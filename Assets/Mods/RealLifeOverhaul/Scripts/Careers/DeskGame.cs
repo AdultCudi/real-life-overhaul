@@ -17,35 +17,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Everything a working day's desk reads from or does to the game, in one place (Careers/CareersDirector.Desk.cs is the
-    /// rest). It follows the game's own job (El Gato Food Market's till: EmployeeStationController.Work and
-    /// PlayerActivity.WorkActivity) step by step:
-    ///
-    ///   the station   one of the employer's own stations of the kind the profession works at (DeskRules.Kinds), of
-    ///                 those the game lets anybody be put at (Item.assignable), not one of its receptionists' desks
-    ///                 (BusinessEmployeeController) and not for sale, in the order of their ids in the building's layout:
-    ///                 the same list every visit. The game seats one of its people at every station of a business that is
-    ///                 not the player's when the player comes in (BuildingManager.SetupAiEmployeeStations); the one that is
-    ///                 the player's is kept free, as WorkActivity frees it when its player starts, and given back with
-    ///                 BuildingManager.AssignAiToEmployeeStation if the job ends while the player is there.
-    ///   the click     one entry at the front of the game's list of calls to action (CtaManager.CtaBehaviors, reached as
-    ///                 Ledger/LedgerPointer does): over the player's own station or desk it says the game's own "Click to
-    ///                 work", and a click walks the player there and opens the work panel, as the game's cash register
-    ///                 does. Asked only when the pointer comes onto something: a reference comparison. (A day from home is
-    ///                 begun from the home computer's own panel instead: Careers/ComputerButtons.) In a Going Public
-    ///                 session it also answers over a classroom door of the university with the game's own "Click to
-    ///                 learn", which opens the room's own panel of the mod's: the game's own click there would reach
-    ///                 Going Public's training window for the game's course the door was laid with
-    ///                 (CareersDirector.RoomDoorClicked); then the pointer on a door costs a look at the floor's five doors.
-    ///   the pose      at a desk computer of the game's, or a desk of the mod's, seated on its chair as the game's people
-    ///                 sit at one, typing now and then; at a till, a counter or any station whose people stand,
-    ///                 WorkActivity's own (the station given the player as its employee, in the business's uniform where
-    ///                 it has one). Held by the game's own work blocker, which goes as they stand up whatever else fails.
-    ///   the boss      a contact of the game's own Employees kind, named for the employer, with the employer's address,
-    ///                 as JobHelper.GetBossContact makes the game's; its texts are the game's text messages.
-    ///   the way       the game's own destination marker (GuidersManager), as "set destination" does for a building.
-    ///
-    /// Nothing here runs by itself; nothing is saved but what the game itself saves of a contact's texts.
+    /// Everything a working day's desk reads from or does to the game, as its own job at El Gato's till: the station, the click
+    /// (an entry at the front of the game's calls to action), the pose, the boss's texts and the destination marker.
     /// </summary>
     internal static class DeskGame
     {
@@ -53,8 +26,6 @@ namespace RealLifeOverhaul.Careers
         private static readonly Comparison<EmployeeStationController> ById = CompareById;
 
         private static PlayerController Player => InstanceBehavior<GameManager>.Instance != null ? InstanceBehavior<GameManager>.Instance.playerController : null;
-
-        // ---------------------------------------------------------------- the building
 
         /// <summary>The building the player is in and its registration; false outside, or while the game is still going in or out.</summary>
         public static bool Inside(out BuildingManager manager, out BuildingRegistration reg)
@@ -71,10 +42,7 @@ namespace RealLifeOverhaul.Careers
             return manager != null && manager.enteringBuilding;
         }
 
-        /// <summary>
-        /// The game's own words on whether the business is open now, as WorkActivity says them; null where it says nothing
-        /// (open, or a building with no business of its own: an empty unit, a headquarters of the mod's).
-        /// </summary>
+        /// <summary>The game's own words on whether the business is open now, as WorkActivity says them; null where it says nothing.</summary>
         public static LabelInfo Closed()
         {
             if (!Inside(out BuildingManager manager, out BuildingRegistration reg) || (!reg.HasEstablishedBusiness && (manager.building == null || manager.building.SpecialService == null)))
@@ -121,12 +89,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- the stations
-
-        /// <summary>
-        /// The player's station in the building: of the kinds asked for, the first kind the building has, and of its
-        /// stations the seed's pick in the order of their ids. Null if the building has none of those kinds.
-        /// </summary>
+        /// <summary>The player's station: of the kinds asked for, the first the building has, the seed's pick in the order of ids; null if none.</summary>
         public static EmployeeStationController Choose(BuildingManager manager, StationKind[] kinds, int seed, int job, out StationKind kind, out int count)
         {
             kind = StationKind.None;
@@ -230,7 +193,7 @@ namespace RealLifeOverhaul.Careers
             }
             catch (Exception)
             {
-                return true;   // (nothing to say otherwise: the desk as usual)
+                return true;   // nothing to say otherwise: the desk as usual
             }
         }
 
@@ -252,11 +215,7 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        /// <summary>
-        /// A computer of the player's home the game itself would pass the time at (its Pass the time button: the home the
-        /// player's, the computer with nothing it needs missing, as CustomizableButtonsOverlay.ShouldShow has it), one
-        /// with its chair first, in the order of the building's items. Null if the home has none. Looked for on a press.
-        /// </summary>
+        /// <summary>A home computer the game itself would pass the time at, one with its chair first; null if none. Looked for on a press.</summary>
         public static ComputerController UsableComputer()
         {
             if (!Inside(out BuildingManager manager, out BuildingRegistration reg) || !GoingPublic.Mine(reg))
@@ -286,11 +245,7 @@ namespace RealLifeOverhaul.Careers
                    && !ItemHelper.HasAnyMissingRequirements(computer.ItemInstance);
         }
 
-        /// <summary>
-        /// The study desk of the game's school (Manhattan Business School) nearest the player, of those with their chair:
-        /// the classroom door whose panel the game opens for its desk (EducationDoorController.StartLearning). Null if
-        /// none. Looked for on a press.
-        /// </summary>
+        /// <summary>The school's study desk nearest the player with its chair (the classroom door that opens it), or null. Looked for on a press.</summary>
         public static EducationDoorController NearestStudyDoor()
         {
             if (!Inside(out BuildingManager manager, out _))
@@ -317,11 +272,7 @@ namespace RealLifeOverhaul.Careers
             return best;
         }
 
-        /// <summary>
-        /// A study door's own refusals, as its door makes them before its panel (EducationDoorController.StartLearning): the
-        /// building closed, something in hand that is not a bag, a vehicle in use. True if refused; with say, said in the
-        /// game's own words, for a desk's panel of the mod's, which does not go through the door.
-        /// </summary>
+        /// <summary>A study door's own refusals before its panel: true if refused, said in the game's words with <paramref name="say"/>.</summary>
         public static bool StudyDoorRefuses(bool say)
         {
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
@@ -345,13 +296,11 @@ namespace RealLifeOverhaul.Careers
             return false;
         }
 
-        // ---------------------------------------------------------------- the click
-
         private sealed class Behaviour : ICtaBehavior
         {
             private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "DeskGame.Behaviour", typeof(Behaviour));   // the game's calls of it (Core/Guard)
 
-            // (asked by the game for whatever the pointer is on: a fault here would break its pointer, so none leaves)
+            // asked by the game for whatever the pointer is on: a fault here would break its pointer, so none leaves
             public override bool ShouldShow(EntityController entityController)
             {
                 if (FrameGuard.Off)
@@ -403,13 +352,13 @@ namespace RealLifeOverhaul.Careers
         {
             if (e is EducationDoorController door)
             {
-                return CareersDirector.Instance != null && CareersDirector.Instance.TakesRoomClick(door);   // (a classroom of the university in a session)
+                return CareersDirector.Instance != null && CareersDirector.Instance.TakesRoomClick(door);   // a university classroom in a session
             }
             if (e == null || !ReferenceEquals(e, Target))
             {
                 return false;
             }
-            return !(e is EmployeeStationController) || PlayerHelper.HasPaidForAllItems();   // (with something unpaid in hand the till sells first)
+            return !(e is EmployeeStationController) || PlayerHelper.HasPaidForAllItems();   // with something unpaid in hand the till sells first
         }
 
         /// <summary>Adds the entry, once. False if the game's list could not be reached (said once): the desk then cannot be clicked.</summary>
@@ -425,7 +374,7 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
-                FieldInfo field = GameContract.CtaBehaviours.Field;   // (resolved once: Core/GameContract)
+                FieldInfo field = GameContract.CtaBehaviours.Field;   // resolved once (Core/GameContract)
                 _list = field != null ? field.GetValue(null) as List<ICtaBehavior> : null;
                 if (_list == null)
                 {
@@ -531,12 +480,7 @@ namespace RealLifeOverhaul.Careers
             return uis != null && uis.playerActivityUI != null && ReferenceEquals(uis.playerActivityUI.GetCurrentActivity, activity);
         }
 
-        // ---------------------------------------------------------------- the pose
-
-        /// <summary>
-        /// The seat of one of the game's desk computers, where its employee sits (its chair); null for a station of another
-        /// kind, a till, a counter or a salon chair, whose employee stands at it.
-        /// </summary>
+        /// <summary>The chair seat of one of the game's desk computers; null for a station whose employee stands at it.</summary>
         public static Transform SeatOf(EmployeeStationController station)
         {
             switch (station)
@@ -578,10 +522,7 @@ namespace RealLifeOverhaul.Careers
             player.Character.LinkToPointAndClickObject(station);
         }
 
-        /// <summary>
-        /// ...and stands up from it, as WorkActivity's Finish has its player do. The work blocker goes whatever the game's
-        /// calls before it do, so that nothing can leave the player held at the station. Never throws.
-        /// </summary>
+        /// <summary>...and stands up from it, as WorkActivity's Finish does; the work blocker goes whatever fails before it. Never throws.</summary>
         public static void StandFrom(EmployeeStationController station)
         {
             PlayerController player = Player;
@@ -607,11 +548,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// The player sits down at a desk: the game's chair seat (a fitted desk's, or the chair of one of the game's desk
-        /// computers, <see cref="SeatOf"/>), held there by the game's work blocker. A station's own place is kept the
-        /// player's while they sit. Where they stood is given back, to stand up on.
-        /// </summary>
+        /// <summary>The player sits on a desk's chair seat, held by the work blocker; <paramref name="stood"/> is where to stand up.</summary>
         public static void SitOn(Transform seat, EmployeeStationController station, out Vector3 stood)
         {
             PlayerController player = Player;
@@ -629,10 +566,7 @@ namespace RealLifeOverhaul.Careers
             player.Character.SitOnChair(seat);
         }
 
-        /// <summary>
-        /// ...and stands up on a place on the floor beside the desk. The work blocker goes whatever the game's calls before
-        /// it do, so that nothing can leave the player held where they sat. Never throws.
-        /// </summary>
+        /// <summary>...and stands up beside the desk; the work blocker goes whatever fails before it. Never throws.</summary>
         public static void StandUp(Vector3 at, EmployeeStationController station)
         {
             PlayerController player = Player;
@@ -698,10 +632,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// The self-check of an activity's walk to its place (docs/features/careers.md, "Setting off"), with Developer
-        /// diagnostics on: PASS when it got there with the game's panel holding it all the way; FAIL when the panel called it
-        /// off in the frame its walk order was given (<paramref name="orderFrame"/>), taking that order for a click
-        /// elsewhere. A walk called off in a later frame is the player's own click, and says nothing.
+        /// The self-check of a walk to its place ("Setting off" in docs/features/careers.md), with Developer diagnostics on: PASS
+        /// when it got there; FAIL when the panel called it off in the frame its walk order was given (<paramref name="orderFrame"/>).
         /// </summary>
         public static void SetOffSeen(string what, bool there, int orderFrame)
         {
@@ -719,8 +651,6 @@ namespace RealLifeOverhaul.Careers
                                              + " it was given: FAIL, it was set off later than the panel allows");
             }
         }
-
-        // ---------------------------------------------------------------- the boss and the way
 
         /// <summary>A text from the boss of the employer at an address, as the game's own employer texts its player. False if it could not be sent.</summary>
         public static bool BossText(string employer, string street, int number, string key, Dictionary<string, string> data)

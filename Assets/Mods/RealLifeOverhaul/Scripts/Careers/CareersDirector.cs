@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
-using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
 using UI.Load;
 using UI.Notification;
@@ -12,16 +11,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Education and careers: the courses of the city's schools and the player's own skills (Careers/Study), and each part
-    /// that follows has its own option and its own partial file of this class.
-    ///
-    /// This class keeps it going and nothing more. It has no Update. A one-second timer on the real clock waits for the
-    /// save, starts and stops each part with its option, puts the Campus app on the phone and keeps the handlers of the
-    /// game's hour, day and save in place (the game empties its events on every load). The work is done on the game's hour
-    /// (classes that are missed, reminders) and on its day (fees, exams that lapse, skills that fade). An hour or more of
-    /// study is one of the game's own activities, left to its clock (<see cref="Sitting"/>).
-    ///
-    /// A fault switches education and careers off for the session with one line; the game's hour and day are left alone.
+    /// Education and careers, each part behind its own option in a partial file of this class. No Update: a one-second timer
+    /// starts and stops the parts and keeps the game's hour, day and save handlers in place (the game empties its events on
+    /// every load); the frame cost is LateUpdate's (.Prompt). A fault, or the guard switching education off (Core/Guard, which
+    /// also disables the component), stops it for the session: a sitting needs it enabled, as ShiftSkip starts on its host.
     /// </summary>
     public sealed partial class CareersDirector : MonoBehaviour
     {
@@ -84,9 +77,14 @@ namespace RealLifeOverhaul.Careers
                 {
                     continue;
                 }
+                if (FrameGuard.Off)
+                {
+                    StandDown("its feature was switched off after its faults (Core/Guard)");
+                    continue;
+                }
                 while (StartLine.Holds(StartSeats.Careers))
                 {
-                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                    yield return null;   // a save's first load waits for a frame of its own (Core/StartLine)
                 }
                 try
                 {
@@ -102,7 +100,7 @@ namespace RealLifeOverhaul.Careers
         private static readonly int HotTick = HotSpots.Slot("Careers: CareersDirector.Tick");
         private void Slow()
         {
-            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotTick);
             if (Save == null || LoadScene.isLoading || !ModState.Loaded || Meta.SaveTools.Dormant)
             {
                 return;
@@ -149,9 +147,9 @@ namespace RealLifeOverhaul.Careers
             ClassPrompt();
             if (!ComputerButtons.Installed)
             {
-                ComputerButtons.Install();   // (once per city: the computer's own panel; a flag test once it is in)
+                ComputerButtons.Install();   // once a city; a flag test after
             }
-            PersonaEducation.Keep();   // (the mod's courses in the Persona app's education box: a null test once it is there)
+            PersonaEducation.Keep();   // the mod's courses in the Persona app; a null test once it is in
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
             EventHold.Keep(ref GlobalEvents.onNewDay, _onDay, ref _daySeen);
@@ -164,8 +162,6 @@ namespace RealLifeOverhaul.Careers
                 InstallCareer();
             }
         }
-
-        // ---------------------------------------------------------------- the game's hour, day and save
 
         private static readonly int HotOnHour = HotSpots.Slot("Careers: CareersDirector.OnHour");
         private void OnHour()
@@ -226,7 +222,7 @@ namespace RealLifeOverhaul.Careers
         private static readonly int HotSave = HotSpots.Slot("Careers: CareersDirector.OnSave");
         private void OnSave()
         {
-            using var hotSpot = HotSpots.Time(HotSave);   // the careers' lines written (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSave);
             try
             {
                 if (Save == null)
@@ -257,14 +253,13 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- an hour or more left to the clock
-
-        /// <summary>
-        /// Offers a sitting on the game's activity panel. Null (having said why, as a key) if the game is busy or another
-        /// is open.
-        /// </summary>
+        /// <summary>Offers a sitting on the game's activity panel; null if offered, else why not, as a locale key.</summary>
         internal string Offer(Sitting sitting)
         {
+            if (_broken || !isActiveAndEnabled)
+            {
+                return "reallife_study_test_off";   // switched off: ShiftSkip would call a sitting off at Start, as it needs its host enabled
+            }
             if (_skip != null && _skip.Open)
             {
                 return "reallife_study_why_busy";
@@ -313,13 +308,13 @@ namespace RealLifeOverhaul.Careers
                     case SittingKind.Overtime:
                         if (_workOn)
                         {
-                            WorkEnded(sitting, minutes, whole);
+                            WorkEnded(sitting, minutes);
                         }
                         break;
                     case SittingKind.Interview:
                         if (_workOn)
                         {
-                            InterviewEnded(sitting, minutes, whole);
+                            InterviewEnded(sitting, whole);
                         }
                         break;
                     default:
@@ -334,10 +329,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>A sitting of a later part (contract work, tutoring, a ceremony): settled by that part.</summary>
-        partial void OtherEnded(Sitting sitting, int minutes, bool whole);
-
-        /// <summary>The fee a sitting carries (a retake's, at a desk), charged as the player sits down for it: the cash was there when it was pressed.</summary>
+        /// <summary>Charges a sitting's fee (a retake's, at a desk) as the player sits down for it.</summary>
         internal void ChargeAtStart(Sitting sitting, int fee)
         {
             Enrolment e = _studyOn && ReferenceEquals(sitting, _sitting) ? _study.Live(sitting.Of) : null;
@@ -391,8 +383,6 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- the morning paper
-
         /// <summary>A story for tomorrow's paper (the City Ledger prints what happened the day before).</summary>
         internal void Story(string key, string aName, string a, string bName = "", string b = "")
         {
@@ -411,12 +401,16 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- faults and the player
-
         private void Fault(string where, Exception e)
         {
-            _broken = true;
             Logger?.Error(e);
+            StandDown("an error in " + where);
+        }
+
+        // Off for the session, with nothing left running: no sitting is offered on a director that is not there for it.
+        private void StandDown(string why)
+        {
+            _broken = true;
             try
             {
                 CloseSitting();
@@ -427,7 +421,7 @@ namespace RealLifeOverhaul.Careers
             {
                 Logger?.Error(second);
             }
-            Logger?.Warn("Careers: switched off for this session after an error in " + where + ". The game's own courses and jobs are not affected; the records are kept as they were last saved.");
+            Logger?.Warn("Careers: switched off for this session after " + why + ". The game's own courses and jobs are not affected; the records are kept as they were last saved.");
         }
 
         /// <summary>A notification of the game's that opens the Campus app on a tab with a row picked.</summary>
@@ -458,8 +452,6 @@ namespace RealLifeOverhaul.Careers
             _careerView?.Changed();
             CareerBadge();
         }
-
-        // ---------------------------------------------------------------- for the save tools
 
         /// <summary>For the save tools: every part stops (its state written to the save first); the timer starts each again if its option is on.</summary>
         public void StopAll()

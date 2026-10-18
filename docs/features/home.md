@@ -19,16 +19,19 @@ Three needs the game does not have (hygiene, stress and a tidy home), sleep debt
 Scripts/Home/
   HomeState      per-save state: the three needs, fitness, sleep debt, five days of meals, the illness, a few dates: one line in modData (game-free)
   HomeBalance    every number (rates per game hour, thresholds, fees, odds), the game's food items by kind, the dishes (game-free)
-  HomeCooking    what can be made from a list of what the fridges hold: a plan per dish, what is one unit short (game-free)
+  Cooking        what can be made from a list of what the fridges hold: a plan per dish, what is one unit short (game-free)
   HomeCookList   the cooking list, in the game's list window: the size, the leftovers, the dishes that can be made now, what is one ingredient short
   HomeOffers     "Click to cook" on cookers and "Click to make a coffee" on coffee machines: one entry in the game's list of click actions
   HomeFridgeButton  "Cook a meal" as a button in the game's own panel of a fridge
-  HomeDirector   the one component: reads what the player is doing once a second, moves the needs, offers the routines, the test buttons
+  HomeDirector   the one component: reads what the player is doing once a second, moves the needs; .Offers (the furniture's clicks, the doctor's panel, the bars), .Routines (starting a routine), .Tests (the test buttons)
   HomeHealth     the rules: needs by activity, mood modifiers, fitness, sleep quality, the body, falling ill and getting over it
-  HomePlace      HomeTidy (the flat's tidiness = the game's own floor dirt) and HomePlace (cookers, coffee machines, fridges and the food in them, a clear piece of floor)
-  HomeActivity   the mod's routines as activities on the game's own panel: a dish from the cooking list, coffee, tidy, floor exercises, the doctor's waiting room
+  HomeTidy       the flat's tidiness = the game's own floor dirt
+  HomePlace      cookers, coffee machines, fridges and the food in them, a clear piece of floor
+  HomeActivity   the mod's routines as activities on the game's own panel; the routines: CookActivity (a dish from the cooking list), CoffeeActivity, TidyActivity, ExerciseActivity (floor exercises), WaitingRoomActivity (the doctor's waiting room)
   JogRun         going for a run: a loop of six checkpoints
-  HomePhone      the "Wellbeing" contact and its page (HomeReport), the doctor's consultation (DoctorVisit, ClinicDialog)
+  HomeReport     the "How am I doing" page and the morning's summary
+  HomePhone      the "Wellbeing" contact and its call (WellbeingDialog)
+  DoctorVisit    the doctor's consultation (ClinicDialog)
   HomeNeedsBar   hygiene, stress and home as three more of the game's bars, in a tab under its top bar
 ```
 

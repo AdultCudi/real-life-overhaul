@@ -104,20 +104,8 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// Every profession the player can work in, with its ranks, pay and what each rank needs. Game-free (the checkers compile
-    /// it); every amount is at the start's prices and is asked of Prices when it is paid or shown.
-    ///
-    /// THE GAME'S OWN. The game has two jobs of its own for the player: the cashier's job at El Gato Food Market (a building's
-    /// SpecialService.playerJob: a till, a weekly schedule, 25 an hour, three warnings and the sack) and the delivery van
-    /// (Vehicles.DeliveryDriverJob), and food deliveries from a restaurant's till. The mod's gigs and their employers
-    /// (Jobs/JobCatalogue, CareerCatalogue) are street work. These are the professions: an employer of the city (one of its
-    /// own businesses, a rival's, one of its tech companies, or the public sector) takes the player on at a rank, judged on
-    /// the player's own skills (Careers/Study) and qualifications, and pays by the hour of a working day.
-    ///
-    /// PAY. The game's cashier earns 25 an hour and its van about 100 an hour of play; the gigs come to 40 to 55. A newcomer
-    /// to a profession earns 16 to 40 an hour, a senior 40 to 90, the top of a ladder 70 to 260: a working week of a senior
-    /// developer is about 3,200, a chief executive's about 10,000. Working is a way to start and a way to rise, not a better use
-    /// of a day than a busy business of one's own.
+    /// Every profession the player can work in, with its ranks, pay and needs, at the start's prices; game-free. A newcomer earns
+    /// 16 to 40 an hour, a senior 40 to 90, the top of a ladder 70 to 260, against the game's cashier at 25.
     /// </summary>
     public static class ProCatalogue
     {
@@ -296,17 +284,11 @@ namespace RealLifeOverhaul.Careers
                 new ProRank(-1, TalentCatalogue.Senior, 42, 45, 180))
         };
 
-        // ---------------------------------------------------------------- the city's tech companies and the public sector
         public const string HospitalType = "ba:businesstype_hospital", ClinicType = "ba:businesstype_clinic", SchoolType = "ba:businesstype_school", CityHallType = "ba:businesstype_irs";
 
         public static Profession Find(int id) => id >= 0 && id < All.Length ? All[id] : null;
 
-        /// <summary>
-        /// True if a business type employs a profession, as <see cref="Employs"/> says, from a set of the professions kept
-        /// for each type: the city's thousand-odd businesses are of a few dozen types, and the day's vacancies ask of each
-        /// many times (25 professions' stems as IndexOf each: some 40,000 a day). One dictionary hit and a bit after the
-        /// type's first time. On the game's thread only.
-        /// </summary>
+        /// <summary>True if a business type employs a profession (<see cref="Employs"/>), from a set kept per type: a dictionary hit after its first time. Game thread only.</summary>
         public static bool EmploysKept(Profession p, string type)
         {
             int bit = p != null ? p.Id : -1;
@@ -397,10 +379,7 @@ namespace RealLifeOverhaul.Careers
             return false;
         }
 
-        /// <summary>
-        /// The profession an ad of a family of the jobs board is for: one of the professions of that family, by the roll (the
-        /// infrastructure family's are IT support's); -1 for a family that has none here.
-        /// </summary>
+        /// <summary>The profession an ad of a jobs board family is for, by the roll; -1 for a family with none here.</summary>
         public static int OfFamily(int family, int roll)
         {
             if (family == (int)Tech.Family.Infrastructure)

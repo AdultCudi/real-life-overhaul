@@ -1,31 +1,21 @@
 using System;
 using System.Collections;
 using RealLifeOverhaul.GameUi;
-using UI;
 using UI.MiniMenu;
 using UI.Notification;
-using UI.Smartphone;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The Guide as an app on the game's phone (<see cref="PhoneApp"/>, built as the Planner is): a button on the home
-    /// screen and in the full menu's top bar, and a panel in the game's frame (<see cref="GuideView"/>). It is put on the
-    /// phone once the city's phone is there (asked again each second until it is, for a few minutes), and taken off when
-    /// the city unloads.
-    ///
-    /// Asked for from the options page, the contact's call, or the welcome notice's click: if the phone is on the home
-    /// screen the app opens at once, as the game opens its own; if a menu of the game's is up (the options, the map, a
-    /// question) a notification says the Guide opens when the menu is closed, and it does. In the main menu there is no
-    /// phone: a notification says where the Guide is. Nothing here runs per frame; the waiting is a quarter-second
-    /// timer that lasts only while a request waits.
+    /// The Guide as an app on the game's phone (<see cref="PhoneApp"/>), drawn by <see cref="GuideView"/>: on the phone while a
+    /// city is loaded; asked for over a menu of the game's, it opens when the menu closes. Nothing per frame.
     /// </summary>
     public static class GuideApp
     {
         public const string AppId = "RealLifeGuide";
 
-        private const float GiveUpAfter = 600f;
+        private const float GiveUpAfter = 600f;   // real seconds of trying to put the app on the phone
 
         private static PhoneApp _app;
         private static GuideView _view;
@@ -36,7 +26,6 @@ namespace RealLifeOverhaul.Meta
 
         public static bool Installed => _app != null && _app.Installed;
 
-        /// <summary>The city has loaded: put the app on the phone when the phone is there.</summary>
         public static void Begin(int generation)
         {
             _generation = generation;
@@ -50,7 +39,6 @@ namespace RealLifeOverhaul.Meta
             MetaUi.Instance.Run(Install(generation));
         }
 
-        /// <summary>The city is unloading: the app comes off the phone.</summary>
         public static void End()
         {
             _waiting = false;
@@ -102,7 +90,8 @@ namespace RealLifeOverhaul.Meta
             {
                 Id = AppId,
                 TitleKey = "reallife_guide_app",
-                Icon = like => AppIconPainter.Paint(like, GameSprites.Get("Icon-Info") ?? GameSprites.Get("Icon-Edit"), new Color32(255, 170, 60, 255), new Color32(224, 104, 10, 255), 0.42f, "AppIcon-Guide"),
+                Icon = like => AppIconPainter.Paint(like, GameSprites.Get("Icon-Info") ?? GameSprites.Get("Icon-Edit"),
+                    new Color32(255, 170, 60, 255), new Color32(224, 104, 10, 255), 0.42f, "AppIcon-Guide"),
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed
@@ -122,8 +111,6 @@ namespace RealLifeOverhaul.Meta
                 MetaLog.Info("Meta check (guide app): the Guide is on the phone: PASS.");
             }
         }
-
-        // ---------------------------------------------------------------- asking for it
 
         /// <summary>One of the game's own screens that the phone's menu must not be opened over, or that hides the HUD.</summary>
         internal static bool Blocked => CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen || Scenes.MainMenu.Options.IsVisible;

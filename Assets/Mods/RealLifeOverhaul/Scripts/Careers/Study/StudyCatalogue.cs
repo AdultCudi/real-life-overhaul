@@ -29,11 +29,7 @@ namespace RealLifeOverhaul.Careers
         Distance = 2      // the same timetable followed online from home (a course that allows it)
     }
 
-    /// <summary>
-    /// The player's own skills: the 29 specialisms of the professions (Tech/People, the same numbers, so a role's two
-    /// specialisms are read straight from the player's), then fourteen of the trades, care and everyday work that no role
-    /// of the professions has. Each is 0 to 100 points, kept in thousandths.
-    /// </summary>
+    /// <summary>The player's own skills: the professions' 29 specialisms (Tech/People, the same numbers), then fourteen of the trades and care; 0 to 100 points, in thousandths.</summary>
     public static class Skills
     {
         public const int Electrical = 29, Plumbing = 30, Joinery = 31, Cooking = 32, Hair = 33, Beauty = 34, Care = 35, Clinical = 36, Teaching = 37,
@@ -106,25 +102,14 @@ namespace RealLifeOverhaul.Careers
     }
 
     /// <summary>
-    /// Every course of the city's schools and every figure of studying: the timetable, fees, grants, the student loan,
-    /// homework, exams and grades, and how skills are learnt and fade. Game-free (the checkers compile it).
-    ///
-    /// THE GAME'S OWN. The game has seven courses (DiplomaName: food safety, auto mechanics, basic HR, market demands,
-    /// headquarters, office businesses, product manufacturing), studied by the hour at Manhattan Business School at a desk
-    /// of its own, and each unlocks business types. Those stay exactly as they are. The courses here are the city's other
-    /// learning: short courses and diplomas taught in the same school's classrooms, degrees at the university, live
-    /// classes online and professional certificates, each with a timetable, homework and an exam, and each teaching the
-    /// player's own skills (<see cref="Skills"/>), which the professions' jobs ask for.
-    ///
-    /// TIME. One game hour is a minute of play. A class is three or four game hours, held on set days at a set hour; it
-    /// is attended from half an hour before until an hour after it starts, and missed if not. A degree is about two dozen
-    /// classes, three a week: eight weeks full time, twice that part time.
+    /// Every course of the city's schools and every figure of studying, game-free (the checkers compile it). The game's own
+    /// seven courses stay as they are. One game hour is a minute of play; a degree is about two dozen classes, three a week.
     /// </summary>
     public static class StudyCatalogue
     {
         public const int Mon = 1, Tue = 2, Wed = 4, Thu = 8, Fri = 16, Sat = 32, Sun = 64;
 
-        // ---------------------------------------------------------------- the courses' ids
+        // the courses' ids
         public const int FirstAid = 0, Barista = 1, Bartending = 2, Forklift = 3, SecurityLicence = 4, DrivingRefresher = 5, CodingBootcamp = 6, Bookkeeping = 7,
             CustomerService = 8, DigitalMarketing = 9;
         public const int Electrician = 10, Plumber = 11, Carpenter = 12, Chef = 13, Hairdresser = 14, Beautician = 15, CareWorker = 16, ItSupport = 17;
@@ -139,7 +124,7 @@ namespace RealLifeOverhaul.Careers
 
         public static readonly CourseDef[] All =
         {
-            // ---- short courses at the school (and two online)
+            // short courses at the school (and two online)
             new CourseDef(FirstAid, "first_aid", CourseKind.Short, Campus.School, 2, 0, 3, Wed | Sat, 10, 120, Skills.FirstAid, 25, Skills.Care, 5),
             new CourseDef(Barista, "barista", CourseKind.Short, Campus.School, 2, 0, 3, Mon | Thu, 10, 150, Skills.Hospitality, 20, Skills.Cooking, 5),
             new CourseDef(Bartending, "bartending", CourseKind.Short, Campus.School, 3, 0, 3, Tue | Fri, 14, 180, Skills.Hospitality, 25, TalentCatalogue.Relationships, 5),
@@ -151,7 +136,7 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(CustomerService, "customer_service", CourseKind.Short, Campus.School, 2, 0, 3, Wed | Fri, 10, 120, TalentCatalogue.Relationships, 15, TalentCatalogue.Selling, 10),
             new CourseDef(DigitalMarketing, "digital_marketing", CourseKind.Short, Campus.Online, 5, 2, 3, Tue | Thu, 19, 600, TalentCatalogue.Marketing, 20, TalentCatalogue.Analysis, 5),
 
-            // ---- vocational diplomas at the school
+            // vocational diplomas at the school
             new CourseDef(Electrician, "electrician", CourseKind.Vocational, Campus.School, 14, 4, 4, Mon | Wed | Fri, 9, 3200, Skills.Electrical, 45, TalentCatalogue.Troubleshooting, 10, Diploma),
             new CourseDef(Plumber, "plumber", CourseKind.Vocational, Campus.School, 14, 4, 4, Tue | Thu | Sat, 9, 3000, Skills.Plumbing, 45, TalentCatalogue.Troubleshooting, 10, Diploma),
             new CourseDef(Carpenter, "carpenter", CourseKind.Vocational, Campus.School, 14, 4, 4, Mon | Wed | Fri, 13, 2800, Skills.Joinery, 45, TalentCatalogue.Structures, 5, Diploma),
@@ -161,7 +146,7 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(CareWorker, "care_worker", CourseKind.Vocational, Campus.School, 10, 4, 4, Mon | Wed, 13, 1800, Skills.Care, 40, Skills.Clinical, 10, Diploma),
             new CourseDef(ItSupport, "it_support", CourseKind.Vocational, Campus.School, 10, 4, 4, Tue | Thu, 13, 2400, TalentCatalogue.Troubleshooting, 35, TalentCatalogue.Networking, 20, Diploma, -1, true),
 
-            // ---- degrees at the university
+            // degrees at the university
             new CourseDef(ComputerScience, "computer_science", CourseKind.Degree, Campus.University, 24, 10, 4, Mon | Wed | Fri, 10, 9000, TalentCatalogue.Coding, 35, TalentCatalogue.SystemDesign, 25, Bachelor, -1, true),
             new CourseDef(SoftwareEngineering, "software_engineering", CourseKind.Degree, Campus.University, 24, 10, 4, Tue | Thu | Fri, 10, 9000, TalentCatalogue.Coding, 35, TalentCatalogue.Backend, 25, Bachelor, -1, true),
             new CourseDef(DataScience, "data_science", CourseKind.Degree, Campus.University, 24, 10, 4, Mon | Wed | Fri, 14, 9000, TalentCatalogue.Statistics, 35, TalentCatalogue.Learning, 25, Bachelor, -1, true),
@@ -177,14 +162,14 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(Teaching, "teaching", CourseKind.Degree, Campus.University, 24, 10, 4, Mon | Wed | Thu, 14, 8500, Skills.Teaching, 45, TalentCatalogue.Writing, 15, Bachelor),
             new CourseDef(Design, "design", CourseKind.Degree, Campus.University, 22, 10, 4, Tue | Wed | Fri, 10, 8500, TalentCatalogue.Visual, 40, TalentCatalogue.Research, 20, Bachelor, -1, true),
 
-            // ---- after a degree
+            // after a degree
             new CourseDef(Mba, "mba", CourseKind.Postgrad, Campus.University, 14, 6, 4, Tue | Thu, 18, 18000, TalentCatalogue.Leadership, 25, TalentCatalogue.Delivery, 20, Master, -1, true, null, true),
             new CourseDef(MscComputing, "msc_computing", CourseKind.Postgrad, Campus.University, 14, 6, 4, Mon | Wed, 18, 12000, TalentCatalogue.Learning, 25, TalentCatalogue.SystemDesign, 20, Master, -1, true,
                 new[] { ComputerScience, SoftwareEngineering, DataScience, Cybersecurity }),
             new CourseDef(LegalPractice, "legal_practice", CourseKind.Postgrad, Campus.University, 12, 6, 4, Mon | Wed | Fri, 14, 12000, TalentCatalogue.Law, 25, TalentCatalogue.Writing, 10, Master, -1, false, new[] { Law }),
             new CourseDef(Pgce, "pgce", CourseKind.Postgrad, Campus.University, 10, 4, 4, Tue | Thu, 14, 7000, Skills.Teaching, 30, TalentCatalogue.Leadership, 5, Master, -1, false, null, true),
 
-            // ---- professional certificates: the same twelve the professions' staff sit (TalentCatalogue.Certs)
+            // professional certificates: the same twelve the professions' staff sit (TalentCatalogue.Certs)
             new CourseDef(CloudAssociate, "cloud_associate", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 450, TalentCatalogue.Automation, 10, TalentCatalogue.SystemDesign, 5, -1, 0),
             new CourseDef(CloudArchitect, "cloud_architect", CourseKind.Certificate, Campus.Online, 0, 8, 0, 0, 0, 1200, TalentCatalogue.SystemDesign, 12, TalentCatalogue.Automation, 5, -1, 1, false, new[] { CloudAssociate }),
             new CourseDef(SecurityPractitioner, "security_practitioner", CourseKind.Certificate, Campus.Online, 0, 8, 0, 0, 0, 950, TalentCatalogue.SecurityOps, 12, TalentCatalogue.Networking, 5, -1, 2),
@@ -201,33 +186,30 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(TestingProfessional, "testing_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 500, TalentCatalogue.Testing, 12, TalentCatalogue.Coding, 5, -1, 11)
         };
 
-        // ---------------------------------------------------------------- the timetable
         public const int ArriveEarlyMinutes = 30;     // a class can be joined this long before it starts
         public const int LateMinutes = 60;            // ...and until this long after; after that it is missed
         public const int CountedShare = 750;          // thousandths of a class that must be sat for it to count
         public const int PartTimeDaysSchool = Sat;    // part time at the school: Saturday mornings
-        public const int PartTimeHourSchool = 10;
+        public const int PartTimeHourSchool = 10;     // hour
         public const int PartTimeDaysUniversity = Tue | Thu;   // part time at the university: two evenings
-        public const int PartTimeHourUniversity = 18;
+        public const int PartTimeHourUniversity = 18;          // hour
         public const int HomeworkHours = 2;           // a piece of homework, game hours
         public const int ExamHours = 3;               // the exam, game hours
         public const int ExamWindowDays = 7;          // the exam can be sat on any weekday this many days after the last class
         public const int ExamOpens = 9, ExamCloses = 17;   // ...between these hours, at the course's campus (a certificate's at the school)
 
-        // ---------------------------------------------------------------- exams and grades
         public const int Pass = 50;                   // the pass mark of a course that is not a degree
         public const int DegreePass = 40;             // a degree's (a third)
         public const int Distinction = 80, Merit = 65;           // a course's grades
         public const int First = 70, UpperSecond = 60, LowerSecond = 50;   // a degree's classes (a third from the pass mark)
         public const int Barred = 500;                // thousandths: a student who attended fewer of the classes than this may not sit the exam
-        public const int RetakesMost = 2;
+        public const int RetakesMost = 2;             // retakes after the first sitting
         public const int RetakeDays = 7;              // days after a fail before the retake can be sat
         public const int RetakeFeeShare = 150;        // thousandths of the course's fee a retake costs
-        public const int RetakeFeeLeast = 50;
+        public const int RetakeFeeLeast = 50;         // whole money at the start's prices
         public const int ExamNoise = 10;              // points either way that the day itself brings
         public const int RevisionMost = 4;            // pieces of homework beyond the set ones that still count as revision
 
-        // ---------------------------------------------------------------- learning
         public const int GainAtTop = 500;             // thousandths of a class's gain that is still learnt at 100 points (less the nearer the top)
         public const int HomeworkShare = 500;         // thousandths of a class's gain a piece of homework teaches
         public const int WorkLearn = 12;              // thousandths of a point of each of a job's two skills an hour of work, at 0 points
@@ -236,7 +218,6 @@ namespace RealLifeOverhaul.Careers
         public const int FadeFloor = 600;             // thousandths of the best it ever reached that it never fades below
         public const int FadeLeast = 20;              // points under which nothing fades
 
-        // ---------------------------------------------------------------- fees, grants and the student loan
         public const int InstalmentsHigher = 3;       // a degree's fee is paid in thirds: at the start, a third of the way, two thirds of the way
         public const int MeritGrantShare = 250;       // thousandths off for a student whose last result was a distinction or a first
         public const int NeedGrantShare = 200;        // thousandths off for a student with little money (a bursary)
@@ -248,17 +229,15 @@ namespace RealLifeOverhaul.Careers
         public const int LoanThreshold = 2500;        // cents an hour of pay above which the loan is repaid (at the start's prices)
         public const int LoanMost = 60000;            // whole money that can be owed on it at most
 
-        // ---------------------------------------------------------------- how much is too much
         public const int StressedWeekHours = 30;      // hours of classes and homework in a week over which the player is stressed
         public const int TiredEnergy = 15;            // a class or homework cannot be started below this much energy
         public const int RefresherPoints = 3;         // penalty points a driving refresher takes off the licence
 
-        // ---------------------------------------------------------------- tutoring, the family, an academy
         public const int TutorLeast = 30;             // points of a subject it takes to tutor it
         public const int TutorBase = 1500;            // cents an hour at the start's prices...
         public const int TutorPerPoint = 60;          // ...and this much more a point of the subject
         public const int TutorMinutes = 120;          // a session
-        public const int TutorPerDay = 2;
+        public const int TutorPerDay = 2;             // sessions
         public const int TutorFrom = 15, TutorTo = 21;   // sessions are given between these hours (after school), from home online
         public const int AcademyPerStaff = 12;        // students an academy's staff member teaches
         public const int AcademyDemand = 30;          // students who would come to a new academy...

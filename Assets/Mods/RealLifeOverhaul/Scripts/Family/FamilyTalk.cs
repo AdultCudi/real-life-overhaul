@@ -5,7 +5,6 @@ using Dialogs;
 using Entities;
 using Localizor;
 using Localizor.LanguageChangeEvent;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Family
 {
@@ -26,12 +25,7 @@ namespace RealLifeOverhaul.Family
         }
     }
 
-    /// <summary>
-    /// Conversations in the game's own dialogue panel, on the phone or face to face: the pieces
-    /// every family conversation is built from. A conversation offers one thing at a time with
-    /// "do it", "something else" and leaving, the way the Gig Line reads out its jobs, so any
-    /// number of things fit the panel's two buttons.
-    /// </summary>
+    /// <summary>The pieces of every family conversation: one thing at a time with "do it", "something else" and leaving.</summary>
     internal static class FamilyTalk
     {
         private const string InPersonType = "reallife_familytalk_calldialogtype";
@@ -54,10 +48,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>
-        /// Opens a conversation face to face (the game's own panel, as its counters and desks
-        /// open one). <paramref name="closed"/> is called when it ends, however it ends.
-        /// </summary>
+        /// <summary>Opens a conversation face to face, as the game's counters do; <paramref name="closed"/> is called however it ends.</summary>
         public static bool Open(Func<DialogEntry> first, Action closed = null, ThirdPersonCharacter with = null)
         {
             var uis = InstanceBehavior<UI.UIs>.Instance;
@@ -129,11 +120,7 @@ namespace RealLifeOverhaul.Family
             };
         }
 
-        /// <summary>
-        /// The things that can be done, one at a time from <paramref name="index"/> on: "do it",
-        /// "something else" (the next that applies, round and round) and leaving. With nothing
-        /// that applies, a closing line.
-        /// </summary>
+        /// <summary>The choices that apply, one at a time from <paramref name="index"/> on, round and round; a closing line if none applies.</summary>
         public static DialogEntry Menu(List<Choice> choices, int index, string nothingKey = "reallife_family_menu_nothing")
         {
             int count = choices.Count;
@@ -215,7 +202,7 @@ namespace RealLifeOverhaul.Family
     }
 
     /// <summary>The face-to-face family conversation: whatever <see cref="FamilyTalk.Open"/> was given.</summary>
-    public class FamilyDialog : Dialog
+    public sealed class FamilyDialog : Dialog
     {
         public FamilyDialog()
         {

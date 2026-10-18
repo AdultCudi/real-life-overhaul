@@ -3,10 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Roommates
 {
-    /// <summary>
-    /// Somebody who would move in, or has: the mod's one person model (<see cref="SocialPerson"/>: a name, a look, a job,
-    /// three figures for how things stand) with what living together adds to it.
-    /// </summary>
+    /// <summary>Somebody who would move in, or has: the mod's person model (<see cref="SocialPerson"/>) with what living together adds.</summary>
     public sealed class Flatmate
     {
         public SocialPerson Person;
@@ -25,23 +22,18 @@ namespace RealLifeOverhaul.Roommates
         None = 0, Leaving = 1, PartnerIn = 2, Rent = 4, Noise = 8, Raid = 16, Borrow = 32, Cooked = 64
     }
 
-    /// <summary>
-    /// Everything a save keeps of the feature (see <see cref="RoommateStore"/>). Game-free. With nobody living in and
-    /// no notice up it is empty but for the seed.
-    /// </summary>
+    /// <summary>Everything a save keeps of the feature (<see cref="RoommateStore"/>). Game-free; empty but for the seed with nobody in and no notice up.</summary>
     public sealed class RoommateState
     {
         public int Seed;
         public int LastDay;          // the day the daily round was last done for
         public int LastStamp;        // day * 24 + hour the hourly round was last done for
 
-        // ---- the notice
         public bool AdUp;
         public int AdStamp;          // day * 24 + hour it went up
         public int Ads;              // how many notices this save has had: each brings different people
         public readonly List<Flatmate> Candidates = new List<Flatmate>(RoommateRules.CandidatesMost);
 
-        // ---- the roommate
         public Flatmate Mate;       // null: nobody lives in
         public string HomeStreet;    // the home they live in (the game's own address)
         public int HomeNumber;
@@ -121,7 +113,6 @@ namespace RealLifeOverhaul.Roommates
             Candidates.Clear();
         }
 
-        /// <summary>Somebody moves in on a day: the arrangement starts, the notice comes down.</summary>
         public void MoveIn(Flatmate who, int day, string street, int number, bool lodger, bool sofa, int weekly)
         {
             ClearMate();
@@ -156,10 +147,7 @@ namespace RealLifeOverhaul.Roommates
             Topics &= ~Topic.Leaving;
         }
 
-        /// <summary>
-        /// The feature was switched off for so many days and is on again: every date moves on by as much, so nothing
-        /// is owed for the days nobody counted and nobody leaves or answers in a gap that was never played.
-        /// </summary>
+        /// <summary>The feature was off for so many days: every date moves on by as much, so nothing is owed or ends in days nobody played.</summary>
         public void Shift(int days)
         {
             if (days <= 0)

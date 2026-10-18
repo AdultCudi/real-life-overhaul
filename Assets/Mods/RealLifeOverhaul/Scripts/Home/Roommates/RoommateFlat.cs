@@ -12,23 +12,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Roommates
 {
     /// <summary>
-    /// The roommate in the flat. While the player is in the home they share and the roommate's hours say they are in,
-    /// they are there as a real character, exactly as the player's partner is (Family/HomeLife): standing in the
-    /// kitchen with a cup or something to eat, by the sofa or the television with the paper or on the phone, walking
-    /// between those places on the floor's own navigation mesh, sitting down for a minute or two; they look up when
-    /// the player comes in and can be talked to ("Talk" on the game's own panel over them).
-    ///
-    /// They do not lie down: the game's beds belong to its own sleep activity and the mod has no sleeping pose, so
-    /// asleep, and "in their room" for those who keep to themselves, is a state: they are in the flat and not shown.
-    ///
-    /// NEVER IN THE WAY. The places they stand are a step clear of the furniture and never in the doorway; they sit
-    /// only on a seat nobody is using (the game's own "occupied", so never the player's, never the partner's) and only
-    /// in a home with two seats or more, so the only chair is never theirs; they keep off any place the partner is
-    /// standing at; they use no bed, cooker or fridge; and as an agent of the navigation mesh they are walked round.
-    ///
-    /// Cost: <see cref="Tick"/> once a second while the player is in that home, a handful of comparisons and at most
-    /// one path request when they move on; the furniture is read once on coming in. Nothing per frame but the cast's
-    /// own turn and hide (<see cref="RoommateCast.Tick"/>), and nothing at all while the player is elsewhere.
+    /// The roommate in the flat as a real character, as the partner is (Family/HomeLife): at their places, walking, sitting
+    /// a while on a free seat, talked to through the game's panel over them; asleep or in their room, in but not shown.
+    /// They keep clear of the door, the furniture and the partner. Cost: <see cref="Tick"/> once a second while the player
+    /// is in that home; nothing per frame but the cast's turn and hide.
     /// </summary>
     public sealed class RoommateFlat
     {
@@ -36,7 +23,7 @@ namespace RealLifeOverhaul.Roommates
 
         private const int MaxSpots = 5;
         private const int Kitchen = 0, Living = 1, Floor = 2, SeatKind = 3;
-        private const float TalkReach = 2.3f;
+        private const float TalkReach = 2.3f;        // metres
         private const float KeepOffPartner = 1.6f;   // metres from where the partner is
 
         private static readonly string[] KitchenItems = { "stove", "fridge", "coffeemachine", "microwave", "kitchen", "sink", "oven" };
@@ -85,16 +72,13 @@ namespace RealLifeOverhaul.Roommates
             _talkEnded = EndTalk;
         }
 
-        /// <summary>True while they are shown in the home.</summary>
         public bool Present => _person != null && !_person.Lost;
 
-        /// <summary>True from the player's first second in the home until <see cref="Leave"/>.</summary>
         public bool Inside => _inside;
 
         /// <summary>True while the cast has somebody out: the director then gives it its frame.</summary>
         public bool Out => _cast.Out;
 
-        /// <summary>True while the "Talk" panel is on screen: the mod's own use of the interact key stands aside.</summary>
         public bool TakesKey => _door.TakesKey;
 
         public void Frame(float delta)
@@ -108,9 +92,6 @@ namespace RealLifeOverhaul.Roommates
             _cast.Dispose();
         }
 
-        // ---------------------------------------------------------------- once a second
-
-        /// <summary>Once a second while the player is in the home they share.</summary>
         public void Tick(float now, RoommateState s, RoomWhere where)
         {
             var manager = InstanceBehavior<BuildingManager>.Instance;
@@ -179,7 +160,6 @@ namespace RealLifeOverhaul.Roommates
                     }
                     break;
                 case Mode.Leaving:
-                    // Out through the door they came in by.
                     if (_person.Near(_entry, 0.9f) || (now >= _giveUp && !CitySpots.InView(_person.Position)))
                     {
                         Release();
@@ -227,8 +207,6 @@ namespace RealLifeOverhaul.Roommates
             _mode = Mode.None;
         }
 
-        // ---------------------------------------------------------------- the places
-
         // The places they stand: beside what the game calls a cooker, a fridge, a sofa, a television; one seat; failing all, clear floor.
         private void Scan(BuildingManager manager, Vector3 player)
         {
@@ -264,9 +242,19 @@ namespace RealLifeOverhaul.Roommates
                 }
                 _seats[_spotCount] = kind == SeatKind ? item : null;
                 Add(spot, at, kind, type);
-                if (kind == Kitchen) kitchens++; else if (kind == Living) livings++; else seats++;
+                if (kind == Kitchen)
+                {
+                    kitchens++;
+                }
+                else if (kind == Living)
+                {
+                    livings++;
+                }
+                else
+                {
+                    seats++;
+                }
             }
-            // Clear floor a few steps in from the door, if the furniture gave nothing (or one place only).
             for (int ring = 0; ring < 2 && _spotCount < 2; ring++)
             {
                 float radius = 3.4f + ring * 1.6f;
@@ -336,14 +324,11 @@ namespace RealLifeOverhaul.Roommates
 
         private int AgentType => _agentType == 0 ? NavMeshHelperIds.Npc : NavMeshHelperIds.Player;
 
-        // True if the partner is at (or within a step and a half of) a place: that place is theirs for now.
         private static bool PartnerAt(Vector3 spot)
         {
             Transform partner = RoommateBridges.PartnerBody != null ? RoommateBridges.PartnerBody() : null;
             return partner != null && CitySpots.Flat(partner.position - spot) < KeepOffPartner * KeepOffPartner;
         }
-
-        // ---------------------------------------------------------------- coming and going
 
         private void Arrive(float now, RoommateState s, Vector3 player, bool wasHome)
         {
@@ -434,7 +419,6 @@ namespace RealLifeOverhaul.Roommates
 
         private void Standing(float now, Vector3 player, string name)
         {
-            // A sip, then the cup held again; the wave over, back to what they were doing.
             if (_person.ClipOver && _person.Playing != null)
             {
                 Activity(_at);
@@ -471,12 +455,11 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        // Near enough and turned towards them: the panel is offered.
         private bool Reachable(Vector3 player)
         {
             Vector3 offset = _person.Position - player;
             PlayerController controller = PlayerHelper.PlayerController;
-            return CitySpots.Flat(offset) < TalkReach * TalkReach && Mathf.Abs(offset.y) < 1.2f && controller != null
+            return CitySpots.Flat(offset) < TalkReach * TalkReach && Mathf.Abs(offset.y) < 1.2f && controller != null && controller.Character != null
                    && Vector3.Dot(controller.Character.transform.forward, offset.normalized) > 0.45f;
         }
 
@@ -519,7 +502,6 @@ namespace RealLifeOverhaul.Roommates
             return true;
         }
 
-        // Seated: they get up when it is time to move on or to go, when the seat is taken away, and when spoken to.
         private void Sitting(float now, Vector3 player, bool staying, string name)
         {
             ItemController item = _at >= 0 ? _seats[_at] : null;
@@ -582,10 +564,7 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        // ---------------------------------------------------------------- talking
-
-        // The prompt for this second, as the game's own panel over them with one button, which the game labels with the
-        // player's key. The words are rebuilt only when the name changes; the partner's own panel, a job's or home life's has the key first.
+        // The game's panel over them, its one button on the player's key; the partner's, a job's or home life's panel has the key first.
         private void Prompt(string name)
         {
             _promptWanted = true;
@@ -614,7 +593,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        // The panel's button (the game runs it on the player's key or a click).
         private void PromptPressed()
         {
             if (!FamilyDirector.CanAct())

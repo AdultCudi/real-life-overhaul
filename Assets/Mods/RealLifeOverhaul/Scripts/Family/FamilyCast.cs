@@ -15,29 +15,17 @@ namespace RealLifeOverhaul.Family
     /// <summary>Who somebody in the family's own pool is dressed as.</summary>
     public enum FamilyLook { Partner, PartnerFormal, Officiant, Mother, Guest }
 
-    /// <summary>
-    /// The family's own people: THREE characters at most, ever (the partner, and two more for a
-    /// wedding: the officiant and one guest of the family's). Made the first time each is
-    /// needed, kept on the shelf switched off, and handed out again in the same look, so the
-    /// expensive part (the game merges a character's meshes when its look is built) is paid
-    /// once per look. The partner's look is built from the seed in the save: the same face in
-    /// every session, in day clothes or dressed up.
-    ///
-    /// They are the living city's kind of person (CityPerson: they only move by their navigation
-    /// agent, clips never slide them), on whichever navigation mesh the place has. Nothing here
-    /// runs by itself: the director calls <see cref="Tick"/> while somebody is out, and that
-    /// only turns people who are turning and hides whoever cannot be seen.
-    /// </summary>
+    /// <summary>The family's three characters, each made once, kept switched off and dressed only for a new look; <see cref="Tick"/> runs while one is out.</summary>
     public sealed class FamilyCast
     {
         public const int Size = 3;
 
         private const string CharacterPrefab = "Characters/HumanDefinitionLow";
-        private const float HideDistance = 150f;
-        private const float HideBehind = 6f;
+        private const float HideDistance = 150f;   // metres from the camera
+        private const float HideBehind = 6f;       // metres behind the camera
         private const float TurnRate = 240f;       // degrees a second
         private const float MaxBuild = 0.55f;      // the mod's clips are made for slim to average
-        private const int MotherSeed = FixedLooks.MomSeed;   // Mom: the one look of every game (Phone/Contacts/FixedLooks), as on her contact and in the street
+        private const int MotherSeed = FixedLooks.MomSeed;   // Mom's one look in every game, as on her contact and in the street
 
         private static readonly AppearanceTag[] Casual = { AppearanceTag.Casual };
         private static readonly AppearanceTag[] Formal = { AppearanceTag.Formal };
@@ -63,20 +51,13 @@ namespace RealLifeOverhaul.Family
             Props = new CityProps(parent);
         }
 
-        /// <summary>The modelled props the family's people hold or push (cups, the newspaper, the pushchair).</summary>
         public CityProps Props { get; }
 
-        /// <summary>True while anybody is out.</summary>
         public bool AnyOut => _out[0] || _out[1] || _out[2];
 
         public bool Failed => _failed;
 
-        /// <summary>
-        /// Puts somebody at a spot that was found on a navigation mesh, facing a point, standing.
-        /// Slot 0 is always the partner. Null if that slot is out already, the spot will not take
-        /// them, or characters cannot be made (said once in the log; family life goes on as
-        /// messages and conversations).
-        /// </summary>
+        /// <summary>Somebody standing at a spot on a navigation mesh, facing a point (slot 0: the partner); null if they cannot be put or made.</summary>
         public CityPerson Put(int slot, FamilyLook look, Vector3 spot, Vector3 face, int agentType)
         {
             if (_failed || slot < 0 || slot >= Size || _out[slot])
@@ -178,7 +159,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>Called by the director each frame while somebody is out: a few comparisons a person.</summary>
+        /// <summary>Each frame while somebody is out: a few comparisons a person.</summary>
         public void Tick(float delta)
         {
             Camera camera = GameManager.GetMainCamera();
@@ -213,7 +194,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>The city is going: destroy what was made.</summary>
         public void Dispose()
         {
             for (int i = 0; i < Size; i++)
@@ -257,7 +237,6 @@ namespace RealLifeOverhaul.Family
             return new CityPerson(character);
         }
 
-        // On the mesh of the given agent type at a spot, standing, facing a point.
         private static bool Place(CityPerson person, Vector3 spot, Vector3 face, int agentType)
         {
             ThirdPersonCharacter character = person.Character;
@@ -292,13 +271,13 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // One mesh merge. The face, hair and build come from the seed with day clothes; dressing up changes the clothes only.
         /// <summary>The partner's age, from their seed: the same in the city and on their contact's picture.</summary>
         internal static int PartnerAge(int seed)
         {
             return 24 + (seed & 0x7fffffff) % 14;
         }
 
+        // One mesh merge. The face, hair and build come from the seed with day clothes; dressing up changes the clothes only.
         private static void Dress(CityPerson person, FamilyLook look)
         {
             AppearanceSetter appearance = person.Character.appearanceSetter;
@@ -335,13 +314,13 @@ namespace RealLifeOverhaul.Family
                     formal = true;
                     break;
             }
-            // The game colours a beard to match the hair by a roll of the engine's own dice: the same roll every time for the same seed.
+            // The game colours a beard by a roll of the engine's own dice: seeded, the same roll every time for the same seed.
             Random.State dice = Random.state;
             Random.InitState(seed);
             try
             {
                 appearance.data.ageInDays = age * year;
-                if (!PersonLookGame.Dress(appearance, seed))   // (a partner met in the street: the look they had there, People/PersonLook)
+                if (!PersonLookGame.Dress(appearance, seed))   // a partner met in the street keeps the look they had there
                 {
                     appearance.RandomizeElements(female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(seed), Casual, seed);
                 }
@@ -365,13 +344,7 @@ namespace RealLifeOverhaul.Family
         }
     }
 
-    /// <summary>
-    /// The family's own furniture and decorations, by id. Each is the modelled prop from the
-    /// prop bundle when the bundle has one of that id, and until then a clean stand-in of plain
-    /// shapes built here (Core/Shapes): a model of "cot" added to the bundle changes what
-    /// is shown with no change to this code. One object each, made the first time it is wanted
-    /// and kept; no script on any of them.
-    /// </summary>
+    /// <summary>The family's furniture and decorations: the bundle's modelled prop by id, else plain shapes; each made once and kept.</summary>
     public sealed class FamilyProps
     {
         public const string Arch = "wedding_arch";
@@ -381,12 +354,7 @@ namespace RealLifeOverhaul.Family
         public const string HighChair = "high_chair";
         public const string Baby = "baby_bundle";
 
-        /// <summary>
-        /// A swaddled baby in the cot, or not: the modelled <c>baby_bundle</c> lying on the modelled cot's blanket with
-        /// its head to the pillow (0.53 m up, in the middle: where the cot was made to take it). It is a piece of the cot
-        /// object, made the first time one is wanted and switched off otherwise, so it goes back to the shelf with the cot.
-        /// The plain stand-in cot stays empty: its mattress is not at that height.
-        /// </summary>
+        /// <summary>The swaddled baby, a piece of the modelled cot 0.53 m up, shown or not; the plain stand-in cot stays empty.</summary>
         public static void Tuck(Transform cot, bool baby)
         {
             if (cot == null)

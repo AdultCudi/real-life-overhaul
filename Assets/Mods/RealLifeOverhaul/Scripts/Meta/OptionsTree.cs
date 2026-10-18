@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
-        /// <summary>The main switch: it is the first row, and every other row is greyed while it is off (unless <see cref="Free"/>).</summary>
+        /// <summary>The main switch: it is the first row, and every other row is greyed while it is off (unless <see cref="TreeRow.Free"/>).</summary>
         public TreeSection Main(string optionId)
         {
             Master = optionId;
@@ -159,30 +159,22 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// THE STRUCTURE OF THE OPTIONS PAGE, and nothing else: which groups there are, which sections each opens to,
-    /// which rows stand in each section and in what order, what a row needs to be on before it does anything.
-    /// The page itself is still built by RealLifeOverhaulMod.cs and the features (ids, defaults and handlers are
-    /// theirs); <see cref="OptionsLayout"/> arranges the finished rows by this table, and
-    /// <see cref="OptionsPlan"/> is the arithmetic of it. No Unity or game types: CatalogueCheck reads this file
-    /// as it ships and fails if an option of Settings.cs is in no section, a section is too long or empty, a
-    /// need points nowhere or in a circle, or a label is too long or uses one of the mod's own words.
+    /// The structure of the options page and nothing else: the groups, their sections, each section's rows in order and what a
+    /// row needs on. <see cref="OptionsLayout"/> arranges the built rows by it and <see cref="OptionsPlan"/> does the
+    /// arithmetic; CatalogueCheck reads it as it ships. A new feature adds one S(...) line:
     ///
-    /// TO ADD A FEATURE: one S(...) line in the group it belongs to (or its option ids in a section that is
-    /// there). A row no line claims is shown in a section called "Other" and named in Player.log.
+    ///     S("fuel").For("fuel")                 // section id (its title is reallife_opt_sec_ and the id), the feature's id
+    ///         .Main("fuel")                     // its main switch: first row, the others greyed while it is off
+    ///         .Opts("fuel_price", "fuel_gauge") // more options by saved id, in the page's order
+    ///         .Opt("fuel_cans", "car_ownership")// an option that needs another one on
+    ///         .Buttons("&lt;reallife_fuel_page&gt;")  // a button of the player's (not a test), by label key
     ///
-    ///     S("fuel").For("fuel")                 // section id (its title is the en.json key reallife_opt_sec_fuel), the feature id of Meta/FeatureList
-    ///         .Main("fuel")                     // its main switch: first row, the others are greyed while it is off
-    ///         .Opts("fuel_price", "fuel_gauge") // more options, by saved id, in the order of the page
-    ///         .Opt("fuel_cans", "car_ownership")// an option that needs another one on ("Needs: Owning a car")
-    ///         .Buttons("<reallife_fuel_page>")  // a button that is the player's (not a test), by label key
-    ///
-    /// Every option row also needs one sentence in en.json: the key is the tip prefix below and its id.
-    /// (The example's key is inside angle brackets only so that the locale check does not take it for a real one.)
-    /// Cost: built once when the class is first used (about 60 small objects); nothing runs per frame.
+    /// Every option row needs its sentence in en.json under <see cref="TipPrefix"/> and its id (the example key is bracketed so
+    /// that the locale check skips it). A row no line claims goes to "Other", named in Player.log.
     /// </summary>
     public static class OptionsTree
     {
-        private const string Mod = "reallife";                 // (apart, so that the locale check does not take a prefix for a key)
+        private const string Mod = "reallife";                 // apart, so that the locale check does not take a prefix for a key
         public const int MostRows = 10;                       // rows in one section: more than a screenful is a wall again
         public const string GroupPrefix = Mod + "_opt_group_";    // a group's title is this and its id
         public const string SectionPrefix = Mod + "_opt_sec_";    // a section's title
@@ -204,7 +196,6 @@ namespace RealLifeOverhaul.Meta
             return new TreeGroup(id, sections);
         }
 
-        /// <summary>The groups in the order of the page.</summary>
         public static readonly TreeGroup[] Groups =
         {
             G(StartId,
@@ -234,7 +225,8 @@ namespace RealLifeOverhaul.Meta
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people").Also("friends dating date people calls typing"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),
-                S("flare").For("flare").Main("social_media").Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
+                S("flare").For("flare").Main("social_media")
+                    .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
                     .Also("social media app followers posts likes selfie influencer"),
                 S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
                     .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite"),
@@ -260,7 +252,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("crash collision ambulance paramedics fire service notification notifications sound waypoint marker pin"),
                 S("police").Guide("crime").Main("police").Opt("police_presence", "people").Opt("patrol_officers", "people").Opt("patrol_frequency", "patrol_officers")
                     .Opts("police_pursuit", "player_offences").Also("cop cops officers chase fine fines speeding"),
-                S("stations").For("law").Main("law_precincts").Opts("law_station").Opt("law_station_furniture", "law_station").Opt("law_map_markers", "map_places_shown").Opts("law_custody").FreeOpts("law_arrests", "law_reputation")
+                S("stations").For("law").Main("law_precincts").Opts("law_station").Opt("law_station_furniture", "law_station").Opt("law_map_markers", "map_places_shown")
+                    .Opts("law_custody").FreeOpts("law_arrests", "law_reputation")
                     .Also("precinct cell custody arrest record"),
                 S("crime").For("crime").Main("street_crime").Opts("crime_frequency").FreeOpts("crime_against_player").Also("robbery mugging thief theft burglar scam pickpocket"),
                 S("courts").For("justice").Main("justice").Opts("justice_lawyers", "justice_courthouse", "justice_no_prison", "justice_prison_cap", "justice_community",
@@ -286,7 +279,8 @@ namespace RealLifeOverhaul.Meta
                 S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")
                     .FreeOpts("map_places_shown", "special_names").Also("map route satnav directions destination names building buildings"),
                 S("districtview").For("districtview").Opts("district_view")
-                    .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage internet competition council"),
+                    .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage "
+                        + "internet competition council"),
                 S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks")
                     .Also("driving test theory examiner points"),
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
@@ -294,12 +288,19 @@ namespace RealLifeOverhaul.Meta
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
-                S("study").For("careers_study").Main("careers_study").Opts("careers_class_start").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
-                S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study").Also("university degree degrees bachelor master mba law nursing certificate certificates exam student loan grant scholarship graduation tuition fees"),
-                S("familystudy").For("careers_family").Opt("careers_family", "careers_study").Also("children child university tutoring tutor academy training school own business staff degree sponsored"),
-                S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Opt("careers_agency_note", "careers_jobs").Opt("careers_reject_reason", "careers_jobs").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
-                S("worklife").For("careers_life").Opt("careers_life", "careers_jobs").Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire retirement options shares conflict interest"),
-                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
+                S("study").For("careers_study").Main("careers_study").Opts("careers_class_start")
+                    .Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
+                S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study")
+                    .Also("university degree degrees bachelor master mba law nursing certificate certificates exam student loan grant scholarship graduation tuition fees"),
+                S("familystudy").For("careers_family").Opt("careers_family", "careers_study")
+                    .Also("children child university tutoring tutor academy training school own business staff degree sponsored"),
+                S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Opt("careers_agency_note", "careers_jobs").Opt("careers_reject_reason", "careers_jobs")
+                    .Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
+                S("worklife").For("careers_life").Opt("careers_life", "careers_jobs")
+                    .Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire "
+                        + "retirement options shares conflict interest"),
+                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs")
+                    .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary calendar notes to do")),
 
             G("money",
@@ -311,7 +312,8 @@ namespace RealLifeOverhaul.Meta
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
                 S("markets").For("markets", "markets_listing", "markets_bots").Main("ventures_market")
                     .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_large", "markets_reinvest")
-                    .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit").Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
+                    .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit")
+                    .Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
                     .Also("markets_bots", "bot bots robot automated algorithm strategy stop loss take profit limit order trend momentum")
                     .Also("markets_bonds", "bond bonds treasury gilt deposit certificate fixed income interest coupon reinvest savings rollover ladder")
                     .Also("markets_large", "large big block limit volume worked order algorithm vwap slice wealth investor")
@@ -325,15 +327,19 @@ namespace RealLifeOverhaul.Meta
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
-                S("endscale").For("economy_endscale").Opts("economy_endscale").Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
+                S("endscale").For("economy_endscale").Opts("economy_endscale")
+                    .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
                 S("rivals").For("rivals").Main("rivals").Opts("rivals_strength")
                     .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game pressure"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Also("web shop orders delivery internet"),
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
-                S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
-                S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
-                S("startups").For("tech_startups").Opt("tech_startups", "tech_sector").Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),
+                S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people")
+                    .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
+                S("techsector").For("tech_sector").Opt("tech_sector", "tech_people")
+                    .Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
+                S("startups").For("tech_startups").Opt("tech_startups", "tech_sector")
+                    .Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),
                 S("techsites").For("tech_sites").Opt("tech_site_rooms", "tech_sector").Opts("tech_site_hq").Opt("tech_site_cloud", "tech_sector").Opt("tech_site_offices", "tech_sector")
                     .Also("data centre data center server servers rack racks cooling headquarters hq lobby reception office cloud hyperscaler sign buildings"),
                 S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer", "economy_dealer_floor").Also("car dealership showroom auction wholesale used cars finance warranty")
@@ -374,8 +380,6 @@ namespace RealLifeOverhaul.Meta
                     "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_phone_dump", "reallife_keys_character_report")
                     .Also("benchmark fps developer keys")),
         };
-
-        // ---------------------------------------------------------------- looking things up
 
         private static Dictionary<string, TreeSection> _byRow;
         private static Dictionary<string, TreeRow> _rows;

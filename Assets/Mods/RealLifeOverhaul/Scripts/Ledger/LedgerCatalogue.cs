@@ -1,31 +1,23 @@
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// The City Ledger's fixed figures and its table of what each kind of piece is: the section it goes in, how much it
-    /// matters (the front page leads with the heaviest) and the paper's own headline for the kinds whose words have none.
-    /// Every amount of money is at the start's prices and goes through Prices.At when it is charged or shown. Game-free.
-    /// </summary>
+    /// <summary>The City Ledger's fixed figures and its table of kinds of piece. Money is at the start's prices. Game-free.</summary>
     public static class LedgerCatalogue
     {
-        private const string P = "reallife";   // (apart, so that a key made from parts is not taken for a whole one)
+        private const string P = "reallife";   // in parts: a key's beginning, not a key
 
-        // ---- what it costs
         public const int CopyAtStart = 2;           // a copy at a kiosk
         public const int WeekAtStart = 9;           // a week of home delivery, paid a week at a time
 
-        // ---- when
-        public const int WeekDays = 7;
-        public const int DeliveryHour = 6;          // the paper is at the door once the city's paper is written, from 06:00
-        public const int KioskOpenHour = 6, KioskCloseHour = 20;
+        public const int WeekDays = 7;              // days
+        public const int DeliveryHour = 6;          // hour of the day: the round, once the city's paper is out
+        public const int KioskOpenHour = 6, KioskCloseHour = 20;   // hours of the day
 
-        // ---- the kiosks near the home
         public const int KiosksWanted = 2;
         public const float KioskNearest = 30f;      // metres from the home's door: not on its doorstep
-        public const float KioskFurthest = 320f;    // ...and within a few minutes' walk
-        public const float KioskApart = 90f;        // between two kiosks
-        public const float KioskKeepClear = 7f;     // from a bus stop, a help-wanted board, a bike dock
+        public const float KioskFurthest = 320f;    // metres: within a few minutes' walk
+        public const float KioskApart = 90f;        // metres between two kiosks
+        public const float KioskKeepClear = 7f;     // metres from another feature's fixture in the street
 
-        // ---- the edition
         public const int ChartDays = 60;            // the index's last closes, for the little chart on the markets page
         public const int MarketNewsDays = 4;        // the market's news from at most this many days back (the first edition after a gap)
         public const int PiecesMost = 60;           // pieces in an edition
@@ -58,14 +50,10 @@ namespace RealLifeOverhaul.Ledger
             return new Kind(P + suffix, section, weight, head != null ? P + "_ledger_head_" + head : null);
         }
 
-        /// <summary>
-        /// The kinds, the first that fits a key wins (so a longer prefix stands before a shorter one that it starts with).
-        /// A key that fits none goes to the city's pages at an ordinary weight: a feature that writes for the paper and is
-        /// not in this table yet is printed all the same.
-        /// </summary>
+        /// <summary>The first kind that fits a key wins, so a longer prefix stands before a shorter one it starts with.</summary>
         public static readonly Kind[] Kinds =
         {
-            // the city: the street, the courts, City Hall (the paper's own words, Social/News)
+            // the city: the street, the courts, City Hall
             K("_news_ped_killed", LedgerSection.City, 100),
             K("_news_accident_severe", LedgerSection.City, 90),
             K("_news_story_fire", LedgerSection.City, 85),
@@ -95,7 +83,6 @@ namespace RealLifeOverhaul.Ledger
             K("_event_today", LedgerSection.AroundTown, 18),
             K("_event_tomorrow", LedgerSection.AroundTown, 16),
 
-            // the economy (Economy/City, through the paper's Extra pieces)
             K("_macro_news_rate_up", LedgerSection.Economy, 88, "rate_up"),
             K("_macro_news_rate_down", LedgerSection.Economy, 88, "rate_down"),
             K("_macro_news_rate_hold", LedgerSection.Economy, 50, "rate_hold"),
@@ -126,7 +113,7 @@ namespace RealLifeOverhaul.Ledger
             K("_news_shop_good", LedgerSection.Business, 25),
             K("_news_shop_none", LedgerSection.Business, 10),
 
-            // the markets (Markets, through the wiring: the market's own sentences, MarketText); first a player's own company's (Markets/Listing)
+            // the markets (MarketText), a player's own company's first
             K("_mkt_news_own_meeting_revolt", LedgerSection.Markets, 80, "own_revolt"),
             K("_mkt_news_own_meeting", LedgerSection.Markets, 35),
             K("_mkt_news_own_audit", LedgerSection.Markets, 75, "own_audit"),
@@ -167,7 +154,6 @@ namespace RealLifeOverhaul.Ledger
             K("_mkt_news_close", LedgerSection.Markets, 20, "close"),
             K("_mkt_news", LedgerSection.Markets, 30),
 
-            // the rest of the paper
             K("_news_rain_now", LedgerSection.Weather, 10),
             K("_news_rained", LedgerSection.Weather, 10),
             K("_news_dry", LedgerSection.Weather, 10),
@@ -178,7 +164,6 @@ namespace RealLifeOverhaul.Ledger
             K("_news_masthead", LedgerSection.AroundTown, -1)   // the old paper's masthead: the page has its own (left out)
         };
 
-        /// <summary>The weight of a piece that fits no kind.</summary>
         public const int UnknownWeight = 40;
     }
 }

@@ -15,7 +15,7 @@ A feature is one component under `Scripts/<Feature>/`, registered in `Core/RealL
 
 ### The registry statement
 
-At the marked place at the end of `FeatureList.RegisterAll` (or the same statement in a `static void DescribeFeature()` of a class of the feature's own marked `[Meta.DescribesFeature]`):
+At the end of `FeatureList.RegisterAll` (or the same statement in a `static void DescribeFeature()` of a class of the feature's own marked `[Meta.DescribesFeature]`):
 
 ```csharp
 Features.Add("fuel", "reallife_fuel_title")              // id (plain English: it sorts the page), title key

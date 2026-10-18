@@ -2,12 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// Who the partner is, whoever keeps them. With the Social bridge set, they are one of
-    /// Social's people and everything here reads from and reports to it; without it, one minimal
-    /// record in the family state (a name, a seed for their look, how fond they are) stands in,
-    /// met and talked to through the "Someone special" phone contact.
-    /// </summary>
+    /// <summary>Who the partner is: one of Social's people while its bridge is set, else the family state's own record.</summary>
     public static class Partner
     {
         private static readonly string[] Women =
@@ -20,7 +15,7 @@ namespace RealLifeOverhaul.Family
             "Daniel", "Marco", "Theo", "Samir", "Lucas", "Andre", "Felix", "Jonah", "Kenji", "Mateo", "Elias", "Omar", "Nico", "Aaron", "Caleb", "Idris"
         };
 
-        // What they do for a living, and what a day of it brings in. Keys are written out in full for the locale check.
+        // What they do for a living, and what a day of it brings in. The keys are written out in full for the locale check.
         private static readonly string[] Trades =
         {
             "reallife_family_job_nurse", "reallife_family_job_teacher", "reallife_family_job_chef", "reallife_family_job_designer",
@@ -32,10 +27,7 @@ namespace RealLifeOverhaul.Family
 
         public static bool UsesSocial => FamilyBridges.Social != null && FamilyBridges.Social.Active;
 
-        /// <summary>
-        /// Social's person, if they are the partner Family keeps (or Family keeps none yet). A partner from before Social supplied them
-        /// (engaged, married or living in with somebody else) stays on Family's own record until that is settled.
-        /// </summary>
+        /// <summary>Social's person, if they are the partner Family keeps or Family keeps none yet; a partner bound before Social keeps Family's record.</summary>
         public static bool Kept(out PersonInfo person)
         {
             person = default;
@@ -62,7 +54,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>Days since the two began seeing each other.</summary>
         public static int DaysTogether
         {
             get
@@ -103,16 +94,12 @@ namespace RealLifeOverhaul.Family
             return name;
         }
 
-        /// <summary>
-        /// Brings the family state into step with whoever keeps the partner. With Social: its
-        /// partner is ours (name, look, sex mirrored); if it has none and nothing binds the two
-        /// yet (not living together, not engaged or married), the player is single again.
-        /// </summary>
+        /// <summary>Brings the family state into step with Social's partner; with none and nothing binding the two, the player is single again.</summary>
         public static void Resync()
         {
             if (!UsesSocial || !FamilyBridges.Social.Ready)
             {
-                return;   // (Social has not read its people yet: nobody is dropped for being unread)
+                return;   // Social has not read its people yet: nobody is dropped for being unread
             }
             FamilySave s = FamilyState.S;
             if (FamilyBridges.Social.TryGetPartner(out PersonInfo p) && !string.IsNullOrEmpty(p.Name))
@@ -144,10 +131,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>
-        /// Something happened between the two. Social is told and moves its own figures; the
-        /// default record moves its affection by the same amount.
-        /// </summary>
+        /// <summary>Something happened between the two: Social is told and moves its own figures, or the default record its affection.</summary>
         public static void Tell(FamilyEvent what, float affection, float trust = 0f)
         {
             if (Kept(out _))

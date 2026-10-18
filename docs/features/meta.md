@@ -11,30 +11,31 @@ The mod's part about itself: the feature registry, the in-game **Guide** app and
 
 ## How it talks to other features
 
-- It names no feature outside `FeatureList.cs`: everything else reads the registry, so a feature that registers appears in the Guide, the presets, the options page and the save tools. How to register one is in [Adding a feature](../contributing/adding-things.md#adding-a-feature-with-its-guide-page-and-presets).
+- It names no feature outside `FeatureList.cs` and its parts: everything else reads the registry, so a feature that registers appears in the Guide, the presets, the options page and the save tools. How to register one is in [Adding a feature](../contributing/adding-things.md#adding-a-feature-with-its-guide-page-and-presets).
 - `Meta.Dev` is the **Developer diagnostics** switch every logger in the mod goes through; see [Logs and debugging](../reference/logs-and-debugging.md).
 
 `Scripts/Meta` is the mod's part about itself.
-It names no feature outside one file, `FeatureList.cs`: everything else reads the registry that file fills, so a feature that registers appears in all of it.
+It names no feature outside `FeatureList.cs` and its parts: everything else reads the registry they fill, so a feature that registers appears in all of it.
 
 ```
 Meta/
   Features        the registry: Feature (fluent), Features.Add / Find / OwnerOf...; [DescribesFeature] for self-registration
-  FeatureList     every feature, one statement each; the place for features merged later
+  FeatureList     every feature, one statement each: gameplay and tools here, .Life and .Economy the rest; a new one at the end of RegisterAll
   SettingsTable   every saved option, found by itself: Settings' "XId" + "X" fields (id, kind, shipped default,
                   captured at the top of the first Settings.Load), the rows of the options page (label, range),
                   and what a feature declares for options kept elsewhere (performance tweaks, looks)
   Presets         Relaxed / Standard / Realistic / Hardcore / Custom, reset everything, the settings file
   OptionsLayout   puts the finished options page in order: sections, test tools, the buttons at the top; the set-up check
-  OptionsSearch   the other half of that class: the search box under the page's first header, and the words features are also found by
-  OptionsCaptions a third part of it: the word on each button of the page ("Open", "Close", "Run", "Apply")
+  OptionsLayout.Drawing, .Buttons, .Book  its drawing (greyed rows, counts, open and closed), its own buttons and the set-up check, and the Settings app's view of its rows
+  OptionsLayout.Search    the search box under the page's first header
+  OptionsLayout.Captions  the word on each button of the page ("Open", "Close", "Run", "Apply")
   MetaUi          the mod's own canvas (above the menus, off unless a panel is open) for the options page's messages and questions only
   Guide           the guide's pages and texts (topics, facts, mark-up) and its phone contact
   GuideApp        the Guide as an app on the game's phone (GameUi.PhoneApp), asked for from the options page, the contact and the welcome notice
   GuideView       the app's panel in the game's frame (GameUi.AppShell): a table of pages, a table of the lines of a page
   Welcome         the first-run / after-update notification, with a click that opens the Guide on "What changed"
-  Changelog       what changed per version (guide page, "since last time")
-  SaveTools       prepare a save for removing the mod, reset the mod's data, repair, the check after each load
+  Changelog       what changed per version, for the Guide's What's new page
+  SaveTools       prepare a save for removing the mod (.Steps: the backup and the purge), reset and repair (.Reset), the check after each load (.Load)
   MetaCity        Meta's part of a city load; Dev: the "Developer diagnostics" switch
 ```
 
@@ -57,7 +58,7 @@ A section's button says what is in it after the name, through the label's `Suffi
 The game calls a toggle's callback with the saved value when it draws the row and on every click, and that is where the button hears of it.
 
 The game's button row has two texts: the label beside the button, which `ModOptionsButtonControl.Initialize` fills from the row, and one on the button itself, which it never fills, so the button shows what its template was saved with ("Your text here").
-`OptionsCaptions.cs` writes that second text.
+`OptionsLayout.Captions.cs` writes that second text.
 
 A row that draws nothing stands after the mod's last row and goes once through the rows of this drawing:
 
@@ -75,11 +76,11 @@ If the page cannot be put in order it is registered as built, with the same numb
 
 ## Search
 
-The row under the page's first header is a text field (`OptionsSearch.cs`).
+The row under the page's first header is a text field (`OptionsLayout.Search.cs`).
 The page has no text field of the game's to copy, so it is a `TMP_InputField` built in code that takes its width from the header above it and its height, font, letter size and button shape from the "Open the Guide" button below it.
 
 - **Matching.** From two letters on.
-  Not case-sensitive; the words typed may be in any order and each must be somewhere in the row's label, or in its section's text: the section's name, the feature's `About` sentence, and the other words for it in the `SearchWords` table.
+  Not case-sensitive; the words typed may be in any order and each must be somewhere in the row's label, its tip or its own other words, or in its section's text: the section's name and the other words given for it, and those of the sections above it.
 
   So a word that names a feature shows all of its rows, and a word only in a label shows that row ("bus" shows the whole of the transport section and its tests; "timetable" shows the rows that say timetable).
 
@@ -103,13 +104,13 @@ The page has no text field of the game's to copy, so it is a `TMP_InputField` bu
 - **Failing.** Anything thrown hides the box for the session, logs once ("Meta: the search box ... is hidden") and shows the page as the sections have it.
 - **Not kept.** The box starts empty every time the page is drawn.
 
-Other words for a feature are one line of `SearchWords` at the top of `OptionsSearch.cs`: who (the feature's id, or the header key of its group while it is not registered; both may be given) and the words, lower case:
+Other words are given where the page is laid out, in `OptionsTree.cs`, lower case: `.Also(words)` on a section for every row of it, `.Also(rowId, words)` for one row:
 
 ```csharp
-new[] { "fuel reallife_fuel_header", "petrol gas station tank litre" },
+S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
 ```
 
-Only words that mean the whole feature: each one shows every row of it.
+A section's words are only those that mean the whole of it: each one shows every row of it.
 
 The game's own help (F1) draws any page whose text is the locale key `help_<slug>_content` (`HelpPageRenderer.RenderPage(slug)`), but lists only the pages of its `helpstructure.json`, and that key cannot carry the mod's prefix; the guide is therefore a panel of the mod's own.
 

@@ -2,11 +2,7 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The Campus app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts, what its rows
-    /// can be filtered by and the sentence shown when a filter leaves nothing. The numbers beside each are the columns, for
-    /// whoever writes the rows.
-    /// </summary>
+    /// <summary>The Campus app's tables as data (GameUi.TableSpec): each tab's columns, sorts, filters and empty sentence; the column numbers for the rows.</summary>
     public static class CampusColumns
     {
         private static readonly string[] Kinds =

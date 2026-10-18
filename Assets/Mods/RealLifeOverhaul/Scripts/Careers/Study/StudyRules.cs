@@ -3,7 +3,7 @@ using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>Why a course cannot be started now: the saved number is never kept, each is a locale key's end.</summary>
+    /// <summary>Why a course cannot be started now; never saved, each the end of a locale key.</summary>
     public enum EnrolRefusal
     {
         None = 0,
@@ -16,11 +16,6 @@ namespace RealLifeOverhaul.Careers
         Closed          // the part of studying it belongs to is switched off
     }
 
-    /// <summary>
-    /// The rules of studying, in plain numbers (Careers/Study/StudyCatalogue): when classes are, what a class and a piece of
-    /// homework teach, what an exam comes to and the grade it earns, retakes, fees and grants, the student loan, and how
-    /// skills fade. Game-free: EconomyCheck runs every one.
-    /// </summary>
     /// <summary>Where the player is, as far as study cares: read from the game by the director, decided on here.</summary>
     public struct StudyHere
     {
@@ -32,10 +27,7 @@ namespace RealLifeOverhaul.Careers
         public HomeNet Net;       // ...and if not, why not: an outage is said apart from the rest
     }
 
-    /// <summary>
-    /// The home's internet as careers reads it (Utilities, through CareersBridges): up, or why it is down. Only an outage
-    /// is the city's doing; no plan, one being put in and one cut for a bill not paid are the player's own. Never saved.
-    /// </summary>
+    /// <summary>The home's internet as careers reads it: up, or why it is down; only an outage is the city's doing. Never saved.</summary>
     public enum HomeNet
     {
         Online = 0,       // up, or no utilities to ask (a home is then taken to be connected)
@@ -54,7 +46,8 @@ namespace RealLifeOverhaul.Careers
         Exam = 2
     }
 
-    public static class StudyRules
+    /// <summary>The rules of studying in plain numbers (Careers/Study/StudyCatalogue); game-free: EconomyCheck runs every one.</summary>
+    public static partial class StudyRules
     {
         /// <summary>Null if the player is where a course's classes are held; else the reason key (what to say, and where to go).</summary>
         public static string AtClass(CourseDef c, StudyMode mode, StudyHere here)
@@ -65,7 +58,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     return "reallife_study_why_not_home";
                 }
-                return here.Online ? null : NoNetWhy(here.Net == HomeNet.Online ? HomeNet.NoPlan : here.Net);   // (not online with no reason given: no working internet)
+                return here.Online ? null : NoNetWhy(here.Net == HomeNet.Online ? HomeNet.NoPlan : here.Net);   // not online with no reason given: no working internet
             }
             switch (c.Campus)
             {
@@ -85,11 +78,7 @@ namespace RealLifeOverhaul.Careers
             return AtClass(c, mode, here);
         }
 
-        /// <summary>
-        /// What the panel where the player stands offers for one course, from whether its class can be joined and its exam
-        /// sat here and now (null: yes; else the reason key): a class first, then an exam, and nothing while the player is
-        /// busy with something else (a sitting under way, the wheel, another screen).
-        /// </summary>
+        /// <summary>What the panel where the player stands offers for a course (classWhy, examWhy null when possible): a class first, then an exam, nothing while busy.</summary>
         public static StudyPrompt Prompt(string classWhy, string examWhy, bool busy)
         {
             if (busy)
@@ -99,10 +88,7 @@ namespace RealLifeOverhaul.Careers
             return classWhy == null ? StudyPrompt.Class : examWhy == null ? StudyPrompt.Exam : StudyPrompt.None;
         }
 
-        /// <summary>
-        /// The notice when a class's hour comes: none if it cannot be joined at all now (no class, a fee owed is said by its
-        /// own notice); "press the key" if it can be joined where the player is; "go there" if only the place is wrong.
-        /// </summary>
+        /// <summary>The notice as a class's hour comes: 0 none (no class), 1 "press the key" (it can be joined here), 2 "go there" (only the place is wrong).</summary>
         public static int ClassNotice(string why)
         {
             if (why == null)
@@ -116,12 +102,7 @@ namespace RealLifeOverhaul.Careers
             return 2;       // elsewhere, or another reason the mod knows: why, where, and for how long
         }
 
-        // ---------------------------------------------------------------- the home's internet down
-
-        /// <summary>
-        /// The one rule for what the home's internet being down excuses: only a provider's outage, which is not the
-        /// player's doing. No home, no plan, one not yet connected or one cut for an unpaid bill excuses nothing.
-        /// </summary>
+        /// <summary>The one rule for what the home's internet being down excuses: only a provider's outage, never the player's own doing.</summary>
         public static bool Excuses(HomeNet net) => net == HomeNet.Outage;
 
         /// <summary>Why something done at the home's computer cannot be done now (a reason key), or null with the internet up: the one reason every such activity gives.</summary>
@@ -130,11 +111,7 @@ namespace RealLifeOverhaul.Careers
             return net == HomeNet.Online ? null : net == HomeNet.Outage ? "reallife_study_why_outage" : "reallife_study_why_no_internet";
         }
 
-        /// <summary>
-        /// The minutes of the save (day * 1440 + minute) a day's class can be joined in: from
-        /// <see cref="StudyCatalogue.ArriveEarlyMinutes"/> before its start to <see cref="StudyCatalogue.LateMinutes"/> after.
-        /// False on a day it has no class.
-        /// </summary>
+        /// <summary>The save's minutes (day * 1440 + minute) a day's class can be joined in, from ArriveEarlyMinutes before to LateMinutes after; false on a day without.</summary>
         public static bool JoinWindow(CourseDef c, StudyMode mode, int day, out int from, out int to)
         {
             from = to = 0;
@@ -155,8 +132,6 @@ namespace RealLifeOverhaul.Careers
         }
 
         public const int LiveMost = 4;   // courses at once
-
-        // ---------------------------------------------------------------- the timetable
 
         /// <summary>The days a course's classes are on in a mode (bit 0 Monday).</summary>
         public static int Days(CourseDef c, StudyMode mode)
@@ -210,10 +185,7 @@ namespace RealLifeOverhaul.Careers
             return week <= 0 ? 0 : (c.Sessions + week - 1) / week * 7;
         }
 
-        /// <summary>
-        /// Whether a class can be joined at this minute of this day (from <see cref="StudyCatalogue.ArriveEarlyMinutes"/>
-        /// before its start until <see cref="StudyCatalogue.LateMinutes"/> after), with the minutes it still has to run.
-        /// </summary>
+        /// <summary>Whether a class can be joined at this minute (ArriveEarlyMinutes before its start to LateMinutes after), with the minutes it still runs.</summary>
         public static bool Joinable(CourseDef c, StudyMode mode, int day, int minuteOfDay, out int minutesLeft)
         {
             minutesLeft = 0;
@@ -230,11 +202,7 @@ namespace RealLifeOverhaul.Careers
             return minutesLeft > 0;
         }
 
-        /// <summary>
-        /// The next class of a course that can still be joined, from now on (today's if its window is still open), as
-        /// day * 1440 + its starting minute; -1 if none in the next four weeks. <paramref name="fromDay"/>: the first day it
-        /// may be on (the course's start, the day after the last one settled).
-        /// </summary>
+        /// <summary>The next class still joinable from now, as day * 1440 + its start, from <paramref name="fromDay"/> on; -1 if none in four weeks.</summary>
         public static int NextClass(CourseDef c, StudyMode mode, int today, int minuteOfDay, int fromDay)
         {
             if (c == null || !c.Timetabled)
@@ -264,13 +232,7 @@ namespace RealLifeOverhaul.Careers
 
         public const int HeldLookBack = 28;   // days: classes gone by but not yet counted are looked for this far back (the hour and the day count them sooner)
 
-        /// <summary>
-        /// The classes of an enrolment held so far: those counted (attended or missed), those whose window has shut since
-        /// without being counted yet (today's from <see cref="StudyCatalogue.LateMinutes"/> after its start until the next
-        /// hour counts it as missed), and the one the player is sitting now (<paramref name="sitting"/>: the course of the
-        /// class being sat, -1 for none). At most the course's classes. A loop of at most four weeks, run when a page is
-        /// written, never per frame.
-        /// </summary>
+        /// <summary>The classes held so far: counted, gone by but not yet counted, and the one being sat (<paramref name="sitting"/>, or -1); at most the course's.</summary>
         public static int Held(Enrolment e, int today, int minuteOfDay, int sitting)
         {
             CourseDef c = e != null ? e.Def : null;
@@ -294,11 +256,7 @@ namespace RealLifeOverhaul.Careers
             return held;
         }
 
-        /// <summary>
-        /// The next class of an enrolment that can still be joined, as day * 1440 + its starting minute, or -1: none while
-        /// it is not at its classes, and none once every class of the course has been held (<see cref="Held"/>). The one rule
-        /// every page that names the next class reads: the Campus app, Persona, the desks and doors, the notices.
-        /// </summary>
+        /// <summary>The next joinable class of an enrolment (day * 1440 + its start), or -1 once every class is held: the one rule every page naming it reads.</summary>
         public static int NextClass(Enrolment e, int today, int minuteOfDay, int sitting)
         {
             CourseDef c = e != null ? e.Def : null;
@@ -310,11 +268,7 @@ namespace RealLifeOverhaul.Careers
             return NextClass(c, (StudyMode)e.Mode, today, minuteOfDay, sitting == e.Course ? Math.Max(from, today + 1) : from);
         }
 
-        /// <summary>
-        /// True if "your class starts now" is due for an enrolment at this minute: its next class (<see cref="NextClass(Enrolment, int, int, int)"/>,
-        /// so a class beyond the course's last, or one being sat, never) begins now, and it has not been told for that class
-        /// (<paramref name="told"/>: <see cref="Enrolment.StartTold"/>, kept in the save, so a reload does not tell it again).
-        /// </summary>
+        /// <summary>True if "your class starts now" is due: the next class begins now and <paramref name="told"/> (kept in the save) is before it.</summary>
         public static bool StartsNow(Enrolment e, int today, int minuteOfDay, int sitting, int told)
         {
             int next = NextClass(e, today, minuteOfDay, sitting);
@@ -368,10 +322,7 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
-        /// <summary>
-        /// A class gone by without the player, excused (<see cref="ClassExcused"/>): held, so the course moves on, but left
-        /// out of the classes that count (<see cref="Counted"/>), neither attended nor missed. True if it was one.
-        /// </summary>
+        /// <summary>A class excused (<see cref="ClassExcused"/>): held, so the course moves on, but left out of those that count (<see cref="Counted"/>); true if one.</summary>
         public static bool Excuse(Enrolment e, int day)
         {
             if (!Miss(e, day))
@@ -398,10 +349,7 @@ namespace RealLifeOverhaul.Careers
             return c == null || !c.Timetabled ? 1000 : counted <= 0 ? 1000 : Math.Min(1000, e.Done * 1000 / counted);
         }
 
-        /// <summary>
-        /// After a class is counted, or a certificate's last piece of study: the course moves on to its exam, or the student
-        /// is barred for having missed too much. True if the stage changed.
-        /// </summary>
+        /// <summary>After a class is counted, or a certificate's last homework: on to the exam, or barred for missing too much; true if the stage changed.</summary>
         public static bool Advance(Enrolment e, int today)
         {
             CourseDef c = e.Def;
@@ -448,83 +396,7 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
-        // ---------------------------------------------------------------- what a class and homework teach
-
-        /// <summary>
-        /// The thousandths of a point one class adds to a skill that stands at <paramref name="points"/> (whole points): the
-        /// course's gain over its classes, less the nearer the top, by how well the player learns (the schooling they hold).
-        /// </summary>
-        public static int ClassGain(int gain, int classes, int points, int learning)
-        {
-            if (gain <= 0 || classes <= 0)
-            {
-                return 0;
-            }
-            int per = gain * 1000 / classes;
-            int factor = 1000 - (1000 - StudyCatalogue.GainAtTop) * TalentCatalogue.Clamp(points, 0, 100) / 100;
-            return per * factor / 1000 * TalentCatalogue.Clamp(learning, 500, 1500) / 1000;
-        }
-
-        /// <summary>What a piece of homework teaches: a share of a class, or for a certificate (no classes) its own part of the gain.</summary>
-        public static int HomeworkGain(CourseDef c, bool first, int points, int learning)
-        {
-            if (c == null)
-            {
-                return 0;
-            }
-            int gain = first ? c.GainA : c.GainB;
-            if (!c.Timetabled)
-            {
-                return ClassGain(gain, Math.Max(1, c.Homework), points, learning);
-            }
-            return ClassGain(gain, c.Sessions, points, learning) * StudyCatalogue.HomeworkShare / 1000;
-        }
-
-        /// <summary>How well the player learns, thousandths: by the best schooling they hold (the professions' own figures).</summary>
-        public static int Learning(int school)
-        {
-            return TalentCatalogue.SchoolLearning[TalentCatalogue.Clamp(school, 0, TalentCatalogue.Schools - 1)];
-        }
-
-        /// <summary>Homework set so far: by the counted classes attended (an excused class sets none and takes none away), up to the course's number (all of a certificate's at once).</summary>
-        public static int HomeworkSet(Enrolment e)
-        {
-            CourseDef c = e.Def;
-            if (c == null)
-            {
-                return 0;
-            }
-            if (!c.Timetabled)
-            {
-                return c.Homework;
-            }
-            int counted = Counted(e);
-            return counted <= 0 ? c.Homework : Math.Min(c.Homework, e.Done * c.Homework / counted);
-        }
-
-        /// <summary>True if a piece of homework can be done now: one is set and not done, or the classes are over and revision is still worth something.</summary>
-        public static bool HomeworkOpen(Enrolment e)
-        {
-            CourseDef c = e.Def;
-            if (c == null || !e.Live)
-            {
-                return false;
-            }
-            if (e.Homework < HomeworkSet(e))
-            {
-                return true;
-            }
-            return e.Stage != (int)EnrolStage.Studying && e.Homework < c.Homework + StudyCatalogue.RevisionMost;
-        }
-
-        // ---------------------------------------------------------------- the exam
-
-        /// <summary>
-        /// The exam's mark out of 100: a fifth for turning up, then by the share of classes attended (four tenths), the
-        /// homework done (a quarter), how far the course's first skill has come against what the course takes it to (three
-        /// twentieths), two for each piece of revision, five off for sitting it tired, and the day's own luck
-        /// (<paramref name="luck"/>, -<see cref="StudyCatalogue.ExamNoise"/> to +).
-        /// </summary>
+        /// <summary>The exam's mark out of 100: 20 for turning up, 40 by attendance, 25 by homework, 15 by skill, 2 a revision, 5 off tired, and the day's luck.</summary>
         public static int ExamScore(Enrolment e, int skillPoints, bool tired, int luck)
         {
             CourseDef c = e.Def;
@@ -548,10 +420,7 @@ namespace RealLifeOverhaul.Careers
             return TechRandom.Range(seed, 7101, e.Course, e.Start * 8 + e.Retakes, -StudyCatalogue.ExamNoise, StudyCatalogue.ExamNoise);
         }
 
-        /// <summary>
-        /// The grade a mark earns. A course: 0 fail, 1 pass, 2 merit, 3 distinction. A degree or a master's: 0 fail, 1 a
-        /// third, 2 a lower second, 3 an upper second, 4 a first.
-        /// </summary>
+        /// <summary>The grade a mark earns: a course 0 fail to 3 distinction; a degree 0 fail, 1 third, 2 lower second, 3 upper second, 4 first.</summary>
         public static int Grade(CourseDef c, int score)
         {
             if (c == null || score < c.Pass)
@@ -569,7 +438,7 @@ namespace RealLifeOverhaul.Careers
         public static int TopGrade(CourseDef c) => c != null && c.Higher ? 4 : 3;
 
         /// <summary>True for a grade with honours: a first or an upper second, a distinction.</summary>
-        public static bool Honours(CourseDef c, int grade) => c != null && (c.Higher ? grade >= 3 : grade >= 3);
+        public static bool Honours(CourseDef c, int grade) => c != null && grade >= 3;
 
         /// <summary>The exam sat: the mark and grade are kept, and it is passed, or failed with a retake to come (or none left). True if passed.</summary>
         public static bool Sit(Enrolment e, int score, int today)
@@ -620,326 +489,6 @@ namespace RealLifeOverhaul.Careers
                 on++;
             }
             return on;
-        }
-
-        // ---------------------------------------------------------------- the family's children
-
-        /// <summary>What a child's degree costs the player, whole money at the start's prices: its fee less what the college fund covers.</summary>
-        public static int ChildCost(CourseDef c, int fundWhole)
-        {
-            return c == null ? 0 : Math.Max(0, c.Fee - Math.Max(0, fundWhole));
-        }
-
-        /// <summary>
-        /// The class a child graduates with (a degree's 1 to 4): by how close they are to the player (0 to 100), a private
-        /// school, and their own luck (-15 to 15).
-        /// </summary>
-        public static int ChildGrade(float closeness, bool privateSchool, int luck)
-        {
-            int mark = 40 + (int)(Math.Max(0f, Math.Min(100f, closeness)) * 0.3f) + (privateSchool ? 8 : 0) + TalentCatalogue.Clamp(luck, -15, 15);
-            return mark >= StudyCatalogue.First ? 4 : mark >= StudyCatalogue.UpperSecond ? 3 : mark >= StudyCatalogue.LowerSecond ? 2 : 1;
-        }
-
-        /// <summary>The students an academy teaches a day: as many as its staff can take, of those who come (more with the council's grants up).</summary>
-        public static int AcademyStudents(int staff, int council)
-        {
-            int demand = StudyCatalogue.AcademyDemand * (council > 0 ? 12 : council < 0 ? 8 : 10) / 10;
-            return Math.Max(0, Math.Min(staff * StudyCatalogue.AcademyPerStaff, demand + staff * 4));
-        }
-
-        // ---------------------------------------------------------------- tutoring
-
-        /// <summary>What an hour of tutoring pays, cents at the start's prices: a base and more for the subject's points; nothing under the least.</summary>
-        public static int TutorRate(int points)
-        {
-            return points < StudyCatalogue.TutorLeast ? 0 : StudyCatalogue.TutorBase + points * StudyCatalogue.TutorPerPoint;
-        }
-
-        /// <summary>The best subject the player could tutor: the skill with the most points among the professions' and teaching.</summary>
-        public static int TutorSkill(StudyFile f)
-        {
-            int best = Skills.Teaching, points = -1;
-            for (int s = 0; s < Skills.Count; s++)
-            {
-                bool subject = Skills.Professional(s) || s == Skills.Teaching;
-                if (subject && f.Skill[s] > points)
-                {
-                    best = s;
-                    points = f.Skill[s];
-                }
-            }
-            return best;
-        }
-
-        // ---------------------------------------------------------------- starting a course
-
-        /// <summary>Whether the player may start a course now, and why not.</summary>
-        public static EnrolRefusal CanEnrol(StudyFile f, CourseDef c, StudyMode mode)
-        {
-            if (c == null)
-            {
-                return EnrolRefusal.Closed;
-            }
-            if (f.Live(c.Id) != null)
-            {
-                return EnrolRefusal.Already;
-            }
-            if (f.Holds(c.Id))
-            {
-                return EnrolRefusal.Passed;
-            }
-            if (!Qualified(f, c))
-            {
-                return EnrolRefusal.Needs;
-            }
-            if (f.Courses.Count >= LiveMost)
-            {
-                return EnrolRefusal.Full;
-            }
-            if (mode == StudyMode.Distance && !c.Distance)
-            {
-                return EnrolRefusal.NoDistance;
-            }
-            return EnrolRefusal.None;
-        }
-
-        /// <summary>True if the player has passed what the course needs first.</summary>
-        public static bool Qualified(StudyFile f, CourseDef c)
-        {
-            if (c.Needs.Length == 0 && !c.NeedsDegree)
-            {
-                return true;
-            }
-            for (int i = 0; i < c.Needs.Length; i++)
-            {
-                if (f.Holds(c.Needs[i]))
-                {
-                    return true;
-                }
-            }
-            return c.NeedsDegree && HoldsAny(f, CourseKind.Degree);
-        }
-
-        /// <summary>True if any course of a kind has been passed.</summary>
-        public static bool HoldsAny(StudyFile f, CourseKind kind)
-        {
-            for (int i = 0; i < f.Results.Count; i++)
-            {
-                CourseDef c = f.Results[i].Def;
-                if (c != null && c.Kind == kind && f.Results[i].Stage == (int)EnrolStage.Passed)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>The best schooling the player's results count as (TalentCatalogue's schools): self-taught with none.</summary>
-        public static int School(StudyFile f)
-        {
-            int best = TalentCatalogue.SelfTaught;
-            for (int i = 0; i < f.Results.Count; i++)
-            {
-                CourseDef c = f.Results[i].Def;
-                if (c != null && f.Results[i].Stage == (int)EnrolStage.Passed && c.School > best)
-                {
-                    best = c.School;
-                }
-            }
-            return best;
-        }
-
-        /// <summary>The professional certificates held (TalentCatalogue.Certs), one bit each, as a professional's file keeps them.</summary>
-        public static int Certs(StudyFile f)
-        {
-            int bits = 0;
-            for (int i = 0; i < f.Results.Count; i++)
-            {
-                CourseDef c = f.Results[i].Def;
-                if (c != null && c.Cert >= 0 && c.Cert < 31 && f.Results[i].Stage == (int)EnrolStage.Passed)
-                {
-                    bits |= 1 << c.Cert;
-                }
-            }
-            return bits;
-        }
-
-        /// <summary>The courses passed, one bit each by id.</summary>
-        public static long Passed(StudyFile f)
-        {
-            long bits = 0;
-            for (int i = 0; i < f.Results.Count; i++)
-            {
-                int id = f.Results[i].Course;
-                if (f.Results[i].Stage == (int)EnrolStage.Passed && id >= 0 && id < StudyCatalogue.IdsMost)
-                {
-                    bits |= 1L << id;
-                }
-            }
-            return bits;
-        }
-
-        // ---------------------------------------------------------------- fees and grants
-
-        /// <summary>
-        /// The share of the fee taken off, thousandths: a merit grant for a student whose last result was the top grade, a
-        /// bursary for one with little money, and the council's policy on education (+1 a subsidy, -1 a surcharge, which
-        /// adds). Never more than <see cref="StudyCatalogue.GrantMost"/> off; a short course has no grants but the council's.
-        /// </summary>
-        public static int Grant(StudyFile f, CourseDef c, int cashWhole, int priceLevel, int council)
-        {
-            int off = 0;
-            if (c.Kind != CourseKind.Short)
-            {
-                Enrolment last = LastPass(f);
-                if (last != null && last.Grade >= TopGrade(last.Def))
-                {
-                    off += StudyCatalogue.MeritGrantShare;
-                }
-                if (cashWhole < Prices(StudyCatalogue.NeedGrantCash, priceLevel))
-                {
-                    off += StudyCatalogue.NeedGrantShare;
-                }
-            }
-            off += council > 0 ? StudyCatalogue.CouncilShare : council < 0 ? -StudyCatalogue.CouncilShare : 0;
-            return TalentCatalogue.Clamp(off, -StudyCatalogue.CouncilShare, StudyCatalogue.GrantMost);
-        }
-
-        private static Enrolment LastPass(StudyFile f)
-        {
-            for (int i = f.Results.Count - 1; i >= 0; i--)
-            {
-                if (f.Results[i].Stage == (int)EnrolStage.Passed)
-                {
-                    return f.Results[i];
-                }
-            }
-            return null;
-        }
-
-        /// <summary>A course's whole fee after its grant, whole money at the start's prices.</summary>
-        public static int Fee(CourseDef c, int grant)
-        {
-            return c == null ? 0 : Math.Max(0, (int)((long)c.Fee * (1000 - grant) / 1000));
-        }
-
-        /// <summary>How many instalments a course's fee is paid in: a degree's thirds, every other course's at once.</summary>
-        public static int Instalments(CourseDef c) => c != null && c.Higher ? StudyCatalogue.InstalmentsHigher : 1;
-
-        /// <summary>
-        /// The instalment of the fee that falls due now, whole money at the start's prices, or 0: the first at enrolment,
-        /// a degree's others once a third and two thirds of its classes have gone by.
-        /// </summary>
-        public static int InstalmentDue(Enrolment e)
-        {
-            CourseDef c = e.Def;
-            int parts = Instalments(c);
-            if (c == null || e.Instalments >= parts)
-            {
-                return 0;
-            }
-            int due = e.Instalments == 0 ? 0 : c.Sessions * e.Instalments / parts;
-            if (e.Seen < due)
-            {
-                return 0;
-            }
-            int whole = Fee(c, e.Grant);
-            return e.Instalments == parts - 1 ? whole - whole / parts * (parts - 1) : whole / parts;
-        }
-
-        private static int Prices(int amount, int level) => PriceRules.At(amount, level);
-
-        // ---------------------------------------------------------------- the student loan
-
-        /// <summary>A day's interest on the student loan, cents.</summary>
-        public static long LoanInterest(long owed, int daysPerYear)
-        {
-            return owed <= 0 ? 0 : owed * StudyCatalogue.LoanRateBp / 10000 / Math.Max(60, daysPerYear);
-        }
-
-        /// <summary>
-        /// What the student loan takes from a day's pay: <see cref="StudyCatalogue.LoanShareBp"/> of what an hour pays over
-        /// the threshold, for the hours paid; never more than is owed.
-        /// </summary>
-        public static long LoanRepayment(long owed, int centsAnHour, int hours, int priceLevel)
-        {
-            int threshold = PriceRules.At(StudyCatalogue.LoanThreshold, priceLevel);
-            if (owed <= 0 || centsAnHour <= threshold || hours <= 0)
-            {
-                return 0;
-            }
-            long over = (long)(centsAnHour - threshold) * hours;
-            return Math.Min(owed, over * StudyCatalogue.LoanShareBp / 10000);
-        }
-
-        /// <summary>True if the loan can pay so much more (whole money at the start's prices).</summary>
-        public static bool LoanRoom(StudyFile f, int whole, int priceLevel)
-        {
-            return f.LoanCents + whole * 100L <= PriceRules.At(StudyCatalogue.LoanMost, priceLevel) * 100L;
-        }
-
-        // ---------------------------------------------------------------- skills
-
-        /// <summary>Thousandths added to a skill, to 100 points at most; the best ever is kept and the day it was used.</summary>
-        public static void Learn(StudyFile f, int skill, int thousandths, int day)
-        {
-            if (skill < 0 || skill >= Skills.Count || thousandths <= 0)
-            {
-                return;
-            }
-            f.Skill[skill] = Math.Min(100000, f.Skill[skill] + thousandths);
-            f.Best[skill] = Math.Max(f.Best[skill], f.Skill[skill]);
-            f.Used[skill] = day;
-        }
-
-        /// <summary>A skill used at work or in a class without being taught: it stops fading for a while.</summary>
-        public static void Use(StudyFile f, int skill, int day)
-        {
-            if (skill >= 0 && skill < Skills.Count)
-            {
-                f.Used[skill] = day;
-            }
-        }
-
-        /// <summary>
-        /// A day gone by: every skill unused for more than <see cref="StudyCatalogue.FadeAfterDays"/> days fades by
-        /// <see cref="StudyCatalogue.FadePerDay"/> thousandths, never below <see cref="StudyCatalogue.FadeFloor"/> of its best
-        /// nor below <see cref="StudyCatalogue.FadeLeast"/> points. Returns the thousandths lost in all.
-        /// </summary>
-        public static int Fade(StudyFile f, int day)
-        {
-            int lost = 0;
-            for (int s = 0; s < Skills.Count; s++)
-            {
-                int now = f.Skill[s];
-                if (now <= StudyCatalogue.FadeLeast * 1000 || day - f.Used[s] <= StudyCatalogue.FadeAfterDays)
-                {
-                    continue;
-                }
-                int floor = Math.Max(StudyCatalogue.FadeLeast * 1000, (int)((long)f.Best[s] * StudyCatalogue.FadeFloor / 1000));
-                int next = Math.Max(floor, now - StudyCatalogue.FadePerDay);
-                lost += now - next;
-                f.Skill[s] = next;
-            }
-            return lost;
-        }
-
-        /// <summary>A skill in whole points.</summary>
-        public static int Points(StudyFile f, int skill) => skill >= 0 && skill < Skills.Count ? f.Skill[skill] / 1000 : 0;
-
-        /// <summary>The week's minutes of study, the week starting again each seventh day. True if the week has just passed the stressed mark.</summary>
-        public static bool Studied(StudyFile f, int day, int minutes)
-        {
-            int week = (day - 1) / 7;
-            if (week != f.WeekOf)
-            {
-                f.WeekOf = week;
-                f.WeekMinutes = 0;
-            }
-            int before = f.WeekMinutes;
-            f.WeekMinutes += Math.Max(0, minutes);
-            int mark = StudyCatalogue.StressedWeekHours * 60;
-            return before < mark && f.WeekMinutes >= mark;
         }
     }
 }

@@ -2,12 +2,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// A front page of its own, outside the morning's editions: the paper's masthead and rules over words another feature
-    /// has written, in the language of the moment, as plain text (a name from the game printed as it is). Permadeath's
-    /// obituary is one. The page prints what is here and nothing of the day's news, the market or the weather; its inside
-    /// pages are not shown. Game-free.
-    /// </summary>
+    /// <summary>A front page of its own outside the morning's editions (Permadeath's obituary), in another feature's words. Game-free.</summary>
     public sealed class LedgerSpecial
     {
         public int Day;                      // the day in the dateline

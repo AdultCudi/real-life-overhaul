@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using BigAmbitions.DayNightCycle;
-using Helpers;
 using PlayerActivity;
 using RealLifeOverhaul.FitOut;
 using UI.Elements;
@@ -11,20 +10,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// A working day of a professional job at the player's own desk, on the game's own work panel: what
-    /// PlayerActivity.WorkActivity is for the game's job at El Gato Food Market, for the mod's job. The player has clicked
-    /// their station (or desk) and walked to it; the panel says, with the game's own labels where it has them, whether the
-    /// business is open, a day off, the shift not yet started or starting soon, the day done, the desk taken, and what the
-    /// day pays, with Cancel and Start working (or Work late, once the day is worked). Started, the player walks the last
-    /// step to the station, set off as the game's own activities are (<see cref="Walk"/>), and is put to work there
-    /// (Careers/DeskGame): seated at a desk computer or a fitted desk, typing now and then, as the game's people sit at
-    /// one; on their feet at a till, a counter or another station whose people stand, in WorkActivity's own pose. The
-    /// panel shows the game's progress bar with the time remaining, fast forward, "skip time" and Stop working. Whichever
-    /// way it ends, the minutes worked are the director's to settle (CareersDirector.Ended): pay, skills, the counted share
-    /// of the day, lateness and overtime as before; and the player stands up free to walk, whatever else fails.
-    ///
-    /// One object per click. Nothing here runs unless the game's panel has it; the director looks once a second whether it
-    /// still does (the panel can let an activity go without a word).
+    /// A working day of a professional job at the player's own desk on the game's work panel, as WorkActivity is to the game's
+    /// own job: its labels, Start working or Work late, the walk and the pose; the minutes are the director's to settle.
     /// </summary>
     internal sealed class DeskWork : IPlayerActivity
     {
@@ -67,8 +54,6 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The fitted desk it is at (null for a station).</summary>
         public FitDesk Desk => _desk;
 
-        // ---------------------------------------------------------------- starting
-
         private void StartDay() => Begin(false);
 
         private void StartLate() => Begin(true);
@@ -97,16 +82,13 @@ namespace RealLifeOverhaul.Careers
             _director.StartCoroutine(Guard.Routine(Walk()));
         }
 
-        // Set off as the game's own activities are (docs/features/careers.md, "Setting off"): on its way only once every
-        // script of the press's frame has run, and the walk order in the next frame, the first in which the game's panel
-        // sees it on its way; a walk order after that frame's end is one the panel takes for a click elsewhere. Then the
-        // last step to the station, as WorkActivity's, and set to work there.
+        // Set off as the game's activities are ("Setting off" in docs/features/careers.md), then the last step to the station.
         private IEnumerator Walk()
         {
             yield return null;
             if (_state != PlayerActivityState.NotStarted)
             {
-                yield break;   // (cancelled meanwhile)
+                yield break;   // cancelled meanwhile
             }
             _state = PlayerActivityState.MovingTowardsActivity;
             yield return null;
@@ -140,7 +122,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 else
                 {
-                    DeskGame.SitAt(_station);   // (a till, a counter: on their feet at it, as the game's own job)
+                    DeskGame.SitAt(_station);   // a till, a counter: on their feet at it, as the game's own job
                 }
                 _sitting.SkipStarted();
                 DeskGame.SetOffSeen("the work desk", true, _orderFrame);
@@ -155,11 +137,9 @@ namespace RealLifeOverhaul.Careers
         {
             if (_state == PlayerActivityState.NotStarted)
             {
-                End(true, false);   // (pressed already: the day's sitting is let go with nothing counted)
+                End(true, false);   // pressed already: the day's sitting is let go with nothing counted
             }
         }
-
-        // ---------------------------------------------------------------- the game's contract
 
         public bool RequiresEnergy() => false;
 
@@ -169,7 +149,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (FrameGuard.Off)
             {
-                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+                return Guard.Ended(this);   // its feature is off: ended as its Finish ends it, and the panel closes
             }
             try
             {
@@ -261,7 +241,7 @@ namespace RealLifeOverhaul.Careers
                 UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
                 if (_state == PlayerActivityState.Running && uis != null && uis.timeMachine != null && uis.timeMachine.isRunning)
                 {
-                    uis.timeMachine.CancelTimeMachine();   // (the game's panel then finishes the activity itself)
+                    uis.timeMachine.CancelTimeMachine();   // the game's panel then finishes the activity itself
                 }
             }
             catch (Exception e)
@@ -271,8 +251,7 @@ namespace RealLifeOverhaul.Careers
             End(false, true);
         }
 
-        // Every way out. settle: the minutes are told to the director (else it has let the sitting go itself); walking:
-        // the walk is called off here (else the game has given the player another walk order already).
+        // Every way out. settle: the minutes go to the director (else it has let the sitting go); walking: the walk is called off here.
         private void End(bool settle, bool walking)
         {
             if (_state == PlayerActivityState.Finished)
@@ -281,7 +260,7 @@ namespace RealLifeOverhaul.Careers
             }
             PlayerActivityState was = _state;
             _before = was;
-            _state = PlayerActivityState.Finished;   // (first: whatever the game's calls below do, nothing here runs twice)
+            _state = PlayerActivityState.Finished;   // first: whatever the game's calls below do, nothing here runs twice
             bool begun = was == PlayerActivityState.Started || was == PlayerActivityState.Running;
             try
             {
@@ -318,7 +297,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (!begun)
             {
-                sitting.CalledOff();   // (pressed, but never at work: nothing counted, nothing said)
+                sitting.CalledOff();   // pressed, but never at work: nothing counted, nothing said
                 return;
             }
             sitting.SkipEnded(Math.Min(_done, _length), _done >= _length);
@@ -367,7 +346,7 @@ namespace RealLifeOverhaul.Careers
                             }
                             if (_canLate)
                             {
-                                PlayerAction key = _canStart ? PlayerAction.SecondaryInteract : PlayerAction.Confirm;   // (beside Start, the other key)
+                                PlayerAction key = _canStart ? PlayerAction.SecondaryInteract : PlayerAction.Confirm;   // beside Start, the other key
                                 _offer[k] = new ButtonInfo("LateRealLifeWork", "reallife_life_button_late", "blue", Guard.Wrap(StartLate), key);
                             }
                         }

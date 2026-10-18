@@ -21,13 +21,7 @@ namespace RealLifeOverhaul.Family
         public bool Valid => Building != null;
     }
 
-    /// <summary>
-    /// The real places of family life: the jeweller, the event planner, the florist, the
-    /// hospital, the school, a theatre, a restaurant, the registry office, and home. Every one is
-    /// one of the city's own buildings, found by what the game calls its business; nothing is
-    /// placed in the world for them. Asked when the player opens a conversation or an errand
-    /// begins, and once a second while an errand is on; never otherwise.
-    /// </summary>
+    /// <summary>The real places of family life, each one of the city's own buildings by its business type, and floor spots indoors.</summary>
     public static class FamilyPlaces
     {
         public const string Residential = "ba:buildingtype_residential";
@@ -48,8 +42,8 @@ namespace RealLifeOverhaul.Family
 
         private static bool _guiding;
 
-        /// <summary>What the game calls the business in a building: its special service if it is one, else its registered business.</summary>
-        public static string TypeOf(CityBuildingController building)
+        // What the game calls the business in a building: its special service if it is one, else its registered business.
+        private static string TypeOf(CityBuildingController building)
         {
             if (building == null || building.building == null)
             {
@@ -80,10 +74,7 @@ namespace RealLifeOverhaul.Family
             return false;
         }
 
-        /// <summary>
-        /// The nearest building of a kind to a point (the first kind in the list that exists at
-        /// all). One pass over the city's buildings: for a button press or the start of an errand.
-        /// </summary>
+        /// <summary>The nearest building of the first kind in the list the city has. One pass over the city's buildings: for events only.</summary>
         public static bool Nearest(string[] kinds, Vector3 from, out Venue venue)
         {
             venue = default;
@@ -179,7 +170,6 @@ namespace RealLifeOverhaul.Family
             return false;
         }
 
-        /// <summary>True while the player stands inside a building of one of these kinds.</summary>
         public static bool Inside(string[] kinds)
         {
             if (!BuildingManager.IsInsideBuilding)
@@ -197,7 +187,6 @@ namespace RealLifeOverhaul.Family
             return Matches(type, kinds);
         }
 
-        /// <summary>True while the player is inside that very building.</summary>
         public static bool Inside(in Venue venue)
         {
             return BuildingManager.IsInsideBuilding && venue.Building != null
@@ -278,8 +267,6 @@ namespace RealLifeOverhaul.Family
             _guiding = false;
         }
 
-        // ---------------------------------------------------------------- home
-
         /// <summary>The home the family lives in: the one named in the state while the player still rents it, else the first home they rent.</summary>
         public static BuildingRegistration Home()
         {
@@ -348,7 +335,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>True while the player stands inside the family's home.</summary>
         public static bool AtHome()
         {
             if (!BuildingManager.IsInsideBuilding)
@@ -365,16 +351,9 @@ namespace RealLifeOverhaul.Family
                    || ReferenceEquals(Home(), manager.buildingRegistration);
         }
 
-        // ---------------------------------------------------------------- floor indoors
-
         private static NavMeshPath _path;
 
-        /// <summary>
-        /// A place on the floor of the building the player is in, near a point: on the navigation
-        /// mesh (which the furniture is cut out of), with so much room to the nearest edge, on the
-        /// player's storey, and walkable to from where the player stands. The agent type is the
-        /// one whose mesh was found there (the game's own indoor people use the first).
-        /// </summary>
+        /// <summary>A spot on the player's storey near a point, with room to the mesh's edge and a path from the player; and the agent type there.</summary>
         public static bool Floor(Vector3 near, Vector3 player, float room, float reach, out Vector3 spot, out int agentType)
         {
             spot = default;
@@ -389,8 +368,7 @@ namespace RealLifeOverhaul.Family
                 }
                 if (NavMesh.FindClosestEdge(hit.position, out NavMeshHit edge, filter) && edge.distance < room)
                 {
-                    // Too close to the furniture or the wall: a step away from that edge.
-                    Vector3 away = hit.position - edge.position;
+                    Vector3 away = hit.position - edge.position;   // too close to the furniture or the wall: a step away from that edge
                     away.y = 0f;
                     if (away.sqrMagnitude < 0.0001f)
                     {
@@ -420,7 +398,7 @@ namespace RealLifeOverhaul.Family
         }
     }
 
-    /// <summary>The two navigation agent types the game has, under names of our own (the game declares them in two places).</summary>
+    /// <summary>The game's two navigation agent types, under names of the mod's own.</summary>
     internal static class NavMeshHelperIds
     {
         public const int Npc = 0;

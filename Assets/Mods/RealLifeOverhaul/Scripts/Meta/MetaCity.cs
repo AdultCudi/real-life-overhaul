@@ -1,22 +1,15 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using BAModAPI;
 using UI.Load;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>
-    /// Meta's part of a city load: one call from RealLifeOverhaulCity when the features have been started, one
-    /// when they are unloaded. After the save's mod data has been read it runs the check for leftovers, adds the
-    /// guide's phone contact and, the first time on this computer or after a change of version, shows the
-    /// welcome panel. It waits for these on a half-second timer and then stops: nothing of it runs afterwards. On a game
-    /// older than the build this version is made for, a second such wait shows that notice once a session (Core/GameBuild).
-    /// </summary>
+    /// <summary>Meta's part of a city load: once the save's data is read, the leftovers check, the Guide's contact, the welcome and the old-build notice; short waits that stop.</summary>
     public static class MetaCity
     {
-        private const float GiveUpAfter = 900f;
+        private const float GiveUpAfter = 900f;   // real seconds a wait lasts at most
 
         private static int _generation;
 
@@ -111,8 +104,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // The notice for a game older than the build this version is made for (Core/GameBuild), once a session: a wait of
-        // its own, so that nothing of the load waits for it and nothing of the load can keep it from coming.
+        // Once a session, in a wait of its own, so that nothing of the load waits for it and nothing of the load keeps it away.
         private static IEnumerator BuildWatch(int generation)
         {
             var wait = new WaitForSecondsRealtime(0.5f);
@@ -125,8 +117,7 @@ namespace RealLifeOverhaul.Meta
                 }
                 yield return wait;
             }
-            // Not on top of the first seconds of a load or of another question; a menu or a pause is waited out for half a
-            // minute at most, since on such a game what tells the mod the city is quiet may itself be missing.
+            // A menu or a pause is waited out for half a minute at most: on an older game what says the city is quiet may be missing.
             float earliest = Time.realtimeSinceStartup + 4f;
             float latest = earliest + 30f;
             while (generation == _generation && (Time.realtimeSinceStartup < earliest || GameConfirm.IsOpen || (Time.realtimeSinceStartup < latest && !Quiet())))
@@ -156,13 +147,9 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
-
     /// <summary>
-    /// The "Developer diagnostics" switch. Off (as the mod ships), the keys the features registered as development
-    /// aids (the performance measurements and the F8 and F9 dumps) do nothing, and Info lines do not go to the log;
-    /// warnings and errors always do. No feature is edited for this: a key is switched off in <see cref="Keys"/>,
-    /// and the one logger every class is handed (<see cref="Gated"/>) drops Info lines while the switch is off, but for
-    /// the few a player's log must show, written through <see cref="Always"/>.
+    /// The "Developer diagnostics" switch: off, the development keys do nothing and the one logger every class is handed
+    /// (<see cref="Gated"/>) drops Info lines but those written through <see cref="Always"/>.
     /// </summary>
     public static class Dev
     {
@@ -209,21 +196,15 @@ namespace RealLifeOverhaul.Meta
         private static bool _verbose;
         private static int _lines;
 
-        /// <summary>
-        /// The lines the mod has written to the log this run. The session record says how many a minute: the game keeps every
-        /// line of the log in memory for the whole run (its own DebugLogCollector), so they are memory that never comes back.
-        /// </summary>
+        /// <summary>Lines the mod has written to the log this run, for the session record: the game keeps every one in memory (DebugLogCollector).</summary>
         public static int Lines => _lines;
 
         private static void Counted()
         {
-            System.Threading.Interlocked.Increment(ref _lines);   // (features log from worker threads too)
+            System.Threading.Interlocked.Increment(ref _lines);   // features log from worker threads too
         }
 
-        /// <summary>
-        /// One plain Info line that goes to the log whatever the switch says: for the rare line a player's log must show
-        /// to answer a report (where Hudson City University is, and why). Once per event, never per frame.
-        /// </summary>
+        /// <summary>An Info line that goes to the log whatever the switch says, for the rare line a player's log must show to answer a report. Once per event.</summary>
         public static void Always(IModLogger logger, string message)
         {
             if (logger is GatedLogger gated)
@@ -237,17 +218,10 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>
-        /// True while "Developer diagnostics" is on. For the few places where a diagnostic line costs something to
-        /// work out (a self-check that asks the navigation mesh, a text put together on a timer): they test this
-        /// first, since the text handed to a logger is built before the logger can drop it.
-        /// </summary>
+        /// <summary>True while "Developer diagnostics" is on: tested before building a diagnostic line that costs something, since a logger drops it only once it is built.</summary>
         public static bool Verbose => _verbose;
 
-        /// <summary>
-        /// The context the game hands a mod entry, with its logger behind the switch. Both entries call this first
-        /// and pass the result on, so every logger in the mod, whoever keeps it and wherever, is this one.
-        /// </summary>
+        /// <summary>The game's context with its logger behind the switch: both entries call this first, so every logger in the mod is this one.</summary>
         public static ModContext Gated(ModContext context)
         {
             _verbose = Settings.DevDiagnostics;
@@ -261,7 +235,7 @@ namespace RealLifeOverhaul.Meta
             {
                 bool on = Settings.DevDiagnostics;
                 _verbose = on;
-                SessionWatch.Apply(on);   // the once-a-minute line and the long-frame line (Diagnostics/SessionWatch): a disabled component while off
+                SessionWatch.Apply(on);   // the session record's lines: a disabled component while off
                 foreach (Feature feature in Features.All)
                 {
                     foreach (KeyAction action in feature.DiagnosticKeys)

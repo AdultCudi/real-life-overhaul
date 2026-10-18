@@ -22,22 +22,12 @@ namespace RealLifeOverhaul.Careers
         public int Chance;   // per cent: the chance that an application now brings an offer; 0 for none
     }
 
-    /// <summary>
-    /// The way to an offer, in plain numbers (Careers/Work/ProRules): the chance an application brings one, how many
-    /// points short the player is, and what to do first in each profession (a course and where it is taught, more
-    /// skill, or a vacancy to wait for). An employer turns down anyone it cannot score high enough with the best luck of
-    /// both steps, so a post is open to the player only where an offer can come. Game-free: EconomyCheck runs every one.
-    /// </summary>
+    /// <summary>The way to an offer in plain numbers: its chance, how far short the player is, and the first step in each profession. Game-free.</summary>
     public static class ProPath
     {
         private const int Never = 101;
 
-        // ---------------------------------------------------------------- the chance of an offer
-
-        /// <summary>
-        /// The chance, per cent, that an application with this score brings an offer: the screening's luck and the
-        /// interview's, each even over its range. At least 1 where an offer can come at all.
-        /// </summary>
+        /// <summary>The chance, per cent, that an application with this score brings an offer (the screening's and interview's luck); at least 1 where one can come.</summary>
         public static int OfferChance(int score)
         {
             if (score <= 0)
@@ -85,11 +75,7 @@ namespace RealLifeOverhaul.Careers
 
         public const int GoodChance = 50;   // per cent: the chance of an offer the vacancy box calls good ("For a good chance")
 
-        /// <summary>
-        /// The points of the rung's skills the candidate still wants before an application has at least <paramref name="chance"/>
-        /// per cent of bringing an offer (<see cref="OfferChance"/>): 0 if it has now; over 100 if no points would do (not
-        /// qualified, or held back by something skill does not change). At most 101 scores, when the vacancy box is written.
-        /// </summary>
+        /// <summary>The rung's skill points still wanted for at least <paramref name="chance"/> per cent of an offer: 0 if there, over 100 if no points would do.</summary>
         public static int PointsFor(Candidate c, int chance)
         {
             if (!c.Qualified)
@@ -107,8 +93,6 @@ namespace RealLifeOverhaul.Careers
             }
             return Never;
         }
-
-        // ---------------------------------------------------------------- with one course more
 
         /// <summary>True if a course is taught with the options as they are: the school's always, the university's and the certificates while the university is open.</summary>
         public static bool Taught(CourseDef c, bool university)
@@ -175,7 +159,7 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
-        /// <summary>What an employer would read of the player for a rung, once a course is passed too (null: as they are). The rest (references, name, economy) is the game's, from the template.</summary>
+        /// <summary>What an employer would read of the player for a rung, with a course passed too (null: as they are); the rest from the template.</summary>
         public static Candidate With(StudyFile f, Profession p, int rank, CourseDef c, Candidate template)
         {
             Candidate x = template;
@@ -196,8 +180,6 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>How long a course takes to finish, roughly, as a number to compare: its classes and homework first, then its fee.</summary>
         public static long Cost(CourseDef c) => (c.Sessions + c.Homework) * 100000L + c.Fee;
-
-        // ---------------------------------------------------------------- a profession's next step
 
         /// <summary>The next step to an offer at a rung of a profession: ready, a course under way, a course or a certificate to take, more skill, or closed.</summary>
         public static PathView For(StudyFile f, Profession p, int rank, Candidate template, bool university)
@@ -273,11 +255,7 @@ namespace RealLifeOverhaul.Careers
             return v;
         }
 
-        /// <summary>
-        /// The course that helps most toward an offer at a rung: one under way that teaches its skills; else, of those the
-        /// player can enrol on that make an offer possible, the one whose length over the chance it brings is least; else
-        /// the one that adds the most points. -1 for none.
-        /// </summary>
+        /// <summary>The course that helps most toward an offer at a rung: one under way that teaches it, else the shortest for its chance, else the most points; -1 for none.</summary>
         private static int Helping(StudyFile f, Profession p, int rank, Candidate template, bool university, out bool live)
         {
             live = false;
@@ -323,14 +301,7 @@ namespace RealLifeOverhaul.Careers
             return ready >= 0 ? ready : most;
         }
 
-        // ---------------------------------------------------------------- the first step of all
-
-        /// <summary>
-        /// The quickest way to a first offer from where the player is: a profession they could be offered now (course -1),
-        /// else the profession and the course under way or to take that makes an offer likeliest soonest (the course's
-        /// length over the chance of an offer it brings). The better paid first rung wins a tie. False if no single
-        /// course would do.
-        /// </summary>
+        /// <summary>The quickest way to a first offer: a profession open now (course -1), else the one whose course makes an offer likeliest soonest; false if none.</summary>
         public static bool FirstStep(StudyFile f, Candidate template, bool university, out int prof, out int course)
         {
             prof = -1;

@@ -30,15 +30,9 @@ namespace RealLifeOverhaul.Careers
         }
     }
 
-    /// <summary>
-    /// The rules of working life, in plain numbers (Careers/Work): reviews and the rating they give, rises, bonuses and
-    /// promotion, asking for a rise, overtime and burnout, office matters and the boss's manner, a search firm's approach,
-    /// redundancy in a downturn and severance, unemployment benefit, share options at a tech company, the pension, a seat
-    /// at the top of a rival's company, and a conflict of interest. Game-free: EconomyCheck runs every one.
-    /// </summary>
+    /// <summary>The rules of working life in plain numbers: reviews, promotion, burnout, office matters, search firms, redundancy, options, the pension. Game-free.</summary>
     public static class LifeRules
     {
-        // ---------------------------------------------------------------- reviews
         public const int ReviewDays = 182;          // between reviews, written for a year of 365 days (two a year)
         public static readonly int[] RatingFrom = { 0, 35, 50, 65, 80 };   // a review's score for each rating, 1 to 5
         public const int RiseBp = 300;              // a rating of 4: a rise of so much; 5: twice it; 3: half of it
@@ -51,7 +45,6 @@ namespace RealLifeOverhaul.Careers
         public const int AskGapDays = 30;           // ...once in so many days
         public const int MentorLearn = 250;         // thousandths more the work teaches under a mentor
 
-        // ---------------------------------------------------------------- overtime and burnout
         public const int OvertimeMinutes = 120;     // a stint of overtime
         public const int LongWeekHours = 45;        // hours a week over which burnout builds
         public const int BurnoutPerHour = 12;       // thousandths of burnout an hour over it
@@ -60,7 +53,6 @@ namespace RealLifeOverhaul.Careers
         public const int BurnoutSignedOff = 900;    // over this the doctor signs the player off for a working day
         public const int BurnoutAfterSignedOff = 650;
 
-        // ---------------------------------------------------------------- office matters
         public const int MatterGapLeast = 6, MatterGapMost = 12;   // days between office matters
         public const int MatterDays = 2;            // days to answer one; unanswered is the second answer
         public const int FavourMost = 15;           // standing with colleagues, either way
@@ -78,7 +70,6 @@ namespace RealLifeOverhaul.Careers
             new Matter("shortcut", -2, 3, 0, true)       // a shortcut your manager wants: take it, or do it properly
         };
 
-        // ---------------------------------------------------------------- moving on
         public const int PoachLeastRank = 2;        // search firms come for the third rung and up
         public const int PoachChance = 5;           // per mille a day, by the last rating and the player's name
         public const int PoachGapDays = 21;
@@ -89,12 +80,10 @@ namespace RealLifeOverhaul.Careers
         public const int BenefitShare = 400;        // thousandths of the last week's pay
         public const int BenefitMost = 600;         // whole money a week at most, at the start's prices
 
-        // ---------------------------------------------------------------- tech companies' share options
         public const int OptionsPerRank = 2000;     // options granted at a tech company for each rung above the first
         public const int VestQuarterDays = 91;      // a quarter of them is the player's every so many days (a year of 365)
         public static readonly int[] OptionCents = { 520, 380, 240, 120 };   // what one option comes to when it vests, by the city's economy
 
-        // ---------------------------------------------------------------- the pension
         public const int PensionOwnBp = 500;        // of pay into the pension, the player's own
         public const int PensionEmployerBp = 300;   // ...and the employer's on top
         public const int PensionPublicBp = 800;     // the public sector's employer pays this instead
@@ -103,22 +92,15 @@ namespace RealLifeOverhaul.Careers
         public const int PensionYears = 20;         // the pot is paid out over so many years
         public const int EarlyCutBp = 2500;         // retiring early pays this much less
 
-        // ---------------------------------------------------------------- the top of a rival's company, conflicts
         public const int ProfitShareChiefBp = 100;  // a chief executive's share of a rival's week of takings, basis points
         public const int ProfitShareExecBp = 40;    // ...the other seats at the top
         public const int ConflictChance = 3;        // per mille a day an undeclared conflict comes out, for each rung
         public const int ConflictIntegrity = -4;    // what it does to the player's integrity
 
-        // ---------------------------------------------------------------- reviews
-
         /// <summary>Days between reviews in a year of the game's length.</summary>
         public static int ReviewEvery(int year) => TalentCatalogue.Scaled(ReviewDays, year);
 
-        /// <summary>
-        /// A review's score, 0 to 100: half for attendance (lateness costing a little), up to 20 for skills over the rank and
-        /// three a point off for under it, overtime (up to 8, twice with a driver), standing with colleagues, the boss's
-        /// manner, and burnout.
-        /// </summary>
+        /// <summary>A review's score, 0 to 100: half for attendance, skills against the rank, overtime, standing with colleagues, the boss's manner and burnout.</summary>
         public static int ReviewScore(Job j, int points, int need, BossKind boss)
         {
             int attended = ProRules.Attendance(j);
@@ -205,8 +187,6 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The chance (per cent) an ask for a rise between reviews is granted, by the last rating.</summary>
         public static int AskRiseChance(int rating) => rating >= 5 ? 75 : rating == 4 ? 55 : rating == 3 ? 25 : 5;
 
-        // ---------------------------------------------------------------- burnout
-
         /// <summary>A week's hours worked add burnout over the long-week mark; returns the thousandths added for the minutes just worked.</summary>
         public static int BurnoutFor(int weekMinutesBefore, int minutes)
         {
@@ -214,8 +194,6 @@ namespace RealLifeOverhaul.Careers
             int over = Math.Max(0, weekMinutesBefore + minutes - Math.Max(mark, weekMinutesBefore));
             return over * BurnoutPerHour / 60;
         }
-
-        // ---------------------------------------------------------------- office matters
 
         /// <summary>What an answer to an office matter does to the player's favour, with the boss's manner where it counts.</summary>
         public static int FavourOf(Matter m, bool first, BossKind boss)
@@ -230,8 +208,6 @@ namespace RealLifeOverhaul.Careers
             }
             return m.FavourA;
         }
-
-        // ---------------------------------------------------------------- moving on
 
         /// <summary>The chance (per mille) a search firm comes this day, by the rung, the last rating and the player's name.</summary>
         public static int PoachChanceOf(int rank, int rating, int reputation)
@@ -267,8 +243,6 @@ namespace RealLifeOverhaul.Careers
             return (int)Math.Min(BenefitMost, weekPayCents * BenefitShare / 1000 / 100);
         }
 
-        // ---------------------------------------------------------------- share options
-
         /// <summary>Options granted on joining a tech company at a rung (none at the first).</summary>
         public static int OptionsFor(EmployerKind kind, int rank) => kind == EmployerKind.TechFirm ? OptionsPerRank * Math.Max(0, rank) : 0;
 
@@ -278,8 +252,6 @@ namespace RealLifeOverhaul.Careers
             vested = options / 4;
             return (long)vested * OptionCents[TalentCatalogue.Clamp(cycle, 0, 3)];
         }
-
-        // ---------------------------------------------------------------- the pension
 
         /// <summary>What a pay goes into the pension, cents: the player's own share (taken from it) and the employer's.</summary>
         public static void Pension(long payCents, EmployerKind kind, out long own, out long employer)
@@ -297,8 +269,6 @@ namespace RealLifeOverhaul.Careers
             long day = pot / Math.Max(1, PensionYears * Math.Max(60, year));
             return early ? day * (10000 - EarlyCutBp) / 10000 : day;
         }
-
-        // ---------------------------------------------------------------- the top of a rival's company
 
         /// <summary>A seat at the top of a rival's company: the share of its week's takings it pays, basis points (0 elsewhere).</summary>
         public static int ProfitShareBp(Job j)

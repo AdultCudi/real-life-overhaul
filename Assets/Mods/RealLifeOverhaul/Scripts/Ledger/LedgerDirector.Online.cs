@@ -5,15 +5,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// Newsstand, the City Ledger online: the paper and three other titles read on the phone by subscription
-    /// (NewsstandApp), each written from the same morning's edition with its own focus (NewsstandCatalogue). Once a
-    /// second, while today's edition is out and a subscription still has today to settle, the round looks at the
-    /// internet at the player's homes (Utilities, through the wiring): with a working connection today's editions come
-    /// to the phone and a week that is over is paid for; without one nothing comes and nothing is charged until it is
-    /// back (NewsstandRules.Morning). The editions of the last few mornings are kept in the save to be read again; what
-    /// came can be read anywhere, connection or not. Nothing here runs per frame.
-    /// </summary>
+    /// <summary>The director's Newsstand part: the online subscriptions and their editions. Nothing here runs per frame.</summary>
     public sealed partial class LedgerDirector
     {
         private readonly OnlineMorning[] _results = new OnlineMorning[NewsstandCatalogue.Subscriptions];
@@ -26,13 +18,10 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>True while Newsstand runs: the paper runs and its online titles are switched on.</summary>
         public bool OnlineRunning => Running && Settings.LedgerOnline && _online != null;
 
-        /// <summary>The subscriptions and the editions that came, while Newsstand runs; null otherwise.</summary>
         public NewsstandState Online => OnlineRunning ? _online : null;
 
-        /// <summary>The Newsstand app, while it is on the phone.</summary>
         public NewsstandApp Stand => OnlineRunning ? _stand : null;
 
-        /// <summary>A week of a subscription at today's prices.</summary>
         public int OnlinePrice(int sub)
         {
             return NewsstandRules.WeekPrice(sub, Prices.Level);
@@ -79,7 +68,6 @@ namespace RealLifeOverhaul.Ledger
             return _online != null ? NewsstandRules.Weekly(_online, Prices.Level).ToString() : "0";
         }
 
-        // Once a second while the paper runs: the app on the phone or off it, and the round.
         private void OnlineSlow(int day, int hour, bool skipping)
         {
             if (_online == null || _stand == null)
@@ -98,7 +86,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The edition that is no longer the latest is kept to be read again (Print, before today's takes its place).
         private void KeepEarlier(LedgerEdition old, int day)
         {
             if (_online != null && old != null && old.Day != day)
@@ -106,8 +93,6 @@ namespace RealLifeOverhaul.Ledger
                 NewsstandRules.Keep(_online, old, day);
             }
         }
-
-        // ---------------------------------------------------------------- the morning's editions
 
         private void OnlineRound(int day, int hour)
         {
@@ -130,7 +115,8 @@ namespace RealLifeOverhaul.Ledger
                         Logger?.Info("Newsstand: " + NewsstandCatalogue.NameKeys[i] + " renewed on day " + day + " (" + OnlinePrice(i) + "), paid until day " + _online.Subs[i].PaidUntil + ".");
                         break;
                     case OnlineMorning.Lapsed:
-                        Notifications.Show(NotificationType.Warning, "reallife_ledger_online_note_lapsed", LedgerText.Data("title", LedgerText.T(NewsstandCatalogue.NameKeys[i]), "price", LedgerText.Money(OnlinePrice(i))), 10f);
+                        Notifications.Show(NotificationType.Warning, "reallife_ledger_online_note_lapsed",
+                            LedgerText.Data("title", LedgerText.T(NewsstandCatalogue.NameKeys[i]), "price", LedgerText.Money(OnlinePrice(i))), 10f);
                         Logger?.Info("Newsstand: " + NewsstandCatalogue.NameKeys[i] + " could not be paid on day " + day + " (" + OnlinePrice(i) + "); the subscription has stopped.");
                         break;
                     case OnlineMorning.Ended:
@@ -194,8 +180,6 @@ namespace RealLifeOverhaul.Ledger
             return true;
         }
 
-        // ---------------------------------------------------------------- the connection
-
         /// <summary>How the internet stands at the best of the player's homes, and that home's name (null for none).</summary>
         public NetState Net(out string home)
         {
@@ -217,7 +201,6 @@ namespace RealLifeOverhaul.Ledger
             return net;
         }
 
-        /// <summary>What a connection's state means for the editions, in a sentence.</summary>
         public static string NetWords(NetState net, string home)
         {
             switch (net)
@@ -237,13 +220,7 @@ namespace RealLifeOverhaul.Ledger
             return LedgerBridges.OpenUtilities != null && LedgerBridges.OpenUtilities();
         }
 
-        // ---------------------------------------------------------------- taking one out, cancelling it
-
-        /// <summary>
-        /// A subscription taken out in the app: the first week paid now, today's edition the first (it comes at once if it
-        /// is out). A cancelled one is taken up again with nothing to pay (resumed). Refused without a working connection
-        /// at a home of the player's, for a title the pass already covers, or without the money.
-        /// </summary>
+        /// <summary>A subscription from the app, its first week paid now; a cancelled one is taken up again free (<paramref name="resumed"/>).</summary>
         public OnlineRefusal SubscribeOnline(int sub, out bool resumed)
         {
             resumed = false;
@@ -260,7 +237,8 @@ namespace RealLifeOverhaul.Ledger
             if (!payNow)
             {
                 resumed = true;
-                Logger?.Info("Newsstand: the cancelled subscription to " + NewsstandCatalogue.NameKeys[sub] + " is taken up again on day " + save.Day + "; paid until day " + _online.Subs[sub].PaidUntil + ".");
+                Logger?.Info("Newsstand: the cancelled subscription to " + NewsstandCatalogue.NameKeys[sub] + " is taken up again on day " + save.Day
+                             + "; paid until day " + _online.Subs[sub].PaidUntil + ".");
                 return OnlineRefusal.None;
             }
             int price = OnlinePrice(sub);
@@ -289,8 +267,6 @@ namespace RealLifeOverhaul.Ledger
             Logger?.Info("Newsstand: the subscription to " + NewsstandCatalogue.NameKeys[sub] + " is cancelled; the last edition is on day " + _online.Subs[sub].PaidUntil + ".");
             return true;
         }
-
-        // ---------------------------------------------------------------- reading
 
         /// <summary>The edition of a day: today's (the paper's own) or one kept; null if there is none.</summary>
         public LedgerEdition OnlineEdition(int day)

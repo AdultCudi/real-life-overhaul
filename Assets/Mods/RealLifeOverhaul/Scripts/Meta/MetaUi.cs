@@ -9,39 +9,21 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>One of the mod's own panels (the guide, the welcome, a message). Built once, shown and hidden.</summary>
+    /// <summary>A panel on the mod's own canvas (the options page's messages): built once, then shown and hidden.</summary>
     public abstract class MetaPanel
     {
         public GameObject Root;
         public ScrollRect KeyScroll;       // what the arrow and page keys scroll
-        public bool EscCloses = true;
-
-        /// <summary>Once a frame while this is the panel in front.</summary>
-        public virtual void Tick()
-        {
-        }
-
-        public virtual void Closed()
-        {
-        }
-
-        /// <summary>Esc was pressed: true if the panel used it for something of its own and stays open.</summary>
-        public virtual bool Escape()
-        {
-            return false;
-        }
     }
 
     /// <summary>
-    /// The canvas the mod's own panels are on, and the few controls they are made of (uGUI built in code, in
-    /// the colours of the mod's HUD). It lives for the session, above the game's menus, and does nothing at all
-    /// while no panel is open: the canvas is off and this component is disabled. While a panel is open the
-    /// mod's keys are suspended, the player on foot is held where they stand, and one of the panel's objects is
-    /// kept selected, which is how the game knows not to act on its own shortcuts.
+    /// The canvas of the mod's own panels (uGUI built in code, in the HUD's colours), above the game's menus for the session.
+    /// It costs nothing a frame while no panel is open: the canvas is off and this component disabled. While one is open its
+    /// Update keeps the panel selected (so the game leaves its shortcuts alone), the mod's keys suspended and the player held.
     /// </summary>
     public sealed class MetaUi : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "MetaUi", typeof(MetaUi));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "MetaUi", typeof(MetaUi));   // its frame methods
 
         public static readonly Color Dim = new Color(0f, 0f, 0f, 0.62f);
         public static readonly Color Window = new Color(0.05f, 0.06f, 0.085f, 0.985f);
@@ -50,10 +32,9 @@ namespace RealLifeOverhaul.Meta
         public static readonly Color Accent = new Color(1f, 0.58f, 0.08f, 1f);
         public static readonly Color Ink = new Color(0.93f, 0.95f, 0.97f, 1f);
         public static readonly Color Soft = new Color(0.72f, 0.78f, 0.86f, 1f);
-        public static readonly Color Dark = new Color(0.07f, 0.05f, 0.03f, 1f);
 
         private const NavigationBlocker Blocker = (NavigationBlocker)7302;   // the mod's own, like PlayerKnockdown's 7301
-        private const float LinePixels = 14f;
+        private const float LinePixels = 14f;                                // pixels the arrow keys scroll a line
 
         private static MetaUi _instance;
 
@@ -83,7 +64,6 @@ namespace RealLifeOverhaul.Meta
 
         public static bool Exists => _instance != null;
 
-        /// <summary>True while one of the mod's panels is on screen.</summary>
         public static bool AnyOpen => _instance != null && _instance._open.Count > 0;
 
         private void Awake()
@@ -115,8 +95,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- showing and hiding
-
         public void Show(MetaPanel panel)
         {
             if (panel == null || panel.Root == null)
@@ -146,14 +124,6 @@ namespace RealLifeOverhaul.Meta
             }
             try
             {
-                panel.Closed();
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-            }
-            try
-            {
                 EventSystem events = EventSystem.current;
                 if (events != null && panel.Root != null && events.currentSelectedGameObject == panel.Root)
                 {
@@ -172,11 +142,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        public bool IsOpen(MetaPanel panel)
-        {
-            return panel != null && _open.Contains(panel);
-        }
-
         public void CloseAll()
         {
             for (int i = _open.Count - 1; i >= 0; i--)
@@ -191,7 +156,7 @@ namespace RealLifeOverhaul.Meta
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -217,14 +182,9 @@ namespace RealLifeOverhaul.Meta
                 Fit(top.Root);
                 if (Keys.PanelClose())
                 {
-                    if (!top.Escape() && top.EscCloses)
-                    {
-                        // On the next frame: for the rest of this one the panel is still what is selected, so in the
-                        // city the game takes this Esc as used up (CancelButtonHandler) and does not close a menu of
-                        // its own, or open one, with it. The main menu's options page does not ask: there Esc closes
-                        // it as well.
-                        NextFrame(() => Close(top));
-                    }
+                    // On the next frame: until then the panel is still selected, so in the city the game takes this Esc as used
+                    // (CancelButtonHandler) and does not act on it. In the main menu the options page closes on it too.
+                    NextFrame(() => Close(top));
                     return;
                 }
                 int lines = Keys.PanelScroll();
@@ -232,9 +192,7 @@ namespace RealLifeOverhaul.Meta
                 {
                     ScrollBy(top.KeyScroll, lines);
                 }
-                // The panel itself stays the selected object (not one of its buttons). The game then leaves its own
-                // keyboard shortcuts alone (GameManager.HasInputSelected), counts Esc as used
-                // (CancelButtonHandler), and the mod's camera gives the mouse cursor back.
+                // The panel stays selected, so the game leaves its shortcuts alone (GameManager.HasInputSelected) and the camera gives the cursor back.
                 EventSystem events = EventSystem.current;
                 if (events != null && events.currentSelectedGameObject != top.Root)
                 {
@@ -244,7 +202,6 @@ namespace RealLifeOverhaul.Meta
                 {
                     Hold(true);   // opened in the menu, and the city has come since
                 }
-                top.Tick();
             }
             catch (Exception e)
             {
@@ -303,8 +260,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- small jobs for the other Meta classes
-
         /// <summary>Runs something on the next frame: for what must not happen inside a button's own click.</summary>
         public void NextFrame(Action action)
         {
@@ -355,11 +310,7 @@ namespace RealLifeOverhaul.Meta
             Message(title, body, new KeyValuePair<string, Action>(yesKey, yes), new KeyValuePair<string, Action>("reallife_meta_cancel", null));
         }
 
-        // ---------------------------------------------------------------- the controls
-
-        // The game's own font, so the panels match its menus: the one Core/GameUi/GameFont found behind the loading screen
-        // (the font's prewarm), asked for when a panel is shown, until there is one. It used to be looked for here by going
-        // through every text of the interface (FindObjectsOfType), a long frame the first time a panel of the mod opened.
+        // The game's font, found behind the loading screen (Core/GameUi/GameFont), asked for when a panel is shown until there is one.
         private void FindFont()
         {
             if (_font != null)
@@ -533,9 +484,7 @@ namespace RealLifeOverhaul.Meta
             window = Box("Window", dimmer, Window, true);
             window.anchorMin = window.anchorMax = window.pivot = new Vector2(0.5f, 0.5f);
             window.sizeDelta = size;
-            // The dimmer is itself selectable (and shows nothing of it): a press anywhere on the panel that is not one
-            // of its buttons then leaves it the selected object, so the event system never has nothing selected
-            // between a press and this class's next Update, and the mod's camera never takes the cursor in between.
+            // The dimmer is selectable, so a press outside the buttons keeps the panel selected and the camera never takes the cursor.
             var selectable = dimmer.gameObject.AddComponent<Selectable>();
             selectable.transition = Selectable.Transition.None;
             var navigation = selectable.navigation;
@@ -570,7 +519,7 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>A bar along the top of a window with a title in it; returns the bar for anything else that goes on it.</summary>
-        public RectTransform TitleBar(RectTransform window, string title, out TextMeshProUGUI text)
+        private RectTransform TitleBar(RectTransform window, string title, out TextMeshProUGUI text)
         {
             RectTransform bar = Box("Title Bar", window, Bar, false);
             bar.anchorMin = new Vector2(0f, 1f);
@@ -584,8 +533,6 @@ namespace RealLifeOverhaul.Meta
             text.text = title;
             return bar;
         }
-
-        // ---------------------------------------------------------------- the message panel
 
         private sealed class MessagePanel : MetaPanel
         {

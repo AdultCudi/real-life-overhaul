@@ -3,27 +3,12 @@ using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.Items;
 using Buildings;
-using Entities;
 using Helpers;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Roommates
 {
-    /// <summary>
-    /// The one place where the roommate touches the game and the mod's home life: which home, its furniture and its
-    /// rent, money in and out, the fridges, the floor's dirt, the player's mood, hunger and sleep.
-    ///
-    ///   READ   SaveGameManager.Current.BuildingRegistrations (RentedByPlayer, GetBuildingType, StreetName, StreetNumber,
-    ///          RentPerDay, BuildingOwnedByPlayer, itemInstances), Building.GetBuildingDailyMarketRent, BuildingManager
-    ///          (IsInsideBuilding, buildingRegistration), TimeHelper (CurrentDay, CurrentHour), SaveGameManager.Current.Hunger
-    ///   WRITE  GameManager.ChangeMoneySafe (a transaction of the mod's own), EnergyHelper.SetCurrentHunger; through the
-    ///          mod's home life: HomeTidy.Change (the game's own floor dirt of the home), HomeState.PutBy and Leftovers
-    ///          (portions put by), HomePlace.Take (one unit of the fridges' cargo), HomeState.SleepDebt; through
-    ///          Core/ModState: a happiness modifier the mod already has
-    ///
-    /// Nothing here runs by itself. The furniture is counted when a page is opened or a day begins (one pass over the
-    /// home's items); everything else is one call on an event.
-    /// </summary>
+    /// <summary>Where the roommate touches the game and home life: the home, its rent and furniture, money, the fridges, the player's mood and sleep.</summary>
     public static class RoommateGame
     {
         private const string Residential = "ba:buildingtype_residential";
@@ -40,9 +25,6 @@ namespace RealLifeOverhaul.Roommates
 
         private static bool HomeLifeOn => Settings.HomeLife && HomeState.Loaded;
 
-        // ---------------------------------------------------------------- the home
-
-        /// <summary>The player's home at an address, while they still have it; null otherwise.</summary>
         public static BuildingRegistration HomeAt(string street, int number)
         {
             List<BuildingRegistration> all = SaveGameManager.Current != null ? SaveGameManager.Current.BuildingRegistrations : null;
@@ -89,7 +71,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        /// <summary>True while the player stands inside that home.</summary>
         public static bool Inside(string street, int number)
         {
             if (!BuildingManager.IsInsideBuilding || string.IsNullOrEmpty(street))
@@ -101,7 +82,6 @@ namespace RealLifeOverhaul.Roommates
             return r != null && GoingPublic.Mine(r) && r.StreetNumber == number && r.StreetName == street;
         }
 
-        /// <summary>The beds and sofas a home is furnished with: one pass over its items, by what the game calls them.</summary>
         public static void Furniture(BuildingRegistration home, out int beds, out int sofas)
         {
             beds = 0;
@@ -124,21 +104,19 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        /// <summary>The room a home has for a roommate now.</summary>
         public static RoomKind Room(BuildingRegistration home, bool partnerLivesIn)
         {
             Furniture(home, out int beds, out int sofas);
             return RoommateRules.Room(beds, sofas, partnerLivesIn);
         }
 
-        /// <summary>
-        /// What a day of the home costs: the rent the player pays, or for a home they own (or one the game charges
-        /// nothing for) what the game says it would let for, at today's prices as the city's cost of living charges
-        /// it. <paramref name="owned"/>: the roommate is a lodger.
-        /// </summary>
         /// <summary>What a home's power and water come to a day (Utilities, through Wiring/UtilityLinks); null: none known.</summary>
         public static Func<BuildingRegistration, float> Bills;
 
+        /// <summary>
+        /// A day of the home at today's prices, with its bills: the rent the player pays, or for a home they own (or one let
+        /// for nothing) what the game says it would let for. <paramref name="owned"/>: the roommate is a lodger.
+        /// </summary>
         public static float RentPerDay(BuildingRegistration home, out bool owned)
         {
             owned = false;
@@ -166,9 +144,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        // ---------------------------------------------------------------- money
-
-        /// <summary>Money to the player, as a line of the game's own statement.</summary>
         public static void Receive(int amount, string transaction)
         {
             if (amount > 0)
@@ -182,8 +157,6 @@ namespace RealLifeOverhaul.Roommates
         {
             return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, false, true);
         }
-
-        // ---------------------------------------------------------------- the flat
 
         /// <summary>The home is so many points tidier or messier, on the game's own floor where the home has one. False with home life's needs off.</summary>
         public static bool Tidy(float points)
@@ -216,10 +189,8 @@ namespace RealLifeOverhaul.Roommates
             return dish != null && HomeState.PutBy(1, dish.Number, RoommateRules.MealFill) > 0;
         }
 
-        /// <summary>True while a portion is put by.</summary>
         public static bool HasMeal => HomeLifeOn && HomeState.Leftovers > 0;
 
-        /// <summary>The player eats a portion that was put by, in company. False if there is none.</summary>
         public static bool EatMeal()
         {
             if (!HasMeal || SaveGameManager.Current == null)
@@ -234,9 +205,8 @@ namespace RealLifeOverhaul.Roommates
         }
 
         /// <summary>
-        /// They take one unit of food: one from the fridges of the home the player stands in (the fridges are only
-        /// known there), else a portion that was put by; never below what <see cref="RoommateRules.RaidTake"/>
-        /// leaves. Returns the game's name of what went (a locale key), or null if nothing did.
+        /// They take one unit of food: from the fridges if the player is in the home (only then are they known), else a portion
+        /// put by; never below what <see cref="RoommateRules.RaidTake"/> leaves. Returns what went (a locale key), or null.
         /// </summary>
         public static string TakeFood(int raidsThisWeek, bool stopped, bool playerInside)
         {
@@ -275,9 +245,6 @@ namespace RealLifeOverhaul.Roommates
             return null;
         }
 
-        // ---------------------------------------------------------------- the player
-
-        /// <summary>One of the moods the mod already has, through the game's own happiness modifiers.</summary>
         public static void Mood(string modifier)
         {
             ModState.AddModifier(modifier);

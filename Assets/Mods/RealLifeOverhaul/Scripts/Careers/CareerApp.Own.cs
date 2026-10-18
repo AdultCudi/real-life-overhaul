@@ -1,16 +1,11 @@
 using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.GameUi;
-using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The Own work tab: freelance contracts (offers to take, work to do, what was delivered), the player's practice, the
-    /// way out of a job to found a company or open a practice, former colleagues waiting to join a firm of the player's, and
-    /// a restraint clause that still binds.
-    /// </summary>
+    /// <summary>The Own work tab: freelance contracts, the practice, leaving to found or practise, former colleagues and a restraint clause.</summary>
     public sealed partial class CareerApp
     {
         public const string ContractRow = "contract:";
@@ -173,7 +168,8 @@ namespace RealLifeOverhaul.Careers
                     }
                 case ContractStep.Taken:
                     {
-                        box.Meter("reallife_ibox_work_done", c.Hours > 0 ? c.Minutes / (c.Hours * 60f) : 1f, CareersText.T("reallife_own_contract_left", "time", CareersText.Minutes(OwnRules.Left(c))), late ? CellTone.Red : CellTone.Plain);
+                        box.Meter("reallife_ibox_work_done", c.Hours > 0 ? c.Minutes / (c.Hours * 60f) : 1f,
+                            CareersText.T("reallife_own_contract_left", "time", CareersText.Minutes(OwnRules.Left(c))), late ? CellTone.Red : CellTone.Plain);
                         string why = _director.CanWorkContract(c);
                         if (why != null)
                         {

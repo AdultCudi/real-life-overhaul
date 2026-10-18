@@ -9,23 +9,8 @@ using UnityEngine.Pool;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The game's own mark over each classroom door of the university, for the mod's course of the room (CampusRules.MarkOf).
-    ///
-    /// HOW THE GAME MARKS ITS DOORS. Its warning icon manager (Player.HUD.ItemWarningIcons.ItemWarningIconManager) keeps one
-    /// icon of its own pool for each item that has one, keyed by the item, and moves them all over their items each frame.
-    /// A classroom door (EducationDoorController) always shows one, from the game's own course its custom value names:
-    /// green with a tick when that course is completed, green with an "i" while it can be studied. At the university the
-    /// game's courses are not there, so the game is told not to mark these doors (alwaysShowWarningIcon, the flag it reads
-    /// first), and the mod puts in the game's own icon, from the game's own pool with the game's own pictures, for the
-    /// room's course: the green "i" for a class or an exam to begin now or within the hour, the plain "i" while enrolled,
-    /// the green tick for a course passed, none for a free room or a course not taken. The game moves and clears them as
-    /// its own (it lets them all go when the player leaves the building).
-    ///
-    /// The manager's pool, its list of icons and its pictures are private to it: they are looked up once. If they are not
-    /// there (a game that changed them), the doors go without a mark, with one line in the log.
-    ///
-    /// THE COST. Once a second while the player is on a floor: five dictionary lookups, and an icon taken or let go only
-    /// when a room's mark changes. Nothing per frame.
+    /// The game's own icon over each university classroom door for its room's course (CampusRules.MarkOf), from the game's pool,
+    /// the doors told not to mark the game's courses. The cost: once a second on a floor, five lookups.
     /// </summary>
     internal sealed class CampusMarks
     {
@@ -86,7 +71,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (ours || (active != null && active.ContainsKey(key)))
             {
-                manager.HideWarningIcon(door);   // (the game's own way: back to its pool)
+                manager.HideWarningIcon(door);   // the game's own way: back to its pool
             }
             _icons[room] = null;
             _types[room] = type;
@@ -137,8 +122,6 @@ namespace RealLifeOverhaul.Careers
             Array.Clear(_types, 0, _types.Length);
         }
 
-        // ---------------------------------------------------------------- the game's manager, looked up once
-
         private bool Resolve()
         {
             if (_resolved)
@@ -148,7 +131,7 @@ namespace RealLifeOverhaul.Careers
             _resolved = true;
             try
             {
-                _poolField = GameContract.IconPool.Field;   // (the game's private pieces, resolved once as the mod starts: Core/GameContract)
+                _poolField = GameContract.IconPool.Field;   // the game's private pieces, resolved once (Core/GameContract)
                 _activeField = GameContract.IconsActive.Field;
                 _visuals = GameContract.IconVisuals.Method;
                 _works = _poolField != null && _activeField != null && _visuals != null

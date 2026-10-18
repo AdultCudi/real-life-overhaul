@@ -4,12 +4,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// Working for oneself (Careers/Work/OwnRules): leaving a profession to found a tech company or open a practice, the
-    /// founder's record the venture firms read (TechBridges.Founder), former colleagues brought along to a firm of the
-    /// player's, a restraint clause and the claim a former employer files over it (Justice), freelance contracts from the
-    /// city's businesses, side work under an exclusive contract, and a practice whose name grows with each delivery.
-    /// </summary>
+    /// <summary>Working for oneself (Careers/Work/OwnRules): founding or a practice, former colleagues, a restraint clause, freelance contracts and side work.</summary>
     public sealed partial class CareersDirector
     {
         public const int TabOwn = 5;
@@ -17,8 +12,6 @@ namespace RealLifeOverhaul.Careers
         private const string RegisterKey = "reallife_transaction_own_register";
 
         public static bool OwnOn => Settings.CareersOwn;
-
-        // ---------------------------------------------------------------- leaving to work for oneself
 
         /// <summary>Why the player may not leave to found a company now, or null.</summary>
         public string CanFoundLeave(Job j)
@@ -92,7 +85,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>A job ended: a founder's record, a practice to open, a restraint clause that now binds, colleagues waiting.</summary>
-        partial void EndedOwn(Job j, LeaveReason why, int day)
+        private void EndedOwn(Job j, LeaveReason why, int day)
         {
             if (!OwnOn)
             {
@@ -142,8 +135,6 @@ namespace RealLifeOverhaul.Careers
             }
             return OwnRules.FounderScore(w.FounderTop, ProRules.Experience(w, w.FounderProf, Save.Day, Year), CareersBridges.ReputationNow());
         }
-
-        // ---------------------------------------------------------------- former colleagues
 
         /// <summary>The firm of the player's that colleagues can join now, or null.</summary>
         public string ColleaguesFirm()
@@ -204,8 +195,6 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        // ---------------------------------------------------------------- a restraint clause
-
         /// <summary>The former employer looks at what the player did under the clause: a claim, or nothing (once).</summary>
         private void TestRestraint(bool colleagues)
         {
@@ -233,8 +222,6 @@ namespace RealLifeOverhaul.Careers
             w.ClaimNumber = number;
             Tell2(NotificationType.Warning, number > 0 ? "reallife_own_note_claim" : "reallife_own_note_claim_letter", Data("employer", employer, "amount", CareersText.Money(amount)), TabOwn, null);
         }
-
-        // ---------------------------------------------------------------- a practice
 
         /// <summary>Opens a practice in a profession the player may practise: its registration paid. Null if done, else a reason key.</summary>
         public string OpenPracticeNow(int prof)
@@ -294,8 +281,6 @@ namespace RealLifeOverhaul.Careers
             Changed();
             return null;
         }
-
-        // ---------------------------------------------------------------- freelance contracts
 
         /// <summary>The profession contracts come in: the practice's, else the job's, else the best the player is qualified for.</summary>
         private int FreelanceProf()
@@ -387,18 +372,14 @@ namespace RealLifeOverhaul.Careers
                 Stage = (int)ContractStep.Offered, Practice = w.Practice.Open
             };
             w.Contracts.Add(c2);
-            Tell2(NotificationType.Info, "reallife_own_note_offer", Data("client", c2.Client, "fee", CareersText.Money(Prices.At((int)c2.Fee)), "hours", hours.ToString()), TabOwn, CareerApp.ContractRow + c2.Id);
+            Tell2(NotificationType.Info, "reallife_own_note_offer", Data("client", c2.Client, "fee", CareersText.Money(Prices.At((int)c2.Fee)), "hours", hours.ToString()),
+                TabOwn, CareerApp.ContractRow + c2.Id);
         }
 
         /// <summary>A business of the player's own where a profession's desk work can be done (an office, or the practice's own kind), or null.</summary>
         internal BuildingRegistration OwnOffice(Profession p)
         {
-            int day = Save != null ? Save.Day : 0;
-            if (_mineDay != day)
-            {
-                _mineDay = day;
-                TalentGame.Businesses(_mine);
-            }
+            ReadMine();
             for (int i = 0; i < _mine.Count; i++)
             {
                 BuildingRegistration reg = _mine[i];
@@ -488,7 +469,7 @@ namespace RealLifeOverhaul.Careers
                 CareersText.T("reallife_own_skip_left", "time", CareersText.Minutes(OwnRules.Left(c))), CareersText.T("reallife_own_skip_fee", "fee", CareersText.Money(Prices.At((int)c.Fee)))));
         }
 
-        private void ContractEnded(Sitting s, int minutes, bool whole)
+        private void ContractEnded(Sitting s, int minutes)
         {
             Contract c = ContractOf(s.Of);
             if (c == null || minutes <= 0)
@@ -502,8 +483,8 @@ namespace RealLifeOverhaul.Careers
             int a, b;
             p.SkillsOf(c.Rank, out a, out b);
             int hours = Math.Max(1, minutes / 60);
-            StudyRules.Learn(_study, a, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, a)) / 100, day);
-            StudyRules.Learn(_study, b, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, b)) / 100, day);
+            LearnAtWork(a, hours, day);
+            LearnAtWork(b, hours, day);
             // Side work under a contract that does not allow it may be noticed.
             Job j = w.Job;
             if (j != null && j.Exclusive && TechRandom.Mille(StudySeed, 8706, day, c.Id * 7 + c.Minutes) < OwnRules.SideWorkFound)
@@ -538,15 +519,14 @@ namespace RealLifeOverhaul.Careers
             Tell2(NotificationType.Success, late ? "reallife_own_note_delivered_late" : "reallife_own_note_delivered", Data("client", c.Client, "fee", CareersText.Money(fee)), TabOwn, null);
         }
 
-        partial void OtherEnded(Sitting sitting, int minutes, bool whole)
+        /// <summary>A sitting of a later part (contract work, tutoring, a ceremony): settled by that part.</summary>
+        private void OtherEnded(Sitting sitting, int minutes, bool whole)
         {
             if (sitting.Kind == SittingKind.Contract && _workOn && OwnOn)
             {
-                ContractEnded(sitting, minutes, whole);
+                ContractEnded(sitting, minutes);
             }
             OtherEndedMore(sitting, minutes, whole);
         }
-
-        partial void OtherEndedMore(Sitting sitting, int minutes, bool whole);
     }
 }

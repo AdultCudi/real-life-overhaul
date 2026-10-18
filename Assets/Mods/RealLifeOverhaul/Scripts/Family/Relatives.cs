@@ -1,19 +1,12 @@
 using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
-using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// The wider family. Mom (the mod's own phone contact) reacts to every milestone, sends
-    /// small presents and drops by; the in-laws arrive with the engagement as a contact of their
-    /// own, to chat with, to ask for advice, and now and then to ask a favour; four times a
-    /// year (on the game's own calendar) there is a family dinner, at home if there is a
-    /// household, at Mom's otherwise. A next of kin is kept as a line of text and nothing more.
-    /// </summary>
+    /// <summary>The wider family: Mom, the in-laws from the engagement on, four family dinners a year, and a next of kin.</summary>
     internal static class Relatives
     {
         private static readonly string[] HolidayNames =
@@ -31,7 +24,7 @@ namespace RealLifeOverhaul.Family
         private static readonly string[] InLawThanks = { null, "reallife_family_inlaws_thanks_lift", "reallife_family_inlaws_thanks_loan", "reallife_family_inlaws_thanks_move" };
 
         internal static int HostCost => Prices.At(120);
-        private const int LoanAmount = 300;
+        private const int LoanAmount = 300;   // lent to the in-laws for a week, not at today's prices
 
         private static int _lastInvite = -1, _lastDinner = -1, _lastMissed = -1, _lastVisit = -1, _lastChat = -1;
 
@@ -46,7 +39,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>A present of money from Mom, with a note.</summary>
         public static void MomGift(int amount, string key, Args fill)
         {
             if (!On || PhoneContacts.Mom == null)
@@ -71,8 +63,6 @@ namespace RealLifeOverhaul.Family
         {
             return HolidayNames[Mathf.Clamp(which, 0, 3)];
         }
-
-        // ---------------------------------------------------------------- the calendar
 
         public static void Daily(int day)
         {
@@ -156,8 +146,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // ---------------------------------------------------------------- the holiday dinner
-
         public static void Dinner(Errand errand)
         {
             FamilyDirector director = FamilyDirector.Instance;
@@ -168,7 +156,7 @@ namespace RealLifeOverhaul.Family
             }
             FamilyState.MoneyOut(HostCost, 4);
             FamilyState.S.Errands.Remove(errand);
-            director.Run(director.Passage("reallife_family_passage_holiday", 3, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which)));
+            director.Pass("reallife_family_passage_holiday", 3, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which));
         }
 
         private static void AfterDinner(int which)
@@ -207,11 +195,9 @@ namespace RealLifeOverhaul.Family
             FamilyDirector director = FamilyDirector.Instance;
             int which = s.MomDinnerWhich;
             s.MomDinnerDay = 0;
-            director.WhenFree(() => director.Run(director.Passage("reallife_family_passage_moms", 4, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which))));
+            director.WhenFree(() => director.Pass("reallife_family_passage_moms", 4, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which)));
             return FamilyTalk.Close("reallife_family_holiday_going", Args.Us.With(FamilyText.T(HolidayName(which))));
         }
-
-        // ---------------------------------------------------------------- the in-laws
 
         public static bool InLawFavourOpen => FamilyState.S.InLaws && FamilyState.S.InLawAsk > 0;
 
@@ -262,8 +248,6 @@ namespace RealLifeOverhaul.Family
             Partner.Tell(FamilyEvent.SharedTime, 2f, 3f);
             return FamilyTalk.Close(InLawThanks[ask], Args.Us.Cost(LoanAmount));
         }
-
-        // ---------------------------------------------------------------- next of kin (words only)
 
         public static string NextOfKin()
         {

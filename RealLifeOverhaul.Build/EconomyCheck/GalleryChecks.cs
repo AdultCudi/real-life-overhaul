@@ -100,7 +100,8 @@ internal static partial class Program
 
     // Every copy the mod makes of the game's ListBackground, anywhere in the mod, is switched on: the game keeps it switched
     // off, so a copy left as it is draws nothing (the Gallery's grid in 0.27.0; the Stocks and Car Showroom pages' sheet).
-    // Switched on where it is made, or kept in a field that is switched on when the page shows (Newsstand).
+    // Switched on where it is made, or kept in a field that is switched on when the page shows (Newsstand, in a part
+    // file of its type: Type.cs and Type.Part.cs are read together).
     private static void ListBackgroundsOn()
     {
         var made = new Regex(@"GameObject (\w+) = [^;]*Instantiate\(background\.gameObject");
@@ -109,6 +110,12 @@ internal static partial class Program
         foreach (string file in Directory.GetFiles(PhotoScripts, "*.cs", SearchOption.AllDirectories))
         {
             string text = File.ReadAllText(file);
+            string stem = System.IO.Path.GetFileName(file).Split('.')[0];
+            string type = text;
+            foreach (string part in Directory.GetFiles(System.IO.Path.GetDirectoryName(file), stem + ".*.cs"))
+            {
+                type += File.ReadAllText(part);
+            }
             int at = text.IndexOf("Find(\"ListBackground\")", StringComparison.Ordinal);
             while (at >= 0)
             {
@@ -119,7 +126,7 @@ internal static partial class Program
                     copies++;
                     string name = copy.Groups[1].Value;
                     Match kept = Regex.Match(window, @"(_\w+) = \(RectTransform\)" + name + @"\.transform;");
-                    bool on = window.Contains(name + ".SetActive(true);") || (kept.Success && text.Contains(kept.Groups[1].Value + ".gameObject.SetActive("));
+                    bool on = window.Contains(name + ".SetActive(true);") || (kept.Success && type.Contains(kept.Groups[1].Value + ".gameObject.SetActive("));
                     if (!on)
                     {
                         off.Add(System.IO.Path.GetFileName(file));

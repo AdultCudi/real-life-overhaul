@@ -11,15 +11,7 @@ namespace RealLifeOverhaul.Ledger
         public byte Kind;
     }
 
-    /// <summary>
-    /// A title's edition written for the phone, one column from top to bottom: the masthead and its line, the dateline,
-    /// the lead under its headline, then each section the title prints (its stories under their headlines, the rest as
-    /// briefs), the markets as the title has them (in full: the city index, the rates, the risers, the fallers, the most
-    /// traded and every sector; or one line), the weather, and for the City Ledger and the Exchange Gazette every listed
-    /// company's close. Written from the same pieces the printed paper is (LedgerText, in the language of the moment), as
-    /// a list of blocks the app sets one under the next. The app keeps what it wrote: an edition is written once a morning
-    /// for each title read, not each time it is opened.
-    /// </summary>
+    /// <summary>A title's edition written for the phone as a column of blocks, from the same pieces as the printed paper.</summary>
     public sealed class NewsstandPage
     {
         public const byte Masthead = 0, Centre = 1, Body = 2, Label = 3, Rule = 4, Double = 5, Table = 6, Foot = 7;
@@ -34,7 +26,6 @@ namespace RealLifeOverhaul.Ledger
         private readonly List<LedgerPiece> _pieces = new List<LedgerPiece>(24);
         private readonly List<LedgerQuote> _quotes = new List<LedgerQuote>(160);
 
-        /// <summary>A title's edition as the blocks of its page.</summary>
         public void Write(LedgerEdition e, int title, List<NewsBlock> into)
         {
             into.Clear();
@@ -91,9 +82,6 @@ namespace RealLifeOverhaul.Ledger
             Add(into, Centre);
         }
 
-        // ---------------------------------------------------------------- the parts
-
-        // The lead: its kicker, its headline in capitals, the byline and its story; a quiet morning's words without one.
         private void Lead(LedgerEdition e, LedgerPiece lead)
         {
             string kicker, headline, body;
@@ -121,7 +109,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // A section: a rule and its name, then its stories, the heaviest first.
         private void Section(LedgerEdition e, LedgerSection section, LedgerPiece lead, List<NewsBlock> into)
         {
             LedgerRules.Of(e, section, lead, _pieces);
@@ -160,7 +147,6 @@ namespace RealLifeOverhaul.Ledger
             _b.Append('\n');
         }
 
-        // The markets: their stories, then the figures as the title has them.
         private void Markets(LedgerEdition e, LedgerPiece lead, int how, List<NewsBlock> into)
         {
             Heading(LedgerCatalogue.SectionKeys[(int)LedgerSection.Markets], into);
@@ -178,13 +164,13 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;
             }
-            // the index, the week, the rates and the cycle
             _b.Append("<size=80%><smallcaps><cspace=0.1em>").Append(Plain(LedgerText.T("reallife_ledger_ear_index"))).Append("</cspace></smallcaps></size>").Append(VT);
             _b.Append("<size=160%><b>").Append(LedgerPage.Level(e.IndexLevel)).Append("</b></size>   <size=110%>").Append(LedgerText.Change(e.IndexChangeBp)).Append("</size>").Append(VT);
             _b.Append("<i>").Append(Plain(LedgerText.Fill("reallife_ledger_week", "change", LedgerText.Change(e.IndexWeekBp)))).Append("</i>");
             if (e.RateBp >= 0)
             {
-                _b.Append('\n').Append(Plain(LedgerText.Fill("reallife_ledger_rates", "rate", LedgerText.Rate(e.RateBp), "inflation", e.InflationBp != int.MinValue ? LedgerText.Rate(e.InflationBp) : "?")));
+                string inflation = e.InflationBp != int.MinValue ? LedgerText.Rate(e.InflationBp) : "?";
+                _b.Append('\n').Append(Plain(LedgerText.Fill("reallife_ledger_rates", "rate", LedgerText.Rate(e.RateBp), "inflation", inflation)));
             }
             if (!string.IsNullOrEmpty(e.CycleKey))
             {

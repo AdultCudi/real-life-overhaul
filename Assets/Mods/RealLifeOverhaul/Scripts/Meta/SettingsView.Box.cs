@@ -8,11 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>
-    /// The Settings app's white box (InfoBox, the game's own parts): what is picked in the table, and with nothing
-    /// picked the group and the preset compared with the choices made. Figures first, then the control, then where the
-    /// option is and its Guide page; written on a click, nothing per frame.
-    /// </summary>
+    /// <summary>The Settings app's white box: what is picked in the table, or the group and the presets against the choices made. Written on a click.</summary>
     public sealed partial class SettingsView
     {
         private const int Presets4 = 4;          // Relaxed, Standard, Realistic, Hardcore (Meta/Presets)
@@ -80,8 +76,6 @@ namespace RealLifeOverhaul.Meta
             return line.Kind == LineKind.Button ? Array.IndexOf(PresetButtons, OptionsLayout.AppLabelKey(line)) : -1;
         }
 
-        // ---------------------------------------------------------------- nothing picked
-
         private void WriteOverview(InfoBox box, SettingsTab tab, int on, int all)
         {
             box.Title(tab.Group.TitleKey.GetLocalization());
@@ -112,8 +106,6 @@ namespace RealLifeOverhaul.Meta
             box.Line(T("reallife_set_box_same_page"));
             Guide.Point(box, GuideTitle);
         }
-
-        // ---------------------------------------------------------------- something picked
 
         private void WritePicked(InfoBox box, SettingsLine line)
         {
@@ -311,8 +303,6 @@ namespace RealLifeOverhaul.Meta
             Guide.Point(box, title ?? GuideTitle);
         }
 
-        // ---------------------------------------------------------------- the differences
-
         private void WriteDiffer(InfoBox box)
         {
             if (_closest < 0)
@@ -361,8 +351,6 @@ namespace RealLifeOverhaul.Meta
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_set_back", Back);
             Guide.Point(box, "reallife_guide_presets_title");
         }
-
-        // ---------------------------------------------------------------- changing a value
 
         private void Set(SettingsLine line, int value)
         {

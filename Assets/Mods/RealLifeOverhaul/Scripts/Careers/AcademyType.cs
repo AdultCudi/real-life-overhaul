@@ -12,18 +12,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The player's own training academy, as a business type of the game's own (BAModAPI.ModdingAPI.RegisterModBusinessType,
-    /// the call the game gives mods for this, as the tech sector registers its firms): an office business picked in the
-    /// game's own list, tagged as one the player may start and that takes money. Its staff are the game's HR managers and
-    /// customer service people, hired and rostered as for any office. The game sends it no customers of its own: its
-    /// students and their fees are the mod's (Careers/CareersDirector.Family).
-    ///
-    /// WHEN. Registered once at the game's start, before any save is loaded, whatever the options say: a save that holds an
-    /// academy must find its type. The first time the game's own recruitment office type is known, its requirements,
-    /// uniforms, logo shapes and icon are copied onto it, so it is furnished and dressed as one.
-    ///
-    /// REMOVING THE MOD. "Prepare this save for removing the mod" turns each academy back into a recruitment office, the
-    /// game's own office business it was copied from (<see cref="Strip"/>), so the save loads without the mod.
+    /// The player's own training academy, a business type registered with the game at its start whatever the options, so a
+    /// save that holds one finds it; its students and fees are the mod's. <see cref="Strip"/> makes each a recruitment office.
     /// </summary>
     public static class AcademyType
     {

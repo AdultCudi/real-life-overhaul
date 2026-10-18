@@ -8,17 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// Everything education and careers read from or do to the game, in one place.
-    ///
-    /// READ: the day, hour and minute; the player's cash and energy; where the player is (inside the game's school, a
-    /// hospital or clinic, a home of their own, a building at an address); whether the game's own activity panel or time
-    /// skip is busy.
-    ///
-    /// DONE, each the game's own way: money is the mod's own dated transactions (GameManager.ChangeMoneySafe); a class or
-    /// homework spends energy as the game's own studying does (EnergyHelper's spender, at the game's "low" rate, for as
-    /// long as it runs); the mood is one of the mod's happiness modifiers. Nothing here runs by itself.
-    /// </summary>
+    /// <summary>Everything education and careers read from or do to the game: the clock, cash, energy, where the player is, money, energy spent and mood.</summary>
     internal static class CareersGame
     {
         public const string SchoolType = "ba:businesstype_school";
@@ -50,8 +40,6 @@ namespace RealLifeOverhaul.Careers
                 return 0;
             }
         }
-
-        // ---------------------------------------------------------------- where the player is
 
         private static Building Inside()
         {
@@ -148,10 +136,7 @@ namespace RealLifeOverhaul.Careers
         private static string _schoolStreet;
         private static int _schoolNumber;
 
-        /// <summary>
-        /// The university's permanent building's address as the game writes one ("26 2nd Avenue": the game's own street
-        /// name), for the Guide's degrees page; the street's name as the mod has it where the game's streets are not loaded.
-        /// </summary>
+        /// <summary>The university's permanent building's address as the game writes it ("26 2nd Avenue"), for the Guide's degrees page.</summary>
         public static string HomeAddress()
         {
             try
@@ -195,8 +180,6 @@ namespace RealLifeOverhaul.Careers
             number = _schoolNumber;
             return !string.IsNullOrEmpty(street);
         }
-
-        // ---------------------------------------------------------------- money, energy and mood
 
         /// <summary>A charge of whole money with a line of the bank history naming what for. False if there was not the money.</summary>
         public static bool Charge(int whole, string key, string name)

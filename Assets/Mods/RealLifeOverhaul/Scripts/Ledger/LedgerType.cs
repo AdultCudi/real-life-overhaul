@@ -7,17 +7,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger's typeface: a serif, as a newspaper is set. First the serif the game ships itself (Noto Serif, one of
-    /// the faces it offers for shop signs, loaded with the city), else any serif among the game's loaded fonts, else one of
-    /// the operating system's serifs made into a font asset at runtime (Georgia, Times New Roman or Cambria on Windows;
-    /// Liberation Serif or DejaVu Serif under Linux and Proton), with its bold and italic faces where the system has them;
-    /// else none, and the paper keeps the game's own font. No font file ships with the mod.
-    ///
-    /// Looked up when the page is built (once a city, at the paper's first opening). The game's own serif is asked of the
-    /// game by name; only when it has none are the fonts in memory gone through (Core/SceneFinds: a search of everything
-    /// the engine holds), and a serif found so is kept while it stays loaded. One line in Player.log, once a session, says which face the paper is set
-    /// in and why, with the names of the game's loaded font assets when they were gone through. A face made from the system
-    /// is made once a session and kept.
+    /// The City Ledger's typeface, a serif: the game's Noto Serif, else one among the fonts in memory (SceneFinds),
+    /// else one of the system's made into a font asset once a session; else the game's own font. The mod ships no font.
     /// </summary>
     public static class LedgerType
     {
@@ -42,7 +33,7 @@ namespace RealLifeOverhaul.Ledger
             }
             catch (Exception)
             {
-                face = null;   // the game's list of sign faces is not as this version expects: looked for by name below
+                face = null;   // the game's sign faces are not as this version expects
             }
             TMP_FontAsset[] loaded = null;
             if (face != null)
@@ -51,13 +42,12 @@ namespace RealLifeOverhaul.Ledger
             }
             else if (_searched != null)
             {
-                face = _searched;   // found among the game's fonts earlier this session (a font asset stays loaded)
+                face = _searched;   // found earlier this session: a font asset stays loaded
                 why = "a serif among the game's fonts";
             }
             else
             {
-                // Only when the game's own serif is not there: everything in memory gone through (SceneFinds counts and names it;
-                // the page is built at its first opening, with the game standing still under the menu).
+                // Only without the game's own serif; the page is built at its first opening, under the menu.
                 loaded = SceneFinds.InMemory<TMP_FontAsset>("ledger: a serif among the game's fonts being looked for (everything in memory gone through)");
                 face = Serif(loaded);
                 _searched = face;
@@ -109,8 +99,8 @@ namespace RealLifeOverhaul.Ledger
             return null;
         }
 
-        // A serif of the operating system's as a dynamic font asset, its bold and italic faces in its weight table so that
-        // bold and italic are the real faces, not drawn heavier or slanted. Tried once a session.
+        // A serif of the operating system's as a dynamic font asset, its bold and italic faces in its weight table so
+        // that bold and italic are the real faces, not drawn heavier or slanted. Tried once a session.
         private static TMP_FontAsset FromSystem()
         {
             if (_made != null || _triedSystem)

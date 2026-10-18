@@ -66,11 +66,8 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The arithmetic of the options page, with no Unity or game types so that CatalogueCheck runs it as it
-    /// ships: where each built row goes by <see cref="OptionsTree"/>, what a row needs before it does anything
-    /// and which need is not met, and how many switches of a list are on. Cost: <see cref="Place"/> is one
-    /// dictionary and one pass over the rows and the tree (about 250 rows), once when the page is built;
-    /// <see cref="Blocker"/> walks a row's few needs, when the page is drawn and on a click. Nothing per frame.
+    /// The arithmetic of the options page: where each row goes by <see cref="OptionsTree"/> and what a row needs before it does
+    /// anything. No Unity types, so CatalogueCheck runs it as it ships; it runs on a build, a drawing or a click.
     /// </summary>
     public static class OptionsPlan
     {
@@ -130,14 +127,9 @@ namespace RealLifeOverhaul.Meta
             return plan;
         }
 
-        // ---------------------------------------------------------------- what a row needs
-
         private static Dictionary<string, string[]> _needs;
 
-        /// <summary>
-        /// The options that must be on before this one does anything: what its section needs, what the row
-        /// itself needs, and its section's main switch (unless it is that switch, or free of it).
-        /// </summary>
+        /// <summary>The options that must be on before this one does anything: its section's needs, its own, and its section's main switch unless it is that or free of it.</summary>
         public static string[] NeedsOf(string optionId)
         {
             if (_needs == null)
@@ -182,10 +174,7 @@ namespace RealLifeOverhaul.Meta
             return optionId != null && _needs.TryGetValue(optionId, out string[] needs) ? needs : OptionsTree.None;
         }
 
-        /// <summary>
-        /// The option that keeps this one from doing anything: the first of its needs that is off, or that
-        /// is itself kept from working (then the one that keeps that). Null when all it needs is on.
-        /// </summary>
+        /// <summary>The first of an option's needs that is off, or that is itself blocked (then what blocks that); null when all it needs is on.</summary>
         public static string Blocker(string optionId, Func<string, bool> isOn)
         {
             return Blocker(optionId, isOn, 0);
@@ -295,11 +284,7 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
-    /// <summary>
-    /// What the search box finds. A word typed finds a text when a word of the text begins with it ("rent"
-    /// finds "rent" and "rental", not "current"); every word typed must be found in the row's own text, its
-    /// section's or its group's. Texts are lower case already. No allocation: IndexOf over a few short strings.
-    /// </summary>
+    /// <summary>What the search finds: every word typed begins a word of the row's, section's or group's lower-case text ("rent" finds "rental", not "current").</summary>
     public static class OptionsFind
     {
         public const int ShortestQuery = 2;   // one letter begins a word in nearly every row: switching all of them on would be a hitch for nothing
@@ -332,10 +317,7 @@ namespace RealLifeOverhaul.Meta
             return query;
         }
 
-        /// <summary>
-        /// True when a word of <paramref name="text"/> begins with <paramref name="word"/>. Chinese is written without
-        /// spaces between words, so a word typed in Chinese characters is found wherever it stands.
-        /// </summary>
+        /// <summary>True when a word of <paramref name="text"/> begins with <paramref name="word"/>; Chinese has no spaces, so a word in its characters matches anywhere.</summary>
         public static bool Has(string text, string word)
         {
             if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(word))
@@ -370,10 +352,7 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
-    /// <summary>
-    /// The rules every label of the options page keeps, so that the check can hold each text of en.json to
-    /// them: how long a label may be, and the mod's own words that never stand on the page.
-    /// </summary>
+    /// <summary>The rules the check holds every label of the options page to: its length, and the mod's own words that never stand on the page.</summary>
     public static class OptionsWording
     {
         public const int LabelWords = 9;      // a switch, a slider, a choice, a button of the player's: "at most about 8 words"

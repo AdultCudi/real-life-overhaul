@@ -14,13 +14,13 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 | File | What it is |
 | --- | --- |
 | `Study/StudyCatalogue` | every course (short, diploma, degree, after a degree, certificate), the timetable, exams, grades, fees, grants, the student loan, learning and fading (game-free: EconomyCheck runs it) |
-| `Study/StudyRules` | the rules of studying: classes joined and missed, homework, the exam's mark, retakes, fees, the loan, skills, a child's degree, tutoring, an academy's students (game-free) |
+| `Study/StudyRules` (and .Learning, .Fees) | the rules of studying: classes joined and missed, homework, the exam's mark, retakes, fees, the loan, skills, a child's degree, tutoring, an academy's students (game-free) |
 | `Work/ProCatalogue` | twenty-five professions, each a ladder of ranks on the professions' roles and the player's skills (game-free) |
 | `Work/ProRules` | what a rank asks, an employer's score, the interview, the offer and haggling, the working day, notice, references, the city's vacancies (game-free) |
 | `Work/LifeRules` | reviews, rises, bonuses, promotion, burnout, office matters, search firms, redundancy, benefit, options, the pension, the top seats of a rival's company, a conflict of interest (game-free) |
 | `Work/OwnRules` | founding a company or a practice, a founder's record, restraint clauses and claims, freelance contracts (game-free) |
 | `CareersModel, Work/WorkModel, CareersStore, Work/WorkStore` | the save's records and its one line (game-free) |
-| `CareersDirector` | the one component (no Update): a one-second timer, the game's hour and day, the parts in partial files (.Study, .Work, .Life, .Own, .Degrees, .Family, .Tests) |
+| `CareersDirector` | the one component (no Update): a one-second timer, the game's hour and day, the parts in partial files (.Study and .Coursework; .Work, .Vacancies and .Applying; .Desk and .DeskDay; .ClassPlay, .Prompt and .Floors; .Life, .Own, .Degrees, .Family, .Tests) |
 | `Sitting` | a class, homework, an exam, a working day, a contract, tutoring or a ceremony left to the game's own activity panel and clock (Jobs/ShiftSkip) |
 | `CampusApp, CareerApp` | the Campus and Career apps in the game's own frame (GameUi.AppShell) |
 | `CampusBuilding` | Hudson City University: the largest office building of the city, with its sign |
@@ -109,10 +109,10 @@ The courier and cab ranks come to about the van job's 100 an hour of play, and t
 The per-hour column is worked out from the catalogue's figures, not measured in play.
 **Owners are paid less:** every job's pay, freelance or employed, is multiplied by `CareerCatalogue.OwnerFactor`: 1 with no business, 0.85 with one, 0.70 with two, 0.55 from three on.
 
-**The dispatcher's desk** (`DispatchJob`, `DispatchList`): three batches of six parcels round the depot; each parcel goes on one of three vans (three a van) with the choice keys, 55 s a batch, the interaction key takes one back.
+**The dispatcher's desk** (`DispatchJob`, `DispatchList`): three batches of six parcels round the depot; each parcel goes on one of three vans (three a van) by that van's button on the game's panel over the desk (`JobPanel`, run on the game's keys or a click), 55 s a batch; its Take one back button takes the last one back.
 
 The board is the game's list window (`GameUi.DeskList`): the parcels still waiting as a note at the top (how far and which way from the depot), then an entry for each van with what it carries and how long its round is, and a button to send the next parcel on it, and an entry to take one back.
-The same choices stay on the game's panel over the desk (the keys).
+The same buttons stay on the game's panel over the desk.
 
 The window opens with each batch; the cancel key closes it for that batch.
 If the game's list window cannot be copied the panel is all there is (`Jobs check (dispatch list) ... FAIL`).

@@ -6,18 +6,13 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The copy at home: while the player is in their home with a copy of the latest edition (delivered that morning, or
-    /// bought at a kiosk and brought home), the modelled <c>newspaper_ledger</c> lies open on the floor just inside the front
-    /// door, where the player comes in. Pointing at it is the game's own call to action, "Read the City Ledger", and a click
-    /// opens the page (<see cref="LedgerPointer"/>). It is one object with a shared mesh and material and a trigger box on the
-    /// game's layer for things that can be pointed at; it goes when the player leaves, and when the copy is old news.
-    /// The cost: once a second two reference comparisons while it lies there; putting it down is a few navigation queries,
-    /// once each time the player comes home with a copy. Nothing per frame.
+    /// The copy at home: the <c>newspaper_ledger</c> prop open inside the front door while the player is home with a
+    /// copy, a click away (<see cref="LedgerPointer"/>). The cost: nothing per frame; a few comparisons a second.
     /// </summary>
     public sealed class LedgerHome
     {
         private const string PropId = "newspaper_ledger";
-        private const string PlainPropId = "newspaper";
+        private const string PlainPropId = "newspaper";   // for a prop bundle without the Ledger's own
 
         private readonly LedgerDirector _director;
         private Transform _paper;
@@ -30,7 +25,6 @@ namespace RealLifeOverhaul.Ledger
             _director = director;
         }
 
-        /// <summary>Once a second: the copy is put down, or taken up, as the home and the copy are.</summary>
         public void Slow(bool atHomeWithCopy)
         {
             LedgerState state = _director.State;
@@ -64,8 +58,7 @@ namespace RealLifeOverhaul.Ledger
             var renderer = made.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-            // The prop stands upright, read from -Z with its front page facing +Z: laid on its back it lies front page up,
-            // the sheet reaching 0.4 m from where it was put.
+            // The prop stands upright, front page to +Z: laid on its back it lies front page up, 0.4 m long.
             made.transform.SetPositionAndRotation(floor + Vector3.up * 0.004f, Quaternion.Euler(0f, heading, 0f) * Quaternion.Euler(-90f, 0f, 0f));
             _paper = made.transform;
             _pointer = LedgerPointer.Make(_paper, new Vector3(0f, 0.2f, 0.03f), new Vector3(0.66f, 0.46f, 0.16f));
@@ -78,8 +71,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // Inside the front door: on the floor a little ahead of where the player comes in and to one side, the first of a few
-        // places that is floor the player can walk on.
+        // On the floor a little ahead of where the player comes in and to one side, where the player can walk.
         private static bool Spot(BuildingManager manager, out Vector3 floor, out float heading)
         {
             floor = default;

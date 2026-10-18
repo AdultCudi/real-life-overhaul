@@ -13,39 +13,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The Persona app's EDUCATION box with the mod's courses after the game's own (Careers/Study/EducationRules).
-    ///
-    /// HOW THE GAME FILLS IT. The box (UI.Smartphone.Apps.Persona.EducationInfo) is filled each time it is switched on, as
-    /// the app opens: it lets go of last time's rows (every copy of its row template, ResetTemplate) and makes one copy of
-    /// the template for each of the game's courses (CreateElement), each set up with the course's name, its standing
-    /// ("Not started yet", "{n}% completed", "Completed") and a tick when it is completed (EducationInfoEntry.Setup).
-    ///
-    /// WHAT IS ADDED. A component of the mod's sits on the box. When the box is switched on it waits one frame (so the
-    /// game has made its rows and let go of the old ones, the mod's with them) and then makes more copies of the same
-    /// template, as the game does: for each group of the mod's courses a heading (its name in bold, the count of its
-    /// courses where the status mark would be, no row background and no mark), then the group's courses, each with its
-    /// standing in the game's own row: not started (the game's own words), the classes so far and the next, the exam or
-    /// retake to sit, an instalment owed, completed with its grade (and the game's tick), failed with the mark, withdrawn,
-    /// barred. The rows' texts are keys the game's localizer fills, so they follow a change of language. Nothing is kept:
-    /// the game lets the rows go the next time.
-    ///
-    /// THE BOX'S HEIGHT. Persona's left column (CharacterStats: a ScrollRect whose Content is a VerticalLayoutGroup that
-    /// does not control its children's heights, with a ContentSizeFitter) stacks Energy, Hunger, Happiness and Education
-    /// by their rectangles. The Education box is a fixed 1320 by 690 (its LayoutElement and its rectangle), made for the
-    /// game's five rows; only its inner list (Content: a VerticalLayoutGroup and a ContentSizeFitter) grows. So rows added
-    /// to the list were drawn past the box's white, and the column's scroll ended where the box did. After the rows are
-    /// made the box is given the height they need (EducationRules.BoxHeight: the game's white under them kept) and the
-    /// column is laid out again, so it scrolls to the last row; on each open the box first goes back to the game's own
-    /// height. The rows' heights are the template's, so a change of language does not move them. If the rows are ever not
-    /// straight in the box, or the box not in a scrolling column, only the courses begun are listed.
-    ///
-    /// The template and the row's three parts are private to the game's box and row: they are looked up once. If they are
-    /// not there (a game that changed them), the box keeps the game's rows alone, with one line in the log.
-    ///
-    /// GOING PUBLIC. The rows are the player's own studies on this machine; nothing is sent.
-    ///
-    /// THE COST. Nothing per frame: once a second the director checks the component is on the box (a null test), and the
-    /// rows are made once each time the app opens (about fifty copies of the game's row, as many as the game's own lists).
+    /// The Persona app's education box with the mod's courses after the game's own (Careers/Study/EducationRules), copies of
+    /// the game's row template made a frame after the game fills it, and the box made tall enough. The cost: nothing per
+    /// frame; a null test once a second and about fifty rows each time the app opens.
     /// </summary>
     public sealed class PersonaEducation : MonoBehaviour
     {
@@ -185,7 +155,8 @@ namespace RealLifeOverhaul.Careers
                 list = null;   // (rows not straight in the box: it cannot be sized to them, so only the begun ones)
             }
             bool scrolls = list != null && _box.GetComponentInParent<ScrollRect>() != null;
-            int courses = EducationRules.Rows(f, CareersDirector.Offered, !scrolls, save.Day, CareersGame.MinuteOfDay, CareersDirector.Instance != null ? CareersDirector.Instance.SittingClass : -1, _rows);
+            int courses = EducationRules.Rows(f, CareersDirector.Offered, !scrolls, save.Day, CareersGame.MinuteOfDay,
+                CareersDirector.Instance != null ? CareersDirector.Instance.SittingClass : -1, _rows);
             int headings = 0;
             for (int i = 0; i < _rows.Count; i++)
             {
@@ -247,9 +218,7 @@ namespace RealLifeOverhaul.Careers
             return _baseHeight;
         }
 
-        // The box made the height its rows need (below 0: the game's own), and Persona's column laid out again to it, so
-        // its white holds every row and its scroll reaches the last. The column's layout sizes the box by its rectangle
-        // (it does not control its children's heights), and the box's LayoutElement says the same height.
+        // The box made the height its rows need (below 0: the game's own) and Persona's column laid out again, so its scroll reaches the last row.
         private void Size(float height)
         {
             if (!(_box != null && _box.transform is RectTransform r))
@@ -274,8 +243,7 @@ namespace RealLifeOverhaul.Careers
             LayoutRebuilder.MarkLayoutForRebuild(r);   // (up to the column's own list, whose fitter sets how far it scrolls)
         }
 
-        // A heading row: no status mark (the grey ring is the mark's background, the tick inside it), the count where the
-        // mark stood, and the name given the width the count does not need, so a long group name stays on one line.
+        // A heading row: no status mark, the count where it stood, and the name given the rest of the width, so a long name stays on one line.
         private static void Heading(RectTransform row, TextLocalizationComponent header, TextLocalizationComponent status, GameObject check)
         {
             Transform mark = check != null ? check.transform.parent : null;

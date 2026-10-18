@@ -17,9 +17,8 @@ namespace RealLifeOverhaul.Ledger
     ///   Q|name|ticker|sector|close|change|volume|marks a company's price
     ///   C|close,close,...                             the index's last closes
     ///
-    /// Every number is written in the invariant culture; what is not understood is left out, a line at a time, so an entry
-    /// from a later version or a damaged one never stops a load: at worst the paper of that morning is not there. An entry
-    /// that is not this version's is not read at all (a new state). Game-free.
+    /// Numbers are invariant; a line that does not read is left out, and another version's entry is not read (a new
+    /// state). Game-free.
     /// </summary>
     public static class LedgerStore
     {
@@ -56,7 +55,7 @@ namespace RealLifeOverhaul.Ledger
             return b.ToString();
         }
 
-        /// <summary>An edition as the store writes it: its line and those of its pieces, sectors, companies and closes (each after a line break).</summary>
+        /// <summary>An edition's lines as the store writes them, each after a line break.</summary>
         public static void Edition(StringBuilder b, LedgerEdition e)
         {
             if (e == null)
@@ -111,19 +110,19 @@ namespace RealLifeOverhaul.Ledger
             {
                 return new LedgerState();
             }
-            if (!string.IsNullOrEmpty(text) && !HeadOk(text, 12))
+            if (!string.IsNullOrEmpty(text) && !HeadOk(text, Version, 12))
             {
-                SaveLines.Unreadable(data, Key, "it could not be read");   // (damaged, or of a later version: kept as it is, Core/SaveLines)
+                SaveLines.Unreadable(data, Key, "it could not be read");   // damaged, or a later version's: kept as it is (Core/SaveLines)
             }
             return Read(text);
         }
 
-        // The line's first row is this version's (what Read needs before it reads anything).
-        private static bool HeadOk(string text, int fields)
+        /// <summary>True if an entry's first line is of this version, with as many fields as Read needs before it reads anything.</summary>
+        internal static bool HeadOk(string text, string version, int fields)
         {
             int end = text.IndexOf('\n');
             string[] head = (end >= 0 ? text.Substring(0, end) : text).TrimEnd('\r').Split('|');
-            return head.Length >= fields && head[0] == Version;
+            return head.Length >= fields && head[0] == version;
         }
 
         public static LedgerState Read(string text)
@@ -185,10 +184,7 @@ namespace RealLifeOverhaul.Ledger
             return s;
         }
 
-        /// <summary>
-        /// One line of an edition as the store writes it: "E" begins a new one (given back in <paramref name="e"/>), the
-        /// others are added to the one begun. A line of another kind, or one before any "E", is left out.
-        /// </summary>
+        /// <summary>One line of an edition: "E" begins one (given back in <paramref name="e"/>), the others add to it.</summary>
         public static void EditionLine(string[] f, ref LedgerEdition e)
         {
             switch (f[0])

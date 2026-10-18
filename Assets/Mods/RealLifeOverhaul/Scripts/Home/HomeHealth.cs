@@ -10,17 +10,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The rules of home life and health: how the three needs move with what the player is
-    /// doing, what that does to their mood (the mod's own happiness modifiers), fitness, the
-    /// body, sleep, and being ill. Nothing here runs by itself: the director calls
-    /// <see cref="Advance"/> once a second with the game minutes that went by, <see cref="Hourly"/>
-    /// on the hour and <see cref="NewDay"/> at midnight.
-    ///
-    /// Illness goes through Life's sickness, not beside it: a cold, the flu and food poisoning
-    /// are Life's "sick" (its mood modifier, its energy drain, its doctor on the phone, the
-    /// hospital curing it) with a name and a course of their own, and a sickness a life event
-    /// hands out is taken up here as a cold. Back pain and burnout are the mod's own two
-    /// modifiers. One illness at a time, and none for three days after any.
+    /// The rules of home life and health: the needs, the mood modifiers, fitness, the body, sleep and illness, run by the
+    /// director (<see cref="Advance"/> once a second, <see cref="Hourly"/>, <see cref="NewDay"/>). A cold, the flu and food
+    /// poisoning are Life's "sick" with a course of their own. One illness at a time, and none for three days after.
     /// </summary>
     public static class HomeHealth
     {
@@ -40,7 +32,7 @@ namespace RealLifeOverhaul
         public static bool SickNoteActive => HomeState.Loaded && HomeState.SickNoteUntil > 0f && TimeHelper.NowInMinutes() < HomeState.SickNoteUntil;
         private static float Easy => Settings.HomeEasy ? HomeBalance.Easy : 1f;
 
-        /// <summary>A load or the city going: nothing of ours is left draining energy.</summary>
+        /// <summary>Takes every energy drain of ours off: a load, or the city going.</summary>
         public static void Reset()
         {
             SetDrain(IllDrain, ref _illDrain, 0f);
@@ -53,12 +45,9 @@ namespace RealLifeOverhaul
             _noticedAt = -1000f;
         }
 
-        // ---------------------------------------------------------------- minute by minute
-
-        /// <summary>The needs move with what the player is doing. Called once a second; <paramref name="minutes"/> is game time.</summary>
         private static float _cutSaid = -999f;
 
-        // Says once a minute at most that the supply is cut, as the player tries to use it.
+        // At most once a minute: the supply is cut, as the player tries to use it.
         private static void Cut(string key)
         {
             if (Time.unscaledTime - _cutSaid > 60f)
@@ -68,6 +57,7 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>The needs move with what the player is doing. Called once a second with the game minutes that went by.</summary>
         public static void Advance(float minutes, Doing doing, bool atHome, bool onFootOutside, float boost)
         {
             if (minutes <= 0f)
@@ -109,11 +99,26 @@ namespace RealLifeOverhaul
                 }
                 if (doing == Doing.Nothing || doing == Doing.Toilet)
                 {
-                    if (JobDirector.OnShift) stress += HomeBalance.StressJobShift;
-                    if (ModState.IsSick || Ill) stress += HomeBalance.StressSick;
-                    if (SaveGameManager.Current.Hunger < 15f) stress += HomeBalance.StressHungry;
-                    if (atHome && HomeState.Tidy < HomeBalance.MessLow) stress += HomeBalance.StressMess;
-                    if (HomeState.SleepDebt > HomeBalance.DebtHigh) stress += HomeBalance.StressTired;
+                    if (JobDirector.OnShift)
+                    {
+                        stress += HomeBalance.StressJobShift;
+                    }
+                    if (ModState.IsSick || Ill)
+                    {
+                        stress += HomeBalance.StressSick;
+                    }
+                    if (SaveGameManager.Current.Hunger < 15f)
+                    {
+                        stress += HomeBalance.StressHungry;
+                    }
+                    if (atHome && HomeState.Tidy < HomeBalance.MessLow)
+                    {
+                        stress += HomeBalance.StressMess;
+                    }
+                    if (HomeState.SleepDebt > HomeBalance.DebtHigh)
+                    {
+                        stress += HomeBalance.StressTired;
+                    }
                 }
                 bool wet = onFootOutside && BigAmbitions.DayNightCycle.RainHelper.AreRainDropsFalling && !PlayerHelper.IsCarryingAnUmbrella();
                 if (wet)
@@ -138,7 +143,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Sleep debt: so much owed for every hour up, an hour paid off for every hour asleep (Slept settles the quality).
             if (Settings.HomeSleep && !asleep)
             {
                 HomeState.SleepDebt = HomeState.Clamp(HomeState.SleepDebt + HomeBalance.DebtPerWakingHour * hours * Easy, 0f, HomeBalance.DebtMost);
@@ -167,7 +171,6 @@ namespace RealLifeOverhaul
             SetDrain(EffortDrain, ref _effortDrain, effort);
         }
 
-        // Exercise of any kind: fitness with diminishing returns over the day, and what it will do to the body.
         private static void Trained(float minutes, float perHour, bool builds)
         {
             float hours = minutes / 60f;
@@ -189,13 +192,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- on the hour
-
         public static void Hourly(bool atHome, bool inSomeoneElsesPlace)
         {
             float now = TimeHelper.NowInMinutes();
 
-            // ---- being ill
             if (Settings.HomeIllness)
             {
                 if (ModState.IsSick && HomeState.Ill == Illness.None)
@@ -205,8 +205,7 @@ namespace RealLifeOverhaul
                     HomeState.IllSince = now;
                     HomeState.IllTreated = false;
                 }
-                // With Permadeath on, a flu left untreated gets worse, with warnings, and from the first of them no longer
-                // clears up by itself: it is held on here until it is treated (Permadeath/PermadeathRules). Off, nothing changes.
+                // With Permadeath on, an untreated flu gets worse, with warnings, and from the first is held on until treated.
                 bool flu = HomeState.Ill == Illness.Flu && ModState.IsSick;
                 if (Permadeath.Mortality.FluHour(flu, HomeState.IllSince, HomeState.IllTreated) && flu
                     && HomeState.IllUntil < now + Permadeath.PermadeathRules.IllHoldMinutes)
@@ -255,7 +254,7 @@ namespace RealLifeOverhaul
             }
             SetDrain(IllDrain, ref _illDrain, HomeBalance.Drain(HomeState.Ill) * (HomeState.IllTreated ? 0.5f : 1f));
 
-            // ---- fitness as stamina: a fit player tires more slowly at everything
+            // Fitness as stamina: a fit player tires more slowly at everything.
             float fit = Settings.HomeFitness ? Mathf.Lerp(HomeBalance.FitDrainWorst, HomeBalance.FitDrainBest, HomeState.Fitness / 100f) : 0f;
             fit = Mathf.Round(fit * 1000f) / 1000f;
             if (float.IsNaN(_fitDrain) || !Mathf.Approximately(fit, _fitDrain))
@@ -268,7 +267,6 @@ namespace RealLifeOverhaul
                 _fitDrain = fit;
             }
 
-            // ---- mood
             bool needs = Settings.HomeNeeds;
             Hold(ModState.Unwashed, needs && HomeState.Hygiene < HomeBalance.HygieneLow);
             Hold(ModState.Stressed, needs && HomeState.Stress > HomeBalance.StressHigh);
@@ -281,7 +279,6 @@ namespace RealLifeOverhaul
             Hold(ModState.GoodDiet, Settings.HomeFitness && diet >= HomeBalance.DietGood);
             Hold(ModState.PoorDiet, Settings.HomeFitness && diet <= HomeBalance.DietPoor);
 
-            // ---- other people
             if (needs && inSomeoneElsesPlace && HomeState.Hygiene < HomeBalance.HygieneNotice && now - _noticedAt > 6f * 60f)
             {
                 _noticedAt = now;
@@ -290,7 +287,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Keeps one of the mod's modifiers on for as long as its cause lasts, and takes it off when the cause goes.
         private static void Hold(string type, bool on)
         {
             List<HappinessModifierData> list = SaveGameManager.Current.happinessModifiers;
@@ -341,8 +337,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- at midnight
-
         public static void NewDay(int passed)
         {
             int day = TimeHelper.CurrentDay;
@@ -382,23 +376,35 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- sleep
-
-        /// <summary>
-        /// A sleep ended. Works out how good it was (the bed, the hour, the state of the flat and of the
-        /// sleeper), pays off sleep debt accordingly, sets the morning's mood, lets rest work on an
-        /// illness and shows on the body what the last days did to it. Returns the quality, 0..100.
-        /// </summary>
+        /// <summary>A sleep ended: its quality pays off sleep debt, sets the mood, eases an illness and shows on the body. Returns the quality, 0..100.</summary>
         public static int Slept(float hours, int bedQuality, bool inCar, int bedHour, bool atHome)
         {
             float score = 55f;
             score += inCar ? -25f : (Mathf.Clamp(bedQuality, 0, 100) - 50f) * 0.3f;
-            if (bedHour >= HomeBalance.LateFrom && bedHour < HomeBalance.LateTo) score -= 15f;        // far too late
-            else if (bedHour >= 8 && bedHour < 18) score -= 10f;                                       // the day's noise
-            if (atHome && HomeState.Tidy < HomeBalance.MessLow) score -= 8f;
-            if (HomeState.Stress > HomeBalance.StressHigh) score -= 10f;
-            if (SaveGameManager.Current.Hunger < 20f) score -= 6f;
-            if (Ill || ModState.IsSick) score -= 10f;
+            if (bedHour >= HomeBalance.LateFrom && bedHour < HomeBalance.LateTo)   // far too late
+            {
+                score -= 15f;
+            }
+            else if (bedHour >= 8 && bedHour < 18)   // the day's noise
+            {
+                score -= 10f;
+            }
+            if (atHome && HomeState.Tidy < HomeBalance.MessLow)
+            {
+                score -= 8f;
+            }
+            if (HomeState.Stress > HomeBalance.StressHigh)
+            {
+                score -= 10f;
+            }
+            if (SaveGameManager.Current.Hunger < 20f)
+            {
+                score -= 6f;
+            }
+            if (Ill || ModState.IsSick)
+            {
+                score -= 10f;
+            }
             score += hours >= 7f ? 10f : hours >= 6f ? 0f : hours >= 5f ? -8f : -20f;
             score = Mathf.Clamp(score, 0f, 100f);
 
@@ -437,7 +443,7 @@ namespace RealLifeOverhaul
             return (int)score;
         }
 
-        // What exercise and food did to the body, a little at a time and only on waking: one rebuild of the player's look at most.
+        // What exercise and food did to the body, a little at a time and only on waking: one rebuild of the look at most.
         private static void ShowOnBody()
         {
             if (_bodyBroken)
@@ -478,8 +484,6 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Home: the body could not be updated; body changes are off for this session.");
             }
         }
-
-        // ---------------------------------------------------------------- illness
 
         /// <summary>The player falls ill, if they are well and not just over something. A test forces it.</summary>
         public static bool Catch(Illness ill, string causeKey, bool forced)
@@ -565,7 +569,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Well again, by whatever road.</summary>
         public static void Over(bool tell)
         {
             Illness was = HomeState.Ill;
@@ -604,7 +607,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>What it does, in a sentence: for the doctor and the phone page.</summary>
         public static string SymptomKey(Illness ill)
         {
             switch (ill)
