@@ -98,7 +98,6 @@ namespace RealLifeOverhaul.Family
             int day = TimeHelper.CurrentDay;
             int hour = TimeHelper.CurrentHour;
 
-            // A baby in the house makes itself heard.
             if (now >= _nextSound)
             {
                 _nextSound = now + Random.Range(150f, 320f);
@@ -164,15 +163,13 @@ namespace RealLifeOverhaul.Family
                         Settle(director, now, _partner.Near(Spots[_at], 0.7f));
                     }
                     break;
-                case Mode.Leaving:
-                    // Out through the door they came in by.
+                case Mode.Leaving:   // out through the door they came in by
                     if (_partner.Near(_entry, 0.9f) || (now >= _giveUp && !CitySpots.InView(_partner.Position)))
                     {
                         ReleasePartner();
                     }
                     break;
-                case Mode.Retiring:
-                    // Gone to bed (or out) the moment nobody is looking.
+                case Mode.Retiring:   // gone to bed, or out, the moment nobody is looking
                     if (!CitySpots.InView(_partner.Position))
                     {
                         ReleasePartner();
@@ -260,8 +257,7 @@ namespace RealLifeOverhaul.Family
         private static void Arrive(float now, Vector3 player, bool wasHome)
         {
             FamilyDirector director = FamilyDirector.Instance;
-            // Already home when the player walks in: at one of their places, the one furthest from the door. Coming home
-            // while the player is in: in at the door, when the door is not being looked at.
+            // Home when the player walks in: at the place furthest from the door. Coming home: in at the door while it is not looked at.
             int at = 0;
             Vector3 spot;
             if (wasHome)
@@ -481,7 +477,6 @@ namespace RealLifeOverhaul.Family
             switch (Kinds[at])
             {
                 case CotKind:
-                    // Both hands on the rail, rocking: the baby is in the cot.
                     if (!_partner.Work(RockClip, props, 0.4f))
                     {
                         _partner.Work("arms_crossed", props, 0.4f);

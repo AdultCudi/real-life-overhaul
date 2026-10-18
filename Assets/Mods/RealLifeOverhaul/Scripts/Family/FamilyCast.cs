@@ -15,11 +15,7 @@ namespace RealLifeOverhaul.Family
     /// <summary>Who somebody in the family's own pool is dressed as.</summary>
     public enum FamilyLook { Partner, PartnerFormal, Officiant, Mother, Guest }
 
-    /// <summary>
-    /// The family's own people, three at most: the partner, and the officiant and one guest for a wedding. Each is made once and
-    /// kept switched off between uses, and dressed again only for another look (a mesh merge). The partner's look comes from
-    /// the save's seed. Cost: nothing unless somebody is out; then <see cref="Tick"/> turns and hides them each frame.
-    /// </summary>
+    /// <summary>The family's three characters, each made once, kept switched off and dressed only for a new look; <see cref="Tick"/> runs while one is out.</summary>
     public sealed class FamilyCast
     {
         public const int Size = 3;
@@ -55,18 +51,13 @@ namespace RealLifeOverhaul.Family
             Props = new CityProps(parent);
         }
 
-        /// <summary>The modelled props the family's people hold or push (cups, the newspaper, the pushchair).</summary>
         public CityProps Props { get; }
 
-        /// <summary>True while anybody is out.</summary>
         public bool AnyOut => _out[0] || _out[1] || _out[2];
 
         public bool Failed => _failed;
 
-        /// <summary>
-        /// Puts somebody standing at a spot on a navigation mesh, facing a point; slot 0 is the partner. Null if the slot is out,
-        /// the spot will not take them, or characters cannot be made (logged once; family life goes on without them).
-        /// </summary>
+        /// <summary>Somebody standing at a spot on a navigation mesh, facing a point (slot 0: the partner); null if they cannot be put or made.</summary>
         public CityPerson Put(int slot, FamilyLook look, Vector3 spot, Vector3 face, int agentType)
         {
             if (_failed || slot < 0 || slot >= Size || _out[slot])
@@ -203,7 +194,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>The city is going: destroy what was made.</summary>
         public void Dispose()
         {
             for (int i = 0; i < Size; i++)
@@ -247,7 +237,6 @@ namespace RealLifeOverhaul.Family
             return new CityPerson(character);
         }
 
-        // On the mesh of the given agent type at a spot, standing, facing a point.
         private static bool Place(CityPerson person, Vector3 spot, Vector3 face, int agentType)
         {
             ThirdPersonCharacter character = person.Character;
@@ -355,10 +344,7 @@ namespace RealLifeOverhaul.Family
         }
     }
 
-    /// <summary>
-    /// The family's own furniture and decorations by id: the bundle's modelled prop of that id, or a stand-in of plain shapes
-    /// (Core/Shapes) until there is one. Made the first time each is wanted and kept; no script on any of them.
-    /// </summary>
+    /// <summary>The family's furniture and decorations: the bundle's modelled prop by id, else plain shapes; each made once and kept.</summary>
     public sealed class FamilyProps
     {
         public const string Arch = "wedding_arch";
@@ -368,10 +354,7 @@ namespace RealLifeOverhaul.Family
         public const string HighChair = "high_chair";
         public const string Baby = "baby_bundle";
 
-        /// <summary>
-        /// A swaddled baby in the modelled cot, or not: <c>baby_bundle</c>, 0.53 m up where the cot was made to take it, as a piece
-        /// of the cot, so that it goes back to the shelf with it. The plain stand-in cot stays empty.
-        /// </summary>
+        /// <summary>The swaddled baby, a piece of the modelled cot 0.53 m up, shown or not; the plain stand-in cot stays empty.</summary>
         public static void Tuck(Transform cot, bool baby)
         {
             if (cot == null)

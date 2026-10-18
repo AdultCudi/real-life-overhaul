@@ -21,11 +21,7 @@ namespace RealLifeOverhaul.Family
         public bool Valid => Building != null;
     }
 
-    /// <summary>
-    /// The real places of family life (a jeweller, a planner, a hospital, a school, a theatre, a restaurant, home), each one of
-    /// the city's own buildings found by its business type, and floor spots indoors. Asked on events and once a second while an
-    /// errand is on.
-    /// </summary>
+    /// <summary>The real places of family life, each one of the city's own buildings by its business type, and floor spots indoors.</summary>
     public static class FamilyPlaces
     {
         public const string Residential = "ba:buildingtype_residential";
@@ -174,7 +170,6 @@ namespace RealLifeOverhaul.Family
             return false;
         }
 
-        /// <summary>True while the player stands inside a building of one of these kinds.</summary>
         public static bool Inside(string[] kinds)
         {
             if (!BuildingManager.IsInsideBuilding)
@@ -192,7 +187,6 @@ namespace RealLifeOverhaul.Family
             return Matches(type, kinds);
         }
 
-        /// <summary>True while the player is inside that very building.</summary>
         public static bool Inside(in Venue venue)
         {
             return BuildingManager.IsInsideBuilding && venue.Building != null
@@ -341,7 +335,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>True while the player stands inside the family's home.</summary>
         public static bool AtHome()
         {
             if (!BuildingManager.IsInsideBuilding)
@@ -360,10 +353,7 @@ namespace RealLifeOverhaul.Family
 
         private static NavMeshPath _path;
 
-        /// <summary>
-        /// A spot on the floor near a point, on the player's storey: on the navigation mesh (the furniture is cut out of it), with
-        /// so much room to its edge, and walkable to from the player. The agent type is the one whose mesh was found there.
-        /// </summary>
+        /// <summary>A spot on the player's storey near a point, with room to the mesh's edge and a path from the player; and the agent type there.</summary>
         public static bool Floor(Vector3 near, Vector3 player, float room, float reach, out Vector3 spot, out int agentType)
         {
             spot = default;
@@ -378,8 +368,7 @@ namespace RealLifeOverhaul.Family
                 }
                 if (NavMesh.FindClosestEdge(hit.position, out NavMeshHit edge, filter) && edge.distance < room)
                 {
-                    // Too close to the furniture or the wall: a step away from that edge.
-                    Vector3 away = hit.position - edge.position;
+                    Vector3 away = hit.position - edge.position;   // too close to the furniture or the wall: a step away from that edge
                     away.y = 0f;
                     if (away.sqrMagnitude < 0.0001f)
                     {

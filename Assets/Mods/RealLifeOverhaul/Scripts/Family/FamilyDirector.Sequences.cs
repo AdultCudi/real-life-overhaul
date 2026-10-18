@@ -67,10 +67,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>
-        /// The shape of something that takes time: the screen goes dark with a line on it, <paramref name="during"/> happens
-        /// unseen, so many hours pass on the game's own time skip, the screen comes back and <paramref name="after"/> follows.
-        /// </summary>
+        /// <summary>A dark screen with a line, <paramref name="during"/> unseen, so many hours on the game's time skip, then <paramref name="after"/>.</summary>
         internal IEnumerator Passage(string infoKey, int hours, Action during, Action after)
         {
             float waited = 0f;
@@ -84,8 +81,7 @@ namespace RealLifeOverhaul.Family
             UIs uis = InstanceBehavior<UIs>.Instance;
             if (hours > 0 && !GoingPublic.ClockShared && uis != null && uis.timeMachine != null && !uis.timeMachine.isRunning)
             {
-                // A day at a time: longer than that and hunger alone would put somebody in hospital.
-                int left = hours;
+                int left = hours;   // a day at a time: longer, and hunger alone would put somebody in hospital
                 while (left > 0)
                 {
                     int chunk = Mathf.Min(left, 24);
@@ -187,7 +183,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // The HUD, the phone and the top bar, each only if it was showing.
         private static void Show(UIs uis, bool hud, bool phone, bool top, bool shown)
         {
             if (hud)

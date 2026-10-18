@@ -7,10 +7,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// Planning the wedding, at an event planning agency's counter (a fee; they send the invitations and order the flowers)
-    /// or from the phone: venue, how grand, extras and date, a deposit now and the rest on the day; put back or called off.
-    /// </summary>
+    /// <summary>Planning the wedding at an agency's counter or from the phone: venue, size, extras and date, a deposit now; put back or called off.</summary>
     internal static class WeddingPlanner
     {
         private static readonly string[] VenueNames =

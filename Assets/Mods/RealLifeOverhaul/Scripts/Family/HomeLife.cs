@@ -11,10 +11,7 @@ namespace RealLifeOverhaul.Family
     /// <summary>Where the partner is at an hour of a day.</summary>
     internal enum Whereabouts { Home, Asleep, Work, Out }
 
-    /// <summary>
-    /// Living together: the partner's timetable, moving in and out, the shared routines, their share of the rent, chores,
-    /// support and evenings out; and the partner shown at home while both are in (<see cref="Tick"/>, once a second).
-    /// </summary>
+    /// <summary>Living together: the timetable, moving in, routines, their share of the rent, chores, support, evenings out, the partner at home.</summary>
     internal static partial class HomeLife
     {
         /// <summary>What a home's power and water come to a day (Utilities, through Wiring/UtilityLinks); null: none known.</summary>
@@ -134,7 +131,6 @@ namespace RealLifeOverhaul.Family
             return null;
         }
 
-        /// <summary>Close enough, for long enough, to share a home.</summary>
         public static bool Ready()
         {
             if (Partner.Kept(out PersonInfo p))
@@ -295,8 +291,7 @@ namespace RealLifeOverhaul.Family
             {
                 return;   // no home just now: nothing to share the cost of
             }
-            // A day of the home: the game's rent at today's prices, and its power and water (Utilities). With no bills to go by
-            // (that feature off), an owned home's are a set sum.
+            // The home's day: the rent at today's prices and its power and water; with no bills known, an owned home's are a set sum.
             float rent = Mathf.Max(0f, home.RentPerDay) * Prices.Level / 1000f;
             Func<BuildingRegistration, float> bills = Bills;
             float cost = rent + (bills != null ? Mathf.Max(0f, bills(home)) : 0f);

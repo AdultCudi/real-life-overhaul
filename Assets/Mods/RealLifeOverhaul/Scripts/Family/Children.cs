@@ -7,11 +7,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// Children, up to three: deciding together, a pregnancy or an adoption, the birth, growing up, school, birthdays and
-    /// what they cost. The game has no child-sized character, so a child is never shown walking: a baby is a pushchair, a cot
-    /// and a sound, a school-age child a name, reports and events (docs/features/family.md).
-    /// </summary>
+    /// <summary>Children, up to three, from deciding together to leaving home; never shown walking: a baby is a pushchair, a cot and a sound.</summary>
     internal static partial class Children
     {
         private static readonly string[] Expecting =
@@ -209,8 +205,7 @@ namespace RealLifeOverhaul.Family
             }
             if (!FamilyState.Together && FamilyState.Process == ProcessKind.Adoption)
             {
-                // An adoption is for the two of them: it lapses quietly if they part. (A baby on the way comes all the same.)
-                ClearProcess();
+                ClearProcess();   // an adoption is for the two of them; a baby on the way comes all the same
                 return;
             }
             if (FamilyState.Process == ProcessKind.Pregnancy)
@@ -235,7 +230,6 @@ namespace RealLifeOverhaul.Family
                 }
                 return;
             }
-            // Adoption.
             if (s.PStep == 2 && s.PDueDay > 0 && day >= s.PDueDay - 1)
             {
                 s.PStep = 3;
@@ -258,7 +252,6 @@ namespace RealLifeOverhaul.Family
             {
                 return;
             }
-            // It is time.
             if (FamilyState.Process == ProcessKind.Pregnancy && s.PStep < 10 && (day > s.PDueDay || (day == s.PDueDay && hour >= s.BirthHour)))
             {
                 s.PStep = 10;
@@ -396,7 +389,6 @@ namespace RealLifeOverhaul.Family
                 FamilyTalk.Move(-pocket, "reallife_transaction_family_pocket");
                 FamilyState.MoneyOut(pocket, 2);
             }
-            // Somebody who has left home rings now and then.
             for (int i = 0; i < s.Children.Count; i++)
             {
                 if (s.Children[i].Grown && Random.value < 0.25f)

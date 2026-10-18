@@ -8,10 +8,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// The ring, bought at a real jeweller's counter, and the answer to the question: an evening, a dry sky, a good night out,
-    /// being dressed for it and the ring all help. A "not yet" costs a week.
-    /// </summary>
+    /// <summary>The ring, bought at a jeweller's counter, and the answer: an evening, a dry sky, a night out, formal clothes and the ring help.</summary>
     internal static class Courtship
     {
         private static readonly string[] RingNames =
@@ -189,10 +186,7 @@ namespace RealLifeOverhaul.Family
         }
     }
 
-    /// <summary>
-    /// The proposal, wherever the player chose: the partner walks in from out of view (at home they are there already), the
-    /// player kneels when ready, and the answer is given face to face. Every way out gives the partner back and frees the player.
-    /// </summary>
+    /// <summary>The proposal where the player chose: the partner walks up, the player kneels, the answer comes face to face; every way out gives them back.</summary>
     internal sealed class ProposalScene : FamilyScene
     {
         private enum Step { Coming, Waiting, Stepping, GoingDown, Kneeling, Reacting, Answer, Parting }
@@ -498,8 +492,7 @@ namespace RealLifeOverhaul.Family
             {
                 controller.Character.transform.rotation = Quaternion.LookRotation(to);
             }
-            // Down on one knee with the ring box (it comes with the clips), then the kneeling loop; the question is asked at the
-            // way down's "present" mark. Without the way down, a fade into the loop; without the loop, the working kneel.
+            // Down on one knee with the ring box, then the kneeling loop; without those clips a fade into the loop, or the working kneel.
             _ringClips = _d.Body.Chain("propose_kneel_down", "propose_kneel", 0.3f);
             if (_ringClips)
             {

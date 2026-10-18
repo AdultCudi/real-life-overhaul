@@ -8,11 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// The ceremony out of doors at the venue, set out under a cut to black on spots tested for room: the officiant, guests in
-    /// rows and what was paid for. The aisle, vows with a choice, rings, applause, a photograph and the first dance; then the
-    /// reception under a fade, and everybody taken away unseen.
-    /// </summary>
+    /// <summary>The ceremony out of doors, set out under a cut to black: aisle, vows, rings, applause, photograph, first dance, then the reception.</summary>
     internal sealed class WeddingScene : FamilyScene
     {
         /// <summary>The test button's wedding: it costs nothing and brings in nothing.</summary>
@@ -384,8 +380,7 @@ namespace RealLifeOverhaul.Family
                     if (now >= _until)
                     {
                         _partner.Idle(0.3f);
-                        // Both halves start together (the ring goes on at 1.86 s in each), and only at the distance the pair
-                        // was made for; otherwise the player's half plays alone.
+                        // Both halves together (the ring goes on at 1.86 s in each), only at the pair's distance; otherwise the player's alone.
                         bool paired = Mathf.Abs(Mathf.Sqrt(CitySpots.Flat(player - _partner.Position)) - RingGap) <= RingSlack
                                       && ClipLibrary.Has("ring_present") && ClipLibrary.Has("ring_receive");
                         if (!_d.Body.Clip("ring_present", 0.3f))

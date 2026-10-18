@@ -127,8 +127,7 @@ namespace RealLifeOverhaul.Family
             FamilyDirector director = FamilyDirector.Instance;
             if (FamilyState.S.PCarrier == 1)
             {
-                // The player's own: an ambulance sees to it, wherever they were.
-                director.WhenFree(() => Deliver(director, true));
+                director.WhenFree(() => Deliver(director, true));   // the player's own: an ambulance sees to it, wherever they were
                 return;
             }
             FamilyTalk.Move(-FamilyBalance.BirthPrice, "reallife_transaction_family_clinic");
@@ -136,7 +135,6 @@ namespace RealLifeOverhaul.Family
             Arrive(false, 0f, false);
         }
 
-        /// <summary>Somebody new in the family: born, or brought home.</summary>
         private static void Arrive(bool adopted, float age, bool present)
         {
             FamilySave s = FamilyState.S;

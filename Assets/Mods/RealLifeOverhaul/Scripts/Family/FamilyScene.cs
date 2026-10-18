@@ -1,9 +1,6 @@
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// A staged scene with people in it (the proposal, the wedding, the pushchair walk), one at a time. The director ticks it
-    /// five times a second and calls <see cref="End"/> exactly once on every way out; End gives back every person and prop.
-    /// </summary>
+    /// <summary>A staged scene with people (proposal, wedding, walk), one at a time; <see cref="End"/> is called once on every way out.</summary>
     internal abstract class FamilyScene
     {
         public bool Done;

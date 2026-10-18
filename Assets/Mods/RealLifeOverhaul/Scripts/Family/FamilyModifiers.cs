@@ -5,10 +5,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// The moods of family life. The game has no public way to add a happiness modifier type, so they go into its registry as
-    /// Core/ModState adds the mod's others; with the mod's prefix, ModState also keeps them out of the save proper.
-    /// </summary>
+    /// <summary>The moods of family life, put into the game's registry of happiness modifiers as Core/ModState puts the mod's others.</summary>
     public static class FamilyModifiers
     {
         public const string Together = "reallife_happinessmodifier_together";
@@ -95,10 +92,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>
-        /// Keeps a lasting mood topped up: added when absent, renewed with less than a day left. Called once an in-game day, so
-        /// the game's "happier" face shows at most then.
-        /// </summary>
+        /// <summary>Keeps a lasting mood topped up, renewed with less than a day left; called once an in-game day.</summary>
         public static void Keep(string type, bool wanted)
         {
             if (!_registered || SaveGameManager.Current == null || SaveGameManager.Current.happinessModifiers == null)

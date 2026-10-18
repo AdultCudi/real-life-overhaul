@@ -10,10 +10,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// Family life's phone contacts: "Family" (the Family page and everything decided from a phone), "Someone special" (the
-    /// partner the default bridge keeps; it steps aside when Social keeps them) and the in-laws, from the engagement on.
-    /// </summary>
+    /// <summary>The Family, Someone special (the default bridge's partner) and in-laws contacts, and what can be done from a call.</summary>
     public static partial class FamilyPhone
     {
         public const string FamilyId = "reallife-family";
@@ -69,7 +66,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>The in-laws' contact, once there are in-laws.</summary>
         public static void SetupInLaws()
         {
             if (InLawContact != null || !FamilyState.S.InLaws || !Settings.PhoneContacts || !Settings.FamilyRelatives)
@@ -87,7 +83,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // The partner's contact shows their own face, as the city dresses them; the family and the in-laws come from the catalogue.
         private static void Picture(string id)
         {
             if (id == PartnerId && Partner.Seed != 0)
@@ -180,7 +175,6 @@ namespace RealLifeOverhaul.Family
             return PartnerMenu(false);
         }
 
-        // A chat about what has really been going on.
         private static DialogEntry Chat()
         {
             FamilySave s = FamilyState.S;

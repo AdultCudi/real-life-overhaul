@@ -185,10 +185,7 @@ namespace RealLifeOverhaul.Family
         public int Interest;         // who the player asked to meet: 0 anyone, 1 women, 2 men (the options page sets the default)
     }
 
-    /// <summary>
-    /// The per-save state of family life, as JSON under one key of the save's modData, so that a save made with the mod loads
-    /// without it. Loaded after Core/ModState, written on the game's save event.
-    /// </summary>
+    /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>
     public static class FamilyState
     {
         private const string Key = "reallife:family";
@@ -404,7 +401,6 @@ namespace RealLifeOverhaul.Family
             S.TOut += amount;
         }
 
-        /// <summary>Starts the month's figures afresh once a month of the player's calendar has gone by.</summary>
         public static void RollMonth(int day)
         {
             if (S.MonthStart <= 0)

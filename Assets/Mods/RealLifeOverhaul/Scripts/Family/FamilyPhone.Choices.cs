@@ -24,7 +24,6 @@ namespace RealLifeOverhaul.Family
             Func<Bond> bond = () => FamilyState.Bond;
             Func<FamilySave> s = () => FamilyState.S;
 
-            // The two of you.
             _chatAt = list.Count;
             list.Add(new Choice(() => !Partner.UsesSocial && !FamilyState.HasPartner && Settings.Family,
                 () => FamilyText.Say("reallife_family_do_meet"), "reallife_family_do_meet_yes", PartnerFirst));
@@ -53,7 +52,6 @@ namespace RealLifeOverhaul.Family
                     return FamilyTalk.Close("reallife_family_new_home_done");
                 }));
 
-            // The ring and the question.
             list.Add(new Choice(() => bond() == Bond.Dating && s().Ring == 0 && Courtship.Ready() && Settings.FamilyWedding,
                 () => FamilyText.Say("reallife_family_do_jeweller"), "reallife_family_do_show_way",
                 () => Way(FamilyPlaces.Jeweller, "reallife_family_way_jeweller", () => Courtship.Rings(0))));
@@ -64,7 +62,6 @@ namespace RealLifeOverhaul.Family
                     return FamilyTalk.Close("reallife_family_propose_called");
                 }));
 
-            // The wedding.
             list.Add(new Choice(() => bond() == Bond.Engaged && !s().Wedding.Active && Settings.FamilyWedding,
                 () => FamilyText.Say("reallife_family_do_plan"), "reallife_family_do_plan_yes", () => WeddingPlanner.Start(false)));
             list.Add(new Choice(() => bond() == Bond.Engaged && !s().Wedding.Active && Settings.FamilyWedding,
@@ -98,7 +95,6 @@ namespace RealLifeOverhaul.Family
                     return FamilyTalk.Close("reallife_family_honeymoon_asking");
                 }));
 
-            // Children.
             list.Add(new Choice(() => Children.CanTalk, () => FamilyText.Say("reallife_family_do_children"), "reallife_family_do_children_yes", Children.Talk));
             list.Add(new Choice(() => FamilyState.AnyUnder(FamilyBalance.SchoolFrom),
                 () => FamilyText.Say("reallife_family_do_care", Args.Us.With(FamilyText.T(Children.CareName(FamilyState.Care)))), "reallife_family_do_care_yes",
@@ -127,12 +123,10 @@ namespace RealLifeOverhaul.Family
                 return errand != null ? Way(Errands.PlacesOf(errand.Kind), "reallife_family_way_shop") : FamilyTalk.Close("reallife_family_menu_nothing");
             }));
 
-            // Relatives.
             list.Add(new Choice(() => Relatives.CanGoToMoms, () => FamilyText.Say("reallife_family_do_moms"), "reallife_family_do_moms_yes", Relatives.GoToMoms));
             list.Add(new Choice(() => Relatives.InLawFavourOpen, () => FamilyText.Say("reallife_family_do_favour"), "reallife_family_do_favour_yes", Relatives.InLawFavour));
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_kin", Args.Us.With(Relatives.NextOfKin())), "reallife_family_kin_change", Relatives.NextOfKinStep));
 
-            // Hard times.
             list.Add(new Choice(() => HardTimes.CanCounsel && Settings.FamilyFriction, () => FamilyText.Say("reallife_family_do_counselling", Args.Us.Cost(FamilyBalance.CounsellingCost)),
                 "reallife_family_do_counselling_yes", HardTimes.Book));
             list.Add(new Choice(() => HardTimes.CanCallApart, () => FamilyText.Say("reallife_family_do_call_apart"), "reallife_family_do_chat_yes", HardTimes.CallApart));
@@ -142,7 +136,6 @@ namespace RealLifeOverhaul.Family
             list.Add(new Choice(() => HardTimes.CanEnd, () => FamilyText.Say((Bond)s().BondBefore == Bond.Married ? "reallife_family_do_divorce" : "reallife_family_do_part"),
                 "reallife_family_do_end_yes", HardTimes.EndAsk));
 
-            // And back to the page.
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_page"), "reallife_family_do_page_yes", () => FamilyPage.Page(0)));
             _choices = list;
             return _choices;

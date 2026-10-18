@@ -8,10 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// Family life's one component. Cost: a few comparisons a frame, a tick once a second (five a second in a scene), the
-    /// rest by the in-game hour and day. Everything it puts in the world goes again when a scene ends, the building is left,
-    /// the feature is switched off or the city unloads. A fault in a tick switches family life off for the session; the save
-    /// is left as it was.
+    /// Family life's one component. Cost: a few comparisons a frame, a tick a second (five in a scene), the rest by the hour
+    /// and day. A fault in a tick switches family life off for the session; the save is left as it was.
     /// </summary>
     public sealed partial class FamilyDirector : MonoBehaviour
     {

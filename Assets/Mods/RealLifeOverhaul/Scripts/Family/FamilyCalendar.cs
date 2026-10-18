@@ -1,9 +1,6 @@
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// What family life does by the in-game hour and day. Anything "once a day at six" is written as "at six or later, if not
-    /// yet done today", so an hour skipped by the game's fast-forward is never an evening lost.
-    /// </summary>
+    /// <summary>By the in-game hour and day: "at six" means "at six or later, if not done today", so a skipped hour loses nothing.</summary>
     internal static class FamilyCalendar
     {
         public static void Daily(int day, int elapsed)

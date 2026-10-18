@@ -1,10 +1,6 @@
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// Every figure of family life: what things cost (set against the game's economy, at today's prices), how long they take,
-    /// and what a relationship needs before the next step. Affection and harmony are points of a hundred. Nothing here is
-    /// read per frame.
-    /// </summary>
+    /// <summary>Every figure of family life, at today's prices; affection and harmony are points of a hundred. Nothing here is read per frame.</summary>
     public static class FamilyBalance
     {
         // The couple: the default bridge's figures (Social has its own).
@@ -75,8 +71,7 @@ namespace RealLifeOverhaul.Family
         public static int ScanPrice => Prices.At(120);
         public static int BirthPrice => Prices.At(1800);
         public static int CheckupPrice => Prices.At(80);
-        // Childcare and private school by the day, paid a week at a time and shown by the month of the player's calendar
-        // (GameCalendar.MonthDays), so that the length of the year changes nothing by the day.
+        // Childcare and school by the day, paid weekly and shown by the month of the player's calendar: the year's length changes nothing.
         public static int NurseryPerDay => Prices.At(32);            // a child
         public static int NannyPerDay => Prices.At(79);              // the household
         public static int PrivateSchoolPerDay => Prices.At(54);      // a child

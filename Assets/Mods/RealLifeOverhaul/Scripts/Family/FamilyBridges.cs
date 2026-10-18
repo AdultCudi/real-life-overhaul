@@ -25,11 +25,7 @@ namespace RealLifeOverhaul.Family
         BrokenPromise    // stood up, a missed appointment: a little further apart
     }
 
-    /// <summary>
-    /// What Social implements so that the partner is one of its people. Social sets <see cref="FamilyBridges.Social"/> once
-    /// its state is loaded and calls <see cref="FamilyApi.PartnerChanged"/> when the partner changes outside Family's own
-    /// flows; until then Family keeps one partner record of its own, met through the "Someone special" contact.
-    /// </summary>
+    /// <summary>What Social implements so that the partner is one of its people; until it sets <see cref="FamilyBridges.Social"/>, Family keeps its own.</summary>
     public interface ISocialBridge
     {
         /// <summary>True while Social supplies the partner (its option is on); false and Family keeps its own stand-in.</summary>
@@ -113,10 +109,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>True on the wedding day itself, for anything that should leave the player alone then.</summary>
         public static bool WeddingToday => Active && FamilyState.S.Wedding.Active && FamilyState.S.Wedding.Day == TimeHelper.CurrentDay;
 
-        /// <summary>
-        /// The player was arrested or sentenced: severity 1 a night in the cells, 2 charged, 3 prison. Called once for each, when
-        /// it happens (Wiring.Arrests). The partner takes it hard; it never ends things by itself.
-        /// </summary>
+        /// <summary>An arrest (1 a night in the cells, 2 charged, 3 prison), told once as it happens: taken hard, but it never ends things.</summary>
         public static void PlayerArrested(int severity)
         {
             if (Active)

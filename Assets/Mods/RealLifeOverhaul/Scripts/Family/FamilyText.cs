@@ -60,7 +60,6 @@ namespace RealLifeOverhaul.Family
                 .Replace("{day}", a.Day ?? string.Empty).Replace("{text}", a.Text ?? string.Empty).Replace("{n}", a.N ?? string.Empty);
         }
 
-        /// <summary>The same as the text of a conversation entry.</summary>
         public static LanguageChangeEventDataHolder Say(string key, in Args a)
         {
             return key.Localize(new
@@ -108,10 +107,7 @@ namespace RealLifeOverhaul.Family
             Notifications.Show(NotificationType.Success, key, Data(a), 9f);
         }
 
-        /// <summary>
-        /// Set by RLO Texts (Wiring/TextsPhone): given who a text is from, its key, its values and a way to send it, true when it
-        /// holds the text for the model's words and sends it later; null or false and it goes now, as written.
-        /// </summary>
+        /// <summary>Set by RLO Texts: true when it holds a text for the model's words and sends it later; null or false, it goes now.</summary>
         public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
 
         /// <summary>A text message from one of the phone's contacts; without the contact, said on screen instead.</summary>
@@ -130,7 +126,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // A text held for its words (RLO Texts), sent now.
         private static void Send(Contact contact, string key, Dictionary<string, string> data)
         {
             try

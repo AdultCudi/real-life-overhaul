@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// Who the partner is: one of Social's people while its bridge is set, otherwise the one record the family state keeps (a
-    /// name, a look seed, how fond they are), met through the "Someone special" contact.
-    /// </summary>
+    /// <summary>Who the partner is: one of Social's people while its bridge is set, else the family state's own record.</summary>
     public static class Partner
     {
         private static readonly string[] Women =
@@ -57,7 +54,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>Days since the two began seeing each other.</summary>
         public static int DaysTogether
         {
             get
@@ -98,10 +94,7 @@ namespace RealLifeOverhaul.Family
             return name;
         }
 
-        /// <summary>
-        /// Brings the family state into step with Social: its partner is ours (name, look, sex mirrored); if it has none and
-        /// nothing binds the two yet, the player is single again.
-        /// </summary>
+        /// <summary>Brings the family state into step with Social's partner; with none and nothing binding the two, the player is single again.</summary>
         public static void Resync()
         {
             if (!UsesSocial || !FamilyBridges.Social.Ready)

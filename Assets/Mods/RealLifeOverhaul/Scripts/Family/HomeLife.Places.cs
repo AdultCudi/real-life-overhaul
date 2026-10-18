@@ -167,8 +167,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // A place at the cot's long side for rocking it while a baby lies in it: within a hand's breadth of where rock_cot
-        // has the feet, so that the rail comes to the hands.
+        // A place at the cot's side where rock_cot puts the hands on the rail, while a baby lies in it.
         private static void CotPlace()
         {
             if (_cot == null || _spotCount == 0 || _spotCount > MaxSpots || !FamilyState.AnyUnder(FamilyBalance.BabyUntil) || !ClipLibrary.Has(RockClip))

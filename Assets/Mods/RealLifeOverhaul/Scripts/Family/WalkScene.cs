@@ -5,10 +5,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// A pushchair walk of a couple of hundred metres wherever the player likes, pushing the modelled pushchair over the game's
-    /// own walk; the partner walks along when home and free. The pushchair is folded away however the walk ends.
-    /// </summary>
+    /// <summary>A pushchair walk of a couple of hundred metres, the partner along when home and free; the pushchair folded away however it ends.</summary>
     internal sealed class WalkScene : FamilyScene
     {
         private const float HandleAhead = 0.88f;   // the pushchair's middle ahead of the feet: its handle is then where push_cart has the hands

@@ -25,10 +25,7 @@ namespace RealLifeOverhaul.Family
         }
     }
 
-    /// <summary>
-    /// The pieces every family conversation is built from, in the game's dialogue panel on the phone or face to face: one thing
-    /// at a time with "do it", "something else" and leaving, so any number of things fit the panel's two buttons.
-    /// </summary>
+    /// <summary>The pieces of every family conversation: one thing at a time with "do it", "something else" and leaving.</summary>
     internal static class FamilyTalk
     {
         private const string InPersonType = "reallife_familytalk_calldialogtype";

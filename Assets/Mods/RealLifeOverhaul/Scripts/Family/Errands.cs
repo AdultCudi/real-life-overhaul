@@ -5,11 +5,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// Somewhere to be (a scan, a dinner, a school play, the wedding) or something to buy: a line in the save with a day and
-    /// hours (none for shopping), at a real building of a kind the city has, shown as the objective and the game's destination
-    /// marker and done by a key prompt there. A missed one has its own rule. Cost: a few comparisons a second while any are due.
-    /// </summary>
+    /// <summary>Somewhere to be, or something to buy: a line in the save, then the objective, the game's marker and a key prompt at a real building.</summary>
     internal static class Errands
     {
         public const string Dinner = "dinner";

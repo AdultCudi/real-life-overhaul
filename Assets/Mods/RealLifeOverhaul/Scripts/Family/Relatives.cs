@@ -6,10 +6,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>
-    /// The wider family: Mom's texts, presents and visits; the in-laws, from the engagement on, with chats, advice and favours;
-    /// four family dinners a year on the game's calendar, at home or at Mom's; and a next of kin, as a line of text.
-    /// </summary>
+    /// <summary>The wider family: Mom, the in-laws from the engagement on, four family dinners a year, and a next of kin.</summary>
     internal static class Relatives
     {
         private static readonly string[] HolidayNames =
@@ -42,7 +39,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>A present of money from Mom, with a note.</summary>
         public static void MomGift(int amount, string key, Args fill)
         {
             if (!On || PhoneContacts.Mom == null)

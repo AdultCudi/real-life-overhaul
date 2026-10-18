@@ -62,7 +62,6 @@ namespace RealLifeOverhaul.Family
             });
         }
 
-        /// <summary>Proposes where the player stands.</summary>
         public void TestPropose()
         {
             if (!TestReady("Family proposal", false, true) || !TestPartner("Family proposal"))
@@ -149,7 +148,6 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>Starts a pregnancy (or an adoption), or moves the one in progress on by a step.</summary>
         public void TestChild(bool adoption)
         {
             if (!TestReady("Family child", false, false) || !TestPartner("Family child"))
@@ -166,7 +164,6 @@ namespace RealLifeOverhaul.Family
             });
         }
 
-        /// <summary>Every child is a year older.</summary>
         public void TestYear()
         {
             if (!TestReady("Family year", false, false))
@@ -200,7 +197,6 @@ namespace RealLifeOverhaul.Family
             });
         }
 
-        /// <summary>The Family page, face to face.</summary>
         public void TestPage()
         {
             if (!TestReady("Family page", false, false))

@@ -79,7 +79,6 @@ namespace RealLifeOverhaul.Family
                 }
                 return null;
             }
-            // Adoption.
             Errand step = FamilyState.FindErrand(Errands.AdoptFile);
             if (step != null)
             {

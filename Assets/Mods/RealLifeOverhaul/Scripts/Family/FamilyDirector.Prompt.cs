@@ -40,11 +40,7 @@ namespace RealLifeOverhaul.Family
         private string _objectiveLine;
         private bool _objectiveWanted;
 
-        /// <summary>
-        /// This tick's prompt: the game's panel over <paramref name="over"/> (the player when null) with one button, which the
-        /// game labels with the player's key. Asked for every tick, and gone when nobody asks; the first to ask in a tick has it.
-        /// The words are rebuilt only when the key or what fills it changes.
-        /// </summary>
+        /// <summary>This tick's key prompt, on the game's panel over <paramref name="over"/> (the player if null); the first to ask in a tick has it.</summary>
         internal void Prompt(string key, string fill, Action action, Transform over = null, int cost = 0)
         {
             if (_promptWanted)
@@ -120,10 +116,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>
-        /// This tick's objective, on the copy of the game's job panel: the headline says what is going on, the first line what
-        /// to do, where and by when. Without that panel the line goes out as a notification each time it changes.
-        /// </summary>
+        /// <summary>This tick's objective on the copy of the game's job panel; without that panel, a notification each time it changes.</summary>
         internal void Objective(string titleKey, string lineKey, string fill, string child = null)
         {
             _objectiveWanted = true;
