@@ -5,9 +5,11 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ledger
 {
+    /// <summary>The paper's page: its rules and its columns.</summary>
     public sealed partial class LedgerPage
     {
-        // Marks in a text, read back from TextMeshPro's layout once the text is laid out (links of no width, never seen):
+        // Marks in a text, read back from TextMeshPro's layout once the text is laid out (links of no width, never
+        // seen):
         //   r  a rule across the column above this line        c  a short rule above this line (between two stories)
         //   u  a rule under this line (a label sitting on it)   k  keep from here...   e  ...to here in one column
         private const string MarkRule = "<link=\"r\"></link>", MarkCut = "<link=\"c\"></link>", MarkUnder = "<link=\"u\"></link>";
@@ -164,8 +166,8 @@ namespace RealLifeOverhaul.Ledger
             }
 
             /// <summary>
-            /// How many lines deep a drop cap on this text can be (three, else two; none if the text beside it would not
-            /// fill two lines, or it does not open with a letter), in the columns' size and width.
+            /// How many lines deep a drop cap on this text can be (three, else two; none if the text beside it would
+            /// not fill two lines, or it does not open with a letter), in the columns' size and width.
             /// </summary>
             public int CapLines(string text, float w, out bool endsBeside)
             {
@@ -204,8 +206,8 @@ namespace RealLifeOverhaul.Ledger
             }
 
             /// <summary>
-            /// Lays the text out: column i at x0 + i * (w + gutter), from 'top' (down from the page's top), never deeper than
-            /// 'most'. With a cap letter of 'capLines' lines (two or three) the text is what follows that letter.
+            /// Lays the text out: column i at x0 + i * (w + gutter), from 'top' (down from the page's top), never
+            /// deeper than 'most'. With a cap letter of 'capLines' lines (two or three), the text follows that letter.
             /// </summary>
             public void Lay(string text, float x0, float w, float gutter, float top, float most, string capLetter, int capLines, bool capThenGap)
             {
@@ -340,7 +342,7 @@ namespace RealLifeOverhaul.Ledger
                         {
                             keepPart = p;
                             keepTop = TopOf(p) - info.lineInfo[line].ascender;
-                            // the top of a column, or beside the cap (whose lines stay as they are): nothing to keep with
+                            // at a column's top, or beside the cap (whose lines stay): nothing to keep it with
                             keepFirst = (line == 0 && (p == 0 || ColumnOf(p - 1) != ColumnOf(p))) || (_capLines > 0 && p == 0);
                         }
                         else if (id == 'e' && keepPart >= 0)
