@@ -156,7 +156,7 @@ namespace RealLifeOverhaul.Family
             }
             FamilyState.MoneyOut(HostCost, 4);
             FamilyState.S.Errands.Remove(errand);
-            director.Run(director.Passage("reallife_family_passage_holiday", 3, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which)));
+            director.Pass("reallife_family_passage_holiday", 3, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which));
         }
 
         private static void AfterDinner(int which)
@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Family
             FamilyDirector director = FamilyDirector.Instance;
             int which = s.MomDinnerWhich;
             s.MomDinnerDay = 0;
-            director.WhenFree(() => director.Run(director.Passage("reallife_family_passage_moms", 4, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which))));
+            director.WhenFree(() => director.Pass("reallife_family_passage_moms", 4, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which)));
             return FamilyTalk.Close("reallife_family_holiday_going", Args.Us.With(FamilyText.T(HolidayName(which))));
         }
 

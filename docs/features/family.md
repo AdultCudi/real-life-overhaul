@@ -275,7 +275,7 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
   Missing one costs nothing but the dinner.
 - Next of kin is a line on the Family page (the partner once married, Mom otherwise; it can be changed) and nothing else.
 - Arguments are questions with two answers from a pool of ten that never repeats until all have come up; which answer is the better one differs.
-  Counselling (180 a session at a clinic, an hour) mends the most the first times.
+  Counselling (180 a session at a clinic, an hour) is offered from the Family contact while harmony is under 60 (`FamilyBalance.HarmonyCounsel`, "a little tense" and lower) or the two are apart, and mends the most the first times.
   Harmony under 15 for five days and they move out; time apart can also be asked for.
 
   A call a day, counselling and a little time bring harmony back, and at 55 they can be asked home.

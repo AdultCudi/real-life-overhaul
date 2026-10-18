@@ -245,13 +245,13 @@ namespace RealLifeOverhaul.Family
             FamilyState.MoneyOut(FamilyBalance.DinnerCost, 4);
             FamilyState.S.Errands.Remove(errand);
             FamilyPlaces.Unguide();
-            director.Run(director.Passage("reallife_family_passage_dinner", FamilyBalance.DinnerHours,
+            director.Pass("reallife_family_passage_dinner", FamilyBalance.DinnerHours,
                 () => EnergyHelper.SetCurrentHunger(100f),
                 () =>
                 {
                     AfterDate();
                     FamilyText.Toast(NotificationType.Success, FamilyText.Pick(DinnerLines, ref _lastDinner), Args.Us, 10f);
-                }));
+                });
         }
 
         private static void AfterDate()

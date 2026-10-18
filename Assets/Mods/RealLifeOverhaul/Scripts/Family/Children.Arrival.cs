@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Family
             int which = errand.Number;
             s.Errands.Remove(errand);
             FamilyPlaces.Unguide();
-            director.Run(director.Passage(scan ? "reallife_family_passage_scan" : "reallife_family_passage_class", scan ? 1 : 2, null, () =>
+            director.Pass(scan ? "reallife_family_passage_scan" : "reallife_family_passage_class", scan ? 1 : 2, null, () =>
             {
                 if (FamilyBridges.Home != null)
                 {
@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Family
                     FamilyState.Remember("reallife_family_memory_first_scan", Partner.Name);
                 }
                 FamilyText.Good(key, Args.Us);
-            }));
+            });
         }
 
         public static void AppointmentMissed(Errand errand)
@@ -48,6 +48,8 @@ namespace RealLifeOverhaul.Family
             FamilySave s = FamilyState.S;
             if (s.PCarrier == 1)
             {
+                // The player's own: booked again for tomorrow, as the notice says (the birth drops it if it comes first).
+                Errands.Add(errand.Kind, TimeHelper.CurrentDay + 1, errand.FromHour, errand.ToHour).Number = errand.Number;
                 FamilyText.Toast(NotificationType.Info, "reallife_family_appointment_missed_me", Args.Us);
                 return;
             }
@@ -70,7 +72,7 @@ namespace RealLifeOverhaul.Family
             ChildRecord c = Of(errand);
             s.Errands.Remove(errand);
             FamilyPlaces.Unguide();
-            director.Run(director.Passage("reallife_family_passage_checkup", 1, null, () =>
+            director.Pass("reallife_family_passage_checkup", 1, null, () =>
             {
                 if (c == null)
                 {
@@ -82,7 +84,7 @@ namespace RealLifeOverhaul.Family
                 }
                 c.Closeness = Mathf.Min(100f, c.Closeness + 2f);
                 FamilyText.Good("reallife_family_checkup_done", Args.Us.Kid(c.Name).With(FamilyText.Age(c.Age)));
-            }));
+            });
         }
 
         public static void CheckupMissed(Errand errand)
@@ -116,10 +118,7 @@ namespace RealLifeOverhaul.Family
             int price = FamilyBalance.BirthPrice;
             FamilyTalk.Move(-price, "reallife_transaction_family_clinic");
             FamilyState.MoneyOut(price, 4);
-            if (!director.Run(director.Passage("reallife_family_passage_birth", 8, null, () => Arrive(false, 0f, present))))
-            {
-                Arrive(false, 0f, present);
-            }
+            director.Pass("reallife_family_passage_birth", 8, null, () => Arrive(false, 0f, present));
         }
 
         public static void BirthMissed(Errand errand)
@@ -274,12 +273,12 @@ namespace RealLifeOverhaul.Family
         {
             FamilyDirector director = FamilyDirector.Instance;
             FamilyState.S.Errands.Remove(errand);
-            director.Run(director.Passage("reallife_family_passage_home_visit", 1, null, () =>
+            director.Pass("reallife_family_passage_home_visit", 1, null, () =>
             {
                 FamilyState.S.PStep = 2;
                 HomeLife.Shared(3f);
                 FamilyText.Good("reallife_family_adopt_visit_done", Args.Us);
-            }));
+            });
         }
 
         public static void HomeVisitMissed(Errand errand)
@@ -298,10 +297,7 @@ namespace RealLifeOverhaul.Family
             s.Errands.Remove(errand);
             FamilyPlaces.Unguide();
             float age = s.PAdoptAge == 0 ? 0.3f : s.PAdoptAge == 1 ? 2f : 6f;
-            if (!director.Run(director.Passage("reallife_family_passage_adopt", 3, null, () => Arrive(true, age, true))))
-            {
-                Arrive(true, age, true);
-            }
+            director.Pass("reallife_family_passage_adopt", 3, null, () => Arrive(true, age, true));
         }
 
         public static void AdoptMeetMissed(Errand errand)

@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Family
         public static void Narrated()
         {
             FamilyDirector director = FamilyDirector.Instance;
-            director.Run(director.Passage("reallife_family_passage_ceremony", 5, Feast, () => Complete(false)));
+            director.Pass("reallife_family_passage_ceremony", 5, Feast, () => Complete(false));
         }
 
         public static void Feast()
@@ -197,7 +197,7 @@ namespace RealLifeOverhaul.Family
                         return;
                     }
                     FamilyState.MoneyOut(FamilyBalance.HoneymoonCost, 4);
-                    director.Run(director.Passage("reallife_family_passage_honeymoon", FamilyBalance.HoneymoonDays * 24, null, () => HoneymoonOver(true)));
+                    director.Pass("reallife_family_passage_honeymoon", FamilyBalance.HoneymoonDays * 24, null, () => HoneymoonOver(true));
                 },
                 () => FamilyText.Toast(NotificationType.Info, "reallife_family_honeymoon_later", Args.Us));
         }

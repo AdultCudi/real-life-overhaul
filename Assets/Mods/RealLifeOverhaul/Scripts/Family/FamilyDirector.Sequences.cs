@@ -67,6 +67,20 @@ namespace RealLifeOverhaul.Family
             }
         }
 
+        /// <summary>
+        /// A passage that follows what has been paid for or used up (an errand, a booking): run as a sequence, or, when one is
+        /// refused (another under way, the director off), <paramref name="during"/> and <paramref name="after"/> at once, with no
+        /// fade and no time passing, so that nothing paid for is lost.
+        /// </summary>
+        internal void Pass(string infoKey, int hours, Action during, Action after)
+        {
+            if (!Run(Passage(infoKey, hours, during, after)))
+            {
+                during?.Invoke();
+                after?.Invoke();
+            }
+        }
+
         /// <summary>A dark screen with a line, <paramref name="during"/> unseen, so many hours on the game's time skip, then <paramref name="after"/>.</summary>
         internal IEnumerator Passage(string infoKey, int hours, Action during, Action after)
         {

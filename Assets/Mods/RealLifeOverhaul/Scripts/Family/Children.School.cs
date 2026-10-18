@@ -47,12 +47,12 @@ namespace RealLifeOverhaul.Family
             {
                 return;
             }
-            director.Run(director.Passage("reallife_family_passage_parents_evening", 1, null, () =>
+            director.Pass("reallife_family_passage_parents_evening", 1, null, () =>
             {
                 c.Closeness = Mathf.Min(100f, c.Closeness + 3f);
                 float standing = c.Closeness + (c.School == 2 ? 12f : 0f);
                 FamilyText.Good(Evenings[standing >= 78f ? 0 : standing >= 55f ? 1 : 2], Args.Us.Kid(c.Name));
-            }));
+            });
         }
 
         public static void SchoolPlay(Errand errand)
@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Family
             {
                 return;
             }
-            director.Run(director.Passage("reallife_family_passage_school_play", 2, null, () => PlayOver(c, true)));
+            director.Pass("reallife_family_passage_school_play", 2, null, () => PlayOver(c, true));
         }
 
         private static void PlayOver(ChildRecord c, bool went)
@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Family
             {
                 return;
             }
-            director.Run(director.Passage("reallife_family_passage_party", 3, () => EnergyHelper.SetCurrentHunger(Mathf.Max(SaveGameManager.Current.Hunger, 80f)), () => PartyOver(c, true)));
+            director.Pass("reallife_family_passage_party", 3, () => EnergyHelper.SetCurrentHunger(Mathf.Max(SaveGameManager.Current.Hunger, 80f)), () => PartyOver(c, true));
         }
 
         private static void PartyOver(ChildRecord c, bool went)

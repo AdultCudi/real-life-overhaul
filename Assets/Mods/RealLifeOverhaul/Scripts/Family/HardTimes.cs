@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Family
             Relatives.MomSays("reallife_family_mom_arrest");
         }
 
-        public static bool CanCounsel => FamilyState.HasPartner && (FamilyState.S.Harmony < 60f || FamilyState.Bond == Bond.Separated)
+        public static bool CanCounsel => FamilyState.HasPartner && (FamilyState.S.Harmony < FamilyBalance.HarmonyCounsel || FamilyState.Bond == Bond.Separated)
                                          && FamilyState.FindErrand(Errands.Counselling) == null && TimeHelper.CurrentDay - FamilyState.S.LastCounselDay >= 3;
 
         public static DialogEntry Book()
@@ -170,7 +170,7 @@ namespace RealLifeOverhaul.Family
             FamilyState.MoneyOut(FamilyBalance.CounsellingCost, 4);
             s.Errands.Remove(errand);
             FamilyPlaces.Unguide();
-            director.Run(director.Passage("reallife_family_passage_counselling", 1, null, () =>
+            director.Pass("reallife_family_passage_counselling", 1, null, () =>
             {
                 float gain = Mathf.Max(6f, FamilyBalance.HarmonyCounselling - 3f * Mathf.Min(3, s.Counselling));   // the first sessions do the most
                 s.Counselling++;
@@ -180,7 +180,7 @@ namespace RealLifeOverhaul.Family
                 FamilyState.Harmony(gain);
                 Partner.Tell(FamilyEvent.Counselling, 4f, 6f);
                 FamilyText.Good(FamilyText.Pick(SessionLines, ref _lastSession), Args.Us);
-            }));
+            });
         }
 
         public static void SessionMissed(Errand errand)

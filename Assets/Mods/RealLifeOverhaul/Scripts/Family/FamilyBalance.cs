@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Family
         public const float HarmonyBrokenPromise = -8f;
         public const float HarmonyArrest = -22f;        // at severity 1; times 0.6 + 0.4 x severity
         public const float HarmonyCounselling = 15f;    // the first session; less after
+        public const float HarmonyCounsel = 60f;        // counselling is offered below this: "a little tense" and lower (FamilyText), so the in-laws' word for it (below 45) always finds it
         public const float HarmonyDriftPerDay = -0.6f;  // with nothing shared that day
         public const float HarmonyBreak = 15f;          // this low for BreakDays and they move out
         public const int BreakDays = 5;
