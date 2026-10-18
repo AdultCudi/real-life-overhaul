@@ -157,7 +157,7 @@ namespace RealLifeOverhaul
             _closed.Clear();
         }
 
-        /// <summary>Takes any traffic car standing in the closed stretch or just short of it off the road, out of view (cars already in the lane drive up and stand). Every twenty seconds while closed.</summary>
+        /// <summary>Takes traffic cars standing in or just short of the closed stretch off the road, out of view. Every twenty seconds while closed.</summary>
         public void Sweep()
         {
             if (!Closed || !TrafficTools.Ready)

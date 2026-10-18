@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using BigAmbitions.Neighborhoods;
 using Entities;
-using Extensions;
 using Helpers;
-using Localizor;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -501,7 +499,8 @@ namespace RealLifeOverhaul
                     total > 0f ? "reallife_civic_week_charged" : "reallife_civic_week_paid", "amount", CivicText.Money(Mathf.Abs(total)), 12f);
             }
             CivicDirector.Logger?.Info("Civic: weekly account settled: levy " + account.Levy.ToString("F0") + ", tax " + account.Tax.ToString("F0") + ", trade " + account.Trade.ToString("F0")
-                                       + ", grants " + account.Grants.ToString("F0") + ", rent " + (account.Rent + account.Landlord).ToString("F0") + ", wages " + account.Wages.ToString("F0") + " (positive is charged).");
+                                       + ", grants " + account.Grants.ToString("F0") + ", rent " + (account.Rent + account.Landlord).ToString("F0")
+                                       + ", wages " + account.Wages.ToString("F0") + " (positive is charged).");
         }
 
         /// <summary>Money to the player (positive) or from them (negative), under a label of the mod's. Whole dollars; nothing under one.</summary>

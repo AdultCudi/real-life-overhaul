@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using Characters.EmojiSystem;
-using Helpers;
-using Streets.Pedestrians;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -238,7 +234,8 @@ namespace RealLifeOverhaul
                 }
                 _rallyAt = spot;
                 _stageAt = spot;
-                CivicDirector.Logger?.Info("Civic: a rally for candidate " + candidate + " with " + _crew.Count + " people, " + Mathf.RoundToInt(Vector3.Distance(player, spot)) + " m from the player.");
+                CivicDirector.Logger?.Info("Civic: a rally for candidate " + candidate + " with " + _crew.Count + " people, "
+                    + Mathf.RoundToInt(Vector3.Distance(player, spot)) + " m from the player.");
                 return true;
             }
             return false;

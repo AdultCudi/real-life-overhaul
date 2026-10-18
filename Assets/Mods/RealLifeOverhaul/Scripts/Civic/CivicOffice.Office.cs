@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using UI.Notification;
 using UnityEngine;
 
@@ -165,7 +162,8 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            var m = new OfficeMotion { Kind = OfficeMotion.KindPolicy, Policy = policy, By = OfficeMotion.ByPlayer, Day = day, Undeclared = State.Holds == OfficeRace.Mayor && !declared && Conflicted(policy) };
+            var m = new OfficeMotion { Kind = OfficeMotion.KindPolicy, Policy = policy, By = OfficeMotion.ByPlayer, Day = day,
+                Undeclared = State.Holds == OfficeRace.Mayor && !declared && Conflicted(policy) };
             Add(m);
             State.Tabled = day;
             if (declared && Conflicted(policy))

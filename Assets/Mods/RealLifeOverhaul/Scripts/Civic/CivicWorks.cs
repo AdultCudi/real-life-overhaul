@@ -168,7 +168,7 @@ namespace RealLifeOverhaul
         private static bool Let(SiteState site)
         {
             CityBuildingController controller = CivicCity.Find(site.Street, site.Number);
-            BuildingRegistration registration = controller != null && controller.building != null ? controller.building.GetRegistration() : null;   // asked afresh: the scene object's own copy may be old
+            BuildingRegistration registration = controller != null && controller.building != null ? controller.building.GetRegistration() : null;   // asked afresh: the scene's copy may be old
             return registration != null && (registration.RentedByPlayer || registration.businessTypeName != EmptyUnit);
         }
 

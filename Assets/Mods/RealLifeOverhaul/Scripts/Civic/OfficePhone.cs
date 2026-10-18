@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using Dialogs;
 using Entities;
 using Helpers;
 using Localizor;
@@ -68,7 +67,8 @@ namespace RealLifeOverhaul
                 }
                 if (office.Campaigning || office.Collecting)
                 {
-                    return CityHallPhone.Page(text, "reallife_civic_office_button_office", () => OfficeMenu(0), "reallife_civic_office_button_campaign", () => office.Collecting ? Prep(0) : Campaign(0));
+                    return CityHallPhone.Page(text, "reallife_civic_office_button_office", () => OfficeMenu(0),
+                        "reallife_civic_office_button_campaign", () => office.Collecting ? Prep(0) : Campaign(0));
                 }
                 return CityHallPhone.Page(text, "reallife_civic_office_button_office", () => OfficeMenu(0), "reallife_civic_office_button_stand", () => StandPage(next));
             }
@@ -162,7 +162,8 @@ namespace RealLifeOverhaul
                 {
                     int issue = OfficeRules.PartyIssue(s.Me.Party);
                     string text = Fill("reallife_civic_office_prep_party", "party", CivicText.Party(s.Me),
-                        "line", issue >= 0 ? Fill("reallife_civic_office_party_line", "issue", T(CivicCatalogue.IssueNames[issue]), "grant", Money(Prices.At(OfficeRules.PartyGrant(s.Race, s.Me.Party))))
+                        "line", issue >= 0 ? Fill("reallife_civic_office_party_line", "issue", T(CivicCatalogue.IssueNames[issue]),
+                            "grant", Money(Prices.At(OfficeRules.PartyGrant(s.Race, s.Me.Party))))
                             : T("reallife_civic_office_party_independent"));
                     return CityHallPhone.Page(text, "reallife_civic_office_button_next_party", () =>
                     {
@@ -184,7 +185,8 @@ namespace RealLifeOverhaul
                         "reallife_civic_office_button_sheets", () =>
                         {
                             int names = office.Sheets();
-                            return CityHallPhone.Page(Fill(names > 0 ? "reallife_civic_office_sheets_in" : "reallife_civic_office_sheets_none", "count", names.ToString(), "signatures", s.Signatures.ToString()),
+                            return CityHallPhone.Page(Fill(names > 0 ? "reallife_civic_office_sheets_in" : "reallife_civic_office_sheets_none",
+                                "count", names.ToString(), "signatures", s.Signatures.ToString()),
                                 "reallife_civic_button_back", () => Prep(3));
                         }, "reallife_civic_button_next_option", more);
                 case 4:
@@ -303,7 +305,8 @@ namespace RealLifeOverhaul
                     }
                     Text.Append('\n').Append(Fill("reallife_civic_office_race_days", "days", Mathf.Max(0, gov.State.ElectionDay - Day).ToString(),
                         "debate", (gov.State.ElectionDay - CivicCatalogue.DebateBefore).ToString()));
-                    return CityHallPhone.Page(Text.ToString(), "reallife_civic_button_next_option", more, "reallife_civic_button_back", () => Topic(() => CityHallPhone.Closing(T("reallife_civic_office_bye"))));
+                    return CityHallPhone.Page(Text.ToString(), "reallife_civic_button_next_option", more,
+                        "reallife_civic_button_back", () => Topic(() => CityHallPhone.Closing(T("reallife_civic_office_bye"))));
                 }
                 case 1:
                     return FundPage(more);
@@ -340,7 +343,9 @@ namespace RealLifeOverhaul
                 return T("reallife_civic_office_offer_nobody");
             }
             string person = T(CivicCatalogue.FirstNames[s.OfferFirst]) + " " + T(CivicCatalogue.LastNames[s.OfferLast]);
-            return s.OfferKind == OfficeRules.OfferBusiness || s.OfferKind == OfficeRules.OfferStraw ? Fill("reallife_civic_office_offer_firm", "name", T(CivicCatalogue.LastNames[s.OfferLast])) : person;
+            return s.OfferKind == OfficeRules.OfferBusiness || s.OfferKind == OfficeRules.OfferStraw
+                ? Fill("reallife_civic_office_offer_firm", "name", T(CivicCatalogue.LastNames[s.OfferLast]))
+                : person;
         }
 
         private static string OfferKey(int kind)
@@ -357,7 +362,8 @@ namespace RealLifeOverhaul
 
         private static readonly string[] SpendKeys =
         {
-            "reallife_civic_office_spend_posters", "reallife_civic_office_spend_ledger", "reallife_civic_office_spend_flare", "reallife_civic_office_spend_rally", "reallife_civic_office_spend_canvassers"
+            "reallife_civic_office_spend_posters", "reallife_civic_office_spend_ledger", "reallife_civic_office_spend_flare",
+            "reallife_civic_office_spend_rally", "reallife_civic_office_spend_canvassers"
         };
 
         private static DialogEntry Spend(int item, Func<DialogEntry> more)
@@ -494,7 +500,8 @@ namespace RealLifeOverhaul
                 {
                     BudgetWeek week = OfficeRules.Week(gov.Electorate(), gov.State.Levers, s.Budget);
                     string text = Fill("reallife_civic_office_budget_page", "levels", CivicOffice.Levels(s.Budget), "revenue", Money(Prices.At(week.Revenue)),
-                        "spending", Money(Prices.At(week.Spending)), "balance", Money(Prices.At(week.Balance)), "reserve", Money(Prices.At((int)Mathf.Clamp(s.Reserve, int.MinValue / 2, int.MaxValue / 2))),
+                        "spending", Money(Prices.At(week.Spending)), "balance", Money(Prices.At(week.Balance)),
+                        "reserve", Money(Prices.At((int)Mathf.Clamp(s.Reserve, int.MinValue / 2, int.MaxValue / 2))),
                         "due", Mathf.Max(0, s.BudgetDay - Day).ToString());
                     if (!mayor)
                     {
@@ -577,7 +584,8 @@ namespace RealLifeOverhaul
                 BudgetWeek week = OfficeRules.Week(gov.Electorate(), gov.State.Levers, Proposal);
                 string text = Fill("reallife_civic_office_budget_proposal", "levels", CivicOffice.Levels(Proposal), "revenue", Money(Prices.At(week.Revenue)),
                     "spending", Money(Prices.At(week.Spending)), "balance", Money(Prices.At(week.Balance)));
-                return CityHallPhone.Page(text, "reallife_civic_office_button_put_budget", () => CityHallPhone.Page(T(office.ProposeBudget(Proposal, Day)), "reallife_civic_button_back", () => OfficeMenu(1)),
+                return CityHallPhone.Page(text, "reallife_civic_office_button_put_budget",
+                    () => CityHallPhone.Page(T(office.ProposeBudget(Proposal, Day)), "reallife_civic_button_back", () => OfficeMenu(1)),
                     "reallife_civic_office_button_budget_again", () => BudgetPage(0));
             }
             int next = department + 1;

@@ -1,9 +1,4 @@
 using System;
-using System.Collections.Generic;
-using Characters.EmojiSystem;
-using Helpers;
-using Streets.Pedestrians;
-using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
 

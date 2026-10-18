@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using Helpers;
 using UI.Notification;
 using UnityEngine;
 
@@ -79,7 +76,8 @@ namespace RealLifeOverhaul
                     if (policy >= 0)
                     {
                         OpenPetition(policy, day, false);
-                        CivicText.Toast(NotificationType.Info, "reallife_civic_petition_new", "policy", CivicText.T(CivicCatalogue.All[policy].Name), "needed", State.PetitionNeeded.ToString("N0"), 12f);
+                        CivicText.Toast(NotificationType.Info, "reallife_civic_petition_new", "policy", CivicText.T(CivicCatalogue.All[policy].Name),
+                            "needed", State.PetitionNeeded.ToString("N0"), 12f);
                     }
                 }
                 return;
@@ -104,7 +102,8 @@ namespace RealLifeOverhaul
             }
             else if (day >= State.PetitionEnds)
             {
-                CivicText.Toast(NotificationType.Warning, "reallife_civic_petition_lapsed", "policy", CivicText.T(asked.Name), "signed", State.PetitionSigned.ToString("N0"), "needed", State.PetitionNeeded.ToString("N0"), 12f);
+                CivicText.Toast(NotificationType.Warning, "reallife_civic_petition_lapsed", "policy", CivicText.T(asked.Name),
+                    "signed", State.PetitionSigned.ToString("N0"), "needed", State.PetitionNeeded.ToString("N0"), 12f);
                 ClosePetition(day);
             }
         }

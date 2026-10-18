@@ -483,7 +483,8 @@ namespace RealLifeOverhaul
             if (!mayor && _step == 0)
             {
                 _text.Length = 0;
-                _text.Append(Fill("reallife_civic_office_result_council_head", "district", _office.DistrictName(_office.DistrictIndex(S.District) >= 0 ? _office.DistrictIndex(S.District) : _office.HomeDistrict())));
+                _text.Append(Fill("reallife_civic_office_result_council_head",
+                    "district", _office.DistrictName(_office.DistrictIndex(S.District) >= 0 ? _office.DistrictIndex(S.District) : _office.HomeDistrict())));
                 int last = Mathf.Min(S.RaceVotes.Length - 1, OfficeState.Rivals);
                 for (int i = 0; i <= last; i++)
                 {

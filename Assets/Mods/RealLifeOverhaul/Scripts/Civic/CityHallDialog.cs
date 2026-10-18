@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using BAModAPI;
 using Dialogs;
 using Entities;
 using Helpers;
-using Localizor;
-using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -258,7 +255,8 @@ namespace RealLifeOverhaul
                         {
                             string result = Gov != null ? Gov.Donate(candidate) : "reallife_civic_closed";
                             return result == "reallife_civic_donate_broke" ? null
-                                : CityHallPhone.Page(CivicText.T(result, "name", name, "amount", CivicText.Money(CivicCatalogue.DonationStepNow)), "reallife_civic_button_back", () => CandidatePage(candidate));
+                                : CityHallPhone.Page(CivicText.T(result, "name", name, "amount", CivicText.Money(CivicCatalogue.DonationStepNow)),
+                                    "reallife_civic_button_back", () => CandidatePage(candidate));
                         },
                         "reallife_civic_button_next_option", () => Support(candidate, next));
                 case 1:
@@ -470,7 +468,8 @@ namespace RealLifeOverhaul
             switch (option)
             {
                 case 0:
-                    return CityHallPhone.Page(CivicText.T(works.Permits > 0 ? "reallife_civic_complain_offer_fast" : works.Permits < 0 ? "reallife_civic_complain_offer_strict" : "reallife_civic_complain_offer"),
+                    return CityHallPhone.Page(CivicText.T(works.Permits > 0 ? "reallife_civic_complain_offer_fast"
+                        : works.Permits < 0 ? "reallife_civic_complain_offer_strict" : "reallife_civic_complain_offer"),
                         "reallife_civic_button_complain", () => CityHallPhone.Page(CivicText.T(works.Complain(site, Day)), "reallife_civic_button_back", back),
                         "reallife_civic_button_next_option", () => SiteAction(siteId, next, backTo));
                 case 1:
@@ -490,7 +489,8 @@ namespace RealLifeOverhaul
                     {
                         return SiteAction(siteId, next, backTo);
                     }
-                    return CityHallPhone.Page(CivicText.T("reallife_civic_favour_offer", "favours", gov.State.Favours.ToString(), "odds", Mathf.RoundToInt(CivicCatalogue.PayToPlayOdds * 100f).ToString()),
+                    return CityHallPhone.Page(CivicText.T("reallife_civic_favour_offer", "favours", gov.State.Favours.ToString(),
+                        "odds", Mathf.RoundToInt(CivicCatalogue.PayToPlayOdds * 100f).ToString()),
                         "reallife_civic_button_favour", () =>
                         {
                             site.Favoured = true;
@@ -543,7 +543,8 @@ namespace RealLifeOverhaul
             }
             string address = shop.Address.ToFormattedStringSafe();
             int price = CivicCatalogue.RefitPriceNow(bid), hours = CivicCatalogue.RefitHours[bid], next = bid + 1;
-            string text = CivicText.T("reallife_civic_refit_bid").Replace("{address}", address).Replace("{contractor}", CivicText.T(CivicCatalogue.Contractors[(bid * 3 + 1) % CivicCatalogue.Contractors.Length]))
+            string text = CivicText.T("reallife_civic_refit_bid").Replace("{address}", address)
+                .Replace("{contractor}", CivicText.T(CivicCatalogue.Contractors[(bid * 3 + 1) % CivicCatalogue.Contractors.Length]))
                 .Replace("{amount}", CivicText.Money(price)).Replace("{days}", Mathf.CeilToInt(hours / 10f).ToString()).Replace("{bid}", (bid + 1).ToString());
             return CityHallPhone.Page(text, "reallife_civic_button_accept_bid", () =>
                 {
@@ -568,12 +569,14 @@ namespace RealLifeOverhaul
                 .Replace("{days}", Mathf.Max(0, state.PetitionEnds - Day).ToString());
             if (state.PetitionISigned)
             {
-                return CityHallPhone.Page(text + "\n" + CivicText.T("reallife_civic_petition_signed_already"), "reallife_civic_button_back", () => Topic(3), "reallife_civic_button_next_topic", () => Topic(0));
+                return CityHallPhone.Page(text + "\n" + CivicText.T("reallife_civic_petition_signed_already"), "reallife_civic_button_back", () => Topic(3),
+                    "reallife_civic_button_next_topic", () => Topic(0));
             }
             return CityHallPhone.Page(text, "reallife_civic_button_sign", () =>
                 {
                     bool signed = Gov != null && Gov.SignPetition();
-                    return CityHallPhone.Page(CivicText.T(signed ? "reallife_civic_petition_signed" : "reallife_civic_petition_signed_already", "count", (1 + 5 * Mathf.Min(10, CivicCity.PlayerBusinesses())).ToString()),
+                    return CityHallPhone.Page(CivicText.T(signed ? "reallife_civic_petition_signed" : "reallife_civic_petition_signed_already",
+                        "count", (1 + 5 * Mathf.Min(10, CivicCity.PlayerBusinesses())).ToString()),
                         "reallife_civic_button_back", () => Topic(3));
                 },
                 "reallife_civic_button_back", () => Topic(3));

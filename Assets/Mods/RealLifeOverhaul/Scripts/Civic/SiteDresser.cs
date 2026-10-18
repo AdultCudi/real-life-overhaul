@@ -290,7 +290,8 @@ namespace RealLifeOverhaul
             }
             CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ") set out at " + CivicCity.AddressText(site.Street, site.Number) + ", stage " + (site.Phase + 1) + ": "
                                        + dressed.Props.Count + " prop(s)" + (dressed.LaneShut ? ", one lane closed" : string.Empty)
-                                       + (InRoad(site.Kind) ? ", lane " + dressed.LaneFromKerb.ToString("F1", CultureInfo.InvariantCulture) + " m from the kerb" : ", " + (dressed.BayMax - dressed.BayMin + 1) + " bay(s), " + dressed.Lifts + " lift(s)") + ".");
+                                       + (InRoad(site.Kind) ? ", lane " + dressed.LaneFromKerb.ToString("F1", CultureInfo.InvariantCulture) + " m from the kerb"
+                                           : ", " + (dressed.BayMax - dressed.BayMin + 1) + " bay(s), " + dressed.Lifts + " lift(s)") + ".");
             return true;
         }
 

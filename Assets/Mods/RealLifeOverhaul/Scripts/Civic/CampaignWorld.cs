@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Characters.EmojiSystem;
-using Helpers;
 using Streets.Pedestrians;
 using UI.Notification;
 using UnityEngine;
@@ -201,7 +199,8 @@ namespace RealLifeOverhaul
             stand.y = player.y;
             Vector3 across = Vector3.Cross(Vector3.up, outward) * 0.27f;
             float distance = 0.6f;
-            if (!Agrees(stand, outward, 1.95f, distance) || !Agrees(stand, outward, 1.15f, distance) || !Agrees(stand + across, outward, 1.55f, distance) || !Agrees(stand - across, outward, 1.55f, distance))
+            if (!Agrees(stand, outward, 1.95f, distance) || !Agrees(stand, outward, 1.15f, distance)
+                || !Agrees(stand + across, outward, 1.55f, distance) || !Agrees(stand - across, outward, 1.55f, distance))
             {
                 return false;
             }

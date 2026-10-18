@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 using UI.Notification;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {
@@ -116,7 +113,8 @@ namespace RealLifeOverhaul
             for (int i = 0; i < save.BuildingRegistrations.Count; i++)
             {
                 BuildingRegistration r = save.BuildingRegistrations[i];
-                if (r != null && r.Address != null && GoingPublic.Mine(r) && r.Address.streetName == building.building.Address.streetName && r.Address.streetNumber == building.building.Address.streetNumber)
+                if (r != null && r.Address != null && GoingPublic.Mine(r)
+                    && r.Address.streetName == building.building.Address.streetName && r.Address.streetNumber == building.building.Address.streetNumber)
                 {
                     return true;
                 }

@@ -1,9 +1,5 @@
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
-using UnityEngine.AI;
-using UnityEngine.UI;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {

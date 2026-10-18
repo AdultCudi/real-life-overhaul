@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BigAmbitions.Neighborhoods;
 using Buildings;
 using Helpers;
 using Localizor;
@@ -48,7 +47,8 @@ namespace RealLifeOverhaul
             for (int i = 0; i < ids.Count; i++)
             {
                 string id = ids[i];
-                if (string.IsNullOrEmpty(id) || id == GlobalDistrict || !BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(id, out List<Building> buildings) || buildings == null || buildings.Count == 0)
+                if (string.IsNullOrEmpty(id) || id == GlobalDistrict || !BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(id, out List<Building> buildings)
+                    || buildings == null || buildings.Count == 0)
                 {
                     continue;
                 }
