@@ -92,9 +92,9 @@ namespace RealLifeOverhaul
                 _wanted = want;
                 _nextTry = 0f;
             }
-            if (_held != null && _held.Car != want)
+            if (_held != null && (_held.Car == null || _held.Car != want))   // (a car the game has destroyed reads as null: given back too)
             {
-                GiveBack(want == null ? Why() : "another car took its place");
+                GiveBack(_held.Car == null ? "the car is gone" : want == null ? Why() : "another car took its place");
             }
             float now = Time.unscaledTime;
             if (_held == null)
@@ -192,6 +192,7 @@ namespace RealLifeOverhaul
             _held = null;
             _parts = -1;
             int removed = 0;
+            int found = held.GameFound;   // before they are given back
             int back;
             try
             {
@@ -206,8 +207,8 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Car sound check (leaving a car): " + (gone ? "the car is gone with its sources" : held.Car.name) + " (" + reason + "), " + back + " of "
-                             + held.GameFound + " of the game's sources back as they were, " + removed + " of the mod's taken off: "
-                             + (gone || back == held.GameFound ? "PASS." : "FAIL, a source of the game's was not there to give back."));
+                             + found + " of the game's sources back as they were, " + removed + " of the mod's taken off: "
+                             + (gone || back == found ? "PASS." : "FAIL, a source of the game's was not there to give back."));
             }
         }
 

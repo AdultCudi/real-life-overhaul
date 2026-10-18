@@ -166,8 +166,8 @@ A loop with nothing to play is stopped.
 | part | price (x part base) | trade-off | sound |
 | --- | --- | --- | --- |
 | stock exhaust | | | the engine as recorded |
-| Sports exhaust | 0.5 | | 1.25 times as loud, a little lower, rawer off the throttle, the odd pop after lifting off from high revs |
-| Straight-through exhaust | 0.9 | not street legal (fines) | 1.6 times as loud, lower, raw off the throttle, pops and bangs after lifting off |
+| Sports exhaust | 0.5 | | 1.2 times as loud, a little lower, rawer off the throttle, the odd pop after lifting off from high revs |
+| Straight-through exhaust | 0.9 | not street legal (fines) | 1.4 times as loud, lower, raw off the throttle, pops and bangs after lifting off |
 | Turbocharger | 2.5 | wears 10 % faster | whistles as boost builds (spool 0.6 s), flutters on lifting off with boost |
 | Big turbo | 4.5 | wears 22 % faster, insurance +10 % | slower (1.0 s), lower and louder whistle, bigger flutter |
 
@@ -179,7 +179,7 @@ Only the local player's own car is ever held (`GoingPublic.MineVehicle`); traffi
 
 With Developer diagnostics on: `Car sound check (entering a car)` (the engine, clips in memory of 33, the mod's sources, the game's sources quieted) and `Car sound check (leaving a car)` (the game's sources back as they were).
 Options, Tests: "Check the recorded car sounds".
-Not verified in the game: the loudness against the game's own engine (`EngineVolume` 0.55), the game's cars' idle and rev limit (read live; the loops are placed on them), how the turntable's revving sounds with the car frozen.
+Not verified in the game: the loudness against the game's own engine (`EngineVolume` 0.7), the game's cars' idle and rev limit (read live; the loops are placed on them), how the turntable's revving sounds with the car frozen.
 
 ## Two-wheelers
 

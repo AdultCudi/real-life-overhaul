@@ -102,7 +102,7 @@ namespace RealLifeOverhaul
         public const float MinPitch = 0.5f;           // a loop is never pitched below or above these (an engine that stalls or over-revs)
         public const float MaxPitch = 2.2f;
         public const float FadeShare = 0.5f;          // of the span between two loops, on a scale of ratios, that they cross over in
-        public const float EngineVolume = 0.55f;      // a stock engine's level on the car's own sound group (the game's own runs at about 0.5)
+        public const float EngineVolume = 0.7f;       // a stock engine's level on the car's own sound group (the game's own note runs at about 0.5 on louder clips)
         public const float IdleLevel = 0.62f;         // the engine's level at idle, against its level at the rev limit
         public const float OnFrom = 0.05f;            // throttle below which the engine is off the throttle
         public const float OnFull = 0.45f;            // throttle from which it is wholly on it
@@ -175,8 +175,8 @@ namespace RealLifeOverhaul
         private static readonly ExhaustSound[] Exhausts =
         {
             new ExhaustSound(1.00f, 1.00f, 0.55f, 0f, 0f),     // stock
-            new ExhaustSound(1.25f, 0.98f, 0.70f, 1.0f, 0.55f),   // sports: deeper and louder, the odd pop
-            new ExhaustSound(1.60f, 0.96f, 0.85f, 3.0f, 0.95f)    // straight-through: loud and raw, pops and bangs
+            new ExhaustSound(1.20f, 0.98f, 0.70f, 1.0f, 0.55f),   // sports: deeper and louder, the odd pop
+            new ExhaustSound(1.40f, 0.96f, 0.85f, 3.0f, 0.95f)    // straight-through: loud and raw, pops and bangs
         };
 
         private static readonly TurboSound[] Turbos =
@@ -318,10 +318,14 @@ namespace RealLifeOverhaul
         /// <summary>The engine's level, 0 to 1 before the exhaust: rising with the revs, quieter off the throttle.</summary>
         public static float Level(float revs, float onShare, in ExhaustSound exhaust)
         {
+            return ByRevs(revs) * (exhaust.OffLevel + (1f - exhaust.OffLevel) * onShare);
+        }
+
+        /// <summary>The engine's level by its revs alone, <see cref="IdleLevel"/> at a standstill to 1 at the limit: the idle loop's (idle is idle, on the throttle or off it).</summary>
+        public static float ByRevs(float revs)
+        {
             revs = revs < 0f ? 0f : revs > 1f ? 1f : revs;
-            float byRevs = IdleLevel + (1f - IdleLevel) * revs;
-            float byLoad = exhaust.OffLevel + (1f - exhaust.OffLevel) * onShare;
-            return byRevs * byLoad;
+            return IdleLevel + (1f - IdleLevel) * revs;
         }
 
         /// <summary>The volume a loop is played at: its share of the mix, of its layer, the level, the exhaust; never above 1.</summary>

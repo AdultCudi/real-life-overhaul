@@ -347,7 +347,8 @@ internal static partial class Program
             "car sounds: the only cars are the one driven and the turntable's, never a search");
 
         string update = Body(director, "private void OnUpdate(");
-        Check(Regex.IsMatch(update, @"_held\.Car != want\)\s*\{\s*GiveBack\("), "car sounds: leaving the car, another car, the option off or a load give the game's sound back the same frame");
+        Check(Regex.IsMatch(update, @"_held != null && \(_held\.Car == null \|\| _held\.Car != want\)\)\s*\{\s*GiveBack\("),
+            "car sounds: leaving the car, another car, the car gone, the option off or a load give the game's sound back the same frame");
         string frame = Body(director, "private void Update(");
         Check(Regex.IsMatch(frame, @"FrameGuard\.Off\)\s*\{\s*GiveBack\(") && Regex.IsMatch(frame, @"catch \(Exception e\)\s*\{\s*Fault\(e\);")
               && Regex.IsMatch(Body(director, "private void Fault("), @"_failed = true;\s*GiveBack\("),

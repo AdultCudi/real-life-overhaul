@@ -189,7 +189,7 @@ namespace RealLifeOverhaul
                 float pitch = CarSoundRules.PitchOf(_reading.Rpm, _at[i]) * _exhaust.Pitch;
                 if (_off[i] == null)
                 {
-                    Set(_on[i], CarSoundRules.Volume(_gains[i], 1f, level, _exhaust) * master, pitch);
+                    Set(_on[i], CarSoundRules.Volume(_gains[i], 1f, CarSoundRules.ByRevs(revs), _exhaust) * master, pitch);   // the idle loop: one layer
                     continue;
                 }
                 Set(_on[i], CarSoundRules.Volume(_gains[i], onLayer, level, _exhaust) * master, pitch);
