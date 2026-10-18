@@ -62,16 +62,13 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// One employer: its name, where it is found (which kind of building its depot or office is taken to be
-    /// in), its boss, the gig it grows out of, and its ladder.
-    /// </summary>
+    /// <summary>An employer: its name, the kind of building its office is taken to be in, its boss, the gig it grows out of, and its ladder.</summary>
     public sealed class Employer
     {
         public readonly string Id;
         public readonly string NameKey;
         public readonly string BossKey;          // the boss's name
-        public readonly string Pitch;            // the boss's own lines, in their own manner: what the work is, with {title}, {wage}, {status}
+        public readonly string Pitch;            // the boss's own lines: what the work is, with {title}, {wage}, {status}
         public readonly string Welcome;          // ...on being taken on, with {rota}
         public readonly string Review;           // ...how they open a review
         public readonly string Notice;           // ...on being given notice, with {shifts}
@@ -83,10 +80,10 @@ namespace RealLifeOverhaul
         public readonly bool BossFemale;
         public readonly string LeadSkill;        // the game's skill a lead or desk shift trains, or null
         public readonly string[] Colleagues;     // names of the two people seen on shifts
-        public readonly string[] Premises;       // business types its depot may be, best first (matched as a substring of the game's type name)
+        public readonly string[] Premises;       // business types its office may be, best first, matched within the game's type name
         public readonly CareerRank[] Ranks;
 
-        /// <param name="keys">Locale keys, each written out in full where the employer is listed: name, boss, the two colleagues, then the boss's five lines.</param>
+        /// <param name="keys">Locale keys: name, boss, the two colleagues, then the boss's five lines.</param>
         public Employer(string id, string[] keys, string job, string related, int references, int seed, bool bossFemale, string leadSkill,
             string[] premises, params CareerRank[] ranks)
         {
@@ -111,37 +108,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Employers, ranks, rotas and every figure of the career ladder. Game-free, like the job, event and
-    /// crime catalogues.
-    ///
-    /// Balance. One game hour is one minute of play; a rota shift is one run of the work, about four game
-    /// hours. The game pays a cashier 25 an hour and its own staff 12 to 18 at no skill; its van job comes
-    /// to about 100 an hour. Freelance gigs (JobCatalogue) come to 40 to 55 an hour on foot and about 85
-    /// with a car. An employer adds a basic hourly wage on top of the piece pay, for the hours of the shift
-    /// (four at most), so that a rota shift is worth about a fifth to a third more than the same work
-    /// freelance, and the desk and lead ranks are salaried (the first release's wages, raised by 2.8 for the
-    /// gigs and 2 for the salaries, as the gigs' own pay was):
-    ///
-    ///   rank                         basic/h   work pays                      about, per game hour
-    ///   Leafleter / Cleaner           11         as the gig                     51 to 53
-    ///   Stocker / Vendor              14         as the gig                     63 to 70
-    ///   Courier                       17         as the gig                     95 to 100
-    ///   Senior courier                25         7 parcels, firm's van, +10 %   130 to 150
-    ///   Dispatcher                    40         42 a plan x quality, 3 plans   65 to 72 (no car, no risk)
-    ///   Depot supervisor              60         36 a good call, 4 calls        100 to 105
-    ///   Crew / team / shift lead      36 to 40   36 a good call                 72 to 76
-    ///   Assistant manager             52         36 a good call, +20 %          90 to 95
-    ///   Cab driver                    14         4 fares, as the gig            110 to 120 (a fare is about 80 s of driving)
-    ///   Premium driver                22         fares +25 %, tips x2           170 to 190 (needs a Luxury car)
-    ///   Owner-operator                 0         fares +45 %, tips x2           190 to 200
-    ///   Own cart                       0         takings 30 a customer less 9.5 stock, 165 a day for the cart: 80 to 125 a shift
-    ///
-    /// The figures that were money in the old scale are in the new one throughout: the raise step, the cart's
-    /// takings and rent, the booked set's fee, the van's daily fee and what a review counts a tip for. The
-    /// courier and cab ranks come to about the van job's 100 an hour of play, the top two cab ranks to about twice it (they need a car costing tens of thousands). Tax follows the game: it takes no tax from the player's wages (its one employer job pays
-    /// the hourly rate in full), so the payslip's tax line reads zero and says so.
-    /// Once the player runs businesses, employers pay less (<see cref="OwnerFactor"/>): work stays possible
-    /// but is not a better use of an hour than a shop.
+    /// Employers, ranks, rotas and every figure of the career ladder; game-free. An employer adds a basic hourly wage to what
+    /// the work pays, so a rota shift is worth a fifth to a third more than freelance (docs/features/careers.md).
     /// </summary>
     public static class CareerCatalogue
     {
@@ -170,7 +138,7 @@ namespace RealLifeOverhaul
         public const float CartStock = 9.5f;        // ...and what the drink cost
         public const int CabShiftFares = 4;         // fares in an employed cab shift
         public static int GigFee => Prices.At(125);              // a venue's fee for a booked set, on top of the hat
-        public const float GigTipFactor = 1.3f;
+        public const float GigTipFactor = 1.3f;                  // factor on tips at a booked set
         public const int GigNeedsLevel = 2;         // busker level at which the agency books sets
         public const float PromoteScore = 70f;      // review score for a promotion
         public const float RaiseScore = 55f;        // ...for a raise
@@ -275,6 +243,19 @@ namespace RealLifeOverhaul
             return day > 0 && (days & (1 << ((day - 1) % 7))) != 0;
         }
 
+        /// <summary>The first of <see cref="Rotas"/> that works on a day; the first rota if none does.</summary>
+        public static CareerRota FirstRotaOn(int day)
+        {
+            for (int i = 0; i < Rotas.Length; i++)
+            {
+                if (RotaDay(Rotas[i].Days, day))
+                {
+                    return Rotas[i];
+                }
+            }
+            return Rotas[0];
+        }
+
         /// <summary>The next day on or after a day that a rota works; -1 for an empty rota.</summary>
         public static int NextRotaDay(int days, int from)
         {
@@ -288,11 +269,7 @@ namespace RealLifeOverhaul
             return -1;
         }
 
-        /// <summary>
-        /// The hours of basic wage a shift pays that ended so many game minutes after it was clocked on to: every hour
-        /// begun, one at least and <see cref="ShiftHours"/> at most, and one less for having clocked on late. The one
-        /// rule, for a shift that ends on the street and for one settled from a save (<see cref="JobSave.Settle"/>).
-        /// </summary>
+        /// <summary>Hours of basic wage for a shift that ended so many game minutes after clock-on: every hour begun, 1 to <see cref="ShiftHours"/>, one less if late.</summary>
         public static int PaidHours(float elapsedMinutes, bool late)
         {
             int hours = (int)Math.Ceiling(elapsedMinutes / 60f);
@@ -300,16 +277,12 @@ namespace RealLifeOverhaul
             return hours - (late ? 1 : 0);
         }
 
-        /// <summary>What so many hours of basic wage come to, in whole money.</summary>
         public static int Wage(int hours, float hourly)
         {
             return hours > 0 ? (int)Math.Round(hours * hourly) : 0;
         }
 
-        /// <summary>
-        /// What employers pay someone who runs businesses of their own, as a factor: nothing off with none,
-        /// then 15 % less for each, never under 55 %.
-        /// </summary>
+        /// <summary>What employers pay someone who runs businesses, as a factor: 1 with none, 15 % less for each, never under 55 %.</summary>
         public static float OwnerFactor(int businesses)
         {
             float factor = 1f - 0.15f * (businesses < 0 ? 0 : businesses);
@@ -317,20 +290,23 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Experience brought along: rota shifts credited towards the first review for the level already
-        /// reached in the employer's own gig (two each above the first) and in a related one (one each).
-        /// Never the whole review.
+        /// A booked set's venue fee at the pay option (25 to 300 %) for someone who runs so many businesses: <see cref="GigFee"/>
+        /// cut by <see cref="OwnerFactor"/>, as every other pay is. <see cref="GigFee"/> is at the city's price level already.
         /// </summary>
+        public static int VenueFee(int payOption, int businesses)
+        {
+            int option = payOption < 25 ? 25 : payOption > 300 ? 300 : payOption;
+            return (int)Math.Round(GigFee * (option / 100f) * OwnerFactor(businesses));
+        }
+
+        /// <summary>Rota shifts credited to the first review for levels in the employer's gig (two each above the first) and a related one (one each).</summary>
         public static int CarryOver(int ownLevel, int relatedLevel)
         {
             int credit = (ownLevel > 1 ? (ownLevel - 1) * 2 : 0) + (relatedLevel > 1 ? relatedLevel - 1 : 0);
             return credit > ShiftsPerReview - 1 ? ShiftsPerReview - 1 : credit;
         }
 
-        /// <summary>
-        /// A review's score, 0 to 100, from what really happened since the last one: mostly turning up on
-        /// time, then complaints (failed shifts), crashes and police stops on the job, with a little for tips.
-        /// </summary>
+        /// <summary>A review's score, 0 to 100: mostly turning up on time, less for complaints, crashes and police stops, a little for tips.</summary>
         public static float ReviewScore(int onTime, int late, int noShow, int complaints, int crashes, int stops, int tips, int shifts)
         {
             int due = onTime + late + noShow;

@@ -7,24 +7,18 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Officers on the beat: most of the time, while the player is outdoors, a pair of officers
-    /// (now and then one alone) is walking a stretch of pavement nearby. A patrol lasts a few
-    /// minutes and a new one starts soon after the last has gone or been left behind. They
-    /// appear out of immediate view and leave the same way. One patrol at a time.
-    /// They are people the pool may take back at any moment (ActorRole.EnterPresence): when an
-    /// accident, a crime or an arrest needs somebody and nobody else is free, one of them is
-    /// gone that instant, and the patrol carries on with whoever is left or ends.
-    /// Idle, this is one time comparison per frame; a patrol is moved along twice a second.
+    /// Officers on the beat: now and then a pair walks a stretch of pavement near the player, appearing and leaving out of
+    /// view. Cost: one time comparison a frame while idle; a patrol is moved twice a second.
     /// </summary>
     public class BeatPatrol : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("people", "BeatPatrol", typeof(BeatPatrol));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "BeatPatrol", typeof(BeatPatrol));
 
-        private const float CheckInterval = 8f;
-        private const float TickInterval = 0.5f;
-        private const float MinDistance = 35f;
-        private const float MaxDistance = 70f;
-        private const float LostDistance = 150f;     // the player has left them far behind
+        private const float CheckInterval = 8f;      // seconds
+        private const float TickInterval = 0.5f;     // seconds
+        private const float MinDistance = 35f;       // metres from the player a beat starts, at least...
+        private const float MaxDistance = 70f;       // ...and at most
+        private const float LostDistance = 150f;     // metres: the player has left them far behind
         private const float PartnerChance = 0.85f;
         private const int MaxStops = 4;
 
@@ -51,7 +45,7 @@ namespace RealLifeOverhaul
             _nextCheck = Time.time + CheckInterval;
         }
 
-        /// <summary>True while an officer of the beat is out within so many metres of a place: they hear what is said there (Street talk asks on a threat).</summary>
+        /// <summary>True while an officer of the beat is within <paramref name="metres"/> of a place, and so hears what is said there.</summary>
         public bool OfficerWithin(Vector3 place, float metres)
         {
             float most = metres * metres;
@@ -73,14 +67,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -111,7 +105,7 @@ namespace RealLifeOverhaul
                     End();
                     if (Guard.StandsDown(e, "officers walking a beat"))
                     {
-                        enabled = false;   // (a game that lacks what a patrol names would fail at every look)
+                        enabled = false;   // a game that lacks what a patrol names would fail at every look
                     }
                 }
                 return;
@@ -152,7 +146,6 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // The beat: a few stretches of pavement, each a short walk on from the last.
             _stops = 0;
             Vector3 from = start;
             for (int i = 0; i < MaxStops; i++)
@@ -213,7 +206,6 @@ namespace RealLifeOverhaul
                 case Step.Walking:
                     if (_lead.Settled || !_lead.Present || now >= _stepEnd)
                     {
-                        // A look around before moving on.
                         _step = Step.Pausing;
                         _stepEnd = now + Random.Range(2f, 6f);
                     }
@@ -235,7 +227,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // On to the next stop, and round again after the last.
         private void WalkOn(float now)
         {
             Vector3 stop = _beat[_next];
@@ -247,7 +238,7 @@ namespace RealLifeOverhaul
             _stepEnd = now + 46f;
         }
 
-        // They walk off away from the player and are gone when they get there, when nobody can see them, or when time is up.
+        // They walk off away from the player and are gone on arrival, out of view, or when time is up.
         private void Dismiss(float now, Vector3 player, float within)
         {
             _lead.WalkAwayFrom(player, Pace.Walk, 30f, within);
@@ -256,7 +247,7 @@ namespace RealLifeOverhaul
             _stepEnd = now + within + 1f;
         }
 
-        // Both off the street. The patrol is marked over first, so no failure here can make it run again.
+        // The patrol is marked over first, so no failure here can make it run again.
         private void End()
         {
             _step = Step.None;

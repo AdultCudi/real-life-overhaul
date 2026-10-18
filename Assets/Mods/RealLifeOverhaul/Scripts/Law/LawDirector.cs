@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using BAModAPI;
-using Extensions;
-using GleyTrafficSystem;
 using Helpers;
 using RealLifeOverhaul.GameUi;
-using Streets;
 using Streets.Pedestrians;
 using UI.Guiders;
 using UI.Notification;
@@ -16,22 +14,18 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Law
 {
     /// <summary>
-    /// The law's one component: loads and saves its part of the savegame, designates the
-    /// precincts and keeps the one the player is near dressed, lets the player into a station
-    /// and furnishes it while they are inside, runs the front desk, runs the daily step of the
-    /// reputation, lets a passer-by say thanks now and then, watches over a stay in the cell,
-    /// and owns the test buttons. Everything is on one tick a second (real time, so it also
-    /// runs while the game is paused for a time skip) and a look four times a second at whether
-    /// the player is at a station's door or desk; between those it is two time comparisons and
-    /// three flags per frame, and the interaction key only while its prompt is on screen.
+    /// The law's one component: the save, the precincts, the station's door, room and desk, the reputation's daily step and
+    /// the watch over a stay in the cell. Cost: a tick a second on the real clock and a look four times a second at the door
+    /// or desk; between them two time comparisons, three flags and a reference a frame.
     /// </summary>
-    public sealed class LawDirector : MonoBehaviour
+    public sealed partial class LawDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("law", "LawDirector", typeof(LawDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("law", "LawDirector", typeof(LawDirector));
 
-        private const float TickInterval = 1f;
-        private const float ThanksChance = 1f / 75f;     // per second on foot near people, for somebody well liked, once a day at most
-        private const float ThanksWithin = 6f;
+        private const float TickInterval = 1f;       // seconds, real time
+        private const float OwedEvery = 0.25f;        // seconds between looks for a dark screen while the station is owed its furniture
+        private const float ThanksChance = 1f / 75f;   // chance a second on foot near people, for somebody well liked; once a day at most
+        private const float ThanksWithin = 6f;       // metres
 
         private static readonly string[] ThanksLines = { "reallife_law_thanks_1", "reallife_law_thanks_2", "reallife_law_thanks_3", "reallife_law_thanks_4" };
 
@@ -55,7 +49,7 @@ namespace RealLifeOverhaul.Law
         private int _doorKey = -1;
         private Action<Address> _onEnter;
         private Action<Address> _onExit;
-        private bool _entered;               // the game has just put the player inside a building (its event; acted on in Update)
+        private bool _entered;               // the game's own event; acted on in Update
         private bool _exited;
         private Use _use;                    // what the interaction key does where the player stands
         private Precinct _usePrecinct;
@@ -64,6 +58,8 @@ namespace RealLifeOverhaul.Law
         private Precinct _asked;             // the precinct whose door the game was asked to take the player through
         private float _askedAt;
         private float _nextTick;
+        private Precinct _roomOwed;          // the precinct the player is in, its station not furnished: done behind the next dark screen
+        private float _nextOwed;
         private int _faults;
         private int _streetFaults;
         private int _day = -1;
@@ -71,22 +67,19 @@ namespace RealLifeOverhaul.Law
         private bool _resumed;
         private int _lastThanks = -1;
         private Action _onSave;
-        private Action<Address> _enterSeen;   // the game's two building events as they were when the hooks were last put on them
+        private Action<Address> _enterSeen;   // the game's two building events as last hooked
         private Action<Address> _exitSeen;
 
-        /// <summary>True once the precincts have been designated for this city (other features that take a building choose after).</summary>
+        /// <summary>True once the precincts are chosen for this city; features that take a building choose after.</summary>
         public static bool PrecinctsChosen => Instance != null && Instance._precincts != null && Instance._precincts.Chosen;
 
-        /// <summary>How many precincts the city has (0 until they have been designated).</summary>
-        public static int PrecinctCount => Instance != null && Instance._precincts != null ? Instance._precincts.Count : 0;
-
-        /// <summary>The precinct nearest a point, or null. For other features: where patrols come from, where somebody is taken.</summary>
+        /// <summary>The precinct nearest a point, or null before the city is ready: where patrols come from, where somebody is taken.</summary>
         public static Precinct NearestPrecinct(Vector3 at)
         {
             return Instance != null && Instance._precincts != null ? Instance._precincts.Nearest(at) : null;
         }
 
-        /// <summary>True while the interaction key is the station's (its prompt is on screen): World/NearbyInteraction leaves the key alone.</summary>
+        /// <summary>True while the station's prompt is on screen: World/NearbyInteraction leaves the key alone.</summary>
         public static bool TakesInteractKey => Instance != null && (Instance._door.TakesKey || Instance._desk.IsOpen);
 
         /// <summary>The precinct the player is standing inside, or null.</summary>
@@ -95,7 +88,7 @@ namespace RealLifeOverhaul.Law
         private void Awake()
         {
             Instance = this;
-            _onSave = OnSaveGame;   // one delegate for the session, in the mod's one relay on the game's save event (Core/SaveHook)
+            _onSave = OnSaveGame;
             _onEnter = _ => _entered = true;
             _onExit = _ => _exited = true;
             LawState.Logger = Logger;
@@ -103,7 +96,7 @@ namespace RealLifeOverhaul.Law
             LawState.Reset();
             _precincts = new Precincts(transform, Logger);
             _interior = new StationInterior(transform, Logger);
-            _desk = new StationDesk(transform, _precincts, Logger);
+            _desk = new StationDesk(Logger);
             WorldPanel.Logger = Logger;
             _door = new DoorPanel(Logger, "Law check (desk panel)");
             _onSpeak = _door.Press(Speak);
@@ -147,14 +140,14 @@ namespace RealLifeOverhaul.Law
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -167,6 +160,11 @@ namespace RealLifeOverhaul.Law
                 if (_entered || _exited)
                 {
                     Moved();
+                }
+                if (_roomOwed != null && Time.unscaledTime >= _nextOwed)
+                {
+                    _nextOwed = Time.unscaledTime + OwedEvery;
+                    FurnishOwed();
                 }
                 if (Time.unscaledTime >= _nextLook)
                 {
@@ -195,14 +193,14 @@ namespace RealLifeOverhaul.Law
                 {
                     Logger?.Error(inner);
                 }
-                bool lacking = Guard.StandsDown(e, "the police precincts, custody and the record");   // (that fault would come back at every tick)
+                bool lacking = Guard.StandsDown(e, "the police precincts, custody and the record");   // the fault would come back every tick
                 if (lacking || ++_faults >= 3)
                 {
                     if (!lacking)
                     {
                         Logger?.Warn("Law: switched off for this session after repeated errors (see above). Fines and stops go on as before; nobody is held.");
                     }
-                    _custody.enabled = false;   // (Custody.Ready is then false: every route falls back to what it did before)
+                    _custody.enabled = false;   // Custody.Ready is then false: every route does what it did before
                     enabled = false;
                 }
             }
@@ -226,14 +224,13 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // ---------------------------------------------------------------- the station: the door, the room, the desk
-
-        // The game has just taken the player into a building or out of one (its own events, raised with the screen dark).
+        // The game has just taken the player into or out of a building (its own events, raised with the screen dark).
         private void Moved()
         {
             bool entered = _entered;
             _entered = false;
             _exited = false;
+            _roomOwed = null;   // the door's own event decides now; the tick owes the room again if this leaves it bare
             Idle();
             _desk.Close();
             if (!_precincts.Chosen || !LawState.Loaded)
@@ -249,8 +246,7 @@ namespace RealLifeOverhaul.Law
                     {
                         _asked = null;
                     }
-                    _precincts.PeopleIn();
-                    _interior.Begin(precinct);
+                    Furnish(precinct);
                 }
                 else if (_interior.Dressed && precinct != _interior.Precinct)
                 {
@@ -262,12 +258,49 @@ namespace RealLifeOverhaul.Law
             _interior.End();
             if (left != null && !Custody.Active)
             {
-                _precincts.DressNow(left);   // (the screen is still dark: the frontage is all there when it clears)
+                _precincts.DressNow(left);   // the screen is still dark: the frontage is up when it clears
             }
             _desk.OnStreet();
         }
 
-        // Four times a second: what the interaction key would do where the player stands, and the line that says so.
+        // The station furnished, in one pass (StationInterior.Begin): a long frame, so only where it is not seen. With
+        // Developer diagnostics on, its time and where it was paid.
+        private void Furnish(Precinct precinct)
+        {
+            long began = Stopwatch.GetTimestamp();
+            bool hidden = SceneFinds.Hidden;
+            _roomOwed = null;
+            _precincts.PeopleIn();
+            _interior.Begin(precinct);
+            if (Meta.Dev.Verbose && _interior.Dressed)
+            {
+                double ms = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
+                Logger?.Info("Law check (furnish): " + precinct.Name + " furnished in " + ms.ToString("F0", CultureInfo.InvariantCulture) + " ms "
+                             + (hidden ? "behind a dark screen or a pause: PASS" : "with the game in view: FAIL, a long frame the player sees"));
+            }
+        }
+
+        // The door's event was missed (a save loaded inside) or the floor was not there yet: the station is furnished once a
+        // long frame is not seen, behind the loading screen, the game's black screen or a pause; never in play.
+        private void FurnishOwed()
+        {
+            Precinct owed = _roomOwed;
+            if (!SceneFinds.Hidden)
+            {
+                return;
+            }
+            BuildingManager buildings = InstanceBehavior<BuildingManager>.Instance;
+            if (_interior.Dressed || !BuildingManager.IsInsideBuilding || buildings == null)
+            {
+                _roomOwed = null;
+                return;
+            }
+            if (!buildings.enteringBuilding && !buildings.exitingBuilding)
+            {
+                Furnish(owed);
+            }
+        }
+
         private void Look()
         {
             if (!LawState.Loaded || !ModState.Loaded || SaveGameManager.Current == null)
@@ -281,8 +314,8 @@ namespace RealLifeOverhaul.Law
             Use use = Use.None;
             Precinct precinct = null;
             PlayerController player = PlayerHelper.PlayerController;
-            if (LawState.Loaded && _precincts.Count > 0 && Settings.LawPrecincts && player != null && !_desk.IsOpen && !Custody.Active && !PlayerHelper.IsUsingVehicle
-                && !player.NavigationDisabled && !JobDirector.TakesInteractKey && !JobDirector.OnShift && !ThirdPersonCamera.IsUiOpen() && SaveGameManager.Current != null)
+            if (_precincts.Count > 0 && Settings.LawPrecincts && player != null && !_desk.IsOpen && !Custody.Active && !PlayerHelper.IsUsingVehicle
+                && !player.NavigationDisabled && !JobDirector.TakesInteractKey && !JobDirector.OnShift && !ThirdPersonCamera.IsUiOpen())
             {
                 Vector3 at = player.transform.position;
                 if (BuildingManager.IsInsideBuilding)
@@ -330,14 +363,12 @@ namespace RealLifeOverhaul.Law
             return LawState.Loaded && LawState.WantedCharges != 0;
         }
 
-        // At the precinct's door as the game itself measures at one of its doors (StationReach). A few multiplications.
         private static bool AtDoor(Vector3 at, Precinct precinct)
         {
             return StationReach.AtDoor(at.x - precinct.Door.x, at.y - precinct.Door.y, at.z - precinct.Door.z);
         }
 
-        // The game's panel at the desk or the door. At a desk: speak to the officer (the list). At a door that can be walked into: go in.
-        // If the game's list could not be made the desk's four commonest things are on the panel's own keys.
+        // The panel at the desk or the door; without the game's list the desk's four commonest services go on its keys.
         private void WriteDoor(Use use, Precinct precinct, bool plain)
         {
             WorldPanel panel = _door.Panel;
@@ -371,7 +402,6 @@ namespace RealLifeOverhaul.Law
             _doorKey = -1;
         }
 
-        // The panel's buttons, on the game's keys or a click. Each makes sure the player is still where the panel was.
         private bool Where(out Precinct precinct, out Use use)
         {
             precinct = _usePrecinct;
@@ -402,7 +432,7 @@ namespace RealLifeOverhaul.Law
                 if (Where(out Precinct precinct, out Use use) && use == Use.Door)
                 {
                     Idle();
-                    // Measured again at the press: the look four times a second may be a step behind the player.
+                    // Measured again: the look four times a second may be a step behind the player.
                     Vector3 at = PlayerHelper.GetPosition();
                     bool there = AtDoor(at, precinct);
                     if (Meta.Dev.Verbose)
@@ -437,7 +467,7 @@ namespace RealLifeOverhaul.Law
                 if (Where(out Precinct precinct, out Use use) && use != Use.Door)
                 {
                     _desk.Quick(precinct, use == Use.Desk, service);
-                    _doorKey = -1;   // (what the buttons say may have changed: a fine paid, a car brought)
+                    _doorKey = -1;   // what the buttons say may have changed: a fine paid, a car brought
                 }
             }
             catch (Exception e)
@@ -446,16 +476,15 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // The game was asked to take the player into a station seven seconds ago and has not: its way in does not work for
-        // this unit. Whatever it left half done is put right (its "entering" flag, the dark screen), and the precinct is
-        // one whose front desk answers at the door for the rest of the session.
+        // The game was asked seven seconds ago to take the player into a station and has not: its way in does not work for
+        // this unit. What it left half done is put right, and the precinct's desk answers at the door for the session.
         private void NotLetIn(BuildingManager buildings, Precinct within)
         {
             Precinct asked = _asked;
             _asked = null;
             if (within == asked && buildings != null && !buildings.enteringBuilding)
             {
-                return;   // they are in (the door's own event was missed)
+                return;   // they are in; the door's own event was missed
             }
             asked.WalkIn = false;
             Logger?.Warn("Law: the game did not take the player into " + asked.Name + " (see any error above); its front desk answers at the door from now on.");
@@ -474,10 +503,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        /// <summary>
-        /// Takes the player into a precinct that can be walked into, through its own door, by the game's own way into a
-        /// building (its fade, its interior for that unit, its camera and light). False if that cannot be done now.
-        /// </summary>
+        /// <summary>Takes the player into a walk-in precinct by the game's own way into a building. False if that cannot be done now.</summary>
         internal bool EnterStation(Precinct precinct)
         {
             BuildingManager buildings = InstanceBehavior<BuildingManager>.Instance;
@@ -491,7 +517,7 @@ namespace RealLifeOverhaul.Law
             {
                 return false;
             }
-            // By the door nearest the player, as the game's own entrance does.
+        // By the door nearest the player, as the game's own entrance does.
             int doorId = -1;
             float best = float.MaxValue;
             Vector3 at = PlayerHelper.GetPosition();
@@ -530,16 +556,14 @@ namespace RealLifeOverhaul.Law
                 RecordPhone.Setup(_precincts.Icon);
             }
 
-            // The game clears its event hub on every load, so the hooks are kept attached: looked at every second, and put
-            // back only when the game's event is not the one last seen (nothing is allocated while nothing has changed).
+            // The game clears its event hub on every load: the hooks are put back when the event is not the one last seen.
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             EventHold.Keep(ref GlobalEvents.onExitBuilding, _onExit, ref _exitSeen);
 
             bool outdoors = !BuildingManager.IsInsideBuilding;
 
-            // The room: furnished here too if the door's own event was missed (a save loaded inside one), cleared if the
-            // player is no longer in it, and its people kept at their places.
+            // The room: owed its furniture if the door's event was missed (a save loaded inside), cleared once the player has left.
             if (_precincts.Chosen)
             {
                 BuildingManager buildings = InstanceBehavior<BuildingManager>.Instance;
@@ -548,11 +572,7 @@ namespace RealLifeOverhaul.Law
                 {
                     _interior.End();
                 }
-                if (within != null && !_interior.Dressed && !buildings.enteringBuilding && !buildings.exitingBuilding)
-                {
-                    _precincts.PeopleIn();
-                    _interior.Begin(within);
-                }
+                _roomOwed = within != null && !_interior.Dressed && !buildings.enteringBuilding && !buildings.exitingBuilding ? within : null;
                 _interior.Tick(Time.time);
                 _precincts.Keep(within);
                 if (_asked != null && Time.unscaledTime - _askedAt > 7f)
@@ -566,12 +586,16 @@ namespace RealLifeOverhaul.Law
                     MapPlaces.Refresh();
                 }
             }
-            if (!_precincts.Chosen && outdoors && !_precincts.Choose())
+            if (!_precincts.Chosen && outdoors)
             {
-                return;
+                if (!_precincts.Choose())
+                {
+                    return;
+                }
+                StationInterior.SearchDesigns(_precincts);
             }
 
-            // A stay in the cell: resumed after a load; ended if it has stopped making progress or the save and the routine disagree.
+            // A stay in the cell: resumed after a load; ended if it stalls or the save and the routine disagree.
             if (_precincts.Chosen && LawState.Custody.Active && !Custody.Active)
             {
                 if (!_resumed)
@@ -615,7 +639,7 @@ namespace RealLifeOverhaul.Law
                 }
             }
 
-            // The street: a fault out here takes the frontage in, and after three leaves it in; it never ends a stay in the cell.
+            // The street: a fault here takes the frontage in, and after three leaves it off; it never ends a stay in the cell.
             if (_streetFaults >= 3)
             {
                 return;
@@ -660,8 +684,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // Somebody walking by, close enough to be the one who speaks: a smile over their head and a line; for
-        // somebody the city really likes, a few dollars pressed into the hand as well. Nobody near: nothing is said.
+        // Somebody walking by close enough to speak: a smile and a line; for somebody the city loves, a few dollars too.
         private void Thanks(int day)
         {
             List<Pedestrian> walkers = PerfGame.Pedestrians;
@@ -713,12 +736,7 @@ namespace RealLifeOverhaul.Law
             Logger?.Info($"Law: a passer-by thanked the player (public reputation {Reputation.Public}).");
         }
 
-        // ---------------------------------------------------------------- the nearest precinct, shown
-
-        /// <summary>
-        /// Points the game's own destination marker at the precinct nearest the player (its name and
-        /// the distance show on it, and it can be dismissed like any destination). Null if there is none.
-        /// </summary>
+        /// <summary>Points the game's destination marker at the precinct nearest the player. Null if there is none.</summary>
         internal Precinct GuideToNearest()
         {
             Precinct precinct = _precincts.Nearest(PlayerHelper.GetCityPosition());
@@ -728,272 +746,6 @@ namespace RealLifeOverhaul.Law
             }
             GuidersManager.SetGuiderTarget(precinct.Door + Vector3.up * 4.5f, precinct.Name, _precincts.Icon, new Color(0.10f, 0.28f, 0.78f), DirectionGuiderType.Destination);
             return precinct;
-        }
-
-        // ---------------------------------------------------------------- test buttons
-
-        private TestRefusal Refusal(bool needsCustody)
-        {
-            if (!ModState.Loaded || !LawState.Loaded || SaveGameManager.Current == null || PlayerHelper.PlayerController == null)
-            {
-                return TestRefusal.NotLoaded;
-            }
-            if (!enabled || (needsCustody ? !Settings.LawCustody : !Settings.LawPrecincts))
-            {
-                return TestRefusal.FeatureOff;
-            }
-            if (_precincts.Count == 0)
-            {
-                return TestRefusal.NoPrecinct;
-            }
-            if (!needsCustody)
-            {
-                return TestRefusal.None;
-            }
-            if (Custody.Active || PoliceAttention.IsBusy)
-            {
-                return TestRefusal.PoliceBusy;
-            }
-            // Not over a time skip or a conversation. (A menu is no reason: the button is in one. The arrest waits for it to close.)
-            var uis = InstanceBehavior<UI.UIs>.Instance;
-            return (uis != null && uis.timeMachine != null && uis.timeMachine.isRunning) || DialogController.current != null
-                ? TestRefusal.ScreenBusy : TestRefusal.None;
-        }
-
-        /// <summary>Options-menu test button: the whole arrest from where the player stands. 0 minor, 1 serious, 2 fatal.</summary>
-        public void TestArrest(int kind)
-        {
-            try
-            {
-                TestRefusal why = Refusal(needsCustody: true);
-                if (why != TestRefusal.None)
-                {
-                    TestRefusals.Tell(Logger, "Arrest", why, 0, _precincts.Count + " precinct(s)");
-                    return;
-                }
-                int charges = kind <= 0 ? LawBook.Bit(Charge.FledStop)
-                    : kind == 1 ? LawBook.Bit(Charge.HitAndRun) | LawBook.Bit(Charge.InjuryFled)
-                    : LawBook.Bit(Charge.DeathFled);
-                // No money is taken by the test: in play the fines are charged by whoever stops the player, before this is called.
-                if (!Custody.Arrest(charges, 0, null))
-                {
-                    TestRefusals.Tell(Logger, "Arrest", TestRefusal.PoliceBusy);
-                    return;
-                }
-                Notifications.Show(NotificationType.Info, "reallife_law_test_fine", null, 8f);
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-        }
-
-        /// <summary>Options-menu test button: marks the nearest precinct and says how far it is.</summary>
-        public void TestNearest()
-        {
-            try
-            {
-                TestRefusal why = Refusal(needsCustody: false);
-                if (why != TestRefusal.None)
-                {
-                    TestRefusals.Tell(Logger, "Nearest precinct", why);
-                    return;
-                }
-                Precinct precinct = GuideToNearest();
-                if (precinct == null)
-                {
-                    TestRefusals.Tell(Logger, "Nearest precinct", TestRefusal.NoPrecinct);
-                    return;
-                }
-                Vector3 offset = precinct.Door - PlayerHelper.GetCityPosition();
-                offset.y = 0f;
-                var data = new Dictionary<string, string>(3)
-                {
-                    { "precinct", precinct.Name },
-                    { "metres", Mathf.RoundToInt(offset.magnitude).ToString() },
-                    { "address", precinct.Building.building.Address.ToFormattedString() }
-                };
-                Notifications.Show(NotificationType.Info, "reallife_law_nearest", data, 12f);
-                Logger?.Info($"Law: nearest precinct is {precinct.Name} at {precinct.Building.building.Address.ToFormattedString()}, {offset.magnitude:F0} m.");
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-        }
-
-        /// <summary>Options-menu test button: opens the front desk of the nearest precinct wherever the player stands.</summary>
-        public void TestDesk()
-        {
-            try
-            {
-                TestRefusal why = Refusal(needsCustody: false);
-                if (why == TestRefusal.None && (Custody.Active || DialogController.current != null))
-                {
-                    why = Custody.Active ? TestRefusal.PoliceBusy : TestRefusal.ScreenBusy;
-                }
-                if (why != TestRefusal.None)
-                {
-                    TestRefusals.Tell(Logger, "Front desk", why);
-                    return;
-                }
-                Precinct precinct = Inside ?? _precincts.Nearest(PlayerHelper.GetCityPosition());
-                if (precinct == null)
-                {
-                    TestRefusals.Tell(Logger, "Front desk", TestRefusal.NoPrecinct);
-                    return;
-                }
-                Idle();
-                _desk.Open(precinct, Inside == precinct);
-                Notifications.Show(NotificationType.Info, "reallife_law_test_desk_done", null, 6f);
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-        }
-
-        /// <summary>Options-menu test button: takes the nearest precinct's frontage in and puts it out again at once, and says in the log what fitted and what did not.</summary>
-        public void TestDress()
-        {
-            try
-            {
-                TestRefusal why = Refusal(needsCustody: false);
-                if (why == TestRefusal.None && BuildingManager.IsInsideBuilding)
-                {
-                    why = TestRefusal.Indoors;
-                }
-                if (why != TestRefusal.None)
-                {
-                    TestRefusals.Tell(Logger, "Dress the precinct", why);
-                    return;
-                }
-                Vector3 at = PlayerHelper.GetPosition();
-                Precinct precinct = _precincts.Nearest(at);
-                if (precinct == null)
-                {
-                    TestRefusals.Tell(Logger, "Dress the precinct", TestRefusal.NoPrecinct);
-                    return;
-                }
-                float metres = JobSpots.Flat(at, precinct.Door);
-                if (metres > 250f)
-                {
-                    TestRefusals.TellKey(Logger, "Dress the precinct", "reallife_law_test_dress_far", $"{precinct.Name} is {metres:F0} m away");
-                    return;
-                }
-                _precincts.Undress();
-                _precincts.DressNow(precinct);
-                string report = _precincts.Report();
-                Logger?.Info("Law: dressed again by the test button: " + report + ". " + _interior.Report() + ".");
-                var data = new Dictionary<string, string>(1) { { "precinct", precinct.Name } };
-                Notifications.Show(NotificationType.Info, "reallife_law_test_dress_done", data, 10f);
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-        }
-
-        /// <summary>Options-menu test button: wipes the record and puts both reputations back where a new save starts.</summary>
-        public void TestClearRecord()
-        {
-            if (!LawState.Loaded)
-            {
-                TestRefusals.Tell(Logger, "Clear record", TestRefusal.NotLoaded);
-                return;
-            }
-            if (Custody.Active)
-            {
-                TestRefusals.Tell(Logger, "Clear record", TestRefusal.PoliceBusy);
-                return;
-            }
-            Record.Clear();
-            Reputation.Set(Reputation.Start, Reputation.Start);
-            _level = Reputation.ScrutinyLevel;
-            Notifications.Show(NotificationType.Success, "reallife_law_record_cleared", null, 7f);
-            Logger?.Info("Law: record cleared by the test button.");
-        }
-    }
-
-    /// <summary>
-    /// The ways into a cell, one call each for whoever catches the player. Each returns true if
-    /// the law has taken it from there (the caller then keeps its patrol car where it is while
-    /// <see cref="Custody.OnScene"/> is true, and does nothing more), false if the caller should
-    /// do what it did before. The fines are the caller's: it charges them once and passes what
-    /// they came to.
-    /// </summary>
-    public static class Arrests
-    {
-        /// <summary>Caught after driving on from a traffic stop (Crime/PoliceAttention).</summary>
-        /// <param name="crashed">They hit a car on the way.</param>
-        public static bool FledStop(bool crashed, int hurt, int killed, int paid, VehicleComponent patrol)
-        {
-            int charges = LawBook.Bit(Charge.FledStop)
-                          | (crashed ? LawBook.Bit(Charge.HitAndRun) : 0)
-                          | (hurt > 0 ? LawBook.Bit(Charge.InjuryFled) : 0)
-                          | (killed > 0 ? LawBook.Bit(Charge.DeathFled) : 0);
-            return Custody.Arrest(charges, paid, patrol);
-        }
-
-        /// <summary>Caught after driving off from a crash (Traffic/PolicePursuit).</summary>
-        /// <param name="crashed">A car was hit (with nobody hurt and no car hit there is nothing to hold them for but this).</param>
-        public static bool HitAndRun(bool crashed, int hurt, int killed, int paid, VehicleComponent patrol)
-        {
-            int charges = (killed > 0 ? LawBook.Bit(Charge.DeathFled) : 0) | (hurt > 0 ? LawBook.Bit(Charge.InjuryFled) : 0);
-            if (charges == 0 || crashed)
-            {
-                charges |= LawBook.Bit(Charge.HitAndRun);
-            }
-            return Custody.Arrest(charges, paid, patrol);
-        }
-
-        /// <summary>
-        /// They stopped and waited after hitting somebody. An injury is the fine it always was; a
-        /// death is an arrest on the spot.
-        /// </summary>
-        public static bool StayedAtScene(int killed, int paid, VehicleComponent patrol)
-        {
-            return killed > 0 && Settings.LawArrests && Custody.Arrest(LawBook.Bit(Charge.DeathStayed), paid, patrol);
-        }
-
-        /// <summary>One more 911 call about nothing today (Crime/CrimeDirector): from the fifth, a few hours.</summary>
-        public static bool WastedCall(int callsToday, int paid)
-        {
-            return callsToday >= LawBook.WastedCallsForCustody && Settings.LawArrests && Custody.Arrest(LawBook.Bit(Charge.WastedCalls), paid, null);
-        }
-
-        /// <summary>
-        /// They drove off after a crash and were not caught. No cell; but their car is known for the
-        /// rest of the day (the flag Crime/PoliceAttention already keeps), and if somebody was hurt
-        /// it goes on the record as wanted.
-        /// </summary>
-        public static void Escaped(int hurt, int killed)
-        {
-            if (!Settings.LawArrests || !LawState.Loaded)
-            {
-                return;
-            }
-            PoliceAttention.KnowCar();
-            if (hurt + killed > 0)
-            {
-                Record.Add(LawBook.Bit(Charge.Wanted), 0, 0, Outcome.Escaped);
-                // What they ran from, for the day they walk into a station and hand themselves in (StationDesk).
-                LawState.WantedCharges = LawBook.Bit(killed > 0 ? Charge.DeathFled : Charge.InjuryFled);
-                LawState.WantedDay = TimeHelper.CurrentDay;
-            }
-            if (SaveGameManager.Current != null)
-            {
-                Notifications.Show(NotificationType.Warning, "reallife_law_wanted", null, 10f);
-            }
-        }
-
-        /// <summary>A ticket at the roadside (Crime/PoliceAttention): no cell, a line on the record.</summary>
-        public static void Cited(int fine)
-        {
-            if (LawState.Loaded)
-            {
-                Record.Add(LawBook.Bit(Charge.Citation), 0, fine, Outcome.Cited);
-            }
         }
     }
 }

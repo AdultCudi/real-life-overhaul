@@ -10,13 +10,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Law
 {
-    /// <summary>
-    /// The "Record" page: a Police Records Desk contact on the phone. Calling it reads out how
-    /// the player stands with the police and with the public, how long ago their last offence
-    /// was, and then the record itself, newest first, a line at a time. It can also point the
-    /// game's destination marker at the nearest precinct. Registered the way the mod's other
-    /// contacts are (Phone/PhoneContacts, Jobs/JobPhone).
-    /// </summary>
+    /// <summary>The Police Records Desk contact on the phone: it reads out both standings and the record, and points to a precinct.</summary>
     public static class RecordPhone
     {
         public const string ContactId = "reallife-records";
@@ -32,7 +26,7 @@ namespace RealLifeOverhaul.Law
                 ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_records_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_records_calldialogtype");
-                contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
+                contact.callDialogTypeOverride = dialogType;   // not saved by the game: set on every load
                 CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new RecordsDialog()));
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)
                 {
@@ -46,9 +40,31 @@ namespace RealLifeOverhaul.Law
             }
         }
 
+        /// <summary>How a line of the record ended, in the player's language.</summary>
+        internal static string OutcomeText(RecordEntry line)
+        {
+            switch (line.Outcome)
+            {
+                case Outcome.Held: return "reallife_records_outcome_held".GetLocalization();
+                case Outcome.Served: return "reallife_records_outcome_served".GetLocalization().Replace("{hours}", line.Hours.ToString());
+                case Outcome.Bailed: return "reallife_records_outcome_bailed".GetLocalization().Replace("{hours}", line.Hours.ToString());
+                case Outcome.Escaped: return "reallife_records_outcome_escaped".GetLocalization();
+                default: return "reallife_records_outcome_cited".GetLocalization();
+            }
+        }
+
+        /// <summary>How long ago the last offence was, in the player's language.</summary>
+        internal static string SinceText()
+        {
+            int since = Record.DaysSinceLastOffence;
+            return since < 0 ? "reallife_records_since_never".GetLocalization()
+                : since == 0 ? "reallife_records_since_today".GetLocalization()
+                : "reallife_records_since_days".GetLocalization().Replace("{days}", since.ToString());
+        }
     }
 
-    public class RecordsDialog : Dialog
+    /// <summary>The call to the records desk.</summary>
+    public sealed class RecordsDialog : Dialog
     {
         public RecordsDialog()
         {
@@ -63,10 +79,7 @@ namespace RealLifeOverhaul.Law
 
         private static DialogEntry Summary()
         {
-            int since = Record.DaysSinceLastOffence;
-            string last = since < 0 ? "reallife_records_since_never".GetLocalization()
-                : since == 0 ? "reallife_records_since_today".GetLocalization()
-                : "reallife_records_since_days".GetLocalization().Replace("{days}", since.ToString());
+            string last = RecordPhone.SinceText();
             var entry = new DialogEntry
             {
                 messageData = "reallife_records_summary".Localize(new
@@ -77,7 +90,8 @@ namespace RealLifeOverhaul.Law
                     peopleScore = Reputation.Public.ToString(),
                     count = Record.Count.ToString(),
                     since = last,
-                    watch = (Reputation.NoWarnings ? "reallife_records_watch_high" : Reputation.ScrutinyLevel > 0 ? "reallife_records_watch_some" : "reallife_records_watch_none").GetLocalization()
+                    watch = (Reputation.NoWarnings ? "reallife_records_watch_high" : Reputation.ScrutinyLevel > 0 ? "reallife_records_watch_some"
+                        : "reallife_records_watch_none").GetLocalization()
                 }),
                 ConfirmTextOverride = "reallife_records_read".Localize(),
                 OnConfirm = () => Record.Count > 0 ? Line(Record.Count - 1) : PhoneContacts.Closing("reallife_records_clean"),
@@ -88,7 +102,6 @@ namespace RealLifeOverhaul.Law
             return entry;
         }
 
-        // One line of the record, newest first, then the one before it.
         private static DialogEntry Line(int index)
         {
             if (index < 0 || index >= Record.Count)
@@ -96,15 +109,7 @@ namespace RealLifeOverhaul.Law
                 return PhoneContacts.Closing("reallife_records_end");
             }
             RecordEntry line = Record.Entry(index);
-            string outcome;
-            switch (line.Outcome)
-            {
-                case Outcome.Held: outcome = "reallife_records_outcome_held".GetLocalization(); break;
-                case Outcome.Served: outcome = "reallife_records_outcome_served".GetLocalization().Replace("{hours}", line.Hours.ToString()); break;
-                case Outcome.Bailed: outcome = "reallife_records_outcome_bailed".GetLocalization().Replace("{hours}", line.Hours.ToString()); break;
-                case Outcome.Escaped: outcome = "reallife_records_outcome_escaped".GetLocalization(); break;
-                default: outcome = "reallife_records_outcome_cited".GetLocalization(); break;
-            }
+            string outcome = RecordPhone.OutcomeText(line);
             return new DialogEntry
             {
                 messageData = "reallife_records_line".Localize(new

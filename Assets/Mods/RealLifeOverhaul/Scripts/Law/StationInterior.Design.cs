@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using BigAmbitions.InteriorDesigner.InteriorElements;
+using System.Threading.Tasks;
 using BigAmbitions.SaveSystem;
 using Blueprints;
 using BusinessLayoutSets;
@@ -10,25 +10,7 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Law
 {
-    // The game's own design for the unit a station is in. Every empty unit of a size is the same room (the game loads one
-    // interior per size and version: BuildingManager.GetBuildingTransform), and the game ships finished designs for those
-    // rooms: the interior installation firm's (StreamingAssets/InteriorDesigns/<type>/<size>/<business>/<name>.json) and the
-    // layouts its own businesses are furnished with (StreamingAssets/BusinessLayouts/<business>/<size>/<name>.json). Each is a
-    // list of the game's items at their places in that room, and the room's walls and floors (its interior elements: paint,
-    // tiles, wood). Both are read with the game's own reader (BusinessLayoutSetHelper.Deserialize).
-    //
-    //   the look       the walls and floors of an office design, put on the room's elements by the game's own call
-    //                  (BuildingManager.ApplyInteriorDesign with the design's list). Nothing of it is kept by the game:
-    //                  it writes a unit's look into the save only for a unit the player rents (SerializeInteriorDesign), and
-    //                  it puts each unit's own look back on the room every time it loads one (LoadBuilding).
-    //   the furniture  the design's desks, chairs, computers, shelves, plants, dividers, lamps, washroom, as copies to look at
-    //                  (Core/GameFurniture), around what the station has already placed: a piece that would stand on the
-    //                  counter, the cell, a way through or anything placed before it is left out, and so is all that
-    //                  stands on it or at it; then the walkway check (StationInterior.Rooms.cs) has the last word.
-    //
-    // Only office kinds of business are furnished from: a law firm, a head office, a travel agency, a bank, the tax office,
-    // a recruitment agency, the agencies. A size with none of those (some shop units) keeps the station's own furniture only,
-    // and takes its walls and floors from a shop design that suits a public office best.
+    /// <summary>The game's own design for the unit: an office design's walls, floors and furniture, or a shop design's look alone.</summary>
     internal sealed partial class StationInterior
     {
         private static readonly string[] OfficeKinds =
@@ -39,24 +21,106 @@ namespace RealLifeOverhaul.Law
 
         private static readonly string[] LookOnlyKinds = { "ElectronicsStore", "Bookstore", "GiftShop", "JewelryStore", "Supermarket" };
 
-        // The design's items that are a business's trade, not an office's furniture.
+        // A design's items that are a business's trade, not an office's furniture.
         private static readonly string[] NotForAStation =
         {
             "forsale", "jobboard", "signwithtext", "productsign", "menuboard", "deliverysign", "deliveryspot", "cashregister", "checkout",
             "shoppingbasket", "spawner", "showcase", "cardboardcutout", "christmas", "halloween", "jackolantern", "seasonal", "neon", "candycane"
         };
 
+        // What the search for a precinct's design found: the design, whether it furnishes (an office's), and its name.
+        private sealed class DesignPick
+        {
+            public BusinessLayoutSet Set;
+            public bool Furnishes;
+            public string Name;
+        }
+
+        // The game's design files are listed and read on a worker thread, one search at a time (the lock), once a session.
+        private static readonly object DesignLock = new object();
         private static readonly Dictionary<string, BusinessLayoutSet> Designs = new Dictionary<string, BusinessLayoutSet>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, List<string>> DesignFiles = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        private static readonly Dictionary<string, Task<DesignPick>> Picks = new Dictionary<string, Task<DesignPick>>(StringComparer.Ordinal);
 
         private string _designName;
         private InteriorElement[] _elements;
         private Buildings.Building _lookOn;
 
-        // ---------------------------------------------------------------- finding a design
+        /// <summary>
+        /// Begins the search for every precinct's design on a worker thread, once a session for each unit, so that the walk in
+        /// never waits for the game's files. Called when the precincts are chosen; a few string reads a precinct here.
+        /// </summary>
+        public static void SearchDesigns(Precincts precincts)
+        {
+            for (int i = 0; precincts != null && i < precincts.Count; i++)
+            {
+                Precinct precinct = precincts.At(i);
+                Search(precinct != null && precinct.Building != null ? precinct.Building.building : null, precinct != null ? precinct.Index : 0);
+            }
+        }
 
-        // The files of one kind of business for this size, from both places the game keeps them, in a fixed order.
-        private static List<string> FilesFor(string kind, string size)
+        // The search for one unit's design, begun on a worker the first time it is asked for; null for a unit with no size.
+        private static Task<DesignPick> Search(Buildings.Building building, int index)
+        {
+            if (building == null || string.IsNullOrEmpty(building.BuildingSize))
+            {
+                return null;
+            }
+            string size = new BuildingSizeInfo(building).ToString();
+            string buildingSize = building.BuildingSize;
+            int version = building.BuildingVersion;
+            string key = size + "|" + buildingSize + "|" + version + "|" + index;
+            if (!Picks.TryGetValue(key, out Task<DesignPick> search))
+            {
+                string root = Application.streamingAssetsPath;   // (read here: the engine answers it on the main thread only)
+                search = Task.Run(() =>
+                {
+                    try
+                    {
+                        lock (DesignLock)
+                        {
+                            return Pick(root, size, buildingSize, version, index);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        return new DesignPick();
+                    }
+                });
+                Picks[key] = search;
+            }
+            return search;
+        }
+
+        // On the worker: an office design if the size has one (each precinct its own pick, so two stations of one size differ),
+        // otherwise a shop one for the look alone; an empty pick if the game has none for this room.
+        private static DesignPick Pick(string root, string size, string buildingSize, int version, int index)
+        {
+            for (int pass = 0; pass < 2; pass++)
+            {
+                string[] kinds = pass == 0 ? OfficeKinds : LookOnlyKinds;
+                for (int k = 0; k < kinds.Length; k++)
+                {
+                    List<string> files = FilesFor(root, kinds[k], size);
+                    for (int tried = 0; tried < files.Count; tried++)
+                    {
+                        string path = files[(index + tried) % files.Count];
+                        BusinessLayoutSet set = Read(path);
+                        if (set == null || set.BuildingSize != buildingSize || set.BuildingVersion != version)
+                        {
+                            continue;   // a design for another version of the size: another room
+                        }
+                        return new DesignPick
+                        {
+                            Set = set, Furnishes = pass == 0, Name = kinds[k] + "/" + Path.GetFileNameWithoutExtension(path) + " (" + size + ")"
+                        };
+                    }
+                }
+            }
+            return new DesignPick();
+        }
+
+        private static List<string> FilesFor(string root, string kind, string size)
         {
             string key = kind + "|" + size;
             if (DesignFiles.TryGetValue(key, out List<string> files))
@@ -66,7 +130,6 @@ namespace RealLifeOverhaul.Law
             files = new List<string>(4);
             try
             {
-                string root = Application.streamingAssetsPath;
                 string designs = Path.Combine(root, "InteriorDesigns");
                 if (Directory.Exists(designs))
                 {
@@ -112,46 +175,25 @@ namespace RealLifeOverhaul.Law
             return set;
         }
 
-        // The design for this unit: an office one if the size has one (the precinct's own pick of them, so that two stations
-        // of one size differ), otherwise a shop one for the look alone. Null if the game has none for this size.
+        // The design for this unit, from the search begun when the precincts were chosen (long done by the first visit; if
+        // not, waited for here, behind the black screen). Null if the game has none for this size.
         private BusinessLayoutSet FindDesign(out bool furnish)
         {
             furnish = false;
-            Buildings.Building building = _building != null ? _building.building : null;
-            if (building == null || string.IsNullOrEmpty(building.BuildingSize))
+            Task<DesignPick> search = Search(_building != null ? _building.building : null, Precinct.Index);
+            DesignPick pick = search != null ? search.Result : null;
+            if (pick == null || pick.Set == null)
             {
                 return null;
             }
-            string size = new BuildingSizeInfo(building).ToString();
-            for (int pass = 0; pass < 2; pass++)
-            {
-                string[] kinds = pass == 0 ? OfficeKinds : LookOnlyKinds;
-                for (int k = 0; k < kinds.Length; k++)
-                {
-                    List<string> files = FilesFor(kinds[k], size);
-                    for (int tried = 0; tried < files.Count; tried++)
-                    {
-                        string path = files[(Precinct.Index + tried) % files.Count];
-                        BusinessLayoutSet set = Read(path);
-                        if (set == null || set.BuildingSize != building.BuildingSize || set.BuildingVersion != building.BuildingVersion)
-                        {
-                            continue;   // (a design for another version of the size: another room)
-                        }
-                        furnish = pass == 0;
-                        _designName = kinds[k] + "/" + Path.GetFileNameWithoutExtension(path) + " (" + size + ")";
-                        return set;
-                    }
-                }
-            }
-            return null;
+            furnish = pick.Furnishes;
+            _designName = pick.Name;
+            return pick.Set;
         }
-
-        // ---------------------------------------------------------------- the furniture
 
         private BusinessLayoutSet _design;
         private bool _designFurnishes;
 
-        // The design's pieces staged round what the station already has.
         private void PlaceDesign()
         {
             _design = FindDesign(out _designFurnishes);
@@ -165,7 +207,7 @@ namespace RealLifeOverhaul.Law
                 _fitted.Append("the walls and floors of ").Append(_designName).Append("; ");
                 return;
             }
-            // First: does the design stand in this room? Its pieces on the floor must be on this room's floor.
+            // Does the design stand in this room? Its floor pieces must be on this room's floor.
             int floorItems = 0, onFloor = 0;
             for (int i = 0; i < _design.Items.Count; i++)
             {
@@ -211,7 +253,7 @@ namespace RealLifeOverhaul.Law
                     continue;
                 }
                 bool floor = !lamp && !flat && height < 0.15f;
-                int index = Stage(piece, size, at, facing, floor, -1, SeatUse.None, true);
+                int index = Stage(piece, size, at, facing, floor, -1, SeatUse.None);
                 staged++;
                 Staged s = _staged[index];
                 if (floor)
@@ -236,7 +278,7 @@ namespace RealLifeOverhaul.Law
                 }
                 _staged[index] = s;
             }
-            // What stands on something (a computer on a desk) goes with it; a chair goes with the desk or table it is at.
+            // What stands on something goes with it (a computer on a desk); a chair goes with the desk or table it is at.
             for (int i = first; i < _staged.Count; i++)
             {
                 Staged s = _staged[i];
@@ -252,7 +294,7 @@ namespace RealLifeOverhaul.Law
                                     || (_evidence != null && _evidence.gameObject.activeSelf && CitySpots.Flat(_evidence.position - s.At) < 1.4f * 1.4f);
                         for (int h = 0; h < hungBefore && !near; h++)
                         {
-                            near = CitySpots.Flat(_hung[h] - s.At) < 1.2f * 1.2f && Mathf.Abs(_hung[h].y - s.At.y) < 1.4f;   // (the station's own screen)
+                            near = CitySpots.Flat(_hung[h] - s.At) < 1.2f * 1.2f && Mathf.Abs(_hung[h].y - s.At.y) < 1.4f;   // the station's own screen
                         }
                         s.Dropped |= near;
                         if (!s.Dropped)
@@ -272,7 +314,7 @@ namespace RealLifeOverhaul.Law
                 }
                 _staged[i] = s;
             }
-            // Whatever is kept is taken: what is placed along the walls afterwards keeps off it.
+            // Whatever is kept is taken: what goes along the walls afterwards keeps off it.
             int kept = 0;
             for (int i = first; i < _staged.Count; i++)
             {
@@ -332,7 +374,7 @@ namespace RealLifeOverhaul.Law
             return false;
         }
 
-        // The design's floor piece a raised piece stands on: the one whose floor it is over. -1 if none (it hangs on a wall).
+        // The floor piece a raised piece stands on: the smallest whose floor it is over. -1 if none (it hangs on a wall).
         private int Under(Staged s, int first)
         {
             float a = AsideOf(s.At), d = DepthOf(s.At);
@@ -355,7 +397,6 @@ namespace RealLifeOverhaul.Law
             return best;
         }
 
-        // The desk or table a chair is at, within a step; whether it is a desk.
         private int Beside(Staged chair, int first, out bool desk)
         {
             desk = false;
@@ -382,9 +423,6 @@ namespace RealLifeOverhaul.Law
             return best;
         }
 
-        // ---------------------------------------------------------------- the look
-
-        // The design's walls and floors on the room, by the game's own call. Only while the player is in this unit.
         private void ApplyLook()
         {
             if (_design == null || _design.interiorDesigns == null || _design.interiorDesigns.Count == 0 || _building == null || _building.currentBuildingVersion == null)
@@ -409,8 +447,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // The unit's own look back, if the player is still in it (the option switched off, the station given up). Out of it,
-        // there is nothing to do: the game puts each unit's own look on the room whenever it loads one.
+        // The unit's own look back if the player is still in it; out of it the game puts it back whenever it loads the unit.
         private void RestoreLook()
         {
             Buildings.Building on = _lookOn;

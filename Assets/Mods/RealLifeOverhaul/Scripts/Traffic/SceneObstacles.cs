@@ -5,14 +5,9 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Makes the vehicles standing at a scene solid for people on foot. The game moves everyone
-    /// on its navigation mesh, and traffic cars are not part of that mesh: left alone, a crew's
-    /// route (and the player) goes straight through a wreck or the ambulance. While a vehicle
-    /// stands at a scene, a box its size is cut out of the mesh, so every route goes round it
-    /// and every place to stand that is asked of the mesh is clear of it.
-    /// The boxes are the mod's own objects, never parts of the pooled cars: a handful, built
-    /// once, switched off when not in use. Only vehicles that stand still are given one, so a
-    /// box is placed once and costs nothing after the mesh has been cut.
+    /// Makes the vehicles standing at a scene solid for people on foot: the game moves everyone on its navigation mesh, which
+    /// traffic cars are not part of, so a box the vehicle's size is cut out of the mesh while it stands. A handful of the
+    /// mod's own boxes, built once and switched off when unused; placed once per vehicle, nothing after the cut.
     /// </summary>
     public static class SceneObstacles
     {
@@ -52,8 +47,7 @@ namespace RealLifeOverhaul
                 return;   // more vehicles than boxes: the last ones stay as they were
             }
 
-            // The box is the car's real body (its colliders), not its nominal size about its centre of mass:
-            // by those an end of a skewed or rear-engined car stuck out of its box, and people stood in it.
+            // The box is the car's real body (its colliders): its nominal size left an end of a skewed car outside.
             TrafficTools.Footprint(car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth);
             if (StreetSpots.Ground(centre, out float ground))
             {

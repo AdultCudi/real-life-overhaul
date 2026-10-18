@@ -9,28 +9,18 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The shift's figures on the HUD, in the game's own job panel: a copy of
-    /// <c>Canvases/PlayerHUD/CurrentJobUI/Panel</c> (the dark box with a pale headline that the game shows at the
-    /// top right while the player has its own employer job), made while it sleeps (GameUi/UiClone), with the
-    /// game's script and its two buttons taken off. The headline says the job; under it are five lines in the
-    /// panel's own lettering, written by whoever owns the card and only when a line's words change.
-    ///
-    /// It stands where the game's panel stands, and under it while the game's own is showing (the player also has
-    /// the game's job). It is looked at, never clicked: nothing on it takes the pointer from the world.
-    ///
-    /// Made once per city the first time a shift needs it, kept switched off between shifts, and destroyed with
-    /// the HUD it hangs on. If the game's panel is not where it was, <see cref="Make"/> says so in one
-    /// "Game UI:" line and returns null: the shift is then worked with the panel over the cart alone.
+    /// The shift's figures on a copy of the game's job panel (top right), made asleep without its script: a headline and five
+    /// lines, each written only on a change, under the game's own panel while that shows. <see cref="Make"/> gives null if it cannot.
     /// </summary>
     public sealed class ShiftCard
     {
         public const int Lines = 5;
 
-        private const float FirstLine = -132.1f;    // the game's own first line under the headline...
+        private const float FirstLine = -132.1f;    // canvas units to the game's own first line under the headline...
         private const float LineStep = 42f;         // ...and the step between its lines
         private const float Foot = 36f;             // under the last line
         private const float GameHeight = 460f;      // the game's own panel, when it is showing above this one
-        private const float Gap = 16f;
+        private const float Gap = 16f;              // between the two panels
 
         private readonly GameObject _panel;
         private readonly RectTransform _rect;
@@ -116,13 +106,13 @@ namespace RealLifeOverhaul
                     Vector2 at = rect.anchoredPosition;
                     at.y = FirstLine - LineStep * i;
                     rect.anchoredPosition = at;
-                    lines[i].enableAutoSizing = true;      // a long line is set smaller, never cut off or wrapped
+                    lines[i].enableAutoSizing = true;      // a long line is set smaller, never cut or wrapped
                     lines[i].fontSizeMax = lines[i].fontSize;
                     lines[i].fontSizeMin = 18f;
                     UiClone.Words(lines[i], string.Empty);
                 }
                 UiClone.Words(title, string.Empty);
-                // Looked at, never clicked: nothing on it may take the pointer from the world under it.
+                // Looked at, never clicked: nothing on it may take the pointer from the world.
                 foreach (Graphic graphic in panel.GetComponentsInChildren<Graphic>(true))
                 {
                     graphic.raycastTarget = false;
@@ -157,7 +147,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>One of the five lines, as final words (null or empty leaves it blank). Written only when the words or the colour differ.</summary>
+        /// <summary>One of the five lines (null or empty: blank), written only when the words or the colour differ.</summary>
         public void Line(int line, string words, Color32 colour)
         {
             if (_panel == null || line < 0 || line >= Lines)
@@ -177,11 +167,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// One of the game's bars (<see cref="GameBar"/>) on the card, in the place of its last two lines, which the
-        /// owner then leaves blank. Made the first time it is asked for and kept, switched off, with the card; null
-        /// (one "Game UI:" line, once) if the game's top bar could not be copied. The owner shows, hides and fills it.
-        /// </summary>
+        /// <summary>One of the game's bars (<see cref="GameBar"/>) in place of the card's last two lines; null if the game's bar could not be copied.</summary>
         public GameBar Bar()
         {
             if (_bar == null && !_barTried && _panel != null)
@@ -190,7 +176,7 @@ namespace RealLifeOverhaul
                 _bar = GameBar.Make(_rect, "RealLifeOverhaul Card Bar");
                 if (_bar != null)
                 {
-                    // Midway between the last two lines, in the middle of the card: measured from the lines themselves.
+                    // Midway between the last two lines, measured from the lines themselves.
                     var upper = (RectTransform)_line[Lines - 2].transform;
                     var lower = (RectTransform)_line[Lines - 1].transform;
                     float y = (upper.localPosition.y + upper.rect.center.y + lower.localPosition.y + lower.rect.center.y) * 0.5f;
@@ -200,7 +186,7 @@ namespace RealLifeOverhaul
             return _bar != null && _bar.Alive ? _bar : null;
         }
 
-        /// <summary>Shows or hides the card. Two comparisons when nothing changes: fit for every frame.</summary>
+        /// <summary>Shows or hides the card; two comparisons when nothing changes, so fit for every frame.</summary>
         public void Show(bool on)
         {
             if (_panel == null)

@@ -1,30 +1,20 @@
 using System;
 using System.Reflection;
 using BAModAPI;
-using BigAmbitions.Items;
 using Helpers;
-using UnityEngine;
 using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's own mop in the player's hands on a client's floor. The game gives a mop at a cleaning station, and only
-    /// in a business the player rents (<c>CleaningStationController.OnCleaningStationClick</c>); what it does then is
-    /// <c>PlayerHelper.ItemInstanceInHands = ItemHelper.InitializeNewInstance("ba:itemname_mop")</c>, which puts the mop
-    /// object in the hand, turns the dirt highlighting on, sets the cleaning cursor and plays the mopping stance. This
-    /// does the same call. The only other difference is the click: the mop listens for a click on the floor only in
-    /// the player's own business, so the same mop method is hooked to the floor's click event here.
-    ///
-    /// Taking it away is the game's own call too (<c>PlayerHelper.RemoveItemsFromHands</c>, as its Escape and its exit
-    /// from a building do), which stops a mopping in progress, drops the highlighting and the stance. <see cref="Take"/>
-    /// is safe in any state and is what a job calls on every way out.
+    /// The game's own mop in the player's hands on a client's floor, given as its cleaning station gives it. Its click method is
+    /// hooked to the floor's click event, which it hears only in the player's own business. <see cref="Take"/> is always safe.
     /// </summary>
     public sealed class JobMop
     {
-        private const string MopItem = "ba:itemname_mop";   // the item the game's cleaning station hands over
+        private const string MopItem = "ba:itemname_mop";   // what the game's cleaning station hands over
 
-        private static readonly MethodInfo Click = GameContract.MopClick.Method;   // (resolved once: Core/GameContract)
+        private static readonly MethodInfo Click = GameContract.MopClick.Method;   // resolved once (Core/GameContract)
 
         private readonly IModLogger _logger;
         private UnityAction<DirtSpotObject> _onCell;
@@ -35,7 +25,6 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        /// <summary>True while the mop is in the player's hands.</summary>
         public static bool Holding => PlayerHelper.IsHoldingAMop;
 
         /// <summary>True while the game's mop is cleaning a spot.</summary>
@@ -126,10 +115,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The game's own item panel shows the cleanliness bar with the mop, but reads 100 outside the player's own
-        /// business; this sets the bar to the floor's real figure.
-        /// </summary>
+        /// <summary>Sets the game's cleanliness bar, shown with the mop, to this floor's figure: outside the player's own business it reads 100.</summary>
         public void Show(float percent)
         {
             try

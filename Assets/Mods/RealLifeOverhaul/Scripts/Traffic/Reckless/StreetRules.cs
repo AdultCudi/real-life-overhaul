@@ -3,17 +3,13 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The rules of the live street in plain numbers: who hears a horn and what they make of it, what a
-    /// driver who keeps sounding it at people in the right may expect from an officer, how often a
-    /// reckless driver turns up and what kind, how such a driver brakes, sees and corners, how hard a
-    /// collision was from the speed the two met at, and how far ahead of a car somebody steps into the
-    /// road. Nothing of the game or the engine in it, so every rule is also run in a console test
-    /// (RealLifeOverhaul.Build/NavCheck/StreetCheck.cs). People/HornReactions and Traffic/Reckless hold
-    /// no number of their own for any of this.
+    /// The rules of the live street in plain numbers: horns and what people and officers make of them, how often a reckless
+    /// driver turns up and how they drive, how hard a collision was, and when somebody steps out. Game-free, so NavCheck's
+    /// StreetCheck runs every rule; People/HornReactions and Traffic/Reckless hold no number of their own.
     /// </summary>
     public static class StreetRules
     {
-        // ---------------------------------------------------------------- the horn: who hears it
+        // The horn: who hears it.
         public const float HornReach = 14f;          // metres from the middle of the car, ahead of it
         public const float HornTangent = 1.19f;      // the tangent of 50 degrees: how wide the cone ahead opens each side
         public const float HornBeside = 4f;          // metres to either side of the car that hear it whatever the cone says
@@ -23,7 +19,7 @@ namespace RealLifeOverhaul
         public const float HornRepeat = 2f;          // seconds a held horn takes to count as another blast
         public const float PathMargin = 0.9f;        // metres beyond the car's side that are still in its way
 
-        // ---------------------------------------------------------------- the horn: what people do
+        // The horn: what people do.
         public const int StartleShare = 50;          // of 100 people on the pavement who look round
         public const float StartleSeconds = 1.1f;    // how long that look lasts
         public const float GlareSeconds = 1.8f;      // somebody in the right stops and faces the car this long...
@@ -38,14 +34,14 @@ namespace RealLifeOverhaul
         public const int WaveShare = 35;             // of 100 who hurry and lift a hand in apology
         public const int PointShare = 30;            // of 100 who glare and point at the red light
 
-        // ---------------------------------------------------------------- the horn: what the police make of it
+        // The horn: what the police make of it.
         public const float RageWindow = 60f;         // seconds in which blasts at people in the right are counted
         public const int RagesForWarning = 3;        // that many in the window, with an officer near: a warning
         public const float WarnedFor = 300f;         // seconds after a warning in which the next such blast is fined
         public const float OfficerWithin = 30f;      // metres: how near an officer (or a parked patrol car) must be
         public const float PenaltyPause = 30f;       // seconds after a warning or a fine before either can follow
 
-        // ---------------------------------------------------------------- how often
+        // How often.
         public const float CheckSeconds = 20f;       // the street is looked at this often (TrafficAccidents' own interval), in seconds of play
         public const float LooksPerGameHour = 3f;    // a game minute is a second of play at normal speed: three looks a game hour
         public const int DefaultFrequency = 2;       // the option's default
@@ -57,16 +53,16 @@ namespace RealLifeOverhaul
         public const float RecklessMost = 0.85f;     // the chance of one at a look never passes this
         public const float NightFactor = 1.3f;       // more of them from 21:00 to 05:00
         public const float JaywalkersPerKnock = 3f;  // people who step out for each one who is due to be hit
-        public const float JaywalkMost = 0.5f;
+        public const float JaywalkMost = 0.5f;       // the chance of one at a look never passes this
 
-        // ---------------------------------------------------------------- which car, and for how long
+        // Which car, and for how long.
         public const float PickLeast = 20f;          // metres from the player: nearer than this a change of driving would show
-        public const float PickMost = 120f;
+        public const float PickMost = 120f;          // metres
         public const float PickSpeedKmh = 15f;       // a car slower than this is not on the move
         public const float LastsLeast = 20f;         // seconds a driver keeps it up
-        public const float LastsMost = 60f;
+        public const float LastsMost = 60f;          // seconds
 
-        // ---------------------------------------------------------------- how such a driver drives
+        // How such a driver drives.
         public const float DryGrip = 8.5f;           // m/s2 sideways a car's tyres hold on a dry road (EmergencyDriver's own figure)
         public const float LoseMargin = 1.2f;        // a bend taken this much faster than the road holds ends in a crash
         public const float GentleBend = 40f;         // metres: a bend wider than this is no bend
@@ -77,11 +73,11 @@ namespace RealLifeOverhaul
         public const float LateStoppingMost = 12f;   // ...and at the most: still too little for what they see of the road
         public const float LateForesightMost = 0.7f; // the most of the road ahead such a driver takes in
 
-        // ---------------------------------------------------------------- how hard a collision was
+        // How hard a collision was.
         public const float MinorBelow = 8f;          // m/s closing speed, about 29 km/h: a bump
         public const float SevereFrom = 14f;         // ...about 50 km/h: a serious crash (CrashConsequences' own line for the player)
 
-        // ---------------------------------------------------------------- afterwards
+        // Afterwards.
         public const float ChaseAfter = 230f;        // metres a driver who ran must be beyond the scene before a patrol car is put behind it
         public const int PullsOverShare = 65;        // of 100 drivers a patrol car lights up who stop for it
         public const float NearMissAhead = 9f;       // metres ahead of a reckless car inside which somebody in its way has had a near miss
@@ -101,8 +97,6 @@ namespace RealLifeOverhaul
 
         /// <summary>The kinds of reckless driver.</summary>
         public enum Kind { Speeder, RedLight, Tailgater, Drunk }
-
-        // ---------------------------------------------------------------- the horn
 
         /// <summary>True on the frame a blast begins: the horn goes down, or has been held for another two seconds.</summary>
         public static bool Blast(bool pressed, bool pressedBefore, float sinceLast)
@@ -127,22 +121,13 @@ namespace RealLifeOverhaul
             return ahead > 0f && ahead <= HornReach && Math.Abs(side) <= halfWidth + PathMargin;
         }
 
-        /// <summary>
-        /// True if somebody in the road is there by right: the car's own light is red, or they are on a
-        /// marked crossing whose light is in their favour (which also covers a car that has turned in
-        /// over a crossing on a green of its own).
-        /// </summary>
+        /// <summary>True if somebody in the road is there by right: the car's light is red, or they are on a crossing whose light lets them walk.</summary>
         public static bool InTheRight(Place place, Light car, bool peopleMayWalk)
         {
             return place != Place.Pavement && (car == Light.Red || (place == Place.Crossing && peopleMayWalk));
         }
 
-        /// <summary>
-        /// What one person does. Somebody in the car's way who is in the right stops and glares; in the
-        /// wrong, they clear the way (onwards, or back if they had only just stepped in). Anybody else
-        /// may look round. <paramref name="roll"/> is 0 to 99; <paramref name="sideSpeed"/> is how fast they
-        /// are moving across the car's line, towards positive side.
-        /// </summary>
+        /// <summary>What one person does (roll 0 to 99): glare in the right, clear the way in the wrong, perhaps look round off the car's way.</summary>
         public static Reaction React(Place place, bool inPath, Light car, bool peopleMayWalk, float side, float sideSpeed, float halfWidth, int roll)
         {
             if (place == Place.Pavement || !inPath)
@@ -156,10 +141,7 @@ namespace RealLifeOverhaul
             return StepsBack(side, sideSpeed, halfWidth) ? Reaction.StepBack : Reaction.Hurry;
         }
 
-        /// <summary>
-        /// True if the kerb they came from is the nearer way out: they are walking in towards the car's
-        /// line and have come no further into its way than a step.
-        /// </summary>
+        /// <summary>True if the kerb they came from is the nearer way out: walking in towards the car's line, no more than a step into its way.</summary>
         public static bool StepsBack(float side, float sideSpeed, float halfWidth)
         {
             bool inwards = side * sideSpeed < 0f && Math.Abs(sideSpeed) > 0.2f;
@@ -194,10 +176,7 @@ namespace RealLifeOverhaul
         /// <summary>True if somebody who glares also points at the light: only when it is the car's red light they are in the right by.</summary>
         public static bool Points(Light car, int roll) => car == Light.Red && roll < PointShare;
 
-        /// <summary>
-        /// What an officer makes of a blast at people in the right. Nothing without an officer near. Three
-        /// in a minute earn a warning; once warned, the next one is fined.
-        /// </summary>
+        /// <summary>What an officer near makes of a blast at people in the right: three in a minute earn a warning, the next one a fine.</summary>
         public static Penalty For(int blastsInWindow, bool officerNear, bool warned)
         {
             if (!officerNear || blastsInWindow <= 0)
@@ -211,13 +190,7 @@ namespace RealLifeOverhaul
             return blastsInWindow >= RagesForWarning ? Penalty.Warning : Penalty.None;
         }
 
-        // ---------------------------------------------------------------- how often
-
-        // How busy the road is at each hour of the day, against the day's average (the mean of the 24 is 1): the
-        // shape of a large city's reported collisions by hour, lowest from 02:00 to 05:00 at about a third of the
-        // average, highest in the late afternoon at about one and a half times it. The higher risk of each car at
-        // night (drink, speed, the dark) is in the drivers instead: more of them are reckless (NightFactor) and a
-        // drunk may be among them.
+        // How busy the road is each hour against the day's average (mean 1), as a large city's collisions run.
         private static readonly float[] HourFactors =
         {
             0.63f, 0.44f, 0.37f, 0.32f, 0.37f, 0.49f,   // 00:00 to 05:00
@@ -232,17 +205,7 @@ namespace RealLifeOverhaul
             return HourFactors[((hour % 24) + 24) % 24];
         }
 
-        /// <summary>
-        /// Car accidents near the player in a game day of street time at a setting of the frequency option, in fair
-        /// weather at the day's average hour. Each point is half as many again as the one below it, so the low end is
-        /// rare and the top still busy: 0.5 at 1, 0.75 at the default 2, about 19 at 10. None at 0 or below.
-        ///
-        /// What a real city sees is far rarer still: a city the size of the game's records a few hundred collisions a
-        /// day over some ten thousand kilometres of street, so the kilometre or two of street in sight of one person
-        /// sees one every few weeks. The game is a game: an accident is an event the player meets now and then, and
-        /// the old rate of nearly three a day at the default (with a scene that lasts up to five game hours) put one
-        /// on the road nearly all the time.
-        /// </summary>
+        /// <summary>Car accidents near the player in a game day at a frequency setting: 0.5 at 1, 0.75 at the default 2, about 19 at 10, none at 0.</summary>
         public static float PerDay(int frequency)
         {
             return frequency <= 0 ? 0f : DayAtDefault * (float)Math.Pow(StepFactor, frequency - DefaultFrequency);
@@ -289,14 +252,9 @@ namespace RealLifeOverhaul
             return chance > JaywalkMost ? JaywalkMost : chance;
         }
 
-        // ---------------------------------------------------------------- which car, which kind
-
         private static readonly string[] NeverOffenders = { "ambulance", "taxi", "limo", "police", "bus", "truck", "van", "fire", "garbage", "delivery", "tow" };
 
-        /// <summary>
-        /// True if a vehicle of that name is an ordinary private car: not an emergency vehicle and not
-        /// one with a job to do. The one list both Crime/CrimeCars and the reckless drivers pick by.
-        /// </summary>
+        /// <summary>True if a vehicle of that name is an ordinary private car: the one list Crime/CrimeCars and the reckless drivers pick by.</summary>
         public static bool IsOrdinaryCarName(string prefabName)
         {
             if (string.IsNullOrEmpty(prefabName))
@@ -336,8 +294,6 @@ namespace RealLifeOverhaul
             return LastsLeast + (LastsMost - LastsLeast) * roll;
         }
 
-        // ---------------------------------------------------------------- how such a driver drives
-
         /// <summary>The pace on a clear road in m/s, from a roll of 0 to 1: a speeder 65 to 85 km/h, the others at or a little over the traffic's.</summary>
         public static float Cruise(Kind kind, float roll)
         {
@@ -351,11 +307,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The most the driver can slow by, in m/s2. Somebody who will get away with it brakes late but
-        /// hard, and in time; somebody with an accident due brakes like a driver who was not looking, by
-        /// a roll of 0 to 1, so that what they hit they hit at anything from a bump to full speed.
-        /// </summary>
+        /// <summary>The most the driver can slow by, m/s2: hard and in time if they get away with it, else as one who was not looking, by the roll.</summary>
         public static float Stopping(bool accidentDue, float roll)
         {
             if (!accidentDue)
@@ -380,21 +332,14 @@ namespace RealLifeOverhaul
             return least + (most - least) * roll;
         }
 
-        /// <summary>
-        /// The fastest such a driver can be going and still stop short of something standing in the road
-        /// that they see at the edge of their look: below it they get away with it, above it they hit it.
-        /// <paramref name="look"/> is how far an emergency driver would see at that speed, in metres.
-        /// </summary>
+        /// <summary>The fastest such a driver can go and still stop short of something seen at the edge of their look (in metres).</summary>
         public static float StopsFrom(float stopping, float foresight, float look, float gap)
         {
             float room = look * foresight - gap;
             return room <= 0f ? 0f : (float)Math.Sqrt(2f * stopping * room);
         }
 
-        /// <summary>
-        /// The kind when somebody on foot is due to be hit, from a roll of 0 to 99: more often than not the
-        /// one who runs red lights, since people cross while the cars' light is red and anybody else stops for it.
-        /// </summary>
+        /// <summary>The kind when somebody on foot is due to be hit, from a roll of 0 to 99: mostly the red-light runner, as people cross on red.</summary>
         public static Kind PickForPeople(Kind rolled, int roll)
         {
             return roll < 60 ? Kind.RedLight : rolled;
@@ -406,11 +351,7 @@ namespace RealLifeOverhaul
             return kind != Kind.RedLight;
         }
 
-        /// <summary>
-        /// The grip the driver plans a bend with, in m/s2. Somebody who gets away with it leaves a margin
-        /// on the road as it is today. A speeder or a drunk with an accident due plans for a dry road and
-        /// more than even that holds, by a roll of 0 to 1; the others corner as carefully as anybody.
-        /// </summary>
+        /// <summary>The grip the driver plans a bend with, m/s2: a margin on today's road, or (a speeder or drunk with an accident due) more than a dry road's.</summary>
         public static float PlannedGrip(Kind kind, bool accidentDue, float roll, float grip)
         {
             if (!accidentDue || kind == Kind.RedLight || kind == Kind.Tailgater)
@@ -441,8 +382,6 @@ namespace RealLifeOverhaul
             return accidentDue ? 1.3f + 0.5f * roll : 0.6f + 0.4f * roll;
         }
 
-        // ---------------------------------------------------------------- what came of it
-
         /// <summary>How hard two vehicles met, from their closing speed in m/s: 0 minor, 1 moderate, 2 severe.</summary>
         public static int Severity(float closingSpeed)
         {
@@ -470,18 +409,13 @@ namespace RealLifeOverhaul
             return speed >= NearMissSpeed && ahead > 0f && ahead <= NearMissAhead && Math.Abs(side) <= halfWidth + PathMargin;
         }
 
-        // ---------------------------------------------------------------- stepping out
-
+        // Stepping out.
         public const float WalkPace = 1.4f;          // m/s somebody crosses at
         public const float TrafficBraking = 5f;      // m/s2 an ordinary driver stops with
         public const float JaywalkRoom = 8f;         // metres to spare when the driver is to stop in time
         public const float JaywalkLate = 2f;         // ...and when not
 
-        /// <summary>
-        /// How far up the road the car should be when somebody on the pavement sets off for its lane:
-        /// what it covers while they walk there, and then room to stop in (or, when somebody is due to
-        /// be hit, none to speak of).
-        /// </summary>
+        /// <summary>How far up the road the car should be as somebody sets off for its lane: what it covers meanwhile, then room to stop (none if late).</summary>
         public static float JaywalkCarDistance(float carSpeed, float metresToLane, bool late)
         {
             float walk = (metresToLane < 0f ? 0f : metresToLane) / WalkPace;

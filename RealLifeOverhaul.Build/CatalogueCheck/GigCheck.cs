@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul
 {
@@ -13,6 +15,13 @@ namespace RealLifeOverhaul
         private const double Cashier = 25.0;      // what the game's own job pays an hour (WorkActivity)
         private const double VanJob = 100.0;      // the game's delivery van job, an hour
         private const int Days = 3000;
+        private static readonly string[] UnreadWorkPrompts =
+        {
+            "reallife_job_flyers_prompt", "reallife_job_courier_prompt_collect", "reallife_job_courier_prompt_load", "reallife_job_courier_prompt_take",
+            "reallife_job_courier_prompt_hand", "reallife_job_courier_prompt_leave", "reallife_job_prompt_enter", "reallife_job_cleaner_prompt_mop",
+            "reallife_job_stocker_prompt_pick", "reallife_job_stocker_prompt_stock", "reallife_job_busker_prompt_setup", "reallife_job_busker_prompt_strum",
+            "reallife_job_busker_prompt_pack", "reallife_job_lead_prompt"
+        };
 
         public static void Run(Action<string> fail, Dictionary<string, string> locale)
         {
@@ -163,6 +172,65 @@ namespace RealLifeOverhaul
                 "reallife_gig_quote", "reallife_gig_tipper", "reallife_gig_speed_offer", "reallife_gig_speed_paid", "reallife_gig_speed_missed", "reallife_gig_redo_cart",
                 "reallife_gig_redo_clean", "reallife_job_no_today", "reallife_job_card_gig_offer", "reallife_job_slip_events", "reallife_guide_job_size" })
                 if (!locale.TryGetValue(key, out string text) || string.IsNullOrWhiteSpace(text)) fail($"locale key {key} missing");
+        }
+
+        /// <summary>
+        /// The booked set's venue fee paid as every job is, the jobs' refusals, the sign-on test's rota, and every prompt of
+        /// the jobs and careers read by some source (Jobs/CareerCatalogue, and the sources as they ship).
+        /// </summary>
+        public static void Sources(Action<string> fail, Dictionary<string, string> locale, string src)
+        {
+            Console.WriteLine("\n== Gigs: the venue fee, the refusals, the test rota ==");
+            int fee = CareerCatalogue.GigFee;
+            if (CareerCatalogue.VenueFee(100, 0) != fee) fail($"venue fee: {CareerCatalogue.VenueFee(100, 0)} with no business at 100 %, wanted the table's {fee}");
+            if (CareerCatalogue.VenueFee(100, 1) != (int)Math.Round(fee * 0.85f)) fail($"venue fee: {CareerCatalogue.VenueFee(100, 1)} for an owner of one business, wanted 85 % of {fee}");
+            if (CareerCatalogue.VenueFee(100, 3) != (int)Math.Round(fee * 0.55f) || CareerCatalogue.VenueFee(100, 9) != CareerCatalogue.VenueFee(100, 3))
+                fail("venue fee: an owner of three businesses or more is not paid 55 % of it");
+            if (CareerCatalogue.VenueFee(200, 0) != fee * 2) fail("venue fee: the pay option at 200 % does not double it");
+            if (CareerCatalogue.VenueFee(5, 0) != CareerCatalogue.VenueFee(25, 0) || CareerCatalogue.VenueFee(900, 0) != CareerCatalogue.VenueFee(300, 0))
+                fail("venue fee: the pay option is not held to 25 to 300 %");
+            if (CareerCatalogue.VenueFee(100, -1) != fee) fail("venue fee: a count of businesses under none is not read as none");
+
+            for (int day = 1; day <= 14; day++)
+            {
+                CareerRota first = CareerCatalogue.Rotas[0];
+                for (int i = CareerCatalogue.Rotas.Length - 1; i >= 0; i--)
+                    if (CareerCatalogue.RotaDay(CareerCatalogue.Rotas[i].Days, day)) first = CareerCatalogue.Rotas[i];
+                if (!ReferenceEquals(CareerCatalogue.FirstRotaOn(day), first)) fail($"test rota: day {day} gives a rota other than the first that works that day");
+            }
+
+            string jobs = Path.Combine(src, "Scripts", "Jobs");
+            string gigs = File.ReadAllText(Path.Combine(jobs, "CareerDirector.Gigs.cs"));
+            if (!gigs.Contains("CareerCatalogue.VenueFee(Settings.JobPay, BusinessGame.RevenueBusinesses())") || gigs.Contains("CareerCatalogue.GigFee"))
+                fail("venue fee: a booked set's fee is not worked out through CareerCatalogue.VenueFee with the businesses run (CareerDirector.Gigs.cs)");
+            string director = File.ReadAllText(Path.Combine(jobs, "JobDirector.cs"));
+            int gig = director.IndexOf("public bool StartGig(", StringComparison.Ordinal);
+            string startGig = gig >= 0 ? director.Substring(gig, Math.Min(700, director.Length - gig)) : "";
+            int off = startGig.IndexOf("reallife_job_no_off", StringComparison.Ordinal);
+            int busy = startGig.IndexOf("reallife_job_no_busy", StringComparison.Ordinal);
+            if (off < 0 || busy < off || startGig.IndexOf("_job != null", StringComparison.Ordinal) < off)
+                fail("refusals: a booked set with jobs off, faulted or not loaded is not refused as off, as a job and a rota shift are (JobDirector.StartGig)");
+            string tests = File.ReadAllText(Path.Combine(jobs, "JobDirector.Tests.cs"));
+            if (!tests.Contains("CareerCatalogue.FirstRotaOn(TimeHelper.CurrentDay + 1)"))
+                fail("test rota: the sign-on test does not take the first rota that works tomorrow (JobDirector.Tests.cs)");
+
+            // A prompt ({key}: ...) of the jobs and careers that no source names is a text nobody can see. The work's own prompts
+            // (UnreadWorkPrompts) have had no reader since the work moved into the game's panels; they wait for the maintainer.
+            var code = new System.Text.StringBuilder();
+            foreach (string file in Directory.GetFiles(Path.Combine(src, "Scripts"), "*.cs", SearchOption.AllDirectories))
+                code.Append(File.ReadAllText(file));
+            string all = code.ToString();
+            int prompts = 0;
+            string unread = null;
+            foreach (KeyValuePair<string, string> pair in locale)
+            {
+                if (!Regex.IsMatch(pair.Key, "^reallife_(job|career)_") || !pair.Value.StartsWith("{key}", StringComparison.Ordinal)) continue;
+                prompts++;
+                bool read = all.Contains("\"" + pair.Key + "\"");
+                if (read == UnreadWorkPrompts.Contains(pair.Key)) unread = (unread == null ? "" : unread + ", ") + pair.Key;
+            }
+            if (unread != null) fail($"prompts: {unread} named by no source, or read again though listed as unread");
+            Console.WriteLine($"  venue fee {fee} at 100 % with no business; {prompts} job and career prompt(s), {UnreadWorkPrompts.Length} of them listed as unread");
         }
     }
 }

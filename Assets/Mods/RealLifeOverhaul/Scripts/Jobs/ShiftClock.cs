@@ -8,7 +8,6 @@ namespace RealLifeOverhaul
     /// <summary>What a job tells its <see cref="ShiftClock"/> about the units of its shift.</summary>
     public interface IClockedShift
     {
-        /// <summary>Units of work the shift still has.</summary>
         int ClockLeft { get; }
 
         /// <summary>What one unit pays when it is done by hand, in whole money, before <see cref="ShiftRates.Share"/>.</summary>
@@ -17,20 +16,11 @@ namespace RealLifeOverhaul
         /// <summary>The clock starts: whatever stands on the street for the hand-played shift is put away.</summary>
         void ClockStarted();
 
-        /// <summary>The clock is over: it did <paramref name="count"/> units and was paid <paramref name="pay"/> for them, and the real seconds it took were <paramref name="away"/>.</summary>
+        /// <summary>The clock is over: <paramref name="count"/> units done for <paramref name="pay"/>, in <paramref name="away"/> real seconds.</summary>
         void ClockEnded(int count, int pay, float away);
     }
 
-    /// <summary>
-    /// The rest of a job's shift left to the game's clock, for every job but the drinks cart (which does the same inline):
-    /// the game's own activity panel (<see cref="ShiftSkip"/>) with Start, the skip button, a progress bar and Stop. This
-    /// class holds what every such job would otherwise repeat: the offer, the texts of the panel, the rate
-    /// (<see cref="ShiftRates"/>), the pay slip, and one log line per step. The job gives it the numbers through
-    /// <see cref="IClockedShift"/>.
-    ///
-    /// While the offer or the clock is on the game's panel the job's tick does nothing but its card: it asks
-    /// <see cref="Hold"/> first. No walk order is ever given (the game's panel would call the activity off).
-    /// </summary>
+    /// <summary>The rest of a shift left to the game's clock (<see cref="ShiftSkip"/>), for every job but the cart, which does it inline.</summary>
     public sealed class ShiftClock : ISkippableShift
     {
         private readonly JobContext _ctx;
@@ -49,9 +39,6 @@ namespace RealLifeOverhaul
         private bool _closed;
 
         /// <param name="name">What the log calls the job ("flyers").</param>
-        /// <param name="unitKey">Locale key of one unit ("flyer").</param>
-        /// <param name="unitsKey">Locale key of the units ("flyers").</param>
-        /// <param name="slipKey">Locale key of the pay slip's title.</param>
         /// <param name="asTips">The clock's pay goes on the slip as tips (a busker lives on the hat), not as base pay.</param>
         public ShiftClock(JobContext ctx, Job job, IClockedShift shift, string name, string unitKey, string unitsKey, string slipKey, bool asTips = false)
         {
@@ -66,7 +53,6 @@ namespace RealLifeOverhaul
             _each = ShiftRates.Minutes(job.Def);
         }
 
-        /// <summary>True while the clock is doing the work.</summary>
         public bool Working => _skip != null && _skip.Working;
 
         /// <summary>True from the offer until it is over.</summary>
@@ -75,7 +61,6 @@ namespace RealLifeOverhaul
         /// <summary>Units the clock has done so far in this run (for the card).</summary>
         public int Done => Working ? _done : 0;
 
-        /// <summary>Game minutes the clock takes for one unit.</summary>
         public int MinutesEach => _each;
 
         /// <summary>Shows the offer on the game's panel. False if there is nothing left to do or the panel is busy.</summary>
@@ -89,10 +74,7 @@ namespace RealLifeOverhaul
             return _skip != null;
         }
 
-        /// <summary>
-        /// On the job's tick, first: true while the offer or the clock is on the game's panel (the job then does only its
-        /// card); false once it is over or the game dropped it.
-        /// </summary>
+        /// <summary>First on the job's tick: true while the offer or the clock is on the game's panel (the job then does only its card).</summary>
         public bool Hold()
         {
             if (_skip == null)
@@ -103,13 +85,12 @@ namespace RealLifeOverhaul
             {
                 return true;
             }
-            _skip.Close();   // over, or dropped by the game's panel: either way it settles nothing more
+            _skip.Close();   // over, or dropped by the game's panel: it settles nothing more
             _skip = null;
             return false;
         }
 
-        /// <summary>The job is stopping: the game's panel goes and nothing more is settled through it.</summary>
-        /// <summary>What a run of the clock that is still going has done and not been paid (it is paid when the run ends). Changes nothing.</summary>
+        /// <summary>What a run of the clock still going has done and not been paid (it is paid when the run ends). Changes nothing.</summary>
         public bool Owed(out PaySlip slip)
         {
             slip = default;
@@ -123,6 +104,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>The job is stopping: the game's panel goes and nothing more is settled through it.</summary>
         public void Close()
         {
             _closed = true;
@@ -132,8 +114,6 @@ namespace RealLifeOverhaul
                 _skip = null;
             }
         }
-
-        // ---------------------------------------------------------------- what the game's panel asks
 
         string ISkippableShift.SkipTitle => _ctx.Shift != null
             ? JobText.T("reallife_career_shift_title", "title", JobText.T(_ctx.Shift.Rank.TitleKey), "employer", JobText.T(_ctx.Shift.Employer.NameKey))
@@ -165,7 +145,7 @@ namespace RealLifeOverhaul
             _startedAt = Time.time;
             if (!_ctx.Stand.Standing)
             {
-                _ctx.Self.Hold();   // the player stays where they are while the clock runs (the game's own blocker, no walk order)
+                _ctx.Self.Hold();   // the player stays put while the clock runs: the game's blocker, no walk order
             }
             _shift.ClockStarted();
             if (Meta.Dev.Verbose)

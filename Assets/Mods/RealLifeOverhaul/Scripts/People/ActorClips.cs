@@ -22,30 +22,23 @@ namespace RealLifeOverhaul
         public const string CarryBag = "carry_bag_walk";
         public const string HandsUp = "hands_up";             // plays once: both hands go up...
         public const string HandsUpHold = "hands_up_hold";    // ...and are kept up beside the head
-        public const string RadioTalk = "radio_talk";         // left hand at the shoulder radio on the left collar bone (where ServiceKit wears it)
+        public const string RadioTalk = "radio_talk";         // left hand at the radio on the left collar bone, where ServiceKit wears it
         public const string TakeNotes = "take_notes";         // brings its notebook (left hand)
-        public const string PointDirect = "point_direct";     // plays once: points to their own right and waves someone in front along that way
-        public const string ArrestCuffed = "arrest_cuffed";   // plays once, from hands_up_hold's first pose into cuffed_stand's: the hands come down and go behind the back
-        public const string OfficerCuff = "officer_cuff";     // plays once, whole body, and ENDS stepped in with a hand on the shoulder (hold it); brings its handcuffs (right hand)
+        public const string PointDirect = "point_direct";     // plays once: points right and waves someone in front along
+        public const string ArrestCuffed = "arrest_cuffed";   // plays once, from hands_up_hold into cuffed_stand: hands down behind the back
+        public const string OfficerCuff = "officer_cuff";     // plays once and ENDS stepped in, a hand on the shoulder (hold it); handcuffs in the right hand
         public const string CuffedCarEnter = "cuffed_car_enter";         // plays once, from cuffed_stand: into a rear door on the car's RIGHT side
         public const string CuffedCarEnterLeft = "cuffed_car_enter_l";   // ...on its LEFT side
 
-        /// <summary>
-        /// Metres the officer stands straight behind whoever is being cuffed, both facing the same way: what arrest_cuffed and
-        /// officer_cuff are made to (CityAssets/README.md). The two are the same length with the same "click": started together.
-        /// </summary>
+        /// <summary>Metres the officer stands behind whoever is cuffed, both facing one way, as arrest_cuffed and officer_cuff are made.</summary>
         public const float CuffBehind = 0.90f;
-        public const float CuffSlack = 0.25f;    // further from that place than this the officer's clip is not played (nobody is slid there)
-        public const string CuffClick = "click"; // the mark in both clips at which the cuffs are on: from then one pair of handcuffs is shown, on the wrists
+        public const float CuffSlack = 0.25f;    // metres off that place beyond which the officer's clip is not played (nobody is slid there)
+        public const string CuffClick = "click"; // the mark in both clips at which the cuffs are on: from then one pair is shown, on the wrists
 
-        /// <summary>Writing an account down: the notebook where the bundle has that clip, the clipboard where it has only the older one.</summary>
+        /// <summary>Writing an account down: the notebook clip where the bundle has it, else the clipboard.</summary>
         public static string Notes => ClipLibrary.Has(TakeNotes) ? TakeNotes : Clipboard;
 
-        /// <summary>
-        /// Metres per second the crews and the cuffed are walked at in a walking clip. The clips say what each was
-        /// made for (CityClip.Speed: 1.2, the bag-carrying one 1.3) and are played at the speed that keeps the planted
-        /// foot still at whatever they are really going (ActorClips.Sync).
-        /// </summary>
+        /// <summary>Metres per second the crews and the cuffed walk at in a walking clip.</summary>
         public const float WalkPace = 1.2f;
 
         public const float CprReach = 0.40f;   // metres from the kneeler to the middle of the chest the compressions are made on
@@ -53,31 +46,16 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// One street character's use of those clips, with the promise every scene needs kept in one
-    /// place: a clip that cannot be had (the bundle is still loading or lacks it, the clip
-    /// player is off, the character is too heavily built for a clip that works close to the
-    /// body, its tool is missing) is refused, said once in the log, and the caller keeps the
-    /// pose or animation it had before these clips existed.
-    ///
-    /// Two things can be asked for. A stance is played while they stand (kneeling, CPR,
-    /// directing traffic, writing; with the clip's own tool in the hand at the clip's own grip).
-    /// A carriage is how they hold themselves from now on: one clip while walking, at the pace
-    /// it was made for, and optionally another while standing still (handcuffed; at the handle
-    /// of the stretcher; carrying the medic bag). A walker who is held up is taken out of the
-    /// walking clip until they move again, so nobody walks on the spot.
-    ///
-    /// Nothing here runs by itself: StreetActor calls in when the character is told to go or to
-    /// stand, and whoever ticks them (ActorRole four times a second; the stretcher every frame
-    /// while it is wheeled) calls Sync, which is a comparison unless something changed.
-    /// End hands the body back at once: before a ragdoll, and before the pool has it back.
+    /// One street character's use of the mod's clips: a stance while standing, a carriage while walking. A clip that cannot
+    /// be had is refused, said once in the log, and the caller keeps its fallback. Nothing runs by itself.
     /// </summary>
     internal sealed class ActorClips
     {
-        private const float Fade = 0.3f;
+        private const float Fade = 0.3f;            // seconds
         private const float MaxBuild = 0.55f;       // of the game's 0 (slim) to 1 (heavy), as the living city keeps to: see CityPeople.MaxBuild
         private const float Moving = 0.45f;         // m/s: faster than this they are walking again
         private const float Stopped = 0.2f;         // ...slower than this they may have stopped
-        private const float StalledAfter = 0.3f;    // ...if it lasts this long (the game holds a walker still for a frame whenever a route is asked for)
+        private const float StalledAfter = 0.3f;    // ...if it lasts this long (the game holds a walker still a frame whenever a route is asked)
         private const float SetOffGrace = 0.6f;     // seconds after being sent somewhere in which standing still is only setting off
         private const float MatchEvery = 0.2f;      // seconds between the times a walking clip's speed is matched to the ground
 
@@ -130,7 +108,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True while a stance asked for is being played.</summary>
         public bool Standing => _stance != null;
 
         /// <summary>True while a clip that plays once is leading into a stance: Sync must be called for the stance to follow it.</summary>
@@ -139,14 +116,12 @@ namespace RealLifeOverhaul
         /// <summary>The pace their carriage holds them to, in m/s; 0 when they walk as the game has them walk.</summary>
         public float Pace => _walk != null ? _pace : 0f;
 
-        /// <summary>The id of the tool in their hand, or null.</summary>
         public string Tool => _toolOut ? _toolId : null;
 
-        /// <summary>Plays a clip while they stand. False, with nothing changed, if it cannot be had: the caller falls back.</summary>
-        /// <param name="then">
-        /// A loop that a clip which plays once leads into (hands_up, then hands_up_hold): taken up as the first
-        /// ends, at the next Sync. If either cannot be had nothing is played and the caller falls back.
-        /// </param>
+        /// <summary>
+        /// Plays a clip while they stand; false, with nothing changed, if it cannot be had. With <paramref name="then"/>, a
+        /// one-off (hands_up) leads into that loop (hands_up_hold), taken up at the first Sync after it ends.
+        /// </summary>
         public bool Stand(string id, ClipEnd end = ClipEnd.Return, string then = null)
         {
             _leadIn = null;
@@ -170,7 +145,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Ends the stance: back to how they carry themselves, or to the game's own animation.</summary>
         public void Rest()
         {
             _leadIn = null;
@@ -181,10 +155,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// From now on they walk in one clip, at its pace, and (optionally) stand in another.
-        /// False, and they walk as the game has them walk, if the walking clip cannot be had.
-        /// </summary>
+        /// <summary>From now on they walk in one clip and optionally stand in another; false, walking as the game has them, without it.</summary>
         public bool Carry(string walk, float pace, string idle)
         {
             if (walk == null || !Can(walk, out CityClip made, out _))
@@ -200,7 +171,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Carries themselves as the game has them again.</summary>
         public void Upright()
         {
             if (_walk == null && _idle == null)
@@ -213,7 +183,6 @@ namespace RealLifeOverhaul
             Resolve();
         }
 
-        /// <summary>They have been sent somewhere.</summary>
         public void Going(float now)
         {
             _ordered = true;
@@ -223,7 +192,6 @@ namespace RealLifeOverhaul
             Resolve();
         }
 
-        /// <summary>They have been stood somewhere.</summary>
         public void Stood()
         {
             _ordered = false;
@@ -231,10 +199,7 @@ namespace RealLifeOverhaul
             Resolve();
         }
 
-        /// <summary>
-        /// Whether someone who was sent somewhere is in fact moving, from the square of their
-        /// speed: held up, they leave the walking clip; under way again, they take it up in step.
-        /// </summary>
+        /// <summary>From the square of their speed: held up, they leave the walking clip; under way again, they take it up in step.</summary>
         public void Sync(float speedSquared, float now)
         {
             if (_leadIn != null && now >= _leadUntil)
@@ -246,9 +211,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            // In the walking clip: its playback follows the speed they are really going at (setting off, slowed in a
-            // turn, a clip made for another pace), so the planted foot stays where it is put. Five times a second at
-            // most, whoever calls and however often; the engine is told only when the speed has changed.
+            // The walking clip's playback follows their real speed so the planted foot stays put; at most five times a second.
             if (_moving && _made > 0f && now >= _nextMatch && _playing == _walk)
             {
                 _nextMatch = now + MatchEvery;
@@ -283,19 +246,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The tool out of the hand while the clip goes on: handcuffs that are on somebody's wrists from the clip's click.
-        /// It is in the hand again the next time a clip that holds it is started.
-        /// </summary>
+        /// <summary>The tool out of the hand while the clip goes on (handcuffs left on somebody's wrists).</summary>
         public void Stow()
         {
             PutAway();
         }
 
-        /// <summary>
-        /// Lets go of a clip that played once and is being held on its last pose (officer_cuff: stepped in, a hand on
-        /// the shoulder): back to how they carry themselves, or to the game's own animation. Nothing if a stance is on.
-        /// </summary>
+        /// <summary>Lets go of a one-off held on its last pose (officer_cuff's hand on the shoulder); nothing while a stance is on.</summary>
         public void Release()
         {
             if (_stance == null && _leadIn == null && _playing != null)
@@ -304,7 +261,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The tool is drawn with the body and not without it.</summary>
         public void Show(bool visible)
         {
             _shown = visible;
@@ -314,10 +270,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Everything of ours off the body, now, with no fade: for someone about to be thrown down
-        /// as a ragdoll (physics and a playing clip must not share bones) and for the pool.
-        /// </summary>
+        /// <summary>Everything of ours off the body now, without a fade: before a ragdoll, and for the pool.</summary>
         public void End()
         {
             _stance = null;
@@ -340,13 +293,12 @@ namespace RealLifeOverhaul
             PutAway();
         }
 
-        // What should be playing as things stand, and the change to it if that is something else.
         private void Resolve()
         {
             string wanted = _ordered ? (_moving ? _walk : _idle) : _stance ?? _idle;
             if (wanted == _playing || (_leadIn != null && _playing == _leadIn && wanted == _stance))
             {
-                return;   // (or still raising the hands into it)
+                return;   // or still leading into it
             }
             if (wanted == null || !Start(wanted, ClipEnd.Return))
             {
@@ -414,7 +366,7 @@ namespace RealLifeOverhaul
             {
                 if (!ClipLibrary.Ready)
                 {
-                    Refuse(id, NotLoaded);   // (a clip the loaded bundle lacks is said by the library itself)
+                    Refuse(id, NotLoaded);   // a clip the loaded bundle lacks is reported by the library
                 }
                 return false;
             }
@@ -461,7 +413,6 @@ namespace RealLifeOverhaul
                                    + "; the hand-set pose or the game's own animation is used instead. (Said once per clip and reason.)");
         }
 
-        // The clip's tool in the hand at the clip's grip. The object is made the first time and kept.
         private bool Hold(CityClip clip)
         {
             if (_tool == null || _toolId != clip.Prop)
@@ -472,8 +423,7 @@ namespace RealLifeOverhaul
                 }
                 if (_tool != null && _toolFilter != null && _toolRenderer != null)
                 {
-                    // A second kind of tool for the same character (an officer's clipboard at a car window, a notebook
-                    // at an accident): the one object is given the other shared mesh. Nothing is made or destroyed.
+                    // A second kind of tool for the same character: the one object is given the other shared mesh.
                     PutAway();
                     _toolFilter.sharedMesh = mesh;
                     _toolRenderer.sharedMaterial = material;

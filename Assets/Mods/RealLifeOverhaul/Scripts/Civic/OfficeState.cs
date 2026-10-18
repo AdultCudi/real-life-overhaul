@@ -33,20 +33,13 @@ namespace RealLifeOverhaul
         public string Name, Value;
     }
 
-    /// <summary>
-    /// The player's own part in the city's politics, in one save: a run (the race, the papers, the platform, the fund and
-    /// the law on it, the doors and posters, the endorsements, an attack to answer, the debate, the district's race),
-    /// the result, and an office held (the seat, the term, approval, the council's agenda, the register of interests and
-    /// what was not declared, the city's budget, a recall). Game-free: all of it is data, kept as one line of text in
-    /// modData (reallife:civic_office). The city's government is in <see cref="GovState"/>.
-    /// </summary>
+    /// <summary>The player's own part in the city's politics, game-free: a run, its result, an office held and the city's budget, saved as one line in modData.</summary>
     public sealed class OfficeState
     {
         public const int Version = 1;
         public const int Rivals = 2;                     // the player's opponents in the district's council race
         public const int AgendaMost = 4, SecretsMost = 8, StoriesMost = 8;
 
-        // ---- a run
         public OfficeRace Race;
         public bool Filed;                               // the papers are in: the player is a candidate
         public int ForDay;                               // the election day the run is for
@@ -57,14 +50,12 @@ namespace RealLifeOverhaul
         public bool Deposit;                             // the deposit was paid
         public bool Incumbent;                           // standing again for the office the player holds
 
-        // ---- the fund
         public int Fund, Raised, Spent, Own;
         public int Dirty;                                // money taken against the law, not yet come out
         public int DirtyDay;                             // the day it was last taken (it can come out for a while after the election)
         public int Case;                                 // the court case it brought, if it came out
         public int OfferKind = -1, OfferAmount, OfferFirst, OfferLast, OfferDay;
 
-        // ---- the campaign
         public int PostersHeld, PostersUp, Doors, Rallies, Ads, CanvassDay, LastRally, LastDoorDay;
         public float Push;                               // support of the player's own beyond any district (adverts, rallies, the debate)
         public readonly float[] DistrictPush = new float[CivicCatalogue.MaxDistricts];
@@ -76,7 +67,7 @@ namespace RealLifeOverhaul
         public int Debate;                               // 0 still to come, 1 the player took part, 2 they were not there
         public float DebateGain;
 
-        // ---- the district's council race (the mayor's race is the city's own: GovState)
+        // The district's council race; the mayor's race is the city's own (GovState).
         public int RivalCount;
         public readonly Candidate[] Rival = { new Candidate(), new Candidate() };
         public readonly float[] RacePolls = new float[Rivals + 1];   // the player first
@@ -85,14 +76,12 @@ namespace RealLifeOverhaul
         public readonly int[] RaceVotes = new int[Rivals + 1];
         public int RaceTurnout;
 
-        // ---- the last result
         public int Result;                               // 0 none, 1 won, 2 lost
         public OfficeRace ResultRace;
         public int ResultShare;                          // per mille of the vote
         public int ResultDay;
         public bool ResultShown;                         // result night has been seen
 
-        // ---- an office held
         public OfficeRace Holds;
         public int Seat = -1;                            // the council seat
         public int TermStart;
@@ -112,14 +101,12 @@ namespace RealLifeOverhaul
         public int RecallDay;                            // a councillor's recall vote; 0 for none
         public float RecallPush;
 
-        // ---- the city's budget
         public readonly int[] Budget = new int[4];
         public long Reserve;
         public bool ReserveSet;
         public int BudgetDay;                            // when the next budget is due
         public int WeekDay;                              // when the budget's next week is reckoned
 
-        // ---- the paper, and the record
         public readonly List<OfficeStory> Stories = new List<OfficeStory>(StoriesMost);
         public int Runs, Wins, Terms;
         public readonly Candidate Held = new Candidate { Player = true };   // the platform and party the office was won on
@@ -226,28 +213,35 @@ namespace RealLifeOverhaul
             Stories.Add(new OfficeStory { Day = day, Key = key, Name = name, Value = value });
         }
 
-        // ---------------------------------------------------------------- the line
-
         public string Write()
         {
             var w = new CivicWriter();
             w.Int(Version).Int((int)Race).Bool(Filed).Int(ForDay).Text(District);
-            Candidate(w, Me);
+            GovState.WriteCandidate(w, Me);
             w.Int(Signatures).Bool(Sheets).Bool(Deposit).Bool(Incumbent);
             w.Int(Fund).Int(Raised).Int(Spent).Int(Own).Int(Dirty).Int(DirtyDay).Int(Case);
             w.Int(OfferKind).Int(OfferAmount).Int(OfferFirst).Int(OfferLast).Int(OfferDay);
             w.Int(PostersHeld).Int(PostersUp).Int(Doors).Int(Rallies).Int(Ads).Int(CanvassDay).Int(LastRally).Int(LastDoorDay).Float(Push);
-            for (int i = 0; i < DistrictPush.Length; i++) w.Float(DistrictPush[i]).Int(DistrictDoors[i]);
+            for (int i = 0; i < DistrictPush.Length; i++)
+            {
+                w.Float(DistrictPush[i]).Int(DistrictDoors[i]);
+            }
             w.Int(Endorsed).Int(Asked);
-            for (int i = 0; i < Backs.Length; i++) w.Int(Backs[i]);
+            for (int i = 0; i < Backs.Length; i++)
+            {
+                w.Int(Backs[i]);
+            }
             w.Int(AttackKind).Int(AttackBy).Int(AttackDay).Int(Attacks).Bool(AttackTrue).Int(Debate).Float(DebateGain);
             w.Int(RivalCount);
             for (int i = 0; i < Rivals; i++)
             {
-                Candidate(w, Rival[i]);
+                GovState.WriteCandidate(w, Rival[i]);
                 w.Float(RivalPush[i]).Int(RivalSpend[i]);
             }
-            for (int i = 0; i <= Rivals; i++) w.Float(RacePolls[i]).Int(RaceVotes[i]);
+            for (int i = 0; i <= Rivals; i++)
+            {
+                w.Float(RacePolls[i]).Int(RaceVotes[i]);
+            }
             w.Int(RaceTurnout);
             w.Int(Result).Int((int)ResultRace).Int(ResultShare).Int(ResultDay).Bool(ResultShown);
             w.Int((int)Holds).Int(Seat).Int(TermStart).Float(Approval).Int(LowDays).Int(PayDay).Bool(Registered).Int(RegisterBy).Int(NextMeeting);
@@ -256,18 +250,30 @@ namespace RealLifeOverhaul
             {
                 OfficeMotion m = Agenda[i];
                 w.Int(m.Kind).Int(m.Policy).Int(m.By).Int(m.Day).Bool(m.Undeclared);
-                for (int d = 0; d < m.Budget.Length; d++) w.Int(m.Budget[d]);
+                for (int d = 0; d < m.Budget.Length; d++)
+                {
+                    w.Int(m.Budget[d]);
+                }
             }
             w.Int(Tabled).Int(Missed).Int(Attended).Float(VotesRecord).Int(Scandals).Int(OrderDay);
             w.Int(Secrets.Count);
-            for (int i = 0; i < Secrets.Count; i++) w.Int(Secrets[i].Day).Int(Secrets[i].Policy).Bool(Secrets[i].Decisive);
+            for (int i = 0; i < Secrets.Count; i++)
+            {
+                w.Int(Secrets[i].Day).Int(Secrets[i].Policy).Bool(Secrets[i].Decisive);
+            }
             w.Int(RecallDay).Float(RecallPush);
-            for (int d = 0; d < Budget.Length; d++) w.Int(Budget[d]);
+            for (int d = 0; d < Budget.Length; d++)
+            {
+                w.Int(Budget[d]);
+            }
             w.Long(Reserve).Bool(ReserveSet).Int(BudgetDay).Int(WeekDay);
             w.Int(Stories.Count);
-            for (int i = 0; i < Stories.Count; i++) w.Int(Stories[i].Day).Text(Stories[i].Key).Text(Stories[i].Name).Text(Stories[i].Value);
+            for (int i = 0; i < Stories.Count; i++)
+            {
+                w.Int(Stories[i].Day).Text(Stories[i].Key).Text(Stories[i].Name).Text(Stories[i].Value);
+            }
             w.Int(Runs).Int(Wins).Int(Terms);
-            Candidate(w, Held);
+            GovState.WriteCandidate(w, Held);
             return w.ToString();
         }
 
@@ -320,7 +326,10 @@ namespace RealLifeOverhaul
                 }
                 Endorsed = r.Int();
                 Asked = r.Int();
-                for (int i = 0; i < Backs.Length; i++) Backs[i] = OfficeRules.Clamp(r.Int(), -1, CivicCatalogue.MaxCandidates - 1);
+                for (int i = 0; i < Backs.Length; i++)
+                {
+                    Backs[i] = OfficeRules.Clamp(r.Int(), -1, CivicCatalogue.MaxCandidates - 1);
+                }
                 AttackKind = OfficeRules.Clamp(r.Int(), -1, AttackKindLast);
                 AttackBy = r.Int();
                 AttackDay = r.Int();
@@ -360,7 +369,10 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < motions; i++)
                 {
                     var m = new OfficeMotion { Kind = OfficeRules.Clamp(r.Int(), 0, 1), Policy = r.Int(), By = OfficeRules.Clamp(r.Int(), 0, 3), Day = r.Int(), Undeclared = r.Bool() };
-                    for (int d = 0; d < m.Budget.Length; d++) m.Budget[d] = OfficeRules.Clamp(r.Int(), -OfficeRules.DepartmentMost, OfficeRules.DepartmentMost);
+                    for (int d = 0; d < m.Budget.Length; d++)
+                    {
+                        m.Budget[d] = OfficeRules.Clamp(r.Int(), -OfficeRules.DepartmentMost, OfficeRules.DepartmentMost);
+                    }
                     if (m.Kind == OfficeMotion.KindBudget || CivicCatalogue.At(m.Policy) != null)
                     {
                         Agenda.Add(m);
@@ -383,7 +395,10 @@ namespace RealLifeOverhaul
                 }
                 RecallDay = r.Int();
                 RecallPush = OfficeRules.Clamp(r.Float(), 0f, 1f);
-                for (int d = 0; d < Budget.Length; d++) Budget[d] = OfficeRules.Clamp(r.Int(), -OfficeRules.DepartmentMost, OfficeRules.DepartmentMost);
+                for (int d = 0; d < Budget.Length; d++)
+                {
+                    Budget[d] = OfficeRules.Clamp(r.Int(), -OfficeRules.DepartmentMost, OfficeRules.DepartmentMost);
+                }
                 Reserve = r.Long();
                 ReserveSet = r.Bool();
                 BudgetDay = r.Int();
@@ -419,12 +434,6 @@ namespace RealLifeOverhaul
         }
 
         private const int AttackKindLast = (int)RealLifeOverhaul.AttackKind.Promises;
-
-        private static void Candidate(CivicWriter w, Candidate c)
-        {
-            w.Int(c.First).Int(c.Last).Int(c.Party).Int(c.Slogan).Int(c.Look).Int(c.Lead).Bool(c.Incumbent).Int(c.Planks);
-            for (int i = 0; i < c.Platform.Length; i++) w.Int(c.Platform[i]);
-        }
 
         private static int Wrap(int value, int count)
         {

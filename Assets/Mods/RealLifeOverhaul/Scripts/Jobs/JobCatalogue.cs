@@ -13,32 +13,7 @@ namespace RealLifeOverhaul
         Outdoors = 8        // taken on the street, not inside a building
     }
 
-    /// <summary>
-    /// One job: who can take it, what a unit of its work (a fare, a parcel, a flyer) pays, what
-    /// it costs in energy, how much of it there is in a day and how experience in it is counted.
-    /// Game-free, like the event and crime catalogues: every number that balances a job is here
-    /// and nowhere else.
-    ///
-    /// Balanced against what the game itself pays, read from its data files by
-    /// JobAssets/scripts/extract_wages.py and its decompiled code (one game hour is one minute of play, a shift is four
-    /// game hours):
-    ///  - the one employer job, cashier at El Gato Food Market: 25 an hour (WorkActivity pays floor(hours x salary)),
-    ///    8 to 16, six days: 100 for four hours;
-    ///  - what the game charges for its own staff at no skill: cleaning 12 an hour, customer service 16, delivery
-    ///    driver 18 (times 1 + skill^1.05 / 100, so 19 to 29 at skill 50);
-    ///  - the delivery van job: 100 a drop (150 at one depot), three drops, about three game hours with the van to
-    ///    bring back: roughly 100 an hour, plus tips of about 5 a drop;
-    ///  - food delivery: 25 + 0.05 a metre within 500 m, so 25 to 50 a delivery, tips of about 3;
-    ///  - a taxi charges the player 0.15 a metre (TaxiSystem.GetPrice): 90 for 600 m.
-    /// A gig needs no diploma, building, stock or fixed hours, and the player does the work with their own hands, so a
-    /// shift played well pays clearly more an hour than the cashier's 25: the ones on foot come to about 40 to 55 an
-    /// hour (flyers 42, cleaner 40, shelf stocker 50, vendor 54 plus tips, busker by where and when), the ones that
-    /// need a car and a licence to about 85 (courier, ride-hail), a little under the van job's 100. The desk shifts
-    /// (Career) pay about 40 a plan or a call, and most of their pay is the rank's salary. These are the figures
-    /// of the first release raised by about 2.8, for an owner whose second day costs 187 and who holds 48,500; the
-    /// per-level bonus, the "Job pay" option and the owners' cut work on top as before. The shift's size and fee then
-    /// vary by offer (GigOffers) around exactly these figures.
-    /// </summary>
+    /// <summary>One job: who can take it, what a unit of its work pays, its energy, how much a day and how experience counts.</summary>
     public sealed class JobDef
     {
         public readonly string Id;
@@ -54,7 +29,7 @@ namespace RealLifeOverhaul
         public readonly int DailyUnits;          // how many units there are to be had in a day
         public readonly int UnitsPerLevel;       // units of work for each level after the first
         public readonly int ShiftUnits;          // how many units one shift is, on average (0 = until the player stops)
-        public readonly int UnitsSpread;         // ...and how many more or fewer a freelance offer may make it (GigOffers): the average stays ShiftUnits
+        public readonly int UnitsSpread;         // ...and how many more or fewer a freelance offer may make it; the average stays
 
         public JobDef(string id, string nameKey, string pitchKey, string transactionKey, JobNeed needs, float unitPay, float payPerMetre,
             float unitEnergy, float unitSkill, string skill, int dailyUnits, int unitsPerLevel, int shiftUnits, int unitsSpread = 0)
@@ -76,6 +51,10 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>
+    /// Every job and every number that balances one; game-free. A shift played well pays about 40 to 55 an hour on foot and 85
+    /// with a car, against the game's cashier at 25 (docs/features/jobs.md); offers vary around these figures.
+    /// </summary>
     public static class JobCatalogue
     {
         public const string Flyers = "flyers";
@@ -85,7 +64,7 @@ namespace RealLifeOverhaul
         public const string Stocker = "stocker";
         public const string Vendor = "vendor";
         public const string Busker = "busker";
-        public const string Dispatch = "dispatch";   // the two career-only kinds of shift: never on the Gig Line, no record in JobState
+        public const string Dispatch = "dispatch";   // the two career-only kinds: never on the Gig Line, no record in JobState
         public const string Lead = "lead";
 
         public const int MaxLevel = 4;
@@ -123,7 +102,7 @@ namespace RealLifeOverhaul
             // Five parcels a round, about four minutes with a car: 50 a door plus the distance, about 310 to 340 a round (the van job pays 100 an hour).
             new JobDef(Courier, "reallife_job_courier_name", "reallife_job_courier_pitch", "reallife_transaction_job_courier",
                 JobNeed.Outdoors | JobNeed.Car, 50f, 0.085f, 1.6f, 0.04f, DeliveryDriver, 15, 15, 5, 2),
-            // A fare of 600 m: 22 + 117 = 139, with a tip of up to 30 % for a smooth, quick ride. About one and a half times what a taxi charges the player for the trip (90): the driver also drives to the pick-up, and has the car, the endorsement and the reference.
+            // A 600 m fare: 22 + 117 = 139 and a tip of up to 30 %, about 1.5 times what a taxi charges the player (90).
             new JobDef(Taxi, "reallife_job_taxi_name", "reallife_job_taxi_pitch", "reallife_transaction_job_taxi",
                 JobNeed.Outdoors | JobNeed.Car | JobNeed.Reference | JobNeed.CleanRecord, 22f, 0.195f, 2.2f, 0.05f, CustomerService, 14, 12, 0)
         };
@@ -147,11 +126,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>
-        /// Shifts only an employer gives (Jobs/Career*): a unit is a plan made at the dispatch desk (42 for a perfect
-        /// one, less by how far from the best it was) or a call made well by the one in charge (36). Most of their pay
-        /// is the rank's hourly salary. Not offered on the phone and not counted in JobState's levels.
-        /// </summary>
+        /// <summary>Shifts only an employer gives (a dispatch plan, a lead's call); not on the phone and not in JobState's levels.</summary>
         public static readonly JobDef[] Career =
         {
             new JobDef(Dispatch, "reallife_job_dispatch_name", "reallife_job_dispatch_name", "reallife_transaction_job_dispatch",

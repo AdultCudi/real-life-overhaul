@@ -10,44 +10,11 @@ using Object = UnityEngine.Object;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Everything "traffic sees people in the road" asks of the game, in one place.
-    ///
-    /// WHAT THE CARS SENSE (Read, once for a city, the first time a car and a walking pedestrian are both
-    /// out). A traffic car stops for whatever non-trigger collider enters the sensor box ahead of it, if
-    /// that collider is on one of the layers the traffic system was set up with
-    /// (VehicleComponent.OnTriggerEnter; the masks are LayerSetupData's obstaclesLayers and playerLayers,
-    /// handed to every car by TrafficManager.Initialize), and for a trigger only if it is tagged
-    /// "AiVehicleHalt". Whether the game's pedestrians are on such a layer, whether their capsule is
-    /// switched on while they walk, and whether the physics settings let the sensor's layer meet theirs
-    /// cannot be read from the code, so they are read here from a real car and a real pedestrian, said
-    /// in one log line, and the mode follows:
-    ///   Native     the cars already sense a walking pedestrian's capsule. Stand-ins are used only for
-    ///              people who have none switched on (standing figures, bodies, the mod's own people);
-    ///   StandIns   they do not. Everybody in a car's way gets a stand-in;
-    ///   BrakesOnly no stand-in can be made (no layer the cars read meets their sensor, or the game no
-    ///              longer has the tag): the mod's own braking (SolidBrakes) stops the cars by itself.
-    ///
-    /// THE STAND-INS. Sixteen trigger capsules of a person's size, tagged "AiVehicleHalt", on a layer the
-    /// cars read, each with a kinematic body. Made once, the first time one is needed; never made or
-    /// destroyed after that. One in use stands on its person and is moved to them eight times a second;
-    /// one not in use is switched off. Being triggers they push nothing and stop nobody: not the
-    /// player's car, not a person, not a sweep or ray that ignores triggers. A car that senses one stops
-    /// for it and sets off again by the traffic system's own bookkeeping (its obstacle list), and a
-    /// stand-in that is taken away is first reported to the traffic system the way the game reports a
-    /// pedestrian put back in its pool (Manager.TriggerColliderRemovedEvent), so no car is left waiting
-    /// for something that is gone.
-    ///
-    /// THE FADE. The game fades a person out while a vehicle is within two metres of them
-    /// (HumanHider: ten times a second it asks physics whether anything on its layersToHideFromWhenNear is
-    /// near, and sets "_NearVehicle" on their renderers). For somebody a car is braking for or has hit
-    /// that fade is held off: their hider's mask is set to nothing, so its own next look finds nothing near
-    /// and it shows them again itself, hand-held things included; the mask is put back when no car has
-    /// had them in its way for a second and a half and they are not lying in the road. At most 24 people
-    /// at once; nothing is added to anybody.
-    ///
-    /// COST. Nothing per frame. Read: once. A stand-in placed: one position set. One taken away: one call
-    /// that walks the traffic's cars (a list lookup each). A car's measurements (its sensor's reach, its
-    /// width, its nose, its horn): once for each pooled car in a session, then array reads.
+    /// Everything "traffic sees people in the road" asks of the game. Read: what a car's sensor stops for, tried against a
+    /// real walking pedestrian, sets the Mode: Native (cars sense walkers), StandIns, or BrakesOnly (SolidBrakes alone). The
+    /// stand-ins are sixteen trigger capsules tagged "AiVehicleHalt", made once and reported gone as the game reports a
+    /// pedestrian put away. The fade: the game's HumanHider is held off for somebody a car brakes for. Cost: nothing per
+    /// frame; each pooled car is measured once a session.
     /// </summary>
     internal sealed class SolidGame
     {
@@ -70,15 +37,12 @@ namespace RealLifeOverhaul
         /// <summary>What was read, in one sentence, for the log and for whoever asks.</summary>
         public string Said { get; private set; } = "nothing read yet";
 
-        // ---------------------------------------------------------------- what the cars sense
+        // What the cars sense.
 
         private int _proxyLayer = -1;
         private bool _proxiesFailed;
 
-        /// <summary>
-        /// Reads what a traffic car senses and how a walking pedestrian stands to that. False (and nothing decided)
-        /// while there is no car with a sensor or no pedestrian walking to look at.
-        /// </summary>
+        /// <summary>Reads what a traffic car senses and how a walking pedestrian stands to that; false while there is no such car or walker.</summary>
         public bool Read(List<VehicleComponent> cars, List<Pedestrian> walkers)
         {
             VehicleComponent car = null;
@@ -144,7 +108,8 @@ namespace RealLifeOverhaul
                    + (meets ? "meets" : "does not meet") + " the pedestrians' layer in the physics settings; mode: "
                    + (How == Mode.Native ? "the cars sense walking people themselves; stand-ins only for people without a capsule"
                        : How == Mode.StandIns ? "stand-ins on '" + LayerMask.LayerToName(_proxyLayer) + "' for everybody in a car's way"
-                       : "no stand-in can be made (" + (box == null ? "the car has no sensor box" : _proxiesFailed ? "the game no longer has the tag '" + HaltTag + "'" : "no layer the cars read meets their sensor")
+                       : "no stand-in can be made (" + (box == null ? "the car has no sensor box" : _proxiesFailed
+                           ? "the game no longer has the tag '" + HaltTag + "'" : "no layer the cars read meets their sensor")
                          + "): the mod's own braking alone");
             Logger?.Info("Traffic check (senses): " + Said + ".");
             return true;
@@ -175,10 +140,7 @@ namespace RealLifeOverhaul
             return capsule != null && capsule.enabled && capsule.gameObject.activeInHierarchy;
         }
 
-        /// <summary>
-        /// A car that is owed an accident stops seeing this pedestrian's own capsule (Native only): its sensor is told
-        /// the collider is gone, the way the game tells it (VehicleComponent.ColliderRemoved). Every other car still sees them.
-        /// </summary>
+        /// <summary>A car owed an accident stops seeing this walker's own capsule (Native only), told as the game tells it (ColliderRemoved).</summary>
         public void Unsee(VehicleComponent car, Pedestrian walker)
         {
             if (How == Mode.Native && car != null && walker != null && walker.tpc != null && walker.tpc.capsuleCollider != null)
@@ -187,7 +149,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the stand-ins
+        // The stand-ins.
 
         private readonly GameObject[] _proxy = new GameObject[SolidRules.Proxies];
         private readonly Transform[] _proxyAt = new Transform[SolidRules.Proxies];
@@ -229,7 +191,8 @@ namespace RealLifeOverhaul
                     stand.SetActive(false);
                 }
                 _made = true;
-                Logger?.Info($"Traffic sees people: {_proxy.Length} stand-ins made on layer '{LayerMask.LayerToName(_proxyLayer)}' (triggers tagged '{HaltTag}'): made once, switched off until needed.");
+                Logger?.Info($"Traffic sees people: {_proxy.Length} stand-ins made on layer '{LayerMask.LayerToName(_proxyLayer)}' "
+                             + $"(triggers tagged '{HaltTag}'): made once, switched off until needed.");
                 return true;
             }
             catch (Exception e)
@@ -258,10 +221,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Takes a stand-in off the road: the traffic system is told the collider has gone (the cars drop it from
-        /// their lists and set off if nothing else holds them), and it is switched off.
-        /// </summary>
+        /// <summary>Takes a stand-in off the road: the traffic system is told the collider has gone, and it is switched off.</summary>
         public void Park(int slot)
         {
             if (!_made || !_proxyOut[slot])
@@ -301,7 +261,7 @@ namespace RealLifeOverhaul
             _made = false;
         }
 
-        // ---------------------------------------------------------------- each pooled car, measured once
+        // Each pooled car, measured once.
 
         private object _pool;            // the traffic system the measurements belong to
         private Transform[] _carAt = new Transform[0];
@@ -313,10 +273,7 @@ namespace RealLifeOverhaul
         private bool[] _hornAsked = new bool[0];
         private bool[] _known = new bool[0];
 
-        /// <summary>
-        /// Makes room for the traffic system's cars, forgetting what was measured if it is another traffic system
-        /// than last time (another city). True if it was.
-        /// </summary>
+        /// <summary>Makes room for the traffic system's cars, forgetting what was measured if it is another city's; true if it was.</summary>
         public bool Pool(object traffic, int cars)
         {
             if (ReferenceEquals(traffic, _pool) && cars <= _known.Length)
@@ -346,10 +303,7 @@ namespace RealLifeOverhaul
             _budget = MeasuredAtOnce;
         }
 
-        /// <summary>
-        /// The car's transform, with its measurements taken the first time it is seen. Null if it has not been
-        /// measured yet and enough have been in this look: it is looked at from the next one.
-        /// </summary>
+        /// <summary>The car's transform, measured the first time it is seen; null if not measured yet and this look's budget is spent.</summary>
         public Transform At(int index, VehicleComponent car)
         {
             if (!_known[index])
@@ -412,7 +366,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // ---------------------------------------------------------------- the fade
+        // The fade.
 
         private readonly BaseHuman[] _hidden = new BaseHuman[Hiders];
         private readonly HumanHider[] _hider = new HumanHider[Hiders];
@@ -421,11 +375,7 @@ namespace RealLifeOverhaul
         private int _hiders;
         private bool _hiderSaid;
 
-        /// <summary>
-        /// Somebody a car is braking for, or has hit: the game's fade beside vehicles is held off for them, from now
-        /// until a moment after this was last called for them. Costs a search of 24 places; the first call for a
-        /// person also finds their hider (once).
-        /// </summary>
+        /// <summary>Holds the game's fade off for somebody a car is braking for or has hit, until a moment after the last call. A search of 24.</summary>
         public void Unfade(BaseHuman human, float now)
         {
             if (human == null)
@@ -473,7 +423,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Eight times a second while anybody's fade is held off: whoever no car has had in its way for a moment, and who is not lying in the road, fades as the game has it again.</summary>
+        /// <summary>While any fade is held off: whoever no car has had in its way for a moment, and is not lying down, fades again.</summary>
         public void TickFade(float now)
         {
             if (_hiders == 0)

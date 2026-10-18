@@ -5,20 +5,14 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The cleaner's fallback, used only when the game's own dirt cannot be had on a client's floor (the log says so,
-    /// once): spills of the mod's own (a <c>floor_patch</c> prop, laid on clear floor, with a bucket beside the first),
-    /// mopped one at a time from a panel over the spill, 5.5 s each. The shift is then <c>_units</c> spills, paid per
-    /// spill. The mopping is played on the player, held on the spot, with the mod's <c>mop_floor</c> clip and mop or
-    /// the game's own cleaning animation and mop.
-    /// </summary>
+    /// <summary>The cleaner's fallback without the game's dirt: the mod's own spills, mopped one at a time from a panel over each, paid per spill.</summary>
     public sealed partial class CleanerJob
     {
-        private const float PatchReach = 1.1f;
-        private const float PatchSeen = 14f;           // metres from which the spill's panel stands over it, to be walked to: the city's marker does not show indoors
-        private const float PatchesApart = 2.4f;
-        private const float MopSeconds = 5.5f;
-        private const int MostTries = 4;               // looks for the next clear piece of floor before calling the floor done
+        private const float PatchReach = 1.1f;         // metres
+        private const float PatchSeen = 14f;           // metres from which the spill's panel stands over it to be walked to: the city's marker does not show indoors
+        private const float PatchesApart = 2.4f;       // metres
+        private const float MopSeconds = 5.5f;         // seconds a spill
+        private const int MostTries = 4;               // looks for clear floor before calling the floor done
         private const string GameMop = "Mop";
         private const string PatchProp = "floor_patch";
         private const string BucketProp = "mop_bucket";
@@ -31,7 +25,6 @@ namespace RealLifeOverhaul
         private int _mopped;           // spills mopped, by hand and by the clock
         private int _hand;             // ...of which by hand
         private int _tries;
-        private float _nextTry;
         private Vector3 _patchAt;
         private bool _hasPatch;
         private Transform _patch;
@@ -64,7 +57,7 @@ namespace RealLifeOverhaul
             }
             if (_mopped >= _units)
             {
-                Ctx.Say("reallife_job_cleaner_done", 7f);   // (the last of them was done by the clock)
+                Ctx.Say("reallife_job_cleaner_done", 7f);   // the last of them was done by the clock
                 _panel.Hide();
                 Conclude();
                 return;
@@ -77,14 +70,14 @@ namespace RealLifeOverhaul
                 Unmark();
                 if (_layTries >= MostTries)
                 {
-                    // No clear floor left to work on in a shop this size: what was done is the job.
+                    // No clear floor left in a shop this size: what was done is the job.
                     _tries = MostTries;
                     Ctx.Say("reallife_job_cleaner_small", 7f);
                     Conclude();
                 }
                 return;
             }
-            // The nearest of them is the one offered.
+            // The nearest of them is offered.
             Vector3 here = Ctx.Player.transform.position;
             int nearest = 0;
             float best = float.MaxValue;
@@ -113,7 +106,7 @@ namespace RealLifeOverhaul
             }
             else if (JobSpots.Flat(Ctx.Player.transform.position, _patchAt) < PatchSeen)
             {
-                // Not on it yet: the panel stands over the spill as the thing to walk to, its button off until they are.
+                // Not on it yet: the panel stands over the spill to walk to, its button off until they are.
                 _panel.Offer(_panelFar, _panelLeft, left, _panel.White, ButtonMop, false, null, false);
                 _panel.Show(_patchAt + Vector3.up * PanelUp, Ctx.Player);
                 Hint(2);
@@ -125,8 +118,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // One more spill laid on a clear piece of the shop's floor, away from those lying and those done: one a look, a
-        // quarter of a second apart, until all the floor's spills that are left lie there (or there is no more room).
+        // One more spill on clear floor away from the others, a quarter of a second apart, until all are down or there is no room.
         private void LayMore(float now)
         {
             if (now < _nextLay || _mopped + _laidCount >= _units || _laidCount >= _laid.Length || _layTries >= MostTries)
@@ -159,7 +151,7 @@ namespace RealLifeOverhaul
             _laid[_laidCount] = spot;
             _laidProp[_laidCount] = prop;
             _laidCount++;
-            // The cleaner's bucket stands by the first of them, if there is floor for it there.
+            // The bucket stands by the first of them, where there is floor for it.
             if (_bucket == null)
             {
                 Vector3 beside = spot + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * 0.75f;
@@ -178,7 +170,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The spill that was mopped goes from the floor; the others stay where they lie.
+        // The spill mopped goes from the floor; the others stay where they lie.
         private void Lift(int index)
         {
             if (index < 0 || index >= _laidCount)
@@ -197,7 +189,7 @@ namespace RealLifeOverhaul
             _target = -1;
         }
 
-        // The panel's "Mop it up" was pressed over a spill.
+        // The panel's Mop it up, over a spill.
         private void ActMop()
         {
             if (_mode != Mode.Spills || _step != Step.Floor || !_hasPatch || PlayerHelper.IsHoldingItem)
@@ -212,7 +204,7 @@ namespace RealLifeOverhaul
                                  + " m from its middle; " + Mathf.Max(0, Mathf.CeilToInt(_endsAt - Time.time)) + " s of the floor's time left.");
             }
             float now = Time.time;
-            // Held on the patch, facing across it, and mopping: the mod's clip and mop if the bundle has them, else the game's own.
+            // Held on the patch and mopping: the mod's clip and mop if the bundle has them, else the game's own.
             Ctx.Self.Hold();
             bool mopping = Ctx.Self.Clip(MopClip);
             if (!mopping && Ctx.Self.Pose(PermanentAnimationType.Cleaning, PermanentAnimationType.CleaningIdle))
@@ -237,7 +229,7 @@ namespace RealLifeOverhaul
         private void Mopping(float now)
         {
             float share = Mathf.Clamp01((now - _mopFrom) / MopSeconds);
-            // The patch goes as it is mopped: pushed only when it has shrunk by a visible step.
+            // The patch shrinks as it is mopped, pushed only by a visible step.
             if (_patch != null && share - _mopShown >= 0.1f)
             {
                 _mopShown = share;
@@ -260,7 +252,6 @@ namespace RealLifeOverhaul
             Lift(_target);
             _hasPatch = false;
             _step = Step.Floor;
-            _nextTry = now + 0.4f;
             if (Meta.Dev.Verbose)
             {
                 Ctx.Logger?.Info("Jobs: cleaner: spill mopped by hand in " + MopSeconds.ToString("F1", CultureInfo.InvariantCulture) + " s; mopped " + _mopped + " of " + _units + ", "

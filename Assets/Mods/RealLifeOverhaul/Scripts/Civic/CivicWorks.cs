@@ -7,36 +7,18 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city's construction programme, as data. Six sites are in progress at once: two
-    /// started within a walk of wherever the player was on the day, four anywhere in the city.
-    /// Each has a kind (roadworks, scaffolding on a building front, the refit of an empty shop,
-    /// utility works), a contractor, a project name and a number of working hours it needs.
-    ///
-    /// Work is done by the hour whether or not the player is anywhere near: ten hours a weekday
-    /// (07:00 to 17:00) as the city came, changed by the permits policy (faster and until 19:00,
-    /// or slower and 08:00 to 16:00). Rain stops outdoor work for the hour. A noise complaint
-    /// can bring quiet hours (09:00 to 15:00) for a few days; a report of an unsafe site that
-    /// was right stops it for a day. Hours missed in a time skip are caught up one by one, as
-    /// dry hours. When the hours are done the site is handed over: it leaves the list, and
-    /// whatever stood in the street for it is taken away (SiteDresser).
-    ///
-    /// There are no empty lots in the game's city and nothing in it is ever built or knocked
-    /// down, so no new building goes up: the fourth kind of site is the refit of an empty retail
-    /// unit that nobody rents (hoarding over the shopfront, "opening soon", then the hoarding
-    /// comes down and the unit is back on the market as the game has it).
-    ///
-    /// IN A GOING PUBLIC SESSION the programme is the city's (Core/SharedCity, part W): the host runs it as alone, and a
-    /// guest takes the host's sites (Civic/CivicShare) and works only its own refit (<see cref="Shared"/>); a complaint
-    /// or a report of an unsafe site is the guest's at once and goes to the host as well (<see cref="HostRequest"/>).
+    /// The city's construction programme as data: six sites at a time, worked by the hour on weekdays wherever the player is,
+    /// stopped by rain, slowed by complaints, halted by inspections, and handed over when done. In a Going Public session a
+    /// guest takes the host's sites and works only its own refit (<see cref="Shared"/>).
     /// </summary>
     public sealed class CivicWorks
     {
         private const string Retail = "ba:buildingtype_retail";
         private const string EmptyUnit = "ba:businesstype_empty";
-        private const float SiteGap = 90f;          // two sites are never nearer each other than this
-        private const float LocalNear = 60f, LocalFar = 320f;
-        private const float Earshot = 60f;          // a site this near one of the player's doors is "next door"
-        private const int CatchUpHours = 24 * 21;
+        private const float SiteGap = 90f;          // metres between two sites, at least
+        private const float LocalNear = 60f, LocalFar = 320f;   // metres from the player, for a local site
+        private const float Earshot = 60f;          // metres: a site this near one of the player's doors is "next door"
+        private const int CatchUpHours = 24 * 21;   // after a longer gap the programme simply moves on
 
         public readonly WorksState State = new WorksState();
         private readonly List<Vector3> _doors = new List<Vector3>(16);
@@ -51,7 +33,6 @@ namespace RealLifeOverhaul
         /// <summary>Sites running more than a third over their time: the government hears of it.</summary>
         public int Late { get; private set; }
 
-        /// <summary>Raised when the list of sites has changed (one started, one handed over).</summary>
         public Action SitesChanged;
 
         public static bool Weekday(int day)
@@ -187,7 +168,7 @@ namespace RealLifeOverhaul
         private static bool Let(SiteState site)
         {
             CityBuildingController controller = CivicCity.Find(site.Street, site.Number);
-            BuildingRegistration registration = controller != null && controller.building != null ? controller.building.GetRegistration() : null;   // asked afresh: the scene object's own copy may be old
+            BuildingRegistration registration = controller != null && controller.building != null ? controller.building.GetRegistration() : null;   // asked afresh: the scene's copy may be old
             return registration != null && (registration.RentedByPlayer || registration.businessTypeName != EmptyUnit);
         }
 
@@ -225,8 +206,6 @@ namespace RealLifeOverhaul
             }
             return false;
         }
-
-        // ---------------------------------------------------------------- starting sites
 
         /// <summary>Starts sites until the programme is full. Needs the city's buildings and the player; does nothing without them.</summary>
         public void TopUp(int day)
@@ -420,7 +399,7 @@ namespace RealLifeOverhaul
             site.Local = !mine;
             if (Shared)
             {
-                State.NextId--;                          // (the host's programme counts its own ids)
+                State.NextId--;                          // the host's programme counts its own ids
                 site.Id = CivicShare.NextOwnId(State);   // the guest's own refit, apart from every site of the host's
             }
             if (hours > 0f)
@@ -435,8 +414,6 @@ namespace RealLifeOverhaul
             SitesChanged?.Invoke();
             return site;
         }
-
-        // ---------------------------------------------------------------- what the player can do, and what a notice says
 
         /// <summary>The player complains about the noise. Returns the locale key of the answer.</summary>
         public string Complain(SiteState site, int day)
@@ -586,7 +563,6 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>Test button: every site does a full working day at once.</summary>
         public void AdvanceDay(int day)
         {
             float hours = CivicCatalogue.SiteShuts(Permits) - CivicCatalogue.SiteOpens(Permits);

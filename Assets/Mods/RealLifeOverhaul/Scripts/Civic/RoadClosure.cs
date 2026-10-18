@@ -6,23 +6,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One lane closed for roadworks, through the traffic system's own switch on its road points
-    /// (the same switch Traffic/SceneCordon uses for an accident; this is a small copy of the
-    /// part of it that roadworks need, so that nothing in Scripts/Traffic is called or changed
-    /// beyond TrafficTools.Ready and TrafficTools.Remove).
-    ///
-    /// What is closed: the points of ONE lane alongside the works and a few metres either side,
-    /// and the way into that lane at the junction behind it, so that traffic turns off there
-    /// (the diversion) instead of driving up to the barrier and standing. It is only ever done
-    /// where it is safe to do:
-    ///   - no point of the stretch is in a junction or has more than one way in or out;
-    ///   - every way into the lane that is found can be shut at a point where traffic has
-    ///     another way to go. If there is none, nothing is closed and Close says no: the site
-    ///     then does without a closure or is not dressed here.
-    /// A point is only ever closed if it was open, and Open opens exactly the points this
-    /// closure closed, on every path: the site being undressed, its last phase, a fault, the
-    /// feature being switched off, the city unloading. Road points are the game's runtime
-    /// objects and the switch is not part of a save.
+    /// One lane closed for roadworks through the traffic system's own switch on its road points, with the way into it at the
+    /// junction behind, and only where traffic keeps another way. Open opens exactly what this closed. Not part of a save.
     /// </summary>
     public sealed class RoadClosure
     {
@@ -48,11 +33,7 @@ namespace RealLifeOverhaul
         /// <summary>Which way the lane's traffic runs.</summary>
         public Vector3 LaneDirection { get; private set; }
 
-        /// <summary>
-        /// Finds the lane nearest a place: its direction and the point of its centre line level
-        /// with the place. False if traffic is not running, there is no lane within reach, or the
-        /// nearest road point is in a junction.
-        /// </summary>
+        /// <summary>Finds the lane nearest a place: its direction, and its centre point level with the place. False without traffic, without a lane in reach, or in a junction.</summary>
         public bool Lane(Vector3 place, float reach)
         {
             if (!TrafficTools.Ready)
@@ -77,10 +58,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Closes the lane found by <see cref="Lane"/> for a stretch either side of a point on its
-        /// centre line. False, with nothing closed, if it cannot be done safely here.
-        /// </summary>
+        /// <summary>Closes the lane found by <see cref="Lane"/> for a stretch either side of a point. False, with nothing closed, where it cannot be done safely.</summary>
         public bool Close(Vector3 laneCentre, float halfLength)
         {
             Open();
@@ -179,12 +157,7 @@ namespace RealLifeOverhaul
             _closed.Clear();
         }
 
-        /// <summary>
-        /// Cars that were already in the lane when it closed drive up to the works and stand. Any
-        /// ordinary traffic car standing in the closed stretch or just short of it, where nobody
-        /// is looking, is taken off the road (the traffic system makes another elsewhere). Called
-        /// every twenty seconds while closed.
-        /// </summary>
+        /// <summary>Takes traffic cars standing in or just short of the closed stretch off the road, out of view. Every twenty seconds while closed.</summary>
         public void Sweep()
         {
             if (!Closed || !TrafficTools.Ready)

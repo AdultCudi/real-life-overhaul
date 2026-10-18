@@ -7,37 +7,22 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What one Plan knows about the street, asked once. Plan tries up to some 1,800 ways and tests each every half
-    /// metre; asked of the engine pose by pose that was tens of thousands of box tests, ground rays, pavement lookups
-    /// and searches of every road point in the city, all in the one frame the crew steps out (measured: 3.9 s).
-    /// So the street round the scene is read once, when Plan starts, and the ways are tested against that:
-    ///   everything solid in a square round the scene, each as the rectangle it covers on the ground, sorted into
-    ///   3 m buckets. A pose whose strip touches none of those rectangles is clear, and the engine is not asked (a
-    ///   rectangle never covers less than what it stands for). One that reaches well into a vehicle's or a box's
-    ///   rectangle, at the height the crew is, is blocked, and the engine is not asked either. Only a strip that
-    ///   grazes one, or meets something of another shape, is asked of the engine as before. What the engine said of
-    ///   a strip is remembered for the length of the Plan: the 56 ways of one last move all end in the same pose, and
-    ///   all the ways along one side of the ambulance begin in the same one, so a lamp post beside the casualty is
-    ///   asked about once, not 56 times. Of new strips at most Askings a tier are asked: past that such a strip
-    ///   counts as blocked (a way is refused, never let through);
-    ///   the ground, and whether it is carriageway, remembered by 0.2 m square: asked once for a square, at its
-    ///   middle, however many ways cross it;
-    ///   the road points near the scene, so that the nearest one to a place is found among a few dozen.
-    /// Nothing is kept past the end of Plan (Forget), and a place outside the square is asked of the engine as before.
-    /// The buffers are made once and nothing is allocated by a Plan after the first.
+    /// What one Plan knows about the street, read once as it starts: everything solid as rectangles in 3 m buckets, the
+    /// ground by 0.2 m square, and the road points near the scene. Plan's thousands of pose tests then ask the engine only
+    /// about strips that graze something (asked pose by pose they took seconds in one frame). Kept until Plan ends.
     /// </summary>
     public sealed partial class CrewWay
     {
         private const float LookPad = 12f;        // metres the square reaches beyond the rear doors, the casualty and the tape
-        private const float LookMost = 96f;       // half its side at most (the crew walks 150 m at the very most): a scene wider than that is asked pose by pose, as before
-        private const float LookTall = 40f;       // half its height: nothing solid at street level anywhere on it is above or below that
-        private const float Bucket = 3f;
-        private const float Square02 = 0.2f;
+        private const float LookMost = 96f;       // metres, half its side at most: a wider scene is asked pose by pose
+        private const float LookTall = 40f;       // metres, half its height: nothing solid at street level is beyond that
+        private const float Bucket = 3f;          // metres
+        private const float Square02 = 0.2f;      // metres
         private const float BoxPad = 0.03f;       // what each rectangle is taken larger by: it never holds less than the engine would find
         private const float Well = 0.2f;          // ...and smaller by, for a strip to be well into it: inside a vehicle's corners and mirrors
         private const float BandLow = 0.85f;      // from the ground: what stands there must reach above this...
         private const float BandHigh = 1.35f;     // ...and start below this, to be in the crew's way whatever the camber
-        private const int Askings = 160;          // different strips a tier that the engine is asked about at most (and as many again for the way back)
+        private const int Askings = 160;          // new strips a tier the engine is asked about at most (as many again for the way back)
         private const float Upright = 0.996f;     // the least a thing's own "up" may point up (5 degrees off) for its rectangle to be taken as its true shape
         private const int MostSolid = 8192;
         private const int MostEntries = 32768;
@@ -93,7 +78,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Reads the square round the rear doors, the casualty and the tape. Called once, at the start of Plan.
+        // Reads the square round the rear doors, the casualty and the tape, once at the start of Plan.
         private void Look()
         {
             Forget();
@@ -121,14 +106,13 @@ namespace RealLifeOverhaul
             _lookX = midX - half;
             _lookZ = midZ - half;
             _lookSize = half * 2f;
-            _lookY = StartHeight;
+            _lookY = _startHeight;
             _looked = true;
             _lookedLast = true;
 
-            // Everything solid on it, on either set of layers a way is tested against.
             int count = Physics.OverlapBoxNonAlloc(new Vector3(midX, _lookY, midZ), new Vector3(half, LookTall, half), Solid, Quaternion.identity,
                 SceneParking.StreetMask | SceneParking.RoadsideMask, QueryTriggerInteraction.Ignore);
-            _boxes = count < MostSolid;   // (a full buffer may have left some out: then every pose is asked of the engine)
+            _boxes = count < MostSolid;   // a full buffer may have left some out: then every pose is asked of the engine
             _solidCount = _boxes ? count : 0;
             _solidSeen = count;
             _side = Mathf.Clamp(Mathf.CeilToInt(_lookSize / Bucket), 1, MostBuckets);
@@ -183,7 +167,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Lets go of everything the square held. Called when Plan ends, and before the next is read.
         private static void Forget()
         {
             if (_solidCount > 0)
@@ -210,8 +193,8 @@ namespace RealLifeOverhaul
             toZ = Mathf.Clamp((int)((highZ - _lookZ) / Bucket), 0, _side - 1);
         }
 
-        // The rectangle one solid thing covers on the ground: a box collider's or a mesh's own box seen from above,
-        // turned as it is turned (so a car standing askew is no wider than a car); anything else square-on.
+        // The rectangle one solid thing covers on the ground: a box collider's or a mesh's own box seen from above, turned as
+        // it is turned (a car standing askew is no wider than a car); anything else square-on.
         private static void Outline(int i)
         {
             Collider solid = Solid[i];
@@ -243,7 +226,6 @@ namespace RealLifeOverhaul
                     alongX = (rightFlat >= forwardFlat ? right.x : forward.x) / flat;
                     alongZ = (rightFlat >= forwardFlat ? right.z : forward.z) / flat;
                 }
-                // Its three sides laid onto the ground: what they reach along that direction, and across it.
                 halfA = half.x * Mathf.Abs(right.x * alongX + right.z * alongZ) + half.y * Mathf.Abs(up.x * alongX + up.z * alongZ)
                         + half.z * Mathf.Abs(forward.x * alongX + forward.z * alongZ);
                 halfB = half.x * Mathf.Abs(right.z * alongX - right.x * alongZ) + half.y * Mathf.Abs(up.z * alongX - up.x * alongZ)
@@ -264,8 +246,8 @@ namespace RealLifeOverhaul
                            && bounds.min.y < _lookY + BandHigh && bounds.max.y > _lookY + BandLow;
         }
 
-        // What stands in a strip of road, as SceneParking.InStrip finds it. The engine is asked only when a rectangle
-        // read at the start is grazed (or the strip leaves the square, or the square was never read).
+        // What stands in a strip, as SceneParking.InStrip finds it; the engine is asked only when a rectangle read at the
+        // start is grazed, or the strip leaves the square.
         private static Collider InStrip(Vector3 from, Vector3 to, float halfWidth, Rigidbody except, int mask)
         {
             _poses++;
@@ -304,8 +286,8 @@ namespace RealLifeOverhaul
             return said;
         }
 
-        // One number for a strip, to the millimetre: the same strip met again has the same number. (64 bits mixed
-        // from six whole numbers: two different strips of one Plan sharing a number is not a thing that happens.)
+        // One number for a strip, to the millimetre: six whole numbers mixed into 64 bits, so two strips of one Plan never
+        // share one in practice.
         private static long Strip(Vector3 from, Vector3 to, float halfWidth, Rigidbody except, int mask)
         {
             unchecked
@@ -333,7 +315,7 @@ namespace RealLifeOverhaul
             float length = Mathf.Sqrt(runX * runX + runZ * runZ);
             if (length < 0.05f)
             {
-                return Beyond;   // (SceneParking.InStrip has its own answer for a strip of no length)
+                return Beyond;   // SceneParking.InStrip has its own answer for a strip of no length
             }
             float alongX = runX / length, alongZ = runZ / length;   // the strip's own two directions: along it, and across (-alongZ, alongX)
             float halfLength = length * 0.5f;
@@ -369,7 +351,6 @@ namespace RealLifeOverhaul
             return met;
         }
 
-        // One rectangle against one strip, seen from above.
         private static void Touch(int i, float midX, float midZ, float alongX, float alongZ, float halfLength, float halfWidth,
             float lowX, float highX, float lowZ, float highZ, Rigidbody except, int mask, ref int met, ref int which)
         {
@@ -407,7 +388,6 @@ namespace RealLifeOverhaul
                    || Mathf.Abs(offZ * ownX - offX * ownZ) > halfB + halfLength * sin + halfWidth * cos;
         }
 
-        // True if there is ground under a place.
         private static bool HasGround(Vector3 place)
         {
             if (!SquareOf(place, out int key, out Vector3 middle))
@@ -417,7 +397,6 @@ namespace RealLifeOverhaul
             return (Read(key, middle, false).State & Grounded) != 0;
         }
 
-        // True if a place is on the carriageway (OnCarriage), by the square of ground it is in.
         private static bool OnRoad(Vector3 place)
         {
             if (!SquareOf(place, out int key, out Vector3 middle))
@@ -427,7 +406,7 @@ namespace RealLifeOverhaul
             return (Read(key, middle, true).State & Carriage) != 0;
         }
 
-        // The 0.2 m square a place is in, and its middle. False outside the square that was read (or with none read).
+        // The 0.2 m square a place is in, and its middle; false outside the square read.
         private static bool SquareOf(Vector3 place, out int key, out Vector3 middle)
         {
             key = 0;
@@ -478,8 +457,8 @@ namespace RealLifeOverhaul
             return spot;
         }
 
-        // The nearest road point within a lane's reach of a place: among those read at the start, exactly as the
-        // traffic system picks it among all of them (it goes through every road point of the city for each asking).
+        // The nearest road point within a lane's reach, among those read at the start, as the traffic system picks it among
+        // all of them.
         private static Waypoint Nearest(Vector3 place)
         {
             if (!_points)

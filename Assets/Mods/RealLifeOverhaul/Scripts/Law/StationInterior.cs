@@ -10,33 +10,16 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.Law
 {
     /// <summary>
-    /// The inside of a police station. A precinct is an empty unit of the city's, and the game
-    /// loads such a unit's bare interior through its own door (walls, floor, the way out, its
-    /// camera, light and navigation mesh). This furnishes that room while the player is in it:
-    ///   the front desk    a counter across the room a few metres in, facing the door, with the
-    ///                     desk sergeant behind it (the one who is talked to: StationDesk)
-    ///   the waiting area  a bench along a side wall by the entrance, somebody waiting, and a
-    ///                     notice board on the wall opposite
-    ///   the back office   one or two desks along the side walls behind the counter, an officer
-    ///                     at each writing something up
-    ///   the holding cell  a back corner (or the whole back of a narrow room) closed off with
-    ///                     barred panels, a bench inside; and a closed evidence-room door in the
-    ///                     back wall beside it
-    /// Every unit is a different size and shape, so nothing is placed by a plan drawn in
-    /// advance: the room is measured from where the player comes in, on the navigation mesh
-    /// the game itself walks its customers on (how far it runs straight ahead, how far to
-    /// either side at each depth, whether a wall runs straight where something is to stand
-    /// against it), each piece needs its whole footprint walkable, and what does not fit is left
-    /// out and named in the log. Things that hang on a wall go up only where a ray finds the
-    /// wall's real surface. The furniture is cut out of the navigation mesh, so nobody walks
-    /// through it. One set of objects, built once, switched off when the player leaves.
+    /// The inside of a police station: the empty unit's bare interior, which the game loads through its own door, furnished
+    /// while the player is in it. The room is measured from the door on the game's navigation mesh, and a piece goes in only
+    /// where its whole footprint can be walked on. Cost: one pass on the way in, under the fade; then a tick a second.
     /// </summary>
     internal sealed partial class StationInterior
     {
-        private const float Reach = 45f;
-        private const float Step = 0.35f;
-        private const float Straight = 0.14f;        // a wall is straight if the room is the same width here and a little along it, to within this
-        private const float FromWall = 0.04f;
+        private const float Reach = 45f;             // metres the floor is measured out to
+        private const float Step = 0.35f;            // metres between the floor samples of a footprint
+        private const float Straight = 0.14f;        // metres: a wall is straight if the room's width agrees to within this
+        private const float FromWall = 0.04f;        // metres between a piece's back and the wall
 
         private readonly IModLogger _logger;
         private readonly Transform _root;
@@ -79,6 +62,10 @@ namespace RealLifeOverhaul.Law
         private bool _hasVisitor;
         private float _nextPeople;
         private BuildingManager _building;
+        private bool _cellBenchFits;
+        private Precinct _triedFor;
+        private float _triedAt;
+        private int _tries;
 
         public StationInterior(Transform root, IModLogger logger)
         {
@@ -86,19 +73,17 @@ namespace RealLifeOverhaul.Law
             _logger = logger;
         }
 
-        /// <summary>True while the room the player is in has been furnished (or at least measured) as a station.</summary>
+        /// <summary>True while the room the player is in is furnished (or at least measured) as a station.</summary>
         public bool Dressed { get; private set; }
 
-        /// <summary>The precinct the player is inside, or null.</summary>
         public Precinct Precinct { get; private set; }
 
-        /// <summary>True if the front counter went in.</summary>
         public bool HasDesk => _deskDepth >= 0f;
 
         /// <summary>True if a holding cell went in: custody is then served in it, in view.</summary>
         public bool HasCell { get; private set; }
 
-        /// <summary>Where the player stands to be served: in front of the counter, or of the sergeant where there is no counter.</summary>
+        /// <summary>Where the player stands to be served: before the counter, or before the sergeant where there is none.</summary>
         public Vector3 ServiceSpot { get; private set; }
 
         /// <summary>What they face from there.</summary>
@@ -109,18 +94,12 @@ namespace RealLifeOverhaul.Law
 
         public Vector3 CellFace { get; private set; }
 
-        /// <summary>The way out: the place by the unit's own door that the game takes the player out from. Zero if it could not be found.</summary>
+        /// <summary>The place by the unit's own door the game takes the player out from; zero if it was not found.</summary>
         public Vector3 WayOut { get; private set; }
 
-        /// <summary>The desk sergeant, for whoever has them do something (hand a form over).</summary>
         public ActorRole Sergeant => _sergeant;
 
-        // ---------------------------------------------------------------- coming in
-
-        /// <summary>
-        /// The player has just been put inside this precinct's unit: the room is measured and furnished now (the screen is
-        /// still dark). Safe to call again; it starts from an empty room each time.
-        /// </summary>
+        /// <summary>The player has just been put inside: the room is measured and furnished now, under the dark screen. Safe again.</summary>
         public void Begin(Precinct precinct)
         {
             End();
@@ -142,7 +121,7 @@ namespace RealLifeOverhaul.Law
             {
                 _radius = 0.3f;
             }
-            // Stand-ins built before the prop bundle had loaded give way to the models once it has.
+            // Stand-ins built before the prop bundle loaded give way to the models.
             if (_built && !_builtModelled && PropLibrary.Ready)
             {
                 DestroyPieces();
@@ -187,7 +166,7 @@ namespace RealLifeOverhaul.Law
             _origin = start.position;
             _floor = _origin.y;
             _in = inward.normalized;
-            // The way in is the direction the floor runs furthest in, of the door's own and the three square to it.
+            // The way in is the direction the floor runs furthest in: the door's own or one of the three square to it.
             _length = Run(_origin, _in, Reach);
             if (_length < 3f)
             {
@@ -216,7 +195,7 @@ namespace RealLifeOverhaul.Law
             }
 
             Build();
-            // Everything is measured before anything is switched on: what is switched on is cut out of the mesh that is being measured.
+            // Everything is measured before anything is switched on: what is switched on is cut out of the mesh being measured.
             bool desk = PlanDesk();
             bool bench = PlanWaiting(out int benchSide);
             _benchSide = bench ? benchSide : 0;
@@ -238,20 +217,15 @@ namespace RealLifeOverhaul.Law
             {
                 Show(_desks[i], _staffed[i]);
             }
-            Furnish(desk, bench, cell);   // the game's own furniture round all of it (StationInterior.Furnish.cs)
+            Furnish(desk, bench, cell);
             _nextPeople = 0f;
-            BeginCast(desk);              // its people, seated and at work at once, under the fade (StationInterior.Cast.cs)
-            BeginFill();                  // what floor is still bare, a city office's back rooms, a little a frame (StationInterior.Fill.cs)
+            BeginCast();
+            BeginFill();
             _logger?.Info(FormattableString.Invariant($"Law: {precinct.Name}: inside: room {_length:F1} m deep from the door: {_fitted}."));
         }
 
-        private bool _cellBenchFits;
-        private Precinct _triedFor;
-        private float _triedAt;
-        private int _tries;
-
-        // The floor was not there to be measured (the game may still be putting the room together): the room is left
-        // unfurnished for now and whoever called is free to ask again, up to five times in the first seconds of a visit.
+        // The floor was not there to be measured (the game may still be building the room): the room is left bare for now
+        // and the caller may ask again, up to five times in the first seconds of a visit.
         private bool TryLater(Precinct precinct)
         {
             if (_triedFor != precinct || Time.unscaledTime - _triedAt > 20f)
@@ -269,7 +243,7 @@ namespace RealLifeOverhaul.Law
             return true;
         }
 
-        // With nothing measured the front desk still answers: a step in from the door.
+        // With nothing measured the front desk still answers, a step in from the door.
         private void Fallback(Vector3 from, Vector3 inward)
         {
             inward.y = 0f;
@@ -279,7 +253,7 @@ namespace RealLifeOverhaul.Law
             _sergeantAt = from + inward * 2.2f;
         }
 
-        /// <summary>Once a second while the player is inside: the people of the station are kept at their places.</summary>
+        /// <summary>Once a second while the player is inside: the station's people kept at their places.</summary>
         public void Tick(float now)
         {
             if (!Dressed)
@@ -295,7 +269,7 @@ namespace RealLifeOverhaul.Law
             }
             if (_cast)
             {
-                CastTick(now);   // the furnished station's people (StationInterior.Cast.cs)
+                CastTick(now);
                 return;
             }
             if (now < _nextPeople || !Settings.People)
@@ -303,7 +277,7 @@ namespace RealLifeOverhaul.Law
                 return;
             }
             _nextPeople = now + 6f;
-            // The sergeant is the one who is talked to: a person the pool gives up for nobody. The rest are only there to be seen.
+            // The sergeant is talked to: a person the pool gives up for nobody. The rest are there to be seen.
             if (!_sergeant.Present && Standable(_sergeantAt, out Vector3 post))
             {
                 if (_sergeant.Enter(post, ActorLook.Officer, 0.5f, onRoad: false))
@@ -344,7 +318,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        /// <summary>The player has left (or the feature is going): everybody and everything out of the room. Safe at any time, any number of times.</summary>
+        /// <summary>The player has left or the feature is going: everybody and everything out of the room. Safe at any time.</summary>
         public void End()
         {
             try
@@ -387,7 +361,7 @@ namespace RealLifeOverhaul.Law
             WayOut = Vector3.zero;
         }
 
-        /// <summary>The cell's bars taken away at once (somebody has to be got out of it and nothing else worked).</summary>
+        /// <summary>The cell's bars taken away at once: somebody has to be got out and nothing else worked.</summary>
         public void OpenCell()
         {
             Show(_barsFront, false);
@@ -402,7 +376,6 @@ namespace RealLifeOverhaul.Law
             DestroyFurniture();
         }
 
-        /// <summary>What went into the room the player is in, for the log.</summary>
         public string Report()
         {
             return Dressed && Precinct != null ? Precinct.Name + ", inside: " + _fitted : "not inside a station";
@@ -416,14 +389,12 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // ---------------------------------------------------------------- measuring
-
         private Vector3 At(float depth, float aside)
         {
             return _origin + _in * depth + _right * aside;
         }
 
-        // How far the floor runs from a point in a direction before it ends (at a wall, a pillar, anything that stands on it). -1 if the point is not on the floor.
+        // How far the floor runs from a point in a direction before it ends at anything. -1 if the point is not on the floor.
         private float Run(Vector3 from, Vector3 direction, float most)
         {
             if (!NavMesh.SamplePosition(from, out NavMeshHit start, 0.45f, _filter) || Mathf.Abs(start.position.y - _floor) > 0.4f)
@@ -433,8 +404,6 @@ namespace RealLifeOverhaul.Law
             return NavMesh.Raycast(start.position, start.position + direction * most, out NavMeshHit hit, _filter) ? hit.distance : most;
         }
 
-
-        // True if the whole of a rectangle of floor can be walked on: nothing stands anywhere in it.
         private bool Free(Vector3 centre, Vector3 alongA, float halfA, Vector3 alongB, float halfB)
         {
             int stepsA = Mathf.Max(1, Mathf.CeilToInt(halfA * 2f / Step));
@@ -474,7 +443,7 @@ namespace RealLifeOverhaul.Law
             return before >= 0f && after >= 0f && Mathf.Abs(before - edge) < Straight && Mathf.Abs(after - edge) < Straight;
         }
 
-        // The wall's real surface beyond the floor's edge: a ray at chest height. False if nothing solid and upright is found there.
+        // The wall's real surface beyond the floor's edge, by a ray at chest height. False if nothing upright is found.
         private bool Surface(Vector3 atEdge, Vector3 towardWall, out Vector3 surface)
         {
             Vector3 from = atEdge - towardWall * 0.3f + Vector3.up * 1.3f;
@@ -487,308 +456,6 @@ namespace RealLifeOverhaul.Law
             surface = default;
             return false;
         }
-
-        // ---------------------------------------------------------------- the plan, piece by piece
-
-        // The counter: across the room some way in, in the middle of it where the room is wide, with a way round at one end.
-        private bool PlanDesk()
-        {
-            float half = _deskSize.x * 0.5f;
-            float deep = _deskSize.z * 0.5f;
-            float depth = Mathf.Clamp(_length * 0.42f, 3.2f, 6.5f);
-            if (_length < depth + deep + 1.3f)
-            {
-                depth = _length - deep - 1.3f;
-            }
-            _sergeantAt = At(Mathf.Min(_length - 0.5f, 2.8f), 0f);
-            ServiceSpot = At(Mathf.Min(_length - 0.5f, 2.8f) - 1.3f, 0f);
-            ServiceFace = _sergeantAt;
-            if (depth < 2.6f)
-            {
-                return false;
-            }
-            float left = Run(At(depth, 0f), -_right, 30f);
-            float right = Run(At(depth, 0f), _right, 30f);
-            if (left < 0f || right < 0f)
-            {
-                return false;
-            }
-            float aside = left + right >= half * 2f + 2.2f ? (right - left) * 0.5f : 0f;
-            if (Mathf.Max(left + aside - half, right - aside - half) < 0.9f)
-            {
-                if (left + right < half * 2f + 0.95f)
-                {
-                    return false;   // the room is no wider than the counter: nobody could get round it
-                }
-                aside = right - half - 0.05f;
-            }
-            Vector3 middle = At(depth, aside);
-            if (!Free(middle, _right, half + 0.05f, _in, deep + 0.05f) || !Free(At(depth + deep + 0.5f, aside), _right, 0.3f, _in, 0.3f)
-                || !Free(At(depth - deep - 0.75f, aside), _right, 0.3f, _in, 0.3f))
-            {
-                return false;
-            }
-            _deskDepth = depth;
-            _deskAside = aside;
-            middle.y = _floor;
-            _desk.SetPositionAndRotation(middle, Quaternion.LookRotation(-_in, Vector3.up));
-            if (_deskName != null)
-            {
-                _deskName.text = Precinct.Name.ToUpperInvariant();
-            }
-            _sergeantAt = At(depth + deep + 0.5f, aside);
-            ServiceSpot = At(depth - deep - 0.75f, aside);
-            ServiceFace = _sergeantAt;
-            return true;
-        }
-
-        // A bench along a side wall by the entrance, its back to the wall, with somebody waiting in front of it.
-        private bool PlanWaiting(out int benchSide)
-        {
-            benchSide = 0;
-            const float depth = 2.3f;
-            float half = _benchSize.x * 0.5f;
-            float deep = _benchSize.z;
-            for (int attempt = 0; attempt < 2; attempt++)
-            {
-                int side = attempt == 0 ? 1 : -1;
-                if (!SideWall(depth, side, half, out float edge) || edge < 1.5f)
-                {
-                    continue;
-                }
-                // Clear of the counter if that runs up to this wall.
-                if (HasDesk && depth + half + 0.7f > _deskDepth - _deskSize.z * 0.5f && side * _deskAside + _deskSize.x * 0.5f > edge - deep - 0.6f)
-                {
-                    continue;
-                }
-                if (!Free(At(depth, side * (edge - 0.45f)), _in, half, _right, 0.4f))
-                {
-                    continue;
-                }
-                Vector3 at = At(depth, side * (edge + _radius - deep * 0.5f - FromWall));
-                at.y = _floor;
-                _bench.SetPositionAndRotation(at, Quaternion.LookRotation(_right * -side, Vector3.up));
-                _visitorAt = At(depth + 0.2f, side * (edge - 0.7f));
-                _visitorFace = HasDesk ? At(_deskDepth, _deskAside) : _visitorAt + _right * -side * 4f;
-                _hasVisitor = true;
-                benchSide = side;
-                return true;
-            }
-            return false;
-        }
-
-        // The holding cell at the back: a corner closed with two barred panels, or the whole back of a room no wider than one panel.
-        private bool PlanCell(out int cornerSide)
-        {
-            cornerSide = 0;
-            _cellBenchFits = false;
-            float panel = Mathf.Clamp(_barsSize.x, 2.2f, 3.8f);
-            float back = _length + _radius;                       // the back wall's surface, as near as the floor's edge tells
-            float served = HasDesk ? _deskDepth + _deskSize.z * 0.5f : 2.8f;
-            float deep = Mathf.Min(panel, back - (served + 2.3f));
-            if (deep < 2.3f)
-            {
-                _fitted.Append("cell: the room is not deep enough behind the desk; ");
-                return false;
-            }
-            float left = Run(At(_length - 0.5f, 0f), -_right, 30f);
-            float right = Run(At(_length - 0.5f, 0f), _right, 30f);
-            if (left < 0f || right < 0f)
-            {
-                return false;
-            }
-            float wide = left + right + _radius * 2f;
-            if (Mathf.Abs(wide - panel) <= 0.35f)
-            {
-                // The whole back of the room: one panel from wall to wall (made a little wider or narrower to meet them).
-                float aside = (right - left) * 0.5f;
-                if (!SideWall(_length - deep * 0.5f, -1, deep * 0.4f, out float a) || !SideWall(_length - deep * 0.5f, 1, deep * 0.4f, out float b)
-                    || Mathf.Abs(a - left) > Straight || Mathf.Abs(b - right) > Straight
-                    || !Free(At(back - deep * 0.5f, aside), _right, wide * 0.5f - _radius - 0.08f, _in, deep * 0.5f - _radius - 0.08f))
-                {
-                    _fitted.Append("cell: the back of the room is not a plain alcove; ");
-                    return false;
-                }
-                PutBars(_barsFront, At(back - deep, aside), -_in, wide / _barsSize.x);
-                SetCell(back, deep, aside);
-                _cellPanel = wide;
-                _cellSide = 0;
-                return true;
-            }
-            if (wide < panel + 0.8f)
-            {
-                _fitted.Append(FormattableString.Invariant($"cell: the back of the room is {wide:F1} m wide, neither one panel nor room for a corner; "));
-                return false;
-            }
-            for (int attempt = 0; attempt < 2; attempt++)
-            {
-                int side = attempt == 0 ? -1 : 1;
-                float edge = side < 0 ? left : right;
-                float wall = edge + _radius;                      // the side wall's surface, measured from the way in
-                float aside = side * (wall - panel * 0.5f);       // the middle of the cell
-                // The side wall straight for the cell's depth, the back wall straight for its width, and the whole of it floor.
-                if (!SideWall(_length - deep * 0.5f, side, deep * 0.4f, out float mid) || Mathf.Abs(mid - edge) > Straight)
-                {
-                    continue;
-                }
-                bool square = true;
-                for (int probe = 0; probe < 3 && square; probe++)
-                {
-                    float run = Run(At(_length - 1.2f, side * (edge - 0.25f - probe * (panel - 0.7f) * 0.5f)), _in, 6f);
-                    square = run >= 0f && Mathf.Abs(run - 1.2f) < Straight;
-                }
-                if (!square || !Free(At(back - deep * 0.5f, aside), _right, panel * 0.5f - _radius - 0.08f, _in, deep * 0.5f - _radius - 0.08f))
-                {
-                    continue;
-                }
-                PutBars(_barsFront, At(back - deep, aside), -_in, panel / _barsSize.x);
-                PutBars(_barsSide, At(back - deep * 0.5f, side * (wall - panel)), _right * -side, deep / _barsSize.x);
-                SetCell(back, deep, aside);
-                _cellPanel = panel;
-                _cellSide = side;
-                cornerSide = side;
-                PlanEvidence(back, side * (wall - panel), -side, side < 0 ? right : left);
-                return true;
-            }
-            _fitted.Append("cell: neither back corner is square and clear; ");
-            return false;
-        }
-
-        private void PutBars(Transform bars, Vector3 at, Vector3 facing, float stretch)
-        {
-            at.y = _floor;
-            bars.SetPositionAndRotation(at, Quaternion.LookRotation(facing, Vector3.up));
-            bars.localScale = new Vector3(stretch, 1f, 1f);
-        }
-
-        private void SetCell(float back, float deep, float aside)
-        {
-            _cellBack = back;
-            _cellDeep = deep;
-            _cellAside = aside;
-            Vector3 middle = At(back - deep * 0.5f, aside);
-            CellSpot = NavMesh.SamplePosition(middle, out NavMeshHit hit, 0.6f, _filter) ? hit.position : middle;
-            CellFace = CellSpot - _in * 4f;
-            // A bench against the back wall, if what is left in front of it is still room to stand.
-            if (deep - _benchSize.z >= 1.5f)
-            {
-                Vector3 at = At(back - _benchSize.z * 0.5f - FromWall, aside);
-                at.y = _floor;
-                _cellBench.SetPositionAndRotation(at, Quaternion.LookRotation(-_in, Vector3.up));
-                _cellBenchFits = true;
-                CellSpot = NavMesh.SamplePosition(At(back - _benchSize.z - 0.75f, aside), out NavMeshHit front, 0.5f, _filter) ? front.position : CellSpot;
-            }
-        }
-
-        // A closed door in the back wall beside the cell, where the wall's real surface is found and there is the width for it.
-        private void PlanEvidence(float back, float from, int toward, float edge)
-        {
-            float to = toward * (edge + _radius);
-            if (Mathf.Abs(to - from) < 1.7f)
-            {
-                return;
-            }
-            float aside = (from + to) * 0.5f;
-            float run = Run(At(_length - 0.6f, aside), _in, 4f);
-            if (run < 0f || Mathf.Abs(run - 0.6f) > Straight)
-            {
-                return;
-            }
-            if (!Surface(At(_length, aside), _in, out Vector3 surface))
-            {
-                _fitted.Append("evidence door: the back wall's surface was not found; ");
-                return;
-            }
-            _evidence.SetPositionAndRotation(surface - _in * 0.004f, Quaternion.LookRotation(-_in, Vector3.up));
-            Show(_evidence, true);
-            _fitted.Append("evidence-room door; ");
-        }
-
-        // One or two desks along the side walls between the counter and the cell, an officer standing at each.
-        private void PlanOffice(bool cell)
-        {
-            _staffed[0] = false;
-            _staffed[1] = false;
-            if (!HasDesk)
-            {
-                return;
-            }
-            float from = _deskDepth + _deskSize.z * 0.5f + 1.7f;
-            float to = cell ? Vector3.Dot(_barsFront.position - _origin, _in) - 1.4f : _length - 1.0f;
-            if (to - from < 1.5f)
-            {
-                return;
-            }
-            float depth = (from + to) * 0.5f;
-            int placed = 0;
-            for (int attempt = 0; attempt < 2; attempt++)
-            {
-                int side = attempt == 0 ? 1 : -1;
-                if (!SideWall(depth, side, 0.7f, out float edge) || edge < 1.6f)
-                {
-                    continue;
-                }
-                // Not where the sergeant stands, and room for whoever works at it.
-                if (side * _deskAside + 0.6f > edge - 1.6f && depth < _deskDepth + _deskSize.z * 0.5f + 2.2f)
-                {
-                    continue;
-                }
-                Vector3 stand = At(depth, side * (edge + _radius - FromWall - 0.70f - 0.50f));
-                if (!Free(stand, _in, 0.7f, _right, 0.3f))
-                {
-                    continue;
-                }
-                Vector3 at = At(depth, side * (edge + _radius - FromWall - 0.35f));
-                at.y = _floor;
-                _desks[placed].SetPositionAndRotation(at, Quaternion.LookRotation(_right * -side, Vector3.up));
-                _staffAt[placed] = stand;
-                _staffFace[placed] = at;
-                _staffed[placed] = true;
-                placed++;
-            }
-            if (placed > 0)
-            {
-                _fitted.Append(placed).Append(placed == 1 ? " office desk; " : " office desks; ");
-            }
-        }
-
-        // The notice board: on a side wall by the entrance, at eye height, only where the wall's real surface is found.
-        private void PlanBoard(int preferred)
-        {
-            for (int attempt = 0; attempt < 2; attempt++)
-            {
-                int side = attempt == 0 ? preferred : -preferred;
-                for (int place = 0; place < 2; place++)
-                {
-                    float depth = place == 0 ? 2.3f : 4.4f;
-                    if (depth > _length - 1f || !SideWall(depth, side, 0.7f, out float edge) || !Surface(At(depth, side * edge), _right * side, out Vector3 surface))
-                    {
-                        continue;
-                    }
-                    // Not behind the bench, and not behind an officer's desk.
-                    if (_hasVisitor && Mathf.Abs(Vector3.Dot(_bench.position - surface, _in)) < 1.7f && CitySpots.Flat(_bench.position - surface) < 2.2f * 2.2f)
-                    {
-                        continue;
-                    }
-                    bool taken = false;
-                    for (int i = 0; i < _desks.Length; i++)
-                    {
-                        taken |= _staffed[i] && CitySpots.Flat(_desks[i].position - surface) < 1.9f * 1.9f;
-                    }
-                    if (taken || (HasDesk && CitySpots.Flat(_desk.position - surface) < 1.6f * 1.6f))
-                    {
-                        continue;
-                    }
-                    _board.SetPositionAndRotation(surface + Vector3.up * 1.55f - _right * side * 0.004f, Quaternion.LookRotation(_right * -side, Vector3.up));
-                    Show(_board, true);
-                    _fitted.Append("notice board; ");
-                    return;
-                }
-            }
-            _fitted.Append("notice board: no side wall whose surface was found; ");
-        }
-
-        // ---------------------------------------------------------------- the pieces
 
         private void Build()
         {
@@ -808,10 +475,8 @@ namespace RealLifeOverhaul.Law
                 StationProps.DeskStandIn(_desk);
             }
             StationProps.Solid(_desk, new Vector3(0f, 0.55f, 0f), new Vector3(_deskSize.x, 1.1f, _deskSize.z));
-            // The precinct's name across the public face of the counter. The modelled desk (precinct_desk) already carries
-            // POLICE on its fascia, 1.60 x 0.40 centred 0.60 m up, on a blue panel from 0.28 to 0.92 whose face is 0.05 m
-            // behind the shelf's front edge: there the name goes in the plain strip under that word, on the panel itself
-            // (it was lettered across the word, standing 6 cm proud of it). The stand-in has no word: across its middle.
+            // The precinct's name across the counter's face: in the plain strip under the modelled desk's POLICE (0.60 m up,
+            // its face 0.05 m behind the shelf's edge), or across the stand-in's middle.
             _deskName = modelled
                 ? StationProps.Letter(_desk, string.Empty, new Vector3(0f, 0.34f, _deskSize.z * 0.5f - 0.05f + 0.004f), 1.50f, 0.09f)
                 : StationProps.Letter(_desk, string.Empty, new Vector3(0f, Mathf.Min(0.55f, _deskSize.y * 0.5f), _deskSize.z * 0.5f + 0.012f), _deskSize.x * 0.8f, 0.14f);
@@ -833,7 +498,7 @@ namespace RealLifeOverhaul.Law
                 _desks[i] = StationProps.Holder("Office Desk " + (i + 1), _holder, StationProps.OfficeDesk, Pivot.Floor, new Vector3(1.4f, 0.75f, 0.7f), out Vector3 size, out modelled);
                 if (!modelled)
                 {
-                    // (in a holder of its own: the game's own desk takes its place in a furnished station)
+                    // In a holder of its own: the game's own desk takes its place in a furnished station.
                     var standIn = new GameObject(StandInName).transform;
                     standIn.SetParent(_desks[i], false);
                     StationProps.OfficeDeskStandIn(standIn);

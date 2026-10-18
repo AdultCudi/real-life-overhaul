@@ -182,6 +182,7 @@ internal static partial class Program
         BusRide();
         PlayerBank();
         Office();
+        CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)
         SaveLinesKept();
         Morning();
         EndScale();     // the end game at scale: each venture's costs, upkeep, staff and income by size, the payback, old saves phased in, the option off (EndScaleChecks.cs)

@@ -87,6 +87,8 @@ Nothing about the unit is changed: it is still to let, its registration, rent an
 If the game does not get the player in within seven seconds, its half-done entry is put right and that precinct's front desk answers at the door for the rest of the session.
 
 The room (`StationInterior`) is furnished the moment the game's "entered building" event fires, with the screen still dark, and cleared on its "left building" event.
+If that event was missed (a save loaded inside) or the floor was not there yet, the room is furnished behind the next dark screen or pause, never in play (`LawDirector.FurnishOwed`); with Developer diagnostics on, `Law check (furnish)` gives the time it took.
+The game's design for each precinct's unit is found and read on a worker thread when the precincts are chosen, and the floor is measured once, for the station and its back office alike.
 
 Every unit is a different size and shape, so the room is **measured**, on the navigation mesh the game walks its customers on: how far the floor runs straight in from the door, how far to either side at each depth, whether a wall runs straight where something stands against it.
 

@@ -4,21 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What a city policy currently sets, for any other feature to read. Every value is safe to
-    /// read at any time, costs nothing, and is the neutral value (1, or the stock hour) whenever
-    /// civic life is off, not loaded, or the lever stands where the city came.
-    ///
-    /// THE LINES OTHER FEATURES CALL
-    ///   Law / Crime     fine = Mathf.RoundToInt(fine * CivicPolicy.FineScale);          and once at start-up: CivicBridges.FinesScaledAtSource = true;
-    ///                   chanceSeen *= CivicPolicy.EnforcementScale;
-    ///   Police presence nothing: Settings.PolicePresence and Settings.PatrolFrequency are already scaled (and put back).
-    ///   Transport       headway /= CivicPolicy.ServiceScale;   (bus fares are not touched: the policy changes the subway fare only, which civic life charges itself;
-    ///                   a feature that applied the subway fare change itself would set CivicBridges.FaresScaledAtSource = true)
-    ///   Events          chance *= CivicPolicy.EventScale;
-    ///   Night life      if (hour >= CivicPolicy.ClosingHour &amp;&amp; hour &lt; 6) { closed }
-    ///   Business        nothing to call; read CivicPolicy.Position(Lever.Grants) if it wants to mention it.
-    /// </summary>
+    /// <summary>What a city policy sets now, for any other feature to read: free to read, and neutral while civic life is off or the lever stands where the city came.</summary>
     public static class CivicPolicy
     {
         private static readonly int[] None = new int[CivicCatalogue.Levers];
@@ -62,29 +48,13 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// What civic life asks of features that are not in this tree, each with a default that
-    /// works without them. A feature that exists sets the delegate once when it starts:
-    ///
-    ///   Law     CivicBridges.CriminalRecord = () => LawRecord.Convictions > 0;
-    ///           CivicBridges.Reputation = () => Reputation.Score;                  // -100 to 100
-    ///           CivicBridges.NoteCrime();                                          // when a crime happens in the player's city
-    ///   Events  CivicBridges.LargeScene = () => EventDirector.IsActive;            // a street event is on: no rally, no site crew beside it
-    ///           CivicBridges.WeatherStopsWork = () => Weather.IsStormOrRain;
-    ///   Social  CivicBridges.News = (headlineKey, bodyKey) => Social.News.Report(headlineKey, bodyKey);
-    ///   Jobs    CivicBridges.Labouring = site => JobDirector.Instance.TakeLabouring(site);   // starts a labouring shift at a place; false if it cannot
-    ///   City    CivicBridges.CityPeopleOut = () => CityLifeDirector.Instance.PeopleOut;      // so that civic life's own cast yields to the cap of eight
-    ///   Traffic CivicBridges.NoteAccident();                                       // when a traffic accident happens
-    /// </summary>
+    /// <summary>What civic life asks of features outside this folder: delegates with defaults that work without them, set by Wiring/CivicLinks.</summary>
     public static class CivicBridges
     {
-        /// <summary>True if the player has a criminal record. Default: nobody has.</summary>
-        public static Func<bool> CriminalRecord;
+        public static Func<bool> CriminalRecord;   // default: nobody has one
+        public static Func<int> Reputation;        // the player's standing, -100 to 100; default: 0
 
-        /// <summary>The player's standing in the city, -100 to 100. Default: 0.</summary>
-        public static Func<int> Reputation;
-
-        /// <summary>What the player's following on social media adds to their endorsement, before the cap of two businesses' worth. Default: nothing (Wiring/FlareLinks sets it).</summary>
+        /// <summary>What the player's following on social media adds to their endorsement, before the cap. Default: nothing.</summary>
         public static Func<float> Following;
 
         /// <summary>Social media's mood about the city's running, points of the mayor's approval a day (one at most either way). Default: none.</summary>
@@ -93,8 +63,7 @@ namespace RealLifeOverhaul
         /// <summary>True while something large is on in the street near the player. Default: an accident scene or a crime scene of this mod.</summary>
         public static Func<bool> LargeScene;
 
-        /// <summary>True while the weather stops outdoor work. Default: the game's rain.</summary>
-        public static Func<bool> WeatherStopsWork;
+        public static Func<bool> WeatherStopsWork;   // default: the game's rain
 
         /// <summary>Prints a story (two locale keys: headline, body). Default: the headline as a notification.</summary>
         public static Action<string, string> News;
@@ -102,8 +71,7 @@ namespace RealLifeOverhaul
         /// <summary>Starts a labouring shift at a site. Default: none, and the offer is not made.</summary>
         public static Func<Vector3, bool> Labouring;
 
-        /// <summary>How many of city life's people are out. Default: unknown (0).</summary>
-        public static Func<int> CityPeopleOut;
+        public static Func<int> CityPeopleOut;   // city life's people out; default: 0
 
         /// <summary>Set by a feature that multiplies its own fines by CivicPolicy.FineScale: civic life then leaves fines alone.</summary>
         public static bool FinesScaledAtSource;
@@ -114,34 +82,17 @@ namespace RealLifeOverhaul
         /// <summary>The raise agreed for an employee (by the game's id) on top of the game's wage, money an hour. Default: none (Economy/Company sets it).</summary>
         public static Func<string, float> Raise;
 
-        /// <summary>
-        /// The bank entry a feature gives the game's subway fare back under (a ride on a day pass: Transport/SubwayJourney).
-        /// Civic life does not count such a ride as a fare paid, so the policy's change to the fare is not charged on it.
-        /// </summary>
+        /// <summary>The bank entry a day pass gives the game's subway fare back under: such a ride is not a fare paid, so the policy's change is not charged on it.</summary>
         public const string FareGivenBack = "reallife_transaction_subway_pass";
 
-        // ---- what running for office asks (Civic/CivicOffice; set by Wiring/CivicLinks)
-
-        /// <summary>The city's economy, as the cycle stands: 0 a boom, 1 steady, 2 a slowdown, 3 a recession. Default: steady.</summary>
-        public static Func<int> Economy;
-
-        /// <summary>The player's weight with the council, 0 to 100 (Standing's influence). Default: none.</summary>
-        public static Func<int> Influence;
-
-        /// <summary>How well the city knows the player, 0 to 100 (Standing's recognition). Default: nobody knows them.</summary>
-        public static Func<int> Recognition;
-
-        /// <summary>What the city makes of the player's integrity, 0 to 100 (Standing). Default: 50.</summary>
-        public static Func<int> Integrity;
-
-        /// <summary>A conviction that still counts. Default: none.</summary>
-        public static Func<bool> Convicted;
-
-        /// <summary>A case before the court. Default: none.</summary>
-        public static Func<bool> CaseOpen;
-
-        /// <summary>The player lets property to tenants (a vote on rent is then a conflict of interest). Default: no.</summary>
-        public static Func<bool> Landlord;
+        // What running for office asks; Standing's figures are 0 to 100.
+        public static Func<int> Economy;        // 0 a boom, 1 steady, 2 a slowdown, 3 a recession; default: steady
+        public static Func<int> Influence;      // the player's weight with the council; default: 0
+        public static Func<int> Recognition;    // how well the city knows the player; default: 0
+        public static Func<int> Integrity;      // what the city makes of the player's integrity; default: 50
+        public static Func<bool> Convicted;     // a conviction that still counts
+        public static Func<bool> CaseOpen;      // a case before the court
+        public static Func<bool> Landlord;      // the player lets property: a vote on rent is a conflict of interest
 
         /// <summary>Something the player did in politics moves Standing: integrity points, and tenths of a point of recognition from the press. Default: nothing.</summary>
         public static Action<int, int> StandingMoved;
@@ -151,6 +102,47 @@ namespace RealLifeOverhaul
 
         /// <summary>A moment of the campaign or the office the player may post about on social media: what (CivicOffice.Post*) and a name. Default: none.</summary>
         public static Action<int, string> CampaignPost;
+
+        /// <summary>Tells Standing what the player did in politics (<see cref="StandingMoved"/>); a fault there is logged.</summary>
+        internal static void Moved(int integrity, int press)
+        {
+            try
+            {
+                StandingMoved?.Invoke(integrity, press);
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
+        }
+
+        /// <summary>Opens a case in court on a summons (<see cref="FileCase"/>): its number, or 0 with no court or after a fault there.</summary>
+        internal static int Summon(int kind, int amount)
+        {
+            try
+            {
+                return FileCase != null ? FileCase(kind, amount) : 0;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return 0;
+            }
+        }
+
+        /// <summary>A raise agreed on top of an employee's wage, an hour (<see cref="Raise"/>): 0 with none, or after a fault there.</summary>
+        internal static float RaiseOf(string employee)
+        {
+            try
+            {
+                return Raise != null ? Raise(employee) : 0f;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return 0f;
+            }
+        }
 
         internal static int Cycle()
         {

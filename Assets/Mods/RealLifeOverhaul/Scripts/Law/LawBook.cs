@@ -2,8 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Law
 {
-    // Game-free: nothing in this file touches the game or the engine, so the sums can be checked on their own.
-    // Every locale key is written out in full.
+    // Game-free: nothing here touches the game or the engine. Every locale key is written out in full.
 
     /// <summary>What somebody can be held for, and the two things that only ever go on the record.</summary>
     public enum Charge
@@ -36,29 +35,25 @@ namespace RealLifeOverhaul.Law
         public int HoursMin;        // in the cell, before anything else is added
         public int HoursMax;
         public int Bail;            // to walk at once; 0: no bail for this
-        public int Fine;            // what the offence costs, for a route that has no settlement of its own (none today: every caller bills first)
         public int Police;          // what it does to the player's standing with the police
         public int Public;          // ...and with everyone else
         public bool Custodial;      // false for the two record-only kinds
     }
 
     /// <summary>
-    /// The offence table, and the sums done with it: how long, what bail, what a lawyer takes off.
-    /// Everything a player might want to tune about custody is here. The fines for the offences
-    /// themselves stay where they were (CrimeLaw in Crime/CrimeCatalogue, PolicePursuit's
-    /// constants): whoever stops the player charges them, once, and the charge sheet shows what
-    /// was paid.
+    /// The offence table and its sums: how long, what bail, what a lawyer takes off. The fines themselves are charged by
+    /// whoever stops the player (Crime/CrimeCatalogue, PolicePursuit), once; the charge sheet shows what was paid.
     /// </summary>
     public static class LawBook
     {
-        public const int MostHours = 48;            // "a day or two, max": nothing is ever longer
+        public const int MostHours = 48;            // a day or two at most: nothing is ever longer
         public const int LeastHours = 1;
         public const float OtherChargesShare = 0.25f;   // each further charge adds this much of its own time to the longest
-        public const float RepeatStep = 0.15f;      // per time held in the last RepeatDays
+        public const float RepeatStep = 0.15f;      // for each time held in the last RepeatDays
         public const float RepeatMost = 1.6f;
         public const int RepeatDays = 14;
         public static int LawyerFee => Prices.At(750);
-        public static int LawyerFeeLiked => Prices.At(600);      // for somebody the city thinks well of (Reputation.Public of 70 or more)
+        public static int LawyerFeeLiked => Prices.At(600);      // for somebody the public likes (Reputation.Liked)
         public static int ImpoundFee => Prices.At(300);          // the city pound's, whatever the car was taken for (Licences charges the same)
         public const int WastedCallsForCustody = 5; // the fifth call about nothing in one day
 
@@ -68,12 +63,12 @@ namespace RealLifeOverhaul.Law
 
         private static readonly ChargeDef[] Table =
         {
-            new ChargeDef { Id = Charge.WastedCalls, Name = "reallife_law_charge_wasted_calls", HoursMin = 2, HoursMax = 4, Bail = 300, Fine = 0, Police = -6, Public = -1, Custodial = true },
-            new ChargeDef { Id = Charge.FledStop, Name = "reallife_law_charge_fled_stop", HoursMin = 4, HoursMax = 8, Bail = 1500, Fine = 900, Police = -10, Public = -2, Custodial = true },
-            new ChargeDef { Id = Charge.HitAndRun, Name = "reallife_law_charge_hit_and_run", HoursMin = 8, HoursMax = 16, Bail = 3000, Fine = 600, Police = -12, Public = -4, Custodial = true },
-            new ChargeDef { Id = Charge.InjuryFled, Name = "reallife_law_charge_injury_fled", HoursMin = 18, HoursMax = 30, Bail = 8000, Fine = 6000, Police = -16, Public = -8, Custodial = true },
-            new ChargeDef { Id = Charge.DeathStayed, Name = "reallife_law_charge_death_stayed", HoursMin = 24, HoursMax = 36, Bail = 0, Fine = 5000, Police = -14, Public = -10, Custodial = true },
-            new ChargeDef { Id = Charge.DeathFled, Name = "reallife_law_charge_death_fled", HoursMin = 36, HoursMax = 48, Bail = 0, Fine = 20000, Police = -25, Public = -15, Custodial = true },
+            new ChargeDef { Id = Charge.WastedCalls, Name = "reallife_law_charge_wasted_calls", HoursMin = 2, HoursMax = 4, Bail = 300, Police = -6, Public = -1, Custodial = true },
+            new ChargeDef { Id = Charge.FledStop, Name = "reallife_law_charge_fled_stop", HoursMin = 4, HoursMax = 8, Bail = 1500, Police = -10, Public = -2, Custodial = true },
+            new ChargeDef { Id = Charge.HitAndRun, Name = "reallife_law_charge_hit_and_run", HoursMin = 8, HoursMax = 16, Bail = 3000, Police = -12, Public = -4, Custodial = true },
+            new ChargeDef { Id = Charge.InjuryFled, Name = "reallife_law_charge_injury_fled", HoursMin = 18, HoursMax = 30, Bail = 8000, Police = -16, Public = -8, Custodial = true },
+            new ChargeDef { Id = Charge.DeathStayed, Name = "reallife_law_charge_death_stayed", HoursMin = 24, HoursMax = 36, Bail = 0, Police = -14, Public = -10, Custodial = true },
+            new ChargeDef { Id = Charge.DeathFled, Name = "reallife_law_charge_death_fled", HoursMin = 36, HoursMax = 48, Bail = 0, Police = -25, Public = -15, Custodial = true },
             new ChargeDef { Id = Charge.Citation, Name = "reallife_law_charge_citation", Police = -3, Public = 0 },
             new ChargeDef { Id = Charge.Wanted, Name = "reallife_law_charge_wanted", Police = -10, Public = -3 }
         };
@@ -88,8 +83,6 @@ namespace RealLifeOverhaul.Law
 
         public static int Bit(Charge charge) => 1 << (int)charge;
 
-        public static bool In(int charges, Charge charge) => (charges & Bit(charge)) != 0;
-
         /// <summary>How much longer somebody is held who has been held before: 1 for a first time, never above <see cref="RepeatMost"/>.</summary>
         public static float RepeatFactor(int timesHeldLately)
         {
@@ -97,11 +90,7 @@ namespace RealLifeOverhaul.Law
             return factor > RepeatMost ? RepeatMost : factor;
         }
 
-        /// <summary>
-        /// Hours in the cell for a set of charges: the longest of them in full (each rolled between
-        /// its two ends), a quarter of each of the others on top, times the repeat factor, and never
-        /// more than two days whatever is on the sheet.
-        /// </summary>
+        /// <summary>Hours in the cell: the longest charge in full, a quarter of each other, times the repeat factor; two days at most.</summary>
         public static int Sentence(int charges, int timesHeldLately, Func<float> random01)
         {
             float longest = 0f;
@@ -151,40 +140,6 @@ namespace RealLifeOverhaul.Law
                 }
             }
             return (int)Math.Round(most * RepeatFactor(timesHeldLately) / 50f) * 50;
-        }
-
-        /// <summary>The fines of a set of charges as the table has them: for a new route into a cell that has no bill of its own to pass on.</summary>
-        public static int Fine(int charges)
-        {
-            int fine = 0;
-            for (int i = 0; i < Table.Length; i++)
-            {
-                if ((charges & (1 << i)) != 0)
-                {
-                    fine += Table[i].Fine;
-                }
-            }
-            return fine;
-        }
-
-        /// <summary>The most serious charge of a set (the last in the table that is in it).</summary>
-        public static Charge Worst(int charges)
-        {
-            for (int i = Table.Length - 1; i >= 0; i--)
-            {
-                if (Table[i].Custodial && (charges & (1 << i)) != 0)
-                {
-                    return Table[i].Id;
-                }
-            }
-            for (int i = Table.Length - 1; i >= 0; i--)
-            {
-                if ((charges & (1 << i)) != 0)
-                {
-                    return Table[i].Id;
-                }
-            }
-            return Charge.Citation;
         }
 
         /// <summary>What a lawyer leaves of the time still to serve: two thirds, and never less than a quarter of an hour.</summary>

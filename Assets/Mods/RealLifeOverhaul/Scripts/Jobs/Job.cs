@@ -16,13 +16,7 @@ namespace RealLifeOverhaul
         Fault          // the code met something unexpected
     }
 
-    // (PaySlip, what a piece of work paid line by line, is in Jobs/PaySlip.cs: game-free, so the offline check compiles it.)
-
-    /// <summary>
-    /// What the director hands a job each tick: who and where the player is, the car being
-    /// driven if any, and the services every job shares. One object for the whole session,
-    /// refreshed in place; a job keeps no copy of anything in it.
-    /// </summary>
+    /// <summary>What the director hands a job each tick: the player, the car being driven and the shared services. Refreshed in place.</summary>
     public sealed class JobContext
     {
         public JobDirector Director;
@@ -38,17 +32,17 @@ namespace RealLifeOverhaul
         public Vector3 Velocity;         // of the car being driven; zero on foot
         public bool Driving => Car != null;
 
-        public JobProps Props;           // what jobs put on the street and in hands
-        public JobBody Self;             // the player's own body at work: held still, a clip, a tool
+        public JobProps Props;           // street props and what is in hand
+        public JobBody Self;             // the player's own body at work
         public JobStand Stand;           // a place of work the player takes by walking on to it
-        public JobUniform Uniform;       // work clothes over the player's own, taken off by the director however the job ends
+        public JobUniform Uniform;       // taken off by the director however the job ends
         public JobRental Rental;         // the hired car, when the player has none
         public bool Indoors;             // inside the one building the job allows
 
-        public float Rate;               // level, the pay option and the offer's fee, as one factor on what the catalogue says
-        public GigOffer Offer;           // what makes this shift differ from another of the gig: its size, fee, crowd and events (the table's figures for a shift that is not a freelance gig)
+        public float Rate;               // level, pay option and the offer's fee as one factor on the catalogue's pay
+        public GigOffer Offer;           // what makes this shift differ: size, fee, crowd, events (the table's figures outside freelance)
         public int Level;
-        public bool Test;                // started by a test button: needs and daily limits are waived
+        public bool Test;                // started by a test button: needs and daily limits waived
 
         /// <summary>The rota shift this job is being worked as, for an employer; null for a gig taken freelance.</summary>
         public CareerShift Shift;
@@ -59,16 +53,12 @@ namespace RealLifeOverhaul
         /// <summary>A whole shift's work whatever is left of the day's freelance amount: a test, a rota shift, a booked set.</summary>
         public bool FullShift => Test || Shift != null || Gig != null;
 
-        /// <summary>True if the shift is worked at a rank with this perk.</summary>
         public bool Perk(CareerPerk perk) => Shift != null && Shift.Rank.Has(perk);
 
         /// <summary>What the rank (or a booking) does to tips: 1 freelance.</summary>
         public float TipFactor => Shift != null ? Shift.Rank.TipFactor : Gig != null ? CareerCatalogue.GigTipFactor : 1f;
 
-        /// <summary>
-        /// The shift's figures on the HUD, in a copy of the game's own job panel; null if the game's panel could not be
-        /// copied (said once in the log). Made the first time a job asks, shown by the director while that job is on.
-        /// </summary>
+        /// <summary>The shift's figures on a copy of the game's job panel; null if it could not be copied. Made on first use.</summary>
         public ShiftCard Card => Director.Card();
 
         /// <summary>Pays a slip through the game's own transaction, counts the work, spends the energy and shows the slip.</summary>
@@ -77,10 +67,7 @@ namespace RealLifeOverhaul
             Director.Pay(job, slip, titleKey);
         }
 
-        /// <summary>
-        /// Asks for the job's Moment to be called at a time (Time.time), to the frame: for the instant a hand closes on
-        /// something or lets it go (a clip's "grip" or "release"). One at a time: asking again replaces the last.
-        /// </summary>
+        /// <summary>Calls the job's Moment at this Time.time, to the frame (a hand closing on something). Asking again replaces the last.</summary>
         public void At(float time)
         {
             Director.MomentAt(time);
@@ -109,12 +96,12 @@ namespace RealLifeOverhaul
     {
         public Employer Employer;
         public CareerRank Rank;
-        public float Hourly;          // the basic wage per hour, raises included, after the pay option and the owner's factor
+        public float Hourly;          // per hour: raises, pay option and owner's factor included
         public bool Late;
-        public float StartMinutes;    // game time at clock-on
+        public float StartMinutes;    // game minutes
         public Vector3 Depot;         // where the employer is: desk and lead shifts are worked there
         public bool HasDepot;
-        public bool Counts;           // false for a shift started by a test button: nothing of it goes on the record
+        public bool Counts;           // false for a test button's shift: nothing goes on the record
     }
 
     /// <summary>A set the agency booked: where, and what the venue pays on top of the hat.</summary>
@@ -126,16 +113,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A job the player can take: one small class per job. It is a list of steps the director
-    /// ticks five times a second; between ticks it does nothing. It shows everything in the game's
-    /// own interface (<see cref="ShiftFigures"/> on a copy of the game's job panel, <see cref="JobPanel"/>
-    /// over the place of work, <see cref="ShiftClock"/> for the rest of a shift left to the game's
-    /// clock) and says where the game's guider points by setting a marker. Whatever it puts on the
-    /// street or on screen it takes back in <see cref="End"/>, which the director calls exactly once
-    /// on every way a job can stop.
-    ///
-    /// To add a job: a row in <see cref="JobCatalogue"/>, a class like this in Jobs/Kinds, one
-    /// line in <see cref="JobDirector.Create"/>, its strings at the end of en.json.
+    /// A job the player can take, one class per kind, ticked by the director. What it puts out it takes back in <see cref="End"/>,
+    /// called exactly once however it stops. A new kind is a row in <see cref="JobCatalogue"/> and a case in <see cref="JobDirector.Create"/>.
     /// </summary>
     public abstract class Job
     {
@@ -143,43 +122,31 @@ namespace RealLifeOverhaul
 
         public abstract JobDef Def { get; }
 
-        // ------------------------------------------------ what the job says; set only when it changes
-        /// <summary>What to do now, in words: the job writes it on line 1 of its shift card (<see cref="ShiftFigures"/>).</summary>
+        /// <summary>What to do now, in words: line 1 of the shift card.</summary>
         public string Objective { get; protected set; }
 
-        /// <summary>The place the game's own guider (arrow and city map) points at; the director keeps it where the job puts it.</summary>
+        /// <summary>Where the game's guider points (its arrow and the city map).</summary>
         public bool HasMarker { get; protected set; }
         public Vector3 MarkerAt { get; protected set; }
         public string MarkerLabel { get; protected set; }
 
-        /// <summary>
-        /// True while the interaction key is the job's panel's first button (<see cref="JobPanel"/>, the game's own box over a
-        /// place): the mod's own "enter a door, get in a car" key stands aside. The game runs the button on its key or
-        /// on a click; the mod reads no key.
-        /// </summary>
+        /// <summary>True while the interaction key is the job panel's first button: the mod's own door and car key stands aside.</summary>
         public virtual bool OwnsInteractKey => false;
 
-        /// <summary>
-        /// True while the job itself has handed the shift to the game's clock (<see cref="ShiftSkip"/>): the game's
-        /// time machine running is then the shift being worked, not something that has taken the player away.
-        /// </summary>
+        /// <summary>True while the job has left the shift to the game's clock (<see cref="ShiftSkip"/>): the time machine is not an interruption.</summary>
         public virtual bool PassingTime => false;
 
-        /// <summary>One of the job's panel buttons that is a choice of several (a drink, a song, a van, what to say): 0, 1 or 2. Called by the button, never by a key.</summary>
+        /// <summary>A panel button that is one of several choices: 0, 1 or 2.</summary>
         public virtual void Choose(int choice, float now)
         {
         }
 
-        /// <summary>
-        /// True for the one building this job goes on inside (a client's shop). Entering it does
-        /// not end the shift; entering any other does. Street-only jobs say no to everything.
-        /// </summary>
+        /// <summary>True for the one building this job works inside (a client's shop); entering any other ends the shift.</summary>
         public virtual bool WorksInside(Buildings.Building building)
         {
             return false;
         }
 
-        // ------------------------------------------------ how it is going
         public bool Over { get; private set; }
         public JobEnd Outcome { get; private set; }
         public PaySlip Shift;          // everything paid this shift, for the summary
@@ -199,7 +166,7 @@ namespace RealLifeOverhaul
         /// <summary>Five times a second while the job is on.</summary>
         public abstract void Tick(float now);
 
-        /// <summary>The time asked for with <see cref="JobContext.At"/> has come (called in the director's frame, not on its tick).</summary>
+        /// <summary>The time asked for with <see cref="JobContext.At"/> has come; called in the director's frame.</summary>
         public virtual void Moment(float now)
         {
         }
@@ -214,31 +181,23 @@ namespace RealLifeOverhaul
         {
         }
 
-        /// <summary>
-        /// Every way out. Takes back whatever is on the street or in the player's hands and
-        /// pays for work that was done but not yet paid. Must not throw and must be safe to
-        /// call in any state.
-        /// </summary>
+        /// <summary>Every way out: takes back what is on the street or in hand and pays for work done. Must not throw, in any state.</summary>
         public abstract void End(JobEnd why);
 
         /// <summary>True if stopping now, by choice, counts against the player (work was left undone).</summary>
         public virtual bool QuitIsFailure => false;
 
-        /// <summary>
-        /// What <see cref="End"/> would pay if the shift stopped now through nobody's fault, for work done by hand and not
-        /// yet paid: the slip the job's own settlement would hand over, and nothing else. It changes nothing (it is asked
-        /// when the game is saved, and the shift goes on). A job that pays each unit as it is done has nothing owed.
-        /// </summary>
+        /// <summary>What <see cref="End"/> would pay for unpaid work if the shift stopped now through nobody's fault. Changes nothing.</summary>
         protected virtual bool Owed(out PaySlip slip)
         {
             slip = default;
             return false;
         }
 
-        /// <summary>The clock the rest of this job's shift can be left to, or null: what it has done in a run that is still going is owed too.</summary>
+        /// <summary>The clock the rest of the shift can be left to, or null.</summary>
         protected virtual ShiftClock Clocked => null;
 
-        /// <summary>What the clock has done in a run that is still going, for a job that runs the clock itself (the drinks cart). Changes nothing.</summary>
+        /// <summary>What the clock has done in a run still going (the drinks cart). Changes nothing.</summary>
         protected virtual bool ClockOwed(out PaySlip slip)
         {
             slip = default;
@@ -246,11 +205,7 @@ namespace RealLifeOverhaul
             return clock != null && clock.Owed(out slip);
         }
 
-        /// <summary>
-        /// Everything this shift has earned and not been paid, as one slip: the work done by hand with the tips and
-        /// bonuses its events earned (one slip, bounded at nothing, as the director pays it), and what the clock has done in
-        /// a run that is still going. Changes nothing: for the line a save carries (<see cref="JobSave"/>).
-        /// </summary>
+        /// <summary>Everything earned and not yet paid, as one slip, for the line a save carries (<see cref="JobSave"/>).</summary>
         public PaySlip Unpaid()
         {
             if (!Owed(out PaySlip slip))
@@ -296,7 +251,7 @@ namespace RealLifeOverhaul
             return Mathf.RoundToInt(Def.UnitPay * Ctx.Rate);
         }
 
-        // ------------------------------------------------ what the offer drew (GigOffers): the job rolls none of it itself
+        // The offer (GigOffers) drew these figures: a job rolls none of them itself.
 
         /// <summary>How big this shift is: the offer's number of units, and on a freelance day never more than the day has left.</summary>
         protected int ShiftSize()
@@ -323,11 +278,7 @@ namespace RealLifeOverhaul
             _eventBonus = 0;
         }
 
-        /// <summary>
-        /// A unit has been done by hand: <paramref name="done"/> of them so far. The one big tipper of the shift, if the offer drew
-        /// one, turns up at the unit it says: a tip of so many units' pay (<paramref name="unitMoney"/> is what one unit is worth,
-        /// the fare for a ride), said in one of the game's notifications and paid with the next slip.
-        /// </summary>
+        /// <summary>A unit is done, <paramref name="done"/> so far: the offer's big tipper, if any, tips here so many units of <paramref name="unitMoney"/>.</summary>
         protected void UnitDone(int done, int unitMoney)
         {
             GigOffer offer = Ctx.Offer;
@@ -343,13 +294,11 @@ namespace RealLifeOverhaul
             }
             _eventTips += tip;
             JobText.Toast(UI.Notification.NotificationType.Success, "reallife_gig_tipper", "amount", JobText.Money(tip), 8f);
-            Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: a big tipper at unit " + done + " (the offer drew unit " + offer.TipperAt + ") tips " + tip + " (" + offer.TipperUnits.ToString("F2", CultureInfo.InvariantCulture) + " units of " + unitMoney + ").");
+            Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: a big tipper at unit " + done + " (the offer drew unit " + offer.TipperAt + ") tips " + tip
+                             + " (" + offer.TipperUnits.ToString("F2", CultureInfo.InvariantCulture) + " units of " + unitMoney + ").");
         }
 
-        /// <summary>
-        /// The client's speed bonus, if the offer drew one: said at the start with its money and its time, paid by
-        /// <see cref="EndSpeed"/> if the work is finished in time. <paramref name="allowed"/> is the real seconds the job gives the whole shift.
-        /// </summary>
+        /// <summary>Announces the offer's speed bonus, if it drew one; <paramref name="allowed"/> is the real seconds for the whole shift.</summary>
         protected void BeginSpeed(float now, float allowed)
         {
             GigOffer offer = Ctx.Offer;
@@ -359,7 +308,8 @@ namespace RealLifeOverhaul
             }
             _speedBy = now + allowed * offer.SpeedShare;
             int bonus = Mathf.RoundToInt(offer.SpeedUnits * UnitPay());
-            JobText.Toast(UI.Notification.NotificationType.Info, "reallife_gig_speed_offer", "amount", JobText.Money(bonus), "time", ShiftFigures.Clock(Mathf.RoundToInt(allowed * offer.SpeedShare)), 10f);
+            JobText.Toast(UI.Notification.NotificationType.Info, "reallife_gig_speed_offer", "amount", JobText.Money(bonus), "time",
+                ShiftFigures.Clock(Mathf.RoundToInt(allowed * offer.SpeedShare)), 10f);
             Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: the client adds " + bonus + " (" + offer.SpeedUnits.ToString("F2", CultureInfo.InvariantCulture) + " units) if the shift is done within "
                              + Mathf.RoundToInt(allowed * offer.SpeedShare) + " s of " + Mathf.RoundToInt(allowed) + " s.");
         }

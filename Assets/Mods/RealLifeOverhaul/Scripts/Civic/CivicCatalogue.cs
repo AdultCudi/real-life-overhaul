@@ -23,40 +23,7 @@ namespace RealLifeOverhaul
         public int Levy;         // dollars a week on the city levy line: positive is charged, negative is returned
     }
 
-    /// <summary>
-    /// Every policy and every number a policy changes. Game-free: it reads nothing of the game
-    /// and changes nothing; <see cref="CivicEffects"/> applies the
-    /// numbers, each through a multiplier the mod owns and can take back, or as a labelled
-    /// transaction worked out from the game's own figures.
-    ///
-    /// THE NUMBERS (the texts in en.json say the same; change both together):
-    ///   Policing     +1  officers on the street x1.4, street crime x0.8, levy 70 a week
-    ///                -1  officers x0.6, street crime x1.25, 50 a week returned
-    ///   Traffic      +1  fines x1.5, traffic accidents x0.7
-    ///                -1  fines x0.7, traffic accidents x1.3
-    ///   BusinessTax  +1  20 % on top of the income tax your sales run up (the game's rate x that day's sales), weekly
-    ///                -1  20 % of it paid back, weekly
-    ///   TradeLevy    +1  0.5 % of sales charged weekly, 40 a week of levy returned
-    ///                -1  0.3 % of sales paid back weekly
-    ///   Grants       +1  150 a week for each business, three at most
-    ///                -1  a licence fee of 60 a week for each business, three at most
-    ///   Rent         +1  6 % on top of the rent you pay; 4 % more on rent you collect
-    ///                -1  6 % of the rent you pay comes back; 4 % less on rent you collect
-    ///   Parking      +1  street parking x1.5, each parking ticket +60
-    ///                -1  street parking x0.6, each parking ticket -40
-    ///   Transit      +1  subway fare +1 a ride, buses x1.3 as often (Transport: TransitDirector.Headway); bus fares do not change
-    ///                -1  subway fare -1 a ride, buses x0.75 as often
-    ///   Cleaning     +1  sweepers x2.5 as common, "clean streets" mood +3, levy 30 a week
-    ///                -1  sweepers x0.3, "litter" mood -3, 25 a week returned
-    ///   NightLife    +1  licensed until 04:00 (bridge), street crime x1.1
-    ///                -1  licensed until midnight (bridge), street crime x0.92
-    ///   Permits      +1  sites x1.35 as fast, working 07 to 19, noise complaints only noted
-    ///                -1  sites x0.75, working 08 to 16, a complaint always brings quiet hours
-    ///   Events       +1  street events x1.5 (bridge), "something on" mood +2, levy 40 a week
-    ///                -1  street events x0.5, 30 a week returned
-    ///   Wages        +1  a floor of 16 an hour: you top up anyone you pay less, by their rota hours
-    ///                -1  the city pays 5 % of your wage bill
-    /// </summary>
+    /// <summary>Every policy and every number a policy changes, game-free (<see cref="CivicEffects"/> applies them). The locales quote these numbers: change both together.</summary>
     public static class CivicCatalogue
     {
         public const int Levers = 13;
@@ -64,32 +31,58 @@ namespace RealLifeOverhaul
 
         public static readonly PolicyDef[] All =
         {
-            new PolicyDef { Lever = Lever.Policing, Dir = 1, Issue = Issue.Safety, Levy = 70, Name = "reallife_civic_policy_policing_up", Effect = "reallife_civic_policy_policing_up_fx", Say = "reallife_civic_policy_policing_up_say" },
-            new PolicyDef { Lever = Lever.Policing, Dir = -1, Issue = Issue.Living, Levy = -50, Name = "reallife_civic_policy_policing_down", Effect = "reallife_civic_policy_policing_down_fx", Say = "reallife_civic_policy_policing_down_say" },
-            new PolicyDef { Lever = Lever.Traffic, Dir = 1, Issue = Issue.Roads, Name = "reallife_civic_policy_traffic_up", Effect = "reallife_civic_policy_traffic_up_fx", Say = "reallife_civic_policy_traffic_up_say" },
-            new PolicyDef { Lever = Lever.Traffic, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_traffic_down", Effect = "reallife_civic_policy_traffic_down_fx", Say = "reallife_civic_policy_traffic_down_say" },
-            new PolicyDef { Lever = Lever.BusinessTax, Dir = 1, Issue = Issue.Services, Name = "reallife_civic_policy_tax_up", Effect = "reallife_civic_policy_tax_up_fx", Say = "reallife_civic_policy_tax_up_say" },
-            new PolicyDef { Lever = Lever.BusinessTax, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_tax_down", Effect = "reallife_civic_policy_tax_down_fx", Say = "reallife_civic_policy_tax_down_say" },
-            new PolicyDef { Lever = Lever.TradeLevy, Dir = 1, Issue = Issue.Services, Levy = -40, Name = "reallife_civic_policy_levy_up", Effect = "reallife_civic_policy_levy_up_fx", Say = "reallife_civic_policy_levy_up_say" },
-            new PolicyDef { Lever = Lever.TradeLevy, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_levy_down", Effect = "reallife_civic_policy_levy_down_fx", Say = "reallife_civic_policy_levy_down_say" },
-            new PolicyDef { Lever = Lever.Grants, Dir = 1, Issue = Issue.Business, Name = "reallife_civic_policy_grants_up", Effect = "reallife_civic_policy_grants_up_fx", Say = "reallife_civic_policy_grants_up_say" },
-            new PolicyDef { Lever = Lever.Grants, Dir = -1, Issue = Issue.Services, Name = "reallife_civic_policy_grants_down", Effect = "reallife_civic_policy_grants_down_fx", Say = "reallife_civic_policy_grants_down_say" },
-            new PolicyDef { Lever = Lever.Rent, Dir = 1, Issue = Issue.Growth, Name = "reallife_civic_policy_rent_up", Effect = "reallife_civic_policy_rent_up_fx", Say = "reallife_civic_policy_rent_up_say" },
-            new PolicyDef { Lever = Lever.Rent, Dir = -1, Issue = Issue.Living, Name = "reallife_civic_policy_rent_down", Effect = "reallife_civic_policy_rent_down_fx", Say = "reallife_civic_policy_rent_down_say" },
-            new PolicyDef { Lever = Lever.Parking, Dir = 1, Issue = Issue.Roads, Name = "reallife_civic_policy_parking_up", Effect = "reallife_civic_policy_parking_up_fx", Say = "reallife_civic_policy_parking_up_say" },
-            new PolicyDef { Lever = Lever.Parking, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_parking_down", Effect = "reallife_civic_policy_parking_down_fx", Say = "reallife_civic_policy_parking_down_say" },
-            new PolicyDef { Lever = Lever.Transit, Dir = 1, Issue = Issue.Services, Name = "reallife_civic_policy_transit_up", Effect = "reallife_civic_policy_transit_up_fx", Say = "reallife_civic_policy_transit_up_say" },
-            new PolicyDef { Lever = Lever.Transit, Dir = -1, Issue = Issue.Living, Name = "reallife_civic_policy_transit_down", Effect = "reallife_civic_policy_transit_down_fx", Say = "reallife_civic_policy_transit_down_say" },
-            new PolicyDef { Lever = Lever.Cleaning, Dir = 1, Issue = Issue.Services, Levy = 30, Name = "reallife_civic_policy_cleaning_up", Effect = "reallife_civic_policy_cleaning_up_fx", Say = "reallife_civic_policy_cleaning_up_say" },
-            new PolicyDef { Lever = Lever.Cleaning, Dir = -1, Issue = Issue.Living, Levy = -25, Name = "reallife_civic_policy_cleaning_down", Effect = "reallife_civic_policy_cleaning_down_fx", Say = "reallife_civic_policy_cleaning_down_say" },
-            new PolicyDef { Lever = Lever.NightLife, Dir = 1, Issue = Issue.Growth, Name = "reallife_civic_policy_night_up", Effect = "reallife_civic_policy_night_up_fx", Say = "reallife_civic_policy_night_up_say" },
-            new PolicyDef { Lever = Lever.NightLife, Dir = -1, Issue = Issue.Safety, Name = "reallife_civic_policy_night_down", Effect = "reallife_civic_policy_night_down_fx", Say = "reallife_civic_policy_night_down_say" },
-            new PolicyDef { Lever = Lever.Permits, Dir = 1, Issue = Issue.Growth, Name = "reallife_civic_policy_permits_up", Effect = "reallife_civic_policy_permits_up_fx", Say = "reallife_civic_policy_permits_up_say" },
-            new PolicyDef { Lever = Lever.Permits, Dir = -1, Issue = Issue.Living, Name = "reallife_civic_policy_permits_down", Effect = "reallife_civic_policy_permits_down_fx", Say = "reallife_civic_policy_permits_down_say" },
-            new PolicyDef { Lever = Lever.Events, Dir = 1, Issue = Issue.Growth, Levy = 40, Name = "reallife_civic_policy_events_up", Effect = "reallife_civic_policy_events_up_fx", Say = "reallife_civic_policy_events_up_say" },
-            new PolicyDef { Lever = Lever.Events, Dir = -1, Issue = Issue.Living, Levy = -30, Name = "reallife_civic_policy_events_down", Effect = "reallife_civic_policy_events_down_fx", Say = "reallife_civic_policy_events_down_say" },
-            new PolicyDef { Lever = Lever.Wages, Dir = 1, Issue = Issue.Living, Name = "reallife_civic_policy_wages_up", Effect = "reallife_civic_policy_wages_up_fx", Say = "reallife_civic_policy_wages_up_say" },
-            new PolicyDef { Lever = Lever.Wages, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_wages_down", Effect = "reallife_civic_policy_wages_down_fx", Say = "reallife_civic_policy_wages_down_say" }
+            new PolicyDef { Lever = Lever.Policing, Dir = 1, Issue = Issue.Safety, Levy = 70, Name = "reallife_civic_policy_policing_up",
+                Effect = "reallife_civic_policy_policing_up_fx", Say = "reallife_civic_policy_policing_up_say" },
+            new PolicyDef { Lever = Lever.Policing, Dir = -1, Issue = Issue.Living, Levy = -50, Name = "reallife_civic_policy_policing_down",
+                Effect = "reallife_civic_policy_policing_down_fx", Say = "reallife_civic_policy_policing_down_say" },
+            new PolicyDef { Lever = Lever.Traffic, Dir = 1, Issue = Issue.Roads, Name = "reallife_civic_policy_traffic_up",
+                Effect = "reallife_civic_policy_traffic_up_fx", Say = "reallife_civic_policy_traffic_up_say" },
+            new PolicyDef { Lever = Lever.Traffic, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_traffic_down",
+                Effect = "reallife_civic_policy_traffic_down_fx", Say = "reallife_civic_policy_traffic_down_say" },
+            new PolicyDef { Lever = Lever.BusinessTax, Dir = 1, Issue = Issue.Services, Name = "reallife_civic_policy_tax_up",
+                Effect = "reallife_civic_policy_tax_up_fx", Say = "reallife_civic_policy_tax_up_say" },
+            new PolicyDef { Lever = Lever.BusinessTax, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_tax_down",
+                Effect = "reallife_civic_policy_tax_down_fx", Say = "reallife_civic_policy_tax_down_say" },
+            new PolicyDef { Lever = Lever.TradeLevy, Dir = 1, Issue = Issue.Services, Levy = -40, Name = "reallife_civic_policy_levy_up",
+                Effect = "reallife_civic_policy_levy_up_fx", Say = "reallife_civic_policy_levy_up_say" },
+            new PolicyDef { Lever = Lever.TradeLevy, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_levy_down",
+                Effect = "reallife_civic_policy_levy_down_fx", Say = "reallife_civic_policy_levy_down_say" },
+            new PolicyDef { Lever = Lever.Grants, Dir = 1, Issue = Issue.Business, Name = "reallife_civic_policy_grants_up",
+                Effect = "reallife_civic_policy_grants_up_fx", Say = "reallife_civic_policy_grants_up_say" },
+            new PolicyDef { Lever = Lever.Grants, Dir = -1, Issue = Issue.Services, Name = "reallife_civic_policy_grants_down",
+                Effect = "reallife_civic_policy_grants_down_fx", Say = "reallife_civic_policy_grants_down_say" },
+            new PolicyDef { Lever = Lever.Rent, Dir = 1, Issue = Issue.Growth, Name = "reallife_civic_policy_rent_up",
+                Effect = "reallife_civic_policy_rent_up_fx", Say = "reallife_civic_policy_rent_up_say" },
+            new PolicyDef { Lever = Lever.Rent, Dir = -1, Issue = Issue.Living, Name = "reallife_civic_policy_rent_down",
+                Effect = "reallife_civic_policy_rent_down_fx", Say = "reallife_civic_policy_rent_down_say" },
+            new PolicyDef { Lever = Lever.Parking, Dir = 1, Issue = Issue.Roads, Name = "reallife_civic_policy_parking_up",
+                Effect = "reallife_civic_policy_parking_up_fx", Say = "reallife_civic_policy_parking_up_say" },
+            new PolicyDef { Lever = Lever.Parking, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_parking_down",
+                Effect = "reallife_civic_policy_parking_down_fx", Say = "reallife_civic_policy_parking_down_say" },
+            new PolicyDef { Lever = Lever.Transit, Dir = 1, Issue = Issue.Services, Name = "reallife_civic_policy_transit_up",
+                Effect = "reallife_civic_policy_transit_up_fx", Say = "reallife_civic_policy_transit_up_say" },
+            new PolicyDef { Lever = Lever.Transit, Dir = -1, Issue = Issue.Living, Name = "reallife_civic_policy_transit_down",
+                Effect = "reallife_civic_policy_transit_down_fx", Say = "reallife_civic_policy_transit_down_say" },
+            new PolicyDef { Lever = Lever.Cleaning, Dir = 1, Issue = Issue.Services, Levy = 30, Name = "reallife_civic_policy_cleaning_up",
+                Effect = "reallife_civic_policy_cleaning_up_fx", Say = "reallife_civic_policy_cleaning_up_say" },
+            new PolicyDef { Lever = Lever.Cleaning, Dir = -1, Issue = Issue.Living, Levy = -25, Name = "reallife_civic_policy_cleaning_down",
+                Effect = "reallife_civic_policy_cleaning_down_fx", Say = "reallife_civic_policy_cleaning_down_say" },
+            new PolicyDef { Lever = Lever.NightLife, Dir = 1, Issue = Issue.Growth, Name = "reallife_civic_policy_night_up",
+                Effect = "reallife_civic_policy_night_up_fx", Say = "reallife_civic_policy_night_up_say" },
+            new PolicyDef { Lever = Lever.NightLife, Dir = -1, Issue = Issue.Safety, Name = "reallife_civic_policy_night_down",
+                Effect = "reallife_civic_policy_night_down_fx", Say = "reallife_civic_policy_night_down_say" },
+            new PolicyDef { Lever = Lever.Permits, Dir = 1, Issue = Issue.Growth, Name = "reallife_civic_policy_permits_up",
+                Effect = "reallife_civic_policy_permits_up_fx", Say = "reallife_civic_policy_permits_up_say" },
+            new PolicyDef { Lever = Lever.Permits, Dir = -1, Issue = Issue.Living, Name = "reallife_civic_policy_permits_down",
+                Effect = "reallife_civic_policy_permits_down_fx", Say = "reallife_civic_policy_permits_down_say" },
+            new PolicyDef { Lever = Lever.Events, Dir = 1, Issue = Issue.Growth, Levy = 40, Name = "reallife_civic_policy_events_up",
+                Effect = "reallife_civic_policy_events_up_fx", Say = "reallife_civic_policy_events_up_say" },
+            new PolicyDef { Lever = Lever.Events, Dir = -1, Issue = Issue.Living, Levy = -30, Name = "reallife_civic_policy_events_down",
+                Effect = "reallife_civic_policy_events_down_fx", Say = "reallife_civic_policy_events_down_say" },
+            new PolicyDef { Lever = Lever.Wages, Dir = 1, Issue = Issue.Living, Name = "reallife_civic_policy_wages_up",
+                Effect = "reallife_civic_policy_wages_up_fx", Say = "reallife_civic_policy_wages_up_say" },
+            new PolicyDef { Lever = Lever.Wages, Dir = -1, Issue = Issue.Business, Name = "reallife_civic_policy_wages_down",
+                Effect = "reallife_civic_policy_wages_down_fx", Say = "reallife_civic_policy_wages_down_say" }
         };
 
         public static readonly string[] IssueNames =
@@ -119,8 +112,6 @@ namespace RealLifeOverhaul
         {
             return policy == null ? -1 : (int)policy.Lever * 2 + (policy.Dir > 0 ? 0 : 1);
         }
-
-        // ---------------------------------------------------------------- the numbers
 
         private static float Pick(int position, float up, float down)
         {
@@ -181,7 +172,7 @@ namespace RealLifeOverhaul
         /// <summary>The share of the wage bill the city pays.</summary>
         public static float WageSubsidy(int wages) => wages < 0 ? 0.05f : 0f;
 
-        // ---------------------------------------------------------------- money at today's prices (Core/Prices: the figures here are the start's)
+        // Money at today's prices (Core/Prices); the figures in this class are the start's.
 
         public static int LevyNow(PolicyDef policy) => policy != null ? Prices.At(policy.Levy) : 0;
 
@@ -197,6 +188,9 @@ namespace RealLifeOverhaul
 
         public static int DonationCapNow => Prices.At(DonationCap);
 
+        /// <summary>True if one more donation of <paramref name="step"/> keeps a campaign's total within <paramref name="cap"/>.</summary>
+        public static bool DonationFits(int donated, int step, int cap) => donated + step <= cap;
+
         /// <summary>Given to the winner's campaign, for each fast-track building permit (two at most), at the start's prices.</summary>
         public const int FavourPer = 1000;
 
@@ -204,14 +198,12 @@ namespace RealLifeOverhaul
 
         public static int RefitPriceNow(int bid) => Prices.At(RefitPrice[Math.Max(0, Math.Min(RefitPrice.Length - 1, bid))]);
 
-        // ---------------------------------------------------------------- elections and government
-
         public const int TermWeeks = 8;             // an election every eight in-game weeks
         public const int TermDays = TermWeeks * 7;
         public const int CampaignDays = 7;          // posters go up this many days before election day
         public const int FirstElectionAfter = 14;   // never before the end of the second week the mod has seen in a save
         public const int DebateBefore = 3;          // the debate is this many days before election day, at 19:00
-        public const int PollsOpen = 7, PollsClose = 20, ResultHour = 21;
+        public const int PollsOpen = 7, PollsClose = 20, ResultHour = 21;   // hours of the day
         public const int CouncilSeats = 5;
         public const int MaxCandidates = 4;
         public const int MaxDistricts = 12;         // the count keeps each district's shares for so many districts (the game's city has fewer)
@@ -221,7 +213,7 @@ namespace RealLifeOverhaul
         public const float RecallBelow = 25f;       // approval under this...
         public const int RecallDays = 7;            // ...for this many days running brings a recall election
         public const float PetitionShare = 0.02f;   // of the electorate must sign
-        public const int PetitionDays = 14;
+        public const int PetitionDays = 14;   // days
         public const int CouncilVoteEvery = 12;     // days between council votes on a single issue, give or take
 
         public static readonly string[] FirstNames =
@@ -266,8 +258,6 @@ namespace RealLifeOverhaul
             "reallife_civic_slogan_growth_1", "reallife_civic_slogan_growth_2", "reallife_civic_slogan_growth_3"
         };
 
-        // ---------------------------------------------------------------- construction
-
         public static readonly string[] Contractors =
         {
             "reallife_civic_contractor_1", "reallife_civic_contractor_2", "reallife_civic_contractor_3", "reallife_civic_contractor_4",
@@ -304,12 +294,10 @@ namespace RealLifeOverhaul
         public static readonly int[] RefitHours = { 80, 50, 30 };
     }
 
+    /// <summary>The kinds of building site. Saved as a number.</summary>
     public enum SiteKind { Roadworks, Scaffold, Refit, Utility }
 
-    /// <summary>
-    /// A small repeatable random source (xorshift), so that what is generated from a save's seed
-    /// is the same every time it is asked for: candidates, district counts, where sites go.
-    /// </summary>
+    /// <summary>A small repeatable random source (xorshift): what is drawn from a save's seed is the same every time it is asked for.</summary>
     public struct CivicRandom
     {
         private uint _state;

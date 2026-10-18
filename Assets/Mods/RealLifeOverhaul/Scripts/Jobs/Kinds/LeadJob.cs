@@ -8,24 +8,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A shift in charge: depot supervisor, crew lead, shift lead, team lead, assistant manager.
-    /// The work is other people. Two of the team are out near the office, each doing something
-    /// that can be seen from a few steps off: getting on with it (writing up a list), slacking
-    /// (a cigarette), or stuck (arms folded, waiting). The lead walks up to each and makes the
-    /// call that fits: a word of praise, a word in the ear, or a hand. Then two incidents come
-    /// in, each a choice of three. A call made well is a unit of work (paid, and what a review
-    /// counts); a bad one is a complaint in the making. Most of the pay is the rank's hourly
-    /// salary (Jobs/Career*).
-    ///
-    /// The team are the jobs' own two characters, put on pavement that was found clear and out
-    /// of the player's sight, with the same faces every shift (seeded); they only stand, turn
-    /// and, at the end, walk away. If nobody can be put out, the shift is the incidents alone.
-    ///
-    /// IN THE GAME'S OWN INTERFACE. The game's panel over a place (<see cref="JobPanel"/>) stands over each team member
-    /// in reach with "Check on them"; over them again with the three things to say (the choices are its buttons, on the
-    /// game's keys); and over the player with the three things to do about an incident. The shift's figures are on the
-    /// HUD in a copy of the game's job panel (<see cref="ShiftFigures"/>). There is no "Let time pass": every call is a
-    /// decision. The player works in their own clothes.
+    /// A shift in charge: two of the team stand near the office, getting on, slacking or stuck, and the lead makes the call
+    /// that fits (praise, a word, or a hand); then two incidents, each a choice of three. A good call is a unit of work, a bad
+    /// one a complaint in the making; most of the pay is the rank's wage. The team keep the same faces every shift (seeded).
     /// </summary>
     public sealed class LeadJob : Job
     {
@@ -37,11 +22,11 @@ namespace RealLifeOverhaul
         private static readonly string[] DoKeys = { "reallife_job_lead_do_praise", "reallife_job_lead_do_word", "reallife_job_lead_do_help" };
 
         private const int Incidents = 2;
-        private const float Seconds = 260f;
-        private const float StaffReach = 2.4f;
-        private const float LeaveReach = 70f;
-        private const float AskSeconds = 25f;
-        private const float IncidentSeconds = 32f;
+        private const float Seconds = 260f;          // seconds
+        private const float StaffReach = 2.4f;       // metres
+        private const float LeaveReach = 70f;        // metres from the office before the shift counts as walked off
+        private const float AskSeconds = 25f;        // seconds to choose
+        private const float IncidentSeconds = 32f;   // seconds to choose
         private const string StuckWish = "staff_struggle";
 
         private static readonly string[] MoodClip = { "take_notes", "smoke", "arms_crossed" };
@@ -52,7 +37,7 @@ namespace RealLifeOverhaul
         private static readonly string[] FairCall = { "reallife_job_lead_call_ok_1", "reallife_job_lead_call_ok_2" };
         private static readonly string[] BadCall = { "reallife_job_lead_call_bad_1", "reallife_job_lead_call_bad_2", "reallife_job_lead_call_bad_3" };
 
-        // what has happened, the three things that can be done about it, which is the best and which the bad one (the third is passable)
+        // What has happened, the three things that can be done about it, the best and the bad one (the third is passable).
         private static readonly (string key, string a, string b, string c, int best, int bad)[] Deck =
         {
             ("reallife_job_lead_inc_late", "reallife_job_lead_inc_late_a", "reallife_job_lead_inc_late_b", "reallife_job_lead_inc_late_c", 0, 2),
@@ -86,11 +71,10 @@ namespace RealLifeOverhaul
         private bool _paid;
         private int _line = -1;
 
-        // The game's own interface.
-        private readonly JobPanel _panel;
+        private readonly JobPanel _panel = new JobPanel("lead panel");
         private readonly Action[] _onChoice = new Action[JobKeys.Choices];
         private ShiftFigures _figures;
-        private int _callsTotal;      // the calls the shift is: one for each of the team out, and the incidents
+        private int _callsTotal;      // one for each of the team out, and the incidents
         private float _stepAt;
         private int _panelState = int.MinValue;
         private int _cardKey = int.MinValue;
@@ -102,14 +86,8 @@ namespace RealLifeOverhaul
         private Action _onCheck;
         private bool _wanted;
 
-        public LeadJob()
-        {
-            _panel = new JobPanel("lead panel");
-        }
-
         public override JobDef Def => _def;
 
-        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
         public override bool QuitIsFailure => _calls > 0 && _good * 2 < _calls;
@@ -152,13 +130,14 @@ namespace RealLifeOverhaul
             Ctx.Logger?.Info("Jobs: lead shift for " + _employer.Id + ", " + (_staff[0] != null ? 1 : 0) + "+" + (_staff[1] != null ? 1 : 0) + " of the team out.");
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: lead: " + _callsTotal + " calls to make; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panels over the team and the player are all there is)")
+                Ctx.Logger?.Info("Jobs: lead: " + _callsTotal + " calls to make; shown in the game's own interface: job panel "
+                                 + (_figures.Shown ? "copied" : "NOT copied (the panels over the team and the player are all there is)")
                                  + ", no clock offered (every call is a decision).");
             }
             return true;
         }
 
-        // On pavement that is clear, out of sight, a short walk from the office and not on top of the other one.
+        // On clear pavement, out of sight, a short walk from the office and not on top of the other one.
         private void PutStaff(int index)
         {
             for (int attempt = 0; attempt < 4 && _staff[index] == null; attempt++)
@@ -222,7 +201,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The shift's figures on the card: each line is written only when what it says changes.
         private void Figures(float now)
         {
             _figures.Objective(Objective);
@@ -240,8 +218,7 @@ namespace RealLifeOverhaul
             _figures.Time(-1);
         }
 
-        // The panel over the team member in reach, or over the player; made only when a step, a second or a count changes.
-        // (with the keys of the three choices, or with the one key of "Check on them" when there are none)
+        // The panel over the team member or the player, rebuilt only on a change: the three choices, or Check on them.
         private void Up(Transform over, float lift, string first, string left, string right, Color32 colour, int state, string[] choiceKeys)
         {
             _wanted = true;
@@ -318,7 +295,8 @@ namespace RealLifeOverhaul
                     else
                     {
                         int left = Mathf.Max(0, Mathf.CeilToInt(_stepEnd - now));
-                        Up(Ctx.Player.transform, 2.1f, _incidentWords[Mathf.Min(_incident, Incidents - 1)], _panelTime, ShiftFigures.Clock(left), left <= 8 ? WorldPanel.Red() : left <= 15 ? WorldPanel.Yellow() : _panel.White,
+                        Up(Ctx.Player.transform, 2.1f, _incidentWords[Mathf.Min(_incident, Incidents - 1)], _panelTime, ShiftFigures.Clock(left),
+                            left <= 8 ? WorldPanel.Red() : left <= 15 ? WorldPanel.Yellow() : _panel.White,
                             5000 + left * 8 + _deckAt, _incidentKeys);
                     }
                     break;
@@ -332,10 +310,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel's "Check on them" (the game ran it on its key or on a click).
+        // The panel's Check on them, run by the game on its key or a click.
         private void Check()
         {
-            if (Ctx == null || Over || _step != Step.Rounds || _target < 0 || _staff[_target] == null || Time.time - _stepAt < Debounce)
+            if (Over || _step != Step.Rounds || _target < 0 || _staff[_target] == null || Time.time - _stepAt < Debounce)
             {
                 return;
             }
@@ -353,10 +331,9 @@ namespace RealLifeOverhaul
             CareerLinks.TellMet(_employer, _target);
         }
 
-        /// <summary>One of the panel's three buttons (the game ran it on its key or on a click): 0, 1 or 2.</summary>
         public override void Choose(int choice, float now)
         {
-            if (Ctx == null || Over || now - _stepAt < Debounce)
+            if (Over || now - _stepAt < Debounce)
             {
                 return;
             }
@@ -397,7 +374,7 @@ namespace RealLifeOverhaul
             }
             if (person != null && person.IsValid)
             {
-                // They are being spoken to, face to face: the reaction is theirs to make.
+                // Spoken to face to face: the reaction is theirs to make.
                 Ctx.Animations.Play(person.Character, right ? JobClip.Thank : JobClip.Annoyed);
                 Ctx.Cast.Emoji(person, right ? CharacterEmojiName.CommonGreenHappy : CharacterEmojiName.CommonYellowNeutral, 3f);
                 if (right && _mood[index] != Mood.Fine)
@@ -522,7 +499,7 @@ namespace RealLifeOverhaul
         protected override bool Owed(out PaySlip slip)
         {
             slip = default;
-            if (_paid || _calls <= 0 || Ctx == null)
+            if (_paid || _calls <= 0)
             {
                 return false;
             }
@@ -539,10 +516,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             for (int i = 0; i < _staff.Length; i++)
             {
                 Ctx.Cast.Release(_staff[i]);

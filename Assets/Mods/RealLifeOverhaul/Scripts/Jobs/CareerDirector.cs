@@ -3,41 +3,25 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using BAModAPI;
-using Entities;
 using Helpers;
 using RealLifeOverhaul.GameUi;
-using UI.Guiders;
 using UI.Notification;
-using Vehicles.VehicleTypes;
 using UnityEngine;
+using Vehicles.VehicleTypes;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The career ladder (CareerCatalogue, CareerState) put into the game: where each employer is
-    /// (one of the help-wanted boards: its office is the building the board stands at), the boss
-    /// who stands by that board when the player comes near, the rota (reminders, lateness,
-    /// no-shows, sick notes), clocking on to a shift, the payslip, reviews, notice and dismissal,
-    /// and the agency's booked sets.
-    ///
-    /// Owned and called by <see cref="JobDirector"/>: once a second (<see cref="Slow"/>), which is
-    /// a few comparisons unless the game's hour has changed or the player is within sight of a
-    /// depot. It has a cast of its own (the boss and one colleague: two characters, made the
-    /// first time they are needed, shelved when the player leaves), never the jobs' two.
+    /// The career ladder in the game: offices at help-wanted boards, the boss, the rota, clocking on, payslips, reviews, notice
+    /// and booked sets. Called by <see cref="JobDirector"/> once a second: a few comparisons unless the hour has changed.
     /// </summary>
-    public sealed class CareerDirector
+    public sealed partial class CareerDirector
     {
-        private const float BossAppears = 75f;      // metres from a depot at which its boss is put out, if that can be done unseen
-        private const float BossNotNearer = 22f;    // ...and never in view nearer than this
-        private const float BossGoes = 100f;
-        private const float BossReach = 2.4f;
-        private const float DeskReach = 45f;        // desk and lead shifts are clocked on to this near the depot
-        private const float GigReach = 14f;
+        private const float DeskReach = 45f;        // metres: desk and lead shifts are clocked on to this near the depot
         private const float OfficeNear = 25f;       // metres: the office's mark comes off once the player is this near the board
         private const float OfficeSeconds = 900f;   // real seconds the office's mark stays up if the player never gets there
         private const string WageKey = "reallife_transaction_career_wage";
         private const string SalaryCategory = "ba:transactioncategory_salaryincome";
-        private static readonly Color GuideColour = new Color(0.20f, 0.62f, 0.95f, 1f);
 
         private readonly JobDirector _director;
         private readonly IModLogger _logger;
@@ -45,35 +29,21 @@ namespace RealLifeOverhaul
         private readonly int[] _depot = new int[CareerCatalogue.All.Length];   // the board each employer is at, or -1
         private readonly CareerShift _shift = new CareerShift();
         private readonly StringBuilder _text = new StringBuilder(256);
-        private readonly GuideMark _officeMark = new GuideMark("the career's office");   // the game's destination marker, when the player asked to be shown the office
-        private float _officeUntil;       // unscaled time the office's mark comes off; 0 while it is not up
+        private readonly GuideMark _officeMark = new GuideMark("the career's office");   // the game's destination marker, for "Show me the office"
+        private float _officeUntil;       // unscaled time the mark comes off; 0 while it is not up
         private int _officeBoard = -1;
         private bool _mapped;
         private bool _failed;
 
-        private StreetActor _boss;
-        private int _bossOf = -1;
-        private Vector3 _bossAt;
-        private StreetActor _mate;         // on a rota day: whoever is on the same shift, waiting at the office
-        private int _mateIndex;
-        private bool _mateGreeted;
-        private bool _greeted;
-        private int _noRoomAt = -1;        // a depot whose boss could not be stood anywhere: not asked again this visit
         private int _lastHour = -1;
         private bool _dismissAfter;
-        private string[] _prompts;
         private int _line = -1;
-
-        private BookedGig _gig;
-        private int _gigDay;
-        private bool _gigGuided;
-        private float _gigRetry;
 
         public CareerDirector(JobDirector director, IModLogger logger)
         {
             _director = director;
             _logger = logger;
-            _officeMark.Keep(director);   // the marker goes with the job director, or when the guard stops it (Core/GameUi/GuideMarkWatch)
+            _officeMark.Keep(director);   // goes with the job director, or when the guard stops it
             _cast = new JobCast(director, logger);
             for (int i = 0; i < _depot.Length; i++)
             {
@@ -86,14 +56,6 @@ namespace RealLifeOverhaul
         /// <summary>The employer at whose depot the player stands (by its board or its boss), or -1.</summary>
         public int Near { get; private set; } = -1;
 
-        /// <summary>The key prompt at a depot: "speak to ...". Null when not at one.</summary>
-        public string Prompt => Near >= 0 && _prompts != null ? _prompts[Near] : null;
-
-        /// <summary>True while a booked set is waiting to be played.</summary>
-        public bool GigPending => _gig != null;
-
-        public string GigVenue => _gig != null ? _gig.VenueName : null;
-
         public void Dispose()
         {
             Unguide();
@@ -101,8 +63,6 @@ namespace RealLifeOverhaul
             _boss = null;
             _cast.Dispose();
         }
-
-        // ---------------------------------------------------------------- where the employers are
 
         /// <summary>The board an employer's office is at, or -1 if it has none in this city.</summary>
         public int DepotOf(int employer)
@@ -123,7 +83,7 @@ namespace RealLifeOverhaul
             return -1;
         }
 
-        public bool DepotPlace(int employer, out Vector3 place, out string address)
+        private bool DepotPlace(int employer, out Vector3 place, out string address)
         {
             JobBoards boards = _director.HelpBoards;
             int board = DepotOf(employer);
@@ -144,7 +104,7 @@ namespace RealLifeOverhaul
             return DepotPlace(employer, out _, out string address) && CareerOfficeRules.Has(address) ? address : null;
         }
 
-        /// <summary>The text key for a message that sends the player to the office, with the address put in the data when the employer has a board.</summary>
+        /// <summary>The key for a message sending the player to the office, with the address put in the data when there is a board.</summary>
         public string OfficeKey(string key, int employer, Dictionary<string, string> data)
         {
             string address = OfficeAddress(employer);
@@ -155,11 +115,7 @@ namespace RealLifeOverhaul
             return CareerOfficeRules.Key(key, address);
         }
 
-        /// <summary>
-        /// "Show me the office": the game's own destination marker (the one jobs and outings use) is put on the employer's
-        /// board, and comes off when the player is near it, after a quarter of an hour, or when the career is put away.
-        /// False if the employer has no board, or the game's marker is on a job or an outing (it can be asked again).
-        /// </summary>
+        /// <summary>"Show me the office": the game's destination marker on the board until the player is near or 15 minutes pass. False without a board or with the marker in use.</summary>
         public bool ShowOffice(int employer)
         {
             if (!DepotPlace(employer, out Vector3 place, out string address))
@@ -175,7 +131,8 @@ namespace RealLifeOverhaul
             }
             if (Meta.Dev.Verbose)
             {
-                _logger?.Info("Careers check (office): '" + name + "' at " + place.ToString("F1", CultureInfo.InvariantCulture) + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked (the marker is on a job or an outing): FAIL") + ".");
+                _logger?.Info("Careers check (office): '" + name + "' at " + place.ToString("F1", CultureInfo.InvariantCulture) + " is "
+                              + (shown ? "on the game's destination marker: PASS" : "NOT marked (the marker is on a job or an outing): FAIL") + ".");
             }
             return shown;
         }
@@ -204,8 +161,7 @@ namespace RealLifeOverhaul
             _officeMark.Hide();
         }
 
-        // Each employer takes the board at the kind of building it would have its office in, best match first; the rest
-        // take what is left, in order. The boards are the same in every game, so the employers are too.
+        // Each employer takes the board at its kind of building, best match first, the rest what is left: the same in every game.
         private void Map(JobBoards boards)
         {
             _mapped = true;
@@ -239,17 +195,13 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            _prompts = new string[all.Length];
             _text.Length = 0;
             for (int e = 0; e < all.Length; e++)
             {
-                _prompts[e] = JobText.T("reallife_career_prompt_boss", "boss", JobText.T(all[e].BossKey), "employer", JobText.T(all[e].NameKey));
                 _text.Append(all[e].Id).Append(_depot[e] >= 0 ? " at " + boards.Address(_depot[e]) + " (" + boards.Kind(_depot[e]) + ")" : " has no office").Append("; ");
             }
             _logger?.Info("Careers: " + _text);
         }
-
-        // ---------------------------------------------------------------- once a second
 
         /// <param name="onFoot">The player is on foot out of doors with no job on: a boss may be put out and spoken to.</param>
         public void Slow(Vector3 player, bool onFoot, bool jobOn)
@@ -311,157 +263,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The boss of the nearest depot stands by its board while the player is about; nobody is ever put down in view close by.
-        private void Presence(Vector3 player, bool onFoot, JobBoards boards)
-        {
-            int nearest = -1;
-            float best = BossGoes * BossGoes;
-            for (int e = 0; e < _depot.Length; e++)
-            {
-                if (_depot[e] < 0 || _depot[e] >= boards.Count)
-                {
-                    continue;
-                }
-                float sqr = FlatSqr(boards.Front(_depot[e]) - player);
-                if (sqr < best)
-                {
-                    best = sqr;
-                    nearest = e;
-                }
-            }
-            if (_boss != null && (nearest != _bossOf || !_boss.IsValid))
-            {
-                PutAway();
-            }
-            if (nearest != _noRoomAt)
-            {
-                _noRoomAt = -1;
-            }
-            if (nearest >= 0 && _boss == null && onFoot && nearest != _noRoomAt && best < BossAppears * BossAppears)
-            {
-                PutBoss(nearest, boards, best);
-            }
-
-            // The colleague says hello when the player walks up: a wave at somebody who is there to be waved at.
-            if (_mate != null && _mate.IsValid && !_mateGreeted && onFoot && nearest >= 0 && FlatSqr(_mate.Position - player) < 3.2f * 3.2f)
-            {
-                _mateGreeted = true;
-                _mate.Face(player);
-                _director.Animations.Play(_mate.Character, JobClip.Thank);
-                Colleague(CareerCatalogue.All[nearest], _mateIndex);
-            }
-
-            // At the board, or beside the boss: the key speaks to the office.
-            Near = -1;
-            if (nearest >= 0 && onFoot)
-            {
-                bool atBoard = boards.Near == _depot[nearest];
-                bool atBoss = _boss != null && _boss.IsValid && FlatSqr(_boss.Position - player) < BossReach * BossReach;
-                if (atBoard || atBoss)
-                {
-                    Near = nearest;
-                    if (_boss != null && _boss.IsValid && !_greeted)
-                    {
-                        _greeted = true;
-                        _boss.Face(player);
-                        _director.Animations.Play(_boss.Character, JobClip.Thank);   // a nod and a wave: there is somebody in front of them
-                        CareerLinks.TellMet(CareerCatalogue.All[nearest], -1);
-                    }
-                }
-            }
-        }
-
-        private void PutBoss(int employer, JobBoards boards, float distanceSqr)
-        {
-            int board = _depot[employer];
-            Vector3 outward = boards.Outward(board);
-            Vector3 along = Vector3.Cross(Vector3.up, outward);
-            Vector3 front = boards.Front(board);
-            for (int side = -1; side <= 1; side += 2)
-            {
-                // A step and a half along the wall from the board, clear of it and of the door on its other side.
-                if (!CitySpots.Stand(front + along * (side * 1.7f) - outward * 0.2f, 0.45f, out Vector3 spot))
-                {
-                    continue;
-                }
-                if (CitySpots.InView(spot) && distanceSqr < BossAppears * BossAppears * 0.36f && FlatSqr(spot - PlayerPosition()) < BossNotNearer * BossNotNearer * 4f)
-                {
-                    return;   // they would be seen appearing: wait until the player looks away or comes from further off
-                }
-                Employer who = CareerCatalogue.All[employer];
-                StreetActor boss = _cast.Put(spot, false, who.Seed, who.BossFemale);
-                if (boss == null)
-                {
-                    break;
-                }
-                boss.StandAt(spot, spot + outward);
-                if (!boss.Work(employer % 2 == 0 ? "clipboard_write" : "arms_crossed"))
-                {
-                    boss.Work("arms_crossed");
-                }
-                _boss = boss;
-                _bossOf = employer;
-                _bossAt = spot;
-                _greeted = false;
-                PutMate(employer, who, front - along * (side * 1.9f) + outward * 0.5f, outward);
-                _logger?.Info("Careers: " + who.Id + "'s boss is at the office (" + boards.Address(board) + ")" + (_mate != null ? ", and a colleague with them." : "."));
-                return;
-            }
-            _noRoomAt = employer;
-            _logger?.Info("Careers: no room to stand " + CareerCatalogue.All[employer].Id + "'s boss by the board; the board itself is the office.");
-        }
-
-        // On a day the player is on the rota here, whoever is on the same shift waits at the office too: on the other side
-        // of the board from the boss, put out at the same (unseen) moment, with the same face every time.
-        private void PutMate(int employer, Employer who, Vector3 place, Vector3 outward)
-        {
-            int day = TimeHelper.CurrentDay;
-            if (!CareerState.Employed || CareerState.EmployerIndex != employer || !CareerState.ShiftOpen(day)
-                || !CitySpots.Stand(place, 0.45f, out Vector3 spot) || FlatSqr(spot - _bossAt) < 1.5f * 1.5f)
-            {
-                return;
-            }
-            int mate = day % who.Colleagues.Length;
-            StreetActor person = _cast.Put(spot, false, who.Seed + 11 * (mate + 1), (mate + who.Seed) % 2 == 0, false);
-            if (person == null)
-            {
-                return;
-            }
-            person.StandAt(spot, spot + outward);
-            person.Work("talk_b");   // listening, a nod, a look up the street: somebody waiting for the shift to start
-            _mate = person;
-            _mateIndex = mate;
-            _mateGreeted = false;
-        }
-
-        private static Vector3 PlayerPosition()
-        {
-            PlayerController player = PlayerHelper.PlayerController;
-            return player != null ? player.transform.position : Vector3.zero;
-        }
-
-        private void PutAway()
-        {
-            if (_boss != null)
-            {
-                _cast.Release(_boss);
-                _boss = null;
-            }
-            if (_mate != null)
-            {
-                _cast.Release(_mate);
-                _mate = null;
-            }
-            _bossOf = -1;
-        }
-
-        private static float FlatSqr(Vector3 offset)
-        {
-            return offset.x * offset.x + offset.z * offset.z;
-        }
-
-        // ---------------------------------------------------------------- once a game hour
-
         private void Hourly(int day, int hour, bool jobOn)
         {
             CountCashierHour();
@@ -478,7 +279,7 @@ namespace RealLifeOverhaul
             Employer employer = CareerState.Employer;
             if (CareerState.Marks >= CareerCatalogue.MarksToDismiss && !jobOn)
             {
-                Dismiss("reallife_career_dismissed_late");   // a third mark whose dismissal was still to come (saved in between, or a shift that faulted)
+                Dismiss("reallife_career_dismissed_late");   // a third mark whose dismissal was still to come (a save between, or a faulted shift)
                 return;
             }
 
@@ -540,8 +341,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's own employer job (the cashier), read only: an hour worked there is remembered for the CV and
-        // counts as experience when signing on with the retail chain. Nothing of the game's job is touched.
+        // The game's own cashier job, read only: an hour worked there counts for the CV and as retail experience.
         private void CountCashierHour()
         {
             try
@@ -557,119 +357,6 @@ namespace RealLifeOverhaul
                 _logger?.Error(e);
             }
         }
-
-        // ---------------------------------------------------------------- signing on, leaving
-
-        /// <summary>Whether an employer would take the player on today. If not, the reason is a key with {count}, {day}.</summary>
-        public bool CanSignOn(int employer, out string reasonKey, out string value)
-        {
-            reasonKey = null;
-            value = null;
-            Employer who = CareerCatalogue.All[employer];
-            int day = TimeHelper.CurrentDay;
-            if (!On)
-            {
-                reasonKey = "reallife_career_no_off";
-            }
-            else if (CareerState.Employed && CareerState.EmployerIndex == employer)
-            {
-                reasonKey = "reallife_career_no_already";
-            }
-            else if (CareerState.Employed)
-            {
-                reasonKey = "reallife_career_no_other";
-                value = JobText.T(CareerState.Employer.NameKey);
-            }
-            else if (CareerState.BannedAt(employer, day))
-            {
-                reasonKey = "reallife_career_no_banned";
-                value = (CareerState.BannedUntil(employer) - day).ToString();
-            }
-            else if (CareerState.ReferenceScore(JobState.HasReference) < who.References)
-            {
-                reasonKey = "reallife_career_no_references";
-                value = who.References.ToString();
-            }
-            return reasonKey == null;
-        }
-
-        public void SignOn(int employer, CareerRota rota, bool test)
-        {
-            Employer who = CareerCatalogue.All[employer];
-            JobDef own = JobCatalogue.Find(who.Job);
-            JobDef related = who.Related != null ? JobCatalogue.Find(who.Related) : null;
-            int credit = CareerCatalogue.CarryOver(own != null ? JobState.Level(own) : 1, related != null ? JobState.Level(related) : 1);
-            if (who.Id == CareerCatalogue.Retail)
-            {
-                credit = Mathf.Min(CareerCatalogue.ShiftsPerReview - 1, credit + CareerState.CashierHours / 8);   // a day at the game's own till counts
-            }
-            CareerState.SignOn(employer, rota, TimeHelper.CurrentDay, credit);
-            _dismissAfter = false;
-            var data = new Dictionary<string, string>(3)
-            {
-                { "employer", JobText.T(who.NameKey) }, { "title", JobText.T(who.Ranks[0].TitleKey) }, { "rota", JobText.T(rota.NameKey) }
-            };
-            Notifications.Show(NotificationType.Success, "reallife_career_signed", data, 12f);
-            CareerPhone.Text("reallife_career_text_signed", data);
-            ModState.AddModifier(ModState.MoodUp);
-            CareerLinks.TellMet(who, -1);
-            _logger?.Info("Careers: signed on with " + who.Id + (test ? " by the test button" : string.Empty) + ", rota " + rota.Days + "@" + rota.Hour
-                          + ", experience credited " + credit + " shift(s).");
-        }
-
-        public void GiveNotice()
-        {
-            if (!CareerState.Employed || CareerState.OnNotice)
-            {
-                return;
-            }
-            CareerState.GiveNotice(TimeHelper.CurrentDay);
-            _logger?.Info("Careers: notice given at " + CareerState.Employer.Id + ".");
-        }
-
-        private void FinishNotice(int day)
-        {
-            Employer employer = CareerState.Employer;
-            CareerReference reference = CareerState.EarnedReference();
-            CareerState.Leave(day, reference);
-            var data = new Dictionary<string, string>(1) { { "employer", JobText.T(employer.NameKey) } };
-            Notifications.Show(NotificationType.Info, reference == CareerReference.Good ? "reallife_career_left_good" : "reallife_career_left_plain", data, 12f);
-            CareerPhone.Text(reference == CareerReference.Good ? "reallife_career_text_left_good" : "reallife_career_text_left_plain", data);
-            _logger?.Info("Careers: notice worked at " + employer.Id + ", reference " + reference + ".");
-        }
-
-        public void WalkOut()
-        {
-            if (!CareerState.Employed)
-            {
-                return;
-            }
-            Employer employer = CareerState.Employer;
-            CareerState.Leave(TimeHelper.CurrentDay, CareerReference.MarkedDown);
-            _dismissAfter = false;
-            _logger?.Info("Careers: walked out of " + employer.Id + ".");
-        }
-
-        private void Dismiss(string key)
-        {
-            if (!CareerState.Employed)
-            {
-                return;
-            }
-            Employer employer = CareerState.Employer;
-            CareerState.Leave(TimeHelper.CurrentDay, CareerReference.MarkedDown);
-            _dismissAfter = false;
-            var data = new Dictionary<string, string>(3)
-            {
-                { "employer", JobText.T(employer.NameKey) }, { "boss", JobText.T(employer.BossKey) }, { "days", CareerCatalogue.BanDays.ToString() }
-            };
-            Notifications.Show(NotificationType.Error, key, data, 14f);
-            CareerPhone.Text("reallife_career_text_dismissed", data);
-            ModState.AddModifier(ModState.MoodDownBig);
-            _logger?.Info("Careers: dismissed by " + employer.Id + " (" + key + ").");
-        }
-
-        // ---------------------------------------------------------------- a shift
 
         /// <summary>Why the shift cannot be clocked on to right now, or null if it can.</summary>
         public string ClockOnRefusal()
@@ -803,10 +490,7 @@ namespace RealLifeOverhaul
             "reallife_career_mate_hello_1", "reallife_career_mate_hello_2", "reallife_career_mate_hello_3", "reallife_career_mate_hello_4"
         };
 
-        /// <summary>
-        /// A shift worked for an employer is over: the basic wage for its hours through the game's own
-        /// transaction, the payslip, the record, and whatever the record now leads to.
-        /// </summary>
+        /// <summary>A rota shift is over: the basic wage for its hours, the payslip, the record, and what the record now leads to.</summary>
         public void ShiftEnded(Job job, CareerShift shift, JobEnd why, bool failed)
         {
             try
@@ -856,12 +540,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// An employer's shift that was on when the game was saved, settled after the load (<see cref="JobSave"/>): the basic
-        /// wage for the hours clocked up to the save, by the rule a shift ends by, and the shift on the review's count if
-        /// any work was done on it. No complaint and no mark: the day was already handled when it was clocked on to, so the
-        /// rota does not take it for missed either. Nothing is counted for somebody who no longer works there.
-        /// </summary>
+        /// <summary>Settles a rota shift on at the save (<see cref="JobSave"/>): the wage for the hours clocked, and the shift counted if worked; no complaint, no mark.</summary>
         public void SettleSaved(JobDef def, SavedShift saved, in ShiftSettlement sum)
         {
             if (sum.Wage > 0)
@@ -877,11 +556,9 @@ namespace RealLifeOverhaul
                           + (sum.Worked ? "; counted as a shift worked." : "; no work had been done: not counted as a shift."));
         }
 
-        // The payslip: what the work paid, the basic wage, and the tax line. The game takes no tax from wages (its own
-        // employer job pays its hourly rate in full, and income tax is on business sales only), so the line reads zero.
+        // The game takes no tax from wages (its own job pays the rate in full), so the payslip's tax line reads zero.
         private void Payslip(Job job, CareerShift shift, int piece, int hours, int wage)
         {
-            // The payslip is one of the game's notifications (it also stays in the game's list of them), with the same figures.
             var data = new Dictionary<string, string>(6)
             {
                 { "employer", JobText.T(shift.Employer.NameKey) }, { "total", JobText.Money(piece + wage) }, { "lines", _director.SlipLines(job.Shift) },
@@ -895,153 +572,6 @@ namespace RealLifeOverhaul
                               + shift.Hourly.ToString("F1", CultureInfo.InvariantCulture) + " = " + wage + (shift.Late ? "; late: 1 h docked" : string.Empty) + ").");
             }
         }
-
-        // ---------------------------------------------------------------- the review
-
-        /// <summary>Whether the review can be held here: face to face at the office, or by phone for an employer with no office in this city.</summary>
-        public bool CanReview(bool inPerson)
-        {
-            return CareerState.Employed && CareerState.ReviewDue && (inPerson || DepotOf(CareerState.EmployerIndex) < 0);
-        }
-
-        /// <summary>Holds the review. The numbers read out are the ones the outcome was decided from.</summary>
-        public ReviewOutcome HoldReview(out float score, out int onTime, out int due, out int tips, out int complaints, out int crashes, out int stops)
-        {
-            onTime = CareerState.OnTime;
-            due = CareerState.OnTime + CareerState.Late + CareerState.NoShow;
-            tips = CareerState.Tips;
-            complaints = CareerState.Complaints;
-            crashes = CareerState.Crashes;
-            stops = CareerState.Stops;
-            Employer employer = CareerState.Employer;
-            ReviewOutcome outcome = CareerState.Review(!CareerState.OnNotice, out score);
-            _logger?.Info("Careers: review at " + employer.Id + ": score " + score.ToString("F0") + " (on time " + onTime + "/" + due + ", tips " + tips
-                          + ", complaints " + complaints + ", crashes " + crashes + ", stops " + stops + ") -> " + outcome + ".");
-            switch (outcome)
-            {
-                case ReviewOutcome.Promoted:
-                    ModState.AddModifier(ModState.MoodUpBig);
-                    break;
-                case ReviewOutcome.Raise:
-                    ModState.AddModifier(ModState.MoodUp);
-                    break;
-                case ReviewOutcome.Warning:
-                    ModState.AddModifier(ModState.MoodDown);
-                    break;
-                case ReviewOutcome.Dismissed:
-                    CareerState.Leave(TimeHelper.CurrentDay, CareerReference.MarkedDown);
-                    ModState.AddModifier(ModState.MoodDownBig);
-                    break;
-            }
-            return outcome;
-        }
-
-        // ---------------------------------------------------------------- booked sets
-
-        /// <summary>Why the agency has no set to book right now, or null if it has.</summary>
-        public string GigRefusal()
-        {
-            JobDef busker = JobCatalogue.Find(JobCatalogue.Busker);
-            if (!On)
-            {
-                return "reallife_career_no_off";
-            }
-            if (JobState.Level(busker) < CareerCatalogue.GigNeedsLevel)
-            {
-                return "reallife_career_gig_no_level";
-            }
-            if (CareerState.GigDay == TimeHelper.CurrentDay || _gig != null)
-            {
-                return "reallife_career_gig_no_today";
-            }
-            if (JobState.Sacked(busker, TimeHelper.CurrentDay))
-            {
-                return "reallife_job_no_sacked";
-            }
-            return null;
-        }
-
-        /// <summary>Books a set at a venue near the player: an open business with a clear front. False if none was found.</summary>
-        public bool BookGig(bool test)
-        {
-            if (!JobSpots.RandomDoor(PlayerPosition(), test ? 20f : 90f, test ? 160f : 480f, null, 0f, out DoorSpot spot, JobSites.AnyClient, 96))
-            {
-                return false;
-            }
-            _gig = new BookedGig
-            {
-                Venue = spot.Front,
-                VenueName = JobSites.NameOf(spot),
-                Fee = Mathf.RoundToInt(CareerCatalogue.GigFee * Mathf.Clamp(Settings.JobPay, 25, 300) / 100f)
-            };
-            _gigDay = TimeHelper.CurrentDay;
-            if (!test)
-            {
-                CareerState.GigDay = _gigDay;
-            }
-            Guide();
-            _logger?.Info("Careers: a set is booked at " + _gig.VenueName + " for " + _gig.Fee + ".");
-            return true;
-        }
-
-        public int GigFee => _gig != null ? _gig.Fee : Mathf.RoundToInt(CareerCatalogue.GigFee * Mathf.Clamp(Settings.JobPay, 25, 300) / 100f);
-
-        // The player has come to the venue on foot: the set begins, where they stand.
-        private void Gig(Vector3 player, bool free)
-        {
-            if (!free || Time.unscaledTime < _gigRetry || FlatSqr(_gig.Venue - player) > GigReach * GigReach)
-            {
-                return;
-            }
-            BookedGig gig = _gig;
-            _gig = null;
-            Unguide();
-            if (!_director.StartGig(gig, out string reason))
-            {
-                JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_here", 8f);
-                _gig = gig;       // no room for a pitch just here: tried again in a while, from wherever they stand then
-                _gigRetry = Time.unscaledTime + 12f;
-                Guide();
-            }
-        }
-
-        private void Guide()
-        {
-            try
-            {
-                if (_gig != null && SaveGameManager.Current != null && SaveGameManager.Current.currentPlayerMission == null)
-                {
-                    GuidersManager.SetGuiderTarget(_gig.Venue, _gig.VenueName, JobPhone.Icon, GuideColour, DirectionGuiderType.JobDestination);
-                    _gigGuided = true;
-                }
-            }
-            catch (Exception e)
-            {
-                _logger?.Error(e);
-            }
-        }
-
-        private void Unguide()
-        {
-            if (!_gigGuided)
-            {
-                return;
-            }
-            _gigGuided = false;
-            try
-            {
-                if (SaveGameManager.Current == null || SaveGameManager.Current.currentPlayerMission == null)
-                {
-                    GuidersManager.ResetGuider(DirectionGuiderType.JobDestination);
-                }
-            }
-            catch (Exception e)
-            {
-                _logger?.Error(e);
-            }
-        }
-
-        // ---------------------------------------------------------------- shared
 
         /// <summary>True for a car of the Luxury kind (Driving/CarCatalogue): what premium cab work is done in.</summary>
         public static bool IsLuxury(CarController car)

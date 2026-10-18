@@ -1,26 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI;
+using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Law
 {
     /// <summary>
-    /// The holding cell, in the window the game lists its subway stations in (<see cref="TravelList"/>): the charge
-    /// sheet as a note, the time still to serve in the lines under the headline, and an entry for each of the three
-    /// things to do (sit it out, pay bail, call a lawyer) with its cost under its name. The list cannot be left with
-    /// the cancel key while the player is held (<see cref="TravelList.Locked"/>): custody ends by the clock, by bail
-    /// or in the cell itself, as it did.
-    ///
-    /// The time is waited out by the game's own time skip, which switches the HUD off, so the window stands on the
-    /// skip's own canvas while it runs (<see cref="Mount"/>) and goes back to the HUD's when it is closed. Where a
-    /// real cell is in view the window stands at the right of the screen, with the room beside it.
-    ///
-    /// The cost: the clock line is written only when the minute shown changes; entries are written when an option
-    /// changes (a lawyer called). Nothing runs per frame. If the game's window cannot be copied <see cref="Open"/>
-    /// returns false and the sentence is served without the choices.
+    /// The holding cell in the game's own list window (<see cref="TravelList"/>): the charge sheet, the time left, and sit it
+    /// out, bail or a lawyer. Cost: nothing a frame; the clock line is written only when the minute shown changes.
     /// </summary>
     internal sealed class CustodyList
     {
@@ -56,14 +47,9 @@ namespace RealLifeOverhaul.Law
             TravelList.Logger = logger;
         }
 
-        /// <summary>True while the cell's list is on screen.</summary>
         public bool IsOpen => _window.IsOpen;
 
-        /// <summary>
-        /// Puts the cell's list up. <paramref name="chosen"/> is told which entry was clicked (0, 1 or 2). False if the
-        /// game's window could not be copied.
-        /// </summary>
-        /// <param name="docked">True when the player is standing in a real cell: the list is at the right of the screen with the room in view beside it.</param>
+        /// <summary>Puts the cell's list up, at the right when <paramref name="docked"/> (a cell in view). False if it could not be made.</summary>
         public bool Open(string precinct, string sheet, string sentence, Action<int> chosen, bool docked)
         {
             TravelList list = _window.Take(this);
@@ -90,17 +76,14 @@ namespace RealLifeOverhaul.Law
             return true;
         }
 
-        /// <summary>
-        /// A stay that is not an arrest's (a court's order): only the first <paramref name="options"/> entries are listed,
-        /// and the note has this heading. Call after <see cref="Open"/>, which puts both back to the arrest's.
-        /// </summary>
+        /// <summary>A court's order: only the first <paramref name="options"/> entries, and this heading over the note. Call after Open.</summary>
         public void Shape(int options, string noteKey)
         {
             _shown = Mathf.Clamp(options, 1, Options);
             _noteKey = string.IsNullOrEmpty(noteKey) ? "reallife_law_cell_sheet" : noteKey;
         }
 
-        /// <summary>Shows what was set (call after the options and the clock). Locks the window: the way out is the sentence, bail or a lawyer.</summary>
+        /// <summary>Shows what was set and locks the window: the way out is the sentence, bail or a lawyer.</summary>
         public void Show()
         {
             TravelList list = _window.Take(this);
@@ -117,10 +100,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        /// <summary>
-        /// Moves the window onto the canvas of the game's time skip, which keeps its own screen when it hides the HUD. Call once the
-        /// skip has started. Without that canvas the window stays on the HUD's (and is not seen while the skip runs).
-        /// </summary>
+        /// <summary>Moves the window onto the time skip's own canvas, which stays when the HUD goes. Call once the skip has started.</summary>
         public void Mount()
         {
             TravelList list = _window.Take(this);
@@ -154,7 +134,7 @@ namespace RealLifeOverhaul.Law
             _window.Destroy(e => _logger?.Error(e));
         }
 
-        /// <summary>The time still to serve. The line is rewritten only when the minute shown changes.</summary>
+        /// <summary>The time still to serve; the line is rewritten only when the minute shown changes.</summary>
         public void SetClock(int hours, int minutes)
         {
             if (hours == _hours && minutes == _minutes)
@@ -170,13 +150,11 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        /// <summary>What the desk or the cell answers: the game's own notification.</summary>
         public void SetStatus(string text)
         {
             if (!string.IsNullOrEmpty(text))
             {
-                UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_law_desk_toast",
-                    new System.Collections.Generic.Dictionary<string, string>(1) { { "text", text } }, 8f);
+                Notifications.Show(NotificationType.Info, "reallife_law_desk_toast", new Dictionary<string, string>(1) { { "text", text } }, 8f);
             }
         }
 
@@ -240,7 +218,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // Closed by the owner (the cell ends): the window goes back to the HUD's canvas for whoever uses it next.
+        // Closed by the owner: the window goes back to the HUD's canvas for whoever uses it next.
         private void Closed()
         {
             _chosen = null;

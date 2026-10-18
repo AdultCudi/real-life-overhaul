@@ -14,26 +14,17 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The people a job puts on the street: a passenger at the kerb, a customer at a door.
-    /// Two characters at most, the jobs' own (never the accident pool's, which scenes must be
-    /// able to count on), built the first time a job needs somebody and reused after that.
-    /// One costs what one of the game's pedestrians costs while drawn and nothing on the shelf.
-    /// A person who has been seen gets a new look while shelved, a moment after leaving and when
-    /// People/Looks says one may be built (one every few seconds over all the mod's people, or at
-    /// once behind the loading screen or a pause: a look is a mesh merge, a few milliseconds), so the
-    /// next fare is not the same face; only a person wanted before that is dressed on the spot, as
-    /// before. A seeded person (an employer's boss, a colleague) keeps their look on the shelf and is
-    /// not dressed again while it is still theirs. Nothing here runs by itself: the director calls
-    /// <see cref="Cull"/> a few times a second while somebody is out, and the new looks' coroutine
-    /// tests a flag a frame while it waits for its turn.
+    /// The people a job puts on the street: two characters at most, the jobs' own, made on first need and reused. A person seen
+    /// gets a new look while shelved (People/Looks), so the next fare has another face; a seeded one keeps theirs. Nothing runs
+    /// by itself: the director calls <see cref="Cull"/> while somebody is out.
     /// </summary>
     public sealed class JobCast
     {
         public const int Size = 2;
 
         private const string CharacterPrefab = "Characters/HumanDefinitionLow";
-        private const float HideDistance = 150f;
-        private const float HideBehind = 6f;
+        private const float HideDistance = 150f;   // metres from the camera beyond which nobody is drawn
+        private const float HideBehind = 6f;   // metres behind the camera
 
         private static readonly AppearanceTag[] CasualWear = { AppearanceTag.Casual };
 
@@ -41,8 +32,8 @@ namespace RealLifeOverhaul
         private readonly bool[] _out = new bool[Size];
         private readonly bool[] _stale = new bool[Size];
         private readonly bool[] _fixed = new bool[Size];    // wearing a seeded look: rolled anew for whoever is put out next
-        private readonly bool[] _seated = new bool[Size];   // riding in a car: off the street, still the same person, still held
-        private readonly int[] _wears = new int[Size];      // the seed of the look each wears (0: a look of the game's random sequence)...
+        private readonly bool[] _seated = new bool[Size];   // riding in a car: off the street, still the same person and still held
+        private readonly int[] _wears = new int[Size];      // the seed of each one's look (0: the game's random sequence)...
         private readonly int[] _wearsHow = new int[Size];   // ...and how it was rolled: bit 0 a woman, bit 1 formal wear
         private readonly MonoBehaviour _host;
         private readonly IModLogger _logger;
@@ -55,11 +46,7 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        /// <summary>
-        /// Behind the loading screen: the people are made and dressed now and put on the shelf, so that the first job,
-        /// lesson or test that needs somebody does not make one (a character and a mesh merge) in the middle of play.
-        /// A fault leaves them to be made on first need, as before.
-        /// </summary>
+        /// <summary>Behind the loading screen: the people are made and shelved now, so none is made in play.</summary>
         public bool Prewarm(int people)
         {
             if (_failed || _host == null)
@@ -97,24 +84,16 @@ namespace RealLifeOverhaul
             return seed != 0 && _wears[slot] == seed && _wearsHow[slot] == ((female ? 1 : 0) | (formal ? 2 : 0));
         }
 
-        /// <summary>True while somebody is out on the street.</summary>
         public bool AnyOut => (_out[0] && !_seated[0]) || (_out[1] && !_seated[1]);
 
-        /// <summary>
-        /// Puts a person on the ground at a point that was already found on the navigation mesh.
-        /// Null if both are out, the point cannot be stood on, or characters cannot be made.
-        /// </summary>
+        /// <summary>Puts a person on a point already found on the navigation mesh. Null if both are out, the point cannot be stood on, or characters cannot be made.</summary>
         /// <param name="onRoad">May step onto the road surface (to reach a car door), not only pavements.</param>
         public StreetActor Put(Vector3 spot, bool onRoad)
         {
             return Put(spot, onRoad, 0, false, false);
         }
 
-        /// <summary>
-        /// The same for somebody who is the same person every time (an employer's boss, a colleague): with a seed
-        /// other than zero their age, build, face, hair and clothes are rolled from it, in formal wear, and nothing
-        /// of the game's own random sequence is used up. Formal wear for a boss, everyday clothes otherwise.
-        /// </summary>
+        /// <summary>The same for somebody who is the same person every time: a seed rolls their looks without using the game's random sequence.</summary>
         public StreetActor Put(Vector3 spot, bool onRoad, int seed, bool female, bool formal = true)
         {
             if (_failed)
@@ -137,7 +116,7 @@ namespace RealLifeOverhaul
                 }
                 else if (seed != 0 ? !Wears(slot, seed, female, formal) : _stale[slot] || _fixed[slot])
                 {
-                    // (a seeded person still in their own look on the shelf is put out as they are: the same seed, the same look)
+                    // A seeded person still in their own look on the shelf is put out as they are.
                     person.Character.gameObject.SetActive(true);
                     Dress(person, seed, female, formal);
                     Wear(slot, seed, female, formal);
@@ -164,10 +143,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Someone gets into a car: they are off the street but stay who they are, and stay held,
-        /// until <see cref="Unseat"/> puts them back or <see cref="Release"/> lets them go.
-        /// </summary>
+        /// <summary>Someone gets into a car: off the street but still who they are and still held, until <see cref="Unseat"/> or <see cref="Release"/>.</summary>
         public void Seat(StreetActor person)
         {
             for (int i = 0; i < Size; i++)
@@ -180,7 +156,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Out of the car again at a point on the navigation mesh. False (and still seated) if they cannot stand there.</summary>
+        /// <summary>Out of the car again at a point on the navigation mesh. False, still seated, if they cannot stand there.</summary>
         public bool Unseat(StreetActor person, Vector3 spot, bool onRoad)
         {
             for (int i = 0; i < Size; i++)
@@ -289,7 +265,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The city is going: destroy what was made.</summary>
         public void Dispose()
         {
             for (int i = 0; i < Size; i++)
@@ -381,7 +356,7 @@ namespace RealLifeOverhaul
             {
                 if (person.IsValid)
                 {
-                    ActivityAnimators.Forget(person.Character.animator);   // a clip of the mod's that was still playing ends with them
+                    ActivityAnimators.Forget(person.Character.animator);   // a clip of the mod's still playing ends with them
                     person.ResetForReuse();
                     person.Character.gameObject.SetActive(false);
                 }
@@ -395,8 +370,7 @@ namespace RealLifeOverhaul
         private const float RefreshAfter = 0.75f;   // seconds after leaving before a new look is thought of
         private static readonly int HotRefresh = HotSpots.Slot("Jobs: JobCast.Refresh");
 
-        // A new look for whoever left the street, one at a time, while shelved: a moment after leaving, then each when
-        // People/Looks says one may be built (Looks.Free: one every few seconds over all the pools, or at once while hidden).
+        // A new look for whoever left the street, one at a time while shelved, when People/Looks allows (Looks.Free).
         private IEnumerator Refresh()
         {
             yield return new WaitForSeconds(RefreshAfter);
@@ -409,7 +383,7 @@ namespace RealLifeOverhaul
                 }
                 if (!Looks.Free)
                 {
-                    yield return null;   // (a flag a frame while it waits its turn)
+                    yield return null;   // a flag a frame while it waits its turn
                     continue;
                 }
                 using (HotSpots.Time(HotRefresh))

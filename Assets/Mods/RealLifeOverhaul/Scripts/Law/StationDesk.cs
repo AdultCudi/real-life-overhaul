@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 using BAModAPI;
 using Extensions;
 using Helpers;
 using Localizor;
 using RealLifeOverhaul.GameUi;
-using UI;
 using UI.MiniMenu;
 using UI.Notification;
 using UI.Smartphone;
@@ -16,72 +14,48 @@ using UnityEngine;
 namespace RealLifeOverhaul.Law
 {
     /// <summary>
-    /// The front desk of a police station: what the desk sergeant can do for somebody who walks
-    /// in (or, at a precinct that cannot be walked into, for somebody at its door). It is the game's
-    /// own list (<see cref="TravelList"/>, a copy of the window the game lists its subway stations in):
-    /// an entry for each thing the desk offers today, with the cost or the state under its name and its
-    /// button off, with the reason, when it cannot be had.
-    ///   report a crime     the same as a 911 call about what is going on nearby (the crime
-    ///                      scene's own report, a traffic accident, a fire), with a little extra
-    ///                      standing with the police for coming in; and never a "wasted call"
-    ///   pay fines          whatever is still owed (Core/ModState's pending fine), now, before it
-    ///                      is taken by itself
-    ///   the record         a second page: both reputations and the record, an entry for each line
-    ///   the pound          a car the police are holding after an arrest is brought to the kerb
-    ///                      outside for the impound fee
-    ///   licences           handed to the Licences feature, if that is there (Bridges.Licensing)
-    ///   a police report    after a break-in or a crash: a reference number, and whatever the
-    ///                      paperwork bridge makes of it (Bridges.PoliceReport)
-    ///   hand yourself in   for somebody who got away after hurting someone: half the time
-    ///   visiting hours     a word about how the station works
-    /// What the desk answers is a notification. While the list is up the player stands still; the game's
-    /// cancel key leaves it. If the game's window cannot be copied the panel at the desk has the four
-    /// commonest things on its own keys (<see cref="Quick"/>). Nothing here runs unless LawDirector calls it.
+    /// A police station's front desk, in the game's own list (<see cref="TravelList"/>): an entry for each service, with its
+    /// cost or state and its button off, with the reason, when it cannot be had. Without the game's list the panel at the
+    /// desk has the four commonest on its own keys (<see cref="Quick"/>). Nothing here runs unless LawDirector calls it.
     /// </summary>
     internal sealed class StationDesk
     {
         public static int PaperFee => Prices.At(15);
-        public const int TurnInDays = 7;             // how long after getting away somebody can still hand themselves in
+        public const int TurnInDays = 7;             // game days after getting away somebody can still hand themselves in
 
-        private const NavigationBlocker Blocker = NavigationBlocker.DoctorOperation;   // (as Custody: any blocker stops the player; nothing else on a street or in an empty unit sets this one)
+        private const NavigationBlocker Blocker = NavigationBlocker.DoctorOperation;   // as Custody's: nothing else in a street or an empty unit sets it
         private const string ButtonOpen = "reallife_law_list_open";
         private const string ButtonDo = "reallife_law_list_do";
 
         internal enum Service { None, Report, Fines, Record, Impound, Licence, Paper, TurnIn, Hours, Back }
 
         private readonly IModLogger _logger;
-        private readonly Precincts _precincts;
         private readonly DeskList _window = new DeskList("RealLifeOverhaul Law", 1100f, 150f);
-        private readonly StringBuilder _text = new StringBuilder(256);
         private readonly Action<int> _onPick;
         private readonly Action _onClosed;
         private Precinct _precinct;
         private bool _inside;
         private bool _held;
-        private bool _record;                // the second page (the record) is showing
+        private bool _record;                // the second page, the record, is showing
         private PlayerController _player;
-        private string _bringOnExit;         // a car asked for at a desk indoors: brought when the player steps outside
+        private string _bringOnExit;         // a car asked for indoors: brought when the player steps outside
         private Precinct _bringTo;
         private string _closing;
 
-        public StationDesk(Transform root, Precincts precincts, IModLogger logger)
+        public StationDesk(IModLogger logger)
         {
-            _precincts = precincts;
             _logger = logger;
             _onPick = Picked;
             _onClosed = Closed;
             TravelList.Logger = logger;
         }
 
-        /// <summary>True while the desk's list is on screen.</summary>
         public bool IsOpen => _window.IsOpen;
 
-        /// <summary>True when the game's list could not be copied: the desk's panel then offers the commonest things on its own keys.</summary>
+        /// <summary>True when the game's list could not be copied: the panel offers the commonest services on its own keys.</summary>
         public bool Plain => _window.Failed;
 
-        // ---------------------------------------------------------------- opening and closing
-
-        /// <summary>Opens the desk of a precinct. <paramref name="inside"/>: the player is standing in it (otherwise at its door, or anywhere for the test button).</summary>
+        /// <summary>Opens a precinct's desk; <paramref name="inside"/>: the player stands in it, not at its door or anywhere (the test).</summary>
         public void Open(Precinct precinct, bool inside)
         {
             if (precinct == null || IsOpen)
@@ -121,7 +95,7 @@ namespace RealLifeOverhaul.Law
         {
             if (_window.IsOpen)
             {
-                _window.Close();   // (its closing lets the player walk)
+                _window.Close();   // its closing lets the player walk
             }
             else
             {
@@ -135,7 +109,6 @@ namespace RealLifeOverhaul.Law
             _window.Destroy(e => _logger?.Error(e));
         }
 
-        // The list was closed (a pick that leaves, the Cancel button, the game's cancel key, or the director).
         private void Closed()
         {
             if (Meta.Dev.Verbose)
@@ -167,7 +140,7 @@ namespace RealLifeOverhaul.Law
             _record = false;
         }
 
-        /// <summary>Four times a second while the list is up: it ends if the save is gone, the player is held, or one of the game's own screens has come up over it.</summary>
+        /// <summary>Four times a second while the list is up: it ends if the save goes, the player is held or a game screen comes up.</summary>
         public void Watch()
         {
             if (!IsOpen)
@@ -203,7 +176,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        /// <summary>One thing done at once, with no list (the panel's own keys, when the game's list could not be made).</summary>
+        /// <summary>One service done at once, with no list: the panel's own keys when the game's list could not be made.</summary>
         public void Quick(Precinct precinct, bool inside, Service service)
         {
             if (precinct == null || IsOpen)
@@ -225,8 +198,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // ---------------------------------------------------------------- what is offered
-
         private string Greeting()
         {
             string key = Wanted ? "reallife_law_desk_greeting_wanted"
@@ -239,8 +210,7 @@ namespace RealLifeOverhaul.Law
         private static bool Wanted =>
             LawState.Loaded && LawState.WantedCharges != 0 && SaveGameManager.Current != null && TimeHelper.CurrentDay - LawState.WantedDay <= TurnInDays;
 
-        // The entries, as things stand now. A service that cannot be had is shown with its button off and the reason in its detail line;
-        // one whose bridge is not there is not shown at all. Returns how many.
+        // The entries as things stand: one whose bridge is not there is not shown. Returns how many.
         private int Fill(TravelList list)
         {
             if (_record)
@@ -249,29 +219,41 @@ namespace RealLifeOverhaul.Law
             }
             list.Begin("reallife_law_desk_title".Tr(), Greeting() + "\n<size=80%>" + _precinct.Name + "</size>");
             int count = 0;
-            list.Add((int)Service.Report, "reallife_law_desk_report".Tr(), "reallife_law_list_report".Tr(), ButtonDo, true); count++;
+            list.Add((int)Service.Report, "reallife_law_desk_report".Tr(), "reallife_law_list_report".Tr(), ButtonDo, true);
+            count++;
             int owed = ModState.PendingFine;
-            list.Add((int)Service.Fines, "reallife_law_list_fines".Tr(), owed > 0 ? Custody.Fill("reallife_law_list_fines_owed", "amount", ((float)owed).ToCurrencyFormat()) : "reallife_law_list_fines_none".Tr(), ButtonDo, owed > 0); count++;
-            list.Add((int)Service.Record, "reallife_law_desk_record".Tr(), "reallife_law_list_record".Tr(), ButtonOpen, true); count++;
+            list.Add((int)Service.Fines, "reallife_law_list_fines".Tr(),
+                owed > 0 ? Custody.Fill("reallife_law_list_fines_owed", "amount", ((float)owed).ToCurrencyFormat()) : "reallife_law_list_fines_none".Tr(), ButtonDo, owed > 0);
+            count++;
+            list.Add((int)Service.Record, "reallife_law_desk_record".Tr(), "reallife_law_list_record".Tr(), ButtonOpen, true);
+            count++;
             bool held = LawState.ImpoundVehicleId != null;
-            list.Add((int)Service.Impound, "reallife_law_list_impound".Tr(), held ? Custody.Fill("reallife_law_list_impound_fee", "amount", ((float)LawBook.ImpoundFee).ToCurrencyFormat()) : "reallife_law_list_impound_none".Tr(), ButtonDo, held); count++;
+            list.Add((int)Service.Impound, "reallife_law_list_impound".Tr(),
+                held ? Custody.Fill("reallife_law_list_impound_fee", "amount", ((float)LawBook.ImpoundFee).ToCurrencyFormat()) : "reallife_law_list_impound_none".Tr(), ButtonDo, held);
+            count++;
             if (Bridges.Licensing != null)
             {
-                list.Add((int)Service.Licence, (string.IsNullOrEmpty(Bridges.LicensingLabelKey) ? "reallife_law_desk_licence" : Bridges.LicensingLabelKey).Tr(), "reallife_law_list_licence".Tr(), ButtonOpen, true); count++;
+                list.Add((int)Service.Licence, (string.IsNullOrEmpty(Bridges.LicensingLabelKey) ? "reallife_law_desk_licence" : Bridges.LicensingLabelKey).Tr(),
+                    "reallife_law_list_licence".Tr(), ButtonOpen, true);
+                count++;
             }
             bool incident = Bridges.HasIncident;
             list.Add((int)Service.Paper, "reallife_law_list_paper".Tr(),
-                incident ? Custody.Fill("reallife_law_list_paper_fee", "amount", ((float)PaperFee).ToCurrencyFormat()).Replace("{what}", IncidentName()) : "reallife_law_list_paper_none".Tr(), ButtonDo, incident); count++;
+                incident ? Custody.Fill("reallife_law_list_paper_fee", "amount", ((float)PaperFee).ToCurrencyFormat()).Replace("{what}", IncidentName()) : "reallife_law_list_paper_none".Tr(),
+                ButtonDo, incident);
+            count++;
             if (Wanted)
             {
                 bool ready = Custody.Ready;
-                list.Add((int)Service.TurnIn, "reallife_law_list_turnin".Tr(), "reallife_law_list_turnin_detail".Tr() + (ready ? string.Empty : " " + "reallife_law_list_turnin_not_now".Tr()), ButtonDo, ready); count++;
+                list.Add((int)Service.TurnIn, "reallife_law_list_turnin".Tr(),
+                    "reallife_law_list_turnin_detail".Tr() + (ready ? string.Empty : " " + "reallife_law_list_turnin_not_now".Tr()), ButtonDo, ready);
+                count++;
             }
-            list.Add((int)Service.Hours, "reallife_law_desk_hours".Tr(), "reallife_law_list_hours".Tr(), ButtonDo, true); count++;
+            list.Add((int)Service.Hours, "reallife_law_desk_hours".Tr(), "reallife_law_list_hours".Tr(), ButtonDo, true);
+            count++;
             return count;
         }
 
-        // The record: both standings in the info lines, then an entry for each line of it, newest first, and a way back.
         private int FillRecord(TravelList list)
         {
             list.Begin("reallife_law_desk_record".Tr(), Summary());
@@ -285,19 +267,11 @@ namespace RealLifeOverhaul.Law
             for (int index = count - 1; index >= 0; index--)
             {
                 RecordEntry line = Record.Entry(index);
-                string outcome;
-                switch (line.Outcome)
-                {
-                    case Outcome.Held: outcome = "reallife_records_outcome_held".GetLocalization(); break;
-                    case Outcome.Served: outcome = "reallife_records_outcome_served".GetLocalization().Replace("{hours}", line.Hours.ToString()); break;
-                    case Outcome.Bailed: outcome = "reallife_records_outcome_bailed".GetLocalization().Replace("{hours}", line.Hours.ToString()); break;
-                    case Outcome.Escaped: outcome = "reallife_records_outcome_escaped".GetLocalization(); break;
-                    default: outcome = "reallife_records_outcome_cited".GetLocalization(); break;
-                }
-                string what = "reallife_law_list_entry_detail".Tr().Replace("{charges}", Custody.ChargeNames(line.Charges, ", ")).Replace("{outcome}", outcome)
+                string what = "reallife_law_list_entry_detail".Tr().Replace("{charges}", Custody.ChargeNames(line.Charges, ", "))
+                    .Replace("{outcome}", RecordPhone.OutcomeText(line))
                     .Replace("{amount}", ((float)line.Fines).ToCurrencyFormat());
-                list.AddNote("reallife_law_list_entry".Tr().Replace("{number}", (count - index).ToString()).Replace("{count}", count.ToString()).Replace("{day}", line.Day.ToString()),
-                    what, list.HeightFor(what.Length, false));
+                list.AddNote("reallife_law_list_entry".Tr().Replace("{number}", (count - index).ToString()).Replace("{count}", count.ToString())
+                    .Replace("{day}", line.Day.ToString()), what, list.HeightFor(what.Length, false));
             }
             return count + 1;
         }
@@ -312,8 +286,6 @@ namespace RealLifeOverhaul.Law
                 default: return "reallife_law_paper_other".Tr();
             }
         }
-
-        // ---------------------------------------------------------------- what is done
 
         private void Picked(int id)
         {
@@ -359,7 +331,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // What the desk answers: the game's own notification.
         private static void Say(string line)
         {
             if (!string.IsNullOrEmpty(line))
@@ -368,8 +339,8 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // What a 911 call would do about whatever is going on near the player, said across a counter; with nothing going
-        // on it is a word and no more (nobody is fined for asking in person).
+        // What a 911 call would do about whatever is going on near the player, said across a counter; with nothing going on
+        // it is a word and no more (nobody is fined for asking in person).
         private void Report()
         {
             if (Events.EventDirector.FireBurning)
@@ -424,19 +395,16 @@ namespace RealLifeOverhaul.Law
 
         private static string Summary()
         {
-            int since = Record.DaysSinceLastOffence;
-            string last = since < 0 ? "reallife_records_since_never".GetLocalization()
-                : since == 0 ? "reallife_records_since_today".GetLocalization()
-                : "reallife_records_since_days".GetLocalization().Replace("{days}", since.ToString());
+            string last = RecordPhone.SinceText();
             return "reallife_records_summary".GetLocalization()
                 .Replace("{police}", Reputation.PoliceWord.GetLocalization()).Replace("{policeScore}", Reputation.Police.ToString())
                 .Replace("{people}", Reputation.PublicWord.GetLocalization()).Replace("{peopleScore}", Reputation.Public.ToString())
                 .Replace("{count}", Record.Count.ToString()).Replace("{since}", last)
-                .Replace("{watch}", (Reputation.NoWarnings ? "reallife_records_watch_high" : Reputation.ScrutinyLevel > 0 ? "reallife_records_watch_some" : "reallife_records_watch_none").GetLocalization());
+                .Replace("{watch}", (Reputation.NoWarnings ? "reallife_records_watch_high" : Reputation.ScrutinyLevel > 0 ? "reallife_records_watch_some"
+                    : "reallife_records_watch_none").GetLocalization());
         }
 
-        // A car at the pound: brought to the kerb outside. Asked for indoors, it is there when the player steps out (the fee
-        // is charged when it is brought, with the message that says where it is).
+        // A car at the pound, brought to the kerb outside; asked for indoors, when the player steps out. The fee is charged then.
         private void Impound()
         {
             string id = LawState.ImpoundVehicleId;
@@ -473,7 +441,7 @@ namespace RealLifeOverhaul.Law
                     {
                         if (JobSpots.Flat(vehicle.transform.position, near) < 70f)
                         {
-                            Notifications.Show(NotificationType.Info, "reallife_law_desk_impound_here", null, 8f);   // it is already here: nothing to pay
+                            Notifications.Show(NotificationType.Info, "reallife_law_desk_impound_here", null, 8f);   // already here: nothing to pay
                             return;
                         }
                         VehicleTow.BringNear(vehicle.vehicleInstance, near, LawBook.ImpoundFee, "reallife_law_car_impound", "reallife_law_car_impound_shop",
@@ -518,9 +486,8 @@ namespace RealLifeOverhaul.Law
             }
             string kind = LawState.IncidentKind;
             LawState.ReportsGiven++;
-            _text.Length = 0;
-            _text.Append("PR-").Append((_precinct.Index + 1).ToString("00")).Append('-').Append(LawState.IncidentDay.ToString("0000")).Append('-').Append(LawState.ReportsGiven.ToString("000"));
-            string reference = _text.ToString();
+            string reference = "PR-" + (_precinct.Index + 1).ToString("00") + "-" + LawState.IncidentDay.ToString("0000") + "-"
+                               + LawState.ReportsGiven.ToString("000");
             LawState.IncidentKind = null;
             LawState.IncidentDay = -1;
             try

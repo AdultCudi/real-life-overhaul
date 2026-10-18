@@ -32,6 +32,13 @@ internal static partial class Program
         string sirens = Body(effects, "public static bool PrewarmSirens()");
         Check(sirens.Contains("GetSirenClip(SirenTone.Wail)") && sirens.Contains("GetSirenClip(SirenTone.Yelp)") && Body(effects, "private static AudioClip GetSirenClip(").Contains("_wailClip == null"),
             "prewarm: both sirens are made behind the loading screen, and a siren made already is used as it is");
+        // The game's smoke is looked for only by the prewarm, behind a screen: an accident in play takes what was found, even nothing.
+        string wreck = Source(scripts, @"Traffic\TrafficEffects.Wreck.cs");
+        string smoke = Body(wreck, "public static GameObject CreateSmoke(");
+        string findSmoke = Body(wreck, "private static void FindSmoke()");
+        Check(smoke.Length > 0 && !smoke.Contains("SceneFinds.") && !smoke.Contains("FindSmoke(") && findSmoke.Contains("!SceneFinds.Hidden")
+              && Count(effects + wreck, "FindSmoke(") == 2 && Body(effects, "public static bool Prewarm()").Contains("FindSmoke();"),
+            "prewarm: the game's smoke is searched for only by the prewarm behind a screen, never by an accident in play");
 
         // Searches that come back after every door wait for a dark screen, never a plain pause (its menu shows the search as a
         // hitch): the hair finish's search of the whole scene, and the loading screen's pieces tried again out of doors.

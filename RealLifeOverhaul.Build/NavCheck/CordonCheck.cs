@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using RealLifeOverhaul;
 
 // Checks for who is inside a cordon's tape and where they are put outside it (Traffic/CordonRules.cs, compiled as it
@@ -265,6 +266,11 @@ internal static partial class Program
     {
         string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string cordon = Source(scripts, @"Traffic\SceneCordon.cs");
+        foreach (string part in Directory.GetFiles(Path.Combine(scripts, "Traffic"), "SceneCordon.*.cs"))
+        {
+            string name = Path.GetFileName(part);
+            cordon += name == "SceneCordon.cs" ? "" : Source(scripts, Path.Combine("Traffic", name));   // its partial parts, read as one
+        }
         if (cordon.Length == 0)
         {
             Check(false, "cordon: the mod's sources are at " + scripts);
@@ -292,7 +298,7 @@ internal static partial class Program
         foreach (string path in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
         {
             string name = Path.GetFileName(path);
-            if (name == "SceneCordon.cs")
+            if (name.StartsWith("SceneCordon.", StringComparison.Ordinal))
             {
                 continue;
             }
@@ -308,6 +314,25 @@ internal static partial class Program
         }
         Check(others == null, "cordon: no file but SceneCordon puts up tape" + (others != null ? " (" + others + ")" : ""));
         Check(raisers >= 3, $"cordon: the scenes that put up a cordon (accidents, fires, street events) raise it through SceneCordon.Raise ({raisers} found)");
+
+        // Every post the survey works out has a reader: a place nobody is sent to costs a road query at every scene.
+        string all = cordon;
+        foreach (string path in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
+        {
+            all += Path.GetFileName(path).StartsWith("SceneCordon.", StringComparison.Ordinal) ? "" : Code(File.ReadAllText(path));
+        }
+        string unread = null;
+        int posts = 0;
+        foreach (Match post in Regex.Matches(cordon, @"public Vector3 (\w+) \{ get; private set; \}"))
+        {
+            posts++;
+            string name = post.Groups[1].Value;
+            if (!Regex.IsMatch(all, @"\b" + name + @"\b(?!\s*(=[^=]|\{))"))
+            {
+                unread = (unread == null ? "" : unread + ", ") + name;
+            }
+        }
+        Check(posts >= 4 && unread == null, $"cordon: every one of the {posts} posts the survey works out is read somewhere" + (unread != null ? " (unread: " + unread + ")" : ""));
 
         string clear = Source(scripts, @"People\CordonClear.cs");
         string run = Body(clear, "public static void Out(");

@@ -402,6 +402,20 @@ internal static partial class Program
         Check(!SolidRules.MoveOn(11.9f) && SolidRules.MoveOn(12f), "solid: after 12 s the person is moved on");
         Check(!SolidRules.Remove(15.9f, false) && SolidRules.Remove(16f, false) && !SolidRules.Remove(60f, true), "solid: after 16 s somebody nobody can see is put elsewhere; never somebody in view");
         Check(SolidRules.HoldMost < 20f && SolidRules.RemoveAfter < 20f, "solid: both before the game itself would take a standing car off the road (20 s)");
+
+        // Two cars in one look each held by somebody nobody can see: both people go back to the pool, each once.
+        var queue = new string[SolidRules.PutAwayMost];
+        int queued = 0;
+        string first = "first", second = "second";
+        bool both = SolidRules.Queue(queue, ref queued, first) && SolidRules.Queue(queue, ref queued, second);
+        Check(both && queued == 2 && queue[0] == first && queue[1] == second, "solid: two people to put away in one look are both kept (" + queued + ")");
+        Check(SolidRules.Queue(queue, ref queued, first) && queued == 2, "solid: one person holding two cars is put away once");
+        for (int i = queued; i < SolidRules.PutAwayMost; i++)
+        {
+            SolidRules.Queue(queue, ref queued, "more" + i);
+        }
+        Check(!SolidRules.Queue(queue, ref queued, "one too many") && queued == SolidRules.PutAwayMost && queue[0] == first,
+            "solid: past " + SolidRules.PutAwayMost + " in one look the car waits for the next look, and nobody queued is dropped");
     }
 
     private static void SolidContact()

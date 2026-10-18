@@ -3,17 +3,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The fallback for the mod's kneeling clips (kneel_work, cpr: StreetActor.Kneel plays those
-    /// whenever they can be had). Someone down on one knee, leaning a little over whoever is lying
-    /// in front of them, both hands low on that person's chest. The game has no kneeling or crouching animation (its
-    /// nearest, the gym squat, stands holding a bar), so this is a pose set by hand: the
-    /// animator is switched off and a dozen bones are turned once (BonePose). Each bone is aimed
-    /// along a direction given in the character's own frame, and each hand is put at a place
-    /// worked out from the measured length of that arm, so the hands end where they are meant
-    /// to on any build and never above the elbows.
-    /// Holding the pose costs nothing: no component, nothing per frame.
-    /// Clear puts every bone back as it was and hands the body back to the animator.
-    /// One of these belongs to each StreetActor that has ever knelt.
+    /// The fallback for the kneeling clips: down on one knee over whoever lies in front, set by hand on a dozen bones
+    /// (<see cref="BonePose"/>) with the animator off. Holding it costs nothing per frame.
     /// </summary>
     internal sealed class KneelPose
     {
@@ -58,10 +49,9 @@ namespace RealLifeOverhaul
         private Vector3 _hipsPosition;
         private Animator _animator;
 
-        /// <summary>True from Apply to Clear.</summary>
         public bool Active { get; private set; }
 
-        /// <summary>Kneels the character where it stands, facing the way it faces. False, with nothing changed, if its skeleton is not one this can pose.</summary>
+        /// <summary>Kneels the character where it stands, facing its way; false, with nothing changed, if its skeleton cannot be posed.</summary>
         public bool Apply(ThirdPersonCharacter character)
         {
             if (Active)
@@ -76,7 +66,6 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Count; i++)
             {
                 _bones[i] = animator.GetBoneTransform(Names[i]);
-                // The toes only lay the trailing foot flat; everything else is needed.
                 if (_bones[i] == null && i != ToesDown)
                 {
                     return false;
@@ -93,11 +82,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Puts the pose on again. For after something switched the animator back on (the pool
-        /// showing someone who had been out of view): aiming a bone where it already points
-        /// changes nothing, so this is safe to repeat.
-        /// </summary>
+        /// <summary>Puts the pose on again after the animator was switched back on; repeating it changes nothing.</summary>
         public void Set(ThirdPersonCharacter character)
         {
             if (!Active || _animator == null)
@@ -121,7 +106,6 @@ namespace RealLifeOverhaul
 
             Aim(Spine, Head, Quaternion.AngleAxis(Lean, right) * up);
 
-            // Left leg forward with the foot planted; right knee down, shin and foot laid back along the ground.
             Quaternion ankle = _bones[FootFront].rotation;
             Aim(ThighFront, ShinFront, forward - up * 0.06f - right * 0.18f);
             Aim(ShinFront, FootFront, -up + forward * 0.08f);
@@ -133,14 +117,13 @@ namespace RealLifeOverhaul
                 Aim(FootDown, ToesDown, -forward - up * 0.25f);
             }
 
-            // Both hands low and forward, on the chest of the person on the ground: the arms reach down to a
-            // place, elbows out, instead of being held at an angle (which left the hands in the air).
+            // Both hands low on the chest of the person on the ground: reached to a place, elbows out.
             Vector3 chest = root.position + forward * HandForward + up * HandHeight;
             BonePose.Reach(_bones[UpperArmL], _bones[ForearmL], _bones[HandL], chest - right * HandApart, -right - forward * 0.25f);
             BonePose.Reach(_bones[UpperArmR], _bones[ForearmR], _bones[HandR], chest + right * HandApart, right - forward * 0.25f);
         }
 
-        /// <summary>Back on their feet: every bone as it was, and the animator running if the character is being drawn.</summary>
+        /// <summary>Every bone as it was, and the animator running again if the character is drawn.</summary>
         public void Clear(ThirdPersonCharacter character)
         {
             if (!Active)

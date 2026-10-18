@@ -8,20 +8,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The player's own body at work: standing still for a beat, mopping, strumming, with the
-    /// tool in hand. One for the session, owned by the director and handed to jobs through the
-    /// context; whatever a job starts here the director ends on every way out
-    /// (<see cref="Release"/>), so a job that faults cannot leave the player rooted to the
-    /// spot or with a mop in hand.
-    ///
-    /// Two ways of moving the body, tried in this order by the jobs:
-    ///  - one of the mod's own Humanoid clips, played over the game's controller by the shared
-    ///    ActivityAnimator, with the clip's tool at the clip's own grip (HeldTool);
-    ///  - one of the game's own looping animations (its mop, its guitar), with the game's own
-    ///    hand object placed the way the game places it.
-    /// A clip replaces every layer of the game's controller while it plays, legs included, so
-    /// the player is always held still first (<see cref="Hold"/>: the game's own navigation
-    /// blocker) and nothing here ever plays while they walk.
+    /// The player's own body at work, owned by the director, which undoes everything on every way out (<see cref="Release"/>).
+    /// Moved by one of the mod's clips with its tool, or one of the game's loops; a clip takes every layer, legs included, so the
+    /// player is held first (<see cref="Hold"/>), and only <see cref="Over"/> leaves the legs to the game.
     /// </summary>
     public sealed class JobBody
     {
@@ -73,10 +62,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Keeps the player where they stand (the game's own blocker: no walking, no click-to-move),
-        /// for good or for a number of seconds, after which <see cref="Tick"/> lets them go again.
-        /// </summary>
+        /// <summary>Keeps the player where they stand (the game's blocker), for good or for some seconds, after which <see cref="Tick"/> lets them go.</summary>
         public void Hold(float seconds = -1f)
         {
             if (_player == null)
@@ -133,13 +119,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// One of the mod's clips on the player, with its tool in hand if it has one. A loop runs
-        /// until <see cref="Rest"/>; a one-off returns by itself. All or nothing: false, and
-        /// nothing changed, if the clip or its tool cannot be had or the player cannot play it.
-        /// The player must be held first. With <see cref="ClipEnd.Hold"/> a one-off keeps its last
-        /// pose (and its tool) until <see cref="Rest"/> or the next clip.
-        /// </summary>
+        /// <summary>One of the mod's clips on the held player, with its tool; a loop until <see cref="Rest"/>. All or nothing: false, nothing changed, if it cannot be had.</summary>
         public bool Clip(string name, float fade = 0.25f, ClipEnd end = ClipEnd.Return)
         {
             _next = null;   // whatever was to follow the clip before this one no longer does
@@ -172,14 +152,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Two clips made to follow one another (going down on a knee, then the kneeling loop): the first is played
-        /// once and held on its last pose, and the second starts the moment the first is over, with the same tool
-        /// still in the hand if both hold it. All or nothing: false, with nothing changed, unless both can be had.
-        /// The second is started from <see cref="Tick"/>, so only a director that ticks its body can chain; it costs
-        /// one comparison a tick while one is waiting and nothing otherwise. <see cref="Rest"/>,
-        /// <see cref="Release"/> or any other <see cref="Clip"/> ends the chain.
-        /// </summary>
+        /// <summary>Two clips made to follow one another (down on a knee, then kneeling), the second started from <see cref="Tick"/>. All or nothing.</summary>
         public bool Chain(string first, string then, float fade = 0.25f, float thenFade = 0.15f)
         {
             if (!ClipLibrary.Has(first) || !ClipLibrary.Has(then) || !ClipLibrary.TryGet(first, out CityClip one) || one.Loop
@@ -193,12 +166,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// One of the mod's clips over part of the player's body (an arm, both arms) while everything else stays the
-        /// game's: how something is carried while they walk. A loop, until <see cref="StopOver"/>; asking for the one
-        /// already on changes nothing. No tool comes with it (the job puts that in the hand: HeldProp) and the player
-        /// need not be held. False if it cannot be had.
-        /// </summary>
+        /// <summary>One of the mod's loops over an arm or both while the rest stays the game's, as when carrying while walking; until <see cref="StopOver"/>.</summary>
         public bool Over(string name, BodyMask mask, float fade = 0.25f)
         {
             if (_player == null || !ActivityAnimators.Working || !ClipLibrary.Has(name) || !ClipLibrary.TryGet(name, out CityClip clip) || !clip.Loop)
@@ -210,7 +178,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            BodyMask part = mask == BodyMask.Full ? clip.Mask : mask;   // (Full: whatever the clip says it was made for)
+            BodyMask part = mask == BodyMask.Full ? clip.Mask : mask;   // Full: whatever the clip says it was made for
             ActivityAnimator animator = ActivityAnimators.For(body.animator);
             if (part == BodyMask.Full || animator == null || !animator.Usable || !animator.PlayOver(clip.Clip, part, fade))
             {
@@ -231,10 +199,10 @@ namespace RealLifeOverhaul
             _over = null;
         }
 
-        /// <summary>True while a loop started with <see cref="Clip"/> is still playing (the clip service may be switched off under us).</summary>
+        /// <summary>True while a loop started with <see cref="Clip"/> is still playing; the clip service may be switched off under us.</summary>
         public bool ClipAlive => _clip != null && _animator != null && _animator.Active;
 
-        /// <summary>True while this clip, started with <see cref="Clip"/>, is the one on the player (another may have been played over it since).</summary>
+        /// <summary>True while this clip, started with <see cref="Clip"/>, is still the one on the player.</summary>
         public bool Playing(string name)
         {
             return _clip == name && _animator != null && _animator.Active && ClipLibrary.TryGet(name, out CityClip clip) && _animator.Current == clip.Clip;
@@ -247,11 +215,7 @@ namespace RealLifeOverhaul
                    && _player.Character.animator.HasParameter(pose.ToString());
         }
 
-        /// <summary>
-        /// One of the game's own looping animations on the player, until <see cref="Rest"/>. False if
-        /// their animator has none such. Some of the game's loops sit on top of another (its mopping
-        /// on its mop-in-hand idle): that one is named as <paramref name="under"/> and set with it.
-        /// </summary>
+        /// <summary>One of the game's loops on the player until <see cref="Rest"/>; a loop that sits on another names that one as <paramref name="under"/>.</summary>
         public bool Pose(PermanentAnimationType pose, PermanentAnimationType? under = null)
         {
             if (!Knows(pose) || (under.HasValue && !Knows(under.Value)))
@@ -271,13 +235,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// One of the game's own carried objects on the player, placed as the game places it: on
-        /// the bone the game puts it on (a hand, the upper chest for something on a strap), at
-        /// the prefab's own offset or the offset the game's data gives. Looks only: anything on
-        /// it that could act or collide is switched off. Several may be on at once; all are
-        /// removed by <see cref="Rest"/>.
-        /// </summary>
+        /// <summary>One of the game's carried objects on a bone of the player, as the game places it, for looks only; removed by <see cref="Rest"/>.</summary>
         public bool GameProp(string prefab, Transform hand, Vector3? position = null, Quaternion? rotation = null)
         {
             if (_player == null || _player.Character == null || string.IsNullOrEmpty(prefab))

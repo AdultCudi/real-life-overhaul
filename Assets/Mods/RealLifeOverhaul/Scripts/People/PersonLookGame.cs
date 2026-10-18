@@ -6,30 +6,22 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A kept look (<see cref="PersonLook"/>) to and from the game's own appearance data (CharacterData): read off a figure
-    /// of the crowd (<see cref="Of"/>), and put on whoever the mod dresses from a seed that is a kept look's (<see cref="Dress"/>:
-    /// Social/SocialCast, Family/FamilyCast, Home/Roommates/RoommateCast and the portrait camera's, Phone/Contacts/PortraitTurn).
-    ///
-    /// A character the mod dresses again and again (the social life's two, the portrait camera's one) keeps from one look to
-    /// the next what the game's roll does not set again: the parts a roll of casual clothes leaves alone, the face's shapes,
-    /// the eye colour. A kept look sets all of them, so they are put back as they were when the next look is a rolled one
-    /// (<see cref="Dress"/> returning false): a rolled face is the same with or without a kept look before it, which the
-    /// portrait caches count on.
-    ///
-    /// COST: on a look built or a face drawn only (each a mesh merge or a portrait render already): a few lists of twenty
-    /// entries. Nothing per frame.
+    /// A kept look (<see cref="PersonLook"/>) to and from the game's appearance data. What a kept look replaced is put back
+    /// before a rolled one, so a rolled face never depends on what came before (the portrait caches count on that).
     /// </summary>
     internal static class PersonLookGame
     {
         private sealed class Before
         {
+            public AppearanceSetter Owner;   // the character it belongs to: once that is destroyed, the record may go
             public List<AppearanceElementData> Parts;
             public List<FacialBlendshape> Shapes;
             public Color32 Eyes;
         }
 
-        private static readonly Dictionary<int, Before> Dressed = new Dictionary<int, Before>(4);   // by the appearance's instance: what a kept look took the place of
-        private const int DressedMost = 16;   // characters remembered at most (the mod dresses a handful again and again); past that the oldest are let go
+        private static readonly Dictionary<int, Before> Dressed = new Dictionary<int, Before>(4);   // by appearance instance: what a kept look replaced
+        private const int DressedMost = 16;   // characters remembered before the records of those no longer there are let go
+        private static readonly List<int> Gone = new List<int>(DressedMost);
 
         /// <summary>The look of a character as the game made it, as a kept look's text; null if it has none.</summary>
         public static string Of(CharacterData data)
@@ -62,9 +54,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The kept look of 'seed' put on the appearance (sex, build, skin, eyes, every part, the face's shapes; the caller sets
-        /// the age and caps the build as for anybody it dresses, then merges the meshes); true if the seed is a kept look's.
-        /// False for a rolled seed, with what an earlier kept look took the place of put back: the caller rolls the look then.
+        /// Puts the kept look of <paramref name="seed"/> on the appearance, all but the age; the caller merges the meshes.
+        /// False for a rolled seed, after putting back what an earlier kept look replaced: the caller rolls the look then.
         /// </summary>
         public static bool Dress(AppearanceSetter appearance, int seed)
         {
@@ -89,15 +80,33 @@ namespace RealLifeOverhaul
             {
                 if (Dressed.Count >= DressedMost)
                 {
-                    Dressed.Clear();   // (characters long gone: the mod's own are a handful)
+                    ForgetGone();
                 }
-                Dressed.Add(id, new Before { Parts = data.elements, Shapes = data.blendshapes, Eyes = data.eyesColor });
+                Dressed.Add(id, new Before { Owner = appearance, Parts = data.elements, Shapes = data.blendshapes, Eyes = data.eyesColor });
             }
             Fill(data, look);
             return true;
         }
 
-        // Everything of a kept look but the age into the game's appearance data.
+        // Lets go of the records of characters that have been destroyed. One still wearing a kept look keeps its record, so the
+        // face it is rolled later is the one it had before, however many others were dressed since.
+        private static void ForgetGone()
+        {
+            Gone.Clear();
+            foreach (KeyValuePair<int, Before> record in Dressed)
+            {
+                if (record.Value.Owner == null)
+                {
+                    Gone.Add(record.Key);
+                }
+            }
+            for (int i = 0; i < Gone.Count; i++)
+            {
+                Dressed.Remove(Gone[i]);
+            }
+            Gone.Clear();
+        }
+
         private static void Fill(CharacterData data, PersonLook look)
         {
             data.gender = look.Female ? Gender.Female : Gender.Male;
@@ -122,7 +131,7 @@ namespace RealLifeOverhaul
             data.blendshapes = shapes;
         }
 
-        /// <summary>The kept look of 'seed' as appearance data of its own, of the age given (days); null for a rolled seed.</summary>
+        /// <summary>The kept look of <paramref name="seed"/> as appearance data of its own, aged in days; null for a rolled seed.</summary>
         public static CharacterData Data(int seed, int ageInDays)
         {
             if (!PersonLooks.TryGet(seed, out PersonLook look))

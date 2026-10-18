@@ -8,20 +8,14 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The sums of the dispatcher's desk: what a plan costs and what the best and the worst plan for a
-    /// batch would have cost. A van drives from the depot to the nearest of its parcels, on to the
-    /// nearest of the rest, and home; a van that goes out at all costs a fixed amount on top. With six
-    /// parcels and three vans there are 729 ways to load them, so the best and worst are simply found
-    /// by trying every one, once per batch.
-    /// </summary>
+    /// <summary>The dispatcher's sums: a plan's cost, and a batch's best and worst found by trying all 729 ways to load six parcels on three vans.</summary>
     internal static class DispatchPlan
     {
         public const int Parcels = 6;
         public const int Vans = 3;
         public const int Capacity = 3;            // parcels a van takes
         public const float VanOut = 0.45f;        // what sending a van out costs, in map units of driving
-        public const float Kilometres = 2.4f;     // a map unit, as the board words it
+        public const float Kilometres = 2.4f;     // kilometres in a map unit, as the board words it
 
         private static readonly bool[] Visited = new bool[Parcels];
         private static readonly int[] Trial = new int[Parcels];
@@ -115,18 +109,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A shift at the dispatch desk, a courier firm's third rank. Three batches of six parcels come
-    /// in; each parcel is put on one of three vans (three parcels a van at most) with the choice
-    /// buttons, against the clock, on a small map (<see cref="DispatchList"/>) that lists each van's
-    /// round as it grows. A button takes the last parcel back. A plan is paid by how near
-    /// it came to the best plan there was for that batch (found by trying all 729): better plans
-    /// pay more, and two poor ones in a shift are a bad shift. Worked on foot at the depot; walking
-    /// off ends it.
-    ///
-    /// IN THE GAME'S OWN INTERFACE. The game's panel over a place (<see cref="JobPanel"/>) stands over the desk (over the
-    /// player's head when they are not near it) with a button for each van and "Take one back", on the game's keys.
-    /// The shift's figures are on the HUD in a copy of the game's job panel (<see cref="ShiftFigures"/>). There is no
-    /// "Let time pass": a plan is a decision, not a wait. The player works in their own clothes.
+    /// A shift at the dispatch desk, a courier firm's third rank: three batches of six parcels, each put on one of three vans
+    /// against the clock, on a map (<see cref="DispatchList"/>) or the panel over the desk. A plan is paid by how near it came
+    /// to the best; two poor ones make a bad shift. Worked on foot at the depot; a plan is a decision, so there is no clock.
     /// </summary>
     public sealed class DispatchJob : Job
     {
@@ -135,16 +120,16 @@ namespace RealLifeOverhaul
         /// <summary>Poor plans that make a bad shift (more than half the batches).</summary>
         public const int PoorAllowed = Plans / 2 + 1;
 
-        private const float Debounce = 0.7f;        // seconds after a batch begins in which the panel's buttons do nothing (a key meant for the last parcel)
+        private const float Debounce = 0.7f;        // seconds after a batch begins in which the buttons do nothing (a key meant for the last parcel)
         private const float DeskReach = 8f;         // metres from the desk within which the panel stands over it
-        private const float PanelUp = 1.8f;
+        private const float PanelUp = 1.8f;         // metres
         private static readonly string[] ButtonVan = { "reallife_job_dispatch_button_van_a", "reallife_job_dispatch_button_van_b", "reallife_job_dispatch_button_van_c" };
         private const string ButtonBack = "reallife_job_dispatch_button_back";
         private const int Plans = 3;
-        private const float PlanSeconds = 55f;
-        private const float ResultSeconds = 6f;
-        private const float LeaveReach = 45f;
-        private const float PoorBelow = 0.4f;
+        private const float PlanSeconds = 55f;    // seconds a batch
+        private const float ResultSeconds = 6f;   // seconds the result is shown
+        private const float LeaveReach = 45f;   // metres from the desk before the shift counts as walked off
+        private const float PoorBelow = 0.4f;   // a plan's quality below which it is poor
         private const string DeskClip = "clipboard_write";
         private const string WishClip = "desk_plan";
 
@@ -173,8 +158,7 @@ namespace RealLifeOverhaul
         private string _title;
         private float _fullSaid = -10f;
 
-        // The game's own interface.
-        private readonly JobPanel _panel;
+        private readonly JobPanel _panel = new JobPanel("dispatch panel");
         private readonly Action[] _onVan = new Action[DispatchPlan.Vans];
         private readonly string[] _asks = new string[DispatchPlan.Parcels];
         private Action _onBack;
@@ -186,14 +170,8 @@ namespace RealLifeOverhaul
         private int _panelState = int.MinValue;
         private int _shownSeconds = int.MinValue;
 
-        public DispatchJob()
-        {
-            _panel = new JobPanel("dispatch panel");
-        }
-
         public override JobDef Def => _def;
 
-        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
         public override bool QuitIsFailure => _plan < Plans && _plan > 0 && _poor * 2 >= _plan;
@@ -207,7 +185,7 @@ namespace RealLifeOverhaul
             }
             Vector3 player = Ctx.PlayerPosition;
             _desk = Ctx.Shift != null && Ctx.Shift.HasDepot && JobSpots.Flat(Ctx.Shift.Depot, player) < LeaveReach ? Ctx.Shift.Depot : player;
-            // At the desk, if the bundle has that clip (wish-list); else a clipboard in hand. Either way they stay free to step about.
+            // At the desk if the bundle has that clip, else a clipboard in hand; either way they stay free to step about.
             if (!(ClipLibrary.Has(WishClip) && Ctx.Self.Over(WishClip, BodyMask.Upper)))
             {
                 Ctx.Self.Over(DeskClip, BodyMask.Upper);
@@ -238,7 +216,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Six drops round the depot, in two or three loose clusters so that a good plan can be seen.
+        // Six drops round the depot, in two or three loose clusters, so a good plan can be seen.
         private void NewBatch(float now)
         {
             int clusters = Random.Range(2, 4);
@@ -277,7 +255,7 @@ namespace RealLifeOverhaul
             Refresh();
         }
 
-        // Everything on screen that depends on the plan: rebuilt when a parcel moves, never on the tick.
+        // Everything on screen that depends on the plan, rebuilt when a parcel moves, never on the tick.
         private void Refresh()
         {
             float cost = DispatchPlan.Cost(_where, _van, _rounds);
@@ -300,7 +278,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The shift's figures on the card: each line is written only when what it says changes.
         private void Figures(float now)
         {
             _figures.Objective(Objective);
@@ -318,7 +295,7 @@ namespace RealLifeOverhaul
             _figures.Time(-1);
         }
 
-        // A button for each van, and "Take one back": made only when a parcel, a van's load or the second changes.
+        // A button for each van and Take one back, rebuilt only when a parcel, a load or the second changes.
         private void Panel(float now)
         {
             if (_step != Step.Planning || _current >= DispatchPlan.Parcels)
@@ -398,7 +375,7 @@ namespace RealLifeOverhaul
 
         public override void Choose(int choice, float now)
         {
-            if (Ctx == null || Over || _step != Step.Planning || _current >= DispatchPlan.Parcels || choice < 0 || choice >= DispatchPlan.Vans || now - _batchAt < Debounce)
+            if (Over || _step != Step.Planning || _current >= DispatchPlan.Parcels || choice < 0 || choice >= DispatchPlan.Vans || now - _batchAt < Debounce)
             {
                 return;
             }
@@ -424,16 +401,16 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A click on a van in the list: the same as the panel's button for it.
+        // A click on a van in the list does what its button does.
         private void AssignFromList(int van)
         {
             Choose(van, Time.time);
         }
 
-        // The panel's "Take one back": the last parcel comes off its van.
+        // The panel's Take one back: the last parcel comes off its van.
         private void TakeBack()
         {
-            if (Ctx == null || Over || _step != Step.Planning || _current <= 0)
+            if (Over || _step != Step.Planning || _current <= 0)
             {
                 return;
             }
@@ -484,7 +461,7 @@ namespace RealLifeOverhaul
         protected override bool Owed(out PaySlip slip)
         {
             slip = default;
-            if (_paid || _plan <= 0 || Ctx == null)
+            if (_paid || _plan <= 0)
             {
                 return false;
             }
@@ -502,10 +479,6 @@ namespace RealLifeOverhaul
             _list?.Hide();
             _list?.Dispose();
             _list = null;
-            if (Ctx == null)
-            {
-                return;
-            }
             _panel.Hide();
             Ctx.Self.StopOver();
             if (why != JobEnd.Fault)

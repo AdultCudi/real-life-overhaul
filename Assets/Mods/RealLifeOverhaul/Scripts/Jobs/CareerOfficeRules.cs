@@ -3,19 +3,15 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Pure rules for telling the player where an employer's office is (the employer's help-wanted board): which text
-    /// to use, what data it takes, whether the "Show me the office" choice is offered, and which employers have a
-    /// board to list on the city map. No Unity or game types, so it is checked offline (CatalogueCheck/JobOfficeCheck).
-    /// A text that sends the player to the office has a twin with the same key and "_at" that names the address; the
-    /// plain one is kept for an employer with no board in this city, which is reached by phone.
-    /// Cost: nothing per frame; each call runs once, on an event or a page of the phone.
+    /// Where an employer's office is, as rules checked offline by JobOfficeCheck. A text sending the player there has a twin, its
+    /// key plus "_at", naming the address; the plain one is for an employer with no board in this city.
     /// </summary>
     public static class CareerOfficeRules
     {
         public const string Suffix = "_at";         // the twin of a text that names the office's address
         public const string AddressField = "address";   // the placeholder the twin carries
 
-        /// <summary>The text to use for a message that sends the player to the office: the twin that names the address if there is one, else the plain key.</summary>
+        /// <summary>The key for a message sending the player to the office: the twin naming the address if there is one.</summary>
         public static string Key(string key, string address)
         {
             return Has(address) ? key + Suffix : key;
@@ -33,7 +29,7 @@ namespace RealLifeOverhaul
             return board >= 0 && board < boards;
         }
 
-        /// <summary>The employers that have a board, in catalogue order: what the city map's Job offices row lists, one marker each.</summary>
+        /// <summary>The employers that have a board, in catalogue order: the city map's Job offices row.</summary>
         public static void Offices(int[] depot, int boards, List<int> employers)
         {
             employers.Clear();

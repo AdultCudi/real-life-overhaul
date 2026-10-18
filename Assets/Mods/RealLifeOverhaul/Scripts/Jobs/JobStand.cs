@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Globalization;
 using BAModAPI;
-using BigAmbitions.Characters;
 using Helpers;
 using UnityEngine;
 using UnityEngine.AI;
@@ -9,31 +8,19 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A place of work the player takes by walking on to it: a small zone (behind a cart, at a desk, on a pitch).
-    /// No key: a player on foot who steps into the zone is drawn the last step to the exact place, turned to face
-    /// the way the work faces, kept there by the game's own navigation blocker (<see cref="JobBody.Hold"/>), and
-    /// given the working pose (one of the mod's looping clips, if the bundle has it). They are let go again by
-    /// <see cref="StepAway"/> (the job puts that on a button of the game's panel), and by the director on every
-    /// way a job can stop (<see cref="Clear"/>).
-    ///
-    /// Having stepped away, the player must leave the zone before it takes them again, or they could never walk
-    /// out of it.
-    ///
-    /// One for the session, owned by <see cref="JobDirector"/> and handed to jobs through the context. The job
-    /// calls <see cref="Tick"/> on its own tick (five times a second): one distance and a few comparisons. Only
-    /// the last step is per frame, for the half second it takes.
+    /// A place of work taken by walking on to it: the zone draws the player the last step, holds them (<see cref="JobBody.Hold"/>)
+    /// and puts on the working pose until <see cref="StepAway"/> or <see cref="Clear"/>. A distance a tick; the last step per frame.
     /// </summary>
     public sealed class JobStand
     {
         private const float GlideSpeed = 2.2f;      // metres a second over the last step
         private const float GlideMost = 0.8f;       // seconds: the limit, not the usual time
-        private const float Missed = 0.5f;          // further than this from the place when the glide ends: not taken
+        private const float Missed = 0.5f;          // metres from the place when the glide ends beyond which it is not taken
         private const float RearmBeyond = 0.6f;     // metres past the zone's edge at which it will take the player again
 
         private readonly JobDirector _host;
         private readonly JobBody _body;
         private readonly IModLogger _logger;
-        private PlayerController _player;
         private Vector3 _post;
         private Quaternion _facing;
         private float _reach;
@@ -44,7 +31,6 @@ namespace RealLifeOverhaul
         private bool _settling;
         private int _token;
         private float _busyUntil;
-        private float _since;
 
         public JobStand(JobDirector host, JobBody body, IModLogger logger)
         {
@@ -59,12 +45,7 @@ namespace RealLifeOverhaul
         /// <summary>True once they are on the exact place, turned and in the pose: the work can be offered.</summary>
         public bool Ready => _standing && !_settling;
 
-        /// <summary>Time.time at which the player last took their place.</summary>
-        public float Since => _since;
-
-        /// <summary>
-        /// Says where the place is. Nothing happens to the player until they walk into the zone.
-        /// </summary>
+        /// <summary>Says where the place is; nothing happens to the player until they walk into the zone.</summary>
         /// <param name="facing">The way somebody at work there faces.</param>
         /// <param name="reach">The zone's radius in metres.</param>
         /// <param name="idleClip">The looping clip of the mod's that is the working pose, or null for the game's own standing.</param>
@@ -80,18 +61,13 @@ namespace RealLifeOverhaul
             _armed = true;
         }
 
-        /// <summary>
-        /// On the job's tick. Takes a player on foot who has walked into the zone, keeps the working pose on them
-        /// between one-off motions, and lets them go if something else has their body (knocked down). Returns
-        /// <see cref="Standing"/>.
-        /// </summary>
+        /// <summary>On the job's tick: takes a player who walked into the zone and keeps the working pose on; returns <see cref="Standing"/>.</summary>
         public bool Tick(PlayerController player, bool onFoot, float now)
         {
             if (!_placed || player == null)
             {
                 return false;
             }
-            _player = player;
             ThirdPersonCharacter body = player.Character;
             if (_standing)
             {
@@ -103,7 +79,7 @@ namespace RealLifeOverhaul
                 }
                 if (!_settling && now >= _busyUntil && _idle != null && ClipLibrary.Has(_idle) && !_body.Playing(_idle))
                 {
-                    _body.Clip(_idle, 0.3f);   // back to the working pose after a one-off motion (or it could not be had: asked quietly again)
+                    _body.Clip(_idle, 0.3f);   // back to the working pose after a one-off motion, or asked again quietly
                 }
                 return true;
             }
@@ -131,7 +107,6 @@ namespace RealLifeOverhaul
             }
             _standing = true;
             _settling = true;
-            _since = now;
             _busyUntil = 0f;
             _token++;
             _host.StartCoroutine(Guard.Routine(Settle(player, _token, away)));
@@ -184,10 +159,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A one-off motion is about to be played on the player (a drink served): the working pose and its tool are
-        /// put down for it and come back by themselves when it is over.
-        /// </summary>
+        /// <summary>A one-off motion is about to play (a drink served): the working pose and its tool are put down and come back after.</summary>
         public void Busy(float seconds, float now)
         {
             if (_standing)
@@ -230,7 +202,7 @@ namespace RealLifeOverhaul
             }
             catch (System.Exception e)
             {
-                _logger?.Error(e);   // (the player's objects may be going with the city: the hold is still let go below)
+                _logger?.Error(e);   // the player's objects may be going with the city: the hold is still let go below
             }
             _body.Free();
             if (Meta.Dev.Verbose)

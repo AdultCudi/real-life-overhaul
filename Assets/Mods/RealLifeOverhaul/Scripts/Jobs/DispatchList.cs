@@ -7,19 +7,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The dispatcher's planning board, in the window the game lists its subway stations in (<see cref="DeskList"/>): the
-    /// jobs still waiting to go out as a note at the top (each with how far and which way from the depot), then an entry for each
-    /// van saying what it carries and how long its round is, with a button to put the next parcel on it, and an entry to take
-    /// the last parcel back. The same choices are on the game's panel over the desk (its keys), which stays: this is the plan
-    /// to read and to click. The shift's figures stay on the job's own card.
-    ///
-    /// The window opens with each batch and is put away with the batch; the player can close it (the cancel key) and
-    /// the panel's keys still work. Nothing runs per frame: the entries are written when a parcel is placed or taken back. If
-    /// the game's window cannot be copied the panel over the desk is all there is, as before the map existed.
+    /// The dispatcher's board in the game's subway-station list window (<see cref="DeskList"/>): the parcels waiting, each van's
+    /// load and round, with buttons to load or take back. Written when a parcel moves; without it the panel is all there is.
     /// </summary>
     internal sealed class DispatchList
     {
-        private const int VanIds = DispatchPlan.Vans;     // ids 0..2 are the vans; this one takes a parcel back
+        private const int VanIds = DispatchPlan.Vans;     // ids 0 to 2 are the vans; this one takes a parcel back
         private const string ButtonSend = "reallife_job_dispatch_list_send";
         private const string ButtonBack = "reallife_job_dispatch_list_back_button";
         private static readonly string[] DirKeys =
@@ -74,7 +67,6 @@ namespace RealLifeOverhaul
             _takeBack = takeBack;
             list.Begin(title ?? string.Empty, foot ?? string.Empty);
 
-            // The jobs waiting: the parcels not on a van.
             _text.Length = 0;
             int waiting = 0;
             for (int i = 0; i < DispatchPlan.Parcels; i++)
@@ -101,7 +93,6 @@ namespace RealLifeOverhaul
             }
             list.AddNote(JobText.T("reallife_job_dispatch_list_waiting"), _text.ToString(), list.HeightFor(_text.Length + 40 * Math.Max(1, waiting), false));
 
-            // The vans: what each carries and how long its round is.
             for (int v = 0; v < DispatchPlan.Vans; v++)
             {
                 _parcels.Length = 0;

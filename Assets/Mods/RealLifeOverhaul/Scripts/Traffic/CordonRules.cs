@@ -2,10 +2,7 @@ using System;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The taped rectangle of a cordon (Traffic/SceneCordon), in the road's own frame at the scene: metres along the road
-    /// from the scene (Back to Front) and across it (Left to Right). Nothing of the game or the engine in it.
-    /// </summary>
+    /// <summary>The taped rectangle of a cordon in the road's frame at the scene: metres along the road (Back to Front) and across it (Left to Right).</summary>
     public readonly struct CordonBox
     {
         public readonly float Back, Front, Left, Right;
@@ -26,22 +23,13 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Who is inside a cordon, and where they are put outside it, as plain geometry in the road's own frame (no engine
-    /// types, so that every rule is run in a console test: RealLifeOverhaul.Build/NavCheck/CordonCheck.cs).
-    /// When the tape goes up, anybody standing within it or against it (within the reach of the wall cut out of the
-    /// navigation mesh along it: SideReach, and EndReach at an end, whose wall is deeper for its barriers), but not
-    /// the scene's own people, is put at the nearest place outside: straight out through the nearest side, a step
-    /// beyond that reach (SideClear, EndClear). The other three sides are the next places, nearest first, for when the first is not
-    /// ground they can stand on. Two people are never put within Spacing of each other: whoever comes later is slid
-    /// along the tape, a step either way in turn, so three people who stood on top of each other (and of somebody
-    /// lying in the road) end up side by side at the tape, each a body's width from the next.
-    /// The walkways through an opening in the tape (a crossing that runs through it) are found as points along the
-    /// tape's line; Gaps joins the open points into runs, each a gate across the opening for people on foot.
-    /// Called on the one frame the tape goes up (or is run again): a few dozen people, nothing allocated.
+    /// Who is inside a cordon and where they are put outside it, as plain geometry in the road's frame (NavCheck's CordonCheck
+    /// runs every rule): anybody within or against the tape but the scene's own people is put straight out through the nearest
+    /// side, nobody within Spacing of another. Gaps joins a line's open points into the runs a gate shuts. Nothing allocated.
     /// </summary>
     public static class CordonRules
     {
-        public const float SideReach = 0.55f;   // metres beyond a side's tape its wall's cut reaches: half the wall (0.15) and a walker's radius; nearer is against the tape
+        public const float SideReach = 0.55f;   // metres beyond a side's tape its wall's cut reaches (half the wall and a walker's radius)
         public const float EndReach = 1.6f;     // ...beyond an end's tape, whose wall reaches 1.22 m out over its barriers
         public const float SideClear = 1.1f;    // metres beyond a side's tape somebody is put: its reach and a step
         public const float EndClear = 1.9f;     // ...beyond an end's tape
@@ -57,10 +45,7 @@ namespace RealLifeOverhaul
             return along > box.Back - EndReach && along < box.Front + EndReach && across > box.Left - SideReach && across < box.Right + SideReach;
         }
 
-        /// <summary>
-        /// The places outside the tape for somebody at a point, straight out through each side, nearest first (sides
-        /// before ends on a tie, then left, right, back, front). Writes Exits places; returns the distance to the first.
-        /// </summary>
+        /// <summary>The places outside the tape for a point, through each side, nearest first (sides before ends on a tie); returns the first's distance.</summary>
         /// <param name="alongSide">For each place: true if it is beyond a side (it is slid along the road), false beyond an end (slid across).</param>
         public static float Out(in CordonBox box, float along, float across, float[] alongs, float[] acrosses, bool[] alongSide)
         {
@@ -101,10 +86,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The nearest point outside the tape by a margin, straight out through the nearest side: for a place handed to
-        /// somebody who only waits there. The point itself if it is outside already.
-        /// </summary>
+        /// <summary>The nearest point outside the tape by a margin, straight out through the nearest side; the point itself if outside already.</summary>
         public static void Outside(in CordonBox box, float along, float across, float margin, out float outAlong, out float outAcross)
         {
             outAlong = along;
@@ -136,12 +118,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Moves a place outside the tape along the tape (along the road beyond a side, across it beyond an end) until it
-        /// is at least Spacing from every place already given out: as it is if it is, else a step one way, then the other,
-        /// then two steps, up to SlideTries. A place tried that would be inside (Inside) is passed over. False, and the place
-        /// as it was, if none is free.
-        /// </summary>
+        /// <summary>Slides a place outside the tape along it until it is Spacing from every place given out, up to SlideTries steps; false if none.</summary>
         public static bool Spread(in CordonBox box, bool alongSide, ref float along, ref float across, float[] takenAlong, float[] takenAcross, int taken)
         {
             if (!Inside(box, along, across) && Apart(along, across, takenAlong, takenAcross, taken))
@@ -178,12 +155,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Joins the open points of a straight line of tape (open: a walkway crosses there and no wall stands on it) into
-        /// runs, each reaching GatePad beyond its first and last open point and kept within the line. Point i stands
-        /// i * GateStep along the line (the last one at its end). Runs that touch are one. With more runs than there
-        /// are gates, the last gate reaches over all that remain, so nothing is left open. Returns how many runs.
-        /// </summary>
+        /// <summary>Joins a straight line's open points into runs reaching GatePad beyond them, touching runs as one; the last gate takes what is left.</summary>
         public static int Gaps(bool[] open, int count, float length, float[] from, float[] to, int most)
         {
             int runs = 0;

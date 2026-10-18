@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
-using Buildings.Outdoors;
 using Extensions;
 using Localizor;
 using Streets;
@@ -11,53 +10,19 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Law
 {
-    /// <summary>One police station: a building of the city's own, designated and dressed by the mod.</summary>
-    public sealed class Precinct
-    {
-        public int Index;
-        public CityBuildingController Building;
-        public string District;         // the game's neighbourhood id
-        public string NameKey;
-        public string Name;             // as shown
-        public Vector3 Door;
-        public string Address;          // "street|number", as kept in the save
-        /// <summary>True if the player can walk in: an empty unit nobody rents, entered through its own door into the game's own interior for it.</summary>
-        public bool WalkIn;
-        /// <summary>How well its frontage takes the station's dressing, as measured when it was chosen (higher is better).</summary>
-        public int Score;
-        internal MapPlace Place;        // on the city map (Core/MapPlaces)
-        internal bool[] DoorWas;        // the doors' own "always open" flags, to be put back
-        internal bool DoorsOpen;
-        internal bool Stays;            // on the player's building with nowhere else in its district to go: not looked for again this session
-    }
-
     /// <summary>
-    /// The city's police stations. The game has none (no building, no model: only the parked
-    /// police car prop), so one existing building in each district is designated. Since players
-    /// walk in, it has to be a unit that stands empty and to let (the game loads the bare
-    /// interior of such a unit through its own door, and nothing of the game's lives in it): an
-    /// office where the district has one, otherwise a large shop unit, a warehouse, any shop.
-    /// Of those, the one whose frontage takes the station's dressing best, measured once per
-    /// city load: a sign band of its own over the shopfront, flat wall either side of the door
-    /// and above it, a deep pavement, a kerb. Ties go to the one nearest the middle of the
-    /// district, then by address. The choice is written into the save by address and stays,
-    /// with two exceptions that are both said to the player: a save from before stations could
-    /// be entered is looked over once, and a precinct whose building has been let (to the
-    /// player or a rival) moves to another.
-    ///
-    /// A precinct's doors are flagged "always open" (the game's own flag: its entrance then
-    /// lets the player in whatever the opening hours say), it has a marker in the game's
-    /// point-of-interest list, and its frontage is dressed while the player is near
-    /// (<see cref="PrecinctFrontage"/>). Nothing here runs unless LawDirector calls it.
+    /// The city's police stations: one building a district, an empty unit to let where there is one (the game loads its
+    /// bare interior through its own door), with the frontage that takes the dressing best. Saved by address; a precinct
+    /// whose unit has been let moves (Keep). Nothing here runs unless LawDirector calls it.
     /// </summary>
-    internal sealed class Precincts
+    internal sealed partial class Precincts
     {
         public const int Most = 6;
         public const int Rules = 2;                  // LawState.PrecinctRules once the walk-in rules have chosen
 
-        private const float DressWithin = 260f;      // the player this near: the frontage is dressed
-        private const float UndressBeyond = 330f;
-        private const int Measured = 14;             // candidates per district whose frontage is measured
+        private const float DressWithin = 260f;      // metres: the frontage is dressed with the player this near
+        private const float UndressBeyond = 330f;    // metres
+        private const int Measured = 14;             // candidates a district whose frontage is measured
         private const int MuchBetter = 30;           // an old save's precinct gives way to one that scores this much more
         private const string Hamptons = "ba:neighborhood_thehamptons";
         private const string Empty = "ba:businesstype_empty";
@@ -79,9 +44,8 @@ namespace RealLifeOverhaul.Law
         private readonly List<Precinct> _all = new List<Precinct>(Most);
         private readonly List<Candidate> _candidates = new List<Candidate>(64);
         private readonly IModLogger _logger;
-        private readonly Transform _root;
         private readonly PrecinctFrontage _frontage;
-        private static Sprite _icon;   // drawn once a session: a director of each load asks for the same badge
+        private static Sprite _icon;   // drawn once a session: each load's director asks for the same badge
         private MapPlaces.Category _map;
         private bool _chosen;
         private int _nextLook;
@@ -89,7 +53,6 @@ namespace RealLifeOverhaul.Law
 
         public Precincts(Transform root, IModLogger logger)
         {
-            _root = root;
             _logger = logger;
             _frontage = new PrecinctFrontage(root, logger);
         }
@@ -100,13 +63,11 @@ namespace RealLifeOverhaul.Law
 
         public Precinct At(int index) => index >= 0 && index < _all.Count ? _all[index] : null;
 
-        /// <summary>The precinct whose frontage is dressed just now, or null.</summary>
         public Precinct Dressed => _frontage.Dressed;
 
-        /// <summary>The badge the precincts carry on the map (and the records desk on the phone).</summary>
+        /// <summary>The badge on the destination marker that points the way to a precinct.</summary>
         public Sprite Icon => _icon != null ? _icon : _icon = MakeIcon();
 
-        /// <summary>The precinct whose door is nearest a point, or null if there are none.</summary>
         public Precinct Nearest(Vector3 at)
         {
             Precinct best = null;
@@ -125,7 +86,6 @@ namespace RealLifeOverhaul.Law
             return best;
         }
 
-        /// <summary>The precinct that is this building, or null.</summary>
         public Precinct Of(Buildings.Building building)
         {
             if (building == null)
@@ -142,7 +102,6 @@ namespace RealLifeOverhaul.Law
             return null;
         }
 
-        /// <summary>The precinct that is this building on the street, or null.</summary>
         public Precinct Of(CityBuildingController building)
         {
             for (int i = 0; i < _all.Count; i++)
@@ -155,15 +114,13 @@ namespace RealLifeOverhaul.Law
             return null;
         }
 
-        /// <summary>True if the player can walk into this precinct now: it is an empty unit still, and walk-in stations are switched on.</summary>
+        /// <summary>True if the player can walk into this precinct now: still an empty unit, and walk-in stations are on.</summary>
         public static bool CanEnter(Precinct precinct)
         {
             return precinct != null && precinct.WalkIn && Settings.LawStation && Settings.LawPrecincts && precinct.Building != null && Vacant(precinct.Building);
         }
 
-        // ---------------------------------------------------------------- which buildings
-
-        /// <summary>Once per city load: designates the precincts. False if the city's buildings are not there yet (asked again).</summary>
+        /// <summary>Once a city load: designates the precincts. False if the city's buildings are not there yet (asked again).</summary>
         public bool Choose()
         {
             if (_chosen)
@@ -181,7 +138,7 @@ namespace RealLifeOverhaul.Law
                 if (buildings[i] != null && buildings[i].building != null && buildings[i].buildingRegistration == null && _attempts < 12)
                 {
                     _attempts++;
-                    return false;   // the game has not tied its buildings to their registrations yet (asked again, a dozen times at most)
+                    return false;   // the buildings are not tied to their registrations yet (asked again, a dozen times at most)
                 }
             }
             _chosen = true;
@@ -199,9 +156,8 @@ namespace RealLifeOverhaul.Law
                 districts[district] = sum + new Vector4(door.x, door.y, door.z, 1f);
             }
 
-            // What the save says first: the same buildings as last time, by address.
             var saved = new Dictionary<string, CityBuildingController>(Most, StringComparer.Ordinal);
-            var gaveWay = new HashSet<string>(StringComparer.Ordinal);   // districts whose saved station gave way: its new one is told as a move
+            var gaveWay = new HashSet<string>(StringComparer.Ordinal);   // districts whose saved station gave way: told as a move
             if (!string.IsNullOrEmpty(LawState.PrecinctAddresses))
             {
                 foreach (string address in LawState.PrecinctAddresses.Split(';'))
@@ -211,8 +167,7 @@ namespace RealLifeOverhaul.Law
                     {
                         continue;
                     }
-                    // One the player has since rented or bought gives way, and so does one another feature holds (the
-                    // university's permanent building); either way the district's new station is said to have moved.
+                    // One the player has since taken, or another feature holds, gives way, and the district's station has moved.
                     if (SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), "police_"))
                     {
                         gaveWay.Add(found.building.Neighbourhood);
@@ -246,8 +201,7 @@ namespace RealLifeOverhaul.Law
                         Building = kept, Door = keptDoor, WalkIn = Vacant(kept), Address = AddressOf(kept),
                         Score = Measure(kept, keptDoor)
                     };
-                    // The saved building stands, unless it cannot be walked into and another can, or (an old save, once)
-                    // another's frontage is far better.
+                    // The saved building stands unless another can be walked into and it cannot, or (an old save, once) is far better.
                     bool gives = found && !ReferenceEquals(best.Building, kept)
                                  && ((best.WalkIn && !same.WalkIn) || (oldSave && best.WalkIn == same.WalkIn && best.Score >= same.Score + MuchBetter));
                     if (!gives)
@@ -310,7 +264,7 @@ namespace RealLifeOverhaul.Law
             LawState.PrecinctAddresses = string.Join(";", addresses);
         }
 
-        // A building that can be a precinct at all: in the city proper, with a door on the street, and not one of the game's own services.
+        // A building that can be a precinct at all: in the city proper, with a door on the street, not one of the game's services.
         private static bool Usable(CityBuildingController building, out Vector3 door)
         {
             door = default;
@@ -346,8 +300,7 @@ namespace RealLifeOverhaul.Law
             return null;
         }
 
-        // Standing empty and to let, with nothing of the game's inside and nothing that would keep the player out of it:
-        // the one kind of unit whose interior can be a station's.
+        // Empty and to let, nothing of the game's inside, nothing to keep the player out: a unit whose interior can be a station's.
         private static bool Vacant(CityBuildingController building)
         {
             BuildingRegistration registration = building != null ? building.buildingRegistration : null;
@@ -367,7 +320,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // An office first, then a large shop unit, then a warehouse, then any shop; never a home, a cinema or a theatre.
+        // An office first, then a large shop unit, a warehouse, any shop; never a home, a cinema or a theatre.
         private static int Rank(Buildings.Building building)
         {
             switch (building.BuildingType)
@@ -385,8 +338,7 @@ namespace RealLifeOverhaul.Law
             return building.building.StreetName + "|" + building.building.StreetNumber;
         }
 
-        // The district's best building for a station: every unit of a kind that will do is listed; the likeliest few
-        // (empty ones first, then by kind, then nearest the middle) have their frontage measured; the best score wins.
+        // The likeliest few (empty first, then by kind, then nearest the middle) are measured, and the best score wins.
         private bool Best(CityBuildingController[] buildings, string district, Vector3 middle, CityBuildingController not, out Candidate best)
         {
             best = default;
@@ -403,9 +355,8 @@ namespace RealLifeOverhaul.Law
                 string holder = SpecialBuildings.HolderOf(building);
                 if (holder != null && !holder.StartsWith("police_", StringComparison.Ordinal))
                 {
-                    continue;   // (a building another feature has made its own: a tech company's headquarters, the university)
+                    continue;   // a building another feature has made its own (a tech headquarters, the university)
                 }
-                // Never the player's own premises, and somewhere with a pavement at the door.
                 if (rank < 0 || registration == null || registration.RentedByPlayer || registration.BuildingOwnedByPlayer || !StreetSpots.OnPavement(door, 6f, out _))
                 {
                     continue;
@@ -431,7 +382,7 @@ namespace RealLifeOverhaul.Law
                 Candidate candidate = _candidates[i];
                 candidate.Score = Measure(candidate.Building, candidate.Door);
                 _candidates[i] = candidate;
-                // An empty unit always before one that is not; then the score; then the order they were listed in.
+                // An empty unit always before one that is not; then the score; then the listed order.
                 Candidate held = _candidates[pick];
                 if (i > 0 && candidate.WalkIn == held.WalkIn && candidate.Score > held.Score)
                 {
@@ -456,9 +407,9 @@ namespace RealLifeOverhaul.Law
             return a.Sqr != b.Sqr ? a.Sqr.CompareTo(b.Sqr) : string.CompareOrdinal(a.Address, b.Address);
         }
 
-        // How well a frontage takes the dressing, from 0 to about 100: a sign band of its own (25), flat wall either side
-        // of the door at chest height (3 a place, eight places) and above head height (2 a place, four), the pavement's
-        // depth (5 a metre step, three) and a kerb with the road beyond it (10); a little for the kind of building.
+        // How well a frontage takes the dressing, from 0 to about 100: its own sign band (25), flat wall either side of the
+        // door at chest height (3 a place, eight places) and above head height (2 a place, four), the pavement's depth (5 a
+        // metre, three), a kerb with the road beyond (10), and a little for the kind of building.
         private static int Measure(CityBuildingController building, Vector3 door)
         {
             try
@@ -474,19 +425,9 @@ namespace RealLifeOverhaul.Law
                 {
                     return score;
                 }
-                Transform at = DoorOf(building);
                 Vector3 toFront = front - door;
                 toFront.y = 0f;
-                Vector3 outward = at != null ? at.forward : toFront;
-                outward.y = 0f;
-                if (outward.sqrMagnitude < 0.01f)
-                {
-                    outward = toFront;
-                }
-                else if (Vector3.Dot(outward, toFront) < 0f)
-                {
-                    outward = -outward;
-                }
+                Vector3 outward = Outward(DoorOf(building), toFront);
                 if (outward.sqrMagnitude < 0.01f)
                 {
                     return score;
@@ -536,6 +477,18 @@ namespace RealLifeOverhaul.Law
             }
         }
 
+        /// <summary>The door's own axis turned to face the street; the way to the street where the door has none. May be zero.</summary>
+        internal static Vector3 Outward(Transform door, Vector3 toFront)
+        {
+            Vector3 outward = door != null ? door.forward : toFront;
+            outward.y = 0f;
+            if (outward.sqrMagnitude < 0.01f)
+            {
+                return toFront;
+            }
+            return Vector3.Dot(outward, toFront) < 0f ? -outward : outward;
+        }
+
         private static CityBuildingController Find(CityBuildingController[] buildings, string address)
         {
             if (string.IsNullOrEmpty(address))
@@ -567,121 +520,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // ---------------------------------------------------------------- staying a station
-
-        /// <summary>
-        /// Every few seconds: a precinct whose unit has been let (to the player, to a rival) moves to another empty one in
-        /// its district and says so, and one with its desk at the door moves off a building that has become the player's; the doors of the ones that can be walked into are kept flagged open, and put back as
-        /// the game had them when walk-in stations are switched off.
-        /// </summary>
-        /// <param name="inside">The precinct the player is standing in, which is left alone until they have gone.</param>
-        public void Keep(Precinct inside)
-        {
-            if (++_nextLook < 5)
-            {
-                return;
-            }
-            _nextLook = 0;
-            for (int i = 0; i < _all.Count; i++)
-            {
-                Precinct precinct = _all[i];
-                if (precinct != inside && !Custody.Active && (precinct.WalkIn ? !Vacant(precinct.Building) : !precinct.Stays && SpecialBuildings.Players(precinct.Building)))
-                {
-                    Move(precinct);
-                }
-                Doors(precinct, CanEnter(precinct));
-            }
-        }
-
-        private void Move(Precinct precinct)
-        {
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
-            if (buildings == null)
-            {
-                return;
-            }
-            Vector4 sum = Vector4.zero;
-            for (int i = 0; i < buildings.Length; i++)
-            {
-                if (Usable(buildings[i], out Vector3 door) && buildings[i].building.Neighbourhood == precinct.District)
-                {
-                    sum += new Vector4(door.x, door.y, door.z, 1f);
-                }
-            }
-            Vector3 middle = sum.w > 0f ? new Vector3(sum.x, sum.y, sum.z) / sum.w : precinct.Door;
-            Doors(precinct, false);
-            bool players = SpecialBuildings.Players(precinct.Building);   // (off the player's building to any other that will do, empty or not)
-            if (!Best(buildings, precinct.District, middle, precinct.Building, out Candidate best) || (!best.WalkIn && !players))
-            {
-                // Nowhere empty to go: it stays where it is, with its desk at the door (and is not looked at again for it).
-                if (precinct.WalkIn)
-                {
-                    _logger?.Info("Law: " + precinct.Name + ": its unit has been let and the district has no other empty one; it stays, with the front desk at its door.");
-                }
-                precinct.WalkIn = false;
-                precinct.Stays = players;
-                return;
-            }
-            if (_frontage.Dressed == precinct)
-            {
-                _frontage.Undress();
-            }
-            precinct.Building = best.Building;
-            precinct.Door = best.Door;
-            precinct.Address = best.Address;
-            precinct.WalkIn = best.WalkIn;
-            precinct.Score = best.Score;
-            Mark(precinct);
-            Remember();
-            string address = best.Building.building.Address.ToFormattedString();
-            _logger?.Info("Law: " + precinct.Name + " has moved to " + address + " (its old unit was let); frontage " + precinct.Score + ".");
-            if (SaveGameManager.Current != null)
-            {
-                var data = new Dictionary<string, string>(2) { { "precinct", precinct.Name }, { "address", address } };
-                Notifications.Show(NotificationType.Info, "reallife_law_precinct_moved", data, 12f);
-            }
-        }
-
-        // The game's own flag on an entrance: with it set, the building's own door lets the player in whatever its
-        // registration says. Set on a precinct's doors only, remembered, and put back.
-        private static void Doors(Precinct precinct, bool open)
-        {
-            if (precinct.DoorsOpen == open || precinct.Building == null || precinct.Building.entranceDoors == null)
-            {
-                return;
-            }
-            BuildingEntranceDoor[] doors = precinct.Building.entranceDoors;
-            if (open)
-            {
-                precinct.DoorWas = new bool[doors.Length];
-                for (int i = 0; i < doors.Length; i++)
-                {
-                    if (doors[i] != null)
-                    {
-                        precinct.DoorWas[i] = doors[i].alwaysOpen;
-                        doors[i].alwaysOpen = true;
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < doors.Length; i++)
-                {
-                    if (doors[i] != null)
-                    {
-                        doors[i].alwaysOpen = precinct.DoorWas != null && i < precinct.DoorWas.Length && precinct.DoorWas[i];
-                    }
-                }
-                precinct.DoorWas = null;
-            }
-            precinct.DoorsOpen = open;
-        }
-
-        // ---------------------------------------------------------------- the map
-
-        // On the city map: a place of the mod's "Police stations" category (Core/MapPlaces), which gives it a marker with its
-        // name, a row in the map's filters, a click for a destination, and its name on the game's card for the building.
         private void Mark(Precinct precinct)
         {
             // Its own name wherever the game names the building (Core/SpecialBuildings); a precinct that moves is set again.
@@ -711,7 +549,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // A white five-pointed badge star on nothing: the marker's own blob is the blue behind it. Made once.
+        // A white five-pointed star with soft edges: the marker's own blob is the blue behind it.
         private static Sprite MakeIcon()
         {
             const int size = 64;
@@ -754,13 +592,7 @@ namespace RealLifeOverhaul.Law
             return sprite;
         }
 
-        // ---------------------------------------------------------------- the frontage
-
-        /// <summary>
-        /// Where somebody let out of a precinct stands: on the pavement in front of its door, a
-        /// step out, clear of vehicles, and the way from the door to the street. False if no such
-        /// place could be found (the caller then uses the game's own spot for the building).
-        /// </summary>
+        /// <summary>Where somebody let out stands: on the pavement a step before the door, facing the street. False if there is none.</summary>
         public static bool Front(Precinct precinct, out Vector3 spot, out Vector3 outward)
         {
             spot = default;
@@ -780,15 +612,15 @@ namespace RealLifeOverhaul.Law
             return true;
         }
 
-        /// <summary>Once a second while the player is out of doors: dresses the precinct they are near, undresses the one they left.</summary>
+        /// <summary>Once a second while the player is out of doors: dresses the precinct they are near, undresses the one left.</summary>
         public void Tick(float now, Vector3 player)
         {
             Precinct near = Settings.LawPrecincts ? Nearest(player) : null;
-            float sqr = near != null ? Flat(near.Door - player) : float.MaxValue;
+            float sqr = near != null ? CitySpots.Flat(near.Door - player) : float.MaxValue;
             Precinct dressed = _frontage.Dressed;
             if (dressed != null && (near != dressed || sqr > UndressBeyond * UndressBeyond))
             {
-                // Only ever taken in from far off: the nearest precinct changes half way between two of them.
+                // Only taken in from far off: the nearest precinct changes half way between two.
                 _frontage.Undress();
             }
             if (near == null || sqr > DressWithin * DressWithin)
@@ -798,7 +630,7 @@ namespace RealLifeOverhaul.Law
             _frontage.Tick(now, player, near);
         }
 
-        /// <summary>Dresses a precinct at once, in view or not: called with the screen dark, just before the player is put outside it.</summary>
+        /// <summary>Dresses a precinct at once, in view or not: with the screen dark, before the player is put outside it.</summary>
         public void DressNow(Precinct precinct)
         {
             if (precinct != null && Settings.LawPrecincts)
@@ -807,19 +639,16 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        /// <summary>The frontage's people off the street: the player has gone indoors, and the same few characters are wanted inside.</summary>
         public void PeopleIn()
         {
             _frontage.PeopleIn();
         }
 
-        /// <summary>Everything off the street. Safe at any time, any number of times.</summary>
         public void Undress()
         {
             _frontage.Undress();
         }
 
-        /// <summary>What is up at the dressed precinct and what was left off, for the log.</summary>
         public string Report() => _frontage.Report();
 
         public void Dispose()
@@ -843,11 +672,6 @@ namespace RealLifeOverhaul.Law
                 SpecialBuildings.Remove("police_" + _all[i].Index);
             }
             _all.Clear();
-        }
-
-        private static float Flat(Vector3 offset)
-        {
-            return offset.x * offset.x + offset.z * offset.z;
         }
     }
 }

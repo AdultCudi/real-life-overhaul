@@ -218,6 +218,11 @@ internal static partial class Program
         Check(rolls == 0, "street look: no look of a person of the social life is rolled from their seed without asking for a kept look");
         Check(Read("Social", "SocialState.cs").Contains("PersonLooks.Forget();") && Read("People", "PersonLookGame.cs").Contains("Dressed.Remove(id);"),
             "street look: the kept looks are forgotten with the social life's state, and a character dressed in one is put back for the next rolled look");
+        string dress = Read("People", "PersonLookGame.cs");
+        int forget = dress.IndexOf("private static void ForgetGone()", StringComparison.Ordinal);
+        string gone = forget >= 0 ? dress.Substring(forget, Math.Min(600, dress.Length - forget)) : "";
+        Check(!dress.Contains("Dressed.Clear()") && dress.Contains("Owner = appearance") && gone.Contains("record.Value.Owner == null") && gone.Contains("Dressed.Remove(Gone[i]);"),
+            "street look: past 16 characters only the records of characters no longer there are let go, so a rolled face never depends on what was dressed before");
     }
 
     // ---------------------------------------------------------------- Flare: the face and the age

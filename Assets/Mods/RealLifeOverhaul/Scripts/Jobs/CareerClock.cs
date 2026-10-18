@@ -1,14 +1,8 @@
-using Extensions;
 using Localizor;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// How a rota shift's time is said to the player, in one place: never a bare hour, always the start and the end
-    /// in the game's own clock format (which follows its 12 or 24 hour option), as "13:00 to 17:00". Everything that
-    /// names a shift's time (the boss's offer, the Work contact's rota and reminders, the shift's panel) asks here.
-    /// The Planner's rows carry the same two times as minutes and are written by the Planner's own formatter.
-    /// </summary>
+    /// <summary>How a rota shift's time is said: start and end in the game's own clock format, as "13:00 to 17:00".</summary>
     public static class CareerClock
     {
         /// <summary>An hour of the day on the game's clock: "13:00", or "01:00 PM" with the game's 12 hour option.</summary>
