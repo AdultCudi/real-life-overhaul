@@ -446,7 +446,7 @@ namespace RealLifeOverhaul.Careers
                 row.Set(1, CareersText.Mode(mode));
                 int next = StudyRules.NextClass(e, day, minute, sitting);
                 row.Set(2, next >= 0 ? CareersText.T("reallife_campus_row_next", "day", CareersText.Day(next / (24 * 60)), "hour", CareersText.Hour(next % (24 * 60) / 60)) : "-", next);
-                row.Set(3, c.Timetabled ? CareersText.T("reallife_campus_row_of", "done", e.Done.ToString(), "of", c.Sessions.ToString()) : "-", StudyRules.Attendance(e),
+                row.Set(3, c.Timetabled ? CareersText.T("reallife_campus_row_of", "done", e.Done.ToString(), "of", StudyRules.Counted(e).ToString()) : "-", StudyRules.Attendance(e),
                     StudyRules.Attendance(e) < StudyCatalogue.Barred + 150 && e.Seen > 2 ? TableRow.Yellow : TableRow.Plain);
                 row.Set(4, CareersText.T("reallife_campus_row_of", "done", e.Homework.ToString(), "of", c.Homework.ToString()), e.Homework);
                 row.Set(5, CareersText.Money(e.Fee), e.Fee);
@@ -521,6 +521,11 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(CareersText.T(sit), CellTone.Yellow);
             }
+            if (e.Excused > 0 && e.ExcusedDay >= 0)
+            {
+                // Classes lost to the provider's outage (StudyRules.Excuse): left out of the attendance below, and said why.
+                box.Line(CareersText.Fill(e.Excused == 1 ? "reallife_campus_excused_one" : "reallife_campus_excused", "count", e.Excused.ToString(), "day", CareersText.Day(e.ExcusedDay)));
+            }
             string room = _director.RoomLine(e);
             if (room != null)
             {
@@ -536,9 +541,9 @@ namespace RealLifeOverhaul.Careers
             }
             if (c.Timetabled)
             {
-                int held = StudyRules.Held(e, day, minute, sitting), share = StudyRules.Attendance(e);
-                box.Meter("reallife_campus_col_attended", LookRules.Fill(e.Done, held),
-                    CareersText.Fill("reallife_ibox_attended", "done", e.Done.ToString(), "seen", held.ToString(), "share", CareersText.Mille(share)),
+                int held = StudyRules.Held(e, day, minute, sitting), share = StudyRules.Attendance(e), counted = Mathf.Max(0, held - e.Excused);   // (an excused class counts neither way)
+                box.Meter("reallife_campus_col_attended", LookRules.Fill(e.Done, counted),
+                    CareersText.Fill("reallife_ibox_attended", "done", e.Done.ToString(), "seen", counted.ToString(), "share", CareersText.Mille(share)),
                     share < StudyCatalogue.Barred ? CellTone.Red : share < StudyCatalogue.Barred + 150 && e.Seen > 2 ? CellTone.Yellow : CellTone.Green);
                 box.Row("reallife_ibox_in_all", c.Sessions.ToString());
                 box.Row("reallife_campus_col_timetable", CareersText.Timetable(StudyRules.Days(c, mode), StudyRules.Hour(c, mode)));

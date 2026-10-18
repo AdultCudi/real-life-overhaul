@@ -173,7 +173,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_study_why_not_home";
             }
-            return CareersBridges.HomeOnline() ? null : "reallife_study_why_no_internet";
+            return StudyRules.NoNetWhy(CareersBridges.HomeNetNow());   // (tutoring has no hour it must be given in: nothing to excuse)
         }
 
         public string Tutor()

@@ -29,6 +29,21 @@ namespace RealLifeOverhaul.Careers
         public bool University;   // at the university's sign or door, or inside its building
         public bool Home;         // in a home of the player's
         public bool Online;       // that home has a working internet connection
+        public HomeNet Net;       // ...and if not, why not: an outage is said apart from the rest
+    }
+
+    /// <summary>
+    /// The home's internet as careers reads it (Utilities, through CareersBridges): up, or why it is down. Only an outage
+    /// is the city's doing; no plan, one being put in and one cut for a bill not paid are the player's own. Never saved.
+    /// </summary>
+    public enum HomeNet
+    {
+        Online = 0,       // up, or no utilities to ask (a home is then taken to be connected)
+        Outage = 1,       // the provider's outage: what it keeps the player from is excused (StudyRules.Excuses)
+        NoHome = 2,       // no home of the player's
+        NoPlan = 3,       // no internet plan at the home, or one closed
+        Installing = 4,   // a plan bought and not yet connected
+        Cut = 5           // cut off for a bill not paid
     }
 
     /// <summary>What the panel where the player stands offers: nothing, a class to attend, an exam to sit.</summary>
@@ -50,7 +65,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     return "reallife_study_why_not_home";
                 }
-                return here.Online ? null : "reallife_study_why_no_internet";
+                return here.Online ? null : NoNetWhy(here.Net == HomeNet.Online ? HomeNet.NoPlan : here.Net);   // (not online with no reason given: no working internet)
             }
             switch (c.Campus)
             {
@@ -99,6 +114,44 @@ namespace RealLifeOverhaul.Careers
                 return 0;
             }
             return 2;       // elsewhere, or another reason the mod knows: why, where, and for how long
+        }
+
+        // ---------------------------------------------------------------- the home's internet down
+
+        /// <summary>
+        /// The one rule for what the home's internet being down excuses: only a provider's outage, which is not the
+        /// player's doing. No home, no plan, one not yet connected or one cut for an unpaid bill excuses nothing.
+        /// </summary>
+        public static bool Excuses(HomeNet net) => net == HomeNet.Outage;
+
+        /// <summary>Why something done at the home's computer cannot be done now (a reason key), or null with the internet up: the one reason every such activity gives.</summary>
+        public static string NoNetWhy(HomeNet net)
+        {
+            return net == HomeNet.Online ? null : net == HomeNet.Outage ? "reallife_study_why_outage" : "reallife_study_why_no_internet";
+        }
+
+        /// <summary>
+        /// The minutes of the save (day * 1440 + minute) a day's class can be joined in: from
+        /// <see cref="StudyCatalogue.ArriveEarlyMinutes"/> before its start to <see cref="StudyCatalogue.LateMinutes"/> after.
+        /// False on a day it has no class.
+        /// </summary>
+        public static bool JoinWindow(CourseDef c, StudyMode mode, int day, out int from, out int to)
+        {
+            from = to = 0;
+            if (c == null || !c.Timetabled || !On(Days(c, mode), day))
+            {
+                return false;
+            }
+            int start = day * 24 * 60 + Hour(c, mode) * 60;
+            from = start - StudyCatalogue.ArriveEarlyMinutes;
+            to = start + StudyCatalogue.LateMinutes;
+            return true;
+        }
+
+        /// <summary>True if a class gone by without the player is excused rather than missed: one held online from home, with the home's internet down over its window for an outage.</summary>
+        public static bool ClassExcused(CourseDef c, StudyMode mode, HomeNet net)
+        {
+            return ClassPlayRules.HeldOnline(c, mode) && Excuses(net);
         }
 
         public const int LiveMost = 4;   // courses at once
@@ -315,11 +368,34 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
-        /// <summary>The share of a course's classes attended so far, thousandths (all of them for a course without classes).</summary>
+        /// <summary>
+        /// A class gone by without the player, excused (<see cref="ClassExcused"/>): held, so the course moves on, but left
+        /// out of the classes that count (<see cref="Counted"/>), neither attended nor missed. True if it was one.
+        /// </summary>
+        public static bool Excuse(Enrolment e, int day)
+        {
+            if (!Miss(e, day))
+            {
+                return false;
+            }
+            e.Excused++;
+            e.ExcusedDay = day;
+            return true;
+        }
+
+        /// <summary>The classes of a course that count towards attendance: all of them but those excused.</summary>
+        public static int Counted(Enrolment e)
+        {
+            CourseDef c = e.Def;
+            return c == null ? 0 : Math.Max(0, c.Sessions - Math.Max(0, e.Excused));
+        }
+
+        /// <summary>The share of a course's counted classes attended so far, thousandths (all of them for a course without classes, or with every class excused).</summary>
         public static int Attendance(Enrolment e)
         {
             CourseDef c = e.Def;
-            return c == null || !c.Timetabled ? 1000 : c.Sessions <= 0 ? 1000 : e.Done * 1000 / c.Sessions;
+            int counted = Counted(e);
+            return c == null || !c.Timetabled ? 1000 : counted <= 0 ? 1000 : Math.Min(1000, e.Done * 1000 / counted);
         }
 
         /// <summary>
@@ -410,7 +486,7 @@ namespace RealLifeOverhaul.Careers
             return TalentCatalogue.SchoolLearning[TalentCatalogue.Clamp(school, 0, TalentCatalogue.Schools - 1)];
         }
 
-        /// <summary>Homework set so far: one piece for each class attended, up to the course's number (all of a certificate's at once).</summary>
+        /// <summary>Homework set so far: by the counted classes attended (an excused class sets none and takes none away), up to the course's number (all of a certificate's at once).</summary>
         public static int HomeworkSet(Enrolment e)
         {
             CourseDef c = e.Def;
@@ -422,7 +498,8 @@ namespace RealLifeOverhaul.Careers
             {
                 return c.Homework;
             }
-            return Math.Min(c.Homework, c.Sessions > 0 ? e.Done * c.Homework / c.Sessions : 0);
+            int counted = Counted(e);
+            return counted <= 0 ? c.Homework : Math.Min(c.Homework, e.Done * c.Homework / counted);
         }
 
         /// <summary>True if a piece of homework can be done now: one is set and not done, or the classes are over and revision is still worth something.</summary>

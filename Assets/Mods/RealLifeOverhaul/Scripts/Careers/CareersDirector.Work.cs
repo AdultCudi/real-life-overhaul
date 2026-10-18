@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Careers
         private int _employersDay = -1;
         private long _hqSeen;   // the tech companies' headquarters as the posts were last moved to them
         private int _workReminded = -1, _interviewReminded = -1;
+        private int _interviewGoneDay = -1, _interviewGonePost = -1;   // the interview last looked at as its window shut, so the morning does not look again
 
         public bool WorkRunning => _workOn;
 
@@ -103,6 +104,13 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; i < w.Applications.Count; i++)
             {
                 Application a = w.Applications[i];
+                if (a.InterviewDay == day && ProRules.InterviewGone(a, day, minute) && !ProRules.InterviewGone(a, day, minute - 60) && !InInterview(a.Post.Id))
+                {
+                    // (the first hour its window has shut: looked at once)
+                    _interviewGoneDay = day;
+                    _interviewGonePost = a.Post.Id;
+                    InterviewMoved(a, day + 1);   // (decided as its window shuts; one not moved lapses the next morning, as before)
+                }
                 if (a.Stage == (int)ApplyStep.Interview && a.InterviewDay == day && a.InterviewHour == hour + 1 && _interviewReminded != a.Post.Id)
                 {
                     _interviewReminded = a.Post.Id;
@@ -113,6 +121,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         private bool Working => _sitting != null && (_sitting.Kind == SittingKind.Work || _sitting.Kind == SittingKind.Overtime);
+
+        private bool InInterview(int post) => _sitting != null && _sitting.Kind == SittingKind.Interview && _sitting.Of == post;
 
         // The last day of a registration with the recruitment office: one reminder, from the morning (ProRules.AgencyEnds).
         // The day it was sent for is kept in the save, so a reload on that day does not send it again.
@@ -156,8 +166,19 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>A working day over: worked or missed. A missed one is a warning; the third is the sack, as the game's own employer has it.</summary>
+        /// <summary>
+        /// A working day over: worked or missed. A missed one is a warning; the third is the sack, as the game's own employer
+        /// has it. Off sick, on leave, or a day from home the home's internet was down for an outage over its start window,
+        /// it is excused: no pay, no missed day, no warning.
+        /// </summary>
         private void SettleDay(Job j, int day)
+        {
+            ProRules.StartWindow(j.Def, day, out int from, out int to);
+            SettleDay(j, day, from, to);
+        }
+
+        /// <summary>A working day settled, with the home's internet read over the minutes given (its start window; the test passes now).</summary>
+        private void SettleDay(Job j, int day, int from, int to)
         {
             bool due = ProRules.WorkDay(j.Def, day) && day > j.SettledDay && day >= j.Hired;
             if (!due)
@@ -172,8 +193,13 @@ namespace RealLifeOverhaul.Careers
             }
             if (Excused(day) || j.OffUntil >= day)
             {
-                j.Absent = Math.Max(0, j.Absent - 1);
-                j.Due = Math.Max(0, j.Due - 1);
+                ProRules.Excuse(j);
+                return;
+            }
+            if (OutageExcused(j, day, from, to))
+            {
+                ProRules.Excuse(j);
+                BossSays(j, "reallife_work_text_outage", Data("employer", CareersText.Employer(j.Post.Employer)), NotificationType.Info, "reallife_work_note_outage", TabJob);
                 return;
             }
             j.Warnings++;
@@ -186,6 +212,58 @@ namespace RealLifeOverhaul.Careers
             }
             BossSays(j, "reallife_work_text_warning", Data("employer", CareersText.Employer(j.Post.Employer), "count", j.Warnings.ToString(), "most", WarningsToGo.ToString()),
                 NotificationType.Warning, "reallife_work_note_missed", TabJob);
+        }
+
+        /// <summary>
+        /// True if a day not worked is excused for the internet (ProRules.DayExcused): a day from home, with the home's
+        /// internet down for an outage over the minutes given. One question to Utilities on a day from home, none otherwise;
+        /// the self-check line says what was read and what was decided.
+        /// </summary>
+        private bool OutageExcused(Job j, int day, int from, int to)
+        {
+            if (!ProRules.FromHome((WorkMode)j.Work, day))
+            {
+                return false;
+            }
+            HomeNet net = CareersBridges.HomeNetBetween(from, to);
+            bool excused = ProRules.DayExcused((WorkMode)j.Work, day, net);
+            if (Verbose)
+            {
+                Logger?.Info("Careers check (working day from home gone by): " + j.Post.Employer + " on day " + day + ", not worked; the home's internet "
+                             + (net == HomeNet.Online ? "up" : "down (" + net + ")") + " over its start window; " + (excused ? "excused, no warning" : "missed, a warning")
+                             + "; wanted " + (StudyRules.Excuses(net) ? "excused" : "missed") + ": " + (excused == StudyRules.Excuses(net) ? "PASS" : "FAIL, the decision does not match the rule"));
+            }
+            return excused;
+        }
+
+        /// <summary>
+        /// An invitation's interview by video from home gone by unheld while the home's internet was down for an outage over
+        /// its window: moved, at the same hour, to the first weekday from <paramref name="first"/>, and said, rather than
+        /// lost. True if it was moved. One question to Utilities for a remote post, none otherwise.
+        /// </summary>
+        private bool InterviewMoved(Application a, int first)
+        {
+            if (a.Post.Work != (int)WorkMode.Remote)
+            {
+                return false;
+            }
+            ProRules.InterviewWindow(a, out int from, out int to);
+            HomeNet net = CareersBridges.HomeNetBetween(from, to);
+            bool moved = ProRules.InterviewExcused(a, net);
+            int was = a.InterviewDay;
+            if (moved)
+            {
+                ProRules.Reschedule(a, first);
+                Tell2(NotificationType.Info, "reallife_work_note_interview_moved", Data("employer", CareersText.Employer(a.Post.Employer), "day", CareersText.Day(a.InterviewDay),
+                    "hour", CareersText.Hour(a.InterviewHour)), TabApplications, CareerApp.ApplicationRow + a.Post.Id);
+            }
+            if (Verbose)
+            {
+                Logger?.Info("Careers check (video interview gone by): " + a.Post.Employer + " on day " + was + ", the home's internet " + (net == HomeNet.Online ? "up" : "down (" + net + ")")
+                             + " over its window; " + (moved ? "moved to day " + a.InterviewDay : "lost") + "; wanted " + (StudyRules.Excuses(net) ? "moved" : "lost") + ": "
+                             + (moved == StudyRules.Excuses(net) && (!moved || (a.InterviewDay > was && a.Lapse == a.InterviewDay)) ? "PASS" : "FAIL, the decision does not match the rule"));
+            }
+            return moved;
         }
 
         /// <summary>A day off sick is excused: the mod's own sickness, as the careers of the street count it.</summary>
@@ -714,7 +792,7 @@ namespace RealLifeOverhaul.Careers
                         }
                         break;
                     case ApplyStep.Interview:
-                        if (day > a.InterviewDay)
+                        if (day > a.InterviewDay && ((_interviewGoneDay == a.InterviewDay && _interviewGonePost == a.Post.Id) || !InterviewMoved(a, day)))   // (not looked at again if its hour did)
                         {
                             a.Stage = (int)ApplyStep.Lapsed;
                             Tell2(NotificationType.Warning, "reallife_work_note_interview_missed", Data("employer", employer), TabApplications, CareerApp.ApplicationRow + a.Post.Id);
@@ -759,14 +837,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>A day, or the next weekday after it.</summary>
-        private static int Weekday(int day)
-        {
-            while ((day - 1) % 7 >= 5)
-            {
-                day++;
-            }
-            return day;
-        }
+        private static int Weekday(int day) => ProRules.Weekday(day);
 
         private void Offer(Application a, int day)
         {
@@ -793,13 +864,13 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_work_why_no_interview";
             }
             int now = CareersGame.MinuteOfDay, at = a.InterviewHour * 60;
-            if (now < at - 30 || now > at + ProRules.InterviewLateMinutes)
+            if (now < at - ProRules.InterviewEarlyMinutes || now > at + ProRules.InterviewLateMinutes)
             {
                 return "reallife_work_why_interview_hour";
             }
             if (a.Post.Work == (int)WorkMode.Remote)
             {
-                return CareersGame.AtHome() ? (CareersBridges.HomeOnline() ? null : "reallife_study_why_no_internet") : "reallife_work_why_interview_home";
+                return CareersGame.AtHome() ? StudyRules.NoNetWhy(CareersBridges.HomeNetNow()) : "reallife_work_why_interview_home";
             }
             return WorkGame.AtWork(a.Post.Def, a.Post) ? null : "reallife_work_why_interview_place";
         }
@@ -1022,7 +1093,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (ProRules.FromHome((WorkMode)j.Work, day))
             {
-                return CareersGame.AtHome() ? (CareersBridges.HomeOnline() ? null : "reallife_study_why_no_internet") : "reallife_work_why_home_day";
+                return CareersGame.AtHome() ? StudyRules.NoNetWhy(CareersBridges.HomeNetNow()) : "reallife_work_why_home_day";
             }
             return WorkGame.AtWork(p, j.Post) ? null : "reallife_work_why_not_at_work";
         }

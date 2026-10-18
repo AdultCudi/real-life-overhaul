@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Careers
         private CampusApp _campusView;
         private bool _campusGaveUp;
         private int _reminded = -1;
+        private int _excuseTold = -1;   // the class (day * 100 + course) whose excuse for an outage has been told, so it is told once
 
         public bool StudyRunning => _studyOn;
 
@@ -133,7 +134,7 @@ namespace RealLifeOverhaul.Careers
                 StudyMode mode = (StudyMode)e.Mode;
                 if (StudyRules.Gone(c, mode, day, day, minute) && e.SettledDay < day && day >= e.Start && !InClass(c.Id))
                 {
-                    changed |= StudyRules.Miss(e, day);
+                    changed |= GoneBy(e, day);
                     changed |= AfterClass(e, day, false);
                 }
                 ClassDue(e, day, hour);   // a class beginning now: the log line, and a notice if it cannot be joined where the player is
@@ -153,6 +154,53 @@ namespace RealLifeOverhaul.Careers
             {
                 Changed();
             }
+        }
+
+        /// <summary>
+        /// A day's class gone by without the player: excused if it is held online from home and the home's internet was
+        /// down for an outage at any minute it could be joined in (StudyRules.ClassExcused), else missed. Decided once, when
+        /// its window has shut, from the connection's state then; the Campus app and a notice say it was excused. True if
+        /// the class was counted either way. One question to Utilities for an online class, nothing for the rest.
+        /// </summary>
+        private bool GoneBy(Enrolment e, int day)
+        {
+            CourseDef c = e.Def;
+            StudyMode mode = (StudyMode)e.Mode;
+            if (!ClassPlayRules.HeldOnline(c, mode) || !StudyRules.JoinWindow(c, mode, day, out int from, out int to))
+            {
+                return StudyRules.Miss(e, day);
+            }
+            return GoneBy(e, day, from, to);
+        }
+
+        /// <summary>An online class gone by, with the home's internet read over the minutes given (its window; the test passes now).</summary>
+        private bool GoneBy(Enrolment e, int day, int from, int to)
+        {
+            CourseDef c = e.Def;
+            StudyMode mode = (StudyMode)e.Mode;
+            HomeNet net = CareersBridges.HomeNetBetween(from, to);
+            bool excused = StudyRules.ClassExcused(c, mode, net);
+            int done = e.Done, before = e.Excused;
+            bool counted = excused ? StudyRules.Excuse(e, day) : StudyRules.Miss(e, day);
+            if (!counted)
+            {
+                return false;
+            }
+            int key = day * 100 + c.Id;
+            if (excused && _excuseTold != key)
+            {
+                _excuseTold = key;
+                Tell(NotificationType.Info, "reallife_study_note_class_excused", Data("course", CareersText.Course(c.Id), "day", CareersText.Day(day)), TabStudying, CampusApp.CourseRow + c.Id);
+            }
+            if (Verbose)
+            {
+                bool right = excused == StudyRules.Excuses(net) && e.Done == done && e.Excused == before + (excused ? 1 : 0)
+                             && StudyRules.Counted(e) == c.Sessions - e.Excused;
+                Logger?.Info("Careers check (online class gone by): " + c.Key + " on day " + day + ", the home's internet " + (net == HomeNet.Online ? "up" : "down (" + net + ")")
+                             + " over its window; " + (excused ? "excused, left out of attendance (" : "missed (") + e.Done + " attended of " + StudyRules.Counted(e) + " counted, "
+                             + e.Excused + " excused); wanted " + (StudyRules.Excuses(net) ? "excused" : "missed") + ": " + (right ? "PASS" : "FAIL, the count does not match the rule"));
+            }
+            return true;
         }
 
         private bool InClass(int course) => _sitting != null && _sitting.Kind == SittingKind.Class && _sitting.Of == course;
@@ -179,7 +227,7 @@ namespace RealLifeOverhaul.Careers
                     int from = Math.Max(e.Start, Math.Max(e.SettledDay + 1, last > 0 ? last - 14 : day - 14));
                     for (int d = from; d < day; d++)
                     {
-                        if (StudyRules.On(StudyRules.Days(c, (StudyMode)e.Mode), d) && StudyRules.Miss(e, d))
+                        if (StudyRules.On(StudyRules.Days(c, (StudyMode)e.Mode), d) && GoneBy(e, d))
                         {
                             AfterClass(e, d, false);
                         }
@@ -373,13 +421,15 @@ namespace RealLifeOverhaul.Careers
         private StudyHere Here()
         {
             bool home = CareersGame.AtHome();
+            HomeNet net = home ? CareersBridges.HomeNetNow() : HomeNet.Online;
             return new StudyHere
             {
                 School = CareersGame.InSchool(),
                 Hospital = CareersGame.InHospital(),
                 University = AtUniversity(),
                 Home = home,
-                Online = home && CareersBridges.HomeOnline()
+                Online = home && net == HomeNet.Online,
+                Net = net
             };
         }
 
@@ -394,7 +444,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (CareersGame.AtHome())
             {
-                return c.Campus == Campus.Online && !CareersBridges.HomeOnline() ? "reallife_study_why_no_internet" : null;
+                return c.Campus == Campus.Online ? StudyRules.NoNetWhy(CareersBridges.HomeNetNow()) : null;   // (homework has no hour: nothing to excuse)
             }
             return c.Timetabled && mode != StudyMode.Distance && AtClass(c, mode) == null ? null : "reallife_study_why_not_desk";
         }

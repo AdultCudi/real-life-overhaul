@@ -570,9 +570,10 @@ namespace RealLifeOverhaul.Careers
                 {
                     return DeskRules.Label(state) ?? "reallife_work_why_not_hours";
                 }
-                if (home && !CareersBridges.HomeOnline())
+                string offline = home ? StudyRules.NoNetWhy(CareersBridges.HomeNetNow()) : null;
+                if (offline != null)
                 {
-                    return "reallife_study_why_no_internet";
+                    return offline;
                 }
                 ClockIn(j, day, late);
                 sitting = DaySitting(j, minutes);

@@ -623,5 +623,64 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", ex);
             }
         }
+
+        /// <summary>
+        /// The test button: with the home's internet down for an outage now (Utilities' "Internet: an outage now"), today's
+        /// class of the first online course under way (the coding bootcamp, enrolled on free, if there is none) and today's
+        /// working day from home, if the job has one not yet worked, go by now as if their windows had just shut, read over
+        /// this minute: each is excused, as the real ones are, and says so where they do.
+        /// </summary>
+        public void TestOutage()
+        {
+            if (!TestReady(out _))
+            {
+                return;
+            }
+            try
+            {
+                int day = Save.Day, now = day * 24 * 60 + CareersGame.MinuteOfDay;
+                HomeNet net = CareersBridges.HomeNetBetween(now, now);
+                if (net != HomeNet.Outage)
+                {
+                    Logger?.Info("Careers test: an outage's excuse not tried: the home's internet is " + (net == HomeNet.Online ? "up" : "down (" + net + ")") + ", not in an outage.");
+                    Notifications.Show(NotificationType.Warning, "reallife_study_test_outage_none", null, 8f);
+                    return;
+                }
+                Enrolment e = null;
+                for (int i = 0; i < _study.Courses.Count && e == null; i++)
+                {
+                    Enrolment o = _study.Courses[i];
+                    e = o.Stage == (int)EnrolStage.Studying && o.Def != null && o.Def.Timetabled && ClassPlayRules.HeldOnline(o.Def, (StudyMode)o.Mode) && !InClass(o.Course) ? o : null;
+                }
+                if (e == null)
+                {
+                    e = new Enrolment { Course = StudyCatalogue.CodingBootcamp, Start = day, Instalments = 1 };
+                    _study.Courses.Add(e);
+                }
+                e.SettledDay = Math.Min(e.SettledDay, day - 1);
+                if (GoneBy(e, day, now, now))
+                {
+                    AfterClass(e, day, false);
+                }
+                Job j = _workOn ? _study.Work.Job : null;
+                bool workDay = j != null && ProRules.WorkDay(j.Def, day) && ProRules.FromHome((WorkMode)j.Work, day) && day >= j.Hired && j.SettledDay < day
+                               && !(j.TodayDay == day && j.TodayMinutes > 0) && !Working;
+                if (workDay)
+                {
+                    SettleDay(j, day, now, now);
+                }
+                else
+                {
+                    Notifications.Show(NotificationType.Info, "reallife_study_test_outage_no_day", null, 8f);
+                }
+                Logger?.Info("Careers test: in the outage, today's class of " + e.Def.Key + " went by (" + e.Excused + " excused in all)"
+                             + (workDay ? " and today's working day from home at " + j.Post.Employer + " was settled." : "; no working day from home today to let go by."));
+                Changed();
+            }
+            catch (Exception ex)
+            {
+                Fault("a test", ex);
+            }
+        }
     }
 }

@@ -112,6 +112,7 @@ internal static partial class Program
         Utilities();
         SpecialNames();
         StudyPrompts();
+        OutageExcuses();   // what the home's internet down for an outage excuses: an online class, a day from home, a video interview (OutageExcuseChecks.cs)
         NextClasses();
         Helpers();
         CampusRulesChecks();

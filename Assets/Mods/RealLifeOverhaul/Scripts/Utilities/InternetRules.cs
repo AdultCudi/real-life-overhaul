@@ -3,6 +3,16 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Utilities
 {
+    /// <summary>Why a connection was down over a span, or that it was up (<see cref="InternetRules.Down"/>). Never saved.</summary>
+    public enum NetDown
+    {
+        Up = 0,
+        Outage = 1,       // the provider's outage: not the player's doing
+        NoPlan = 2,       // no plan at the place, or one closed
+        Installing = 3,   // bought, not yet connected
+        Cut = 4           // cut off for a bill not paid
+    }
+
     /// <summary>
     /// The rules of the city's internet (InternetCatalogue), game-free and checked by EconomyCheck: where a provider
     /// reaches, what a plan costs this month, a plan bought and installed, the fee for leaving a contract early, the
@@ -117,6 +127,40 @@ namespace RealLifeOverhaul.Utilities
         public static bool InOutage(Account a, int hour)
         {
             return a != null && a.OutageUntil > a.OutageFrom && hour >= a.OutageFrom && hour < a.OutageUntil;
+        }
+
+        /// <summary>
+        /// True if an outage was on at any minute from <paramref name="fromMinute"/> to <paramref name="toMinute"/>
+        /// (minutes from the save's first day: day * 1440 + minute). It reads the connection's last outage, which stands
+        /// until the provider's next one is drawn on a later morning, so a span of the same day is always answered.
+        /// </summary>
+        public static bool OutageBetween(Account a, int fromMinute, int toMinute)
+        {
+            if (a == null || a.OutageUntil <= a.OutageFrom)
+            {
+                return false;
+            }
+            long from = (long)a.OutageFrom * 60, until = (long)a.OutageUntil * 60;
+            return toMinute >= from && fromMinute < until;
+        }
+
+        /// <summary>
+        /// Why a place's internet was down over some minutes, or that it was up: what other features are told (Wiring).
+        /// Only <see cref="NetDown.Outage"/> is the provider's doing; the rest are the player's own.
+        /// </summary>
+        public static NetDown Down(Account a, int fromMinute, int toMinute)
+        {
+            if (a == null || a.State == SupplyState.Closed)
+            {
+                return NetDown.NoPlan;
+            }
+            switch (a.State)
+            {
+                case SupplyState.Pending: return NetDown.Installing;
+                case SupplyState.Cut: return NetDown.Cut;
+                case SupplyState.Active: return OutageBetween(a, fromMinute, toMinute) ? NetDown.Outage : NetDown.Up;
+                default: return NetDown.NoPlan;
+            }
         }
 
         /// <summary>Whether a provider fails on a day, and when: from an hour of the day for so many hours (half as long on a business plan).</summary>
