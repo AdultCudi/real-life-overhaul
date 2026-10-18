@@ -28,6 +28,12 @@ namespace RealLifeOverhaul
         private const float PlinthMost = 0.3f;         // below the waist the wall may stand this much proud (a plinth, a sill) and no more
         private const int RingAttempts = 8;
 
+        // Metres: table, stools and approaches, including a 0.35 m pavement snap and 0.3 m of room for a person.
+        // The width also covers the optional onlooker 1.3 m to either side after the same snap and clearance.
+        private static readonly Vector3 ChessHalf = new Vector3(2f, 1.5f, 1.85f);
+        private static readonly Collider[] ChessOverlaps = new Collider[64];
+        private static readonly int CrosswalkLayer = LayerMask.NameToLayer("Crosswalk");
+
         /// <summary>Why places were refused since the counts were last cleared: for saying in the log why a test found no room.</summary>
         public static int OffPavement, Blocked, NearDoor, NoWall, Uneven;
 
@@ -156,6 +162,33 @@ namespace RealLifeOverhaul
         public static bool Stand(Vector3 place, float room, out Vector3 spot)
         {
             return OnPavement(place, out spot) && Clear(spot, room);
+        }
+
+        /// <summary>
+        /// True if the whole chess setup misses crossings, including its approaches and possible onlookers.
+        /// One non-allocating box query when choosing a place; independent of the traffic features and the lights.
+        /// </summary>
+        public static bool ChessClear(Vector3 table, Vector3 along)
+        {
+            int count = Physics.OverlapBoxNonAlloc(table + Vector3.up * 0.5f, ChessHalf, ChessOverlaps,
+                Quaternion.LookRotation(along), Physics.AllLayers, QueryTriggerInteraction.Collide);
+            bool clear = count < ChessOverlaps.Length;   // a full buffer may hide a crossing: refuse this candidate
+            for (int i = 0; i < count; i++)
+            {
+                Collider hit = ChessOverlaps[i];
+                if (hit != null && (hit.gameObject.layer == CrosswalkLayer || hit.CompareTag("Crosswalk")))
+                {
+                    clear = false;
+                }
+                ChessOverlaps[i] = null;
+            }
+            if (Meta.Dev.Verbose)
+            {
+                CityLifeDirector.Logger?.Info(clear
+                    ? "Chess check (crossing clearance): the whole setup misses crossings: PASS."
+                    : "Chess check (crossing clearance): candidate refused (crossing overlap or full query buffer): FAIL.");
+            }
+            return clear;
         }
 
         /// <summary>
