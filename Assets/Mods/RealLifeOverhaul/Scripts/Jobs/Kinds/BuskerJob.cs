@@ -180,7 +180,8 @@ namespace RealLifeOverhaul
             Figures(now);
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: busker: the pitch is " + JobSpots.Flat(_pitch, Ctx.PlayerPosition).ToString("F1", CultureInfo.InvariantCulture) + " m from the player " + (atWall ? "with its back to a wall" : "on open pavement")
+                Ctx.Logger?.Info("Jobs: busker: the pitch is " + JobSpots.Flat(_pitch, Ctx.PlayerPosition).ToString("F1", CultureInfo.InvariantCulture) + " m from the player "
+                                 + (atWall ? "with its back to a wall" : "on open pavement")
                                  + " (the zone that takes the player is " + PitchReach.ToString("F1", CultureInfo.InvariantCulture) + " m round it); " + _songsWanted
                                  + " songs; shown in the game's own interface: job panel "
                                  + (_figures.Shown ? "copied" : "NOT copied (the panel over the pitch is all there is)") + ", the game's guider points at the place.");

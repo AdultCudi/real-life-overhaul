@@ -167,7 +167,8 @@ namespace RealLifeOverhaul
                                  + queueFactor.ToString("F1", CultureInfo.InvariantCulture) + " with " + waiting + " at the cart or on the way, recent calls "
                                  + heatBefore.ToString("F1", CultureInfo.InvariantCulture) + "), annoyed " + annoy.ToString("F2", CultureInfo.InvariantCulture)
                                  + ". Within " + HawkWithin.ToString("F0") + " m: " + near + (near > 0 ? " (" + _text + ")" : string.Empty) + ". Customers gained: " + gained
-                                 + " (the shift is now " + _customers + ")" + (warned ? "; an officer's warning " + _hawkWarnings + " of 2" + (_hawkBanned ? ": no more calling out this shift" : string.Empty) : string.Empty)
+                                 + " (the shift is now " + _customers + ")"
+                                 + (warned ? "; an officer's warning " + _hawkWarnings + " of 2" + (_hawkBanned ? ": no more calling out this shift" : string.Empty) : string.Empty)
                                  + "; next call in " + HawkCooldown.ToString("F0") + " s.");
             }
         }

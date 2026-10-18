@@ -394,7 +394,8 @@ namespace RealLifeOverhaul
                 int back = _dirt.Redo(RedoShare, RedoStrength);
                 ReadClean();
                 Ctx.Say("reallife_gig_redo_clean", 7f);
-                Ctx.Logger?.Info("Jobs: cleaner event: a difficult client points out a missed patch: " + back + " cells are dirty again, the floor reads " + Mathf.FloorToInt(_clean + 0.001f) + "% clean.");
+                Ctx.Logger?.Info("Jobs: cleaner event: a difficult client points out a missed patch: " + back + " cells are dirty again, the floor reads "
+                                 + Mathf.FloorToInt(_clean + 0.001f) + "% clean.");
                 return;
             }
             if (_clean >= Spotless - 0.001f)

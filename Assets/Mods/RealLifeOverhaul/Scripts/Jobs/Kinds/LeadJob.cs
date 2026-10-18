@@ -130,7 +130,8 @@ namespace RealLifeOverhaul
             Ctx.Logger?.Info("Jobs: lead shift for " + _employer.Id + ", " + (_staff[0] != null ? 1 : 0) + "+" + (_staff[1] != null ? 1 : 0) + " of the team out.");
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: lead: " + _callsTotal + " calls to make; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panels over the team and the player are all there is)")
+                Ctx.Logger?.Info("Jobs: lead: " + _callsTotal + " calls to make; shown in the game's own interface: job panel "
+                                 + (_figures.Shown ? "copied" : "NOT copied (the panels over the team and the player are all there is)")
                                  + ", no clock offered (every call is a decision).");
             }
             return true;
@@ -294,7 +295,8 @@ namespace RealLifeOverhaul
                     else
                     {
                         int left = Mathf.Max(0, Mathf.CeilToInt(_stepEnd - now));
-                        Up(Ctx.Player.transform, 2.1f, _incidentWords[Mathf.Min(_incident, Incidents - 1)], _panelTime, ShiftFigures.Clock(left), left <= 8 ? WorldPanel.Red() : left <= 15 ? WorldPanel.Yellow() : _panel.White,
+                        Up(Ctx.Player.transform, 2.1f, _incidentWords[Mathf.Min(_incident, Incidents - 1)], _panelTime, ShiftFigures.Clock(left),
+                            left <= 8 ? WorldPanel.Red() : left <= 15 ? WorldPanel.Yellow() : _panel.White,
                             5000 + left * 8 + _deckAt, _incidentKeys);
                     }
                     break;

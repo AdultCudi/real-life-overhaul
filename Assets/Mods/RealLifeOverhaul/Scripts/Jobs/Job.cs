@@ -294,7 +294,8 @@ namespace RealLifeOverhaul
             }
             _eventTips += tip;
             JobText.Toast(UI.Notification.NotificationType.Success, "reallife_gig_tipper", "amount", JobText.Money(tip), 8f);
-            Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: a big tipper at unit " + done + " (the offer drew unit " + offer.TipperAt + ") tips " + tip + " (" + offer.TipperUnits.ToString("F2", CultureInfo.InvariantCulture) + " units of " + unitMoney + ").");
+            Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: a big tipper at unit " + done + " (the offer drew unit " + offer.TipperAt + ") tips " + tip
+                             + " (" + offer.TipperUnits.ToString("F2", CultureInfo.InvariantCulture) + " units of " + unitMoney + ").");
         }
 
         /// <summary>Announces the offer's speed bonus, if it drew one; <paramref name="allowed"/> is the real seconds for the whole shift.</summary>
@@ -307,7 +308,8 @@ namespace RealLifeOverhaul
             }
             _speedBy = now + allowed * offer.SpeedShare;
             int bonus = Mathf.RoundToInt(offer.SpeedUnits * UnitPay());
-            JobText.Toast(UI.Notification.NotificationType.Info, "reallife_gig_speed_offer", "amount", JobText.Money(bonus), "time", ShiftFigures.Clock(Mathf.RoundToInt(allowed * offer.SpeedShare)), 10f);
+            JobText.Toast(UI.Notification.NotificationType.Info, "reallife_gig_speed_offer", "amount", JobText.Money(bonus), "time",
+                ShiftFigures.Clock(Mathf.RoundToInt(allowed * offer.SpeedShare)), 10f);
             Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: the client adds " + bonus + " (" + offer.SpeedUnits.ToString("F2", CultureInfo.InvariantCulture) + " units) if the shift is done within "
                              + Mathf.RoundToInt(allowed * offer.SpeedShare) + " s of " + Mathf.RoundToInt(allowed) + " s.");
         }

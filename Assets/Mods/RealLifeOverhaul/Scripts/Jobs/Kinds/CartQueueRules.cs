@@ -32,11 +32,7 @@ namespace RealLifeOverhaul
         public const float NextSoon = 1.5f;          // seconds after one left for nothing of their own doing before the next sets off
         public const int RetriesMost = 4;            // customers in a row who could not get to the cart before the shift is one shorter
 
-        /// <summary>
-        /// A customer on their way to the place behind the counter or to the counter. <paramref name="best"/> and
-        /// <paramref name="bestAt"/> are the nearest they have been and when: set them to the first distance and the time they
-        /// set off, then leave them to this.
-        /// </summary>
+        /// <summary>A customer on their way; <paramref name="best"/> and <paramref name="bestAt"/> start at the first distance and time, then are kept here.</summary>
         /// <param name="held">Still the cart's: on the street, in use, the same lease as when they set off.</param>
         /// <param name="routeKnown">The route asked for has been worked out.</param>
         /// <param name="routeWhole">...and it reaches their place.</param>

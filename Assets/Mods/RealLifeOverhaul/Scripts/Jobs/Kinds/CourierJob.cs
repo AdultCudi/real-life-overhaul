@@ -135,8 +135,10 @@ namespace RealLifeOverhaul
             Ctx.Logger?.Info("Jobs: courier round of " + _count + " from " + _depot.Name + ", " + _route.ToString("F0") + " m, " + _window.ToString("F0") + " s.");
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: courier: the depot is " + JobSpots.Flat(Ctx.PlayerPosition, _depot.Front).ToString("F0") + " m from the player, " + (_hired ? "in a hired van" : "in the player's own car")
-                                 + "; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panels over the places are all there is)") + ", no clock offered (the car would have to be moved).");
+                Ctx.Logger?.Info("Jobs: courier: the depot is " + JobSpots.Flat(Ctx.PlayerPosition, _depot.Front).ToString("F0") + " m from the player, "
+                                 + (_hired ? "in a hired van" : "in the player's own car")
+                                 + "; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panels over the places are all there is)")
+                                 + ", no clock offered (the car would have to be moved).");
             }
             return true;
         }
@@ -480,7 +482,8 @@ namespace RealLifeOverhaul
             UnitDone(_delivered, UnitPay());   // the round's big tipper, if the offer drew one
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: courier: parcel " + _delivered + " of " + _count + " " + (toSomeone && _recipient != null ? "handed to someone at the door" : "left at the door") + " (" + _drops[_target].Spot.Name + "); "
+                Ctx.Logger?.Info("Jobs: courier: parcel " + _delivered + " of " + _count + " " + (toSomeone && _recipient != null ? "handed to someone at the door" : "left at the door")
+                                 + " (" + _drops[_target].Spot.Name + "); "
                                  + Mathf.Max(0, Mathf.CeilToInt(_endsAt - now)) + " s of the round left.");
             }
             Ctx.TurnPlayer(toSomeone && _recipient != null ? _recipient.Position : _drops[_target].Spot.Door);

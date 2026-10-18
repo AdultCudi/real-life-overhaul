@@ -6,8 +6,8 @@ using Entities;
 using Helpers;
 using UI.Guiders;
 using UI.Notification;
-using Vehicles.VehicleTypes;
 using UnityEngine;
+using Vehicles.VehicleTypes;
 
 namespace RealLifeOverhaul
 {

@@ -46,7 +46,8 @@ namespace RealLifeOverhaul
                     _sentBack = true;
                     _wants = (_wants + 1 + Random.Range(0, JobKeys.Choices - 1)) % JobKeys.Choices;   // they now want another
                     Ctx.Say("reallife_gig_redo_cart", 6f);
-                    Ctx.Logger?.Info("Jobs: vendor event: a difficult customer sends the drink back at customer " + (_served + 1) + " (the offer drew " + Ctx.Offer.RedoAt + "); it is made again, and the patience drops by " + WrongCost.ToString("F0") + " s.");
+                    Ctx.Logger?.Info("Jobs: vendor event: a difficult customer sends the drink back at customer " + (_served + 1) + " (the offer drew " + Ctx.Offer.RedoAt
+                                     + "); it is made again, and the patience drops by " + WrongCost.ToString("F0") + " s.");
                     return;
                 }
                 Ctx.Say(JobText.Pick(Wrong, ref _line), 4f);

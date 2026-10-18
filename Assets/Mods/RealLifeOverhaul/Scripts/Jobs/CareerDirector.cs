@@ -6,8 +6,8 @@ using BAModAPI;
 using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
-using Vehicles.VehicleTypes;
 using UnityEngine;
+using Vehicles.VehicleTypes;
 
 namespace RealLifeOverhaul
 {
@@ -131,7 +131,8 @@ namespace RealLifeOverhaul
             }
             if (Meta.Dev.Verbose)
             {
-                _logger?.Info("Careers check (office): '" + name + "' at " + place.ToString("F1", CultureInfo.InvariantCulture) + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked (the marker is on a job or an outing): FAIL") + ".");
+                _logger?.Info("Careers check (office): '" + name + "' at " + place.ToString("F1", CultureInfo.InvariantCulture) + " is "
+                              + (shown ? "on the game's destination marker: PASS" : "NOT marked (the marker is on a job or an outing): FAIL") + ".");
             }
             return shown;
         }
