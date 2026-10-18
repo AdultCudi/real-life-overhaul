@@ -158,6 +158,7 @@ namespace RealLifeOverhaul
         private bool Dress()
         {
             using var hotSpot = HotSpots.Time(HotDress);
+            Driver.Lit = true;   // its lights are on wherever it drives: an accident's officer on traffic waves it through
             if (Kind == UnitKind.Ambulance)
             {
                 _kit = TrafficEffects.CreateFlasher(Car, "RealLifeOverhaul Emergency Lights", TrafficEffects.BeaconHeight(Car),
@@ -357,6 +358,7 @@ namespace RealLifeOverhaul
 
         private void Clear()
         {
+            Driver.Lit = false;
             Car = null;
             _kit = null;
             _body = null;

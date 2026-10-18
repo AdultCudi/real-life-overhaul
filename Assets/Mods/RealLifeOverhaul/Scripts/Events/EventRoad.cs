@@ -584,6 +584,7 @@ namespace RealLifeOverhaul.Events
                 return false;
             }
             IsVan = van;
+            _unit.Driver.Lit = true;   // lit wherever it drives (its unit puts that out when it lets the truck go)
             try
             {
                 const float flash = 0.16f;

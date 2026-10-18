@@ -217,6 +217,63 @@ namespace RealLifeOverhaul
         /// <summary>Where the officer directing traffic stands: just outside the tape, facing what is coming.</summary>
         public Vector3 DirectorPost { get; private set; }
 
+        /// <summary>Where the officer on the traffic post stands while a unit passes by the open lane: out of it, before the near barriers.</summary>
+        public Vector3 PassPost { get; private set; }
+
+        /// <summary>...and, once the tape is down, beside the wrecks' near end on the open lane's side: clear of a unit pulling out round them.</summary>
+        public Vector3 PassBeside { get; private set; }
+
+        /// <summary>
+        /// For a vehicle near the scene: metres from its nose to the traffic post along the way it faces, metres from its middle
+        /// to the nearest lane left open beside the scene, and how squarely it faces along the road (1: dead along). False if
+        /// the scene was never measured or no lane is open beside it. A few multiplications.
+        /// </summary>
+        public bool ToPost(Vector3 middle, Vector3 facing, float halfLength, out float toPost, out float fromLane, out float squarely)
+        {
+            toPost = float.MaxValue;
+            fromLane = float.MaxValue;
+            squarely = 0f;
+            if (!Surveyed || _openAcross.Count == 0)
+            {
+                return false;
+            }
+            Vector3 offset = middle - _scene;
+            float along = Vector3.Dot(offset, _forward);
+            float across = Vector3.Dot(offset, _right);
+            for (int i = 0; i < _openAcross.Count; i++)
+            {
+                fromLane = Mathf.Min(fromLane, Mathf.Abs(across - _openAcross[i]));
+            }
+            facing.y = 0f;
+            float way = facing.sqrMagnitude > 0.01f ? Vector3.Dot(facing.normalized, _forward) : 0f;
+            squarely = Mathf.Abs(way);
+            float post = Vector3.Dot(DirectorPost - _scene, _forward);
+            toPost = (post - along) * (way >= 0f ? 1f : -1f) - halfLength;
+            return true;
+        }
+
+        /// <summary>How far across the road (in the scene's frame) the open lane nearest the traffic post runs; false if none is open.</summary>
+        public bool OpenLane(out float across)
+        {
+            across = 0f;
+            if (!Surveyed || _openAcross.Count == 0)
+            {
+                return false;
+            }
+            float post = Vector3.Dot(DirectorPost - _scene, _right);
+            float best = float.MaxValue;
+            for (int i = 0; i < _openAcross.Count; i++)
+            {
+                float off = Mathf.Abs(_openAcross[i] - post);
+                if (off < best)
+                {
+                    best = off;
+                    across = _openAcross[i];
+                }
+            }
+            return true;
+        }
+
         /// <summary>Outside the tape by the near entry, on the pavement if there is one: where bystanders are sent to wait.</summary>
         public Vector3 Kerbside { get; private set; }
 

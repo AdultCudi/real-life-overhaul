@@ -305,6 +305,7 @@ namespace RealLifeOverhaul
                 TickChase(now);
             }
             _people.Tick(now);
+            WatchWave(now);   // the officer on traffic waves a unit with its lights on through the open lane
             if (!_seatsEmptied && _people.DriversStepped)
             {
                 _seatsEmptied = true;
@@ -604,6 +605,7 @@ namespace RealLifeOverhaul
             SceneObstacles.Clear();
 
             _people.Clear();
+            EndWave();
             _arrest.Clear();
             CollectCasualty();   // nobody is left lying in the road once the scene is over
             _casualtyScene = false;

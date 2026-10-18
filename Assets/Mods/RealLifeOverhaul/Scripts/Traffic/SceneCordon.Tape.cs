@@ -80,6 +80,13 @@ namespace RealLifeOverhaul
             Vector3 duty = Point(_back - 1.6f, _entry > 0f ? _left - 0.8f : _rightEdge + 0.8f);
             DirectorPost = StreetSpots.OnRoad(duty, 2f, out Vector3 stand) ? stand : duty;
             Oncoming = DirectorPost - _forward * 20f;
+            // ...and, for when a response unit passes by that lane: the same end, well in from the lane (no further than the
+            // middle); and beside the wrecks' near end on that side, for once the tape is down and a unit pulls out round them.
+            float step = Mathf.Min(1.6f, (_rightEdge - _left) * 0.5f);
+            Vector3 inward = Point(_back - 1.6f, _entry > 0f ? _left + step : _rightEdge - step);
+            PassPost = StreetSpots.OnRoad(inward, 1.5f, out Vector3 beside) ? beside : inward;
+            Vector3 byWrecks = Point(_alongMin + 0.5f, _entry > 0f ? _left + 0.35f : _rightEdge - 0.35f);
+            PassBeside = StreetSpots.OnRoad(byWrecks, 1f, out Vector3 wreckSide) ? wreckSide : byWrecks;
 
             // Where people with no business inside are sent: the pavement by the near entry, else the road just outside it.
             Vector3 aside = Point(_back - 2.5f, (_entry > 0f ? _rightEdge : _left) + _entry * 2.5f);

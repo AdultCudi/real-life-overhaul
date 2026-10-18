@@ -197,6 +197,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_solid_late", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Late))
                 .AddButton("reallife_test_solid_crowd", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Crowd))
                 .AddButton("reallife_test_solid_senses", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Senses))
+                .AddButton("reallife_test_wave_through", TrafficAccidents.TestWaveThrough)
                 .AddSplitter()
                 .AddHeader("reallife_crime_header")
                 .AddToggle(Settings.StreetCrimeId, "reallife_crime_enabled", Settings.StreetCrime,

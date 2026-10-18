@@ -261,7 +261,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("accident_hours_most", () => AccidentHours(10))
                 .Preset(Settings.CrashConsequencesId, 0, 1, 1)
                 .Preset(Settings.PolicePursuitId, 0, 1, 1)
-                .Test("reallife_test_accident", "reallife_test_accident_minor", "reallife_test_accident_moderate", "reallife_test_accident_severe", "reallife_test_tow_truck")
+                .Test("reallife_test_accident", "reallife_test_accident_minor", "reallife_test_accident_moderate", "reallife_test_accident_severe", "reallife_test_tow_truck",
+                    "reallife_test_wave_through")
                 .Fact("fine_caught", () => Guide.Money(PolicePursuit.CaughtFine))
                 .Fact("fine_escaped", () => Guide.Money(PolicePursuit.EscapedFine))
                 .Fact("fine_injury", () => Guide.Money(PolicePursuit.InjuryFine))
