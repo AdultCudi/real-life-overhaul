@@ -469,9 +469,9 @@ namespace RealLifeOverhaul.Economy
                 controller.UpdatePoi();
             }
             UIs ui = InstanceBehavior<UIs>.Instance;
-            if (ui != null && ui.mapFilters != null)
+            if (ui != null)
             {
-                ui.mapFilters.ApplyFilters();
+                MapPlaces.Refilter(ui.mapFilters);
             }
             RealEstateHelper.AddNoHomeModifierIfNeeded();
             return true;

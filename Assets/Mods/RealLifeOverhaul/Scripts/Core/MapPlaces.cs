@@ -589,9 +589,9 @@ namespace RealLifeOverhaul
             {
                 ByBuilding.Remove(place.Building);
             }
-            if (Lights.Remove(place) && CityMap.IsOpen && _filters != null)
+            if (Lights.Remove(place))
             {
-                _filters.ApplyFilters();   // the game looks at its buildings again, and puts the light out
+                Refilter(_filters);   // the game looks at its buildings again, and puts the light out
             }
             if (!ReferenceEquals(place.Marker, null) && !GameManager.isCitySceneBeingUnloaded)
             {
@@ -897,11 +897,27 @@ namespace RealLifeOverhaul
             }
             Remember(category, on);
             Apply(category);
+            Refilter(_filters);   // (what the game's own rows do when ticked: its buildings are looked at again)
+        }
+
+        /// <summary>
+        /// The game's map filters applied again (CityMapFilters.ApplyFilters), as the game does after a change to its
+        /// buildings, while the open map is there to apply them to. ApplyFilters reads the map through CityManager, which
+        /// is gone while the city unloads and null while the game quits, when features take their places off the map
+        /// from OnDestroy. A fault in it is logged and goes no further. Every call of the mod's comes here.
+        /// </summary>
+        internal static void Refilter(CityMapFilters filters)
+        {
             try
             {
-                if (_filters != null)
+                if (GameManager.isCitySceneBeingUnloaded || filters == null || !CityMap.IsOpen)
                 {
-                    _filters.ApplyFilters();   // (what the game's own rows do when ticked: its buildings are looked at again)
+                    return;
+                }
+                CityManager city = InstanceBehavior<CityManager>.Instance;
+                if (city != null && city.cityMap != null)
+                {
+                    filters.ApplyFilters();
                 }
             }
             catch (Exception e)
