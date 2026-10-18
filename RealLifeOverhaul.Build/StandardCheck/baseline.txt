@@ -555,8 +555,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareRules.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareStore.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareText.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareTextsMap.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/OutingScene.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialScene.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.Talk.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetLines.cs	7
