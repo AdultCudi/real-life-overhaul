@@ -513,10 +513,13 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTexts = v)
                 .AddSlider(Settings.SocialTextsMaxId, "reallife_social_texts_max", 1, 6, Settings.SocialTextsMax,
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
+                .AddToggle(Settings.SocialComposerId, "reallife_social_composer", Settings.SocialComposer,
+                    v => Settings.SocialComposer = v)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
                 .AddButton("reallife_social_test_person", () => SocialDirector.Instance?.TestPerson())
                 .AddButton("reallife_social_test_advance", () => SocialDirector.Instance?.TestAdvance())
                 .AddButton("reallife_social_test_call", () => SocialDirector.Instance?.TestCall())
+                .AddButton("reallife_social_test_composer", () => SocialDirector.Instance?.TestComposer())
                 .AddButton("reallife_social_test_text", () => SocialDirector.Instance?.TestText())
                 .AddButton("reallife_social_test_favour", () => SocialDirector.Instance?.TestFavour())
                 .AddButton("reallife_social_test_dropby", () => SocialDirector.Instance?.TestDropBy())

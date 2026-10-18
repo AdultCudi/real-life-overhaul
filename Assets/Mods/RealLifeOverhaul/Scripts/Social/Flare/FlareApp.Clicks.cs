@@ -174,12 +174,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The game's own text box, the one it names a business with, for what the player types.</summary>
         private static void AskText(string placeholderKey, string buttonKey, string initial, int most, Action<string> done)
         {
-            UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
-            if (uis == null || uis.textInputUi == null)
-            {
-                return;
-            }
-            uis.textInputUi.Show(placeholderKey, buttonKey, text => UiClone.Safe(() => done(text)), null, initial ?? string.Empty, true, most);
+            TextBox.Ask(placeholderKey, buttonKey, text => UiClone.Safe(() => done(text)), null, initial, true, most);
         }
     }
 }

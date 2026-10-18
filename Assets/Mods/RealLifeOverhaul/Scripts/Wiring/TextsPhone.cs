@@ -263,8 +263,8 @@ namespace RealLifeOverhaul
                 return true;
             }
 
-            // A friend (or the partner, or a roommate) as the speaker: their own data in the training's words.
-            private static void FriendWho(SocialPerson p, TextWho who, bool partner, bool expecting)
+            /// <summary>A friend (or the partner, or a roommate) as the speaker: their own data in the training's words.</summary>
+            internal static void FriendWho(SocialPerson p, TextWho who, bool partner, bool expecting)
             {
                 who.Clear();
                 who.Name = p.Name;

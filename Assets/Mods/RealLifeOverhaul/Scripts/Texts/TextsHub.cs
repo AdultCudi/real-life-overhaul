@@ -126,29 +126,13 @@ namespace RealLifeOverhaul.Texts
             {
                 return false;
             }
-            r.Why = null;
             r.Took = 0;
-            if (!Wants(r.Use, r.Shared))
+            r.Why = WhyNot(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds);
+            if (r.Why != null)
             {
-                r.Why = "not asked: RLO Texts is off, has no pack or is not running";
                 return false;
-            }
-            if (!TextSpeed.Allows(AheadOnly, r.Priority, r.Guess, r.Seconds))
-            {
-                r.Why = "not asked: this machine's model writes only what is asked well ahead";
-                return false;
-            }
-            if (Runner.State == TextServerState.Loading && r.Seconds < TextSpeed.AheadSeconds)
-            {
-                r.Why = "not asked: the model is still loading";
-                return false;   // (still loading: what is due soon takes its written line now rather than wait for nothing)
             }
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch, Data);   // (the card of the pack's own data: v4's for a data 4 pack, v5's for a data 5 one)
-            if (intent == null)
-            {
-                r.Why = "not asked: the pack (data v" + Data + ") has no card " + r.Intent + (r.Branch != null ? " " + r.Branch : string.Empty);
-                return false;   // (no such intent, or one the pack's model never learnt: a v2 pack is never asked a v3 intent)
-            }
             var sheet = new TextSheet();
             if (!TextIntents.Build(intent, r.Who, r.Slots, r.History, sheet))
             {
@@ -172,6 +156,33 @@ namespace RealLifeOverhaul.Texts
             _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = TextCard.Card(sheet), Job = job });
             Runner.Nudge();
             return true;
+        }
+
+        /// <summary>
+        /// Why a request of this use, card and urgency would not be asked now, before anything is built: off, no pack or not
+        /// running, a machine that writes only what is asked ahead, the model still loading for what is due soon, or a card
+        /// the running pack's data version does not have. Null when it would be asked (the queue may still be full). Asked
+        /// by <see cref="Ask"/>, and by a feature that offers something only while words can come (a call's composer).
+        /// </summary>
+        public string WhyNot(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds)
+        {
+            if (!Wants(use, shared))
+            {
+                return "not asked: RLO Texts is off, has no pack or is not running";
+            }
+            if (!TextSpeed.Allows(AheadOnly, priority, guess, seconds))
+            {
+                return "not asked: this machine's model writes only what is asked well ahead";
+            }
+            if (Runner.State == TextServerState.Loading && seconds < TextSpeed.AheadSeconds)
+            {
+                return "not asked: the model is still loading";   // (what is due soon takes its written line now rather than wait for nothing)
+            }
+            if (TextIntents.Find(intent, branch, Data) == null)
+            {
+                return "not asked: the pack (data v" + Data + ") has no card " + intent + (branch != null ? " " + branch : string.Empty);   // (a v2 pack is never asked a v3 intent)
+            }
+            return null;
         }
 
         /// <summary>

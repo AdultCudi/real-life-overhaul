@@ -171,6 +171,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashCategory.cs" Link="Mod\CashCategory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialRules.cs" Link="Mod\SocialRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialComposerRules.cs" Link="Mod\SocialComposerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialState.cs" Link="Mod\SocialState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialCatalogue.cs" Link="Mod\SocialCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactCatalogue.cs" Link="Mod\ContactCatalogue.cs" />

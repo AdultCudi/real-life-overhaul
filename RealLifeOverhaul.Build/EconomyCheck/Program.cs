@@ -137,6 +137,7 @@ internal static partial class Program
         Faults();   // the city's real faults: weighting, limits, reports, escalation, the city's people, the save, Going Public, the source of chance, texts (FaultChecks.cs)
         Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
+        ComposerChecks();   // a call's composer: the two answers without a pack, typed words worth the warm answer a day as before, the words read by no rule, cleaned (ComposerChecks.cs)
         TextsStart();   // RLO Texts' start ends by its limits for certain: each stage timed, a watchdog, against a pretend server that never answers (TextsStartChecks.cs)
         TextsSpeedFix();   // RLO Texts on a GPU at normal priority with two threads, on the processor below normal; the start's lines say what each reply took (TextsSpeedChecks.cs)
         TextsCacheFix();   // RLO Texts' server without Steam's shader cache variables, so the GPU driver keeps its shaders; the first reply's limit and the cache's state (TextsCacheChecks.cs)

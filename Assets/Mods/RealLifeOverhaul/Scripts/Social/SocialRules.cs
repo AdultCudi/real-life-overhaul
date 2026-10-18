@@ -13,6 +13,7 @@ namespace RealLifeOverhaul
         public const float CallFamiliarity = 3f, CallAffection = 2f, CallTrust = 0.5f;
         public const float WarmReply = 1.5f, BluntReply = -2f;
         public const float TextReply = 1f;
+        public const int CallTopics = 2;              // topics talked over in one call before the goodbye (PersonDialog)
         public const float SelfieFamiliarity = 1f, SelfieAffection = 2f;   // a selfie together on an outing, once an outing
         public const float SelfieWithin = 3f;                               // metres from the player the friend stands in
         public const float OnTimeTrust = 2f;
@@ -262,5 +263,42 @@ namespace RealLifeOverhaul
             }
             return roll < 0.12 ? 10f + (float)roll * 60f : -6f + (float)roll * 8f;
         }
+
+        /// <summary>
+        /// What one answer in a chat is worth, on a call or face to face (SocialTalk.Answer): the day's first exchange counts
+        /// the talk itself (half as much again face to face, and a little more when they texted since yesterday and the
+        /// player is getting back to them), then the answer: warm, blunt (a slight, unless either answer suits the topic) or
+        /// plain. A message typed on a call counts as the warm answer (<see cref="SocialComposerRules.TypedWarm"/>).
+        /// </summary>
+        public static SocialWorth Chat(bool firstOfDay, bool inPerson, bool textedLately, bool warm, bool bothFine)
+        {
+            var worth = new SocialWorth();
+            if (firstOfDay)
+            {
+                float scale = inPerson ? 1.5f : 1f;
+                worth.Familiarity = CallFamiliarity * scale;
+                worth.Affection = CallAffection * scale;
+                worth.Trust = CallTrust * scale;
+                if (textedLately)
+                {
+                    worth.Familiarity += TextReply;   // they wrote, and the player got back to them
+                    worth.Affection += 0.5f;
+                }
+            }
+            worth.Affection += warm ? WarmReply : bothFine ? 0.5f : BluntReply;
+            return worth;
+        }
+
+        /// <summary>
+        /// True when a call's chat is over before it starts: the day's chat with them was had on an earlier call, so the
+        /// first topic of this one is "we covered everything" and worth nothing (a chat face to face is not counted here).
+        /// </summary>
+        public static bool ChatHad(int topicsThisCall, int lastCallDay, int day) => topicsThisCall == 0 && lastCallDay == day;
+    }
+
+    /// <summary>What something done together is worth, in points of 0 to 100 (<see cref="SocialRules.Chat"/>).</summary>
+    public struct SocialWorth
+    {
+        public float Familiarity, Affection, Trust;
     }
 }

@@ -227,6 +227,7 @@ namespace RealLifeOverhaul
         public const string SocialContactId = "social_contact";
         public const string SocialTextsId = "social_texts";
         public const string SocialTextsMaxId = "social_texts_max";
+        public const string SocialComposerId = "social_composer";
         public const string StreetTalkId = "street_talk";
         public const string StreetBrushId = "street_brush";
         public const string SocialNewspaperId = "social_newspaper";
@@ -529,6 +530,7 @@ namespace RealLifeOverhaul
         public static bool SocialContact = true;         // they get in touch themselves: invitations, favours, news, a visit at the shop
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
+        public static bool SocialComposer = true;        // with an RLO Texts pack, a call's chat is answered in the player's own typed words (off: the two answers)
         public static bool StreetTalk = true;            // talk to anybody in the street: the game's panel over a passer-by offers Talk (Scripts/Street)
         public static int StreetBrush = 1;               // how often people in the street have no time: 0 rarely, 1 sometimes, 2 often (StreetRules.BrushFactor)
         public static bool SocialMedia = true;           // Flare, the city's social media app: an account, posts about what really happened, friends who follow (Scripts/Social/Flare)
@@ -834,6 +836,7 @@ namespace RealLifeOverhaul
             SocialContact = Bool(modId, SocialContactId, SocialContact);
             SocialTexts = Bool(modId, SocialTextsId, SocialTexts);
             SocialTextsMax = Int(modId, SocialTextsMaxId, SocialTextsMax);
+            SocialComposer = Bool(modId, SocialComposerId, SocialComposer);
             StreetTalk = Bool(modId, StreetTalkId, StreetTalk);
             StreetBrush = Int(modId, StreetBrushId, StreetBrush);
             SocialNewspaper = Bool(modId, SocialNewspaperId, SocialNewspaper);
