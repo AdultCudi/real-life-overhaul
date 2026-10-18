@@ -18,22 +18,25 @@ namespace RealLifeOverhaul.Careers
     /// its own panel with its own study activity for that desk (PlayerActivity.StudyActivity, made by the desk's
     /// EducationDoorController). While the player is on a course of the mod's at the school, that activity is handed to
     /// this one, which leaves every part of it to the game's activity (its course, price, slider, Start and Cancel, and all
-    /// that follows if the game's course is studied) and adds one button: "Attend {course}" during the class's window,
-    /// "Sit the {course} exam" while it is due, or, greyed, when the next class is.
+    /// that follows if the game's course is studied) and adds one button, on the game's secondary key beside its Start:
+    /// "Attend {course}" during the class's window, "Sit the {course} exam" while it is due, or, greyed, when the next
+    /// class is.
     ///
     /// Pressed, the class is this activity's own, done the way the game does its studying: the player walks to the desk,
     /// sits on its chair at its computer (the screen shows its video), types now and then, and spends energy as studying
-    /// does; the game's panel shows the progress, the time left, fast forward and "skip time", and Stop. When it is over,
-    /// whichever way, the minutes are counted to the mod's enrolment (CareersDirector.Ended, as a class from the Campus app
-    /// is), never to a diploma of the game's: nothing of the game's courses or of the save's diplomas is touched, and the
-    /// player stands up at the desk's exit as the game's studying leaves them.
+    /// does; the game's panel shows the progress, the time left, fast forward and "skip time", and Stop. It sets off as
+    /// the game's own activities do (<see cref="Walk"/>), so that the panel never takes its walk for a click elsewhere.
+    /// When it is over, whichever way, the minutes are counted to the mod's enrolment (CareersDirector.Ended, as a class
+    /// from the Campus app is), never to a diploma of the game's: nothing of the game's courses or of the save's diplomas
+    /// is touched, and the player stands up at the desk's exit as the game's studying leaves them.
     ///
     /// One object per press of Study, made only while the player is inside the school and on a course there (Careers
     /// director, one reference comparison a frame then). If the game's activity is not as expected, it is left alone.
     ///
     /// At Hudson City University (Careers/CampusInterior) the classrooms are the school's own, with one of the university's
     /// courses in each: there the panel is the class's alone (<see cref="DeskOffer.Only"/>): the room's course as its
-    /// headline, where it is and when its class is, Cancel and the class's button, and none of the game's courses.
+    /// headline, where it is and when its class is, Cancel and the class's button on the game's Start key, and none of
+    /// the game's courses.
     ///
     /// From the Campus app (Attend, Sit, Homework while at the school or the university) the director opens the desk's
     /// panel itself, as a click on the door does, and presses the button for the player (<see cref="Begin"/>): one press,
@@ -64,6 +67,7 @@ namespace RealLifeOverhaul.Careers
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
         private float _nextType;
         private ButtonInfo[] _stop;
+        private int _orderFrame = -1;   // the frame the walk order to the desk was given in (DeskGame.SetOffSeen)
 
         /// <summary>What the desk offers: a course's class or exam, whether it can be done now, and the words of the button.</summary>
         internal sealed class DeskOffer
@@ -207,13 +211,21 @@ namespace RealLifeOverhaul.Careers
             _mine = true;
             _sitting = sitting;
             _tally = new ClassTally(sitting.SkipMinutes);
-            _state = PlayerActivityState.MovingTowardsActivity;
             _director.StartCoroutine(Guard.Routine(Walk()));
         }
 
-        // As the game's studying: a frame later, the walk to the desk; there, the chair, the screen and the energy.
+        // Set off as the game's own activities are (docs/features/careers.md, "Setting off"): on its way only once every
+        // script of the press's frame has run, and the walk order in the next frame, the first in which the game's panel
+        // sees it on its way; a walk order after that frame's end is one the panel takes for a click elsewhere. Then, at
+        // the desk, the chair, the screen and the energy, as the game's studying.
         private IEnumerator Walk()
         {
+            yield return null;
+            if (_state != PlayerActivityState.NotStarted)
+            {
+                yield break;   // (called off meanwhile)
+            }
+            _state = PlayerActivityState.MovingTowardsActivity;
             yield return null;
             if (_state != PlayerActivityState.MovingTowardsActivity)
             {
@@ -225,6 +237,7 @@ namespace RealLifeOverhaul.Careers
                 Off();
                 yield break;
             }
+            _orderFrame = Time.frameCount;
             player.SetGoal(_door, Guard.Listener(() =>
             {
                 if (_state != PlayerActivityState.MovingTowardsActivity)
@@ -240,6 +253,7 @@ namespace RealLifeOverhaul.Careers
                     _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
                     _tally.Begin();
                     _sitting.SkipStarted();
+                    DeskGame.SetOffSeen("the class's desk", true, _orderFrame);
                 }
                 catch (Exception e)
                 {
@@ -305,8 +319,14 @@ namespace RealLifeOverhaul.Careers
             {
                 if (_mine)
                 {
+                    if (state == PlayerActivityState.Finished)
+                    {
+                        Finish();   // however the panel ends it: the minutes counted once, and the player stood up
+                        return;
+                    }
                     if (_state == PlayerActivityState.MovingTowardsActivity && state == PlayerActivityState.NotStarted)
                     {
+                        DeskGame.SetOffSeen("the class's desk", false, _orderFrame);
                         Off();   // the game's panel called the walk off for a click elsewhere and let it go: the player walks there
                         return;
                     }
@@ -399,21 +419,9 @@ namespace RealLifeOverhaul.Careers
                     Off();
                     return;
                 }
-                try
-                {
-                    PlayerController player = InstanceBehavior<GameManager>.Instance.playerController;
-                    player.Character.Reset();
-                    player.Character.navmeshAgent.Warp(_place.exitPosition.position);
-                    player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
-                    PlayerHelper.GetAnimator().ResetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
-                    _place.computer?.StopVideoOnScreen();
-                }
-                catch (Exception e)
-                {
-                    CareersDirector.Logger?.Error(e);
-                }
                 _before = was;
-                _state = PlayerActivityState.Finished;
+                _state = PlayerActivityState.Finished;   // (first: whatever the game's calls below do, nothing here runs twice)
+                StandUp();
                 Sitting sitting = _sitting;
                 _sitting = null;
                 if (_tally.Settle(out int minutes, out bool whole) == TallyEnd.Counted)
@@ -427,13 +435,45 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // The class's panel alone: closed without anything of the game's.
+        // Up at the desk's exit, as the game's studying stands its player up. The study blocker goes whatever the game's
+        // calls before it do, so that nothing can leave the player held at the desk.
+        private void StandUp()
+        {
+            GameManager game = InstanceBehavior<GameManager>.Instance;
+            PlayerController player = game != null ? game.playerController : null;
+            try
+            {
+                if (player != null)
+                {
+                    player.Character.Reset();
+                    player.Character.navmeshAgent.Warp(_place.exitPosition.position);
+                }
+                PlayerHelper.GetAnimator().ResetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
+                _place.computer?.StopVideoOnScreen();
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+            finally
+            {
+                if (player != null)
+                {
+                    player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
+                }
+            }
+        }
+
+        // The class's panel alone, closed: before its button, with nothing of the game's; after, the class is called off,
+        // or ended with its minutes counted.
         private void Close()
         {
-            if (!_mine)
+            if (_mine)
             {
-                _inner.ChangeState(PlayerActivityState.Finished);
+                Finish();
+                return;
             }
+            _inner.ChangeState(PlayerActivityState.Finished);
         }
 
         public LabelInfo GetHeadlineLabel()
@@ -509,10 +549,11 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (_offer.Only)
                 {
+                    // (on the game's Start key: no course of the game's is offered here, and its secondary key is the panel's fast forward)
                     return _buttons ?? (_buttons = new[]
                     {
                         new ButtonInfo("CancelRealLifeClass", "common_cancel", "gray", Guard.Way(Close), PlayerAction.Cancel),
-                        new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Guard.Wrap(Press), PlayerAction.SecondaryInteract, _offer.Can)
+                        new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Guard.Wrap(Press), PlayerAction.Confirm, _offer.Can)
                     });
                 }
                 ButtonInfo[] game = _inner.GetButtons();

@@ -364,7 +364,7 @@ namespace RealLifeOverhaul.Careers
         {
             ShiftSkip skip = _skip;
             DeskWork desk = _deskWork;
-            ComputerClass computer = _computer;
+            ComputerSitting computer = _computer;
             _skip = null;
             _sitting = null;
             _deskWork = null;

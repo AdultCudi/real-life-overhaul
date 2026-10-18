@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Careers
     /// A class, a piece of homework, an exam or a day at work, left to the game's own clock as the game's own job and study
     /// are: on the game's activity panel with its progress bar, fast-forward and time skip, either where the player stands
     /// (<see cref="ShiftSkip"/>, where nothing in the world fits) or at the desk or computer it is done at, walked to first
-    /// (Careers/SchoolDesk, Careers/ComputerClass, Careers/DeskWork). Energy is spent as the game's own studying spends it
+    /// (Careers/SchoolDesk, Careers/ComputerSitting, Careers/DeskWork). Energy is spent as the game's own studying spends it
     /// while it runs; whichever way it ends, the director is told the minutes that passed (or, called off before it
     /// began, that it was: <see cref="CalledOff"/>).
     /// </summary>

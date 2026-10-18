@@ -187,6 +187,30 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        // The job the working day tests use: the player's own, or the city's first vacancy given now (null, said, if the city
+        // has none); today a working day of it, not counted yet.
+        private Job TestJob()
+        {
+            WorkFile w = _study.Work;
+            if (w.Job == null)
+            {
+                Vacancies(Save.Day);
+                if (w.Openings.Count == 0)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_none", null, 8f);
+                    return null;
+                }
+                var a = new Application { Day = Save.Day, Score = 70 };
+                w.Openings[0].CopyTo(a.Post);
+                a.Offer = a.Post.Pay;
+                Begin(a, Save.Day);
+            }
+            Job j = w.Job;
+            j.TodayDay = Save.Day;
+            j.SettledDay = Math.Min(j.SettledDay, Save.Day - 1);
+            return j;
+        }
+
         /// <summary>The rest of a working day now, here, whatever the hour and the place (a job is given for it if there is none).</summary>
         public void TestWorkDay()
         {
@@ -196,24 +220,12 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
-                WorkFile w = _study.Work;
-                if (w.Job == null)
+                Job j = TestJob();
+                if (j == null)
                 {
-                    Vacancies(Save.Day);
-                    if (w.Openings.Count == 0)
-                    {
-                        Notifications.Show(NotificationType.Warning, "reallife_work_test_none", null, 8f);
-                        return;
-                    }
-                    var a = new Application { Day = Save.Day, Score = 70 };
-                    w.Openings[0].CopyTo(a.Post);
-                    a.Offer = a.Post.Pay;
-                    Begin(a, Save.Day);
+                    return;
                 }
-                Job j = w.Job;
                 Profession p = j.Def;
-                j.TodayDay = Save.Day;
-                j.SettledDay = Math.Min(j.SettledDay, Save.Day - 1);
                 string busy = Offer(new Sitting(this, SittingKind.Work, 0, p.Hours * 60, CareersText.Fill("reallife_work_skip_title", "title", CareersText.Title(j.Post.Prof, j.Post.Rank),
                     "employer", CareersText.Employer(j.Post.Employer)), true, CareersText.T("reallife_work_skip_pay", "pay", CareersText.Rate(Prices.At(j.Pay)))));
                 if (busy != null)
@@ -222,6 +234,42 @@ namespace RealLifeOverhaul.Careers
                 }
                 Logger?.Info("Careers test: a working day at " + j.Post.Employer + (busy == null ? " offered." : " not offered (" + busy + ")."));
                 Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>
+        /// The test button: the rest of a working day begun now at the player's computer at home, whatever the hour and the
+        /// job's days from home, as its Start the working day there begins it (a job is given for it if there is none).
+        /// </summary>
+        public void TestComputerWork()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                ComputerController computer = CareersGame.AtHome() ? DeskGame.HomeComputer() : null;
+                string why = computer == null ? "reallife_work_test_no_computer" : SeatBusy();   // (away from home there is none)
+                Job j = why == null ? TestJob() : null;
+                if (why == null && j == null)
+                {
+                    return;   // (no vacancy in the city: said)
+                }
+                if (why == null)
+                {
+                    why = StartAtComputer(computer, DaySitting(j, j.Def.Hours * 60), j.Post.Employer);
+                    Changed();
+                }
+                Logger?.Info("Careers test: a working day at the computer at home " + (why == null ? "begun (" + j.Post.Employer + ")." : "not begun (" + why + ")."));
+                if (why != null)
+                {
+                    Notifications.Show(NotificationType.Warning, why, null, 8f);
+                }
             }
             catch (Exception e)
             {

@@ -8,7 +8,6 @@ using Helpers;
 using Items.SpecialItems;
 using Player.HUD.ItemInfoOverlays;
 using PlayerActivity;
-using RealLifeOverhaul.FitOut;
 using UI.Elements;
 using UI.Guiders;
 using UI.Smartphone.Apps.Contacts;
@@ -29,13 +28,14 @@ namespace RealLifeOverhaul.Careers
     ///                 the player's is kept free, as WorkActivity frees it when its player starts, and given back with
     ///                 BuildingManager.AssignAiToEmployeeStation if the job ends while the player is there.
     ///   the click     one entry at the front of the game's list of calls to action (CtaManager.CtaBehaviors, reached as
-    ///                 Ledger/LedgerPointer does): over the player's own station, desk or home computer it says the game's
-    ///                 own "Click to work", and a click walks the player there and opens the work panel, as the game's
-    ///                 cash register does. Asked only when the pointer comes onto something: a reference comparison.
-    ///   the pose      at a station, exactly WorkActivity's: the station is given the player as its employee (seated at a
-    ///                 desk computer, which types and shows its work video; behind a till; in the business's uniform where
-    ///                 it has one), the navigation held by the game's own work blocker; at a desk of the mod's, the
-    ///                 game's chair seat and its typing; then stood up as the game stands its player up.
+    ///                 Ledger/LedgerPointer does): over the player's own station or desk it says the game's own "Click to
+    ///                 work", and a click walks the player there and opens the work panel, as the game's cash register
+    ///                 does. Asked only when the pointer comes onto something: a reference comparison. (A day from home is
+    ///                 begun from the home computer's own panel instead: Careers/ComputerButtons.)
+    ///   the pose      at a desk computer of the game's, or a desk of the mod's, seated on its chair as the game's people
+    ///                 sit at one, typing now and then; at a till, a counter or any station whose people stand,
+    ///                 WorkActivity's own (the station given the player as its employee, in the business's uniform where
+    ///                 it has one). Held by the game's own work blocker, which goes as they stand up whatever else fails.
     ///   the boss      a contact of the game's own Employees kind, named for the employer, with the employer's address,
     ///                 as JobHelper.GetBossContact makes the game's; its texts are the game's text messages.
     ///   the way       the game's own destination marker (GuidersManager), as "set destination" does for a building.
@@ -363,21 +363,16 @@ namespace RealLifeOverhaul.Careers
         private static bool _failed;
         private static EntityController _clicked;
 
-        /// <summary>What the player can click to work, set by the director: the station or the desk's pointer, and whether the home computer is a desk now.</summary>
+        /// <summary>What the player can click to work, set by the director: the station or the desk's pointer.</summary>
         public static EntityController Target;
-        public static bool HomeDesk;
 
         private static bool Offers(EntityController e)
         {
-            if (e == null)
+            if (e == null || !ReferenceEquals(e, Target))
             {
                 return false;
             }
-            if (ReferenceEquals(e, Target))
-            {
-                return !(e is EmployeeStationController) || PlayerHelper.HasPaidForAllItems();   // (with something unpaid in hand the till sells first)
-            }
-            return HomeDesk && e is ComputerController computer && computer.FindChair() != null;   // (a computer at home with its chair: the game seats its user there)
+            return !(e is EmployeeStationController) || PlayerHelper.HasPaidForAllItems();   // (with something unpaid in hand the till sells first)
         }
 
         /// <summary>Adds the entry, once. False if the game's list could not be reached (said once): the desk then cannot be clicked.</summary>
@@ -435,7 +430,6 @@ namespace RealLifeOverhaul.Careers
             _list = null;
             _failed = false;
             Target = null;
-            HomeDesk = false;
         }
 
         private static void Clicked()
@@ -497,7 +491,36 @@ namespace RealLifeOverhaul.Careers
 
         // ---------------------------------------------------------------- the pose
 
-        /// <summary>The player sets to work at a station, as WorkActivity does it on arriving: the station's employee, held there.</summary>
+        /// <summary>
+        /// The seat of one of the game's desk computers, where its employee sits (its chair); null for a station of another
+        /// kind, a till, a counter or a salon chair, whose employee stands at it.
+        /// </summary>
+        public static Transform SeatOf(EmployeeStationController station)
+        {
+            switch (station)
+            {
+                case WorkstationController workstation: return Place(workstation.FindChair());
+                case DesktopWorkstationController desktop: return Place(desktop.employeeChair);
+                default: return null;
+            }
+        }
+
+        // Where a piece of the game's furniture is, whichever kind of object the game holds it as.
+        private static Transform Place(UnityEngine.Object piece)
+        {
+            if (piece == null)
+            {
+                return null;
+            }
+            switch (piece)
+            {
+                case Component part: return part.transform;
+                case GameObject thing: return thing.transform;
+                default: return null;
+            }
+        }
+
+        /// <summary>The player sets to work at a station whose people stand, as WorkActivity does it on arriving: the station's employee, held there.</summary>
         public static void SitAt(EmployeeStationController station)
         {
             PlayerController player = Player;
@@ -513,56 +536,103 @@ namespace RealLifeOverhaul.Careers
             player.Character.LinkToPointAndClickObject(station);
         }
 
-        /// <summary>...and stands up from it, as WorkActivity's Finish has its player do.</summary>
+        /// <summary>
+        /// ...and stands up from it, as WorkActivity's Finish has its player do. The work blocker goes whatever the game's
+        /// calls before it do, so that nothing can leave the player held at the station. Never throws.
+        /// </summary>
         public static void StandFrom(EmployeeStationController station)
         {
             PlayerController player = Player;
-            if (station != null)
+            try
             {
-                station.UnassignEmployee();
-                station.Occupied = false;
+                if (station != null)
+                {
+                    station.UnassignEmployee();
+                    station.Occupied = false;
+                }
+                if (player != null)
+                {
+                    player.Character.Reset();
+                }
             }
-            if (player != null)
+            catch (Exception e)
             {
-                player.UnsetNavigationBlocker(NavigationBlocker.WorkActivity);
-                player.Character.Reset();
+                CareersDirector.Logger?.Error(e);
+            }
+            finally
+            {
+                Unhold(player);
             }
         }
 
-        /// <summary>The player sits down at a fitted desk: the game's chair seat, held there by the game's work blocker.</summary>
-        public static void SitAt(FitDesk desk)
+        /// <summary>
+        /// The player sits down at a desk: the game's chair seat (a fitted desk's, or the chair of one of the game's desk
+        /// computers, <see cref="SeatOf"/>), held there by the game's work blocker. A station's own place is kept the
+        /// player's while they sit. Where they stood is given back, to stand up on.
+        /// </summary>
+        public static void SitOn(Transform seat, EmployeeStationController station, out Vector3 stood)
         {
             PlayerController player = Player;
-            if (player == null || desk == null || desk.Seat == null)
+            stood = player != null ? player.transform.position : Vector3.zero;
+            if (player == null || seat == null)
             {
                 return;
             }
             player.SetNavigationBlocker(NavigationBlocker.WorkActivity);
             EnergyHelper.RemoveEnergySpender("move");
-            player.Character.SitOnChair(desk.Seat);
+            if (station != null)
+            {
+                station.Occupied = true;
+            }
+            player.Character.SitOnChair(seat);
         }
 
-        /// <summary>...and stands up beside it.</summary>
-        public static void StandFrom(FitDesk desk)
+        /// <summary>
+        /// ...and stands up on a place on the floor beside the desk. The work blocker goes whatever the game's calls before
+        /// it do, so that nothing can leave the player held where they sat. Never throws.
+        /// </summary>
+        public static void StandUp(Vector3 at, EmployeeStationController station)
         {
             PlayerController player = Player;
-            if (player == null)
-            {
-                return;
-            }
-            player.Character.Reset();
-            if (desk != null)
-            {
-                player.Character.navmeshAgent.Warp(desk.Stand);
-            }
-            player.UnsetNavigationBlocker(NavigationBlocker.WorkActivity);
             try
             {
-                PlayerHelper.GetAnimator().ResetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
+                if (station != null)
+                {
+                    station.Occupied = false;
+                }
+                if (player != null)
+                {
+                    player.Character.Reset();
+                    if (at != Vector3.zero)
+                    {
+                        player.Character.navmeshAgent.Warp(at);
+                    }
+                    PlayerHelper.GetAnimator().ResetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
+                }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // the animation is a nicety
+                CareersDirector.Logger?.Error(e);
+            }
+            finally
+            {
+                Unhold(player);
+            }
+        }
+
+        // The work blocker off the player: the last step of every way they stand up.
+        private static void Unhold(PlayerController player)
+        {
+            try
+            {
+                if (player != null)
+                {
+                    player.UnsetNavigationBlocker(NavigationBlocker.WorkActivity);
+                }
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
             }
         }
 
@@ -583,6 +653,29 @@ namespace RealLifeOverhaul.Careers
         public static void StopWalking()
         {
             Player?.ResetNavigation();
+        }
+
+        /// <summary>
+        /// The self-check of an activity's walk to its place (docs/features/careers.md, "Setting off"), with Developer
+        /// diagnostics on: PASS when it got there with the game's panel holding it all the way; FAIL when the panel called it
+        /// off in the frame its walk order was given (<paramref name="orderFrame"/>), taking that order for a click
+        /// elsewhere. A walk called off in a later frame is the player's own click, and says nothing.
+        /// </summary>
+        public static void SetOffSeen(string what, bool there, int orderFrame)
+        {
+            if (!Meta.Dev.Verbose)
+            {
+                return;
+            }
+            if (there)
+            {
+                CareersDirector.Logger?.Info("Careers check (set off): the walk to " + what + " got there, the game's panel holding it: PASS");
+            }
+            else if (orderFrame == Time.frameCount)
+            {
+                CareersDirector.Logger?.Info("Careers check (set off): the game's panel took the walk order to " + what + " for a click elsewhere, in the frame"
+                                             + " it was given: FAIL, it was set off later than the panel allows");
+            }
         }
 
         // ---------------------------------------------------------------- the boss and the way

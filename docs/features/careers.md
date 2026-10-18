@@ -151,10 +151,28 @@ The clips are already asked for by id, before today's stand-in, so they drop in 
 | prop `dispatch_desk` | a lectern-height desk with a wall map, 1.2 x 1.4 x 0.5 m, read from +Z | (needs placement code) stood by the board on a dispatcher shift |
 | prop `employer_sign` | a small wall plaque (0.6 x 0.3 m), six variants, one per employer name | (needs placement code) above each office's board |
 
-## Classes at a desk and at home
+## Classes, work desks and the computer at home
 
 - **Attend in the Campus app** takes the player to the classroom (the right floor of Hudson City University, or the nearest desk at Manhattan Business School) and starts the game's own study activity at its desk: `SchoolDesk.Begin` presses the class for the player once the panel opens.
-- **Online and distance classes and homework** are done at a computer in the player's home. `ComputerButtons` adds **Attend {course}** and **Do {course} homework** beside the game's **Pass the time**; `ComputerClass` plays them as the game's `EntertainActivity` does. Which button shows is decided by `Study/ClassPlayRules.cs`, which the offline checks test.
-- **Minutes count once.** `ClassPlayRules.ClassTally` settles a sitting exactly once; a walk called off counts nothing, and a retake fee is charged only when the player sits down.
-- **After a game update:** the part `computer_class` (`CustomizableButtonsOverlay.buttonTemplate`) carries the computer's buttons. If it fails, the home computer loses the mod's Attend and homework buttons, and online classes and homework can still be started at home from the Campus app.
-- **Known limit:** on a work-from-home day the job's **Click to work** takes the computer's click, so the class buttons do not show that day.
+- **The class's key.** At the school's desks the class's button is on the game's secondary key (P), beside the game's own Start. In a classroom of the university the panel is the class's alone, and its button is on the game's Start key (Confirm, Enter): the secondary key is the panel's fast-forward switch once the class runs.
+- **Online and distance classes and homework** are done at a computer in the player's home. `ComputerButtons` adds **Attend {course}** and **Do {course} homework** beside the game's **Pass the time**; `ComputerSitting` plays them as the game's `EntertainActivity` does. Which button shows is decided by `Study/ClassPlayRules.cs`, which the offline checks test.
+- **A working day at the employer's.** The game's **Click to work** over the player's station or fitted desk walks them there and opens the game's work panel (`DeskWork`). On **Start working** they sit on the chair of a desk computer or a fitted desk and type now and then (`DeskGame.SitOn`), and stand at a till, a counter or another station whose people stand, in `WorkActivity`'s own pose (`DeskGame.SitAt`).
+- **A working day from home** is begun from the home computer's own panel, at a computer with its chair: `ComputerButtons` adds **Start the working day** beside **Pass the time**, or **Work late** once the day is worked, or the working hours greyed before it and the desk's words greyed after it (too late, worked already). `ComputerSitting` plays the day as it plays an online class, after the desk's own checks and clock-in (`CareersDirector.WorkAtComputer`, `DeskBegin`), except that the player's energy running out does not end it, as it does not at the desk. Which button shows is decided by `Work/DeskRules.AtComputer`, which the offline checks test.
+- **Minutes count once.** `ClassPlayRules.ClassTally` settles a sitting exactly once; a walk called off counts nothing, and a retake fee is charged only when the player sits down. A sitting that no desk, computer or panel holds any more is let go within a second (`DeskTick`), so it never leaves every class and day "under way".
+- **Standing up.** Every way out of a desk, a station or the computer releases the game's navigation blocker in a `finally` (`DeskGame.StandUp` and `StandFrom`, `SchoolDesk.StandUp`, `ComputerSitting.StandUp`): nothing the game's calls before it throw can leave the player held where they sat.
+- **Trying it.** Options > Tests has **Start a working day at my computer at home** (`TestComputerWork`): the rest of a working day begun at the home computer at once, whatever the hour and the job's days from home, with a job given if there is none, as **Start an online class at my computer at home now** does for a class.
+- **After a game update:** the part `computer_class` (`CustomizableButtonsOverlay.buttonTemplate`) carries the computer's buttons. If it fails, or the buttons stand down after a fault, the home computer loses the mod's buttons: online classes and homework can still be started at home from the Campus app, and a day from home from the Career app.
+
+## Setting off
+
+The game's activity panel drops a walk order it sees too late. Once the panel has seen an activity on its way to its place, `PlayerActivityUI.CancelActivityMovement` (on `PlayerController.PlayerChangedNavigation`) takes every walk order after the end of that frame for a click elsewhere: the activity goes back to "not started" and the panel closes without a word ([Home: Cooking](home.md#cooking) has the same flaw in the home routines).
+
+So an activity of the mod's that walks the player to its place (`SchoolDesk`, `DeskWork`, `ComputerSitting`) sets off in three steps, whatever order the game's scripts run in:
+
+1. The press leaves it "not started" for the rest of its frame; it only notes the press, so a second press does nothing.
+2. In the next frame, once every script's `Update` has run, it is "moving towards" its place. The panel first sees that in the frame after.
+3. In that frame, after the panel's `Update`, the walk order is given: before the end of the frame, when the panel starts listening.
+
+With Developer diagnostics on, `Player.log` has a "Careers check (set off)" line for each walk (`DeskGame.SetOffSeen`): PASS when it got to the desk or the computer with the panel holding it, FAIL when the panel took the activity's own walk order for a click elsewhere.
+
+Why: the class at a desk and the work desk used to be put on their way in the frame of the press and given their walk order a frame later. Whenever the panel saw them on their way in the frame of the press (which depends on whether the key or the click is read before the panel's `Update`), the walk was dropped: the panel closed and the player stayed where they were.

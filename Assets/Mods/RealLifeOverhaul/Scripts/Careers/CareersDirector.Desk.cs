@@ -23,7 +23,9 @@ namespace RealLifeOverhaul.Careers
     ///                  teacher's desk, the council's service desks, a back office desk). The same desk every visit.
     ///   the click      the game's own "Click to work" over it (Careers/DeskGame); the player walks there and the game's
     ///                  work panel opens with the mod's job (Careers/DeskWork), its labels as the game's job has them
-    ///   a home day     the player's computer at home is the desk on a day worked from home, with the internet as before
+    ///   a home day     the computer at home, with the internet as before: its own panel has "Start the working day" (or
+    ///                  "Work late") beside the game's Pass the time (Careers/ComputerButtons), and the day is sat at it as
+    ///                  an online class is (Careers/ComputerSitting)
     ///   away           an hour into a working day not begun, the boss texts as the game's own employer does; a day missed
     ///                  is the mod's warning as before (three are the sack), now said in the boss's texts
     ///
@@ -113,9 +115,6 @@ namespace RealLifeOverhaul.Careers
             {
                 DeskSetUp(false);
             }
-            int day = Save != null ? Save.Day : 0;
-            DeskGame.HomeDesk = j != null && day >= j.Hired && ProRules.WorkDay(j.Def, day) && ProRules.FromHome((WorkMode)j.Work, day) && CareersGame.AtHome()
-                                && (j.SettledDay < day || CanWorkLate() == null);
             if (_deskView != null && _deskView.Active)
             {
                 _deskView.Tick(Time.time);
@@ -467,23 +466,19 @@ namespace RealLifeOverhaul.Careers
             if (e is DeskPointer && _deskFit != null)
             {
                 FitDesk desk = _deskFit;
-                DeskGame.WalkTo(desk.Stand, () => DeskPanel(null, desk, false));
+                DeskGame.WalkTo(desk.Stand, () => DeskPanel(null, desk));
             }
             else if (_deskStation != null && ReferenceEquals(e, _deskStation))
             {
                 EmployeeStationController station = _deskStation;
-                DeskGame.WalkTo(station, () => DeskPanel(station, null, false));
-            }
-            else if (DeskGame.HomeDesk && e is EmployeeStationController computer)
-            {
-                DeskGame.WalkTo(computer, () => DeskPanel(computer, null, true));
+                DeskGame.WalkTo(station, () => DeskPanel(station, null));
             }
         }
 
         private readonly List<LabelInfo> _deskLabels = new List<LabelInfo>(6);
 
         // The game's work panel for the job at a desk: its labels, Cancel, Start working or Work late.
-        private void DeskPanel(EmployeeStationController station, FitDesk desk, bool home)
+        private void DeskPanel(EmployeeStationController station, FitDesk desk)
         {
             Job j = Work != null ? Work.Job : null;
             if (j == null || Save == null || (_deskWork != null && _deskWork.Open))
@@ -492,10 +487,10 @@ namespace RealLifeOverhaul.Careers
             }
             Profession p = j.Def;
             int day = Save.Day, minute = CareersGame.MinuteOfDay;
-            DeskState state = DeskRules.State(j, day, minute, home, out int minutes, out bool late);
+            DeskState state = DeskRules.State(j, day, minute, false, out int minutes, out bool late);
             bool canStart = DeskRules.Startable(state);
             _deskLabels.Clear();
-            LabelInfo closed = home ? null : DeskGame.Closed();
+            LabelInfo closed = DeskGame.Closed();
             if (closed != null)
             {
                 _deskLabels.Add(closed);
@@ -508,14 +503,9 @@ namespace RealLifeOverhaul.Careers
                     ? DeskGame.Label(state == DeskState.NotHired ? CareersText.T(key, "day", CareersText.Day(j.Hired)) : CareersText.T(key), colour)
                     : DeskGame.GameLabel(key, colour));
             }
-            if (station != null && !home && DeskGame.Taken(station))
+            if (station != null && DeskGame.Taken(station))
             {
                 _deskLabels.Add(DeskGame.Label(CareersText.T("reallife_desk_label_taken"), 1));
-                canStart = false;
-            }
-            if (home && canStart && !CareersBridges.HomeOnline())
-            {
-                _deskLabels.Add(DeskGame.Label(CareersText.T("reallife_study_why_no_internet"), 3));
                 canStart = false;
             }
             _deskLabels.Add(DeskGame.Label(CareersText.T("reallife_desk_label_hours", "from", CareersText.Hour(p.Hour), "to", CareersText.Hour((p.Hour + p.Hours) % 24)), 0));
@@ -527,7 +517,7 @@ namespace RealLifeOverhaul.Careers
                     _deskLabels.Add(DeskGame.Label(CareersText.T("reallife_desk_label_late"), 1));
                 }
             }
-            bool canLate = state == DeskState.Done && CanWorkLate() == null && !(station != null && !home && DeskGame.Taken(station));
+            bool canLate = state == DeskState.Done && CanWorkLate() == null && !(station != null && DeskGame.Taken(station));
             string title = CareersText.Fill("reallife_work_skip_title", "title", CareersText.Title(j.Post.Prof, j.Post.Rank), "employer", CareersText.Employer(j.Post.Employer));
             var work = new DeskWork(this, station, desk, title, _deskLabels.ToArray(), canStart, canLate);
             if (DeskGame.Show(work))
@@ -626,6 +616,91 @@ namespace RealLifeOverhaul.Careers
                 "employer", CareersText.Employer(j.Post.Employer)), true, CareersText.T("reallife_life_skip_overtime"), CareersText.T("reallife_work_skip_pay", "pay", CareersText.Rate(Prices.At(j.Pay))));
         }
 
+        // ---------------------------------------------------------------- a day from home, at the computer
+
+        /// <summary>
+        /// The words of the home computer's button for the job, beside the game's Pass the time (Careers/ComputerButtons),
+        /// or null for none: Start the working day on a day worked from home, Work late once it is worked and overtime can
+        /// be, or, greyed, the working hours before it can be begun and the desk's words after (too late, worked already).
+        /// Whether it can be pressed, and whether for overtime.
+        /// </summary>
+        internal string ComputerWork(out bool can, out bool overtime)
+        {
+            can = false;
+            overtime = false;
+            Job j = Work != null ? Work.Job : null;
+            if (j == null || Save == null || DeskFallback(j))
+            {
+                return null;   // (no job, or the Career app starts the day)
+            }
+            DeskState state = DeskRules.State(j, Save.Day, CareersGame.MinuteOfDay, true, out _, out _);
+            switch (DeskRules.AtComputer(state, CanWorkLate() == null))
+            {
+                case HomeWork.Start:
+                    can = true;
+                    return CareersText.T("reallife_career_button_work");
+                case HomeWork.Late:
+                    can = true;
+                    overtime = true;
+                    return CareersText.T("reallife_life_button_late");
+                case HomeWork.NotYet:
+                    Profession p = j.Def;
+                    return CareersText.T("reallife_desk_label_hours", "from", CareersText.Hour(p.Hour), "to", CareersText.Hour((p.Hour + p.Hours) % 24));
+                case HomeWork.Why:
+                    return CareersText.T(DeskRules.Label(state));
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// The working day, or overtime, at a computer of the player's home, from its own button (Careers/ComputerButtons):
+        /// the desk's checks and the day's clock-in (<see cref="DeskBegin"/>), then the player walks there and sits at it
+        /// as for an online class (Careers/ComputerSitting). Null if under way; else the reason key.
+        /// </summary>
+        internal string WorkAtComputer(ComputerController computer, bool overtime)
+        {
+            Job j = Work != null ? Work.Job : null;
+            if (j == null)
+            {
+                return "reallife_work_why_no_job";
+            }
+            if (!CareersGame.AtHome())
+            {
+                return "reallife_work_why_home_day";
+            }
+            if (computer == null || !DeskGame.Usable(computer) || computer.FindChair() == null)
+            {
+                return "reallife_career_desk_no_computer";
+            }
+            string busy = SeatBusy();
+            if (busy != null)
+            {
+                return busy;
+            }
+            if (PlayerHelper.ItemInstanceInHands != null && !PlayerHelper.IsHoldingBag)
+            {
+                return "notification_need_empty_hands_to_interact";   // (the game's own words, as its computer says them)
+            }
+            int lateBefore = j.Late;
+            string why = DeskBegin(overtime, out Sitting sitting);
+            if (why != null)
+            {
+                return why;
+            }
+            why = StartAtComputer(computer, sitting, j.Post.Employer);
+            if (why != null)
+            {
+                _sitting = null;   // (the game's panel was busy: nothing begun; the day's clock-in stands, as at a desk)
+                return why;
+            }
+            if (j.Late > lateBefore)
+            {
+                Tell2(NotificationType.Warning, "reallife_desk_label_late", null, TabJob, null);   // (what the desk's panel says before Start)
+            }
+            return null;
+        }
+
         // ---------------------------------------------------------------- away from work
 
         /// <summary>
@@ -683,21 +758,30 @@ namespace RealLifeOverhaul.Careers
         internal bool DeskFallback(Job j) => DeskFallbackWhy(j) != null;
 
         /// <summary>
-        /// Why the Career app starts the working day itself, as a key; null where it is started at the desk. The game's list
-        /// of clicks could not be reached; no desk could be had in the employer's building this visit; the employer's
-        /// building is closed to the public now (the game lets nobody in, so the day is started by its door, as before);
-        /// or a day from home in a home with no computer.
+        /// Why the Career app starts the working day itself, as a key; null where it is started at the desk or the computer
+        /// at home. A day from home in a home with no computer with its chair, or with the computer's own buttons not there
+        /// (Careers/ComputerButtons); the game's list of clicks could not be reached; no desk could be had in the employer's
+        /// building this visit; the employer's building is closed to the public now (the game lets nobody in, so the day
+        /// is started by its door, as before).
         /// </summary>
         internal string DeskFallbackWhy(Job j)
         {
-            if (j == null || _deskOff || !DeskGame.Clickable)
+            if (j == null)
             {
                 return "reallife_career_desk_none";
             }
             int day = Save != null ? Save.Day : 0;
             if (ProRules.FromHome((WorkMode)j.Work, day))
             {
-                return CareersGame.AtHome() && DeskGame.HomeComputer() == null ? "reallife_career_desk_no_computer" : null;
+                if (CareersGame.AtHome() && DeskGame.HomeComputer() == null)
+                {
+                    return "reallife_career_desk_no_computer";
+                }
+                return ComputerButtons.Failed ? "reallife_career_desk_none" : null;
+            }
+            if (_deskOff || !DeskGame.Clickable)
+            {
+                return "reallife_career_desk_none";
             }
             if (_deskFailed && _deskAt != null && _deskAt == JobPlace(j))
             {
@@ -749,7 +833,7 @@ namespace RealLifeOverhaul.Careers
                     "address", WorkGame.Address(j.Post.Street, j.Post.Number));
                 if (_deskStation != null || _deskFit != null)
                 {
-                    DeskPanel(_deskStation, _deskFit, false);
+                    DeskPanel(_deskStation, _deskFit);
                     Notifications.Show(NotificationType.Success, "reallife_work_test_desk_here", data, 8f);
                     return;
                 }
