@@ -13,6 +13,7 @@ namespace RealLifeOverhaul
     ///     Standing        the one answer to "has the player a record, and what does the city think of them"
     ///     LawJustice      an arrest from the street to the court: who holds, who charges, who is told
     ///     LicenceLinks    driving licences with the law and the courts
+    ///     CarSoundLinks   the recorded car sounds with the Garage's builds and its turntable
     ///     Scenes          the one question every street scene asks before it starts
     ///     CivicLinks      city hall with the record, the weather, the paper and the scenes; Paper, a story for the City Ledger
     ///     LifeLinks       careers, social life, travel, the garage and the weather with each other
@@ -89,6 +90,7 @@ namespace RealLifeOverhaul
             Reported.Clear();
             Step("law and justice", Arrests.Connect);
             Step("licences", LicenceLinks.Connect);
+            Step("the recorded car sounds", CarSoundLinks.Connect);
             Step("civic life", CivicLinks.Connect);
             Step("everyday life", LifeLinks.Connect);
             Step("family life", FamilyLinks.Connect);
@@ -172,6 +174,7 @@ namespace RealLifeOverhaul
             Step("everyday life", LifeLinks.Disconnect);
             Step("civic life", CivicLinks.Disconnect);
             Step("licences", LicenceLinks.Disconnect);
+            Step("the recorded car sounds", CarSoundLinks.Disconnect);
             Step("law and justice", Arrests.Disconnect);
         }
 

@@ -54,7 +54,8 @@
   </Target>
 
   <!-- What is installed is the whole package, as the game's Mod Creator uploads it: exactly one DLL in the mod's root
-       folder (the game requires that), the locales, the three asset bundles, and the Workshop thumbnail. The uploader
+       folder (the game requires that), the locales, the three asset bundles, the recorded car sounds with their sources
+       file, and the Workshop thumbnail. The uploader
        takes the first .png/.jpg/.jpeg in the root as the thumbnail, so there must be no other picture there.
        The folder is made the package and nothing else: whatever it holds that the package does not ship (an old
        Bundles\props_newer that the mod would read, a file since dropped) is deleted first, so that installing over an
@@ -64,10 +65,13 @@
       <LocaleFiles Include="$(ModSource)\Locales\**\*.json" />
       <!-- Asset bundles built by CharacterAssets\build_bundle.ps1 (Unity's .meta and .manifest files are not shipped). -->
       <BundleFiles Include="$(ModSource)\Bundles\**\*" Exclude="$(ModSource)\Bundles\**\*.meta;$(ModSource)\Bundles\**\*.manifest" />
+      <!-- The recorded car sounds (Scripts\Driving\Sound), read from this folder at run time, and where each came from. -->
+      <SoundFiles Include="$(ModSource)\Sounds\*.ogg;$(ModSource)\Sounds\SOURCES.md" />
       <InstalledFiles Include="$(ModsLocal)\$(AssemblyName)\**\*" />
       <ShippedFiles Include="$(ModsLocal)\$(AssemblyName)\$(TargetFileName);$(ModsLocal)\$(AssemblyName)\thumbnail.jpg" />
       <ShippedFiles Include="@(LocaleFiles->'$(ModsLocal)\$(AssemblyName)\Locales\%(RecursiveDir)%(Filename)%(Extension)')" />
       <ShippedFiles Include="@(BundleFiles->'$(ModsLocal)\$(AssemblyName)\Bundles\%(RecursiveDir)%(Filename)%(Extension)')" />
+      <ShippedFiles Include="@(SoundFiles->'$(ModsLocal)\$(AssemblyName)\Sounds\%(Filename)%(Extension)')" />
       <StaleFiles Include="@(InstalledFiles)" Exclude="@(ShippedFiles)" />
       <StaleFolders Include="@(StaleFiles->'%(RootDir)%(Directory)')" Exclude="@(ShippedFiles->'%(RootDir)%(Directory)')" />
     </ItemGroup>
@@ -78,6 +82,7 @@
     <Copy SourceFiles="$(ModSource)\thumbnail.jpg" DestinationFolder="$(ModsLocal)\$(AssemblyName)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(LocaleFiles)" DestinationFolder="$(ModsLocal)\$(AssemblyName)\Locales\%(RecursiveDir)" />
     <Copy SourceFiles="@(BundleFiles)" DestinationFolder="$(ModsLocal)\$(AssemblyName)\Bundles\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(SoundFiles)" DestinationFolder="$(ModsLocal)\$(AssemblyName)\Sounds" SkipUnchangedFiles="true" />
     <Message Importance="high" Text="Installed to $(ModsLocal)\$(AssemblyName)" />
   </Target>
 

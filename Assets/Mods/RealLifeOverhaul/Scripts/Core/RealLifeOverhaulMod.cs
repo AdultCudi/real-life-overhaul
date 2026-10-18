@@ -678,11 +678,14 @@ namespace RealLifeOverhaul
                     v => Settings.GarageUnderglow = v)
                 .AddToggle(Settings.GaragePoliceId, "reallife_garage_police", Settings.GaragePolice,
                     v => Settings.GaragePolice = v)
+                .AddToggle(Settings.GarageSoundsId, "reallife_garage_sounds", Settings.GarageSounds,
+                    v => Settings.GarageSounds = v)
                 .AddToggle(Settings.TwoWheelersId, "reallife_garage_two_wheelers", Settings.TwoWheelers,
                     v => Settings.TwoWheelers = v)
                 .AddButton("reallife_garage_test_shop", () => GarageDirector.Instance?.TestShop())
                 .AddButton("reallife_garage_test_random", () => GarageDirector.Instance?.TestRandomBuild())
                 .AddButton("reallife_garage_test_restore", () => GarageDirector.Instance?.TestStock())
+                .AddButton("reallife_garage_test_sounds", () => CarSoundDirector.Instance?.TestReport())
                 .AddButton("reallife_garage_test_vehicles", () => { if (GarageDirector.Instance != null) { GarageSummary.Toggle(); } })
                 .AddButton("reallife_garage_test_bicycle", () => GarageDirector.Instance?.TestBike(BikeKind.CityBicycle))
                 .AddButton("reallife_garage_test_road_bicycle", () => GarageDirector.Instance?.TestBike(BikeKind.RoadBicycle))
@@ -1369,6 +1372,10 @@ namespace RealLifeOverhaul
             Guard.Step("BikeMount", () => BikeMount.Logger = context.Logger);
             Guard.Step("BikePlaces", () => BikePlaces.Logger = context.Logger);
             Guard.Step("GarageDirector", () => Guard.Add<GarageDirector>(_root));   // the custom shop, builds on the player's cars, bicycles and motorbikes (Scripts/Garage)
+            Guard.Step("CarSoundDirector", () => CarSoundDirector.Logger = context.Logger);
+            Guard.Step("CarSoundBank", () => CarSoundBank.Logger = context.Logger);
+            Guard.Step("the recorded car sounds", () => CarSoundBank.Load(context));   // read in the background, once a session (Scripts/Driving/Sound)
+            Guard.Step("CarSoundDirector", () => Guard.Add<CarSoundDirector>(_root));   // the recorded engine on the driven car and the shop's turntable
             Guard.Step("PhoneSkin", () => PhoneSkin.Logger = context.Logger);
             Guard.Step("PhoneSkin", () => Guard.Add<PhoneSkin>(_root));
             Guard.Step("Photos.PhotosDirector", () => Photos.PhotosDirector.Logger = context.Logger);

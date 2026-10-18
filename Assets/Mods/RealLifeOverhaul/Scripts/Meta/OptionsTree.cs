@@ -270,7 +270,7 @@ namespace RealLifeOverhaul.Meta
                 S("carperf").For("driving").Main("car_tuning").Opts("car_top_speed", "car_acceleration").Buttons("reallife_car_measure").Also("speed fast engine"),
                 S("wheel").Guide("driving").Opts("smooth_throttle", "speedometer", "radio_hud").Also("pedal dashboard speed music"),
                 S("owning").Guide("transport").Main("car_ownership").Opts("car_easy").Also("fuel petrol service insurance breakdown wear"),
-                S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police").Buttons("reallife_garage_test_vehicles")
+                S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds").Buttons("reallife_garage_test_vehicles")
                     .Also("tuning paint parts custom"),
                 S("bikes").Guide("garage").Opt("two_wheelers", "garage").Also("bicycle bicycles motorbike motorbikes motorcycle scooter two-wheelers"),
                 S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets", "city_drivers").Opt("tow_trucks", "traffic_accidents")

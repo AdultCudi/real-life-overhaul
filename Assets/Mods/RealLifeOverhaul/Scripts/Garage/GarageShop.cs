@@ -624,6 +624,10 @@ namespace RealLifeOverhaul
             {
                 _info.Append("\n<size=80%>").Append(figures).Append("</size>");
             }
+            if (Settings.GarageSounds)
+            {
+                _info.Append("\n<size=80%>").Append(GarageText.T("reallife_garage_sounds_rev")).Append("</size>");   // the turntable revs on the throttle key (Driving/Sound)
+            }
             return _info.ToString();
         }
 
@@ -892,6 +896,10 @@ namespace RealLifeOverhaul
                     : GarageText.Money(part != null ? GarageCatalogue.PartPrice(part, _kind) : GarageCatalogue.RemovalPrice);
                 string effects = part != null ? Effects(part) : string.Empty;
                 string detail = price.Length > 0 && effects.Length > 0 ? price + ". " + effects : price + effects;
+                if (part != null && part.Sound != null && Settings.GarageSounds)
+                {
+                    detail += (detail.Length > 0 ? ". " : string.Empty) + GarageText.T(part.Sound);   // how it sounds: heard on the throttle key here
+                }
                 Row(list, GarageText.T(GarageCatalogue.SlotName((PartSlot)slot)) + ": " + (part != null ? GarageText.T(part.Name) : GarageText.T("reallife_garage_part_stock")), detail,
                     "reallife_garage_list_next", true, () => Cycle(slot, 1));
             }
