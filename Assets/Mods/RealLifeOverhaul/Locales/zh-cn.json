@@ -19791,7 +19791,7 @@
   "reallife_changes_036_1_title": "0.36.1",
   "reallife_changes_036_1": "已修复：坚持上完的课现在总会计入，跳过时间后也一样；课程或考试进行期间，曼哈顿商学院的书桌会把它放在主键上，游戏自带的课程放在第二个键上。",
   "reallife_garage_sounds": "录制的汽车声音",
-  "reallife_opt_tip_garage_sounds": "你驾驶的汽车会播放同类车型的真实录制引擎声，改装店的排气和涡轮会改变它，松油门时会有放炮声，还有录制的轮胎尖啸声。关闭：使用游戏自带的声音。",
+  "reallife_opt_tip_garage_sounds": "你驾驶的汽车播放同类车型的真实录制引擎声，配合改装店的排气和涡轮，松油门时放炮，还有轮胎尖啸。关闭：使用游戏自带的声音。",
   "reallife_garage_test_sounds": "检查录制的汽车声音",
   "reallife_garage_sounds_test_on": "你的车正在播放录制的引擎声。{wanted} 个录制声音中已有 {loaded} 个就绪。",
   "reallife_garage_sounds_test_wait": "你的车暂时使用游戏自带的声音。{wanted} 个录制声音中已有 {loaded} 个就绪。",

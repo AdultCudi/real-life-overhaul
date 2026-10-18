@@ -19791,7 +19791,7 @@
   "reallife_changes_036_1_title": "0.36.1",
   "reallife_changes_036_1": "Fixed: a class you sit through now always counts, also after skipping time, and while a class or exam is on, a desk at Manhattan Business School has it on the main key and the game's own course on the second key.",
   "reallife_garage_sounds": "Recorded car sounds",
-  "reallife_opt_tip_garage_sounds": "The car you drive plays a real recorded engine of its kind, changed by the custom shop's exhausts and turbos, with pops when you lift off and a recorded tyre squeal. Off: the game's own sounds.",
+  "reallife_opt_tip_garage_sounds": "The car you drive plays a real recorded engine of its kind, with the custom shop's exhausts and turbos, pops when you lift off and tyre squeal. Off: the game's own sounds.",
   "reallife_garage_test_sounds": "Check the recorded car sounds",
   "reallife_garage_sounds_test_on": "Your car plays its recorded engine. {loaded} of {wanted} recorded sounds are ready.",
   "reallife_garage_sounds_test_wait": "Your car keeps the game's own sound for now. {loaded} of {wanted} recorded sounds are ready.",

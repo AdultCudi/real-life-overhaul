@@ -19791,7 +19791,7 @@
   "reallife_changes_036_1_title": "0.36.1",
   "reallife_changes_036_1": "Corrigido: uma aula assistida até o fim agora sempre conta, também depois de pular o tempo, e enquanto uma aula ou prova acontece, uma mesa da Manhattan Business School a mostra na tecla principal e o curso do próprio jogo na segunda tecla.",
   "reallife_garage_sounds": "Sons de carro gravados",
-  "reallife_opt_tip_garage_sounds": "O carro que você dirige toca um motor real gravado do tipo dele, mudado pelos escapamentos e turbos da oficina de personalização, com estouros ao tirar o pé e um chiado de pneu gravado. Desligado: os sons do próprio jogo.",
+  "reallife_opt_tip_garage_sounds": "O carro que você dirige toca um motor real gravado do tipo dele, com os escapamentos e turbos da oficina, estouros ao tirar o pé e chiado de pneu. Desligado: os sons do jogo.",
   "reallife_garage_test_sounds": "Verificar os sons de carro gravados",
   "reallife_garage_sounds_test_on": "Seu carro está tocando o motor gravado. {loaded} de {wanted} sons gravados estão prontos.",
   "reallife_garage_sounds_test_wait": "Por enquanto seu carro fica com o som do próprio jogo. {loaded} de {wanted} sons gravados estão prontos.",
