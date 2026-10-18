@@ -21,7 +21,20 @@ internal static partial class Program
         BusLayout();
         BusPlanner();
         BusSession();
+        BusStopsLikely();
         Console.WriteLine("  Bus network: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
+    }
+
+    // ---------------------------------------------------------------- the dressings built behind the loading screen
+
+    // A line's stops at the spacing wanted: the first at its distance, one more each spacing, none on a line shorter than that.
+    private static void BusStopsLikely()
+    {
+        Check(TransitPlan.StopsLikely(0f, 90f, 260f) == 0 && TransitPlan.StopsLikely(89.9f, 90f, 260f) == 0 && TransitPlan.StopsLikely(90f, 90f, 260f) == 1
+              && TransitPlan.StopsLikely(349.9f, 90f, 260f) == 1 && TransitPlan.StopsLikely(350f, 90f, 260f) == 2 && TransitPlan.StopsLikely(2690f, 90f, 260f) == 11,
+            "bus network: a line has a stop at 90 m and one each 260 m after it (none short of 90 m, 11 on 2.69 km)");
+        Check(TransitPlan.StopsLikely(5000f, 90f, 0f) == 0 && TransitPlan.StopsLikely(-10f, 90f, 260f) == 0 && TransitPlan.StopsLikely(1e6f, 90f, 260f) == 3846,
+            "bus network: no spacing or no length gives no stops, and the longest line its share (3846 on 1,000 km)");
     }
 
     // ---------------------------------------------------------------- the timetable

@@ -118,6 +118,26 @@ namespace RealLifeOverhaul
             _blocks[4] = Block("Bench Block", _shelter);
         }
 
+        /// <summary>
+        /// Behind the loading screen: the bay's paint (or, with none to copy, its strips) made and the lettering's glyphs drawn
+        /// once, so a dressing put up in play makes nothing new. <paramref name="glyphs"/> holds every line's number.
+        /// </summary>
+        public void Prepare(string glyphs)
+        {
+            if (!PaintReady() && _bay == null)
+            {
+                BuildStrips();
+            }
+            for (int i = 0; i < _labels.Length; i++)
+            {
+                if (_labels[i] != null)
+                {
+                    _labels[i].text = glyphs;
+                    _labels[i].ForceMeshUpdate(true);   // drawn although switched off: the font has every glyph before play
+                }
+            }
+        }
+
         /// <summary>Stands the dressing at a stop, for a mesh made for <paramref name="walkerRadius"/>.</summary>
         public void Put(TransitStop stop, string numbers, float walkerRadius)
         {

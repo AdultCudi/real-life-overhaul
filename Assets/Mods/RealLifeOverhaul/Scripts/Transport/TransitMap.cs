@@ -59,6 +59,9 @@ namespace RealLifeOverhaul
         /// <summary>True while the network is being laid out: the director then comes back every frame.</summary>
         public static bool PlacingStops => !Ready;
 
+        /// <summary>True once the routes are laid (behind the loading screen, as a rule), before or after their stops are.</summary>
+        public static bool RoutesLaid => Ready || _phase >= 2;
+
         private static Waypoint[] _points;
         private static readonly List<SubwayStation> Stations = new List<SubwayStation>(24);
         private static readonly List<List<int>> Terminals = new List<List<int>>(24);
@@ -726,6 +729,17 @@ namespace RealLifeOverhaul
         public static int Onward(TransitStop stop)
         {
             return stop == null ? 0 : Lines[stop.Line].Stops.Count - 1 - stop.Order;
+        }
+
+        /// <summary>Every line's number in one text ("M1 M2 M3"): each letter and figure a stop's sign can show. Made anew each call.</summary>
+        public static string LineNumbers()
+        {
+            var text = new StringBuilder(Lines.Count * 4);
+            for (int i = 0; i < Lines.Count; i++)
+            {
+                text.Append(i > 0 ? " " : string.Empty).Append(Lines[i].Number);
+            }
+            return text.ToString();
         }
 
         /// <summary>The numbers of the lines that stop at a place, in the order they were laid ("M2 M5"), each once.</summary>

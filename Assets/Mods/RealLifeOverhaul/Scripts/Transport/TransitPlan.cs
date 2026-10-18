@@ -174,6 +174,19 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// The stops a line of <paramref name="metres"/> has at the spacing wanted, the first <paramref name="first"/> along it:
+        /// about the places it adds to the city, as a stop shared with another line adds none. 0 for a line shorter than that.
+        /// </summary>
+        public static int StopsLikely(float metres, float first, float spacing)
+        {
+            if (metres < first || spacing <= 0f)
+            {
+                return 0;
+            }
+            return (int)((metres - first) / spacing) + 1;
+        }
+
         /// <summary>Real seconds a bus may be behind the figure shown before it counts as late.</summary>
         public static float Slack(float seconds)
         {

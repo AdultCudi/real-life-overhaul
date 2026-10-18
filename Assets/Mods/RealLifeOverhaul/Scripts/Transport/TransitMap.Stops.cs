@@ -20,6 +20,22 @@ namespace RealLifeOverhaul
         private static float _stopWanted;       // metres along it at which its next stop is wanted
         private static int _stopFrom;           // and the point of its path the look goes on from
 
+        /// <summary>About as many places as the routes' stops will be laid at, from the routes alone; the places themselves once laid.</summary>
+        public static int PlacesLikely()
+        {
+            if (Ready)
+            {
+                return Places.Count;
+            }
+            int likely = 0;
+            for (int i = 0; i < Lines.Count; i++)
+            {
+                float[] metres = Lines[i].Metres;
+                likely += metres != null && metres.Length > 0 ? TransitPlan.StopsLikely(metres[metres.Length - 1], FirstStopAt, StopSpacing) : 0;
+            }
+            return likely;
+        }
+
         // The next stop of a line, or the finding that the next stretch has none. True once the line has all its stops.
         private static bool PlaceStop(TransitLine line)
         {

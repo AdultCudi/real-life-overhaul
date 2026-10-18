@@ -15,9 +15,10 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Buses: puts the network (<see cref="TransitMap"/>) on the street. Every place is dressed once, nearest first; the nearest
     /// within 80 m is served, with people waiting and buses on the timetable (<see cref="TransitBus"/>), put on the road out of
-    /// sight. The player's side is in the Player and Journey parts. Every step writes one "Transit check (...)" line with PASS
-    /// or FAIL. Cost: one comparison a frame and a 0.25 s timer; per frame only the rider, the journey and a key while seated.
-    /// A fault switches buses off for the session, after putting everything away.
+    /// sight. The places' dressings are built behind the loading screen, so putting one up in play makes nothing. The player's
+    /// side is in the Player and Journey parts. Every step writes one "Transit check (...)" line with PASS or FAIL. Cost: one
+    /// comparison a frame and a 0.25 s timer; per frame only the rider, the journey and a key while seated. A fault switches
+    /// buses off for the session, after putting everything away.
     /// </summary>
     public sealed partial class TransitDirector : MonoBehaviour
     {
@@ -47,7 +48,7 @@ namespace RealLifeOverhaul
         private const float DwellEmpty = 4f;         // where it stands in the lane and nobody waits, gets out, or is near: doors open and shut
         private const float DwellMost = 34f;         // seconds at the most
         private const float ChooseFor = 30f;         // seconds the bus waits for the player to pick a stop
-        private const int Dressings = 48;            // every place of the city stands while the city is loaded (18 in the city as it is)
+        private const int Dressings = 48;            // every place of the city stands while the city is loaded (26 in the city as it is)
         private const int PutsATick = 6;             // places put up in one pass at the most, nearest first
         private const double PutsSliceMs = 1.0;      // milliseconds of a tick the putting up may take in play; the first place of a tick always goes up
         private const int Waiters = 2;
@@ -168,6 +169,7 @@ namespace RealLifeOverhaul
             TransitMap.Reset();
             TransitState.Reset();
             ScenePrewarm.AddLate("transit: the bus routes laid between the subway stations", TransitMap.Prewarm);
+            ScenePrewarm.AddLate("transit: the bus stops' dressings built for the routes (props, lettering, boxes and paint)", PrewarmDressings);
             ScenePrewarm.Add("transit: the game's road paint found for the bus bays (everything in memory gone through)", RoadPaint.Prewarm);
             _root = new GameObject("RealLifeOverhaul Transit").transform;
             _root.SetParent(transform, false);
@@ -514,11 +516,47 @@ namespace RealLifeOverhaul
             return _walkerRadius;
         }
 
+        // Behind the loading screen, once the routes are laid: a dressing for about every place they will stop at, with its
+        // paint and lettering, so putting one up in play makes nothing. False while the routes or the props are not there
+        // yet: then at the next black screen out of doors.
+        private bool PrewarmDressings()
+        {
+            if (!Settings.Buses)
+            {
+                return true;   // switched on later, from the options in a pause: the dressings are built then
+            }
+            if (!TransitMap.RoutesLaid || !PropLibrary.Settled)
+            {
+                return false;
+            }
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            int want = Math.Min(Dressings, TransitMap.PlacesLikely());
+            string glyphs = TransitMap.LineNumbers();
+            int built = 0;
+            for (int i = 0; i < want; i++)
+            {
+                if (_dressings[i] == null)
+                {
+                    _dressings[i] = new BusStopDressing(_root, i + 1);
+                    _dressings[i].Prepare(glyphs);
+                    built++;
+                }
+            }
+            if (Meta.Dev.Verbose)
+            {
+                double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                Logger?.Info("Transit check (dressings): " + built + " built behind the loading screen for about " + want + " places of " + TransitMap.Lines.Count
+                             + " lines, in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms (wanted: none built in play): PASS.");
+            }
+            return true;
+        }
+
         // Puts up the nearest places not yet up, once a second and on every tick while the last pass ran out of its slice
         // (about a millisecond in play; all of them behind a black screen). True if places were left for the next tick.
         private bool DressNear(Vector3 at)
         {
-            WorkSlice slice = SceneFinds.Hidden ? WorkSlice.Whole : WorkSlice.Of(PutsSliceMs, 1);
+            bool hidden = SceneFinds.Hidden;
+            WorkSlice slice = hidden ? WorkSlice.Whole : WorkSlice.Of(PutsSliceMs, 1);
             for (int pass = 0; pass < PutsATick; pass++)
             {
                 if (!slice.More())
@@ -541,36 +579,18 @@ namespace RealLifeOverhaul
                 {
                     return false;
                 }
-                int free = -1;
-                for (int i = 0; i < Dressings && free < 0; i++)
-                {
-                    if (_dressings[i] == null || _dressings[i].Stop == null)
-                    {
-                        free = i;
-                    }
-                }
+                int free = FreeDressing(at, best, hidden);
                 if (free < 0)
                 {
-                    // All out: the furthest gives its place to the nearer one.
-                    float furthest = best;
-                    for (int i = 0; i < Dressings; i++)
-                    {
-                        float sqr = CitySpots.Flat(_dressings[i].Stop.Sign - at);
-                        if (sqr > furthest && _dressings[i].Stop != _served)
-                        {
-                            furthest = sqr;
-                            free = i;
-                        }
-                    }
-                    if (free < 0)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
                 if (_dressings[free] == null)
                 {
                     _dressings[free] = new BusStopDressing(_root, free + 1);
-                    slice.End();   // a dressing made for the first time (its props, lettering and boxes) is a tick's work on its own
+                    if (!hidden)
+                    {
+                        return true;   // built in play, the city having none: a tick of its own, put up on the next
+                    }
                 }
                 else if (_dressings[free].Stop != null)
                 {
@@ -579,6 +599,46 @@ namespace RealLifeOverhaul
                 PutDressing(_dressings[free], nearest);
             }
             return true;   // as many as a pass puts up: the next pass sees whether any are left
+        }
+
+        // The dressing for the nearest place not up (at nearestSqr): an idle one; a new one behind a screen, or in play only
+        // while none was built for the city; else the furthest up, if further than that place and not the one served. -1 for none.
+        private int FreeDressing(Vector3 at, float nearestSqr, bool hidden)
+        {
+            int empty = -1, built = 0;
+            for (int i = 0; i < Dressings; i++)
+            {
+                if (_dressings[i] == null)
+                {
+                    empty = empty < 0 ? i : empty;
+                    continue;
+                }
+                built++;
+                if (_dressings[i].Stop == null)
+                {
+                    return i;
+                }
+            }
+            if (empty >= 0 && (hidden || built == 0))
+            {
+                return empty;
+            }
+            int free = -1;
+            float furthest = nearestSqr;
+            for (int i = 0; i < Dressings; i++)
+            {
+                if (_dressings[i] == null)
+                {
+                    continue;
+                }
+                float sqr = CitySpots.Flat(_dressings[i].Stop.Sign - at);
+                if (sqr > furthest && _dressings[i].Stop != _served)
+                {
+                    furthest = sqr;
+                    free = i;
+                }
+            }
+            return free;
         }
 
         private void PutDressing(BusStopDressing dressing, TransitStop place)

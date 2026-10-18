@@ -108,6 +108,7 @@ internal static partial class Program
             "transit: every search of the routes is made a slice at a time, held to its steps as a search made whole");
         Check(Body(transit, "private static void Next(").Contains("WorkSlice.Of(StopsSliceMs"), "transit: the stops are placed a slice of about a millisecond a frame");
         Check(Body(Source(scripts, @"Transport\TransitDirector.cs"), "private bool DressNear(").Contains("WorkSlice.Of(PutsSliceMs"), "transit: the stops are put up as many a tick as fit in about a millisecond");
+        Dressings(scripts);
 
         // The road data: one search a city, never in play.
         string roadData = Source(scripts, @"Core\RoadData.cs");
@@ -152,6 +153,32 @@ internal static partial class Program
 
         // The police's road map is built behind the loading screen (the streets' piece builds it), never on the first drive.
         Check(Body(Source(scripts, @"Traffic\Solid\SolidStreets.cs"), "public static bool Prewarm()").Contains("RoadMap.Ensure()"), "prewarm: the police's road map is built behind the loading screen");
+    }
+
+    // The bus stops' dressings: built behind the loading screen once the routes are laid (a spike of about 19 ms the first
+    // time back on the street was one built and put up in the same tick of play), and in play never built and put together.
+    private static void Dressings(string scripts)
+    {
+        string director = Source(scripts, @"Transport\TransitDirector.cs");
+        HandedLate(scripts, @"Transport\TransitDirector.cs", "PrewarmDressings", "the bus stops' dressings");
+        int routes = director.IndexOf(", TransitMap.Prewarm)", StringComparison.Ordinal), dressings = director.IndexOf(", PrewarmDressings)", StringComparison.Ordinal);
+        Check(routes >= 0 && dressings > routes, "transit: the dressings are built after the routes, in the same late call (pieces run in the order handed over)");
+        string prewarm = Body(director, "private bool PrewarmDressings()");
+        int laid = prewarm.IndexOf("TransitMap.RoutesLaid", StringComparison.Ordinal), built = prewarm.IndexOf("new BusStopDressing(", StringComparison.Ordinal);
+        Check(laid >= 0 && prewarm.Contains("PropLibrary.Settled") && built > laid && prewarm.Contains("TransitMap.PlacesLikely()") && prewarm.Contains(".Prepare(glyphs)")
+              && prewarm.Contains("Math.Min(Dressings, "), "transit: once the routes are laid and the props loaded, a dressing for about every place is built and prepared behind the loading screen");
+        string prepare = Body(Source(scripts, @"Transport\BusStopDressing.cs"), "public void Prepare(");
+        Check(prepare.Contains("PaintReady()") && prepare.Contains("BuildStrips()") && prepare.Contains("ForceMeshUpdate(true)"),
+            "transit: a dressing built behind the loading screen has its paint or strips made and its lettering drawn there");
+        string dress = Body(director, "private bool DressNear(");
+        int made = dress.IndexOf("new BusStopDressing(", StringComparison.Ordinal), put = dress.IndexOf("PutDressing(", StringComparison.Ordinal);
+        int alone = made >= 0 ? dress.IndexOf("if (!hidden)", made, StringComparison.Ordinal) : -1;
+        int back = alone >= 0 ? dress.IndexOf("return true;", alone, StringComparison.Ordinal) : -1;
+        Check(made >= 0 && put > made && alone > made && back > alone && back < put && dress.Contains("FreeDressing(at, best, hidden)"),
+            "transit: in play a dressing is never built and put up in the same tick; a new one waits for the next");
+        string free = Body(director, "private int FreeDressing(");
+        Check(free.Contains("empty >= 0 && (hidden || built == 0)") && free.Contains("!= _served"),
+            "transit: in play a place is dressed with an idle dressing or the furthest one, and a new one is built only behind a screen or for a city that has none");
     }
 
     // The feature's file hands the named piece of work to ScenePrewarm as a late piece.
