@@ -15,13 +15,6 @@ namespace RealLifeOverhaul
         private const double Cashier = 25.0;      // what the game's own job pays an hour (WorkActivity)
         private const double VanJob = 100.0;      // the game's delivery van job, an hour
         private const int Days = 3000;
-        private static readonly string[] UnreadWorkPrompts =
-        {
-            "reallife_job_flyers_prompt", "reallife_job_courier_prompt_collect", "reallife_job_courier_prompt_load", "reallife_job_courier_prompt_take",
-            "reallife_job_courier_prompt_hand", "reallife_job_courier_prompt_leave", "reallife_job_prompt_enter", "reallife_job_cleaner_prompt_mop",
-            "reallife_job_stocker_prompt_pick", "reallife_job_stocker_prompt_stock", "reallife_job_busker_prompt_setup", "reallife_job_busker_prompt_strum",
-            "reallife_job_busker_prompt_pack", "reallife_job_lead_prompt"
-        };
 
         public static void Run(Action<string> fail, Dictionary<string, string> locale)
         {
@@ -214,8 +207,7 @@ namespace RealLifeOverhaul
             if (!tests.Contains("CareerCatalogue.FirstRotaOn(TimeHelper.CurrentDay + 1)"))
                 fail("test rota: the sign-on test does not take the first rota that works tomorrow (JobDirector.Tests.cs)");
 
-            // A prompt ({key}: ...) of the jobs and careers that no source names is a text nobody can see. The work's own prompts
-            // (UnreadWorkPrompts) have had no reader since the work moved into the game's panels; they wait for the maintainer.
+            // A prompt ({key}: ...) of the jobs and careers that no source names is a text nobody can see.
             var code = new System.Text.StringBuilder();
             foreach (string file in Directory.GetFiles(Path.Combine(src, "Scripts"), "*.cs", SearchOption.AllDirectories))
                 code.Append(File.ReadAllText(file));
@@ -226,11 +218,10 @@ namespace RealLifeOverhaul
             {
                 if (!Regex.IsMatch(pair.Key, "^reallife_(job|career)_") || !pair.Value.StartsWith("{key}", StringComparison.Ordinal)) continue;
                 prompts++;
-                bool read = all.Contains("\"" + pair.Key + "\"");
-                if (read == UnreadWorkPrompts.Contains(pair.Key)) unread = (unread == null ? "" : unread + ", ") + pair.Key;
+                if (!all.Contains("\"" + pair.Key + "\"")) unread = (unread == null ? "" : unread + ", ") + pair.Key;
             }
-            if (unread != null) fail($"prompts: {unread} named by no source, or read again though listed as unread");
-            Console.WriteLine($"  venue fee {fee} at 100 % with no business; {prompts} job and career prompt(s), {UnreadWorkPrompts.Length} of them listed as unread");
+            if (unread != null) fail($"prompts: {unread} named by no source");
+            Console.WriteLine($"  venue fee {fee} at 100 % with no business; {prompts} job and career prompt(s), each named by a source");
         }
     }
 }
