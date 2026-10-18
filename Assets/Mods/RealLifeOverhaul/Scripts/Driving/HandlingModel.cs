@@ -88,6 +88,10 @@ namespace RealLifeOverhaul
         public float RollPerG;        // degrees
         public float DivePerG;        // degrees of nose dive per g of braking (the same tail squat per g of pull)
         public float BrakeG;          // the deceleration the full pedal gives, g
+        public float BrakeTarget;     // the full pedal's deceleration the kind is built for, g
+        public float FrontLag;        // how much more of its tyres the front asks at its worst moment as the brakes come on than once settled
+        public float RearLag;         // and the rear, at the deepest of the dive
+        public float BrakeUse;        // the most of its tyres' grip along either axle asks for at the full pedal, at its worst moment
         public float TipG;            // the cornering at which the car would tip, g
     }
 
@@ -96,7 +100,8 @@ namespace RealLifeOverhaul
     /// car on the game's spring and two-rate damper, stepped as the physics steps it; the roll and the pitch of the body on
     /// its springs and anti-roll bars about the point where the game applies the tyres' forces; the tyres' magic formula
     /// as the game reads it (the side force from the preset's curve, the force along from its peak figure); the steering
-    /// by speed; the brakes from the axle loads at the design deceleration. <see cref="Design"/> turns a kind's
+    /// by speed; the brakes from the axle loads at the design deceleration, each axle's at its worst moment as the body
+    /// dives, and the stop they give. <see cref="Design"/> turns a kind's
     /// <see cref="HandlingTarget"/> into one car's values. Allocation-free once the setup exists; runs once per car and
     /// change of an option, never per frame.
     /// </summary>
@@ -124,6 +129,11 @@ namespace RealLifeOverhaul
         public const float SmoothAtRest = 0.05f;      // s: the game's own steering smoothing at a standstill
         public const float SteerTop = 50f;            // m/s: the game's speed curves end at this speed
         public const float RollOvershoot = 1.45f;     // a sudden turn swings the body this far past its steady lean, at this ride's damping
+        public const float MostUse = 0.95f;           // the most of what its tyres hold along either axle brakes with, the body settled in its dive
+        public const float MostPeak = 0.98f;          // and at its worst moment as the brakes come on: no wheel locks on a dry road
+        public const float GameBrakeOnset = 0.1f;     // s: the game's own brakes.actuationTime on its cars
+        public const float InputRate = 60f;           // frames a second the eased pedal moves at (the car's input runs once a frame)
+        public const float StopFrom = 100f / 3.6f;    // m/s: the speed the stopping distances are measured from
         public const int CurveKeys = 4;
         public const int SteerKeys = 11;
 
@@ -131,6 +141,8 @@ namespace RealLifeOverhaul
         private static readonly float[] SteerSpeeds = { 0f, 2.5f, 5f, 7.5f, 10f, 13f, 17f, 22f, 30f, 40f, 50f };
 
         private const float Radian = 57.29578f;       // degrees in a radian
+
+        private static readonly float[] Felt = new float[150];   // the brake felt at each physics step while an axle's dive is stepped (3 s)
 
         /// <summary>
         /// One car's handling for a target. Returns why the car cannot be given it (then nothing is to be changed), or
@@ -179,7 +191,7 @@ namespace RealLifeOverhaul
             Pitch(car, t, s, mass, h, a, b);
             Tyres(car, t, s);
             Steering(car, t, s, wheelbase);
-            Brakes(car, t, s, mass, h, wheelbase);
+            Brakes(car, t, s, mass, wheelbase);
             s.TipG = TipG(car, s, s.Front.SideG > s.Rear.SideG ? s.Front.SideG : s.Rear.SideG);
             return null;
         }
@@ -636,23 +648,186 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the brakes
 
-        // Each axle's brake share: at the full pedal the axle brakes with the target's share of what its tyres hold under
-        // the weight the braking itself moves forward, so the front and the rear reach their tyres' limit together and no
-        // wheel locks on a dry road. A car whose brakes are too weak for that keeps the game's full torque.
-        private static void Brakes(CarChassis car, in HandlingTarget t, HandlingSetup s, float mass, float h, float wheelbase)
+        // The full pedal's deceleration for the kind and each axle's brake share for it (PartsBrakes with no parts), and how
+        // much more of its tyres each axle asks at its worst moment as the body dives.
+        private static void Brakes(CarChassis car, in HandlingTarget t, HandlingSetup s, float mass, float wheelbase)
         {
-            float design = t.BrakeShare * t.AlongGrip;   // g at the full pedal
-            float moved = mass * G * design * PitchArm(car, s) / (2f * wheelbase);   // N per wheel
-            float front = s.Front.Load + moved;
-            float rear = s.Rear.Load - moved;
-            rear = rear > 0f ? rear : 0f;
-            float frontTorque = design * front * car.Front.Radius;
-            float rearTorque = design * rear * car.Rear.Radius;
-            float most = car.BrakeTorque > 1f ? car.BrakeTorque : 1f;
-            s.Front.BrakeShare = frontTorque / most > 1f ? 1f : frontTorque / most;
-            s.Rear.BrakeShare = rearTorque / most > 1f ? 1f : rearTorque / most;
-            s.BrakeG = 2f * most * (s.Front.BrakeShare / car.Front.Radius + s.Rear.BrakeShare / car.Rear.Radius) / (mass * G);
+            s.BrakeTarget = t.BrakeShare * t.AlongGrip;
             s.BrakeRise = t.BrakeRise;
+            s.BrakeG = PartsBrakes(car, s, 1f, 1f, 1f, out float front, out float rear, out float use);
+            s.Front.BrakeShare = front;
+            s.Rear.BrakeShare = rear;
+            s.BrakeUse = use;
+            float moved = mass * G * s.BrakeG * PitchArm(car, s) / (2f * wheelbase);   // N per wheel at the full pedal
+            BrakeRamp(s.BrakeRise, GameBrakeOnset, InputRate, 99f, Felt);
+            s.FrontLag = BrakeLag(s.Front, s.Front.Load / G, moved);
+            s.RearLag = BrakeLag(s.Rear, s.Rear.Load / G, -moved);
+        }
+
+        /// <summary>
+        /// The full pedal's deceleration in g with the Garage's brakes, weight and tyres on top (each a factor, 1 for none),
+        /// and each axle's brake share for it: both axles ask the same share of their tyres at their own worst moment as the
+        /// body dives, at most <see cref="MostPeak"/> then and <see cref="MostUse"/> once settled, so no wheel locks on a dry
+        /// road and the parts raise it only as far as the tyres take it. <paramref name="use"/> is the most either axle asks.
+        /// </summary>
+        public static float PartsBrakes(CarChassis car, HandlingSetup s, float brakes, float massFactor, float grip, out float front, out float rear, out float use)
+        {
+            float weight = s.Mass * massFactor * G;
+            float nf = s.Front.Load * massFactor;   // N on a wheel at rest
+            float nr = s.Rear.Load * massFactor;
+            float mf = s.Front.AlongG * grip;       // what each N of load holds along
+            float mr = s.Rear.AlongG * grip;
+            float rollFront = s.Front.Rolling / car.Front.Radius;   // N a wheel's rolling resistance asks of its tyre, all along
+            float rollRear = s.Rear.Rolling / car.Rear.Radius;
+            float rolling = 2f * (rollFront + rollRear) / weight;   // g
+            float perG = weight * PitchArm(car, s) / (2f * (car.Front.Z - car.Rear.Z));   // N moved onto a front wheel by each g of slowing
+            perG = perG > 0f ? perG : 0f;
+            float wanted = s.BrakeTarget * brakes / massFactor;
+            BrakeRamp(s.BrakeRise, GameBrakeOnset, InputRate, 99f, Felt);
+            float lagFront = 1f;
+            float lagRear = 1f;
+            float cap = MostUse;
+            float a = Most(weight, nf, nr, mf, mr, perG, rollFront, rollRear, rolling, 1f, 1f, MostUse, wanted);   // the settled loads alone first
+            for (int pass = 0; pass < 4; pass++)
+            {
+                // The axles' worst moments at this deceleration, and the most both take at them.
+                lagFront = BrakeLag(s.Front, nf / G, perG * (a + rolling));
+                lagRear = BrakeLag(s.Rear, nr / G, -perG * (a + rolling));
+                cap = MostUse * (lagFront < lagRear ? lagFront : lagRear);
+                cap = cap < MostPeak ? cap : MostPeak;
+                a = Most(weight, nf, nr, mf, mr, perG, rollFront, rollRear, rolling, lagFront, lagRear, cap, wanted);
+            }
+            // The front's load lags the brakes as they come on, the rear's swings past its settled share at the deepest of the dive.
+            float frontHold = mf * (nf + perG * (a + rolling)) / lagFront;   // N a front wheel's tyre takes at its worst moment
+            float rearHold = mr * (nr - perG * (a + rolling)) / lagRear;
+            rearHold = rearHold > 1f ? rearHold : 1f;
+            float share = (weight * a * 0.5f + rollFront + rollRear) / (frontHold + rearHold);   // of the tyres, the same on both axles
+            float torque = car.BrakeTorque * brakes > 1f ? car.BrakeTorque * brakes : 1f;
+            float frontForce = share * frontHold - rollFront;
+            float rearForce = share * rearHold - rollRear;
+            front = frontForce * car.Front.Radius / torque;
+            rear = rearForce * car.Rear.Radius / torque;
+            if (front > 1f)
+            {
+                // Brakes too weak for the front's share: the front at their most, the rest to the rear as far as its tyres take it.
+                front = 1f;
+                float rest = weight * a * 0.5f - torque / car.Front.Radius;
+                float rearMost = cap * rearHold - rollRear;
+                rear = (rest < rearMost ? rest : rearMost) * car.Rear.Radius / torque;
+            }
+            rear = rear > 1f ? 1f : rear > 0f ? rear : 0f;
+            front = front > 0f ? front : 0f;
+            float decel = 2f * torque * (front / car.Front.Radius + rear / car.Rear.Radius) / weight;
+            float frontNow = mf * (nf + perG * (decel + rolling)) / lagFront;
+            float rearNow = mr * (nr - perG * (decel + rolling)) / lagRear;
+            float frontUse = (front * torque / car.Front.Radius + rollFront) / (frontNow > 1f ? frontNow : 1f);
+            float rearUse = (rear * torque / car.Rear.Radius + rollRear) / (rearNow > 1f ? rearNow : 1f);
+            use = frontUse > rearUse ? frontUse : rearUse;
+            return decel;
+        }
+
+        // The most braking, at most wanted g, at which both axles ask cap of what their tyres take at their worst moments,
+        // the rolling resistance's part counted: weight a / 2 + rollFront + rollRear = cap (mf (nf + perG (a + rolling)) /
+        // lagFront + mr (nr - perG (a + rolling)) / lagRear).
+        private static float Most(float weight, float nf, float nr, float mf, float mr, float perG, float rollFront, float rollRear, float rolling, float lagFront, float lagRear,
+            float cap, float wanted)
+        {
+            float slope = perG * (mf / lagFront - mr / lagRear);   // N of hold the axles gain together for each g of slowing
+            float below = weight * 0.5f - cap * slope;
+            float most = below > 1f ? (cap * (mf * nf / lagFront + mr * nr / lagRear + slope * rolling) - rollFront - rollRear) / below : wanted;
+            return wanted < most ? wanted : most;
+        }
+
+        /// <summary>
+        /// How much more of its tyres' grip an axle asks for at its worst moment as the brakes come on than once the body
+        /// has settled into the dive: the corner's spring and damper holding <paramref name="mass"/> kg, pressed down by
+        /// <paramref name="moved"/> N at the full pedal (the front; below zero, lifted: the rear), the brakes coming on as
+        /// <see cref="Felt"/> has them, stepped as the game's physics steps it. The front's load lags the brakes at first,
+        /// the rear's swings past its settled share at the deepest of the dive; 1 is never more.
+        /// </summary>
+        private static float BrakeLag(AxleSetup s, float mass, float moved)
+        {
+            float settled = mass * G + moved;   // the load once the body has settled into the dive
+            if (!(mass > 1f))
+            {
+                return 1f;
+            }
+            if (!(settled > 1f))
+            {
+                return 99f;   // the wheel would lift off the road
+            }
+            float length = SettledLength(s, mass);
+            float previous = length;
+            float speed = 0f;
+            float worst = 1f;
+            for (int i = 0; i < Felt.Length; i++)
+            {
+                float load = Corner(s, length, (previous - length) / Step);   // the tyre's load: the spring and the damper
+                float asked = Felt[i] * settled / (load > 1f ? load : 1f);
+                worst = asked > worst ? asked : worst;
+                previous = length;
+                speed += ((load - moved * Felt[i]) / mass - G) * Step;
+                length += speed * Step;
+            }
+            return worst;
+        }
+
+        /// <summary>
+        /// The metres a car stops in from <see cref="StopFrom"/> with the brake key held from the start, as the game runs
+        /// it: the eased pedal at <see cref="InputRate"/> frames a second, the brakes' own onset of <paramref name="onset"/>
+        /// s (brakes.actuationTime), the full pedal's <paramref name="decel"/> g and the tyres' rolling resistance,
+        /// <paramref name="rolling"/> g, each physics step's speed first, then its place.
+        /// </summary>
+        public static float StopMetres(float decel, float rolling, float rise, float onset)
+        {
+            float pedal = 0f;
+            float brake = 0f;
+            float time = 0f;
+            float nextFrame = 0f;
+            float frame = 1f / InputRate;
+            float rate = Step / (onset > 0.001f ? onset : 0.001f);
+            float speed = StopFrom;
+            float metres = 0f;
+            for (int i = 0; i < 5000 && speed > 0f; i++)
+            {
+                while (nextFrame <= time)
+                {
+                    pedal = HandlingRules.BrakePedal(pedal, 1f, frame, rise);
+                    nextFrame += frame;
+                }
+                brake = brake + rate < pedal ? brake + rate : pedal;
+                speed -= (brake * decel + rolling) * G * Step;
+                speed = speed > 0f ? speed : 0f;
+                metres += speed * Step;
+                time += Step;
+            }
+            return metres;
+        }
+
+        /// <summary>
+        /// For the custom shop: the metres from 100 km/h the car the handling is on stops in with a build of the Garage's
+        /// brakes, weight and tyres on top (each a factor, 1 for none), the brakes' own onset <paramref name="onset"/> s:
+        /// the axles' brake shares and the tyres' grip along (<see cref="PartsBrakes"/>), then the eased pedal's rise.
+        /// </summary>
+        public static float ShopStop(CarChassis car, HandlingSetup s, float brakes, float massFactor, float grip, float onset)
+        {
+            float decel = PartsBrakes(car, s, brakes, massFactor, grip, out _, out _, out _);
+            float rolling = 2f * (s.Front.Rolling / car.Front.Radius + s.Rear.Rolling / car.Rear.Radius) / (s.Mass * massFactor * G);
+            return StopMetres(decel, rolling, s.BrakeRise, onset);
+        }
+
+        /// <summary>The whole metres a car of a kind takes from 100 km/h with the full pedal on, at the whole feel: for the Guide.</summary>
+        public static float KindPedalStop(CarKind kind)
+        {
+            HandlingTarget t = HandlingRules.Target(kind, HandlingLevel.Full, HandlingTuning.Neutral);
+            return (float)System.Math.Round(StopFrom * StopFrom / (2f * t.BrakeShare * t.AlongGrip * G));
+        }
+
+        /// <summary>The whole metres a car of a kind stops in from 100 km/h at the whole feel, the brakes' own onset <paramref name="onset"/> s: for the Guide.</summary>
+        public static float KindStop(CarKind kind, float onset)
+        {
+            HandlingTarget t = HandlingRules.Target(kind, HandlingLevel.Full, HandlingTuning.Neutral);
+            return (float)System.Math.Round(StopMetres(t.BrakeShare * t.AlongGrip, t.RollingShare, t.BrakeRise, onset));
         }
 
         /// <summary>

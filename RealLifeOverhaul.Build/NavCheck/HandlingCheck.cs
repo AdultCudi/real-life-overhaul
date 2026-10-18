@@ -10,8 +10,10 @@ using RealLifeOverhaul;
 // springs, weight and tyres on top, the damping ratio from the body's swings in the game's own physics steps and the
 // static sag against the travel (no bottoming out at rest or over a kerb); the body roll from the centre of mass, the
 // tracks and the bars, and no tipping at the tyres' limit; the tyres' peak and plateau; the steering by speed; the
-// brakes from the axle loads and the brake's ramp. Then, over the sources, every value the handling puts on the car is
-// put back on every way out, the Garage's parts go on top of it, and only the car the player drives is ever touched.
+// brakes: the kind's deceleration at the full pedal, inside the tyres at the deepest of the dive, the brake's ramp, and
+// the custom shop's stopping figure against the car braking wheel by wheel with every build of the Garage's brakes,
+// weight, tyres and springs. Then, over the sources, every value the handling puts on the car is put back on every way
+// out, the Garage's parts go on top of it, and only the car the player drives is ever touched.
 internal static partial class Program
 {
     private const float BandLowZeta = 0.20f;     // this ride's damping ratio: a swing or two, then still, never a pogo
@@ -19,6 +21,7 @@ internal static partial class Program
     private const float BandLowSag = 0.30f;      // the static sag's share of the spring's travel
     private const float BandHighSag = 0.68f;
     private const float KerbSpare = 0.01f;       // m of travel left over the kerb at the least
+    private const float ShopSpare = 1f;          // m the custom shop's stopping figure may differ from the car's own stop
 
     private static readonly string[] HandlingKinds = { "honzamimic Economy", "vordtiaravic Saloon", "bima320 Saloon", "mersaidis500 Luxury", "missamvillian Luxury",
         "petrollsfanton Luxury", "limo Luxury", "vordpony Sports", "ferdinand112 Sports", "mersaidimgagt Sports", "anselmoaf90 Sports", "umcnunavut Utility",
@@ -194,9 +197,12 @@ internal static partial class Program
         var countByKind = new Dictionary<CarKind, int>();
         float worstZetaLow = 1f, worstZetaHigh = 0f;
         int builds = 0;
+        int brakeBuilds = 0;
+        var brakeG = new float[4];       // the full pedal's deceleration at each level, for the levels against each other
+        var brakeHeld = new bool[4];     // and whether the game's own brake torque held it there
         if (print)
         {
-            Console.WriteLine("handling: car, kind | kg before -> after | com h | front k, sag, travel, length, zeta | roll deg/g, centre, bars | dive | grip side f/r, along | brake g, shares | tip g");
+            Console.WriteLine("handling: car, kind | kg before -> after | com h | front k, sag, travel, length, zeta | roll deg/g, centre, bars | dive | grip side f/r, along | brake g (built for), shares, use at the worst moment, lags f/r, m at the full pedal, whole stop | tip g");
         }
         foreach ((string type, CarChassis car) in cars)
         {
@@ -288,18 +294,37 @@ internal static partial class Program
                 Check(down, "handling: " + name + "'s steering never grows with speed");
                 Check(setup.SmoothTime[1] > setup.SmoothTime[0] && Near(setup.SmoothTime[0], HandlingModel.SmoothAtRest, 1e-4f), "handling: " + name + "'s wheels follow the key more gently at speed (" + F(setup.SmoothTime[0]) + " to " + F(setup.SmoothTime[1]) + " s)");
 
-                // ---- the brakes: the full pedal inside the tyres, the front and the rear at their limit together.
+                // ---- the brakes: firm, at the kind's deceleration, the full pedal inside the tyres at the deepest of the dive.
                 float arm = HandlingModel.PitchArm(car, setup);
                 float wheelbase = car.Front.Z - car.Rear.Z;
                 float decel = setup.BrakeG;
                 float moved = setup.Mass * HandlingModel.G * decel * arm / (2f * wheelbase);
-                float frontForce = 2f * setup.Front.BrakeShare * car.BrakeTorque / car.Front.Radius;
-                float rearForce = 2f * setup.Rear.BrakeShare * car.BrakeTorque / car.Rear.Radius;
-                float frontHold = 2f * setup.Front.AlongG * (setup.Front.Load + moved);
-                float rearHold = 2f * setup.Rear.AlongG * Math.Max(0f, setup.Rear.Load - moved);
-                Check(frontForce <= frontHold * 1.001f && rearForce <= rearHold * 1.001f, "handling: " + name + "'s full pedal stays inside the tyres (front " + F(frontForce / frontHold) + ", rear " + F(rearForce / Math.Max(1f, rearHold)) + " of what they hold): no lock on a dry road");
-                Check(decel >= 0.5f && decel <= target.BrakeShare * target.AlongGrip * 1.001f, "handling: " + name + " stops at " + F(decel) + " g with the full pedal (design " + F(target.BrakeShare * target.AlongGrip) + ")");
+                float frontForce = setup.Front.BrakeShare * car.BrakeTorque / car.Front.Radius;
+                float rearForce = setup.Rear.BrakeShare * car.BrakeTorque / car.Rear.Radius;
+                float frontHold = setup.Front.AlongG * (setup.Front.Load + moved);   // once the body has settled into the dive
+                float rearHold = setup.Rear.AlongG * Math.Max(1f, setup.Rear.Load - moved);
+                Check(frontForce <= frontHold * HandlingModel.MostUse * 1.001f && rearForce <= rearHold * HandlingModel.MostUse * 1.001f && setup.BrakeUse <= HandlingModel.MostPeak + 1e-3f,
+                    "handling: " + name + "'s full pedal asks the front " + F(frontForce / frontHold) + " and the rear " + F(rearForce / rearHold) + " of what their tyres hold once the body has settled ("
+                    + F(HandlingModel.MostUse) + " at most), and " + F(setup.BrakeUse) + " at their worst moment as it dives (" + F(HandlingModel.MostPeak) + "): no lock on a dry road");
+                Check(setup.FrontLag >= 1f && setup.FrontLag <= 1.3f && setup.RearLag >= 1f && setup.RearLag <= 1.3f, "handling: " + name + "'s axles ask " + F(setup.FrontLag) + " (front) and "
+                    + F(setup.RearLag) + " (rear) times their settled share of the tyres at their worst moment as the body dives under the eased pedal");
+                Check(Near(setup.BrakeTarget, target.BrakeShare * target.AlongGrip, 1e-4f) && decel <= setup.BrakeTarget * 1.001f,
+                    "handling: " + name + " stops at " + F(decel) + " g with the full pedal, never more than it is built for (" + F(setup.BrakeTarget) + ")");
                 Check(setup.Front.BrakeShare > 0f && setup.Front.BrakeShare <= 1f && setup.Rear.BrakeShare >= 0f && setup.Rear.BrakeShare <= 1f, "handling: " + name + "'s brake shares are the game's own range");
+                bool held = setup.Front.BrakeShare >= 0.999f;   // the game's own brake torque is all the front gets
+                brakeG[(int)level] = decel;
+                brakeHeld[(int)level] = held;
+                if (level == HandlingLevel.Full)
+                {
+                    BrakeBand(kind, out float bandLow, out float bandHigh);
+                    Check(decel >= bandLow - 1e-3f && decel <= bandHigh + 1e-3f || held && decel >= setup.BrakeTarget * 0.85f && decel <= bandHigh + 1e-3f,
+                        "handling: " + name + " stops at " + F(decel) + " g with the full pedal (" + kind + ": " + F(bandLow) + " to " + F(bandHigh) + (held ? "; held by the game's own brake torque" : "") + ")");
+                    if (kind == CarKind.Saloon)
+                    {
+                        float pedalMetres = HandlingModel.StopFrom * HandlingModel.StopFrom / (2f * decel * HandlingModel.G);
+                        Check(pedalMetres >= 43f && pedalMetres <= 47f, "handling: " + name + " stops from 100 km/h in " + F(pedalMetres) + " m of the full pedal (43 to 47)");
+                    }
+                }
 
                 // ---- with every Garage build of springs, weight and tyres on top, wet and dry: the worst of them, named.
                 float zetaLow = 1f, zetaHigh = 0f, sagLow = 1f, sagHigh = 0f, kerbLeast = 1f, tipLeast = 99f, stiffLeast = 99f;
@@ -346,24 +371,92 @@ internal static partial class Program
                 Check(stiffLeast > 1f, "handling: " + name + " with every Garage spring: at least " + F(stiffLeast) + " times as stiff as the handling's own (" + stiffAt + ")");
                 Check(tipLeast >= 1.1f, "handling: " + name + " with every Garage build: tips only at " + F(tipLeast) + " times its grip at the least, a sudden turn counted (" + tipAt + ")");
 
+                // ---- with every Garage build of brakes, weight, tyres and springs, the brakes coming on at either of the
+                // game's onsets: the shop's stopping figure is what the car does, wheel by wheel, and no wheel locks.
+                float diffMost = 0f, useMost = 0f;
+                string diffAt = null, useAt = null, longerAt = null;
+                foreach (PartDef spring in PartsOf(PartSlot.Suspension))
+                {
+                    if (spring != null && spring.UtilityOnly && kind != CarKind.Utility && kind != CarKind.Van)
+                    {
+                        continue;
+                    }
+                    foreach (PartDef weight in PartsOf(PartSlot.Weight))
+                    {
+                        float massFactor = weight != null ? weight.Mass : 1f;
+                        AxleSetup frontCorner = BuiltAxle(setup.Front, spring != null ? spring.Stiff : 1f, spring != null ? spring.Ride : 0f, massFactor);
+                        AxleSetup rearCorner = BuiltAxle(setup.Rear, spring != null ? spring.Stiff : 1f, spring != null ? spring.Ride : 0f, massFactor);
+                        foreach (PartDef tyre in PartsOf(PartSlot.Tyres))
+                        {
+                            float grip = tyre != null ? tyre.Grip : 1f;
+                            foreach (float onset in new[] { HandlingModel.GameBrakeOnset, 0.25f })
+                            {
+                                float stockStop = -1f;
+                                foreach (PartDef brake in PartsOf(PartSlot.Brakes))
+                                {
+                                    float brakes = brake != null ? brake.Brake : 1f;
+                                    float shop = HandlingModel.ShopStop(car, setup, brakes, massFactor, grip, onset);
+                                    float stopped = GameStop(car, setup, frontCorner, rearCorner, brakes, massFactor, grip, onset, out float worst);
+                                    brakeBuilds++;
+                                    string build = (brake != null ? brake.Id : "stock brakes") + ", " + (weight != null ? weight.Id : "stock weight") + ", " + (tyre != null ? tyre.Id : "stock tyres")
+                                                   + ", " + (spring != null ? spring.Id : "stock springs") + ", onset " + F(onset) + " s: shop " + F(shop) + " m, car " + F(stopped) + " m";
+                                    if (Math.Abs(shop - stopped) > diffMost) { diffMost = Math.Abs(shop - stopped); diffAt = build; }
+                                    if (worst > useMost) { useMost = worst; useAt = build; }
+                                    if (stockStop > 0f && shop > stockStop + 0.01f) { longerAt = build; }
+                                    stockStop = stockStop < 0f ? shop : Math.Min(stockStop, shop);
+                                }
+                            }
+                        }
+                    }
+                }
+                Check(diffMost <= ShopSpare, "handling: " + name + " with every Garage build of brakes, weight, tyres and springs: the custom shop's stopping figure and the car's own stop agree within "
+                                           + F(diffMost) + " m (" + (diffAt ?? "every build the same") + ")");
+                Check(useMost <= 1f, "handling: " + name + " with every Garage build: no wheel asks more than its tyre holds as the body dives (" + F(useMost) + ", " + useAt + ")");
+                Check(longerAt == null, "handling: " + name + "'s Garage brakes never make the stop longer" + (longerAt != null ? " (" + longerAt + ")" : ""));
+
                 // ---- the same car twice gives the same answer.
                 HandlingModel.Design(car, target, twin);
                 Check(twin.Front.SpringForce == setup.Front.SpringForce && twin.Rear.Bump == setup.Rear.Bump && twin.Front.TyreB == setup.Front.TyreB && twin.SteerShare[5] == setup.SteerShare[5]
                       && twin.Front.BrakeShare == setup.Front.BrakeShare && twin.ComY == setup.ComY, "handling: " + name + " comes out the same every time");
 
-                if (print && level == HandlingLevel.Full)
+                if (print)
                 {
-                    Console.WriteLine("handling: " + type + ", " + kind + " | " + F(car.Mass) + " -> " + F(setup.Mass) + " | " + F(setup.ComHeightBefore) + " -> " + F(setup.ComHeight) + " | "
+                    Console.WriteLine("handling: " + type + ", " + kind + ", " + level + " | " + F(car.Mass) + " -> " + F(setup.Mass) + " | " + F(setup.ComHeightBefore) + " -> " + F(setup.ComHeight) + " | "
                                       + F(setup.Front.Rate) + ", " + F(setup.Front.Sag) + ", " + F(setup.Front.RestLength) + (setup.Front.Raised > 0.001f ? " (+" + F(setup.Front.Raised) + ")" : "") + ", "
                                       + F(setup.Front.SpringLength) + ", " + F(HandlingModel.Bounce(setup.Front, setup.Front.Load / HandlingModel.G, out _, out _)) + " | "
                                       + F(setup.RollPerG) + ", " + F(setup.RollCentre) + ", " + F(setup.Front.AntiRoll) + "/" + F(setup.Rear.AntiRoll) + " | " + F(setup.DivePerG) + " (" + F(setup.Front.AntiSquat) + ") | "
-                                      + F(setup.Front.SideG) + "/" + F(setup.Rear.SideG) + ", " + F(setup.Front.AlongG) + " | " + F(setup.BrakeG) + ", " + F(setup.Front.BrakeShare) + "/" + F(setup.Rear.BrakeShare) + " | "
+                                      + F(setup.Front.SideG) + "/" + F(setup.Rear.SideG) + ", " + F(setup.Front.AlongG) + " | " + F(setup.BrakeG) + " (" + F(setup.BrakeTarget) + "), " + F(setup.Front.BrakeShare) + "/"
+                                      + F(setup.Rear.BrakeShare) + ", " + F(setup.BrakeUse) + ", " + F(setup.FrontLag) + "/" + F(setup.RearLag) + ", "
+                                      + F(HandlingModel.StopFrom * HandlingModel.StopFrom / (2f * setup.BrakeG * HandlingModel.G)) + " m, " + F(HandlingModel.ShopStop(car, setup, 1f, 1f, 1f, 0.25f)) + " m | "
                                       + F(HandlingModel.TipG(car, setup, Math.Max(setup.Front.SideG, setup.Rear.SideG) * semi)) + " | steer " + F(HandlingModel.SteerAt(setup, car.SteerLock, 50f / 3.6f)) + "/"
                                       + F(HandlingModel.SteerAt(setup, car.SteerLock, 100f / 3.6f)) + "/" + F(HandlingModel.SteerAt(setup, car.SteerLock, 50f)));
                 }
             }
+
+            // ---- the levels' brakes against each other: Light firmer, Heavy softer, by as much as their tyres let them.
+            float fullG = brakeG[(int)HandlingLevel.Full];
+            Check(brakeG[(int)HandlingLevel.Light] > fullG && brakeG[(int)HandlingLevel.Heavy] < fullG && brakeG[(int)HandlingLevel.Light] <= fullG * LightBrakeRatio * 1.002f,
+                "handling: " + type + " brakes at " + F(brakeG[(int)HandlingLevel.Light]) + ", " + F(fullG) + " and " + F(brakeG[(int)HandlingLevel.Heavy]) + " g at Light, Full and Heavy");
+            if (!brakeHeld[(int)HandlingLevel.Full] && !brakeHeld[(int)HandlingLevel.Heavy])
+            {
+                Check(Near(brakeG[(int)HandlingLevel.Heavy] / fullG, HeavyBrakeRatio, 0.005f), "handling: " + type + "'s Heavy brakes at " + F(brakeG[(int)HandlingLevel.Heavy] / fullG)
+                                                                                                + " of the whole feel's, as their share of slidier tyres says (" + F(HeavyBrakeRatio) + ")");
+            }
         }
         Check(builds > 1000, "handling: every car with every Garage build of springs, weight and tyres, wet and dry (" + builds + ")");
+        Check(brakeBuilds > 5000, "handling: every car's stop with every Garage build of brakes, weight, tyres and springs, at both onsets (" + brakeBuilds + ")");
+
+        // ---- the kinds' full pedal: firm cars, a van and a truck that take longer, as asked.
+        foreach (CarKind kind in new[] { CarKind.Economy, CarKind.Saloon, CarKind.Luxury, CarKind.Sports, CarKind.Utility, CarKind.Van, CarKind.Truck })
+        {
+            HandlingTarget t = HandlingRules.Target(kind, HandlingLevel.Full, neutral);
+            float g = t.BrakeShare * t.AlongGrip;
+            BrakeBand(kind, out float low, out float high);
+            float metres = HandlingModel.StopFrom * HandlingModel.StopFrom / (2f * g * HandlingModel.G);
+            StopBand(kind, out float shortest, out float longest);
+            Check(g >= low && g <= high && metres >= shortest && metres <= longest, "handling: a " + kind + " is built to stop at " + F(g) + " g with the full pedal, " + F(metres) + " m from 100 km/h ("
+                                                                              + F(low) + " to " + F(high) + " g, " + F(shortest) + " to " + F(longest) + " m), " + F(HandlingModel.KindStop(kind, 0.25f)) + " m with the brake key held from the start");
+        }
         Check(Mean(rollByKind, countByKind, CarKind.Van) > Mean(rollByKind, countByKind, CarKind.Sports) && Mean(rollByKind, countByKind, CarKind.Utility) > Mean(rollByKind, countByKind, CarKind.Sports),
             "handling: a van (" + F(Mean(rollByKind, countByKind, CarKind.Van)) + ") and an SUV (" + F(Mean(rollByKind, countByKind, CarKind.Utility)) + ") roll more than a sports car (" + F(Mean(rollByKind, countByKind, CarKind.Sports)) + " degrees per g)");
 
@@ -446,6 +539,114 @@ internal static partial class Program
         Check(worstZetaLow >= BandLowZeta && worstZetaHigh <= BandHighZeta, "handling: every car's damping ratio lies between " + F(worstZetaLow) + " and " + F(worstZetaHigh));
     }
 
+    private const float LightBrakeRatio = 8f / 7f * 1.1f;    // Light's full pedal against the whole feel's: a seventh more of tyres a tenth grippier
+    private const float HeavyBrakeRatio = 13f / 14f * 0.95f; // Heavy's: a fourteenth less of tyres a twentieth slidier
+
+    // The full pedal's deceleration asked of each kind at the whole feel, g.
+    private static void BrakeBand(CarKind kind, out float low, out float high)
+    {
+        switch (kind)
+        {
+            case CarKind.Van: low = 0.72f; high = 0.78f; return;
+            case CarKind.Truck: low = 0.62f; high = 0.68f; return;
+            default: low = 0.85f; high = 0.92f; return;
+        }
+    }
+
+    // And the metres from 100 km/h that gives at the full pedal.
+    private static void StopBand(CarKind kind, out float shortest, out float longest)
+    {
+        switch (kind)
+        {
+            case CarKind.Van: shortest = 50f; longest = 55f; return;
+            case CarKind.Truck: shortest = 57f; longest = 64f; return;
+            case CarKind.Saloon: shortest = 43f; longest = 47f; return;
+            default: shortest = 42f; longest = 47.5f; return;
+        }
+    }
+
+    // The car braking from 100 km/h as the game's own chain brakes it, wheel by wheel: the eased pedal at the input's rate;
+    // the brakes' onset (Brakes.cs: a MoveTowards over actuationTime each physics step); each wheel's torque, the pedal
+    // times the brakes' most times its axle's share and never past the most (WheelComponent.AddBrakeTorque), and its
+    // rolling resistance; each held to what its tyre takes at the load its spring and damper put on it as the body dives
+    // (each axle's corner, with the build's springs, pushed down or lifted by the weight the braking moves). Returns the
+    // metres; worst is the most of what its tyre holds any wheel asked for (past 1 it would lock and the ABS come on).
+    private static float GameStop(CarChassis car, HandlingSetup s, AxleSetup frontCorner, AxleSetup rearCorner, float brakes, float massFactor, float grip, float onset,
+        out float worst)
+    {
+        HandlingModel.PartsBrakes(car, s, brakes, massFactor, grip, out float frontShare, out float rearShare, out _);
+        float step = HandlingModel.Step;
+        float mass = s.Mass * massFactor;
+        float most = car.BrakeTorque * brakes;
+        float arm = HandlingModel.PitchArm(car, s);
+        float wheelbase = car.Front.Z - car.Rear.Z;
+        float frontGrip = s.Front.AlongG * grip;
+        float rearGrip = s.Rear.AlongG * grip;
+        float frontMass = frontCorner.Load / HandlingModel.G;
+        float rearMass = rearCorner.Load / HandlingModel.G;
+        float frontLength = Settled(frontCorner), rearLength = Settled(rearCorner);
+        float frontBefore = frontLength, rearBefore = rearLength, frontSpeed = 0f, rearSpeed = 0f;
+        float pedal = 0f, felt = 0f, time = 0f, nextFrame = 0f, frame = 1f / HandlingModel.InputRate;
+        float speed = HandlingModel.StopFrom, metres = 0f;
+        worst = 0f;
+        for (int i = 0; i < 5000 && speed > 0f; i++)
+        {
+            while (nextFrame <= time)
+            {
+                pedal = HandlingRules.BrakePedal(pedal, 1f, frame, s.BrakeRise);
+                nextFrame += frame;
+            }
+            felt = Math.Min(pedal, felt + step / Math.Max(0.001f, onset));
+            float frontLoad = Corner(frontCorner, frontLength, (frontBefore - frontLength) / step);
+            float rearLoad = Corner(rearCorner, rearLength, (rearBefore - rearLength) / step);
+            float frontWant = (Math.Min(felt * most * frontShare, most) + s.Front.Rolling) / car.Front.Radius;
+            float rearWant = (Math.Min(felt * most * rearShare, most) + s.Rear.Rolling) / car.Rear.Radius;
+            float frontHold = frontGrip * frontLoad, rearHold = rearGrip * rearLoad;
+            worst = Math.Max(worst, Math.Max(frontWant / Math.Max(1f, frontHold), rearWant / Math.Max(1f, rearHold)));
+            float slowing = 2f * (Math.Min(frontWant, frontHold) + Math.Min(rearWant, rearHold)) / mass;
+            float moved = mass * slowing * arm / (2f * wheelbase);   // N a front wheel gains and a rear wheel loses as the body dives
+            frontBefore = frontLength;
+            rearBefore = rearLength;
+            frontSpeed += ((frontLoad - moved) / frontMass - HandlingModel.G) * step;
+            rearSpeed += ((rearLoad + moved) / rearMass - HandlingModel.G) * step;
+            frontLength += frontSpeed * step;
+            rearLength += rearSpeed * step;
+            speed = Math.Max(0f, speed - slowing * step);
+            metres += speed * step;
+            time += step;
+        }
+        return metres;
+    }
+
+    // A corner's spring and damper at a length and compression speed, as the game sums them for the tyre's load.
+    private static float Corner(AxleSetup s, float length, float compressing)
+    {
+        if (length >= s.SpringLength)
+        {
+            return 0f;
+        }
+        return Math.Max(0f, HandlingModel.SpringAt(s, (s.SpringLength - length) / s.SpringLength) + HandlingModel.DamperAt(s, compressing));
+    }
+
+    // Where a corner's spring holds its load at rest.
+    private static float Settled(AxleSetup s)
+    {
+        float low = 0f, high = 1f;
+        for (int i = 0; i < 40; i++)
+        {
+            float middle = (low + high) * 0.5f;
+            if (HandlingModel.SpringAt(s, middle) < s.Load)
+            {
+                low = middle;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+        return s.SpringLength * (1f - (low + high) * 0.5f);
+    }
+
     private static IEnumerable<PartDef> PartsOf(PartSlot slot)
     {
         yield return null;
@@ -478,7 +679,7 @@ internal static partial class Program
         Check(handling.Length > 0 && tuning.Length > 0 && garage.Length > 0, "handling source: CarHandling, CarTuning and GarageCar are there");
 
         // Every value of the game's the handling writes when it puts itself on, it writes back when it comes off.
-        string apply = Body(handling, "private void PutOn(");
+        string apply = Body(handling, "private void PutOn(") + Body(handling, "private void BrakesForParts(");
         string back = Body(handling, "private void TakeOff(");
         var written = new HashSet<string>(StringComparer.Ordinal);
         var restored = new HashSet<string>(StringComparer.Ordinal);
@@ -510,6 +711,11 @@ internal static partial class Program
         string off = Body(handling, "public void Restore(");
         Check(Before(on, "LiftParts", "PutOn(") && Before(on, "PutOn(", "LayParts") && Before(off, "LiftParts", "TakeOff(") && Before(off, "TakeOff(", "LayParts"),
             "handling source: the Garage's parts are lifted before the handling goes on or comes off, and laid back on top after");
+        Check(Before(on, "LayParts", "BrakesForParts(") && Body(handling, "private void BrakesForParts(").Contains("HandlingModel.PartsBrakes("),
+            "handling source: the brakes are shared out for the Garage's parts once they lie on top, by the model's own sums");
+        string shop = Source(scripts, @"Garage\GarageTuning.cs");
+        Check(Body(shop, "public static GarageFigures Figures(").Contains("CarTuning.HandlingStop(") && Body(handling, "public float ShopStop(").Contains("HandlingModel.ShopStop("),
+            "handling source: the custom shop's stopping figure comes from the handling's own model when the handling is on the car");
 
         // Every way out comes through CarTuning.Restore, which takes the handling off after its own numbers.
         string restore = Body(tuning, "private void Restore(");

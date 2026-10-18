@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("driving", "CarTuning", typeof(CarTuning));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
-        private const float BrakeOnset = 0.25f;   // seconds for the brakes to come on fully with the eased pedal
+        public const float BrakeOnset = 0.25f;    // seconds for the brakes to come on fully with the eased pedal
         private const float MaxTopKmh = 350f;     // whatever the slider says: beyond this a car covers two metres a physics step
 
         public static IModLogger Logger;
@@ -185,6 +185,16 @@ namespace RealLifeOverhaul
             HandlingTuning t = Tuning();
             Meta.Dev.Always(Logger, "Car handling tuning: softness " + t.Softness + " %, bounce " + t.Bounce + " %, roll " + t.Roll + " %, grip " + t.Grip + " %, steering "
                                     + t.Steering + " %, brakes " + t.Brakes + " %, at the level " + HandlingRules.Level(Settings.Handling) + ".");
+        }
+
+        /// <summary>
+        /// For the custom shop's figures (Garage/GarageTuning): the metres from 100 km/h the car being driven stops in with a
+        /// build of the Garage's brakes, weight and tyres on top, by its handling's own model; -1 with the handling not on it.
+        /// </summary>
+        public static float HandlingStop(CarController car, float brakes, float mass, float grip)
+        {
+            CarTuning tuning = Instance;
+            return tuning != null && !tuning._failed ? tuning._handling.ShopStop(car, brakes, mass, grip) : -1f;
         }
 
         /// <summary>The driving feature's clean-up: the car being driven as the game made it, until it or an option changes.</summary>

@@ -68,7 +68,7 @@ namespace RealLifeOverhaul
         public float PeakSlip;        // degrees of slip angle at which the front tyres give their most
         public float RearPeakFactor;  // the rear tyres' peak slip angle against the front's (later: they let go gently)
         public float Plateau;         // share of the peak a tyre keeps well past it: high, so no snap
-        public float BrakeShare;      // the full pedal's share of what the tyres can hold, at the design deceleration
+        public float BrakeShare;      // the full pedal's deceleration as a share of the tyres' grip along
         public float BrakeRise;       // s from nothing to the full pedal, held down
         public float SteerReach;      // at speed, the full steering is this many times the front tyres' peak slip angle past the bend's own angle
         public float SteerSmoothing;  // s: how gently the wheels follow the key at 180 km/h (the game's own is 0.05 s at a standstill)
@@ -84,6 +84,8 @@ namespace RealLifeOverhaul
     {
         public const float BrakeFall = 0.12f;       // s for the brake pedal to come back up from full
         public const float PedalDeadZone = 0.06f;   // just over the 0.05 the game's gearbox reads as "no pedal"
+        private const float LightBrakes = 8f / 7f;  // Light's full pedal against the whole feel's, as a share of the tyres' grip
+        private const float HeavyBrakes = 13f / 14f;   // and Heavy's
 
         /// <summary>The level a choice of the option stands for; anything else is the default.</summary>
         public static HandlingLevel Level(int choice)
@@ -109,7 +111,7 @@ namespace RealLifeOverhaul
                     t.RearSurplus = 0.08f;       // the tail stays put unless the handbrake swings it
                     t.PeakSlip *= 0.9f;          // the tyres bite sooner
                     t.Plateau = 0.95f;
-                    t.BrakeShare = 0.8f;
+                    t.BrakeShare = t.BrakeShare * LightBrakes < HandlingModel.MostUse ? t.BrakeShare * LightBrakes : HandlingModel.MostUse;   // a seventh more of grippier tyres
                     t.BrakeRise = 0.4f;
                     t.SteerReach = 1.0f;
                     t.SteerSmoothing = 0.15f;
@@ -125,7 +127,7 @@ namespace RealLifeOverhaul
                     t.RearSurplus = 0.015f;      // the tail comes round when the weight leaves it
                     t.PeakSlip *= 1.12f;
                     t.Plateau = 0.91f;
-                    t.BrakeShare = 0.65f;
+                    t.BrakeShare *= HeavyBrakes;   // a fourteenth less of slidier tyres
                     t.BrakeRise = 0.6f;
                     t.SteerReach = 1.2f;
                     t.SteerSmoothing = 0.24f;
@@ -146,22 +148,22 @@ namespace RealLifeOverhaul
         // The whole feel for each kind: what such cars weigh, how high their weight sits, how they ride and grip.
         private static HandlingTarget Full(CarKind kind)
         {
-            //                         kg    com h  ride Hz  zeta   roll  dive  centre  side   along  peak deg
+            //                         kg    com h  ride Hz  zeta   roll  dive  centre  side   along  peak deg  brakes g
             switch (kind)
             {
-                case CarKind.Economy: return Make(1250f, 0.50f, 1.25f, 0.24f, 6.5f, 2.4f, 0.05f, 0.95f, 1.00f, 12f);   // small hatchback
-                case CarKind.Saloon: return Make(1550f, 0.52f, 1.20f, 0.24f, 6.0f, 2.4f, 0.06f, 1.00f, 1.00f, 12f);    // family and full-size saloons
-                case CarKind.Luxury: return Make(2050f, 0.52f, 1.05f, 0.23f, 6.5f, 2.6f, 0.08f, 1.00f, 1.00f, 13f);    // big, soft and floating
-                case CarKind.Sports: return Make(1550f, 0.45f, 1.45f, 0.26f, 4.5f, 1.8f, 0.05f, 1.12f, 1.10f, 10f);    // low, firm, wide tyres
-                case CarKind.Utility: return Make(2350f, 0.62f, 1.15f, 0.24f, 7.5f, 2.6f, 0.14f, 0.90f, 0.95f, 14f);   // SUVs and pickups: a live rear axle sits its roll centre higher
-                case CarKind.Van: return Make(2400f, 0.75f, 1.20f, 0.24f, 7.0f, 2.6f, 0.25f, 0.85f, 0.95f, 14f);       // tall and heavy, on a beam axle
-                case CarKind.Truck: return Make(3000f, 0.80f, 1.25f, 0.24f, 6.5f, 2.2f, 0.22f, 0.80f, 0.85f, 15f);     // box and freight trucks, lightly laden, on beam axles
-                default: return Make(1550f, 0.52f, 1.20f, 0.24f, 6.0f, 2.4f, 0.06f, 1.00f, 1.00f, 12f);
+                case CarKind.Economy: return Make(1250f, 0.50f, 1.25f, 0.24f, 6.5f, 2.4f, 0.05f, 0.95f, 1.00f, 12f, 0.86f);   // small hatchback
+                case CarKind.Saloon: return Make(1550f, 0.52f, 1.20f, 0.24f, 6.0f, 2.4f, 0.06f, 1.00f, 1.00f, 12f, 0.88f);    // family and full-size saloons
+                case CarKind.Luxury: return Make(2050f, 0.52f, 1.05f, 0.23f, 6.5f, 2.6f, 0.08f, 1.00f, 1.00f, 13f, 0.88f);    // big, soft and floating
+                case CarKind.Sports: return Make(1550f, 0.45f, 1.45f, 0.26f, 4.5f, 1.8f, 0.05f, 1.12f, 1.10f, 10f, 0.92f);    // low, firm, wide tyres
+                case CarKind.Utility: return Make(2350f, 0.62f, 1.15f, 0.24f, 7.5f, 2.6f, 0.14f, 0.90f, 0.95f, 14f, 0.85f);   // SUVs and pickups: a live rear axle sits its roll centre higher
+                case CarKind.Van: return Make(2400f, 0.75f, 1.20f, 0.24f, 7.0f, 2.6f, 0.25f, 0.85f, 0.95f, 14f, 0.75f);       // tall and heavy, on a beam axle
+                case CarKind.Truck: return Make(3000f, 0.80f, 1.25f, 0.24f, 6.5f, 2.2f, 0.22f, 0.80f, 0.85f, 15f, 0.65f);     // box and freight trucks, lightly laden, on beam axles
+                default: return Make(1550f, 0.52f, 1.20f, 0.24f, 6.0f, 2.4f, 0.06f, 1.00f, 1.00f, 12f, 0.88f);
             }
         }
 
         private static HandlingTarget Make(float mass, float comHeight, float rideHz, float damping, float roll, float dive, float rollCentre,
-            float side, float along, float peakSlip)
+            float side, float along, float peakSlip, float brakes)
         {
             return new HandlingTarget
             {
@@ -180,7 +182,7 @@ namespace RealLifeOverhaul
                 PeakSlip = peakSlip,
                 RearPeakFactor = 1.1f,
                 Plateau = 0.93f,
-                BrakeShare = 0.7f,         // the full pedal well inside the tyres: no wheel locks on a dry road, the Garage's brakes add to it
+                BrakeShare = brakes / along,   // the full pedal's deceleration: firm, inside the tyres (HandlingModel.MostUse), the ABS for the wet
                 BrakeRise = 0.5f,
                 SteerReach = 1.1f,         // a little past the front tyres' peak: pushed too hard, the car runs wide
                 SteerSmoothing = 0.2f,
@@ -207,18 +209,6 @@ namespace RealLifeOverhaul
             }
             float back = current - dt / BrakeFall;
             return back < asked ? asked : back;
-        }
-
-        /// <summary>
-        /// The whole metres a car of a kind stops in from 100 km/h with the full pedal held, at the whole feel: the brake
-        /// building over its rise (about half its force meanwhile), then its full deceleration. For the Guide.
-        /// </summary>
-        public static float StopFrom100(CarKind kind)
-        {
-            HandlingTarget t = Target(kind, HandlingLevel.Full, HandlingTuning.Neutral);
-            const float speed = 100f / 3.6f;   // m/s
-            float slowing = t.BrakeShare * t.AlongGrip * 9.81f;
-            return (float)System.Math.Round(speed * t.BrakeRise * 0.5f + speed * speed / (2f * slowing));
         }
 
         private static float Sqrt(float value)

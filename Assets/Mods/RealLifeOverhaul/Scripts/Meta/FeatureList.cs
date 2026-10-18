@@ -129,7 +129,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("handling_mass_most", () => Guide.Number(HandlingRules.Target(CarKind.Truck, HandlingLevel.Full, HandlingTuning.Neutral).Mass))
                 .Fact("handling_brake_rise", () => Guide.Number(HandlingRules.Target(CarKind.Saloon, HandlingLevel.Full, HandlingTuning.Neutral).BrakeRise))
                 .Fact("handling_kerb", () => Guide.Number(HandlingModel.Kerb * 100f))
-                .Fact("handling_stop", () => Guide.Number(HandlingRules.StopFrom100(CarKind.Saloon)))
+                .Fact("handling_stop", () => Guide.Number(HandlingModel.KindStop(CarKind.Saloon, CarTuning.BrakeOnset)))
+                .Fact("handling_pedal", () => Guide.Number(HandlingModel.KindPedalStop(CarKind.Saloon)))
                 .Test("reallife_handling_test_say", CarTuning.TestHandling)
                 .Cleanup(CarTuning.PutBack);
 

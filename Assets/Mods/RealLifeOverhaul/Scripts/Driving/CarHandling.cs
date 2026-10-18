@@ -80,6 +80,8 @@ namespace RealLifeOverhaul
         private GroundDetectionPreset _ground;
         private ABSModuleWrapper _abs;   // the game's ABS module, put on by the handling (null: none, or the car had its own)
         private ABSModule _absTaken;     // the module last taken off, for the self-check
+        private float _partsBrakes = 1f, _partsMass = 1f, _partsGrip = 1f;   // the Garage's parts on top, against what lies under them
+        private float _partsBrakeG, _partsUse, _partsFront, _partsRear;     // the full pedal with them: g, the most of the tyres it asks, the axles' shares
 
         private AnimationCurve _frontSpring, _rearSpring, _steerMade, _smoothMade;
         private FrictionPreset _frontTyre, _rearTyre;   // the mod's own tyres, one preset for each axle of the car driven
@@ -97,9 +99,10 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- on
 
         /// <summary>
-        /// Puts the handling on a car at a level, the Garage's parts lifted first and laid back on top after. True if it is
-        /// on. Refused (and said once in the log) for a car that is not a four-wheeled car of a kind the mod tunes, or not
-        /// the player's own in a Going Public session; anything unexpected throws, and the caller puts the car back.
+        /// Puts the handling on a car at a level, the Garage's parts lifted first and laid back on top after, and the brakes
+        /// then shared out for the parts on top (never past what the tyres hold). True if it is on. Refused (and said once in
+        /// the log) for a car that is not a four-wheeled car of a kind the mod tunes, or not the player's own in a Going
+        /// Public session; anything unexpected throws, and the caller puts the car back.
         /// </summary>
         public bool Apply(CarController car, NwhVehicle vehicle, HandlingLevel level, in HandlingTuning tuning)
         {
@@ -124,6 +127,9 @@ namespace RealLifeOverhaul
                 return false;
             }
             LiftParts(car);
+            float torqueUnder = 0f;
+            float massUnder = 0f;
+            float gripUnder = 0f;
             try
             {
                 string why = Read(car, vehicle, body);
@@ -144,16 +150,20 @@ namespace RealLifeOverhaul
                 _level = level;
                 Refusal = null;
                 PutOn(vehicle, body);
-                if (Meta.Dev.Verbose)
-                {
-                    CarTuning.Logger?.Info(Line(tuning));
-                }
-                return true;
+                torqueUnder = vehicle.brakes.maxTorque;   // what lies under the Garage's parts, to tell their brakes, weight and tyres by
+                massUnder = body.mass;
+                gripUnder = _wheels[0].Wheel.LongitudinalFrictionGrip;
             }
             finally
             {
                 LayParts(car);   // the Garage's parts back on top of whatever is under them now
             }
+            BrakesForParts(vehicle, body, torqueUnder, massUnder, gripUnder);
+            if (Meta.Dev.Verbose)
+            {
+                CarTuning.Logger?.Info(Line(tuning));
+            }
+            return true;
         }
 
         // Reads the car into the chassis the model designs for. Changes nothing. Why the car cannot be done, or null.
@@ -424,6 +434,22 @@ namespace RealLifeOverhaul
             }
         }
 
+        // The Garage's brakes, weight and tyres as they now lie on top, against what was under them: each axle's brake share
+        // for the deceleration they give, never past what the tyres take (HandlingModel.PartsBrakes). Its write back is
+        // TakeOff's, with the rest.
+        private void BrakesForParts(NwhVehicle vehicle, Rigidbody body, float torqueUnder, float massUnder, float gripUnder)
+        {
+            _partsBrakes = torqueUnder > 1f ? vehicle.brakes.maxTorque / torqueUnder : 1f;
+            _partsMass = massUnder > 1f ? body.mass / massUnder : 1f;
+            _partsGrip = gripUnder > 0.01f ? _wheels[0].Wheel.LongitudinalFrictionGrip / gripUnder : 1f;
+            _partsBrakeG = HandlingModel.PartsBrakes(_chassis, _setup, _partsBrakes, _partsMass, _partsGrip, out _partsFront, out _partsRear, out _partsUse);
+            for (int g = 0; g < _groups.Count; g++)
+            {
+                GroupStock stock = _groups[g];
+                stock.Group.brakeCoefficient = stock.Front ? _partsFront : _partsRear;
+            }
+        }
+
         // ---------------------------------------------------------------- off
 
         /// <summary>The car exactly as it was before <see cref="Apply"/>, the Garage's parts lifted first and laid back on top after. Safe with nothing on.</summary>
@@ -621,9 +647,23 @@ namespace RealLifeOverhaul
             data["zeta"] = Num(_setup.Front.Zeta);
             data["roll"] = Num(_setup.RollPerG);
             data["grip"] = Num(_setup.Front.SideG);
-            data["brakes"] = Num(_setup.BrakeG);
+            data["brakes"] = Num(_partsBrakeG);
             Meta.Dev.Always(CarTuning.Logger, Line(tuning));
             return true;
+        }
+
+        /// <summary>
+        /// For the custom shop: the metres from 100 km/h this car stops in with a build of the Garage's brakes, weight and
+        /// tyres on top (each a factor, 1 for none), by the model the car is given (HandlingModel.ShopStop); -1 for a car the
+        /// handling is not on.
+        /// </summary>
+        public float ShopStop(CarController car, float brakes, float mass, float grip)
+        {
+            if (_vehicle == null || car == null || car.vehicleController != _vehicle || _vehicle.brakes == null)
+            {
+                return -1f;
+            }
+            return HandlingModel.ShopStop(_chassis, _setup, brakes, mass, grip, _vehicle.brakes.actuationTime);
         }
 
         // The self-check line, getting in: what was put on against the game's own, the ride as the model steps it, and
@@ -682,6 +722,14 @@ namespace RealLifeOverhaul
             {
                 why = "the ride steps to a damping ratio of " + Num(zeta) + " with " + Num(kerb * 100f) + " cm left over a kerb";
             }
+            if (why == null && _partsUse > HandlingModel.MostPeak + 0.005f)
+            {
+                why = "the full pedal asks " + Num(_partsUse) + " of what the tyres hold";
+            }
+            if (why == null && Mathf.Abs(_groups[0].Group.brakeCoefficient - (_groups[0].Front ? _partsFront : _partsRear)) > 1e-4f)
+            {
+                why = "the brakes' shares did not take";
+            }
 
             float lockDegrees = _chassis.SteerLock;
             _line.Clear();
@@ -701,8 +749,13 @@ namespace RealLifeOverhaul
                 .Append(" g to the side against the game's ").Append(Num(gameSide)).Append(", ").Append(Num(f.AlongG)).Append(" g along, at their peak at ")
                 .Append(Num(f.PeakDegrees)).Append('/').Append(Num(r.PeakDegrees)).Append(" degrees; steering ").Append(Num(HandlingModel.SteerAt(_setup, lockDegrees, 1.4f)))
                 .Append('/').Append(Num(HandlingModel.SteerAt(_setup, lockDegrees, TownKmh / 3.6f))).Append('/').Append(Num(HandlingModel.SteerAt(_setup, lockDegrees, 100f / 3.6f)))
-                .Append(" degrees at 5/50/100 km/h; brakes ").Append(Num(_setup.BrakeG)).Append(" g at the full pedal, built in ").Append(Num(_setup.BrakeRise))
-                .Append(" s, shares ").Append(Num(f.BrakeShare)).Append('/').Append(Num(r.BrakeShare)).Append(" against the game's ").Append(Num(gf.BrakeShare)).Append('/')
+                .Append(" degrees at 5/50/100 km/h; brakes ").Append(Num(_partsBrakeG)).Append(" g at the full pedal (built for ").Append(Num(_setup.BrakeTarget))
+                .Append(_partsBrakes != 1f || _partsMass != 1f || _partsGrip != 1f
+                    ? ", with the custom shop's brakes " + Num(_partsBrakes) + ", weight " + Num(_partsMass) + " and tyres " + Num(_partsGrip) : string.Empty)
+                .Append("), asking at most ").Append(Num(_partsUse)).Append(" of the tyres as the body dives (front ").Append(Num(_setup.FrontLag)).Append(", rear ")
+                .Append(Num(_setup.RearLag)).Append(" times their settled share at their worst moment), built in ").Append(Num(_setup.BrakeRise))
+                .Append(" s, shares ").Append(Num(_partsFront)).Append('/')
+                .Append(Num(_partsRear)).Append(" against the game's ").Append(Num(gf.BrakeShare)).Append('/')
                 .Append(Num(gr.BrakeShare)).Append(_abs != null ? ", the game's ABS on" : ", the car's own ABS").Append("; inertia ")
                 .Append(_inertiaSet ? "scaled here" : "scaled by the engine").Append(": ").Append(why == null ? "PASS" : "FAIL, " + why).Append('.');
             return _line.ToString();
