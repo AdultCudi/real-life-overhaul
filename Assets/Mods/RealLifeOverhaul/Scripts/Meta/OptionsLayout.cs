@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using BAModAPI;
 using BigAmbitions.Mods;
 using Localizor;
@@ -11,38 +10,16 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// Puts the options page in order. The mod API gives one flat page for all mods and these rows: header,
-    /// toggle, slider, dropdown, button, splitter, and a custom row that draws itself; a row has a label and
-    /// nothing else (no second line, no disabled state, no indent, no sub-pages, no way to jump to a row). So
-    /// the page stays as RealLifeOverhaulMod.cs builds it (features keep adding their group there, and no saved
-    /// option id, default or handler changes), and this class rearranges the finished list by the one table
-    /// <see cref="OptionsTree"/>, with <see cref="OptionsPlan"/> doing the arithmetic:
-    ///
-    ///   ten groups in the order a player thinks ("Start here", "Your character and home", "The city", ...),
-    ///   each a button that opens to its sections, each section a button that opens to at most ten rows, its
-    ///   main switch first. One group is open at a time and one section in it; what is open is remembered
-    ///   until the game is closed. Each button says how many of its switches are on.
-    ///   A row whose option does nothing just now (its main switch is off, something it needs is off, another
-    ///   mod has what it steers) is drawn as the game draws a control that cannot be used, with the reason
-    ///   after its label ("needs: Credit rating and phone loans").
-    ///   Every option has one sentence, shown by the game's own tooltip when the pointer rests on its row.
-    ///   Test buttons stand only under Troubleshooting, in "Test tools", grouped as the page is; they are on
-    ///   the page at all only while "Show test tools" is on (the page is registered again when that changes).
-    ///   A row the table does not claim is shown under Troubleshooting in "Other" and named in the log.
-    ///
-    /// Under the page's first header is the search box (OptionsSearch.cs, the other half of this class).
-    ///
-    /// Cost: the table is read once at start-up (<see cref="Build"/>, timed in its log line). Each drawing of
-    /// the page runs one pass over the mod's rows as the game makes them; a click on a switch recounts its
-    /// section and group and looks again at the rows that need something (a few dictionary reads each).
-    /// Nothing runs per frame. If anything here fails, the page is registered exactly as it was built.
+    /// Puts the options page in order. The mod API gives every mod one flat page of labelled rows, so the page stays as
+    /// RealLifeOverhaulMod.cs builds it and this class rearranges the finished list by <see cref="OptionsTree"/>
+    /// (<see cref="OptionsPlan"/> does the arithmetic): groups opening to sections, rows that do nothing for now drawn
+    /// disabled with the reason, a tooltip on every option, the test tools only while asked for. The table is read once at
+    /// start-up and each drawing is one pass over the rows; nothing per frame. On a fault the page is registered as built.
     /// </summary>
     public static partial class OptionsLayout
     {
         private const string AboutKey = "reallife_opt_about";
         private const string LayoutTestKey = "reallife_opt_test_layout";
-        private const float BlockedAlpha = 0.5f;   // a label beside a control that cannot be used, when the control itself does not say how faint
-
         /// <summary>One row of a section and what the page knows of it.</summary>
         private sealed class Row
         {
@@ -60,7 +37,7 @@ namespace RealLifeOverhaul.Meta
             public Feature AsideOf;                // the feature that may say it does nothing for now
             public bool Away;                      // not on the page in this drawing
             public string Reason;                  // why it does nothing just now, as shown after its label; null while it works
-            public ModOption Option;               // the row as the page registers it (a switch wrapped so that the page hears of it): what the Settings app writes through
+            public ModOption Option;               // the row as registered, a switch wrapped so that the page hears of it: what the Settings app writes through
         }
 
         /// <summary>A button of the page that opens and closes: a group, a section, "Test tools" or a group of test buttons.</summary>
@@ -86,7 +63,7 @@ namespace RealLifeOverhaul.Meta
             public int SwitchesOn;
             public int Switches;
             public string Suffix = string.Empty;   // what stands after its name
-            public string[] Features;              // the features of Meta/FeatureList it is the section of (for Core/Guard's note)
+            public string[] Features;              // its features, for Core/Guard's note
             public string Shown;                   // the suffix that is on the button now
 
             // For the search: made on the first letters typed after the page was drawn.
@@ -123,13 +100,6 @@ namespace RealLifeOverhaul.Meta
         private static readonly List<Row> Needy = new List<Row>();              // rows that need something, or may stand aside
         private static readonly Dictionary<string, Row> ById = new Dictionary<string, Row>(StringComparer.Ordinal);
         private static readonly Dictionary<string, bool> On = new Dictionary<string, bool>(StringComparer.Ordinal);   // switches as the page last reported them
-        private static readonly Dictionary<string, string> OpenChild = new Dictionary<string, string>(StringComparer.Ordinal)   // parent id: the one child that is open (until the game is closed)
-        {
-            { string.Empty, "g:" + OptionsTree.StartId }
-        };
-        private static readonly Dictionary<Feature, string> AsideNow = new Dictionary<Feature, string>();   // of this drawing
-        private static readonly HashSet<GameObject> Absent = new HashSet<GameObject>();   // rows of this drawing that are not on the page (Feature.Present said no)
-        private static readonly Func<string, bool> IsOnNow = IsOn;
         private static ModOptions _plain;
         private static ModOptions _withTests;
         private static bool _testsShown;           // which of the two is registered
@@ -139,12 +109,6 @@ namespace RealLifeOverhaul.Meta
         private static int _otherRows;
         private static int _testRows;
         private static double _buildMs;
-        private static int _drawFrame = -1;        // the frame the page is being drawn in; -1 once it is drawn
-        private static long _drawStarted;
-        private static string _countFormat;
-        private static string _needsFormat;
-
-        // ---------------------------------------------------------------- order
 
         /// <summary>The features in the order of the page: as the table names them, then any it does not name.</summary>
         public static List<Feature> Ordered()
@@ -173,8 +137,6 @@ namespace RealLifeOverhaul.Meta
             }
             return list;
         }
-
-        // ---------------------------------------------------------------- building
 
         /// <summary>The one call from RealLifeOverhaulInit: the page as built goes in, the page in order comes out.</summary>
         public static ModOptions Organise(ModContext context, ModOptions original)
@@ -206,7 +168,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>The mod is being unloaded.</summary>
         public static void Dispose()
         {
             if (_hooked)
@@ -261,8 +222,8 @@ namespace RealLifeOverhaul.Meta
             var built = new List<ModOption>();
             Feature current = null;
 
-            // Whose a row is, as before: the feature that owns its option id; else the one that named its button; else
-            // the one whose header it stood under. A button whose label has "_test_" in it is a test.
+            // Whose a row is: the feature that owns its option id, else the one that named its button, else the one whose header it
+            // stood under. A button with "_test_" in its label is a test.
             foreach (ModOption option in original.Options)
             {
                 if (option is HeaderOption)
@@ -341,7 +302,6 @@ namespace RealLifeOverhaul.Meta
                     info.Owner = Features.OwnerOfOption(info.Id);
                 }
             }
-            // And the page's own buttons.
             built.Add(new ButtonOption("reallife_meta_settings_button", () => SettingsApp.Open(null)));
             built.Add(new ButtonOption("reallife_meta_guide_button", Guide.Open));
             built.Add(new ButtonOption("reallife_meta_preset_button_relaxed", () => AskPreset(Intensity.Relaxed)));
@@ -351,9 +311,9 @@ namespace RealLifeOverhaul.Meta
             built.Add(new ButtonOption("reallife_meta_reset_button", AskReset));
             built.Add(new ButtonOption("reallife_meta_export_button", ExportNow));
             built.Add(new ButtonOption("reallife_meta_import_button", AskImport));
-            built.Add(new ButtonOption("reallife_meta_bug_button", BugReport.Press));   // a report on the player's disk to post in the mod's Discord (Meta/BugReport)
+            built.Add(new ButtonOption("reallife_meta_bug_button", BugReport.Press));
             built.Add(new ButtonOption("reallife_meta_welcome_button", () => Welcome.Open(true)));
-            built.Add(new ButtonOption("reallife_guard_button", () => OptionsNotice.Tell("reallife_guard_button", Guard.Status())));   // what a game update switched off (Core/Guard)
+            built.Add(new ButtonOption("reallife_guard_button", () => OptionsNotice.Tell("reallife_guard_button", Guard.Status())));   // what a game update switched off
             Features.Find("diagnostics")?.AddTest(LayoutTestKey, TestLayout);
 
             var rows = new List<PlanRow>(built.Count);
@@ -366,7 +326,6 @@ namespace RealLifeOverhaul.Meta
             TestPlaces.Clear();
             TestRuns.Clear();
 
-            // The groups and their sections, in the table's order.
             Section trouble = null;
             foreach (TreeGroup group in OptionsTree.Groups)
             {
@@ -461,8 +420,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // One row into a section. A switch is wrapped so that the page hears of it: the game calls the handler with the
-        // saved value each time the page is drawn, and on every click. The option's own handler runs first, unchanged.
+        // A switch is wrapped so that the page hears of it: the game calls its handler, which runs first, on each drawing and click.
         private static Row AddRow(Section section, ModOption option, TreeRow tree)
         {
             string id = option is IPersistableOption saved && !string.IsNullOrEmpty(saved.Id) ? saved.Id : null;
@@ -545,10 +503,7 @@ namespace RealLifeOverhaul.Meta
                                 into = new Section { Id = "ts:" + section.Id, TitleKey = section.TitleKey, InTests = true, Parent = top };
                                 top.Children.Add(into);
                             }
-                            Action run = InCity(test);
-                            AddRow(into, new ButtonOption(test.LabelKey, run), null);
-                            TestPlaces.Add(new TestPlace(g, section.Id, test.LabelKey));
-                            TestRuns.Add(run);
+                            PlaceTest(into, test, new TestPlace(g, section.Id, test.LabelKey));
                             count++;
                         }
                     }
@@ -584,10 +539,7 @@ namespace RealLifeOverhaul.Meta
                         rest.Children.Add(into);
                         MetaLog.Warn("options page: the feature " + feature.Id + " is in no section of Meta/OptionsTree.cs; its test tools are under Test tools, Other.");
                     }
-                    Action run = InCity(test);
-                    AddRow(into, new ButtonOption(test.LabelKey, run), null);
-                    TestPlaces.Add(new TestPlace(-1, null, test.LabelKey));
-                    TestRuns.Add(run);
+                    PlaceTest(into, test, new TestPlace(-1, null, test.LabelKey));
                     count++;
                 }
             }
@@ -596,6 +548,14 @@ namespace RealLifeOverhaul.Meta
                 trouble.Children.Add(tests);
             }
             return count;
+        }
+
+        private static void PlaceTest(Section into, TestAction test, TestPlace place)
+        {
+            Action run = InCity(test);
+            AddRow(into, new ButtonOption(test.LabelKey, run), null);
+            TestPlaces.Add(place);
+            TestRuns.Add(run);
         }
 
         // A test stages something in the city. Without one (the main menu) its button says so, where it would do nothing.
@@ -660,746 +620,6 @@ namespace RealLifeOverhaul.Meta
             {
                 Emit(page, child, withTests);
             }
-        }
-
-        // ---------------------------------------------------------------- the page being drawn
-
-        private static bool Drawing => _drawFrame == Time.frameCount;
-
-        // The first of the mod's rows is being made: the rows of the last drawing are on their way out, and nothing may switch them back on.
-        private static void DrawBegin(Transform parent)
-        {
-            _drawFrame = Time.frameCount;
-            _drawStarted = Stopwatch.GetTimestamp();
-            foreach (Section section in Sections)
-            {
-                section.Header = null;
-                section.HeaderText = null;
-                section.Shown = null;
-                section.Objects.Clear();
-                section.Matched = false;
-                section.Dressed = false;
-                foreach (Row row in section.Infos)
-                {
-                    row.Reason = null;
-                    row.Away = false;
-                }
-            }
-            Absent.Clear();
-            AsideNow.Clear();
-            OtherMods.Look(MetaLog.Sink);   // a row may be there only with another author's mod: looked for when the page is drawn
-            _countFormat = "reallife_opt_count".GetLocalization();
-            _needsFormat = "reallife_opt_needs".GetLocalization();
-            CaptionsBegin(parent);
-            SearchDrawn(parent);
-        }
-
-        // A section's rows have been made: which object is which row, and which rows are not on the page this time.
-        private static void RowsDrawn(Section section, Transform parent)
-        {
-            section.Objects.Clear();
-            for (int i = section.Start; i < parent.childCount; i++)
-            {
-                section.Objects.Add(parent.GetChild(i).gameObject);
-            }
-            // One object per row is what the game makes. Should a row have made none or several, the section still opens and closes as a whole.
-            section.Matched = section.Objects.Count == section.Rows.Count;
-            if (!section.Matched)
-            {
-                return;
-            }
-            for (int i = 0; i < section.Infos.Count; i++)
-            {
-                Row row = section.Infos[i];
-                if (row.Present != null && !row.Present())
-                {
-                    row.Away = true;
-                    Absent.Add(section.Objects[i]);
-                    section.Objects[i].SetActive(false);
-                }
-            }
-        }
-
-        // The last of the mod's rows has been made: every switch has reported, so what is greyed, the counts and what is open can be set.
-        private static void DrawEnd(Transform parent)
-        {
-            CaptionsEnd(parent);
-            _drawFrame = -1;
-            try
-            {
-                foreach (Row row in Needy)
-                {
-                    Block(row);
-                }
-                foreach (Section top in Top)
-                {
-                    Count(top);
-                }
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);   // the groups must still close what is not open: a page with every row shown is the wall this class is there to prevent
-            }
-            foreach (Section top in Top)
-            {
-                Apply(top);
-            }
-            if (Dev.Verbose)
-            {
-                double drawMs = (Stopwatch.GetTimestamp() - _drawStarted) * 1000.0 / Stopwatch.Frequency;
-                int drawn = 0;
-                int unmatched = 0;
-                foreach (Section section in Sections)
-                {
-                    drawn += section.Objects.Count;
-                    unmatched += section.Header != null && !section.Matched ? 1 : 0;
-                }
-                bool pass = _otherRows == 0 && unmatched == 0 && _plan != null && _plan.Missing.Count == 0;
-                MetaLog.Info("Options check (page drawn): " + Top.Count + " groups, " + (_plan != null ? _plan.Sections.Count : 0) + " sections, "
-                             + (_plan != null ? _plan.Placed : 0) + " rows placed, " + _otherRows + " in Other (wanted 0), " + drawn + " row objects, "
-                             + unmatched + " sections whose rows did not match their objects (wanted 0), test tools " + (_testsShown ? "on the page" : "left off")
-                             + ", put in order in " + _buildMs.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms, drawn in "
-                             + drawMs.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms: " + (pass ? "PASS" : "FAIL") + ".");
-            }
-        }
-
-        private static GameObject Last(Transform parent)
-        {
-            return parent != null && parent.childCount > 0 ? parent.GetChild(parent.childCount - 1).gameObject : null;
-        }
-
-        private static TextLocalizationComponent TextOf(GameObject row)
-        {
-            return row != null ? row.GetComponentInChildren<TextLocalizationComponent>(true) : null;
-        }
-
-        // The text of a row that shows its label (a slider has a second one for its number).
-        private static TextLocalizationComponent LabelOf(GameObject row, string labelKey)
-        {
-            if (row == null)
-            {
-                return null;
-            }
-            TextLocalizationComponent first = null;
-            foreach (TextLocalizationComponent text in row.GetComponentsInChildren<TextLocalizationComponent>(true))
-            {
-                if (text.Key == labelKey)
-                {
-                    return text;
-                }
-                first = first ?? text;
-            }
-            return first;
-        }
-
-        // ---------------------------------------------------------------- switches, counts, rows that do nothing for now
-
-        private static bool IsOn(string optionId)
-        {
-            if (On.TryGetValue(optionId, out bool on))
-            {
-                return on;
-            }
-            OptionInfo info = SettingsTable.Get(optionId);
-            return info == null || SettingsTable.Current(info) != 0;   // an option the page does not know keeps nothing from working
-        }
-
-        // A switch reported: with its saved value while the page is drawn, or because it was clicked.
-        private static void Switched(Row row, bool on)
-        {
-            try
-            {
-                row.On = on;
-                if (row.Id != null)
-                {
-                    On[row.Id] = on;
-                }
-                if (Drawing || _countFormat == null)
-                {
-                    return;   // DrawEnd counts and greys everything once, when all have reported; or the page was never drawn (a change from the Settings app)
-                }
-                if (row.Needed)
-                {
-                    foreach (Row needy in Needy)
-                    {
-                        Block(needy);
-                    }
-                }
-                for (Section section = row.Section; section != null; section = section.Parent)
-                {
-                    CountOwn(section);
-                    Label(section);
-                }
-                if (Top.Count > 0 && Top[0].IsStart)
-                {
-                    CountOwn(Top[0]);   // the preset in use may be another one now
-                    Label(Top[0]);
-                }
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-            }
-        }
-
-        // Why a row does nothing just now, or null: another mod has what it steers, or something it needs is off.
-        private static string ReasonFor(Row row)
-        {
-            if (row.AsideOf != null)
-            {
-                if (!AsideNow.TryGetValue(row.AsideOf, out string aside))
-                {
-                    aside = row.AsideOf.AsideWhy();
-                    AsideNow[row.AsideOf] = aside;
-                }
-                if (aside != null)
-                {
-                    return aside;
-                }
-            }
-            if (!row.HasNeeds)
-            {
-                return null;
-            }
-            string blocker = OptionsPlan.Blocker(row.Id, IsOnNow);
-            if (blocker == null)
-            {
-                return null;
-            }
-            string label = ById.TryGetValue(blocker, out Row needed) ? needed.LabelKey.GetLocalization() : blocker;
-            return _needsFormat.Replace("{option}", label);
-        }
-
-        // Draws a row as the game draws a control that cannot be used, with the reason after its label; or puts it back.
-        private static void Block(Row row)
-        {
-            Section section = row.Section;
-            if (!section.Matched || row.Away)
-            {
-                return;
-            }
-            string reason = ReasonFor(row);
-            if (reason == row.Reason)
-            {
-                return;
-            }
-            row.Reason = reason;
-            GameObject item = section.Objects[row.Index];
-            if (item == null)
-            {
-                return;
-            }
-            float faint = BlockedAlpha;
-            foreach (UnityEngine.UI.Selectable control in item.GetComponentsInChildren<UnityEngine.UI.Selectable>(true))
-            {
-                control.interactable = reason == null;
-                faint = control.colors.disabledColor.a;
-            }
-            TextLocalizationComponent label = LabelOf(item, row.LabelKey);
-            if (label != null)
-            {
-                label.Suffix = reason == null ? string.Empty : "   (" + reason + ")";
-                if (label.TextContainer != null)
-                {
-                    label.TextContainer.alpha = reason == null ? 1f : Mathf.Clamp(faint, 0.35f, 0.8f);
-                }
-            }
-        }
-
-        // Counts a section's switches and those of what is in it, and says so after its name.
-        private static void Count(Section section)
-        {
-            foreach (Section child in section.Children)
-            {
-                Count(child);
-            }
-            CountOwn(section);
-        }
-
-        private static void CountOwn(Section section)
-        {
-            int on = 0;
-            int all = 0;
-            foreach (Row row in section.Infos)
-            {
-                if (row.IsSwitch && !row.Away)
-                {
-                    all++;
-                    on += row.On ? 1 : 0;
-                }
-            }
-            int buttons = section.Infos.Count;
-            foreach (Section child in section.Children)
-            {
-                if (child.IsTests)
-                {
-                    continue;   // the test tools are counted where they stand
-                }
-                on += child.SwitchesOn;
-                all += child.Switches;
-                buttons += child.Switches;   // (a group of test buttons keeps its number of buttons there)
-            }
-            section.SwitchesOn = on;
-            section.Switches = section.InTests ? buttons : all;
-            if (section.InTests)
-            {
-                section.Suffix = "   (" + section.Switches + ")";
-            }
-            else if (section.IsStart)
-            {
-                section.Suffix = ":  " + Presets.CurrentName() + (Guard.AnyOff ? "   (" + Guard.Note(null) + ")" : string.Empty);
-            }
-            else
-            {
-                section.Suffix = all == 0 ? string.Empty : _countFormat.Replace("{on}", on.ToString()).Replace("{total}", all.ToString());
-                string note = GuardNote(section);
-                if (note != null)
-                {
-                    section.Suffix += "   (" + note + ")";   // a part of it is off after a game update, or it was switched off after its faults
-                }
-            }
-        }
-
-        // Core/Guard's note for the first of a section's features that has a part off, or null.
-        private static string GuardNote(Section section)
-        {
-            if (section.Features == null)
-            {
-                return null;
-            }
-            foreach (string feature in section.Features)
-            {
-                string note = Guard.Note(feature);
-                if (note != null)
-                {
-                    return note;
-                }
-            }
-            return null;
-        }
-
-        // The text after the name on a section's button, written only when it is another one.
-        private static void Label(Section section)
-        {
-            if (section.HeaderText != null && section.Shown != section.Suffix)
-            {
-                section.Shown = section.Suffix;
-                section.HeaderText.Suffix = section.Suffix;
-            }
-        }
-
-        // The game's own tooltip on every row of a section that has a sentence: made the first time the section is shown in a drawing.
-        private static void Dress(Section section)
-        {
-            if (section.Dressed || !section.Matched)
-            {
-                return;
-            }
-            section.Dressed = true;
-            for (int i = 0; i < section.Infos.Count; i++)
-            {
-                Row row = section.Infos[i];
-                GameObject item = section.Objects[i];
-                if (row.TipKey == null || item == null || item.GetComponent<BasicTooltip>() != null)
-                {
-                    continue;
-                }
-                BasicTooltip tip = item.AddComponent<BasicTooltip>();
-                tip.descriptionKey = row.TipKey;
-            }
-        }
-
-        // ---------------------------------------------------------------- open and closed
-
-        private static void Show(GameObject row, bool on)
-        {
-            on = on && !Absent.Contains(row);   // a row that is not on the page stays away, whatever opens or is found
-            if (row != null && row.activeSelf != on)
-            {
-                row.SetActive(on);
-            }
-        }
-
-        private static string ParentId(Section section)
-        {
-            return section.Parent != null ? section.Parent.Id : string.Empty;
-        }
-
-        private static bool IsOpen(Section section)
-        {
-            return OpenChild.TryGetValue(ParentId(section), out string open) && open == section.Id;
-        }
-
-        // One group is open at a time, and one section in it: opening one closes the one that was.
-        private static void Toggle(Section section)
-        {
-            try
-            {
-                if (Searching)
-                {
-                    return;   // what is shown is what was found; what is open and closed stays as it was left
-                }
-                string parent = ParentId(section);
-                bool open = !IsOpen(section);
-                bool closedAbove = false;
-                if (open && OpenChild.TryGetValue(parent, out string was))
-                {
-                    foreach (Section beside in section.Parent != null ? section.Parent.Children : Top)
-                    {
-                        if (beside == section)
-                        {
-                            break;
-                        }
-                        closedAbove |= beside.Id == was;
-                    }
-                }
-                if (open)
-                {
-                    OpenChild[parent] = section.Id;
-                }
-                else
-                {
-                    OpenChild.Remove(parent);
-                }
-                foreach (Section top in Top)
-                {
-                    Apply(top);
-                }
-                if (closedAbove && _box != null)
-                {
-                    _box.ScrollTo(section.Header);   // what closed above it took its rows away: the one just opened goes to the top of the view
-                }
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-            }
-        }
-
-        // Is the section's own button to be seen: a group always, anything else while what it stands in is open.
-        private static bool Visible(Section section)
-        {
-            return section.Parent == null || (Visible(section.Parent) && IsOpen(section.Parent));
-        }
-
-        // Shows or hides a section's rows, and what is inside it. The objects are the game's; one that has gone (the page was closed) is skipped.
-        private static void Apply(Section section)
-        {
-            if (Searching)
-            {
-                return;   // the search decides until the box is empty again, and then calls this
-            }
-            bool visible = Visible(section);
-            bool open = visible && IsOpen(section);
-            Show(section.Header, visible);
-            Label(section);
-            CaptionState(section, open ? CaptionClose : CaptionOpen);
-            if (open)
-            {
-                Dress(section);
-            }
-            foreach (GameObject row in section.Objects)
-            {
-                Show(row, open);
-            }
-            foreach (Section child in section.Children)
-            {
-                Apply(child);
-            }
-        }
-
-        /// <summary>After "Show test tools" changed: the page with them, or without, is registered in place of the other on the next frame.</summary>
-        public static void ApplyAll()
-        {
-            if (_plain == null || _modId == null || Settings.ShowTestTools == _testsShown)
-            {
-                return;
-            }
-            Refresh();
-        }
-
-        /// <summary>
-        /// Option values were changed from outside the page (a preset, an import, a reset), or the test tools were
-        /// asked for: if the page is registered it is drawn again on the next frame, which is the game's own way
-        /// of showing saved values.
-        /// </summary>
-        public static void Refresh()
-        {
-            if (_plain == null || _modId == null || !OptionsService.RegisteredEntries.ContainsKey(_modId))
-            {
-                return;
-            }
-            MetaUi.Instance.NextFrame(() =>
-            {
-                if (_plain != null && OptionsService.RegisteredEntries.ContainsKey(_modId))
-                {
-                    _testsShown = Settings.ShowTestTools;
-                    OptionsService.Register(_modId, Guard.Rows(_testsShown ? _withTests : _plain));
-                }
-            });
-        }
-
-        // The game's own "reset all options": it clears the saved values and draws the page again, and every row then
-        // reports its default (the rows carry the shipped values, see SettingsTable.WithTrueDefault). A frame later the
-        // options are read again so that whoever listens to Settings.Changed hears of it.
-        private static void GameReset()
-        {
-            try
-            {
-                MetaUi.Instance.NextFrame(() =>
-                {
-                    Settings.Reload();
-                    ApplyAll();
-                });
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-            }
-        }
-
-        // ---------------------------------------------------------------- the buttons of "Start here"
-
-        // A preset is asked first, with the game's own question, which says how many options it will change.
-        private static void AskPreset(Intensity intensity)
-        {
-            string about;
-            switch (intensity)
-            {
-                case Intensity.Relaxed: about = "reallife_meta_preset_about_relaxed"; break;
-                case Intensity.Realistic: about = "reallife_meta_preset_about_realistic"; break;
-                case Intensity.Hardcore: about = "reallife_meta_preset_about_hardcore"; break;
-                default: about = "reallife_meta_preset_about_standard"; break;
-            }
-            int switches;
-            int changes = Presets.CountChanges(intensity, out switches);
-            string body = "reallife_opt_ask_preset".GetLocalization()
-                .Replace("{about}", about.GetLocalization())
-                .Replace("{count}", changes.ToString())
-                .Replace("{switches}", switches.ToString());
-            OptionsNotice.Ask(Presets.NameKey(intensity), body, "reallife_meta_preset_yes", false, () => OptionsNotice.Tell(Presets.NameKey(intensity), Presets.Apply(intensity)));
-        }
-
-        private static void AskReset()
-        {
-            OptionsNotice.Ask("reallife_meta_reset_title", "reallife_meta_reset_explain".GetLocalization(), "reallife_meta_reset_yes", true,
-                () => OptionsNotice.Tell("reallife_meta_reset_title", Presets.ResetAll()));
-        }
-
-        private static void AskImport()
-        {
-            OptionsNotice.Ask("reallife_meta_import_title",
-                "reallife_meta_import_explain".GetLocalization().Replace("{file}", System.IO.Path.Combine(Presets.Folder, Presets.SettingsFile)),
-                "reallife_meta_import_yes", false, () => OptionsNotice.Tell("reallife_meta_import_title", Presets.Import()));
-        }
-
-        private static void ExportNow()
-        {
-            try
-            {
-                string path = Presets.Export(Presets.SettingsFile);
-                MetaLog.Info("settings written to " + path);
-                OptionsNotice.Tell("reallife_meta_export_title", "reallife_meta_export_done".GetLocalization().Replace("{file}", path));
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-                OptionsNotice.Tell("reallife_meta_export_title", "reallife_meta_export_failed".GetLocalization().Replace("{error}", e.Message));
-            }
-        }
-
-        // ---------------------------------------------------------------- the layout as text
-
-        /// <summary>The whole page as it is arranged, one line per group, section and row, for Player.log.</summary>
-        public static string Describe()
-        {
-            var text = new StringBuilder(8192);
-            text.Append("the options page: ").Append(Top.Count).Append(" groups, ").Append(_plan != null ? _plan.Sections.Count : 0).Append(" sections, ")
-                .Append(_plan != null ? _plan.Placed : 0).Append(" rows placed, ").Append(_otherRows).Append(" in Other, ").Append(_testRows).Append(" test tools\n");
-            foreach (Section top in Top)
-            {
-                Describe(text, top, 0);
-            }
-            return text.ToString();
-        }
-
-        private static void Describe(StringBuilder text, Section section, int depth)
-        {
-            text.Append(' ', depth * 2).Append(depth == 0 ? "# " : "+ ").Append(section.TitleKey.GetLocalization()).Append("   [").Append(section.Id).Append(']');
-            if (IsOpen(section))
-            {
-                text.Append(" (open)");
-            }
-            text.Append('\n');
-            foreach (Row row in section.Infos)
-            {
-                text.Append(' ', depth * 2 + 2).Append("- ").Append(row.LabelKey.GetLocalization());
-                if (row.Id != null)
-                {
-                    text.Append("   [").Append(row.Id).Append(row.IsSwitch ? (row.On ? ": on" : ": off") : string.Empty).Append(']');
-                    string[] needs = OptionsPlan.NeedsOf(row.Id);
-                    if (needs.Length > 0)
-                    {
-                        text.Append(" needs ").Append(string.Join(", ", needs));
-                    }
-                }
-                text.Append('\n');
-            }
-            foreach (Section child in section.Children)
-            {
-                Describe(text, child, depth + 1);
-            }
-        }
-
-        // The test button: the layout goes to Player.log whether or not "Developer diagnostics" is on, since it was asked for.
-        private static void TestLayout()
-        {
-            try
-            {
-                UnityEngine.Debug.Log("[RealLifeOverhaul] Meta: " + Describe());
-                OptionsNotice.Tell("reallife_opt_test_layout", "reallife_opt_test_layout_done".GetLocalization());
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-            }
-        }
-
-        // ---------------------------------------------------------------- the set-up check
-
-        /// <summary>
-        /// The "Check the mod's set-up" button: looks through the registry, the presets, the options page and the
-        /// guide for anything that does not fit together, and says what it found. For whoever merges a feature.
-        /// </summary>
-        public static void CheckSetup()
-        {
-            var problems = new List<string>();
-            int rules = 0;
-            try
-            {
-                foreach (Feature feature in Features.All)
-                {
-                    foreach (string key in new[] { feature.TitleKey, feature.AboutKey, feature.HelpKey })
-                    {
-                        if (key != null && key.GetLocalization() == key)
-                        {
-                            problems.Add(feature.Id + ": the text " + key + " is not in the locale file");
-                        }
-                    }
-                    if (feature.Auto)
-                    {
-                        problems.Add(feature.Id + ": this options group is not registered (it works, but has no guide page, presets or clean-up)");
-                    }
-                    else if (feature.Id != OptionsTree.TestsId && feature.Id != OptionsTree.OtherId && OptionsTree.SectionOfFeature(feature.Id) == null)
-                    {
-                        problems.Add(feature.Id + ": no section of Meta/OptionsTree.cs stands for this feature (its test tools are under Other)");
-                    }
-                    foreach (PresetRule rule in feature.Presets)
-                    {
-                        rules++;
-                        OptionInfo info = SettingsTable.Get(rule.OptionId);
-                        if (info == null || !info.HasDefault)
-                        {
-                            problems.Add(feature.Id + ": the preset names the option " + rule.OptionId + ", which has no known default");
-                            continue;
-                        }
-                        if (info.LabelKey == null)
-                        {
-                            problems.Add(feature.Id + ": the option " + rule.OptionId + " is in the presets but not on the options page");
-                        }
-                        foreach (int value in new[] { rule.Relaxed, rule.Realistic, rule.Hardcore })
-                        {
-                            if (SettingsTable.Clamp(info, value) != value)
-                            {
-                                problems.Add(feature.Id + ": the preset value " + value + " for " + rule.OptionId + " is outside " + info.Min + ".." + info.Max);
-                            }
-                        }
-                    }
-                    foreach (string id in feature.Options)
-                    {
-                        if (SettingsTable.Get(id) == null)
-                        {
-                            problems.Add(feature.Id + ": owns the option " + id + ", which does not exist");
-                        }
-                    }
-                    foreach (string id in feature.ReloadOptions)
-                    {
-                        if (SettingsTable.Get(id) == null)
-                        {
-                            problems.Add(feature.Id + ": marks the option " + id + " as needing a reload, which does not exist");
-                        }
-                    }
-                    foreach (TestAction test in feature.Tests)
-                    {
-                        if (test.Run == null)
-                        {
-                            problems.Add(feature.Id + ": names the test button " + test.LabelKey + ", which is not on the page and has no action");
-                        }
-                    }
-                    foreach (string contact in feature.ContactIds)
-                    {
-                        if (contact.GetLocalization() == contact)
-                        {
-                            problems.Add(feature.Id + ": the contact " + contact + " has no name in the locale file");
-                        }
-                    }
-                }
-                foreach (OptionInfo info in SettingsTable.All)
-                {
-                    if (info.LabelKey != null && info.Owner != null && info.Owner.Auto)
-                    {
-                        continue;   // already said once for its group
-                    }
-                    if (info.Field != null && info.LabelKey == null)
-                    {
-                        problems.Add("the option " + info.Id + " is in Settings but on no row of the options page");
-                    }
-                }
-                if (_plan != null)
-                {
-                    foreach (Section section in Sections)
-                    {
-                        foreach (Row row in section.Infos)
-                        {
-                            if (section.Id == "s:" + OptionsTree.OtherId)
-                            {
-                                problems.Add("the row " + (row.Id ?? row.LabelKey) + " is in no section of Meta/OptionsTree.cs");
-                            }
-                            if (row.TipKey != null && row.TipKey.GetLocalization() == row.TipKey)
-                            {
-                                problems.Add("the option " + row.Id + " has no sentence " + row.TipKey + " in the locale file");
-                            }
-                        }
-                    }
-                    foreach (string missing in _plan.Missing)
-                    {
-                        problems.Add("Meta/OptionsTree.cs names the row " + missing + ", which the page does not have");
-                    }
-                    string cycle = OptionsPlan.FindCycle();
-                    if (cycle != null)
-                    {
-                        problems.Add("options that need each other in a circle: " + cycle);
-                    }
-                }
-                Guide.Check(problems);
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-                problems.Add("the check itself failed: " + e.Message);
-            }
-
-            string summary = "reallife_meta_check_summary".GetLocalization()
-                .Replace("{features}", Features.All.Count.ToString())
-                .Replace("{options}", SettingsTable.All.Count.ToString())
-                .Replace("{rules}", rules.ToString())
-                .Replace("{problems}", problems.Count.ToString());
-            foreach (string problem in problems)
-            {
-                MetaLog.Warn("set-up check: " + problem);
-            }
-            MetaLog.Info("set-up check: " + problems.Count + " problem(s).");
-            OptionsNotice.Tell("reallife_meta_check_title", summary);
         }
     }
 }

@@ -9,21 +9,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The Settings app's page, in the game's frame (GameUi.AppShell, copied from MyEmployees) with the kit's table:
-    ///
-    ///   tabs       the ten groups of the options page, Start here first and Troubleshooting last
-    ///   the table  a group's sections in the page's order, each a heading ("4 of 6 on") over its rows: an option's name,
-    ///              its value now, and what keeps it from doing anything ("needs Home life and health"); the drop-down
-    ///              over the table shows one section of the group; Troubleshooting ends with the test tools, by group
-    ///   the box    what is picked: an option's sentence, its value, its control (the game's switch, or its selector of
-    ///              choices and of numbers), what it needs with a button that switches that on, when it takes effect,
-    ///              where it is on the Mods tab and its Guide page; a heading's main switch and Guide page; a button's
-    ///              action; with nothing picked, the group and the preset compared with the choices made
-    ///   search     the game's text entry; the matches of every group in one list, a pick opens its tab on its row
-    ///   the preset in use, or the one the choices are nearest, and the list of the options that differ from it
-    ///
-    /// Every value is read and written through OptionsLayout (OptionsLayout.Book.cs), the rows of the Mods tab itself.
-    /// The page is written when the app opens and on a click; nothing runs per frame or while the app is closed.
+    /// The Settings app's page in the game's frame (GameUi.AppShell): a tab per group of the options page, its sections as
+    /// headings ("4 of 6 on") over their rows, the box for what is picked, and a search over every group. Every value goes
+    /// through OptionsLayout's rows (OptionsLayout.Book.cs). Written when the app opens and on a click; nothing per frame.
     /// </summary>
     public sealed partial class SettingsView
     {
@@ -110,7 +98,7 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>A tab's label: a short word for its group (reallife_set_tab_you).</summary>
-        public static string TabKey(TreeGroup group)
+        private static string TabKey(TreeGroup group)
         {
             return TabPrefix + group.Id;
         }
@@ -234,8 +222,6 @@ namespace RealLifeOverhaul.Meta
             Refresh();
         }
 
-        // ---------------------------------------------------------------- writing the page
-
         private void Refresh()
         {
             if (_shell == null || _table == null || _writing)
@@ -336,7 +322,8 @@ namespace RealLifeOverhaul.Meta
                         int preset = PresetOf(line);
                         if (preset >= 0 && _covers[preset] > 0)
                         {
-                            row.Set(2, _counts[preset] == 0 ? T("reallife_set_in_use") : T("reallife_set_differ_count", "count", _counts[preset].ToString()), _counts[preset] == 0 ? TableRow.Green : TableRow.Plain);
+                            row.Set(2, _counts[preset] == 0 ? T("reallife_set_in_use") : T("reallife_set_differ_count", "count", _counts[preset].ToString()),
+                                _counts[preset] == 0 ? TableRow.Green : TableRow.Plain);
                         }
                         break;
                     case LineKind.Key:
@@ -465,8 +452,6 @@ namespace RealLifeOverhaul.Meta
             return line.Section != null ? group + ", " + line.Section.TitleKey.GetLocalization() : group;
         }
 
-        // ---------------------------------------------------------------- search
-
         private void AskSearch()
         {
             UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
@@ -525,8 +510,6 @@ namespace RealLifeOverhaul.Meta
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_set_back", Back);
             Guide.Point(box, GuideTitle);
         }
-
-        // ---------------------------------------------------------------- rows
 
         private TableRow Row(int index)
         {

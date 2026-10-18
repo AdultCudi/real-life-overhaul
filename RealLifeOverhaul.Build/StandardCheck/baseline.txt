@@ -19,7 +19,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikePlaces.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	3
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Meta/SettingsTable.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavModel.cs	4
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	4
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Planner/PlannerModel.cs	3
@@ -35,7 +34,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	2
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Meta/SaveTools.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavHud.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Photos/PhotosGame.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/Ragdoll.cs	1
@@ -102,8 +100,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageShop.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Meta/MetaUi.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Meta/OptionsSearch.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneUiDump.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Photos/GalleryParts.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Planner/PlannerDirector.cs	1
@@ -137,8 +133,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.Account
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Markets/Bonds/BondModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Markets/Listing/ListingModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Markets/MarketModel.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Meta/OptionsCaptions.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Meta/OptionsSearch.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavBaseRules.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Performance/Tweaks/FarPropCull.cs	1
@@ -290,14 +284,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Meta/BugReport.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Meta/FeatureList.cs	7
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Meta/Guide.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Meta/GuideApp.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Meta/GuideView.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Meta/OptionsTree.cs	14
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Meta/SaveTools.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Meta/SettingsView.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavDirector.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavHud.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavMarks.cs	1

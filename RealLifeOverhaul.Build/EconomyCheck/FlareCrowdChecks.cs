@@ -700,7 +700,9 @@ internal static partial class Program
             facts &= page.Contains("{flare_cast_level}") && page.Contains("{flare_cast_start}") && page.Contains("{flare_citizens}") && words[l]["reallife_guide_social"].Contains("Alex");
             old |= page.Contains("{flare_cast_most}");
         }
-        string list = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\FeatureList.cs")));
+        string meta = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta"));
+        string list = File.ReadAllText(System.IO.Path.Combine(meta, "FeatureList.cs")) + File.ReadAllText(System.IO.Path.Combine(meta, "FeatureList.Life.cs"))
+                      + File.ReadAllText(System.IO.Path.Combine(meta, "FeatureList.Economy.cs"));
         Check(facts && !old && list.Contains(".Fact(\"flare_cast_level\", () => Whole(Flare.FlareCast.Level))") && list.Contains(".Fact(\"flare_cast_start\", () => Whole(Flare.FlareCast.Start))")
               && list.Contains(".Fact(\"flare_citizens\", () => Whole(Flare.FlareLiveRules.Citizens))") && !list.Contains("flare_cast_most"),
             "Flare crowd: the Guide's Flare page gives the city's people, the influencers' start and level from the code, in en, pt and zh-cn, and no longer a most");

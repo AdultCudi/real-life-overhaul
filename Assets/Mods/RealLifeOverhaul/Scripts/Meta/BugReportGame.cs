@@ -14,22 +14,13 @@ using UnityEngine.Experimental.Rendering;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The one place "Report a bug" (BugReport.cs) touches the game and the engine: the listener that keeps the mod's
-    /// warnings and errors (<see cref="Listen"/>), the facts read when the button is pressed, the game's text box, the
-    /// screenshot, the log files read with sharing, the zip, the clipboard and the two links opened.
-    ///
-    /// Per frame: nothing. The listener runs once per line the engine logs, on whichever thread wrote it: a type comparison
-    /// for a plain line; for a warning or an error a prefix comparison, and for an error a search of its stack for the mod's
-    /// namespace; a line of the mod's is a few field writes under a lock (BugLog). No allocation. Everything else runs on the
-    /// press: the facts and the screen on the main thread, the files on a worker thread.
+    /// Where "Report a bug" touches the game: the listener that keeps the mod's warnings and errors (<see cref="Listen"/>, once
+    /// per line logged, a few comparisons, no allocation), the facts, the text box, the screenshot, the logs, the zip, the
+    /// clipboard and the links. Nothing per frame.
     /// </summary>
     internal static class BugReportGame
     {
-        /// <summary>
-        /// The mod's Discord server, by its lasting invite. A link to the #bug-reports channel itself
-        /// (discord.com/channels/...) shows a player who has not joined yet only "no access"; the invite works for everyone,
-        /// lands a member in the server as it is and asks a newcomer to join first. The notice names the channel.
-        /// </summary>
+        /// <summary>The mod's Discord by its lasting invite: a link to the channel itself shows a player not yet in the server only "no access".</summary>
         public const string DiscordUrl = "https://discord.gg/tzCh2VXs9E";
 
         private const int JpgQuality = 85;   // a 1440p screen in some 400 KB: Discord takes 10 MB in a post, the logs need the room
@@ -50,8 +41,7 @@ namespace RealLifeOverhaul.Meta
             Application.logMessageReceivedThreaded += Heard;
         }
 
-        // Called by the engine for every line of its log, from any thread. Nothing here may log (it would come back here),
-        // and nothing can throw but the lock; a fault is dropped rather than written, for the same reason.
+        // From any thread, for every log line. Nothing here may log (it would come back here); a fault drops the line.
         private static void Heard(string text, string stack, LogType type)
         {
             try
@@ -66,8 +56,6 @@ namespace RealLifeOverhaul.Meta
                 // (see above: a line is lost, the game's log is not touched)
             }
         }
-
-        // ---------------------------------------------------------------- the facts
 
         /// <summary>What report.txt says, read on the main thread as the player confirms. A part that cannot be read says so.</summary>
         public static BugFacts Facts(string words)
@@ -121,8 +109,7 @@ namespace RealLifeOverhaul.Meta
                    + Screen.width.ToString(CultureInfo.InvariantCulture) + " x " + Screen.height.ToString(CultureInfo.InvariantCulture);
         }
 
-        // The preset the options match, or the one they are nearest; and every option that differs from it (an option no
-        // preset covers, from its default). One pass over the options per preset, on the press.
+        // The preset the options match or are nearest, and every option that differs from it (from its default where no preset covers it).
         private static string Preset(List<string> changed)
         {
             Intensity? exact = Presets.Detect();
@@ -175,8 +162,7 @@ namespace RealLifeOverhaul.Meta
             return true;
         }
 
-        // A part of report.txt read: null when it was, else why not (the rest of the report still comes). Each calls its
-        // reader inside its own try, so a game without a member the reader names leaves only that part out.
+        // A part of report.txt: null when read, else why not. Each reader runs in its own try, so a game without a member loses only that part.
         private static string StaffPart(List<BugStaff> into)
         {
             try
@@ -209,8 +195,7 @@ namespace RealLifeOverhaul.Meta
             return "could not be read (" + e.GetType().Name + ")";
         }
 
-        // Every employee of the player's (not a candidate, not another player's in Going Public): what their pay is made of,
-        // grouped by business, the businesses by name and each one's staff by skill and wage. One pass on the press.
+        // The player's employees (no candidates, no other player's) by business, skill and wage: what their pay is made of.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Staff(List<BugStaff> into)
         {
@@ -252,8 +237,7 @@ namespace RealLifeOverhaul.Meta
             });
         }
 
-        // The game's transactions of yesterday and today (GameBooks.Day: the history walked once), each with the business
-        // it was booked at: the registration at its address, else the business the game named on it, else the player's own.
+        // Yesterday's and today's transactions (GameBooks.Day), each with the business it was booked at, else the player's own.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Books(List<BugMoney> into, int today)
         {
@@ -295,12 +279,7 @@ namespace RealLifeOverhaul.Meta
         /// <summary>True while a city is loaded: then the report has a screenshot and the game's text box is there.</summary>
         public static bool InCity => MetaCity.Root != null;
 
-        // ---------------------------------------------------------------- the game's text box
-
-        /// <summary>
-        /// The game's own text box (UIs.textInputUi, as the mod's apps ask for a name) for what went wrong, which may be left
-        /// empty. False when the game has none to show (the main menu).
-        /// </summary>
+        /// <summary>The game's own text box (UIs.textInputUi) for what went wrong, which may be left empty; false when the game has none (the main menu).</summary>
         public static bool AskWords(Action<string> done)
         {
             UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
@@ -322,8 +301,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- the screen
-
         /// <summary>The screen as it is drawn, read at the end of a frame.</summary>
         public sealed class Shot
         {
@@ -334,11 +311,7 @@ namespace RealLifeOverhaul.Meta
             public long ReadMs;                // the main thread's share: the engine's read of the screen and one copy
         }
 
-        /// <summary>
-        /// The screen, as the game's own feedback form takes it (ScreenCapture.CaptureScreenshotAsTexture): called after
-        /// WaitForEndOfFrame. Its pixels are copied out and the texture let go at once; the encoding, the slow part, is the
-        /// worker's (<see cref="WriteShot"/>). Null when it cannot be taken.
-        /// </summary>
+        /// <summary>The screen as the game's feedback form takes it, after WaitForEndOfFrame: pixels copied, texture let go, encoding left to the worker. Null on failure.</summary>
         public static Shot TakeShot()
         {
             var watch = Stopwatch.StartNew();
@@ -403,8 +376,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- the files
-
         /// <summary>The game's log of this session, when it is in the game's own data folder (a log written elsewhere is not read).</summary>
         public static string GameLog()
         {
@@ -417,10 +388,7 @@ namespace RealLifeOverhaul.Meta
             return string.Equals(folder, Path.GetFullPath(Application.persistentDataPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) ? log : null;
         }
 
-        /// <summary>
-        /// On the worker: a copy of one of the game's logs, its tail when large, the user folder taken out (BugReportRules.CopyTail).
-        /// Opened with sharing, so the game goes on writing it, and never locked. False when there is no such file.
-        /// </summary>
+        /// <summary>On the worker: a copy of one of the game's logs, its tail when large and the user folder taken out, read with sharing so it is never locked. False with no such file.</summary>
         public static bool CopyLog(string from, string to, long cap, string profile)
         {
             if (from == null || !File.Exists(from))
@@ -435,10 +403,7 @@ namespace RealLifeOverhaul.Meta
             return true;
         }
 
-        /// <summary>
-        /// On the worker: every file of the folder in one zip beside it. Its own method, so that a game whose runtime lacks the
-        /// zip classes leaves only the folder. A half-written zip is removed. Null when it could not be made.
-        /// </summary>
+        /// <summary>On the worker: the folder zipped beside it, in its own method so a runtime without the zip classes loses only the zip; a half zip is removed, the fault thrown on.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string Zip(string folder)
         {
@@ -474,13 +439,9 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- handing it over
-
         /// <summary>
-        /// The summary on the clipboard, the file explorer on the reports' folder with the new zip (or folder) picked, the mod's
-        /// Discord in the browser. On Windows the explorer is started itself: a file address escaped for the browser
-        /// (Uri.AbsoluteUri) is read back in the system's code page, which mangles a user folder with accents or Chinese
-        /// characters. If it cannot be started, and on any other system, the folder's address is opened unescaped.
+        /// The summary on the clipboard, the explorer on the new zip, the Discord in the browser. On Windows the explorer is started
+        /// itself: an escaped file address is read in the system's code page, which mangles accented or Chinese user folders.
         /// </summary>
         public static void HandOver(string summary, string folder, string zip)
         {

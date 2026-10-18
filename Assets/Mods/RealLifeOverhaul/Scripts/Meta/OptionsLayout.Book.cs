@@ -6,14 +6,8 @@ using Localizor;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// What the Settings app (<see cref="SettingsView"/>) knows of the options page: the same rows, read and written the
-    /// way the game's own controls on the Mods tab read and write them. A value is the saved one (ModOptionPrefs' key,
-    /// "m:mod:id", or the option's field in Settings), and a change saves it under that key and then calls the row's own
-    /// handler with it, as ModOptionsToggleControl, ModOptionsSliderControl and ModOptionsDropdownControl do on a
-    /// click. So the app and the Mods tab cannot disagree: there is one saved value and one handler.
-    ///
-    /// The app's tabs come from <see cref="SettingsRules.Tabs"/> over the plan the page itself is placed by, made once in
-    /// <see cref="Build"/>. Everything below runs when the app writes a page or the player clicks; nothing per frame.
+    /// What the Settings app (<see cref="SettingsView"/>) knows of the options page: the same rows, read and written as the Mods
+    /// tab's controls do (saved under the same key, then the row's handler called), so the two cannot disagree. Runs on a click.
     /// </summary>
     public static partial class OptionsLayout
     {
@@ -69,7 +63,6 @@ namespace RealLifeOverhaul.Meta
             return _lineOf.TryGetValue(idOrLabel, out SettingsLine found) ? found : null;
         }
 
-        /// <summary>The label key of a line's row (an option's or a button's), or null.</summary>
         internal static string AppLabelKey(SettingsLine line)
         {
             return RowOf(line)?.LabelKey;
@@ -163,8 +156,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // ---------------------------------------------------------------- values
-
         /// <summary>What an option is now: its field in Settings where it has one, else what is saved, else its default.</summary>
         internal static int AppValue(SettingsLine line)
         {
@@ -205,14 +196,12 @@ namespace RealLifeOverhaul.Meta
             return option is DropdownOption dropdown ? dropdown.DefaultIndex : 0;
         }
 
-        /// <summary>What kind of control an option is.</summary>
         internal static OptionType AppType(SettingsLine line)
         {
             ModOption option = RowOf(line)?.Option;
             return option is SliderOption ? OptionType.Slider : option is DropdownOption ? OptionType.Choice : OptionType.Toggle;
         }
 
-        /// <summary>The smallest and largest value an option takes.</summary>
         internal static void AppRange(SettingsLine line, out int min, out int max)
         {
             ModOption option = RowOf(line)?.Option;
@@ -245,11 +234,7 @@ namespace RealLifeOverhaul.Meta
             return (value != 0 ? "reallife_meta_on" : "reallife_meta_off").GetLocalization();
         }
 
-        /// <summary>
-        /// Changes an option as the game's control on the Mods tab does: the value saved under the same key, then the
-        /// row's own handler called with it (for a switch, the page's wrapper, so the Mods tab hears of it too). False
-        /// if there is nothing to write (the options were not read yet).
-        /// </summary>
+        /// <summary>Changes an option as its Mods tab control does: saved under its key, then the row's handler called. False with nothing to write.</summary>
         internal static bool AppSet(SettingsLine line, int value)
         {
             Row row = RowOf(line);
@@ -322,14 +307,11 @@ namespace RealLifeOverhaul.Meta
             return ById.TryGetValue(optionId ?? string.Empty, out Row row) ? row.LabelKey.GetLocalization() : optionId;
         }
 
-        /// <summary>Whether a change to the option only applies after the save is loaded again.</summary>
         internal static bool AppNeedsReload(SettingsLine line)
         {
             string id = AppId(line);
             return id != null && Features.NeedsReload(id);
         }
-
-        // ---------------------------------------------------------------- buttons, keys and tests
 
         /// <summary>Presses a button or runs a test tool, as its row on the Mods tab does.</summary>
         internal static void AppRun(SettingsLine line)

@@ -6,20 +6,14 @@ using Localizor;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// What changed in each version, for the guide's "What's new" page and the welcome panel's "since last time"
-    /// line. One row per released version, newest first. 0.1.0 is the first public release; the numbers the mod
-    /// carried while it was being developed (0.13 to 0.46) were never released and are not listed.
+    /// What changed in each released version, newest first, for the Guide's "What's new" page. A version is MAJOR.MINOR.PATCH:
+    /// a feature raises MINOR, a fix alone PATCH, and MAJOR is for a change that old saves cannot follow.
     ///
-    /// Numbers are MAJOR.MINOR.PATCH: a new feature raises MINOR (0.6.0), a fix alone raises PATCH (0.5.1, up to 0.5.99),
-    /// and MAJOR is for a change that old saves cannot follow.
-    ///
-    /// A NEW VERSION is four edits, and the build fails if the first three disagree (the CheckVersion target of
-    /// the csproj): &lt;Version&gt; in RealLifeOverhaul.Build/RealLifeOverhaul.csproj (the assembly's version, which
-    /// is what the running mod reports), <see cref="Latest"/> below, Version in ModManifest.asset, and one row at
-    /// the top of <see cref="All"/> with its two texts at the end of en.json (reallife_changes_ and three digits,
-    /// major then two of minor, and the same with _title: 0.2.0 is "002", order 2000; a third number is added after
-    /// an underscore: 0.1.1 is "001_1", order 1010; 0.5.12 is "005_12", order 5120). Work merged before it has a
-    /// number goes in a row of order <see cref="Unnumbered"/>, which takes the new number when the version is set.
+    /// A new version is four edits, and the build fails if the first three disagree (the csproj's CheckVersion target):
+    /// &lt;Version&gt; in RealLifeOverhaul.csproj, <see cref="Latest"/>, Version in ModManifest.asset, and a row at the top of
+    /// <see cref="All"/> with its two texts in en.json (reallife_changes_ with major and two digits of minor, then the patch:
+    /// 0.2.0 is "002_0", 0.5.12 is "005_12"; the same with _title). Work merged before the number is set goes in the row of
+    /// order <see cref="Unnumbered"/>.
     /// </summary>
     public static class Changelog
     {
@@ -27,11 +21,11 @@ namespace RealLifeOverhaul.Meta
         public const string Latest = "0.35.0";
 
         /// <summary>Order of a row for work merged after the last numbered version: above the newest numbered row, below the next one.</summary>
-        public const int Unnumbered = 35005;   // OrderOf(Latest) + 5: it moves up with Latest
+        public const int Unnumbered = 35005;   // Latest's order + 5: it moves up with Latest
 
         public sealed class Entry
         {
-            public readonly int Order;          // OrderOf its version: 0.1.0 is 1000, 0.1.1 is 1010, 0.5.12 is 5120, 0.12.0 is 12000, 1.0.0 is 100000
+            public readonly int Order;          // (major * 100 + minor) * 1000 + patch * 10: 0.1.1 is 1010, 0.5.12 is 5120, 1.0.0 is 100000
             public readonly string TitleKey;
             public readonly string TextKey;
 
@@ -208,27 +202,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>"0.1.0" is 1000, "0.1.1" is 1010, "0.5.12" is 5120, "0.12.3" is 12030, "1.0.0" is 100000 (a third number above 99 counts as 99); anything that is not a version is 0.</summary>
-        public static int OrderOf(string version)
-        {
-            if (string.IsNullOrEmpty(version))
-            {
-                return 0;
-            }
-            string[] parts = version.Split('.');
-            if (parts.Length < 2 || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int major)
-                || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int minor))
-            {
-                return 0;
-            }
-            int patch = 0;
-            if (parts.Length > 2)
-            {
-                int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out patch);
-            }
-            return (major * 100 + minor) * 1000 + Math.Min(99, Math.Max(0, patch)) * 10;
-        }
-
         /// <summary>Compares two versions number by number; a missing part counts as 0.</summary>
         public static int Compare(string a, string b)
         {
@@ -253,22 +226,6 @@ namespace RealLifeOverhaul.Meta
             foreach (Entry entry in All)
             {
                 text.Append("# ").Append(entry.TitleKey.GetLocalization()).Append('\n').Append(entry.TextKey.GetLocalization()).Append("\n\n");
-            }
-            return text.ToString();
-        }
-
-        /// <summary>What came after the version the player last saw, newest first; empty if nothing did.</summary>
-        public static string Since(string seenVersion)
-        {
-            int seen = OrderOf(seenVersion);
-            int now = OrderOf(Version);
-            var text = new StringBuilder();
-            foreach (Entry entry in All)
-            {
-                if (entry.Order > seen && entry.Order <= Math.Max(now, seen))
-                {
-                    text.Append("<b>").Append(entry.TitleKey.GetLocalization()).Append("</b>: ").Append(entry.TextKey.GetLocalization()).Append('\n');
-                }
             }
             return text.ToString();
         }

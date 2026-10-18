@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
+    /// <summary>What kind of control a saved option has.</summary>
     public enum OptionType
     {
         Toggle,
@@ -66,11 +67,7 @@ namespace RealLifeOverhaul.Meta
         public Feature Owner;
     }
 
-    /// <summary>
-    /// Every saved option the mod has, found without a list of its own to keep up to date: the fields of
-    /// <see cref="Settings"/> (a const string "XId" beside a static bool or int "X": id, kind and shipped value),
-    /// the rows of the options page (label and range), and what a feature declares for options kept elsewhere.
-    /// </summary>
+    /// <summary>Every saved option, found without a list to keep: the "XId" and "X" fields of <see cref="Settings"/>, the options page's rows, and what features declare.</summary>
     public static class SettingsTable
     {
         /// <summary>What a slider shows beside itself: the number, or the number as a per cent. The game shows nothing for a slider without one.</summary>
@@ -88,10 +85,7 @@ namespace RealLifeOverhaul.Meta
             return id != null && ById.TryGetValue(id, out OptionInfo info) ? info : null;
         }
 
-        /// <summary>
-        /// Called at the top of Settings.Load. The first time, the static fields still hold the values the mod
-        /// ships with, and they are taken down as the defaults; later calls do nothing.
-        /// </summary>
+        /// <summary>Called at the top of Settings.Load: the first time, the static fields still hold the shipped values, which become the defaults.</summary>
         public static void CaptureDefaults()
         {
             if (_captured)
@@ -111,7 +105,7 @@ namespace RealLifeOverhaul.Meta
                     FieldInfo value = settings.GetField(idField.Name.Substring(0, idField.Name.Length - 2), BindingFlags.Public | BindingFlags.Static);
                     if (value == null || value.IsLiteral || (value.FieldType != typeof(bool) && value.FieldType != typeof(int)))
                     {
-                        continue;   // an id with no value of its own (the dropped car_speed)
+                        continue;   // an id with no value of its own
                     }
                     OptionInfo info = Ensure((string)idField.GetRawConstantValue());
                     info.Field = value;
@@ -194,7 +188,6 @@ namespace RealLifeOverhaul.Meta
             return key == null ? info.Default : UnityEngine.PlayerPrefs.GetInt(key, info.Default);
         }
 
-        /// <summary>Keeps a value inside what the option allows.</summary>
         public static int Clamp(OptionInfo info, int value)
         {
             if (info.Type == OptionType.Toggle)

@@ -139,7 +139,7 @@ internal static partial class Program
     {
         string flow = BugSource("BugReport.cs");
         string press = Between(flow, "public static void Press()", "private static IEnumerator WaitForMenus()");
-        string ask = Between(flow, "private static void Ask()", "// ----------------");
+        string ask = Between(flow, "private static void Ask()", "private sealed class Job");
         Check(press.Contains("catch (Exception e)") && Between(press, "catch (Exception e)", "}").Contains("Fail(e);"), "bug fixes: a press that fails tells the player");
         Check(ask.Contains("asked = BugReportGame.AskWords(Make);") && ask.Contains("catch (Exception e)") && ask.Contains("if (!asked)") && ask.Contains("Make(null);"),
             "bug fixes: a text box that fails makes the report without words");

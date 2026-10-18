@@ -124,7 +124,7 @@ internal static partial class Program
     private static void SaveKeys(SourceFile f, Dictionary<string, List<(SourceFile File, string Value)>> constants)
     {
         Examine("RLO-ARC-014", f.Rel);
-        bool featureList = f.Rel.EndsWith("/Meta/FeatureList.cs", StringComparison.Ordinal);
+        bool featureList = f.Rel.Contains("/Meta/FeatureList.", StringComparison.Ordinal);
         bool store = StoreFile.IsMatch(f.Rel);
         for (int i = 0; i < f.Bare.Length; i++)
         {
