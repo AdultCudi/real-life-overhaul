@@ -17,12 +17,7 @@ namespace RealLifeOverhaul.Law
         public Outcome Outcome;
     }
 
-    /// <summary>
-    /// The player's criminal record in this save: every time they were ticketed, held, or got
-    /// away from something serious. Safe to read at any time from any feature (a job that wants
-    /// a clean record, somebody who reacts to what the player has done); it is empty until the
-    /// save has loaded. Kept as one line of text in the save's modData.
-    /// </summary>
+    /// <summary>The player's criminal record in this save. Safe to read at any time from any feature; empty until the save loads.</summary>
     public static class Record
     {
         public const int Most = 40;     // the oldest lines drop off
@@ -37,10 +32,8 @@ namespace RealLifeOverhaul.Law
         /// <summary>The record's lines, oldest first.</summary>
         public static RecordEntry Entry(int index) => Entries[index];
 
-        /// <summary>True if nothing at all is on the record.</summary>
         public static bool Clean => Entries.Count == 0;
 
-        /// <summary>True if this charge is on the record at all.</summary>
         public static bool Has(Charge charge)
         {
             return Has(charge, int.MaxValue);
@@ -114,8 +107,8 @@ namespace RealLifeOverhaul.Law
 
         private static int Today => SaveGameManager.Current != null ? TimeHelper.CurrentDay : 0;
 
-        /// <summary>Adds a line (and lets the reputation follow). Returns its place in the record.</summary>
-        internal static int Add(int charges, int hours, int fines, Outcome outcome)
+        /// <summary>Adds a line, and lets the reputation follow.</summary>
+        internal static void Add(int charges, int hours, int fines, Outcome outcome)
         {
             if (Entries.Count >= Most)
             {
@@ -124,10 +117,9 @@ namespace RealLifeOverhaul.Law
             Entries.Add(new RecordEntry { Day = Today, Charges = charges, Hours = Mathf.Max(0, hours), Fines = Mathf.Max(0, fines), Outcome = outcome });
             Reputation.Offence(charges);
             Changed?.Invoke();
-            return Entries.Count - 1;
         }
 
-        /// <summary>How the latest line that is still "held" ended, and how long it really was.</summary>
+        /// <summary>How the latest line still "held" ended, and how long it really was.</summary>
         internal static void Close(Outcome outcome, int hoursServed)
         {
             for (int i = Entries.Count - 1; i >= 0; i--)
@@ -150,10 +142,7 @@ namespace RealLifeOverhaul.Law
             Changed?.Invoke();
         }
 
-        /// <summary>
-        /// Nobody is in a cell: any line still marked "held" (a save made between the arrest and the cell door) becomes
-        /// what it was, an arrest that ended at the roadside.
-        /// </summary>
+        /// <summary>Nobody is in a cell: a line still "held" (saved between the arrest and the cell) becomes a roadside arrest.</summary>
         internal static void NobodyHeld()
         {
             for (int i = 0; i < Entries.Count; i++)
@@ -185,7 +174,10 @@ namespace RealLifeOverhaul.Law
                     && int.TryParse(parts[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out int outcome)
                     && charges != 0 && outcome >= 0 && outcome <= (int)Outcome.Escaped && Entries.Count < Most)
                 {
-                    Entries.Add(new RecordEntry { Day = day, Charges = charges, Hours = Mathf.Clamp(hours, 0, LawBook.MostHours), Fines = Mathf.Max(0, fines), Outcome = (Outcome)outcome });
+                    Entries.Add(new RecordEntry
+                    {
+                        Day = day, Charges = charges, Hours = Mathf.Clamp(hours, 0, LawBook.MostHours), Fines = Mathf.Max(0, fines), Outcome = (Outcome)outcome
+                    });
                 }
             }
         }
@@ -211,27 +203,18 @@ namespace RealLifeOverhaul.Law
     }
 
     /// <summary>
-    /// What the police and the public think of the player, each from 0 to 100. Safe to read at
-    /// any time; both are 50 or so until the save has loaded.
-    ///   Police   falls with every line on the record, rises a little with every clean day and
-    ///            with calls that lead to an arrest. A record that has grown lately means more
-    ///            scrutiny for a few days: traffic offences are more likely to be seen
-    ///            (<see cref="Scrutiny"/>) and an officer no longer warns before a ticket
-    ///            (<see cref="NoWarnings"/>).
-    ///   Public   rises with good deeds (helping at an accident, stopping a thief, a call that
-    ///            led to an arrest: everything that earns the "helped" mood) and falls when the
-    ///            player hurts somebody. People who think well of the player say so in the
-    ///            street now and then, and a lawyer charges them less.
+    /// What the police and the public think of the player, 0 to 100 each: police standing falls with each line on the record
+    /// and comes back with clean days, public standing rises with good deeds; a record grown lately means more scrutiny.
     /// </summary>
     public static class Reputation
     {
         public const int Start = 55;
-        public const int ScrutinyDays = 5;          // the record of this many days back is what the police go by
+        public const int ScrutinyDays = 5;          // game days of record the police go by
         public const int LikedFrom = 70;            // from here the public shows it
         public const int LovedFrom = 85;            // ...and now and then with a few dollars
         private const int DeedsCountedPerDay = 3;
         private const int CleanDayPolice = 2;       // a day with nothing new on the record
-        private const int CleanDayPoliceMost = 75;  // ...restores trust up to here; beyond it takes deeds
+        private const int CleanDayPoliceMost = 75;  // ...gives trust back up to here; beyond it takes deeds
 
         private static readonly float[] ScrutinyFactor = { 1f, 1.15f, 1.3f, 1.5f };
 
@@ -241,7 +224,7 @@ namespace RealLifeOverhaul.Law
         /// <summary>Standing with the public, 0 to 100.</summary>
         public static int Public { get; private set; } = Start;
 
-        /// <summary>What the odds of a traffic offence being seen are multiplied by: 1, or up to 1.5 with a long recent record. A plain field read.</summary>
+        /// <summary>What the odds of a traffic offence being seen are multiplied by: 1, up to 1.5 with a long recent record.</summary>
         public static float Scrutiny { get; private set; } = 1f;
 
         /// <summary>True while the record is long enough that an officer tickets without a warning first.</summary>
@@ -260,7 +243,7 @@ namespace RealLifeOverhaul.Law
         public static event Action Deed;
 
         internal static int LastDay = -1;           // the last game day the daily step ran for
-        internal static int NoticedUntil = -1;      // a day the police watch more closely than the record says (not saved: a day at most)
+        internal static int NoticedUntil = -1;      // a day the police watch more closely than the record says; not saved
         internal static int DeedDay = -1;
         internal static int Deeds;
         internal static int ThanksDay = -1;         // the last day a passer-by said thanks
@@ -297,10 +280,7 @@ namespace RealLifeOverhaul.Law
             Refresh();
         }
 
-        /// <summary>
-        /// Something that earned the "helped" mood: staying with a casualty, reporting an accident,
-        /// stopping a thief. Counted three times a day at most.
-        /// </summary>
+        /// <summary>Something that earned the "helped" mood (staying with a casualty, reporting an accident, stopping a thief).</summary>
         public static void GoodDeed()
         {
             if (!LawState.Loaded || !CountDeed())
@@ -332,7 +312,7 @@ namespace RealLifeOverhaul.Law
             Changed?.Invoke();
         }
 
-        /// <summary>A crime reported in person at a front desk, or a fine settled there: a little trust, counted with the day's good deeds.</summary>
+        /// <summary>A crime reported or a fine settled at a front desk: a little trust, counted with the day's good deeds.</summary>
         public static void AtTheDesk(int police)
         {
             if (!LawState.Loaded || police <= 0 || !CountDeed())
@@ -354,14 +334,9 @@ namespace RealLifeOverhaul.Law
             return ++Deeds <= DeedsCountedPerDay;
         }
 
-        /// <summary>
-        /// Once per game day. A day with nothing new on the record gives a little trust back; the
-        /// public forgets slowly in both directions. Returns the change in the level of scrutiny
-        /// (negative: the police have eased off).
-        /// </summary>
-        internal static int NewDay(int day)
+        /// <summary>Once a game day: a clean day gives a little trust back, and the public forgets slowly either way.</summary>
+        internal static void NewDay(int day)
         {
-            int before = ScrutinyLevel;
             if (LastDay >= 0 && day > LastDay)
             {
                 int days = Mathf.Min(day - LastDay, 30);
@@ -380,7 +355,6 @@ namespace RealLifeOverhaul.Law
             }
             LastDay = day;
             Refresh();
-            return ScrutinyLevel - before;
         }
 
         /// <summary>Works out the scrutiny from the record as it stands today.</summary>
@@ -398,10 +372,7 @@ namespace RealLifeOverhaul.Law
             Changed?.Invoke();
         }
 
-        /// <summary>
-        /// The police take notice for the rest of the day (a picture posted while wanted: Wiring/FlareLinks): the level of
-        /// scrutiny one higher until the next day's step, never past the top.
-        /// </summary>
+        /// <summary>A picture posted while wanted (Wiring/FlareLinks): scrutiny one level up until the next day's step.</summary>
         public static void Noticed()
         {
             if (!LawState.Loaded || LastDay < 0)
@@ -443,8 +414,8 @@ namespace RealLifeOverhaul.Law
         public int Bail;             // 0: none
         public bool Lawyer;          // already called
         public string VehicleId;     // the car left at the scene, or null
-        public bool Court;           // held by order of a court (Custody.Hold): no charge sheet, no lawyer, no line on the police record
-        public string Reason;        // ...and the locale key of why, as the court's side gave it
+        public bool Court;           // held by a court's order (Custody.Hold): no charge sheet, no lawyer, no line on the record
+        public string Reason;        // ...and the locale key of why
 
         public void Clear()
         {
@@ -463,14 +434,7 @@ namespace RealLifeOverhaul.Law
         }
     }
 
-    /// <summary>
-    /// The law's part of the savegame: five lines of text in modData (the record, the two
-    /// reputations, a stay in the cell that is going on, which buildings are the precincts, and
-    /// the station's few facts: a car at the pound, what the player is wanted for, the latest
-    /// incident a report can be asked for, whether the map filter has been introduced).
-    /// The base game ignores modData it does not know, so a save made with this loads without
-    /// the mod: the player is then simply standing in the street outside the precinct.
-    /// </summary>
+    /// <summary>The law's part of the save: five lines in modData, which the base game ignores, so a save loads without the mod.</summary>
     internal static class LawState
     {
         private const string KeyRecord = "reallife:law_record";
@@ -482,20 +446,20 @@ namespace RealLifeOverhaul.Law
         public static IModLogger Logger;
         public static bool Loaded { get; private set; }
         public static readonly CustodyState Custody = new CustodyState();
-        /// <summary>The precincts' addresses as saved ("street|number" each, ';' between), or null.</summary>
+        /// <summary>The precincts' addresses as saved ("street|number", ';' between), or null.</summary>
         public static string PrecinctAddresses;
 
-        // The station's own few facts (one line in the save, KeyStation).
-        /// <summary>2 once the precincts have been chosen by the walk-in rules (a save from before that is looked over once).</summary>
+        // The station's own few facts: one line in the save (KeyStation).
+        /// <summary>2 once the precincts are chosen by the walk-in rules; a save from before is looked over once.</summary>
         public static int PrecinctRules;
-        /// <summary>True once the "Police stations" map filter has been switched on for this save (after that it is the player's).</summary>
+        /// <summary>True once the "Police stations" map filter has been switched on for this save; then it is the player's.</summary>
         public static bool MapFilterShown;
-        /// <summary>The car the police are holding at the pound, to be collected at a front desk; null if none.</summary>
+        /// <summary>The car held at the pound, to be collected at a front desk; null if none.</summary>
         public static string ImpoundVehicleId;
-        /// <summary>What the player is wanted for after getting away (LawBook bits) and the game day it happened; 0 if nothing.</summary>
+        /// <summary>What the player is wanted for after getting away (LawBook bits) and the game day; 0 if nothing.</summary>
         public static int WantedCharges;
         public static int WantedDay = -1;
-        /// <summary>The latest thing a police report can be asked for (Bridges.NoteIncident) and its game day.</summary>
+        /// <summary>The latest thing a police report can be asked for (Bridges.NoteIncident), and its game day.</summary>
         public static string IncidentKind;
         public static int IncidentDay = -1;
         /// <summary>How many police reports have been handed over in this save: the next one's number.</summary>
@@ -565,7 +529,7 @@ namespace RealLifeOverhaul.Law
                     Custody.Bail = Int(parts[6], 0);
                     Custody.Lawyer = parts[7] == "1";
                     Custody.VehicleId = parts[8].Length > 0 ? parts[8] : null;
-                    // (Two fields more since the courts hold people here too; a line without them is an arrest's.)
+                    // A line from before the courts held people here has nine fields: an arrest's.
                     Custody.Court = parts.Length >= 11 && parts[9] == "1";
                     Custody.Reason = Custody.Court && parts[10].Length > 0 ? parts[10] : null;
                     Custody.Active = (Custody.Charges != 0 || Custody.Court) && Custody.ReleaseAt > 0f;
@@ -595,7 +559,7 @@ namespace RealLifeOverhaul.Law
             Logger?.Info($"Law: state loaded. record={Record.Count} police={Reputation.Police} public={Reputation.Public} scrutiny={Reputation.ScrutinyLevel} inCustody={Custody.Active}");
         }
 
-        /// <summary>Called from the game's save event, just before the save is serialised.</summary>
+        /// <summary>From the game's save event, just before the save is written.</summary>
         public static void Save()
         {
             GameInstance save = SaveGameManager.Current;
@@ -626,7 +590,6 @@ namespace RealLifeOverhaul.Law
 
         private static string Text(int value) => value.ToString(CultureInfo.InvariantCulture);
 
-        // An id as it goes into a line whose fields are parted by '|'.
         private static string Clean(string text) => string.IsNullOrEmpty(text) ? string.Empty : text.Replace("|", string.Empty);
 
         private static int Int(string text, int fallback)
