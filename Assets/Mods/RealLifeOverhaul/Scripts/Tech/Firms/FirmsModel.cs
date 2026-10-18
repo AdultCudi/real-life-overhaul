@@ -2,12 +2,12 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>One tech firm of the player's: a business of the tech sector's types, or the game's web agency or graphic designer. Game-free.</summary>
+    /// <summary>One of the player's tech firms: a business of the sector's types, or the game's web agency or graphic designer.</summary>
     public sealed class Firm
     {
         public string Place = string.Empty;
         public int Kind;                 // FirmKind
-        public int Founded;
+        public int Founded;              // day
         public int Focus;                // Focus
         public int Debt;                 // technical debt, thousandths
         public int Reputation = 500;     // with clients and customers, thousandths
@@ -17,14 +17,14 @@ namespace RealLifeOverhaul.Tech
         public int ReliefDay;            // the day the last relief was given
         public long Revenue30;           // takings of the last 30 days, cents (rolled each day)
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];   // takings by day, the ring Revenue30 is the sum of
-        // ---- read from the game each day, never saved
+        // read from the game each day, never saved
         public string Name = string.Empty;
         public bool Seen;
 
         public FirmKind K => (FirmKind)Kind;
     }
 
-    /// <summary>One product of a firm's. Game-free.</summary>
+    /// <summary>One product of a firm's.</summary>
     public sealed class Product
     {
         public int Id;
@@ -38,14 +38,14 @@ namespace RealLifeOverhaul.Tech
         public long Users;                    // paying customers (a consumer service: its paying users; a game: copies sold)
         public long Free;                     // a consumer service's free users
         public int Tier = 1, Marketing;       // price tier and marketing level
-        public int Share = 100;               // the share of the firm's engineering time it gets, per cent (the firm's products share it out by these)
-        public int Launched;
+        public int Share = 100;               // its weight in sharing out the firm's engineering time, per cent
+        public int Launched;                  // day
         public int Hype;                      // a game's hype before launch, thousandths
         public int Scope;                     // a game's size: 0 small, 1 mid-sized, 2 big
         public long Revenue;                  // all its takings, cents
         public int RivalFeatures;
         public int RivalTier = 1;
-        public int LastRelease;
+        public int LastRelease;               // day
         public long Carry;                    // millionths of a customer carried from one day's growth to the next
         public long Compute;                  // an AI model's training so far towards its next generation, AI compute unit-days
         public int Train;                     // how hard an AI model is trained, 0 to 4 (InfraRules.TrainLevels)
@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Tech
         public bool Live => Stage == 1;
     }
 
-    /// <summary>A contract: offered to the player's firms, put out to tender by the council, or under way at one of them. Game-free.</summary>
+    /// <summary>A contract: offered to the player's firms, put out to tender by the council, or under way at one of them.</summary>
     public sealed class Contract
     {
         public int Id;
@@ -72,8 +72,8 @@ namespace RealLifeOverhaul.Tech
         public int Stage;                     // WorkStage
         public long Bid;                      // the player's bid on a tender, cents
         public int Rivals;                    // firms bidding against the player
-        public int LastBilled;
-        public int Told;                      // what the player has been told of it: ToldNobody, ToldBehind
+        public int LastBilled;                // day
+        public int Told;                      // bits: ToldNobody, ToldBehind
 
         public const int ToldNobody = 1;      // taken on with nobody able to work on it
         public const int ToldBehind = 2;      // a day went by with nobody working on it (cleared once somebody does again)
@@ -87,11 +87,11 @@ namespace RealLifeOverhaul.Tech
     public struct ProductDay
     {
         public long Won, Lost, Takings, Hosting, Marketing;
-        public bool Released, Launched, Outage, Breach, RivalShipped;
+        public bool Outage, Breach, RivalShipped;
         public long Affected, Fine;
     }
 
-    /// <summary>The crew of a firm on a day: what its people can do, as the game layer counted it from their files. Game-free.</summary>
+    /// <summary>What a firm's people can do on a day, counted from their files.</summary>
     public struct Crew
     {
         public int Engineering;      // work points a day of the engineering, data, security and infrastructure people
@@ -109,10 +109,7 @@ namespace RealLifeOverhaul.Tech
         public long Wages;           // their day's pay, cents (for the research and development relief)
     }
 
-    /// <summary>
-    /// Why nobody at a firm can work, or worked yesterday: the first thing in the way, in the order it has to be put right
-    /// (FirmsRules.Why). The last two say only why nobody worked yesterday.
-    /// </summary>
+    /// <summary>Why nobody at a firm can work, or worked yesterday (FirmsRules.Why). The last two are of yesterday only.</summary>
     public enum Idle
     {
         None = 0,           // somebody can work (or worked)
@@ -131,7 +128,7 @@ namespace RealLifeOverhaul.Tech
         Count = 13
     }
 
-    /// <summary>What decides whether a firm's people can work, as the game layer read it (FirmsGame.Facts). Game-free.</summary>
+    /// <summary>What decides whether a firm's people can work, as read from the game (FirmsGame.Facts).</summary>
     public struct FirmFacts
     {
         public int Staff;            // professionals at the firm
@@ -147,7 +144,7 @@ namespace RealLifeOverhaul.Tech
         public int Worked;           // the hours the workers worked yesterday
     }
 
-    /// <summary>Everything the firms part keeps in a save. Game-free.</summary>
+    /// <summary>Everything the firms part keeps in a save.</summary>
     public sealed class FirmsFile
     {
         public int Seed, FirstDay, LastDay = -1, NextId = 1, LastTender;

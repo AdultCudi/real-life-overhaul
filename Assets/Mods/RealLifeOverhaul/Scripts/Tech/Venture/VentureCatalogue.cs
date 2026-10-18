@@ -40,17 +40,10 @@ namespace RealLifeOverhaul.Tech
         }
     }
 
-    /// <summary>
-    /// Startups and venture capital: the city's own startups (founded over time, growing or dying by a model tied to the
-    /// economy and the market's mood, an AI wave among them), the fictional VC firms and angels that back them, rounds
-    /// with their valuation, size, equity, board seats, liquidation preference and pro rata rights, follow-ons, down rounds,
-    /// bridges, failures, acqui-hires and acquisitions; the player's angel portfolio and fund; and the player's own firms
-    /// raising from the VCs, with a cap table, a board, growth targets, a runway and share options for their staff.
-    /// Game-free (the checkers compile it); every amount is cents at the start's prices. A month is 30 days.
-    /// </summary>
+    /// <summary>The figures of startups and venture capital. Game-free; cents at the start's prices; a month is 30 days.</summary>
     public static class VentureCatalogue
     {
-        // ---------------------------------------------------------------- the firms
+        // The firms
         public static readonly VcDef[] Firms =
         {
             new VcDef(0, "Old Mill Angels", 0, 1, 0x1FF, 250, true),
@@ -65,8 +58,8 @@ namespace RealLifeOverhaul.Tech
 
         public const int FirmCount = 8;
 
-        // ---------------------------------------------------------------- the city's startups
-        public const int StartupsMost = 20;
+        // The city's startups
+        public const int StartupsMost = 20;             // startups running at once
         public const int BirthChance = 60;              // per mille a day at a neutral mood
         public static readonly int[] MoodByCycle = { 1250, 1000, 780, 560 };   // the market's mood by the city's cycle, thousandths
         public const int HypeSwing = 600;               // thousandths the AI wave adds at its top and takes at its foot
@@ -86,44 +79,47 @@ namespace RealLifeOverhaul.Tech
         public const int GrowthBest = 250, GrowthWorst = 20;   // thousandths a month of recurring revenue growth, by the founders' quality: 25% to 2%
         public const int MultipleLeast = 6, MultipleMost = 30;   // a round's revenue multiple (recurring a year) by growth
         public const int DownRoundCut = 400;            // thousandths off the last value in a down round
-        public const int FailedRaisesToDie = 2;
+        public const int FailedRaisesToDie = 2;         // failed raises before a startup out of money goes
         public const int AcquireChance = 4;             // per mille a day for a company at series B or later (a third of it at seed, two thirds at series A)
-        public const int AcquireMultipleLeast = 3, AcquireMultipleMost = 9;
+        public const int AcquireMultipleLeast = 3, AcquireMultipleMost = 9;   // times a year's recurring revenue a buyer pays
         public const int AcquihireShare = 300;          // thousandths of what was put in that an acqui-hire pays
-        public const long ListingArr = 3000000000;      // recurring a year at which a growth company could list
+        public const long ListingArr = 3000000000;      // cents of recurring revenue a year at which a growth company could list
         public const int ListingMultiple = 10;          // ...and the times its recurring revenue a year the market values it at
 
-        // ---------------------------------------------------------------- the player as an investor
+        // The player as an investor
         public const int PitchChance = 350;             // per mille a raising startup comes to the player as well
         public const long TicketLeast = 2500000;        // the least the player can put in, cents
         public const int AskPlayerShare = 250;          // thousandths of a round the founders ask the player to fill
         public const int DiligenceFee = 150000;         // cents, for a due diligence report
         public const int HaggleCut = 150;               // thousandths off the valuation the player can ask for
-        public const int MeetingQuestions = 3;
+        public const int MeetingQuestions = 3;          // questions at a pitch meeting
         public const int ProRataDays = 5;               // days to take up a follow-on offer
 
-        // ---------------------------------------------------------------- the player's fund
-        public const int FundFeeBp = 200;               // a year, of other investors' money (none until another feature brings them)
-        public const int CarryBp = 2000;                // of the profit on other investors' money
-
-        // ---------------------------------------------------------------- the player's own firms raising
+        // The player's own firms raising
         public const int RaiseDays = 10;                // a fundraising round runs this long
-        public const int VcMeetingsMost = 3;
-        public const int TermSheetDays = 5;
+        public const int VcMeetingsMost = 3;            // meetings in a raise
+        public const int TermSheetDays = 5;             // days a term sheet stands
         public const int BoardSeatsPerRound = 1;
         public const int TargetGrowth = 150;            // thousandths of growth in recurring revenue a quarter a board expects
-        public const int TargetDays = 90;
+        public const int TargetDays = 90;               // days to a board's target
         public const int MissesToReplace = 2;           // targets missed in a row before a board with a majority replaces the chief executive
         public const int BridgeInterestBp = 800;        // a year
         public const int BridgeDiscount = 200;          // thousandths off the next round's price a bridge converts at
-        public const int BridgeMonths = 6;
+        public const int BridgeMonths = 6;              // months of burn a bridge lends
         public const int OptionGrant = 20;              // thousandths of the firm granted to staff at a time
-        public const int VestYears = 4, CliffYears = 1;
+        public const int VestYears = 4, CliffYears = 1;   // years of the game's length
         public const int OptionMorale = 100;            // thousandths of morale a grant adds
         public const int OptionPoach = 600;             // thousandths of the rivals' approaches with options unvested
 
         /// <summary>Names for the city's startups: two halves.</summary>
-        public static readonly string[] NameA = { "Nimble", "Bright", "Clear", "True", "Swift", "Kind", "Open", "Little", "North", "Blue", "Green", "Silver", "Quiet", "Bold", "Tidy", "Lucky" };
-        public static readonly string[] NameB = { "loop", "dash", "nest", "lane", "spark", "ledger", "wise", "grid", "field", "path", "byte", "craft", "harvest", "pocket", "signal", "mint" };
+        public static readonly string[] NameA =
+        {
+            "Nimble", "Bright", "Clear", "True", "Swift", "Kind", "Open", "Little", "North", "Blue", "Green", "Silver", "Quiet", "Bold", "Tidy", "Lucky"
+        };
+
+        public static readonly string[] NameB =
+        {
+            "loop", "dash", "nest", "lane", "spark", "ledger", "wise", "grid", "field", "path", "byte", "craft", "harvest", "pocket", "signal", "mint"
+        };
     }
 }

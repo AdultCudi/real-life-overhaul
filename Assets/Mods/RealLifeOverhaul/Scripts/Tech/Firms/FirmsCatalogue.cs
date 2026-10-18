@@ -1,6 +1,6 @@
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>The kinds of tech firm: the five of the sector's own business types (in the order of TechTypes.All), and the game's own two office businesses that join the same economy.</summary>
+    /// <summary>The kinds of tech firm: the sector's five business types (in TechTypes.All's order) and the game's two office businesses.</summary>
     public enum FirmKind
     {
         Software = 0, Games = 1, Consultancy = 2, Security = 3, AiLab = 4, WebAgency = 5, Design = 6, Count = 7
@@ -36,20 +36,11 @@ namespace RealLifeOverhaul.Tech
         Offered = 0, Tender = 1, Bid = 2, Active = 3, Done = 4, Failed = 5, Lost = 6, Declined = 7
     }
 
-    /// <summary>
-    /// The software and IT services part of the tech sector: products with users, recurring revenue, churn, prices, a
-    /// roadmap of features built by engineers, bugs, releases and support; client contracts (builds, integrations, managed
-    /// services, security work, the council's tenders and the player's own businesses); the risks (outages, breaches and
-    /// data protection fines, technical debt, a rival's launch); and the rivals, which are companies of the city's stock
-    /// market. Game-free (the checkers compile it); every amount is cents at the start's prices, asked of
-    /// <see cref="Prices"/> when it is charged or shown. A month here is 30 days, whatever the game's year: subscriptions
-    /// and churn run by the real calendar, as the game's wages and rents do.
-    /// </summary>
+    /// <summary>The figures of tech firms: products, contracts, risks and the rivals. Game-free; cents at the start's prices.</summary>
     public static class FirmsCatalogue
     {
-        public const int MonthDays = 30;
+        public const int MonthDays = 30;   // whatever the game's year: subscriptions run by the calendar, as wages and rents do
 
-        // ---------------------------------------------------------------- what each kind of firm may make and take on
         /// <summary>The products each kind of firm can make, one bit per ProductKind.</summary>
         public static readonly int[] MakesProducts =
         {
@@ -74,7 +65,6 @@ namespace RealLifeOverhaul.Tech
             1 << (int)WorkKind.Branding
         };
 
-        // ---------------------------------------------------------------- the markets
         /// <summary>The customers a segment can have in the city and online: people, businesses, large companies.</summary>
         public static readonly int[] Market = { 400000, 8000, 400 };
 
@@ -90,23 +80,21 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Customers won a day, millionths of those not yet won, at an attraction of 1 and no marketing.</summary>
         public static readonly int[] Acquire = { 900, 1000, 1200 };
 
-        /// <summary>Support tickets a day per thousand customers by segment, and how many tickets one support person answers a day.</summary>
-        public static readonly int[] Tickets = { 2, 12, 60 };
-        public const int TicketsPerPerson = 30;
+        public static readonly int[] Tickets = { 2, 12, 60 };   // support tickets a day per thousand customers, by segment
+        public const int TicketsPerPerson = 30;                 // tickets one support person answers a day
 
         /// <summary>What hosting costs a customer a month, cents, by segment (at the cloud's list price).</summary>
         public static readonly int[] HostingCost = { 5, 150, 4000 };
 
-        /// <summary>The share of revenue a consumer app gets from advertising beside subscriptions, thousandths of the paying users' revenue.</summary>
-        public const int AppAds = 400;
+        public const int AppAds = 400;                // advertising beside subscriptions, thousandths of the paying users' revenue
         public const int AppStoreCut = 300;           // thousandths the app stores take of an app's and a game's sales
 
-        // ---------------------------------------------------------------- licences (enterprise software sold outright)
+        // Licences (enterprise software sold outright)
         public const int LicenceDeal = 4000000;       // a licence's price to a company, cents
         public const int LicenceMaintenance = 200;    // thousandths of a licence a year for its upkeep, billed monthly
         public const int LicenceLeadsPerSeller = 40;  // per mille a day a seller turns up a deal that closes
 
-        // ---------------------------------------------------------------- prices, marketing and focus
+        // Prices, marketing and focus
         public static readonly int[] PriceTiers = { 700, 1000, 1400 };            // thousandths of the segment's price
         public static readonly int[] PriceAppeal = { 1250, 1000, 780 };           // what the price does to the appeal
         public static readonly int[] MarketingDay = { 0, 5000, 20000, 60000, 150000 };   // cents a day
@@ -117,9 +105,9 @@ namespace RealLifeOverhaul.Tech
             new[] { 600, 250, 150 }, new[] { 800, 150, 50 }, new[] { 300, 550, 150 }, new[] { 200, 300, 500 }
         };
 
-        // ---------------------------------------------------------------- building
+        // Building
         public const int FeatureBase = 40, FeatureStep = 12;   // work points a feature costs: the base and more for each one already built
-        public const int FeaturesMost = 24;
+        public const int FeaturesMost = 24;                    // features a product can have
         public const int LaunchFeatures = 3;                   // a product can launch with this many
         public const int PointsPerDay = 8;                     // a mid-level's points in a working day in good heart
         public const int BugsPerFeature = 6;                   // the bugs a feature can hold before its quality falls far (Quality)
@@ -127,17 +115,17 @@ namespace RealLifeOverhaul.Tech
         public const int DebtPerFeature = 35;                  // thousandths of debt a feature adds when juniors build it alone
         public const int DebtPerPoint = 4;                     // thousandths a point of paying down takes out
         public const int SoftwarePerSeat = 300;                // tools and licences a day per professional at a tech firm, cents
-        public const int ProductsMost = 16;
+        public const int ProductsMost = 16;                    // products across the player's firms
 
-        // ---------------------------------------------------------------- games
+        // Games
         public static readonly int[] GameScope = { 600, 1800, 4500 };        // work points: a small game, a mid-sized one, a big one
         public static readonly int[] GamePrice = { 999, 2499, 5999 };        // cents
-        public const int GamePlayers = 300000;
+        public const int GamePlayers = 300000;                               // people who might buy a game
         public const int GameHalfLife = 25;                                  // days for a game's daily sales to halve
         public const int GameLaunchShare = 2;                                // millionths of the players a day at launch per point of appeal (thousandths)
         public const int HypePerMarketingDay = 2;                            // thousandths of hype a day of marketing before launch adds per reach step
 
-        // ---------------------------------------------------------------- contracts
+        // Contracts
         public const int PointRate = 11000;            // cents a work point is charged at for build work
         public const int SecurityRate = 15000;         // ...for security work
         public static readonly int[] WorkLeast = { 60, 200, 0, 60, 80, 40, 40 };     // points of a contract, least
@@ -147,8 +135,8 @@ namespace RealLifeOverhaul.Tech
         public const int ManagedPoints = 2;            // points a day a managed contract needs to keep the client happy
         public const int UpfrontShare = 300;           // thousandths of a project paid when it is signed
         public const int LatePenalty = 20;             // thousandths of a project's value off for each day late, up to half
-        public const int OffersMost = 6;
-        public const int ContractsMost = 24;
+        public const int OffersMost = 6;               // offers and tenders open at once
+        public const int ContractsMost = 24;           // contracts kept, finished ones included
         public const int OfferDays = 5;                // an offer waits this long
         public const int OfferChance = 150;            // per mille a day a firm that takes contracts is offered one, at a reputation of 500 and one seller
         public const int TenderEvery = 20;             // days between the council's tenders
@@ -156,7 +144,7 @@ namespace RealLifeOverhaul.Tech
         public const int CouncilShare = 1500;          // thousandths: a council job is this much bigger
         public const int OwnShare = 300;               // thousandths of the player's own businesses among the clients
 
-        // ---------------------------------------------------------------- risks
+        // Risks
         public const int OutageChance = 8;             // per mille a day for a live service, at no debt and no one keeping it running
         public const int OutageChurn = 20;             // thousandths of customers lost to an outage
         public const int SlaCredit = 50;               // thousandths of a month's enterprise revenue given back for an outage
@@ -169,8 +157,8 @@ namespace RealLifeOverhaul.Tech
         public const int RivalLaunchChance = 30;       // per mille a day that a product's rival ships a feature
         public const int ReliefShare = 300;            // thousandths of qualifying research and development costs given back as an extra tax deduction
 
-        // ---------------------------------------------------------------- the rivals: companies of the city's stock market (Markets/MarketCatalogue)
-        /// <summary>A product kind and segment's rival, as a stock market company's id: SaaS by segment, then apps, licences, games and models.</summary>
+        // The rivals are companies of the city's stock market (Markets/MarketCatalogue).
+        /// <summary>A product's rival, as a stock market company's id.</summary>
         public static int RivalStock(ProductKind kind, Segment segment)
         {
             switch (kind)
@@ -201,7 +189,7 @@ namespace RealLifeOverhaul.Tech
 
         public static readonly int[] RivalFeaturesAtStart = { 8, 10, 12 };   // by segment: the rival's product as it stands
 
-        // ---------------------------------------------------------------- names
+        // Names
         public static readonly string[] NameFirst =
         {
             "Bright", "Quill", "Harbour", "Lantern", "Copper", "Tide", "Ember", "Cobalt", "Juniper", "Meadow", "Summit", "Willow", "Ridge", "Arbor", "Marble", "Orbit", "Pebble", "Kestrel"
@@ -220,14 +208,11 @@ namespace RealLifeOverhaul.Tech
 
         public const string Council = "City Council";
     }
-}
 
-namespace RealLifeOverhaul.Tech
-{
-    /// <summary>The way from a studio to a hyperscaler, step by step: what each step asks. Game-free; amounts in cents at the start's prices.</summary>
+    /// <summary>What the steps from a studio to a hyperscaler ask. Game-free.</summary>
     public static class TechPath
     {
-        public const long ScaleUpMonthly = 5000000;   // recurring revenue a month of a scale-up
-        public const int ScaleUpPeople = 15;          // ...and its professionals
+        public const long ScaleUpMonthly = 5000000;   // a scale-up's recurring revenue a month, cents at the start's prices
+        public const int ScaleUpPeople = 15;          // a scale-up's professionals
     }
 }

@@ -6,24 +6,17 @@ using System.Text;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The way every part of the tech sector writes its line of the save: parts divided by '~', each a letter and a
-    /// colon; records inside a part by ';', fields by '|'. Text fields have the four dividers taken out. A reader takes
-    /// the fields it knows and leaves out what it does not, so a later version's line with more fields at the end of a
-    /// record still loads. Game-free.
-    ///
-    /// THE COST. A save writes every line (600 professionals, the firms, the hiring, the startups, the careers) on the
-    /// game's autosave in play: the writer takes a builder kept from the last line (one per writer alive at once, its room
-    /// grown once), and writes numbers, texts and place keys into it in place, so a line costs the one string it is and
-    /// nothing besides (it made a string of every number and a builder and a string of every text). The text is
-    /// character for character what it was (EconomyCheck, TechWriterChecks).
+    /// Writes a part's line of the save: parts by '~', records by ';', fields by '
+    /// '; a reader leaves out fields it does not
+    /// know. A kept builder makes a line cost only its string. Game-free.
     /// </summary>
     public sealed class TechWriter
     {
-        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         [ThreadStatic] private static Stack<StringBuilder> _kept;   // builders of finished lines, for the next writers
         private StringBuilder _t;
         private string _written;
         private bool _first;
+        private int _fields;
         private readonly char[] _digits = new char[20];
 
         public TechWriter(int version)
@@ -35,7 +28,6 @@ namespace RealLifeOverhaul.Tech
             Number(version);
         }
 
-        /// <summary>Starts a part.</summary>
         public TechWriter Part(char letter)
         {
             Builder.Append('~').Append(letter).Append(':');
@@ -43,7 +35,6 @@ namespace RealLifeOverhaul.Tech
             return this;
         }
 
-        /// <summary>Starts a record in the part.</summary>
         public TechWriter Record()
         {
             if (!_first)
@@ -54,8 +45,6 @@ namespace RealLifeOverhaul.Tech
             _fields = 0;
             return this;
         }
-
-        private int _fields;
 
         public TechWriter Add(long value)
         {
@@ -76,7 +65,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; text != null && i < text.Length; i++)
             {
                 char c = text[i];
-                t.Append(c == '~' || c == ';' || c == '|' ? ' ' : c);   // (as Clean)
+                t.Append(c == '~' || c == ';' || c == '|' ? ' ' : c);   // as Clean
             }
             return this;
         }
@@ -138,7 +127,7 @@ namespace RealLifeOverhaul.Tech
 
         private StringBuilder Builder => _t ?? throw new InvalidOperationException("the line has been written");
 
-        /// <summary>The line; the writer's builder goes back for the next writer (the line is kept: asked again, the same string).</summary>
+        /// <summary>The line, the same string however often asked; the builder goes back for the next writer.</summary>
         public override string ToString()
         {
             if (_t != null)
@@ -172,6 +161,30 @@ namespace RealLifeOverhaul.Tech
         }
     }
 
+    /// <summary>Loads a store's line of the save: null with none, or with one that cannot be read, which is kept as it is (Core/SaveLines).</summary>
+    public static class TechLines
+    {
+        public delegate T Reader<T>(string text, out int version);
+
+        public static T Load<T>(Dictionary<string, string> data, string key, int known, Reader<T> read, out int version) where T : class
+        {
+            version = 0;
+            if (data == null || !data.TryGetValue(key, out string text) || string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+            try
+            {
+                return SaveLines.Checked(data, key, read(text, out version), version, known);
+            }
+            catch (Exception)
+            {
+                SaveLines.Unreadable(data, key, "it could not be read");
+                return null;
+            }
+        }
+    }
+
     /// <summary>Reads a line <see cref="TechWriter"/> wrote: its version, and its parts by letter.</summary>
     public sealed class TechReader
     {
@@ -199,8 +212,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The records of a part, each its fields; none if the part is not there.</summary>
         public IEnumerable<Fields> Records(char letter)
         {
-            string part;
-            if (!_parts.TryGetValue(letter, out part) || part.Length == 0)
+            if (!_parts.TryGetValue(letter, out string part) || part.Length == 0)
             {
                 yield break;
             }
@@ -251,8 +263,7 @@ namespace RealLifeOverhaul.Tech
                 _i++;
                 return otherwise;
             }
-            long v;
-            return long.TryParse(_f[_i++], NumberStyles.Integer, CultureInfo.InvariantCulture, out v) ? v : otherwise;
+            return long.TryParse(_f[_i++], NumberStyles.Integer, CultureInfo.InvariantCulture, out long v) ? v : otherwise;
         }
 
         /// <summary>A place key written by <see cref="TechWriter.Place"/>.</summary>

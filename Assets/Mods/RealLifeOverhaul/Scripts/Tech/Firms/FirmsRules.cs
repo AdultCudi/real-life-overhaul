@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
 {
@@ -12,32 +11,28 @@ namespace RealLifeOverhaul.Tech
     }
 
     /// <summary>
-    /// The rules of tech firms: a product's day (features built, bugs, debt, customers won and lost, takings and costs,
-    /// an outage, a breach, the rival shipping), a game's launch and its tail of sales, contracts (offers, the council's
-    /// tenders, the work and the money), a firm's reputation, its value, and the research and development relief.
-    /// Game-free and checked by EconomyCheck; every roll is <see cref="TechRandom"/>'s.
+    /// The rules of tech firms: who does the work, a product's day of building and selling, reputation, value and relief;
+    /// contracts are in FirmsRules.Contracts. Game-free; every roll is <see cref="TechRandom"/>'s.
     /// </summary>
-    public static class FirmsRules
+    public static partial class FirmsRules
     {
         public const int NoteDone = 1, NoteFailed = 2, NoteBilled = 3, NoteOffered = 4, NoteWon = 5, NoteLostTender = 6, NoteTender = 7, NoteLapsed = 8;
 
-        /// <summary>What the city's cycle does to what people and companies spend on software, thousandths (boom to recession).</summary>
+        /// <summary>What the city's cycle does to spending on software, thousandths, boom to recession.</summary>
         public static readonly int[] CycleSpend = { 1100, 1000, 920, 820 };
 
         public static bool Makes(FirmKind firm, ProductKind kind) => (FirmsCatalogue.MakesProducts[(int)firm] & (1 << (int)kind)) != 0;
 
         public static bool Takes(FirmKind firm, WorkKind kind) => (FirmsCatalogue.TakesWork[(int)firm] & (1 << (int)kind)) != 0;
 
-        // ---------------------------------------------------------------- who does the work, and why nobody does
-
-        /// <summary>True for a role whose points build products and contracts' work: engineering, data, security and infrastructure, but the testers.</summary>
+        /// <summary>True for a role whose points build products and contract work: engineering, data, security and infrastructure, but not testers.</summary>
         public static bool Builds(RoleDef r)
         {
             return r != null && r.Id != TalentCatalogue.QaTester
                    && (r.Family == Family.Engineering || r.Family == Family.Data || r.Family == Family.Security || r.Family == Family.Infrastructure);
         }
 
-        /// <summary>True for a role that can work on a kind of contract: designers on branding, the builders and web designers on a website, the builders on the rest.</summary>
+        /// <summary>True for a role that can work on a kind of contract: designers on branding, builders on the rest, with web designers on a website.</summary>
         public static bool CanDo(RoleDef r, WorkKind kind)
         {
             if (r == null)
@@ -68,13 +63,7 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        /// <summary>
-        /// The roles a business of the tech sector's own types wants first (the first of the game's skill is what a newcomer
-        /// with that skill becomes): a software or game studio its software engineers, an IT consultancy its back end
-        /// engineers, a cybersecurity firm its security analysts, an AI lab its machine learning engineers, each with the
-        /// designers and the support people it uses. Any other kind (-1 among them) wants nothing in particular. Game-free: the
-        /// people part asks it for the business a newcomer is assigned to (TechDirector.WantedRoles).
-        /// </summary>
+        /// <summary>The roles a firm of a kind wants first, a newcomer's role when their skill fits. Returns how many; none for other kinds.</summary>
         public static int Wanted(int kind, int[] into)
         {
             int n = 0;
@@ -107,13 +96,7 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
-        /// <summary>
-        /// Why nobody at a firm can work (<paramref name="yesterday"/> false: from now on), or worked yesterday (true): the
-        /// first thing in the way, in the order it has to be put right. Nobody there; nobody whose role does the work; the
-        /// business closed (no internet plan, the connection being installed or down, no power, else the game's switch);
-        /// no opening hours; no workstation; no shifts. Of yesterday also: a day it did not open or they had no shift,
-        /// else they were away. None when somebody can work, or worked.
-        /// </summary>
+        /// <summary>Why nobody can work now, or (<paramref name="yesterday"/>) worked yesterday: the first thing to put right; None if somebody can.</summary>
         public static Idle Why(in FirmFacts f, bool yesterday)
         {
             if (yesterday && f.Worked > 0)
@@ -147,11 +130,7 @@ namespace RealLifeOverhaul.Tech
             return f.ShiftsYesterday <= 0 ? Idle.DayOff : Idle.Away;
         }
 
-        /// <summary>
-        /// The points a contract gets today out of what the firm's people have left: branding from the designers, a website
-        /// from the builders and then the web designers (who are designers too), the rest from the builders. Returns what
-        /// was given; what is left is written back.
-        /// </summary>
+        /// <summary>The points a contract gets from what the firm's builders and designers have left. Returns what was given.</summary>
         public static int Give(WorkKind kind, int need, ref int engineering, ref int design, ref int web)
         {
             need = Math.Max(0, need);
@@ -174,8 +153,6 @@ namespace RealLifeOverhaul.Tech
             return e + w;
         }
 
-        // ---------------------------------------------------------------- building
-
         /// <summary>Work points a feature costs when so many are built.</summary>
         public static int FeatureCost(int built) => FirmsCatalogue.FeatureBase + FirmsCatalogue.FeatureStep * Math.Max(0, built);
 
@@ -186,40 +163,27 @@ namespace RealLifeOverhaul.Tech
             return 1000 - Math.Min(700, (int)Math.Min(int.MaxValue, (long)p.Bugs * 1000 / allowance));
         }
 
-        /// <summary>
-        /// The share product people add to a feature's points, thousandths: up to four tenths more with one of them for
-        /// every few engineers.
-        /// </summary>
+        /// <summary>What product people add to a feature's points, thousandths: up to 400 with one for every few engineers.</summary>
         public static int ProductBoost(in Crew c) => Math.Min(400, c.Product * 3000 / Math.Max(1, c.Engineering + c.Product));
 
-        /// <summary>
-        /// A day of building: the points given to the product, by the firm's focus, go to features (further with product
-        /// people, less far with debt), to fixing bugs (two points a bug, a tester's one) and to paying down debt. The work
-        /// brings bugs by how often the crew's work needs doing again, and each feature adds debt where few seniors built
-        /// it. Returns how many features were finished.
-        /// </summary>
+        /// <summary>A day of building: the points, split by the firm's focus, go to features, bug fixes and debt. Returns the features finished.</summary>
         public static int Build(Firm firm, Product p, in Crew c, int points, int testing)
         {
             int[] split = FirmsCatalogue.FocusSplit[TalentCatalogue.Clamp(firm.Focus, 0, (int)Focus.Count - 1)];
             long feature = (long)points * split[0] / 1000 * (1000 + ProductBoost(c)) / 1000 * 1000 / (1000 + firm.Debt);
-            int fix = points * split[1] / 1000 / FirmsCatalogue.PointsPerFix + testing;   // (a tester's point fixes a bug)
+            int fix = points * split[1] / 1000 / FirmsCatalogue.PointsPerFix + testing;   // a tester's point fixes a bug
             int debt = points * split[2] / 1000 * FirmsCatalogue.DebtPerPoint;
             int finished = 0;
-            // bugs come with the work: a point in so many by how often the crew's work needs doing again
             p.Bugs = (int)Math.Min(int.MaxValue, p.Bugs + feature * Math.Max(30, c.Faults) / 1000);
-            if (p.K == ProductKind.Game)
+            p.Progress = (int)Math.Min(int.MaxValue, p.Progress + feature);
+            if (p.K != ProductKind.Game)
             {
-                p.Progress = (int)Math.Min(int.MaxValue, p.Progress + feature);
-            }
-            else
-            {
-                p.Progress = (int)Math.Min(int.MaxValue, p.Progress + feature);
                 while (p.Features < FirmsCatalogue.FeaturesMost && p.Progress >= FeatureCost(p.Features)
                        && (p.K != ProductKind.Model || p.Compute >= InfraRules.TrainNeed(p.Features)))
                 {
                     if (p.K == ProductKind.Model)
                     {
-                        p.Compute -= InfraRules.TrainNeed(p.Features);   // (an AI model's feature is a generation's training as well as its engineering)
+                        p.Compute -= InfraRules.TrainNeed(p.Features);   // a model's feature is a generation's training too
                     }
                     p.Progress -= FeatureCost(p.Features);
                     p.Features++;
@@ -237,16 +201,12 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>True when a game's whole build is done and it can be launched.</summary>
-        public static bool GameReady(Product p) => p.K == ProductKind.Game && p.Stage == 0 && p.Progress >= FirmsCatalogue.GameScope[TalentCatalogue.Clamp(p.Scope, 0, 2)];
+        public static bool GameReady(Product p) =>
+            p.K == ProductKind.Game && p.Stage == 0 && p.Progress >= FirmsCatalogue.GameScope[TalentCatalogue.Clamp(p.Scope, 0, 2)];
 
         public static bool CanLaunch(Product p) => p.Stage == 0 && (p.K == ProductKind.Game ? GameReady(p) : p.Features >= FirmsCatalogue.LaunchFeatures);
 
-        // ---------------------------------------------------------------- selling
-
-        /// <summary>
-        /// How much a product appeals against its rival's, thousandths: its features against the rival's, its quality, its
-        /// price tier, the firm's reputation and its design.
-        /// </summary>
+        /// <summary>How a product appeals against its rival's, thousandths: features, quality, price tier, reputation and design.</summary>
         public static int Appeal(Product p, Firm firm, in Crew c)
         {
             long a = 1000L * (p.Features + 1) / (p.RivalFeatures + 1);
@@ -272,7 +232,8 @@ namespace RealLifeOverhaul.Tech
                 case ProductKind.Licence:
                     return p.Users * FirmsCatalogue.LicenceDeal * FirmsCatalogue.LicenceMaintenance / 1000 / 12;
                 case ProductKind.App:
-                    return p.Users * MonthPrice(p) * (1000 - FirmsCatalogue.AppStoreCut) / 1000 + (p.Users + p.Free) * FirmsCatalogue.Price[0] * FirmsCatalogue.AppAds / 1000 / 20;
+                    return p.Users * MonthPrice(p) * (1000 - FirmsCatalogue.AppStoreCut) / 1000
+                           + (p.Users + p.Free) * FirmsCatalogue.Price[0] * FirmsCatalogue.AppAds / 1000 / 20;
                 case ProductKind.Game:
                     return 0;
                 default:
@@ -287,13 +248,7 @@ namespace RealLifeOverhaul.Tech
             return (int)Math.Min(1000, (tickets + FirmsCatalogue.TicketsPerPerson - 1) / FirmsCatalogue.TicketsPerPerson);
         }
 
-        /// <summary>
-        /// A day on sale. New customers come from those the product has not won yet, by its appeal, the marketing's reach,
-        /// the sales people (for businesses and companies) and the economy; customers leave by the segment's churn, more
-        /// for a buggy product, one short of support, a dear tier or a rival ahead. The day's takings and costs come out of
-        /// that. A licence sells by deals the sellers turn up. A game sells its launch's tail. Then the risks: an outage, a
-        /// breach, the rival shipping a feature.
-        /// </summary>
+        /// <summary>A day on sale: customers won and lost, the takings and costs, and the risks (an outage, a breach, the rival shipping).</summary>
         public static ProductDay Sell(FirmsFile f, Firm firm, Product p, in Crew c, int support, int day, int cycle, int hostingRate)
         {
             var r = new ProductDay();
@@ -306,7 +261,8 @@ namespace RealLifeOverhaul.Tech
             {
                 int age = Math.Max(0, day - p.Launched);
                 double decay = Math.Pow(0.5, age / (double)FirmsCatalogue.GameHalfLife);
-                double units = FirmsCatalogue.GamePlayers * FirmsCatalogue.GameLaunchShare / 1e6 * appeal * (1000 + p.Hype) / 1000.0 * reach / 1000.0 * spend / 1000.0 * decay;
+                double units = FirmsCatalogue.GamePlayers * FirmsCatalogue.GameLaunchShare / 1e6 * appeal * (1000 + p.Hype) / 1000.0 * reach / 1000.0 * spend / 1000.0
+                               * decay;
                 long whole = (long)units;
                 p.Carry += (long)((units - whole) * 1e6);
                 whole += p.Carry / 1000000;
@@ -349,7 +305,6 @@ namespace RealLifeOverhaul.Tech
                     r.Won = whole;
                 }
             }
-            // leaving
             long churn = FirmsCatalogue.Churn[seg];
             if (p.K == ProductKind.Licence)
             {
@@ -377,7 +332,6 @@ namespace RealLifeOverhaul.Tech
             p.Users = Math.Max(0, p.Users + r.Won - r.Lost);
             r.Takings += MonthlyRevenue(p) / FirmsCatalogue.MonthDays;
             r.Hosting = (p.Users + p.Free / 10) * FirmsCatalogue.HostingCost[seg] * hostingRate / 1000 / FirmsCatalogue.MonthDays;
-            // the risks
             long exposure = p.Users + p.Free;
             if (exposure > 0)
             {
@@ -428,7 +382,7 @@ namespace RealLifeOverhaul.Tech
             return d;
         }
 
-        /// <summary>A data protection fine for a breach, cents: so much for each customer affected, at least the floor, at most a share of a year's revenue (but never under the floor); half again for a firm not on the register.</summary>
+        /// <summary>A data protection fine, cents: so much a customer, between the floor and a share of a year's revenue; more off the register.</summary>
         public static long Fine(long affected, long yearRevenue, bool registered)
         {
             long fine = affected * FirmsCatalogue.FinePerCustomer;
@@ -437,7 +391,6 @@ namespace RealLifeOverhaul.Tech
             return registered ? fine : fine * FirmsCatalogue.UnregisteredFine / 1000;
         }
 
-        /// <summary>A game's launch: on sale from today; its hype is what its marketing built.</summary>
         public static void Launch(Product p, int day)
         {
             p.Stage = 1;
@@ -445,7 +398,7 @@ namespace RealLifeOverhaul.Tech
             p.LastRelease = day;
         }
 
-        /// <summary>A game's hype before launch: each day of marketing adds a little, more the more is spent.</summary>
+        /// <summary>A game's hype before launch: each day of marketing adds more the more is spent.</summary>
         public static void Hype(Product p)
         {
             if (p.K == ProductKind.Game && p.Stage == 0)
@@ -461,7 +414,6 @@ namespace RealLifeOverhaul.Tech
             firm.Reputation = TalentCatalogue.Clamp(firm.Reputation + (target - firm.Reputation) / 20, 0, 1000);
         }
 
-        /// <summary>A name for a product: two words of the catalogue, by a roll.</summary>
         public static string Name(int seed, int n)
         {
             return FirmsCatalogue.NameFirst[TechRandom.Range(seed, n, 61, 0, 0, FirmsCatalogue.NameFirst.Length - 1)]
@@ -473,7 +425,8 @@ namespace RealLifeOverhaul.Tech
         {
             var p = new Product
             {
-                Id = f.Next(), Place = place, Kind = (int)kind, Segment = kind == ProductKind.App || kind == ProductKind.Game ? (int)Segment.Consumer : kind == ProductKind.Licence ? (int)Segment.Enterprise : (int)segment,
+                Id = f.Next(), Place = place, Kind = (int)kind,
+                Segment = kind == ProductKind.App || kind == ProductKind.Game ? (int)Segment.Consumer : kind == ProductKind.Licence ? (int)Segment.Enterprise : (int)segment,
                 Scope = TalentCatalogue.Clamp(scope, 0, 2), Name = string.IsNullOrEmpty(name) ? Name(f.Seed, f.NextId) : name
             };
             p.RivalFeatures = FirmsCatalogue.RivalFeaturesAtStart[p.Segment];
@@ -481,249 +434,6 @@ namespace RealLifeOverhaul.Tech
             p.Train = kind == ProductKind.Model ? 2 : 0;
             return p;
         }
-
-        // ---------------------------------------------------------------- contracts
-
-        /// <summary>What a contract of so many points is worth, cents: the point rate (security work dearer), a council job bigger.</summary>
-        public static long ValueOf(WorkKind kind, int points, bool council)
-        {
-            long v = kind == WorkKind.Managed ? FirmsCatalogue.ManagedMonth
-                : (long)points * (kind == WorkKind.Audit || kind == WorkKind.PenTest || kind == WorkKind.Incident ? FirmsCatalogue.SecurityRate : FirmsCatalogue.PointRate);
-            return council ? v * FirmsCatalogue.CouncilShare / 1000 : v;
-        }
-
-        /// <summary>
-        /// The day's offers: each firm that takes contracts is offered one now and then, more with a good reputation and
-        /// sellers. A client is one of the city's businesses, or one of the player's own (named in <paramref name="own"/> as
-        /// place and name). Every <see cref="FirmsCatalogue.TenderEvery"/> days the council puts a job out to tender.
-        /// </summary>
-        public static void Offers(FirmsFile f, int day, IList<Crew> crews, IList<KeyValuePair<string, string>> own, List<WorkNote> notes)
-        {
-            int offered = 0;
-            for (int i = 0; i < f.Contracts.Count; i++)
-            {
-                offered += f.Contracts[i].Stage <= (int)WorkStage.Bid ? 1 : 0;
-            }
-            bool taker = false;
-            for (int i = 0; i < f.Firms.Count && offered < FirmsCatalogue.OffersMost && f.Contracts.Count < FirmsCatalogue.ContractsMost; i++)
-            {
-                Firm firm = f.Firms[i];
-                int kinds = FirmsCatalogue.TakesWork[TalentCatalogue.Clamp(firm.Kind, 0, (int)FirmKind.Count - 1)];
-                if (kinds == 0)
-                {
-                    continue;
-                }
-                taker = true;
-                Crew c = i < crews.Count ? crews[i] : default(Crew);
-                int chance = FirmsCatalogue.OfferChance * (500 + firm.Reputation) / 1000 * (1000 + Math.Min(2000, c.Selling * 60)) / 1000;
-                if (TechRandom.Mille(f.Seed, day, 71, i) >= chance)
-                {
-                    continue;
-                }
-                WorkKind kind = PickKind(kinds, TechRandom.Mille(f.Seed, day, 72, i));
-                bool mine = own != null && own.Count > 0 && TechRandom.Mille(f.Seed, day, 73, i) < FirmsCatalogue.OwnShare;
-                var w = new Contract { Id = f.Next(), Kind = (int)kind, Stage = (int)WorkStage.Offered, End = day + FirmsCatalogue.OfferDays };
-                if (mine)
-                {
-                    KeyValuePair<string, string> client = own[TechRandom.Range(f.Seed, day, 74, i, 0, own.Count - 1)];
-                    w.OwnPlace = client.Key;
-                    w.Client = client.Value;
-                }
-                else
-                {
-                    w.Client = FirmsCatalogue.Clients[TechRandom.Range(f.Seed, day, 75, i, 0, FirmsCatalogue.Clients.Length - 1)];
-                }
-                w.Points = kind == WorkKind.Managed ? 0 : TechRandom.Range(f.Seed, day, 76, i, FirmsCatalogue.WorkLeast[(int)kind], FirmsCatalogue.WorkMost[(int)kind]);
-                w.Value = ValueOf(kind, w.Points, false);
-                w.Place = firm.Place;   // (the firm it was offered to; it does the work if it is taken)
-                f.Contracts.Add(w);
-                offered++;
-                notes?.Add(new WorkNote { Contract = w.Id, Kind = NoteOffered });
-            }
-            if (taker && day - f.LastTender >= FirmsCatalogue.TenderEvery && f.Contracts.Count < FirmsCatalogue.ContractsMost)
-            {
-                f.LastTender = day;
-                WorkKind kind = TechRandom.Mille(f.Seed, day, 77) < 500 ? WorkKind.Integration : WorkKind.Managed;
-                var t = new Contract
-                {
-                    Id = f.Next(), Kind = (int)kind, Client = FirmsCatalogue.Council, Council = true, Stage = (int)WorkStage.Tender, End = day + FirmsCatalogue.TenderDays,
-                    Points = kind == WorkKind.Managed ? 0 : TechRandom.Range(f.Seed, day, 78, 0, FirmsCatalogue.WorkLeast[(int)kind], FirmsCatalogue.WorkMost[(int)kind]),
-                    Rivals = TechRandom.Range(f.Seed, day, 79, 0, 2, 4)
-                };
-                t.Value = ValueOf(kind, t.Points, true);
-                f.Contracts.Add(t);
-                notes?.Add(new WorkNote { Contract = t.Id, Kind = NoteTender });
-            }
-        }
-
-        private static WorkKind PickKind(int kinds, int roll)
-        {
-            int count = 0;
-            for (int k = 0; k < (int)WorkKind.Count; k++)
-            {
-                count += (kinds & (1 << k)) != 0 ? 1 : 0;
-            }
-            int n = roll * Math.Max(1, count) / 1000;
-            for (int k = 0; k < (int)WorkKind.Count; k++)
-            {
-                if ((kinds & (1 << k)) != 0 && n-- == 0)
-                {
-                    return (WorkKind)k;
-                }
-            }
-            return WorkKind.Website;
-        }
-
-        /// <summary>An offer taken by a firm: under way from today, a project's first share paid. Returns what is paid now, cents.</summary>
-        public static long Take(Contract w, string place, int day)
-        {
-            w.Place = place;
-            w.Stage = (int)WorkStage.Active;
-            w.Start = day;
-            w.LastBilled = day;
-            if (w.Monthly)
-            {
-                w.End = day + 12 * FirmsCatalogue.MonthDays;
-                return 0;
-            }
-            w.Due = day + FirmsCatalogue.WorkDays[TalentCatalogue.Clamp(w.Kind, 0, (int)WorkKind.Count - 1)];
-            long upfront = w.Value * FirmsCatalogue.UpfrontShare / 1000;
-            w.Paid = upfront;
-            return upfront;
-        }
-
-        /// <summary>The fair price of a tender, cents, and a bid at a share of it.</summary>
-        public static long BidAt(Contract tender, int thousandths) => tender.Value * Math.Max(500, thousandths) / 1000;
-
-        /// <summary>
-        /// A tender's rival bidder r's bid, cents: between 85% and 125% of its fair price (<paramref name="fair"/>). Who bids
-        /// is CompetitorRules.TenderRival; the tender is decided by these very bids (Decide).
-        /// </summary>
-        public static long RivalBid(int seed, Contract t, int r, long fair) => fair * TechRandom.Range(seed, t.Id, 81, r, 850, 1250) / 1000;
-
-        /// <summary>A council tender's fair price, cents: its value, until a bid of the player's wins it and the value is that bid; then the council's price for the work again.</summary>
-        public static long FairOf(Contract t) => t.Council && t.Stage >= (int)WorkStage.Active && t.Stage <= (int)WorkStage.Failed ? ValueOf(t.K, t.Points, true) : t.Value;
-
-        /// <summary>
-        /// A tender decided on its last day: the rivals bid between 85% and 125% of the fair price; each bid is weighed by
-        /// the bidder's reputation (the player's firm's own, the rivals' an ordinary one), and the lowest weighed bid wins.
-        /// True if the player's firm won: the job is then under way at its bid.
-        /// </summary>
-        public static bool Decide(FirmsFile f, Contract t, Firm bidder, int day)
-        {
-            return Decide(f, t, bidder, day, 0);
-        }
-
-        /// <summary>The same, with what the bidder's office adds to the weight of its bid, thousandths (0 to 50: Scripts/Interiors).</summary>
-        public static bool Decide(FirmsFile f, Contract t, Firm bidder, int day, int office)
-        {
-            if (t.Bid <= 0 || bidder == null)
-            {
-                t.Stage = (int)WorkStage.Lost;
-                return false;
-            }
-            long mine = t.Bid * (1500 - bidder.Reputation - TalentCatalogue.Clamp(office, 0, 50)) / 1000;
-            for (int r = 0; r < t.Rivals; r++)
-            {
-                long bid = RivalBid(f.Seed, t, r, t.Value);
-                if (bid * (1500 - 550) / 1000 < mine)
-                {
-                    t.Stage = (int)WorkStage.Lost;
-                    return false;
-                }
-            }
-            t.Value = t.Bid;
-            return true;
-        }
-
-        /// <summary>
-        /// A day of a contract under way with the points given to it: a project's work done (finished: the rest paid, less
-        /// a penalty for each day late; failed at twice its time), a managed service's month billed and its client's
-        /// satisfaction kept up or let slip (too low, and the client goes). Returns cents paid in today.
-        /// </summary>
-        public static long Work(Contract w, Firm firm, int points, int day, List<WorkNote> notes)
-        {
-            if (w.Stage != (int)WorkStage.Active)
-            {
-                return 0;
-            }
-            if (w.Monthly)
-            {
-                w.Satisfaction = TalentCatalogue.Clamp(w.Satisfaction + (points >= FirmsCatalogue.ManagedPoints ? 15 : -40), 0, 1000);
-                long billed = 0;
-                if (day - w.LastBilled >= FirmsCatalogue.MonthDays)
-                {
-                    w.LastBilled = day;
-                    billed = w.Value;
-                    w.Paid += billed;
-                    notes?.Add(new WorkNote { Contract = w.Id, Kind = NoteBilled, Amount = billed });
-                }
-                if (w.Satisfaction < 300 || day >= w.End)
-                {
-                    w.Stage = w.Satisfaction < 300 ? (int)WorkStage.Failed : (int)WorkStage.Done;
-                    firm.Reputation = TalentCatalogue.Clamp(firm.Reputation + (w.Satisfaction < 300 ? -60 : 30), 0, 1000);
-                    notes?.Add(new WorkNote { Contract = w.Id, Kind = w.Satisfaction < 300 ? NoteFailed : NoteDone });
-                }
-                return billed;
-            }
-            w.Done = Math.Min(w.Points, w.Done + Math.Max(0, points));
-            if (w.Done >= w.Points)
-            {
-                int late = Math.Max(0, day - w.Due);
-                long penalty = Math.Min(w.Value / 2, w.Value * FirmsCatalogue.LatePenalty / 1000 * late);
-                long rest = Math.Max(0, w.Value - penalty - w.Paid);
-                w.Paid += rest;
-                w.Stage = (int)WorkStage.Done;
-                w.Satisfaction = TalentCatalogue.Clamp(900 - late * 60, 100, 1000);
-                firm.Reputation = TalentCatalogue.Clamp(firm.Reputation + (late == 0 ? 25 : -late * 5), 0, 1000);
-                notes?.Add(new WorkNote { Contract = w.Id, Kind = NoteDone, Amount = rest });
-                return rest;
-            }
-            if (day > w.Due + (w.Due - w.Start))
-            {
-                w.Stage = (int)WorkStage.Failed;
-                firm.Reputation = Math.Max(0, firm.Reputation - 80);
-                notes?.Add(new WorkNote { Contract = w.Id, Kind = NoteFailed });
-            }
-            return 0;
-        }
-
-        /// <summary>The points a contract asks for today: a project what is left over the days to its date, a fifth more to be safe; a managed service its daily share.</summary>
-        public static int Need(Contract w, int day)
-        {
-            if (w.Stage != (int)WorkStage.Active)
-            {
-                return 0;
-            }
-            if (w.Monthly)
-            {
-                return FirmsCatalogue.ManagedPoints;
-            }
-            int left = Math.Max(0, w.Points - w.Done);
-            int days = Math.Max(1, w.Due - day);
-            return Math.Min(left, (left * 12 / 10 + days - 1) / days);
-        }
-
-        /// <summary>Offers and tenders past their last day lapse; finished and failed contracts are dropped a month after.</summary>
-        public static void Lapse(FirmsFile f, int day, List<WorkNote> notes)
-        {
-            for (int i = f.Contracts.Count - 1; i >= 0; i--)
-            {
-                Contract w = f.Contracts[i];
-                if ((w.Stage == (int)WorkStage.Offered || w.Stage == (int)WorkStage.Tender) && day > w.End)
-                {
-                    w.Stage = (int)WorkStage.Declined;
-                    w.End = day;
-                    notes?.Add(new WorkNote { Contract = w.Id, Kind = NoteLapsed });
-                }
-                else if (w.Stage >= (int)WorkStage.Done && day > w.End + FirmsCatalogue.MonthDays && day > w.Due + FirmsCatalogue.MonthDays)
-                {
-                    f.Contracts.RemoveAt(i);
-                }
-            }
-        }
-
-        // ---------------------------------------------------------------- value and relief
 
         /// <summary>A firm's recurring revenue a year, cents: its products' monthly revenue times twelve.</summary>
         public static long Arr(FirmsFile f, string place)
@@ -737,10 +447,7 @@ namespace RealLifeOverhaul.Tech
             return arr;
         }
 
-        /// <summary>
-        /// What a tech firm is worth to a buyer or an investor, cents: its recurring revenue a year times a multiple that
-        /// grows with its growth and falls with debt (four to twelve times), plus three months of its other takings.
-        /// </summary>
+        /// <summary>What a firm is worth, cents: a year's recurring revenue by a multiple for growth and debt, plus three months' other takings.</summary>
         public static long Value(Firm firm, long arr, int growthBp)
         {
             int multiple = TalentCatalogue.Clamp(4000 + growthBp * 2 - firm.Debt * 2, 2000, 12000);

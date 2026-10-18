@@ -11,10 +11,8 @@ namespace RealLifeOverhaul.Tech
     }
 
     /// <summary>
-    /// The rules of the labour market and of hiring from it: who is looking, what they ask, how short each family is,
-    /// what the rivals post and take, who applies to an ad, what an interview finds out, how an offer is answered, what
-    /// the recruitment office adds and what a search firm brings. Game-free and checked by EconomyCheck; every roll is
-    /// <see cref="TechRandom"/>'s. The game's wage for a role at a skill is handed in (<see cref="RateOf"/>).
+    /// The rules of the labour market and of hiring from it. Game-free; every roll is <see cref="TechRandom"/>'s and the game's wage is
+    /// handed in (<see cref="RateOf"/>).
     /// </summary>
     public static class HiringRules
     {
@@ -22,8 +20,6 @@ namespace RealLifeOverhaul.Tech
         public delegate int RateOf(RoleDef role, int mainPoints);
 
         public const int WithdrewNote = 1, AnsweredNote = 2, DeliveredNote = 3, LapsedNote = 4;
-
-        // ---------------------------------------------------------------- the size of the market
 
         public static int Unemployment(int cycle)
         {
@@ -79,12 +75,7 @@ namespace RealLifeOverhaul.Tech
             return -1;
         }
 
-        /// <summary>
-        /// A new seeker: a family and a level by the market's shares (a junior in the summer as often as not), a role of
-        /// the family, a person (<see cref="TalentRules.Make"/>), in work or not, an ask by the going rate, what they want,
-        /// how long they look, how well they would settle, how far their CV stretches the truth and what their references
-        /// say. <paramref name="role"/> and <paramref name="level"/> of -1 are drawn.
-        /// </summary>
+        /// <summary>A new seeker by the market's shares; a <paramref name="role"/> or <paramref name="level"/> of -1 is drawn.</summary>
         public static Seeker NewSeeker(int seed, int id, int day, bool summer, int role, int level, RateOf rate, int shortage, string district)
         {
             int n = id * 7919;
@@ -94,7 +85,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (role < 0)
             {
-                // A family by its share, then one of its roles that is held at the level (a junior is no CTO): a few tries.
+                // a few tries for a role of the family held at the level (a junior is no CTO)
                 Family family = (Family)Pick(HiringCatalogue.FamilyShare, TechRandom.Mille(seed, n, 1));
                 for (int t = 0; t < 6 && (role < 0 || level < TalentCatalogue.Role(role).LeastLevel || level > TalentCatalogue.Role(role).MostLevel); t++)
                 {
@@ -119,7 +110,7 @@ namespace RealLifeOverhaul.Tech
             return s;
         }
 
-        /// <summary>What a seeker asks, cents an hour: the going rate for them, more in work, less out of it, and a little of their own either side.</summary>
+        /// <summary>What a seeker asks, cents an hour: the going rate, more in work, less out of it, and a little either side.</summary>
         public static int AskOf(int seed, Seeker s, RateOf rate, int shortage)
         {
             RoleDef r = s.P.Def;
@@ -129,12 +120,7 @@ namespace RealLifeOverhaul.Tech
             return Math.Max(TalentCatalogue.RateLeast, (int)((long)going * (10000 + bp) / 10000));
         }
 
-        // ---------------------------------------------------------------- shortage
-
-        /// <summary>
-        /// How short of people a family is, thousandths: its scarcity, moved by the open jobs (the rivals' and the
-        /// player's) against the seekers of the family still looking, between 0.85 and 1.5.
-        /// </summary>
+        /// <summary>How short of people a family is, thousandths: its scarcity, moved by open jobs against seekers still looking.</summary>
         public static int Shortage(HiringFile f, Family family, int day)
         {
             int seekers = 0, jobs = 0;
@@ -155,23 +141,15 @@ namespace RealLifeOverhaul.Tech
             return TalentCatalogue.Clamp(scarcity + pressure, HiringCatalogue.ShortageLeast, HiringCatalogue.ShortageMost);
         }
 
-        // ---------------------------------------------------------------- the day of the market
-
-        /// <summary>
-        /// A day of the city's labour market: seekers who found work elsewhere leave (an applicant of the player's among
-        /// them withdraws); the rivals' ads run out and new ones are posted, as many as the cycle brings; each rival's ad
-        /// may take a matching seeker; the list is filled up to its size again. The player's own applicants are answered
-        /// and lapse in <see cref="Answer"/> and <see cref="Lapse"/>.
-        /// </summary>
+        /// <summary>A day of the labour market: seekers leave, the rivals post and hire, the list is filled again.</summary>
         public static void Day(HiringFile f, int day, int cycle, bool summer, IList<string> rivals, RateOf rate, IList<string> districts, List<MarketNote> notes)
         {
-            // leaving the market
             for (int i = f.Seekers.Count - 1; i >= 0; i--)
             {
                 Seeker s = f.Seekers[i];
                 if (s.Passive && !Applied(f, s.Id))
                 {
-                    f.Seekers.RemoveAt(i);   // (a search firm's candidate the player has not taken on goes back to their own job)
+                    f.Seekers.RemoveAt(i);   // a search firm's candidate not taken on goes back to their own job
                     continue;
                 }
                 if (day < s.Until && !s.Taken)
@@ -180,7 +158,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (Starting(f, s.Id))
                 {
-                    continue;   // (hired by the player and not started yet)
+                    continue;   // hired by the player and not started yet
                 }
                 Withdraw(f, s.Id, notes);
                 if (!Applied(f, s.Id))
@@ -192,7 +170,6 @@ namespace RealLifeOverhaul.Tech
                     s.Taken = true;
                 }
             }
-            // the rivals' ads
             for (int i = f.RivalAds.Count - 1; i >= 0; i--)
             {
                 if (f.RivalAds[i].To <= day)
@@ -213,7 +190,6 @@ namespace RealLifeOverhaul.Tech
                     PayBp = TechRandom.Range(f.Seed, n, 24, 0, 0, 1500)
                 });
             }
-            // the rivals hire
             for (int i = 0; i < f.RivalAds.Count; i++)
             {
                 RivalAd ad = f.RivalAds[i];
@@ -233,7 +209,6 @@ namespace RealLifeOverhaul.Tech
                     }
                 }
             }
-            // new seekers
             int target = Target(cycle, summer);
             for (int k = 0; Open(f) < target && f.Seekers.Count < HiringCatalogue.SeekersMost && k < HiringCatalogue.SeekersMost; k++)
             {
@@ -243,7 +218,7 @@ namespace RealLifeOverhaul.Tech
                 s.Ask = AskOf(f.Seed, s, rate, Shortage(f, s.P.Def.Family, day));
                 f.Seekers.Add(s);
             }
-            // the rivals' takes freed no applicant's seeker yet: those with nothing pending are dropped
+            // seekers the rivals took with nothing pending at the player's are dropped
             for (int i = f.Seekers.Count - 1; i >= 0; i--)
             {
                 if (f.Seekers[i].Taken && !Applied(f, f.Seekers[i].Id) && !Starting(f, f.Seekers[i].Id))
@@ -315,9 +290,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- an ad
-
-        /// <summary>An ad's cost at the start's prices: its days at a day's cost, boosted at two and a half times that.</summary>
+        /// <summary>An ad's cost at the start's prices: its days at a day's cost, more when boosted.</summary>
         public static int AdCost(int days, bool boost)
         {
             long cost = (long)days * HiringCatalogue.AdDayCost;
@@ -338,11 +311,7 @@ namespace RealLifeOverhaul.Tech
             return s.P.Def.Family == want.Family && Math.Abs(s.P.Level - ad.Level) <= 1 && s.P.Level >= want.LeastLevel && s.P.Level <= want.MostLevel;
         }
 
-        /// <summary>
-        /// The per mille chance a matching seeker applies to an ad today: by the pay against their ask (the top of the
-        /// range is what they read), where they would work, the player's standing, the rivals' ads in the family, a boost,
-        /// the same role, and much less for one short of the skill asked.
-        /// </summary>
+        /// <summary>The per mille chance a matching seeker applies to an ad today.</summary>
         public static int ApplyChance(Seeker s, JobAd ad, int esteem, int rivalAds)
         {
             long c = HiringCatalogue.ApplyChance;
@@ -376,10 +345,7 @@ namespace RealLifeOverhaul.Tech
             return (int)Math.Max(0, Math.Min(1000, c));
         }
 
-        /// <summary>
-        /// A day's applications to the player's open ads: each matching seeker who has not applied yet may, up to the ad's
-        /// cap for the weeks it has run. The new applications are added to the file; their count is returned.
-        /// </summary>
+        /// <summary>A day's applications to the player's open ads, up to each ad's weekly cap. Returns how many came.</summary>
         public static int Apply(HiringFile f, int day, int esteem)
         {
             int came = 0;
@@ -426,7 +392,7 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        /// <summary>How keen an applicant is at first, thousandths: half from how well the pay and the arrangement suit them, half from how they would settle.</summary>
+        /// <summary>How keen an applicant is at first, thousandths: half how the pay and arrangement suit them, half how they would settle.</summary>
         public static int Interest(Seeker s, JobAd ad)
         {
             int pay = ad.PayMost >= s.Ask ? 1000 : (int)((long)ad.PayMost * 1000 / Math.Max(1, s.Ask));
@@ -434,17 +400,10 @@ namespace RealLifeOverhaul.Tech
             return TalentCatalogue.Clamp((pay + work) / 4 + s.Fit / 2, 0, 1000);
         }
 
-        // ---------------------------------------------------------------- screening and the interview
-
         public const int RevealSkill = 1, RevealYears = 2, RevealFit = 4, RevealAsk = 8;
         public const int TopicTechnical = 0, TopicProject = 1, TopicMotive = 2, TopicPay = 3, TopicTeam = 4, Topics = 5;
 
-        /// <summary>
-        /// A question asked at an interview: a technical one finds out the true main skill, one about their last project
-        /// their true experience, one about why they want the job how they would settle, one about pay their ask, one
-        /// about the team a little of everything. A question that shows the job well makes them keener; points of
-        /// interest it moved are returned.
-        /// </summary>
+        /// <summary>A question at an interview: its topic reveals one thing. Returns the points of interest it moved.</summary>
         public static int Ask(Applicant a, Seeker s, int topic)
         {
             int before = a.Interest;
@@ -483,8 +442,6 @@ namespace RealLifeOverhaul.Tech
             return a.Interest - before;
         }
 
-        // ---------------------------------------------------------------- offers
-
         /// <summary>The share of their ask, basis points, an applicant takes: less for a good employer and a keen applicant.</summary>
         public static int Threshold(Applicant a, int esteem)
         {
@@ -500,12 +457,7 @@ namespace RealLifeOverhaul.Tech
             a.Stage = (int)ApplyStage.Offered;
         }
 
-        /// <summary>
-        /// The answer to an offer: taken if it reaches their threshold, unless another company has an offer in for them
-        /// (a scarce family's applicant now and then, never one the player has already matched); otherwise they come back
-        /// with their ask if it is near it, or turn it down. Accepted, they start after their notice (or within days if
-        /// out of work).
-        /// </summary>
+        /// <summary>The answer to an offer: accepted, countered (a rival's bid or their ask) or declined.</summary>
         public static ApplyStage Answer(HiringFile f, Applicant a, Seeker s, int day, int esteem, int shortage)
         {
             int threshold = (int)((long)s.Ask * Threshold(a, esteem) / 10000);
@@ -513,7 +465,9 @@ namespace RealLifeOverhaul.Tech
             if (a.Offer >= threshold && !(rival && a.Offer < s.Ask * (10000L + HiringCatalogue.RivalOfferBp) / 10000))
             {
                 a.Stage = (int)ApplyStage.Accepted;
-                a.Start = day + (s.Employed ? Math.Max(HiringCatalogue.StartLeast, s.Notice) : TechRandom.Range(f.Seed, a.Id, 32, 0, HiringCatalogue.StartLeast, HiringCatalogue.StartUnemployedMost));
+                a.Start = day + (s.Employed
+                    ? Math.Max(HiringCatalogue.StartLeast, s.Notice)
+                    : TechRandom.Range(f.Seed, a.Id, 32, 0, HiringCatalogue.StartLeast, HiringCatalogue.StartUnemployedMost));
                 return ApplyStage.Accepted;
             }
             if (rival)
@@ -535,10 +489,7 @@ namespace RealLifeOverhaul.Tech
             return ApplyStage.Declined;
         }
 
-        /// <summary>
-        /// Offers waiting a day are answered; applications not acted on for three weeks lapse, and a counter the player
-        /// has not answered in three days is taken as a no.
-        /// </summary>
+        /// <summary>Offers waiting a day are answered; stale applications lapse, and a counter left unanswered is taken as a no.</summary>
         public static void Answers(HiringFile f, int day, int esteem, Func<Family, int> shortage, List<MarketNote> notes)
         {
             for (int i = 0; i < f.Applicants.Count; i++)
@@ -566,19 +517,13 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- the recruitment office and search firms
-
-        /// <summary>The extra candidates the recruitment office brings for a campaign of so many: half as many again, four at the least.</summary>
+        /// <summary>The extra candidates the recruitment office brings for a campaign of so many.</summary>
         public static int OfficeBonus(int asked)
         {
             return Math.Max(HiringCatalogue.OfficeBonusLeast, (Math.Max(0, asked) * HiringCatalogue.OfficeBonusShare + 999) / 1000);
         }
 
-        /// <summary>
-        /// The seeker the recruitment office puts forward for a business: one who can be hired under the game's skill, in a
-        /// role the business wants if there is one (the first such role ahead of the rest), the most able first, at the
-        /// office's floor or over. Null if the market has nobody.
-        /// </summary>
+        /// <summary>The seeker the recruitment office puts forward: a wanted role first, then the most able; null if the market has nobody.</summary>
         public static Seeker ForOffice(HiringFile f, string gameSkill, int[] wanted, int wantedCount)
         {
             Seeker best = null;
@@ -615,28 +560,26 @@ namespace RealLifeOverhaul.Tech
             return (int)Math.Min(int.MaxValue, (long)askCents * TalentCatalogue.YearHours * HiringCatalogue.SearchFeeBp / 10000);
         }
 
-        /// <summary>What is paid when a search starts: a third of the fee.</summary>
+        /// <summary>What is paid when a search starts, a share of the fee.</summary>
         public static int Retainer(int fee)
         {
             return (int)((long)fee * HiringCatalogue.SearchRetainerShare / 1000);
         }
 
-        /// <summary>
-        /// A search delivers: candidates who are not on the open market (in work, passive), at the level asked or one
-        /// over, in the role asked, from the top half of their level's band; each applies to the search's brief.
-        /// </summary>
+        /// <summary>A search delivers passive candidates in work, in the role at its level or one over, each applying to the brief.</summary>
         public static int Deliver(HiringFile f, JobAd search, int day, RateOf rate, int shortage, IList<string> districts)
         {
             int made = 0;
             RoleDef r = TalentCatalogue.Role(search.Role);
-            for (int k = 0; k < HiringCatalogue.SearchCandidates && f.Seekers.Count < HiringCatalogue.SeekersMost + HiringCatalogue.SearchCandidates * HiringCatalogue.SearchesMost; k++)
+            int most = HiringCatalogue.SeekersMost + HiringCatalogue.SearchCandidates * HiringCatalogue.SearchesMost;
+            for (int k = 0; k < HiringCatalogue.SearchCandidates && f.Seekers.Count < most; k++)
             {
                 int id = f.Next();
                 int level = TalentCatalogue.Clamp(search.Level + (TechRandom.Mille(f.Seed, id, 41) < 300 ? 1 : 0), r.LeastLevel, r.MostLevel);
                 string district = districts != null && districts.Count > 0 ? districts[TechRandom.Range(f.Seed, id, 42, 0, 0, districts.Count - 1)] : string.Empty;
                 Seeker s = NewSeeker(f.Seed, id, day, false, r.Id, level, rate, shortage, district);
-                int least = TalentCatalogue.LevelSkillLeast[level], most = TalentCatalogue.LevelSkillMost[level];
-                s.P.Main = Math.Max(s.P.Main, (least + most) / 2 * 1000);
+                int bandMiddle = (TalentCatalogue.LevelSkillLeast[level] + TalentCatalogue.LevelSkillMost[level]) / 2;
+                s.P.Main = Math.Max(s.P.Main, bandMiddle * 1000);
                 s.Employed = true;
                 s.Passive = true;
                 s.Claim = 0;

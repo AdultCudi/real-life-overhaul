@@ -3,24 +3,15 @@ using System.Globalization;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// A building's place key as the company writes a place ("street~number", the street escaped as a URI's data, so it
-    /// holds no '#' and its number no '~'), and the number read back out of one. Game-free (TalentGame.Place keeps one per
-    /// building; TalentGame.Find passes over every building whose number is not the key's on an int compare).
-    /// </summary>
+    /// <summary>A building's place key ("street~number", the street URI-escaped) and its number read back without making a string. Game-free.</summary>
     public static class PlaceRules
     {
-        /// <summary>The place key of a street and number.</summary>
         public static string Key(string street, int number)
         {
             return Uri.EscapeDataString(street ?? string.Empty) + "~" + number.ToString(CultureInfo.InvariantCulture);
         }
 
-        /// <summary>
-        /// The number of a place key: what follows its last '~', when that is a whole number written as <see cref="Key"/>
-        /// writes one. Whenever Key(street, n) is the key, this is true with n; false for a key it cannot read, which is
-        /// then compared whole. No string is made.
-        /// </summary>
+        /// <summary>The number after a place key's last '~', as <see cref="Key"/> writes it; false for a key it cannot read. No string is made.</summary>
         public static bool Number(string place, out int number)
         {
             number = 0;

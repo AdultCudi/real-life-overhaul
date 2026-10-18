@@ -6,49 +6,24 @@ using System.Text;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The player's data centres and cloud in the save: one line of the save's modData under <see cref="Key"/>, written by
-    /// <see cref="TechWriter"/>. Game-free.
-    ///
-    ///     v=1~h:seed|first day|last day|scale from|owed~c:cloud~d:...
-    ///
-    ///   c  the cloud: open|name|launched|price|rivals' price|last cut|reputation|licence until|hyperscaler|sold|AI sold|own|operations people
-    ///   d  each data centre: place|district|tier|square metres|racks|AI racks|book value|fitted|let|outages|down until|last 30 days|the 30 days' takings by commas
-    ///      |racks of the new kind|AI racks of the new kind|operators|engineers|security
-    ///
-    /// The fields after "own" and after the takings are the end game's scale (Core/EndScale), appended: a line written
-    /// before them reads with no scale day (it is phased in), no racks of the new kind and no crews.
+    /// The player's data centres and cloud in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s format, a
+    /// header (h), the cloud (c) and the data centres (d), fields in the order <see cref="Write"/> writes them. The end game's
+    /// scale fields come last, so an older line reads with no scale day, no racks of the new kind and no crews.
     /// </summary>
     public static class InfraStore
     {
         public const string Key = "reallife:tech_infra";
         public const int Version = 1;
 
-        public static InfraFile Load(Dictionary<string, string> data, out int version)
-        {
-            version = 0;
-            string text;
-            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
-            {
-                return null;
-            }
-            try
-            {
-                return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
-            }
-            catch (Exception)
-            {
-                SaveLines.Unreadable(data, Key, "it could not be read");
-                return null;
-            }
-        }
+        public static InfraFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
         public static string Write(InfraFile f)
         {
             var w = new TechWriter(Version);
             w.Part('h').Record().Add(f.Seed).Add(f.FirstDay).Add(f.LastDay).Add(f.ScaleFrom).Add(f.Owed);
             Cloud c = f.Cloud;
-            w.Part('c').Record().Add(c.Open).Add(c.Name).Add(c.Launched).Add(c.Price).Add(c.RivalPrice).Add(c.LastCut).Add(c.Reputation).Add(c.LicenceUntil).Add(c.Hyper).Add(c.Sold).Add(c.GpuSold).Add(c.Own)
-                .Add(c.Ops);
+            w.Part('c').Record().Add(c.Open).Add(c.Name).Add(c.Launched).Add(c.Price).Add(c.RivalPrice).Add(c.LastCut).Add(c.Reputation).Add(c.LicenceUntil)
+                .Add(c.Hyper).Add(c.Sold).Add(c.GpuSold).Add(c.Own).Add(c.Ops);
             w.Part('d');
             var days = new StringBuilder(256);
             foreach (DataCentre d in f.Centres)
@@ -58,7 +33,8 @@ namespace RealLifeOverhaul.Tech
                 {
                     days.Append(i > 0 ? "," : string.Empty).Append(d.Days[i].ToString(CultureInfo.InvariantCulture));
                 }
-                w.Record().Place(d.Place).Add(d.District).Add(d.Tier).Add(d.Sqm).Add(d.Racks).Add(d.GpuRacks).Add(d.Book).Add(d.Fitted).Add(d.Colo).Add(d.Outages).Add(d.DownUntil).Add(d.Takings30).Add(days.ToString())
+                w.Record().Place(d.Place).Add(d.District).Add(d.Tier).Add(d.Sqm).Add(d.Racks).Add(d.GpuRacks).Add(d.Book).Add(d.Fitted).Add(d.Colo).Add(d.Outages)
+                    .Add(d.DownUntil).Add(d.Takings30).Add(days.ToString())
                     .Add(d.Dense).Add(d.DenseGpu).Add(d.Crew[InfraCatalogue.Operators]).Add(d.Crew[InfraCatalogue.Engineers]).Add(d.Crew[InfraCatalogue.Security]);
             }
             return w.ToString();
@@ -100,8 +76,7 @@ namespace RealLifeOverhaul.Tech
                 string[] days = x.Text().Split(',');
                 for (int i = 0; i < d.Days.Length && i < days.Length; i++)
                 {
-                    long v;
-                    d.Days[i] = long.TryParse(days[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out v) ? v : 0;
+                    d.Days[i] = long.TryParse(days[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out long v) ? v : 0;
                 }
                 d.Dense = TalentCatalogue.Clamp(x.Int(), 0, d.Racks);
                 d.DenseGpu = TalentCatalogue.Clamp(x.Int(), 0, d.GpuRacks);

@@ -4,43 +4,16 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The labour market and the player's hiring in the save: one line of the save's modData under <see cref="Key"/>,
-    /// written by <see cref="TechWriter"/>. Game-free.
-    ///
-    ///     v=1~h:seed|first day|last day|next id~s:...~a:...~r:...~p:...~o:...~c:...
-    ///
-    ///   s  the seekers: id|role|level|main|A|B|years|school|certs|record|female|age|name|district|in work|employer|ask|wants|until|fit|claim|refs|notice|taken|passive
-    ///   a  the player's ads and search briefs: id|place|role|level|pay least|pay most|skill asked|arrangement|from|to|boost|came|search|fee|fee paid|due
-    ///   r  the rivals' ads: rival|family|level|until|pay over the going rate
-    ///   p  the applicants: id|seeker|ad|day|stage|references|background|interviewed|interest|offer|offer day|counter|rival bid|rival|start|revealed
-    ///   o  the recruitment office's campaigns seen: key|place|agency|skill|from|to|planned|delivered
-    ///   c  files for the game's candidates: id|day|role|level|A|B|years|school|certs|record
-    ///
-    /// Every list is capped by the catalogue, so the line stays at a few tens of kilobytes at its fullest.
+    /// The labour market and the player's hiring in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s
+    /// format, a header (h) then seekers (s), ads (a), rivals' ads (r), applicants (p), the office's campaigns (o) and candidates'
+    /// files (c), fields in the order <see cref="Write"/> writes them. Every list is capped, so the line stays small.
     /// </summary>
     public static class HiringStore
     {
         public const string Key = "reallife:tech_hiring";
         public const int Version = 1;
 
-        public static HiringFile Load(Dictionary<string, string> data, out int version)
-        {
-            version = 0;
-            string text;
-            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
-            {
-                return null;
-            }
-            try
-            {
-                return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
-            }
-            catch (Exception)
-            {
-                SaveLines.Unreadable(data, Key, "it could not be read");
-                return null;
-            }
-        }
+        public static HiringFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
         public static string Write(HiringFile f)
         {
@@ -164,7 +137,8 @@ namespace RealLifeOverhaul.Tech
             {
                 if (f.Campaigns.Count < 16)
                 {
-                    f.Campaigns.Add(new OfficeCampaign { Key = x.Place(), Place = x.Place(), Agency = x.Place(), Skill = x.Text(), From = x.Int(), To = x.Int(), Planned = x.Int(), Delivered = x.Int() });
+                    f.Campaigns.Add(new OfficeCampaign { Key = x.Place(), Place = x.Place(), Agency = x.Place(), Skill = x.Text(), From = x.Int(), To = x.Int(),
+                        Planned = x.Int(), Delivered = x.Int() });
                 }
             }
             foreach (Fields x in r.Records('c'))

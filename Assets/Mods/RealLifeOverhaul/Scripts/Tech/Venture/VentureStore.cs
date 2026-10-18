@@ -4,42 +4,16 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// Startups, the player's fund and the player's firms' cap tables in the save: one line of the save's modData under
-    /// <see cref="Key"/>, written by <see cref="TechWriter"/>. Game-free.
-    ///
-    ///     v=1~h:seed|first day|last day|next id~f:fund~s:...~a:...~c:...~k:...~t:...
-    ///
-    ///   f  the fund: open|committed|cash|invested|returned
-    ///   v  the day each venture firm will meet the player again, in the catalogue's order
-    ///   s  each startup: id|name|founder|sector|stage|state|founded|quality|revenue|claim|cash|burn|post|last round|failed raises|carry|diligence|revealed|ask amount|ask value|ask lapse|ask board|ask pro rata
-    ///   a  the startups' cap tables, a line a holder: startup|kind|who|shares|invested|preference|round|pro rata|board
-    ///   c  each of the player's firms that has raised: place|stage|post|board seats|investors' seats|target|target day|misses|pressure|chief executive|raise until|meetings|bridge|bridge day|options|last revenue
-    ///   k  their cap tables: place|kind|who|shares|invested|preference|round|pro rata|board
-    ///   t  term sheets in hand: place|firm|amount|value|board|pro rata|lapse|score
+    /// Startups, the player's fund and their firms' cap tables in the save: one line under <see cref="Key"/> in
+    /// <see cref="TechWriter"/>'s format, a header (h), the fund (f), the venture firms' doors (v), startups (s) and their holders
+    /// (a), the player's firms (c), their holders (k) and term sheets (t), fields in the order <see cref="Write"/> writes them.
     /// </summary>
     public static class VentureStore
     {
         public const string Key = "reallife:tech_ventures";
         public const int Version = 1;
 
-        public static VentureFile Load(Dictionary<string, string> data, out int version)
-        {
-            version = 0;
-            string text;
-            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
-            {
-                return null;
-            }
-            try
-            {
-                return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
-            }
-            catch (Exception)
-            {
-                SaveLines.Unreadable(data, Key, "it could not be read");
-                return null;
-            }
-        }
+        public static VentureFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
         private static void Line(TechWriter w, Holder h)
         {
@@ -129,7 +103,8 @@ namespace RealLifeOverhaul.Tech
             {
                 var s = new Startup
                 {
-                    Id = x.Int(), Name = x.Text(), Founder = x.Text(), Sector = TalentCatalogue.Clamp(x.Int(), 0, (int)Venture.Count - 1), Stage = TalentCatalogue.Clamp(x.Int(), 0, (int)RoundStage.Count - 1),
+                    Id = x.Int(), Name = x.Text(), Founder = x.Text(), Sector = TalentCatalogue.Clamp(x.Int(), 0, (int)Venture.Count - 1),
+                        Stage = TalentCatalogue.Clamp(x.Int(), 0, (int)RoundStage.Count - 1),
                     State = x.Int(), Founded = x.Int(), Quality = x.Int(500), Mrr = x.Long(), ClaimBp = x.Int(), Cash = x.Long(), Burn = x.Long(), Post = x.Long(), LastRound = x.Int(),
                     FailedRaises = x.Int(), Carry = x.Long(), Diligence = x.Bool(), Revealed = x.Int()
                 };

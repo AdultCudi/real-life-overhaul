@@ -1,9 +1,6 @@
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The tech sector's dice: every roll is a hash of the save's seed and of what the roll is about, so a reload gives
-    /// the same answer and nothing has to be kept of the dice themselves. Game-free.
-    /// </summary>
+    /// <summary>The tech sector's dice: each roll a hash of the save's seed and what it is about, so a reload gives the same answer. Game-free.</summary>
     public static class TechRandom
     {
         public static uint Hash(int seed, int a, int b = 0, int c = 0)
