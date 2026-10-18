@@ -123,7 +123,15 @@ namespace RealLifeOverhaul.Meta
                 .Rows("reallife_car_measure")
                 .Fact("throttle_rise", () => Guide.Number(CarModel.ThrottleRise))
                 .Fact("throttle_fall", () => Guide.Number(CarModel.ThrottleFall))
-                .Fact("gentle_throttle", () => Guide.Percent(CarModel.GentleThrottle));
+                .Fact("gentle_throttle", () => Guide.Percent(CarModel.GentleThrottle))
+                .Preset(Settings.HandlingId, (int)HandlingLevel.Light, (int)HandlingLevel.Full, (int)HandlingLevel.Heavy)
+                .Fact("handling_mass_least", () => Guide.Number(HandlingRules.Target(CarKind.Economy, HandlingLevel.Full, HandlingTuning.Neutral).Mass))
+                .Fact("handling_mass_most", () => Guide.Number(HandlingRules.Target(CarKind.Truck, HandlingLevel.Full, HandlingTuning.Neutral).Mass))
+                .Fact("handling_brake_rise", () => Guide.Number(HandlingRules.Target(CarKind.Saloon, HandlingLevel.Full, HandlingTuning.Neutral).BrakeRise))
+                .Fact("handling_kerb", () => Guide.Number(HandlingModel.Kerb * 100f))
+                .Fact("handling_stop", () => Guide.Number(HandlingRules.StopFrom100(CarKind.Saloon)))
+                .Test("reallife_handling_test_say", CarTuning.TestHandling)
+                .Cleanup(CarTuning.PutBack);
 
             Features.Add("jobs", "reallife_meta_title_jobs")
                 .Group("reallife_jobs_header")
@@ -368,7 +376,15 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_gp_record", SharedCity.TestRecord)
                 .Test("reallife_test_gp_apply", SharedCity.TestApply);
 
-            Features.Add("tests", "reallife_meta_title_tests");
+            Features.Add("tests", "reallife_meta_title_tests")
+                .Owns(Settings.HandlingSoftnessId, Settings.HandlingBounceId, Settings.HandlingRollId, Settings.HandlingGripId, Settings.HandlingSteeringId,
+                    Settings.HandlingBrakesId)   // the driven car's handling tuned live, its figures written to the log (Driving/CarTuning.TuningChanged)
+                .Present(Settings.HandlingSoftnessId, () => Settings.ShowTestTools)
+                .Present(Settings.HandlingBounceId, () => Settings.ShowTestTools)
+                .Present(Settings.HandlingRollId, () => Settings.ShowTestTools)
+                .Present(Settings.HandlingGripId, () => Settings.ShowTestTools)
+                .Present(Settings.HandlingSteeringId, () => Settings.ShowTestTools)
+                .Present(Settings.HandlingBrakesId, () => Settings.ShowTestTools);
         }
 
         // Game hours of street time between two accidents near the player at a setting of the option, at the day's average hour in fair weather.

@@ -88,6 +88,21 @@ namespace RealLifeOverhaul
                     v => Settings.CarAcceleration = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.SmoothThrottleId, "reallife_car_smooth_throttle", Settings.SmoothThrottle,
                     v => Settings.SmoothThrottle = v)
+                .AddDropdown(Settings.HandlingId, "reallife_car_handling",
+                    new[] { "reallife_car_handling_0", "reallife_car_handling_1", "reallife_car_handling_2", "reallife_car_handling_3" }, Settings.Handling,
+                    v => Settings.Handling = v)
+                .AddSlider(Settings.HandlingSoftnessId, "reallife_car_handling_softness", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingSoftness,
+                    v => { Settings.HandlingSoftness = v; CarTuning.TuningChanged(); }, Meta.SettingsTable.SliderPercent)
+                .AddSlider(Settings.HandlingBounceId, "reallife_car_handling_bounce", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingBounce,
+                    v => { Settings.HandlingBounce = v; CarTuning.TuningChanged(); }, Meta.SettingsTable.SliderPercent)
+                .AddSlider(Settings.HandlingRollId, "reallife_car_handling_roll", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingRoll,
+                    v => { Settings.HandlingRoll = v; CarTuning.TuningChanged(); }, Meta.SettingsTable.SliderPercent)
+                .AddSlider(Settings.HandlingGripId, "reallife_car_handling_grip", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingGrip,
+                    v => { Settings.HandlingGrip = v; CarTuning.TuningChanged(); }, Meta.SettingsTable.SliderPercent)
+                .AddSlider(Settings.HandlingSteeringId, "reallife_car_handling_steering", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingSteering,
+                    v => { Settings.HandlingSteering = v; CarTuning.TuningChanged(); }, Meta.SettingsTable.SliderPercent)
+                .AddSlider(Settings.HandlingBrakesId, "reallife_car_handling_brakes", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingBrakes,
+                    v => { Settings.HandlingBrakes = v; CarTuning.TuningChanged(); }, Meta.SettingsTable.SliderPercent)
                 .AddButton("reallife_car_measure", CarMeasure.Arm)
                 .AddButton("reallife_camera_test_pretend", CameraYield.TestPretend)
                 .AddToggle(Settings.SpeedometerId, "reallife_speedometer", Settings.Speedometer,

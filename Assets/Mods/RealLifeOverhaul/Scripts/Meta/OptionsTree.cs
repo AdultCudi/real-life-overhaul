@@ -269,6 +269,8 @@ namespace RealLifeOverhaul.Meta
                     .Opt("car_camera").Opt("car_camera_distance", "car_camera").Also("view third person zoom"),
                 S("carperf").For("driving").Main("car_tuning").Opts("car_top_speed", "car_acceleration").Buttons("reallife_car_measure").Also("speed fast engine"),
                 S("wheel").Guide("driving").Opts("smooth_throttle", "speedometer", "radio_hud").Also("pedal dashboard speed music"),
+                S("handling").Guide("driving").Opts("car_handling")
+                    .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering"),
                 S("owning").Guide("transport").Main("car_ownership").Opts("car_easy").Also("fuel petrol service insurance breakdown wear"),
                 S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police").Buttons("reallife_garage_test_vehicles")
                     .Also("tuning paint parts custom"),
@@ -378,7 +380,9 @@ namespace RealLifeOverhaul.Meta
                     .Also("going public multiplayer online friends host guest session"),
                 S("measure").Guide("performance").Opts("perf_step_timing").Buttons("reallife_perf_probe_button", "reallife_perf_bench_button4",
                     "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_phone_dump", "reallife_keys_character_report")
-                    .Also("benchmark fps developer keys")),
+                    .Also("benchmark fps developer keys"),
+                S("tuning").Guide("driving").Opts("car_handling_softness", "car_handling_bounce", "car_handling_roll", "car_handling_grip", "car_handling_steering",
+                    "car_handling_brakes").Also("handling suspension springs dampers roll grip steering brakes developer sliders")),
         };
 
         private static Dictionary<string, TreeSection> _byRow;

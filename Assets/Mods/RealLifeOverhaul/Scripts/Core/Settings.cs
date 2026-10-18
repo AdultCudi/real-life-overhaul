@@ -68,6 +68,13 @@ namespace RealLifeOverhaul
         public const string CarAccelerationId = "car_acceleration";
         public const string SmoothThrottleId = "smooth_throttle";
         public const string SpeedometerId = "speedometer";
+        public const string HandlingId = "car_handling";
+        public const string HandlingSoftnessId = "car_handling_softness";
+        public const string HandlingBounceId = "car_handling_bounce";
+        public const string HandlingRollId = "car_handling_roll";
+        public const string HandlingGripId = "car_handling_grip";
+        public const string HandlingSteeringId = "car_handling_steering";
+        public const string HandlingBrakesId = "car_handling_brakes";
         public const string VisualsEnabledId = "visuals_enabled";
         public const string SaturationId = "visuals_saturation";
         public const string ContrastId = "visuals_contrast";
@@ -347,6 +354,13 @@ namespace RealLifeOverhaul
         public static int CarAcceleration = 100;     // percent: at 150 a car reaches 100 km/h in two thirds of its own target time
         public static bool SmoothThrottle = true;    // the throttle key eases the pedal down instead of flooring it
         public static bool Speedometer = true;
+        public static int Handling = 2;              // the driven car's weight, soft ride, roll and sliding (Driving/CarHandling): 0 off, 1 light, 2 full, 3 heavy
+        public static int HandlingSoftness = 100;    // the test tools' tuning sliders, per cent of the design (Driving/HandlingRules): the springs' softness...
+        public static int HandlingBounce = 100;      // ...how lightly the bounce is damped
+        public static int HandlingRoll = 100;        // ...the body roll
+        public static int HandlingGrip = 100;        // ...the tyres' grip
+        public static int HandlingSteering = 100;    // ...the steering's reach at speed
+        public static int HandlingBrakes = 100;      // ...how quickly the brakes build
         public static bool PhoneSkin = true;         // modern phone body, wallpaper and status bar
         public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour (Core/GameUi/NoticeLook); off: they look like the game's
         public static bool CarCamera = true;     // chase camera while driving
@@ -673,6 +687,13 @@ namespace RealLifeOverhaul
             UnityEngine.PlayerPrefs.DeleteKey(Key(modId, CarSpeedId));
             Keys.Load(modId);
             Speedometer = Bool(modId, SpeedometerId, Speedometer);
+            Handling = Int(modId, HandlingId, Handling);
+            HandlingSoftness = Int(modId, HandlingSoftnessId, HandlingSoftness);
+            HandlingBounce = Int(modId, HandlingBounceId, HandlingBounce);
+            HandlingRoll = Int(modId, HandlingRollId, HandlingRoll);
+            HandlingGrip = Int(modId, HandlingGripId, HandlingGrip);
+            HandlingSteering = Int(modId, HandlingSteeringId, HandlingSteering);
+            HandlingBrakes = Int(modId, HandlingBrakesId, HandlingBrakes);
             VisualsEnabled = Bool(modId, VisualsEnabledId, VisualsEnabled);
             Saturation = Int(modId, SaturationId, Saturation);
             Contrast = Int(modId, ContrastId, Contrast);
