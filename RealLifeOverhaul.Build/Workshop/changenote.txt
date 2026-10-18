@@ -1,4 +1,4 @@
-0.37.1
+0.38.0
 
-Fixed
-- The person you came to meet now always gets the panel to say hello, also beside a subway entrance, a bus stop or a kiosk. Of two places with a panel, the one you are nearer to and facing has it, and if it still cannot come up, you are asked whether to say hello.
+New
+- Cars sound real: each kind of car has a recorded engine, and the custom shop's exhausts and turbos change it, with pops when you lift off, a turbo's whistle and flutter, and a recorded tyre squeal. Hold the throttle key in the shop to hear a build before you pay.
