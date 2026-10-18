@@ -5,11 +5,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>
-    /// What the options page asks and tells, through the game's own interface: a question in its confirm dialog (HudConfirm,
-    /// which also works over the main menu's options), an answer as its notification, or in the confirm dialog where there is
-    /// no HUD. With "Developer diagnostics" on, the whole text goes to Player.log too. Runs on a button press only.
-    /// </summary>
+    /// <summary>What the options page asks and tells through the game's own confirm dialog and notifications (the dialog where there is no HUD). On a press only.</summary>
     internal static class OptionsNotice
     {
         private const string TextKey = "reallife_opt_text";   // "{text}": a text put together in code, shown as it is

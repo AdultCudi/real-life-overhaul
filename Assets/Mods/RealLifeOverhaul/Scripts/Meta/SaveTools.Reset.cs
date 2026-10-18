@@ -19,8 +19,7 @@ namespace RealLifeOverhaul.Meta
             string title = "reallife_meta_resetdata_title".GetLocalization();
             MetaLog.Info("reset data: started.");
 
-            // Nothing on disk is changed by this tool, but the player may save afterwards: so a copy first. Only a game
-            // that has no save file at all goes on without one; any other failure stops here.
+            // Nothing on disk changes, but the player may save afterwards: so a copy first, without which only a never-saved game goes on.
             string backup = Backup(out string error, out bool neverSaved);
             if (backup == null && !neverSaved)
             {

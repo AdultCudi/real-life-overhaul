@@ -199,11 +199,7 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
-    /// <summary>
-    /// What the Guide app shows in the game's frame (<see cref="AppShell"/>, copied from MyEmployees): a "Pages" tab listing
-    /// the pages and a "Reading" tab with the page picked, a line to a row in the game's lettering; the white box names the
-    /// page and leads back to the list. Nothing runs while the app is closed.
-    /// </summary>
+    /// <summary>The Guide app's page in the game's frame (<see cref="AppShell"/>): a tab listing the pages, one reading the page picked a line a row. Nothing while closed.</summary>
     public sealed class GuideView
     {
         public const int Topic = 0, Heading = 1, Bullet = 2, Plain = 3;
@@ -308,7 +304,8 @@ namespace RealLifeOverhaul.Meta
             }
             if (Dev.Verbose)
             {
-                MetaLog.Info("Meta check (guide app): opened on " + (_tab == 1 && _topic != null ? "the page '" + _topic.Id + "', " : "the list of ") + _topics.Count + " pages, " + _rows.Count + " rows; "
+                MetaLog.Info("Meta check (guide app): opened on " + (_tab == 1 && _topic != null ? "the page '" + _topic.Id + "', " : "the list of ") + _topics.Count + " pages, "
+                             + _rows.Count + " rows; "
                              + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }

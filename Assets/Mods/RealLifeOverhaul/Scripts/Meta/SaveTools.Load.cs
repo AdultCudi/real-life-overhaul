@@ -45,10 +45,7 @@ namespace RealLifeOverhaul.Meta
             GlobalEvents.onSaveGame += VersionCall;
         }
 
-        /// <summary>
-        /// Once per load, after the save's mod data is read: removes what another version left that would break the game
-        /// (unknown mood types), and reports, but keeps, data it does not know.
-        /// </summary>
+        /// <summary>Once per load, after the save's mod data is read: removes unknown mood types another version left, and reports, but keeps, data it does not know.</summary>
         public static void CheckAfterLoad()
         {
             try
@@ -63,8 +60,7 @@ namespace RealLifeOverhaul.Meta
                     save.modData = new Dictionary<string, string>();
                 }
                 Dictionary<string, string> data = save.modData;
-                // A development build's number means nothing beside the released ones: such a save counts as written before the first
-                // release, so every migration runs on it and nothing is compared.
+                // A development build's number means nothing: such a save counts as written before the first release.
                 data.Remove(DevelopmentVersionKey);
                 data.TryGetValue(VersionKey, out string written);
                 string now = Changelog.Version;
@@ -85,8 +81,7 @@ namespace RealLifeOverhaul.Meta
                     }
                 }
 
-                // Mood types this version does not register: in the list the save was loaded with they would be unknown
-                // to the game (docs/features/meta.md: an unknown type breaks the load without the mod, and shows as nothing with it).
+                // Mood types this version does not register would be unknown to the game (docs/features/meta.md).
                 if (save.happinessModifiers != null)
                 {
                     for (int i = save.happinessModifiers.Count - 1; i >= 0; i--)

@@ -10,15 +10,11 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// "Report a bug", the button under Start here (the Settings app shows it too). The mod is public, so it holds no token or
-    /// webhook and sends nothing: it gathers what a report needs into a folder on the player's disk, zips it and hands it over
-    /// to post in the mod's Discord. The press asks for the player's words in the game's text box (once a menu of the game's
-    /// has closed; in the main menu a question asks first); the facts are read on the main thread
-    /// (<see cref="BugReportGame.Facts"/>), the screen a frame after the box closed, and the files (report.txt, both logs with
-    /// the user folder taken out, settings.txt, screenshot.jpg) and the zip are written on a worker thread under
-    /// Presets.Folder/Reports. Then a summary goes on the clipboard, the folder opens in the explorer and the Discord in the
-    /// browser. Nothing per frame while no report is made; while one is, a coroutine looks at the worker every tenth of a
-    /// second.
+    /// "Report a bug", under Start here and in the Settings app. The mod is public, so it sends nothing and holds no token
+    /// or webhook: it gathers the player's words, the facts (<see cref="BugReportGame.Facts"/>), the screen, both logs with the
+    /// user folder taken out and the settings into a folder under Presets.Folder/Reports, zipped on a worker thread, for the
+    /// player to post in the mod's Discord. Nothing per frame while no report is made; while one is, a look at the worker
+    /// every tenth of a second.
     /// </summary>
     public static class BugReport
     {
@@ -185,8 +181,7 @@ namespace RealLifeOverhaul.Meta
             _busy = false;
         }
 
-        // On the worker: the older reports cleared, the folder, its files (each on its own: one that fails is said in report.txt
-        // and the rest still come), report.txt last (it lists what the others came to), and the zip.
+        // On the worker: older reports cleared, each file on its own (a failure is said in report.txt), report.txt last, then the zip.
         private static void Write(Job job)
         {
             try
@@ -194,7 +189,8 @@ namespace RealLifeOverhaul.Meta
                 string reports = Path.GetDirectoryName(job.Folder);
                 Directory.CreateDirectory(reports);
                 Clear(reports);
-                job.Folder = Path.Combine(reports, BugReportRules.UniqueName(Path.GetFileName(job.Folder), name => Directory.Exists(Path.Combine(reports, name)) || File.Exists(Path.Combine(reports, name + ".zip"))));
+                job.Folder = Path.Combine(reports, BugReportRules.UniqueName(Path.GetFileName(job.Folder),
+                    name => Directory.Exists(Path.Combine(reports, name)) || File.Exists(Path.Combine(reports, name + ".zip"))));
                 Directory.CreateDirectory(job.Folder);
                 BugFacts f = job.Facts;
                 f.Files.Add("report.txt (this file)");
@@ -307,7 +303,8 @@ namespace RealLifeOverhaul.Meta
             MetaLog.Error(e);
             try
             {
-                OptionsNotice.Tell(TitleKey, "reallife_bug_failed".GetLocalization().Replace("{error}", BugReportRules.ErrorText(e.Message, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))));
+                OptionsNotice.Tell(TitleKey, "reallife_bug_failed".GetLocalization().Replace("{error}", BugReportRules.ErrorText(e.Message,
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))));
             }
             catch (Exception inner)
             {

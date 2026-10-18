@@ -493,8 +493,7 @@ namespace RealLifeOverhaul.Meta
             });
         }
 
-        // The game's own "reset all options" clears the saved values and draws the page again, every row reporting the shipped
-        // default (SettingsTable.WithTrueDefault); a frame later Settings is read again, so that Settings.Changed is heard.
+        // The game's own reset clears the saved values and redraws, every row reporting its shipped default; a frame later Settings is read again.
         private static void GameReset()
         {
             try

@@ -4,11 +4,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>
-    /// The welcome: the game's own notification, shown on the first city load with the mod on this computer and after each
-    /// change of version; a click opens the Guide on "What changed". The version last seen is kept in PlayerPrefs (per
-    /// install, not per save); one not older than the running version reads as a first run.
-    /// </summary>
+    /// <summary>The welcome: the game's notification on the first city load and after each new version (per install); a click opens the Guide on "What changed".</summary>
     public static class Welcome
     {
         private const string SeenId = "meta_seen_release";

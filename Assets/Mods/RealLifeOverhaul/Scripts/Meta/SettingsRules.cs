@@ -64,19 +64,15 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The arithmetic of the Settings app: the lines of each tab under their headings (from the plan the Mods tab is placed
-    /// by, <see cref="OptionsPlan.Place"/>), the presets against the choices made, a number's steps and the search. No Unity
-    /// or game types, so CatalogueCheck runs it as it ships. <see cref="Tabs"/> runs once per build, the rest on a click.
+    /// The arithmetic of the Settings app: each tab's lines from the Mods tab's own plan, the presets against the choices, a
+    /// number's steps and the search. No Unity types, so CatalogueCheck runs it as it ships; nothing per frame.
     /// </summary>
     public static class SettingsRules
     {
         public const int MostSteps = 21;   // values a number's selector offers between its ends: a click or two from any of them to any other
         public const int TabChars = 11;    // a tab's label: ten tabs stand side by side over the table
 
-        /// <summary>
-        /// One tab per group of the options page, in order, each section a heading over its rows as the plan placed them. Rows
-        /// placed nowhere ("Other") and the test tools go on Troubleshooting, the tests by group and section.
-        /// </summary>
+        /// <summary>One tab per group, each section a heading over its rows as placed; rows placed nowhere ("Other") and the test tools go on Troubleshooting.</summary>
         public static SettingsTab[] Tabs(Plan plan, IList<PlanRow> rows, IList<TestPlace> tests)
         {
             TreeGroup[] groups = OptionsTree.Groups;
@@ -188,10 +184,7 @@ namespace RealLifeOverhaul.Meta
             return count;
         }
 
-        /// <summary>
-        /// The preset to compare the choices with: one they match (it is in use), else the one they differ from least, a tie
-        /// going to <paramref name="standard"/>, then to the first; -1 when no preset covers anything.
-        /// </summary>
+        /// <summary>The preset the choices match, else the one they differ from least (a tie to <paramref name="standard"/>, then the first); -1 when none covers anything.</summary>
         public static int Closest(IList<int> counts, IList<int> covers, int standard, out bool exact)
         {
             exact = false;
@@ -211,10 +204,7 @@ namespace RealLifeOverhaul.Meta
             return best;
         }
 
-        /// <summary>
-        /// The values a number's selector steps through, smallest first: both ends, the value now, the default and evenly spaced
-        /// values between, at most about <see cref="MostSteps"/>; every whole number of a small range.
-        /// </summary>
+        /// <summary>A number selector's steps, smallest first: both ends, the value now, the default and even steps between, about <see cref="MostSteps"/> in all.</summary>
         public static void Steps(int min, int max, int now, int standard, List<int> into)
         {
             into.Clear();

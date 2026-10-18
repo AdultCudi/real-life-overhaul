@@ -43,10 +43,7 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
-    /// <summary>
-    /// One feature as the mod's own tools see it: its options and presets, save keys, phone contacts, clean-up and Guide
-    /// page. Filled in by one <see cref="Features.Add"/> statement whose calls each return the feature.
-    /// </summary>
+    /// <summary>One feature as the mod's own tools see it, filled in by one <see cref="Features.Add"/> statement whose calls each return it.</summary>
     public sealed class Feature
     {
         public readonly string Id;
@@ -117,7 +114,6 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
-        /// <summary>A row of its own that is not on the original page.</summary>
         public Feature Row(ModOption option)
         {
             ExtraRows.Add(option);
@@ -213,7 +209,6 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
-        /// <summary>Put back what it adds to a save if it has gone missing.</summary>
         public Feature Repair(Action action)
         {
             RepairAction = action;
@@ -241,10 +236,7 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
-        /// <summary>
-        /// Options that do nothing while <paramref name="why"/> returns a sentence (another mod has what they steer): their rows
-        /// are drawn disabled and the section's button says why. Asked each time the page is drawn.
-        /// </summary>
+        /// <summary>Options that do nothing while <paramref name="why"/> returns a sentence (another mod has what they steer): drawn disabled, the reason on the section.</summary>
         public Feature StandsAside(Func<string> why, params string[] optionIds)
         {
             AsideWhy = why;

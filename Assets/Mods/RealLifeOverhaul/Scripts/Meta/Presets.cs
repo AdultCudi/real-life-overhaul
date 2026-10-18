@@ -8,10 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>
-    /// The realism presets, "reset everything" and the settings file: each writes the PlayerPrefs keys the options page
-    /// writes and has Settings read them again. What a preset sets is declared by the features (Feature.Preset).
-    /// </summary>
+    /// <summary>The realism presets, "reset everything" and the settings file: saved option values, as the features declare them (Feature.Preset).</summary>
     public static class Presets
     {
         public const string SettingsFile = "settings.txt";

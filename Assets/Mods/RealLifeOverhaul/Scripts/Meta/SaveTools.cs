@@ -16,14 +16,9 @@ using Vehicles.DeliveryDriverJob;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The tools for what the mod leaves in a save: "prepare this save for removing the mod", "reset the mod's data in this
-    /// save", "repair", and the check after every load. A save holds of the mod's, as the game's save code writes it: modData
-    /// keys under "reallife:", happiness modifiers of the mod's types (which the game cannot read without the mod), contacts
-    /// with the mod's ids and their messages, notifications with the mod's keys, the mod's transactions (real money, left
-    /// alone), a job's van (Jobs takes it back) and businesses of the tech sector's and the academies' types (made the game's
-    /// own again). Businesses in shops the mod made offices are named in the question and the report. Of the game's own
-    /// fields only PlayerDefaults.contactsLastName is reset, when it names a removed contact. docs/features/meta.md has the
-    /// whole account. Nothing runs unless a button is pressed, except the check after a load (one pass over three lists).
+    /// The tools for what the mod leaves in a save: prepare it for removing the mod, reset the mod's data, repair, and the check
+    /// after every load. What a save holds of the mod's and what is taken out is in docs/features/meta.md (save tools).
+    /// Nothing runs unless a button is pressed, except the check after a load (one pass over three lists).
     /// </summary>
     public static partial class SaveTools
     {
@@ -85,8 +80,7 @@ namespace RealLifeOverhaul.Meta
             {
                 return "reallife_meta_tool_in_vehicle".GetLocalization();
             }
-            // The hospital trip and police custody are coroutines that cannot be cut short cleanly; sleep and
-            // activities run the game's clock.
+            // The hospital trip and custody are coroutines that cannot be cut short; sleep and activities run the game's clock.
             if (GameMembers.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen
                 || CasinoBoatManager.IsOnCasinoBoat || SubwaySystem.IsRiding || PoliceAttention.IsBusy)
             {
@@ -132,14 +126,12 @@ namespace RealLifeOverhaul.Meta
         private static int _leftAtSave = -1;
         private static Removed _removedNow;
 
-        // The two hooks on the game's save event, through the guard and never skipped (Core/Guard): a hook that throws
-        // would stop the game's other hooks of the save. Made once, since the event compares what it is given.
+        // Through the guard and never skipped, so that one that throws cannot stop the game's other save hooks; made once, as the event compares them.
         private static Action _purgeCall, _versionCall;
         private static Action PurgeCall => _purgeCall ?? (_purgeCall = Guard.Way(PurgeOnSave));
         private static Action VersionCall => _versionCall ?? (_versionCall = Guard.Way(WriteVersion));
 
-        // Runs inside the game's save event, after every feature's own hook (it is attached last), so that nothing
-        // a feature writes there reaches the file. Stays attached for the rest of the session.
+        // Inside the game's save event, attached last, so that nothing a feature writes there reaches the file.
         private static void PurgeOnSave()
         {
             try
@@ -207,9 +199,8 @@ namespace RealLifeOverhaul.Meta
             yield return null;
             yield return null;
 
-            // From here on no save may hold a mood of the mod's: the features' own hook, which takes them out while a
-            // save is written, goes with the features. So the moods come out now, and this tool's hook is attached,
-            // in the same frame in which the features are destroyed (the game's autosave could run in any later one).
+            // The features' own hook that takes the moods out of a save goes with them, so the moods come out now and this tool's
+            // hook goes on in the same frame (an autosave could run in any later one).
             var removed = new Removed();
             _removedNow = removed;
             try
@@ -223,8 +214,7 @@ namespace RealLifeOverhaul.Meta
             GlobalEvents.onSaveGame -= PurgeCall;
             GlobalEvents.onSaveGame += PurgeCall;
 
-            // The features themselves go: their own OnDestroy puts back whatever they changed on the game's objects,
-            // exactly as when the game unloads the mod.
+            // Their own OnDestroy puts back what they changed on the game's objects, as when the game unloads the mod.
             Dormant = true;
             int destroyed = 0;
             if (MetaCity.Root != null)
@@ -314,8 +304,7 @@ namespace RealLifeOverhaul.Meta
             MetaUi.Message(title, text);
         }
 
-        // The player's businesses in an empty shop the mod made an office, which are offices in a shop without the mod: a
-        // paragraph that names each and says what to do, or nothing.
+        // The player's businesses in shops the mod made offices (offices in a shop without the mod): a paragraph naming them, or nothing.
         private static string InConvertedShops()
         {
             try
@@ -443,8 +432,7 @@ namespace RealLifeOverhaul.Meta
             return null;
         }
 
-        // Jobs takes its hired van back when it stops. If the van is still in the save (it was not where Jobs could take
-        // it), it is said, not removed: it is one of the game's own job vans, which the game clears away by itself.
+        // Jobs takes its van back when it stops; one still in the save is said, not removed: the game clears its own job vans.
         private static string VanLeft(string vanId)
         {
             try
@@ -455,8 +443,7 @@ namespace RealLifeOverhaul.Meta
                 }
                 foreach (VehicleInstance vehicle in SaveGameManager.Current.VehicleInstances)
                 {
-                    // By the id Jobs noted at the last save, or (a van hired since) by how Jobs makes one: a job van
-                    // that cannot be sold or given to a warehouse.
+                    // By the id Jobs noted, or for a van hired since, by how Jobs makes one: not to be sold or given to a warehouse.
                     if (vehicle != null && ((vanId != null && vehicle.id == vanId)
                                             || (vehicle is DeliveryVehicleInstance && vehicle.zeroSellingPrice && vehicle.preventWarehouseAssign)))
                     {

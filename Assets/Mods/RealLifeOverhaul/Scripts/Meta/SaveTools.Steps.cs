@@ -16,10 +16,9 @@ namespace RealLifeOverhaul.Meta
     public static partial class SaveTools
     {
         /// <summary>
-        /// Copies the save, its .meta and its picture to two new folders and succeeds only if both copies are whole: beside the
-        /// save (the game never lists a folder inside a character folder) and under the mod's own backups folder (the game
-        /// deletes a character folder whole with its last save). Returns both folders, one per line, or null with
-        /// <paramref name="error"/> set; <paramref name="neverSaved"/>: there is no save file at all. Nothing is overwritten.
+        /// Copies the save, its .meta and picture into two new folders, beside the save (the game never lists one there) and under
+        /// the mod's backups (the game deletes a character folder whole); both must be whole. Returns both folders, one per line,
+        /// or null with <paramref name="error"/> set (<paramref name="neverSaved"/>: no save file at all).
         /// </summary>
         private static string Backup(out string error, out bool neverSaved)
         {
@@ -265,8 +264,7 @@ namespace RealLifeOverhaul.Meta
                         save.Contacts.RemoveAt(i);
                     }
                 }
-                // The game remembers the contact last opened by its id, and its Contacts app shows an empty list
-                // when that contact no longer exists: the one field of the game's own that is put back to "none".
+                // The Contacts app lists nothing while the contact it last opened is missing: the one field of the game's that is reset.
                 if (save.PlayerDefaults != null && save.PlayerDefaults.contactsLastName != null
                     && removed.Contacts.Contains(save.PlayerDefaults.contactsLastName))
                 {

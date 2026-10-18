@@ -10,17 +10,11 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// Puts the options page in order. The mod API gives every mod one flat page of headers, toggles, sliders, drop-downs,
-    /// buttons, splitters and rows that draw themselves, each with a label and nothing else. So the page stays as
-    /// RealLifeOverhaulMod.cs builds it (no saved id, default or handler changes) and this class rearranges the finished list
-    /// by <see cref="OptionsTree"/>, with <see cref="OptionsPlan"/> doing the arithmetic: groups that open to sections, one
-    /// open at a time, each button counting its switches on; a row that does nothing for now drawn disabled with the reason
-    /// after its label; a tooltip sentence on every option; the test tools under Troubleshooting only while asked for; a row
-    /// the table does not claim under "Other", named in the log.
-    ///
-    /// Cost: the table is read once at start-up (<see cref="Build"/>, timed in its log line); each drawing is one pass over
-    /// the mod's rows, and a click recounts its section and group. Nothing per frame. If anything fails, the page is
-    /// registered as it was built.
+    /// Puts the options page in order. The mod API gives every mod one flat page of labelled rows, so the page stays as
+    /// RealLifeOverhaulMod.cs builds it and this class rearranges the finished list by <see cref="OptionsTree"/>
+    /// (<see cref="OptionsPlan"/> does the arithmetic): groups opening to sections, rows that do nothing for now drawn
+    /// disabled with the reason, a tooltip on every option, the test tools only while asked for. The table is read once at
+    /// start-up and each drawing is one pass over the rows; nothing per frame. On a fault the page is registered as built.
     /// </summary>
     public static partial class OptionsLayout
     {
@@ -174,7 +168,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>The mod is being unloaded.</summary>
         public static void Dispose()
         {
             if (_hooked)
@@ -309,7 +302,6 @@ namespace RealLifeOverhaul.Meta
                     info.Owner = Features.OwnerOfOption(info.Id);
                 }
             }
-            // And the page's own buttons.
             built.Add(new ButtonOption("reallife_meta_settings_button", () => SettingsApp.Open(null)));
             built.Add(new ButtonOption("reallife_meta_guide_button", Guide.Open));
             built.Add(new ButtonOption("reallife_meta_preset_button_relaxed", () => AskPreset(Intensity.Relaxed)));
@@ -334,7 +326,6 @@ namespace RealLifeOverhaul.Meta
             TestPlaces.Clear();
             TestRuns.Clear();
 
-            // The groups and their sections, in the table's order.
             Section trouble = null;
             foreach (TreeGroup group in OptionsTree.Groups)
             {
@@ -429,8 +420,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // One row into a section. A switch is wrapped so that the page hears of it: the game calls the handler with the
-        // saved value each time the page is drawn, and on every click. The option's own handler runs first, unchanged.
+        // A switch is wrapped so that the page hears of it: the game calls its handler, which runs first, on each drawing and click.
         private static Row AddRow(Section section, ModOption option, TreeRow tree)
         {
             string id = option is IPersistableOption saved && !string.IsNullOrEmpty(saved.Id) ? saved.Id : null;

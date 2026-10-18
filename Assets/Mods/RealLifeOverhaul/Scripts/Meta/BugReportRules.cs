@@ -24,10 +24,7 @@ namespace RealLifeOverhaul.Meta
         public string Stack;
     }
 
-    /// <summary>
-    /// The last <see cref="Most"/> warnings and errors the mod wrote to the game's log this session, kept in a fixed ring under
-    /// a lock (the engine hands lines over from any thread): no allocation, a few field writes. Read when a report is made.
-    /// </summary>
+    /// <summary>The mod's last <see cref="Most"/> warnings and errors this session, in a fixed ring under a lock (lines come from any thread); no allocation.</summary>
     public sealed class BugLog
     {
         public const int Most = 50;   // lines a report gives: the last ones say what went wrong just before the player pressed
@@ -135,9 +132,8 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The game-free part of "Report a bug": which lines of the game's log are the mod's, report.txt and its order, the user
-    /// folder and Steam ids taken out, a long log's tail, the summary for the clipboard and the folder's name. No Unity or
-    /// game types: EconomyCheck runs it on made-up facts. <see cref="Keep"/> runs once per line logged, a few comparisons.
+    /// The game-free part of "Report a bug": which log lines are the mod's, report.txt, the user folder and Steam ids taken out,
+    /// a long log's tail, the clipboard's summary and the folder's name. No Unity types: EconomyCheck runs it on made-up facts.
     /// </summary>
     public static class BugReportRules
     {
@@ -225,10 +221,9 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// report.txt, in this order: what the report holds and what was not read; the player's words, the versions, platform,
-        /// language, Going Public, the preset and the options changed from it, the day, the money (rounded), the mod's last
-        /// warnings and errors and the game contract; then, in a city, <see cref="StaffText"/> and <see cref="BooksText"/>. The
-        /// user folder is taken out of all of it.
+        /// report.txt: what it holds, the player's words, the versions, platform, language, Going Public, the preset and options
+        /// changed, the day and money, the mod's last warnings and errors and the contract; in a city <see cref="StaffText"/> and
+        /// <see cref="BooksText"/>. The user folder is taken out of all of it.
         /// </summary>
         public static string Text(BugFacts f)
         {
@@ -283,11 +278,7 @@ namespace RealLifeOverhaul.Meta
         public const int MostKinds = 15;        // kinds of money a day listed, the largest first: the rest are added up in one line
         public const int StaffWeekDays = 7;     // days: a week on the rota, to say what a day of it costs
 
-        /// <summary>
-        /// "Staff and wages": each business with its staff's hours today and on the rota and what a day of the rota costs at
-        /// their wages; then each employee by main skill, their wage against the game's own for the skill, and their hours. The
-        /// staff come grouped by business.
-        /// </summary>
+        /// <summary>"Staff and wages": each business's hours and a day of its rota at their wages, then each employee's wage against the game's own for the skill, and hours.</summary>
         public static void StaffText(List<BugStaff> staff, string note, StringBuilder text)
         {
             text.Append("\nStaff and wages: ");
@@ -344,11 +335,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>
-        /// "Money in and out": for yesterday (whose night paid the wages) and today, the cash before and after, what came in and
-        /// went out, and the kinds of money by where they were booked, the largest first (<see cref="MostKinds"/>, the rest in one
-        /// line).
-        /// </summary>
+        /// <summary>"Money in and out" for yesterday (whose night paid the wages) and today: the cash, in and out, and the largest kinds of money by where booked.</summary>
         public static void BooksText(List<BugMoney> moves, string note, int today, StringBuilder text)
         {
             text.Append("\nMoney in and out (the game's books): ");
@@ -496,11 +483,7 @@ namespace RealLifeOverhaul.Meta
                    || string.Equals(name, "All Users", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "Default User", StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>
-        /// After the exact pass, by rule: the folder after a drive's Users folder (any separator or encoding: another user, an
-        /// 8.3 name), the folder after /home/ (Proton), every 17-digit Steam id, and the Steam name on the lines that carry one.
-        /// Each is looked for only when a cheap search finds its sign.
-        /// </summary>
+        /// <summary>After the exact pass: another user's or an 8.3 folder under Users, the folder under /home/, Steam ids and Steam names, each when a cheap search finds its sign.</summary>
         private static string MaskForms(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -567,10 +550,7 @@ namespace RealLifeOverhaul.Meta
             return length > cap && cap > 0 ? length - cap : 0;
         }
 
-        /// <summary>
-        /// Copies a log a line at a time with the user folder taken out: all of it, or past <paramref name="cap"/> bytes its last
-        /// whole lines under a note of what was left out. Returns the lines written.
-        /// </summary>
+        /// <summary>Copies a log line by line with the user folder taken out: all of it, or past <paramref name="cap"/> bytes its last whole lines under a note. Returns the lines.</summary>
         public static int CopyTail(Stream from, TextWriter to, long cap, string profile)
         {
             long length = from.Length;
@@ -626,10 +606,7 @@ namespace RealLifeOverhaul.Meta
 
         private static readonly Regex ReportName = new Regex(@"^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})(?:_(\d+))?(?:\.zip)?$", RegexOptions.CultureInvariant);
 
-        /// <summary>
-        /// The reports to delete before a new one, so that with it there are <paramref name="keep"/>: of the folder's names the
-        /// reports' own only, newest first by date, time and number; the rest come back without ".zip", once each.
-        /// </summary>
+        /// <summary>The reports to delete so that with the new one there are <paramref name="keep"/>: of the folder's report names all but the newest keep - 1, without ".zip".</summary>
         public static List<string> Older(IEnumerable<string> names, int keep)
         {
             var stems = new List<KeyValuePair<string, int>>();

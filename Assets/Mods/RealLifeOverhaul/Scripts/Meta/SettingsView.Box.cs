@@ -8,10 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>
-    /// The Settings app's white box (InfoBox, of the game's own parts): what is picked in the table, or with nothing picked the
-    /// group and the presets against the choices made. Written on a click; nothing per frame.
-    /// </summary>
+    /// <summary>The Settings app's white box: what is picked in the table, or the group and the presets against the choices made. Written on a click.</summary>
     public sealed partial class SettingsView
     {
         private const int Presets4 = 4;          // Relaxed, Standard, Realistic, Hardcore (Meta/Presets)

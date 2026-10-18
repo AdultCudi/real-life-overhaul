@@ -11,10 +11,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The word on each button of the options page. The game's button row has a label beside the button, which it fills, and
-    /// a text on the button, which it never fills; this part writes it: "Open" or "Close" on a section, what a button does on
-    /// the others ("Run", "Apply", "Reset"). Done on each drawing of the page and when a section opens or closes; nothing per
-    /// frame. A button whose text cannot be found is left as it is, with one line in the log.
+    /// The word on each button of the options page ("Open", "Close", "Run", "Apply"): the game's button row has a text on the
+    /// button it never fills. Written on each drawing and when a section opens or closes; a text not found is left as it is.
     /// </summary>
     public static partial class OptionsLayout
     {

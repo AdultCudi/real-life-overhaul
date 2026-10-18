@@ -9,12 +9,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The Settings app's page in the game's frame (GameUi.AppShell, copied from MyEmployees) with the kit's table: a tab per
-    /// group of the options page; in the table the group's sections in the page's order, each a heading ("4 of 6 on") over its
-    /// rows (an option's name, its value, what keeps it from working), a drop-down to show one section, and the test tools at
-    /// the end of Troubleshooting; the box for what is picked (an option's sentence, value, control, needs and Guide page);
-    /// and a search over every group. Every value goes through OptionsLayout (OptionsLayout.Book.cs), the rows of the Mods tab
-    /// itself. Written when the app opens and on a click; nothing per frame.
+    /// The Settings app's page in the game's frame (GameUi.AppShell): a tab per group of the options page, its sections as
+    /// headings ("4 of 6 on") over their rows, the box for what is picked, and a search over every group. Every value goes
+    /// through OptionsLayout's rows (OptionsLayout.Book.cs). Written when the app opens and on a click; nothing per frame.
     /// </summary>
     public sealed partial class SettingsView
     {
@@ -325,7 +322,8 @@ namespace RealLifeOverhaul.Meta
                         int preset = PresetOf(line);
                         if (preset >= 0 && _covers[preset] > 0)
                         {
-                            row.Set(2, _counts[preset] == 0 ? T("reallife_set_in_use") : T("reallife_set_differ_count", "count", _counts[preset].ToString()), _counts[preset] == 0 ? TableRow.Green : TableRow.Plain);
+                            row.Set(2, _counts[preset] == 0 ? T("reallife_set_in_use") : T("reallife_set_differ_count", "count", _counts[preset].ToString()),
+                                _counts[preset] == 0 ? TableRow.Green : TableRow.Plain);
                         }
                         break;
                     case LineKind.Key:

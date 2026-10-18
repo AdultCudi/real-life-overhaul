@@ -64,7 +64,6 @@ namespace RealLifeOverhaul.Meta
 
         public static bool Exists => _instance != null;
 
-        /// <summary>True while one of the mod's panels is on screen.</summary>
         public static bool AnyOpen => _instance != null && _instance._open.Count > 0;
 
         private void Awake()
@@ -193,8 +192,7 @@ namespace RealLifeOverhaul.Meta
                 {
                     ScrollBy(top.KeyScroll, lines);
                 }
-                // The panel itself stays selected: the game then leaves its shortcuts alone (GameManager.HasInputSelected), takes Esc
-                // as used, and the mod's camera gives the cursor back.
+                // The panel stays selected, so the game leaves its shortcuts alone (GameManager.HasInputSelected) and the camera gives the cursor back.
                 EventSystem events = EventSystem.current;
                 if (events != null && events.currentSelectedGameObject != top.Root)
                 {
@@ -486,8 +484,7 @@ namespace RealLifeOverhaul.Meta
             window = Box("Window", dimmer, Window, true);
             window.anchorMin = window.anchorMax = window.pivot = new Vector2(0.5f, 0.5f);
             window.sizeDelta = size;
-            // The dimmer is itself selectable, so a press on the panel outside its buttons leaves it selected: the event system is
-            // never without a selection before the next Update, and the camera never takes the cursor in between.
+            // The dimmer is selectable, so a press outside the buttons keeps the panel selected and the camera never takes the cursor.
             var selectable = dimmer.gameObject.AddComponent<Selectable>();
             selectable.transition = Selectable.Transition.None;
             var navigation = selectable.navigation;

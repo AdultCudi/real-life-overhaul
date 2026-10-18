@@ -10,10 +10,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The search box of the options page, a text field under its first header. While it holds two letters or more, a row is
-    /// shown only if every word typed begins a word of its label, its sentence, the table's words for it, or its section's or
-    /// group's (<see cref="OptionsFind"/>); the section and group buttons stand above what was found in them. Emptying the box
-    /// puts the page back as it was left. Runs when the text changes, never per frame; after a fault the box stays hidden.
+    /// The search box under the page's first header: with two letters or more, only rows where every word typed begins a word
+    /// of the row's, its section's or its group's texts are shown (<see cref="OptionsFind"/>), under their section and group
+    /// buttons. Runs when the text changes, never per frame; after a fault the box stays hidden.
     /// </summary>
     public static partial class OptionsLayout
     {
@@ -549,8 +548,7 @@ namespace RealLifeOverhaul.Meta
                 }
             }
 
-            // The mod's own keys are off while the field has the keyboard. The game leaves its shortcuts alone by
-            // itself: the field is the selected object, on the UI layer (GameManager.HasInputSelected).
+            // The mod's keys are off while the field has the keyboard; the game leaves its shortcuts alone itself (GameManager.HasInputSelected).
             private void Selected(string typed)
             {
                 Keys.Suspended = true;
@@ -562,8 +560,7 @@ namespace RealLifeOverhaul.Meta
                 Ended(typed);
             }
 
-            // Esc empties the box. Either the field saw the key itself, or the game took the selection away for it
-            // first (CancelButtonHandler, in the city), in which case the key is still down in this frame.
+            // Esc empties the box: seen by the field, or the game took the selection away first (CancelButtonHandler) with the key still down.
             private void Ended(string typed)
             {
                 try

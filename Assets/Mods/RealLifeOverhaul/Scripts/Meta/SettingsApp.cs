@@ -6,12 +6,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>
-    /// The mod's settings as an app on the game's phone (<see cref="PhoneApp"/>, built as the Guide is), drawn by
-    /// <see cref="SettingsView"/>. It reads and writes the very rows of the Mods tab (OptionsLayout), so a change in either is
-    /// the same change. It goes on and off the phone with the city as the Guide does, and asked for while a menu of the
-    /// game's is up it opens when the menu closes. Nothing per frame: a quarter-second wait only while a request waits.
-    /// </summary>
+    /// <summary>The mod's settings as an app on the game's phone, drawn by <see cref="SettingsView"/> through the Mods tab's own rows; on and off the phone like the Guide.</summary>
     public static class SettingsApp
     {
         public const string AppId = "RealLifeSettings";
@@ -31,7 +26,6 @@ namespace RealLifeOverhaul.Meta
         /// <summary>For the Mods tab's button, which is on the page only while the app is on the phone.</summary>
         public static readonly Func<bool> IsInstalled = () => Installed;
 
-        /// <summary>The city has loaded: put the app on the phone when the phone is there.</summary>
         public static void Begin(int generation)
         {
             _generation = generation;
@@ -42,7 +36,6 @@ namespace RealLifeOverhaul.Meta
             MetaUi.Instance.Run(Install(generation));
         }
 
-        /// <summary>The city is unloading: the app comes off the phone.</summary>
         public static void End()
         {
             _waiting = false;

@@ -29,9 +29,8 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The in-game Guide's pages and texts (<see cref="GuideApp"/> shows them). The fixed pages are en.json texts; a feature's
-    /// page is its description and help, then its options as set now and its test buttons. {facts} are read from the code's
-    /// constants when a page opens, so no number goes stale. Nothing runs unless the Guide is open.
+    /// The Guide's pages: the fixed ones are en.json texts, a feature's is its help, its options as set now and its tests; {facts}
+    /// come from the code's constants when a page opens. <see cref="GuideApp"/> shows them.
     /// </summary>
     public static class Guide
     {
@@ -140,10 +139,7 @@ namespace RealLifeOverhaul.Meta
             return text.ToString();
         }
 
-        /// <summary>
-        /// The last line of an app's page: the Guide's page that explains it ("Guide: <b>Stock market</b>"), in the box's note
-        /// style. Every app's page ends so: the page holds the figures and the actions, the Guide what they mean.
-        /// </summary>
+        /// <summary>The last line of an app's page, the Guide's page that explains it ("Guide: <b>Stock market</b>"): the app holds the figures, the Guide what they mean.</summary>
         public static void Point(GameUi.InfoBox box, string featureTitleKey)
         {
             if (box != null)

@@ -67,10 +67,7 @@ namespace RealLifeOverhaul.Meta
         public Feature Owner;
     }
 
-    /// <summary>
-    /// Every saved option, found without a list to keep up to date: the fields of <see cref="Settings"/> (a const "XId" beside
-    /// a static bool or int "X"), the rows of the options page, and what the features declare for options kept elsewhere.
-    /// </summary>
+    /// <summary>Every saved option, found without a list to keep: the "XId" and "X" fields of <see cref="Settings"/>, the options page's rows, and what features declare.</summary>
     public static class SettingsTable
     {
         /// <summary>What a slider shows beside itself: the number, or the number as a per cent. The game shows nothing for a slider without one.</summary>
@@ -191,7 +188,6 @@ namespace RealLifeOverhaul.Meta
             return key == null ? info.Default : UnityEngine.PlayerPrefs.GetInt(key, info.Default);
         }
 
-        /// <summary>Keeps a value inside what the option allows.</summary>
         public static int Clamp(OptionInfo info, int value)
         {
             if (info.Type == OptionType.Toggle)

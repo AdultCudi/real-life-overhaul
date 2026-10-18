@@ -14,10 +14,9 @@ using UnityEngine.Experimental.Rendering;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// Where "Report a bug" touches the game and the engine: the listener that keeps the mod's warnings and errors
-    /// (<see cref="Listen"/>), the facts read on the press, the game's text box, the screenshot, the logs read with sharing,
-    /// the zip, the clipboard and the two links. Nothing per frame: the listener runs once per line the engine logs, on any
-    /// thread, a few comparisons and for a line of the mod's a few field writes under a lock; no allocation.
+    /// Where "Report a bug" touches the game: the listener that keeps the mod's warnings and errors (<see cref="Listen"/>, once
+    /// per line logged, a few comparisons, no allocation), the facts, the text box, the screenshot, the logs, the zip, the
+    /// clipboard and the links. Nothing per frame.
     /// </summary>
     internal static class BugReportGame
     {
@@ -42,8 +41,7 @@ namespace RealLifeOverhaul.Meta
             Application.logMessageReceivedThreaded += Heard;
         }
 
-        // Called by the engine for every line of its log, from any thread. Nothing here may log (it would come back here),
-        // and nothing can throw but the lock; a fault is dropped rather than written, for the same reason.
+        // From any thread, for every log line. Nothing here may log (it would come back here); a fault drops the line.
         private static void Heard(string text, string stack, LogType type)
         {
             try
@@ -111,8 +109,7 @@ namespace RealLifeOverhaul.Meta
                    + Screen.width.ToString(CultureInfo.InvariantCulture) + " x " + Screen.height.ToString(CultureInfo.InvariantCulture);
         }
 
-        // The preset the options match, or the one they are nearest; and every option that differs from it (an option no
-        // preset covers, from its default). One pass over the options per preset, on the press.
+        // The preset the options match or are nearest, and every option that differs from it (from its default where no preset covers it).
         private static string Preset(List<string> changed)
         {
             Intensity? exact = Presets.Detect();
@@ -165,8 +162,7 @@ namespace RealLifeOverhaul.Meta
             return true;
         }
 
-        // A part of report.txt read: null when it was, else why not (the rest of the report still comes). Each calls its
-        // reader inside its own try, so a game without a member the reader names leaves only that part out.
+        // A part of report.txt: null when read, else why not. Each reader runs in its own try, so a game without a member loses only that part.
         private static string StaffPart(List<BugStaff> into)
         {
             try
@@ -199,8 +195,7 @@ namespace RealLifeOverhaul.Meta
             return "could not be read (" + e.GetType().Name + ")";
         }
 
-        // Every employee of the player's (not a candidate, not another player's in Going Public): what their pay is made of,
-        // grouped by business, the businesses by name and each one's staff by skill and wage. One pass on the press.
+        // The player's employees (no candidates, no other player's) by business, skill and wage: what their pay is made of.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Staff(List<BugStaff> into)
         {
@@ -242,8 +237,7 @@ namespace RealLifeOverhaul.Meta
             });
         }
 
-        // The game's transactions of yesterday and today (GameBooks.Day: the history walked once), each with the business
-        // it was booked at: the registration at its address, else the business the game named on it, else the player's own.
+        // Yesterday's and today's transactions (GameBooks.Day), each with the business it was booked at, else the player's own.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Books(List<BugMoney> into, int today)
         {
@@ -317,11 +311,7 @@ namespace RealLifeOverhaul.Meta
             public long ReadMs;                // the main thread's share: the engine's read of the screen and one copy
         }
 
-        /// <summary>
-        /// The screen as the game's own feedback form takes it (ScreenCapture.CaptureScreenshotAsTexture), after
-        /// WaitForEndOfFrame: its pixels copied out and the texture let go; the worker encodes it (<see cref="WriteShot"/>).
-        /// Null when it cannot be taken.
-        /// </summary>
+        /// <summary>The screen as the game's feedback form takes it, after WaitForEndOfFrame: pixels copied, texture let go, encoding left to the worker. Null on failure.</summary>
         public static Shot TakeShot()
         {
             var watch = Stopwatch.StartNew();
@@ -413,10 +403,7 @@ namespace RealLifeOverhaul.Meta
             return true;
         }
 
-        /// <summary>
-        /// On the worker: the folder's files in one zip beside it, in a method of its own so that a runtime without the zip
-        /// classes loses only the zip. A half-written zip is removed and the fault thrown on.
-        /// </summary>
+        /// <summary>On the worker: the folder zipped beside it, in its own method so a runtime without the zip classes loses only the zip; a half zip is removed, the fault thrown on.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string Zip(string folder)
         {
@@ -453,9 +440,8 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
-        /// The summary on the clipboard, the explorer on the reports' folder with the new zip picked, the Discord in the browser.
-        /// On Windows the explorer is started itself: an escaped file address is read back in the system's code page, which
-        /// mangles a user folder with accents or Chinese characters. Elsewhere, or if it fails, the address is opened unescaped.
+        /// The summary on the clipboard, the explorer on the new zip, the Discord in the browser. On Windows the explorer is started
+        /// itself: an escaped file address is read in the system's code page, which mangles accented or Chinese user folders.
         /// </summary>
         public static void HandOver(string summary, string folder, string zip)
         {

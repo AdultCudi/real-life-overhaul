@@ -6,10 +6,8 @@ using Localizor;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// What the Settings app (<see cref="SettingsView"/>) knows of the options page: the same rows, read and written as the
-    /// game's own Mods tab controls do (the value saved under ModOptionPrefs' key, then the row's handler called), so the app
-    /// and the Mods tab cannot disagree. The tabs come from <see cref="SettingsRules.Tabs"/> over the page's own plan, made
-    /// once in <see cref="Build"/>; the rest runs on a click.
+    /// What the Settings app (<see cref="SettingsView"/>) knows of the options page: the same rows, read and written as the Mods
+    /// tab's controls do (saved under the same key, then the row's handler called), so the two cannot disagree. Runs on a click.
     /// </summary>
     public static partial class OptionsLayout
     {
@@ -65,7 +63,6 @@ namespace RealLifeOverhaul.Meta
             return _lineOf.TryGetValue(idOrLabel, out SettingsLine found) ? found : null;
         }
 
-        /// <summary>The label key of a line's row (an option's or a button's), or null.</summary>
         internal static string AppLabelKey(SettingsLine line)
         {
             return RowOf(line)?.LabelKey;
@@ -199,14 +196,12 @@ namespace RealLifeOverhaul.Meta
             return option is DropdownOption dropdown ? dropdown.DefaultIndex : 0;
         }
 
-        /// <summary>What kind of control an option is.</summary>
         internal static OptionType AppType(SettingsLine line)
         {
             ModOption option = RowOf(line)?.Option;
             return option is SliderOption ? OptionType.Slider : option is DropdownOption ? OptionType.Choice : OptionType.Toggle;
         }
 
-        /// <summary>The smallest and largest value an option takes.</summary>
         internal static void AppRange(SettingsLine line, out int min, out int max)
         {
             ModOption option = RowOf(line)?.Option;
@@ -239,10 +234,7 @@ namespace RealLifeOverhaul.Meta
             return (value != 0 ? "reallife_meta_on" : "reallife_meta_off").GetLocalization();
         }
 
-        /// <summary>
-        /// Changes an option as its control on the Mods tab does: saved under the same key, then the row's handler called (for a
-        /// switch, the page's wrapper). False with nothing to write.
-        /// </summary>
+        /// <summary>Changes an option as its Mods tab control does: saved under its key, then the row's handler called. False with nothing to write.</summary>
         internal static bool AppSet(SettingsLine line, int value)
         {
             Row row = RowOf(line);
@@ -315,7 +307,6 @@ namespace RealLifeOverhaul.Meta
             return ById.TryGetValue(optionId ?? string.Empty, out Row row) ? row.LabelKey.GetLocalization() : optionId;
         }
 
-        /// <summary>Whether a change to the option only applies after the save is loaded again.</summary>
         internal static bool AppNeedsReload(SettingsLine line)
         {
             string id = AppId(line);

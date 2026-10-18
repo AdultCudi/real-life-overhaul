@@ -8,10 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The Guide as an app on the game's phone (<see cref="PhoneApp"/>, built as the Planner is), drawn in the game's frame by
-    /// <see cref="GuideView"/>. It goes on the phone once the city's phone is there (tried each second, for ten minutes at
-    /// most) and off when the city unloads. Asked for while a menu of the game's is up, it opens when the menu closes; in the
-    /// main menu a notification says where it is. Nothing per frame: a quarter-second wait only while a request waits.
+    /// The Guide as an app on the game's phone (<see cref="PhoneApp"/>), drawn by <see cref="GuideView"/>: on the phone while a
+    /// city is loaded; asked for over a menu of the game's, it opens when the menu closes. Nothing per frame.
     /// </summary>
     public static class GuideApp
     {
@@ -28,7 +26,6 @@ namespace RealLifeOverhaul.Meta
 
         public static bool Installed => _app != null && _app.Installed;
 
-        /// <summary>The city has loaded: put the app on the phone when the phone is there.</summary>
         public static void Begin(int generation)
         {
             _generation = generation;
@@ -42,7 +39,6 @@ namespace RealLifeOverhaul.Meta
             MetaUi.Instance.Run(Install(generation));
         }
 
-        /// <summary>The city is unloading: the app comes off the phone.</summary>
         public static void End()
         {
             _waiting = false;
@@ -94,7 +90,8 @@ namespace RealLifeOverhaul.Meta
             {
                 Id = AppId,
                 TitleKey = "reallife_guide_app",
-                Icon = like => AppIconPainter.Paint(like, GameSprites.Get("Icon-Info") ?? GameSprites.Get("Icon-Edit"), new Color32(255, 170, 60, 255), new Color32(224, 104, 10, 255), 0.42f, "AppIcon-Guide"),
+                Icon = like => AppIconPainter.Paint(like, GameSprites.Get("Icon-Info") ?? GameSprites.Get("Icon-Edit"),
+                    new Color32(255, 170, 60, 255), new Color32(224, 104, 10, 255), 0.42f, "AppIcon-Guide"),
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed

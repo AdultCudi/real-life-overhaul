@@ -66,9 +66,8 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The arithmetic of the options page: where each built row goes by <see cref="OptionsTree"/>, what a row needs before
-    /// it does anything and which need is unmet. No Unity or game types, so CatalogueCheck runs it as it ships. Nothing per
-    /// frame: <see cref="Place"/> runs once when the page is built, <see cref="Blocker"/> on a drawing or a click.
+    /// The arithmetic of the options page: where each row goes by <see cref="OptionsTree"/> and what a row needs before it does
+    /// anything. No Unity types, so CatalogueCheck runs it as it ships; it runs on a build, a drawing or a click.
     /// </summary>
     public static class OptionsPlan
     {
@@ -285,10 +284,7 @@ namespace RealLifeOverhaul.Meta
         }
     }
 
-    /// <summary>
-    /// What the search box finds: every word typed must begin a word of the row's text, its section's or its group's ("rent"
-    /// finds "rental", not "current"). The texts are lower case already; no allocation.
-    /// </summary>
+    /// <summary>What the search finds: every word typed begins a word of the row's, section's or group's lower-case text ("rent" finds "rental", not "current").</summary>
     public static class OptionsFind
     {
         public const int ShortestQuery = 2;   // one letter begins a word in nearly every row: switching all of them on would be a hitch for nothing

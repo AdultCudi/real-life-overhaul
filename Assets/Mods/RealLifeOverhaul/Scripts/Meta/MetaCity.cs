@@ -6,11 +6,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>
-    /// Meta's part of a city load, called by RealLifeOverhaulCity when the features start and when they unload. Once the save's
-    /// mod data is read it runs the leftovers check, adds the Guide's contact and shows the welcome when due; on a game older
-    /// than this version's build it shows that notice once a session (Core/GameBuild). Half-second waits that then stop.
-    /// </summary>
+    /// <summary>Meta's part of a city load: once the save's data is read, the leftovers check, the Guide's contact, the welcome and the old-build notice; short waits that stop.</summary>
     public static class MetaCity
     {
         private const float GiveUpAfter = 900f;   // real seconds a wait lasts at most
@@ -152,9 +148,8 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The "Developer diagnostics" switch. Off, as the mod ships, the keys registered as development aids do nothing and the
-    /// one logger every class is handed (<see cref="Gated"/>) drops Info lines, but for the few written through
-    /// <see cref="Always"/>; warnings and errors always go to the log.
+    /// The "Developer diagnostics" switch: off, the development keys do nothing and the one logger every class is handed
+    /// (<see cref="Gated"/>) drops Info lines but those written through <see cref="Always"/>.
     /// </summary>
     public static class Dev
     {
