@@ -1,6 +1,6 @@
 # `Scripts/Driving`
 
-The car the player drives: performance by kind of car, the eased throttle, speedometer (a reading in the game's vehicle panel, SpeedReading), towing (VehicleTow).
+The car the player drives: performance and handling by kind of car, the eased throttle, speedometer (a reading in the game's vehicle panel, SpeedReading), towing (VehicleTow).
 
 ## Read first
 
