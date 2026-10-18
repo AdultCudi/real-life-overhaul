@@ -1101,6 +1101,7 @@ internal static partial class Program
             Check(!File.Exists(System.IO.Path.Combine(cache, "rlo-head-1.bin")) && Directory.GetFiles(cache, "rlo-head-*.bin").Length == 1,
                 "texts, the runner: a crashed session's head file is gone at the start, and the server keeps one of its own");
             TextsRunnerV3(lite, q, server);
+            TextsRunnerSix(q, server);   // (data v6's grammars and the name's ban through the same server: TextsDecodingChecks.cs)
         }
         Check(Directory.GetFiles(cache, "rlo-head-*.bin").Length == 0, "texts, the runner: the server's head file goes with it (the cache never grows)");
         try
