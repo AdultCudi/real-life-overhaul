@@ -126,7 +126,7 @@ namespace RealLifeOverhaul.Careers
                 character.SetItemIKTargets(_computer);
                 _computer.PlayVideoOnScreen(VideoClipData.VideoType.Work);
                 _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
-                _tally.Begin();
+                _tally.Begin(CareersGame.Clock);   // the minutes are the clock's from here, a skip's included
                 _sitting?.SkipStarted();
                 DeskGame.SetOffSeen("the computer", true, _orderFrame);
             }
@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Careers
             }
             Sitting sitting = _sitting;
             _sitting = null;
-            TallyEnd end = _tally.Settle(out int minutes, out bool whole);
+            TallyEnd end = _tally.Settle(CareersGame.Clock, out int minutes, out bool whole);
             if (sitting == null || !settle)
             {
                 return;
@@ -285,7 +285,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     return;
                 }
-                bool over = _tally.Add(minutes);
+                bool over = _tally.Add(minutes, CareersGame.Clock);
                 _sitting?.SkipWorked(_tally.Done);
                 if (over)
                 {

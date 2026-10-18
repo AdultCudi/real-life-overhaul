@@ -193,7 +193,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            string why = _director.DeskSitting(_offer.Course, _offer.Kind, out Sitting sitting);
+            string why = _director.DeskSitting(_offer.Course, _offer.Kind, this, out Sitting sitting);
             if (why != null)
             {
                 Notifications.Show(NotificationType.Warning, why, null, 8f);
@@ -239,7 +239,7 @@ namespace RealLifeOverhaul.Careers
                     player.SetNavigationBlocker(NavigationBlocker.StudyActivity);
                     player.Character.SitOnChair(_place.chair);
                     _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
-                    _tally.Begin();
+                    _tally.Begin(CareersGame.Clock);   // the minutes are the clock's from here, a skip's included
                     _sitting.SkipStarted();
                     DeskGame.SetOffSeen("the class's desk", true, _orderFrame);
                 }
@@ -350,7 +350,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     return;
                 }
-                bool over = _tally.Add(minutes);
+                bool over = _tally.Add(minutes, CareersGame.Clock);
                 _sitting?.SkipWorked(_tally.Done);
                 if (over)
                 {
@@ -404,7 +404,7 @@ namespace RealLifeOverhaul.Careers
                 StandUp();
                 Sitting sitting = _sitting;
                 _sitting = null;
-                if (_tally.Settle(out int minutes, out bool whole) == TallyEnd.Counted)
+                if (_tally.Settle(CareersGame.Clock, out int minutes, out bool whole) == TallyEnd.Counted)
                 {
                     sitting?.SkipEnded(minutes, whole);   // once: a second end finds the tally settled
                 }

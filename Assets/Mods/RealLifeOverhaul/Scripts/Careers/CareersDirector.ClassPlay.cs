@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Careers
         // Why not now, as every press of a class says it: a sitting under way, the game busy, too tired.
         private string SeatBusy()
         {
-            if (SittingNow || _sitting != null)
+            if (SittingNow || _book.Count > 0)
             {
                 return "reallife_study_why_busy";
             }
@@ -278,7 +278,7 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_study_why_game_busy";
             }
             _computer = activity;
-            _sitting = sitting;
+            Hold(sitting, activity);
             activity.Go();
             Logger?.Info("Careers: " + Words(sitting.Kind) + " of " + what + " at the computer at home ("
                          + computer.itemName + (computer.FindChair() != null ? ", with its chair" : ", no chair") + "), "

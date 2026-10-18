@@ -200,7 +200,9 @@ namespace RealLifeOverhaul.Careers
             return SitInPlace(e);
         }
 
-        private void StudyEnded(Sitting s, int minutes, bool whole)
+        // A class, homework or exam over, settled by its own record: its course, its kind and its minutes. current: it was still
+        // the director's current sitting.
+        private void StudyEnded(Sitting s, int minutes, bool whole, bool current)
         {
             Enrolment e = _study.Live(s.Of);
             CourseDef c = e != null ? e.Def : null;
@@ -219,12 +221,16 @@ namespace RealLifeOverhaul.Careers
             switch (s.Kind)
             {
                 case SittingKind.Class:
-                    if (minutes * 1000 < s.Length * StudyCatalogue.CountedShare)
+                    int on = s.Record.Day >= 0 ? s.Record.Day : day;   // the day it was joined on: its class is that day's
+                    if (!SittingRules.Counts(minutes, s.Length))
                     {
+                        ClassSettled(c, on, minutes, s.Length, "left early", current, true);
                         Tell(NotificationType.Warning, "reallife_study_note_left_early", Data("course", CareersText.Course(c.Id)), TabStudying, CampusApp.CourseRow + c.Id);
                         return;
                     }
-                    if (StudyRules.Attend(e, day))
+                    bool counted = StudyRules.Attend(e, on);
+                    ClassSettled(c, on, minutes, s.Length, counted ? "attended" : "attended, but the day's class was settled already", current, counted);
+                    if (counted)
                     {
                         Teach(c.SkillA, StudyRules.ClassGain(c.GainA, c.Sessions, StudyRules.Points(_study, c.SkillA), learning), day);
                         Teach(c.SkillB, StudyRules.ClassGain(c.GainB, c.Sessions, StudyRules.Points(_study, c.SkillB), learning), day);
@@ -254,6 +260,21 @@ namespace RealLifeOverhaul.Careers
                     Examine(e, day);
                     break;
             }
+        }
+
+        // With Developer diagnostics on, one line a class settled at its end: the minutes against the share that counts, what it
+        // came to, and how it was settled.
+        private void ClassSettled(CourseDef c, int day, int minutes, int length, string what, bool current, bool right)
+        {
+            if (!Verbose)
+            {
+                return;
+            }
+            string how = (_finishing != null ? "by the timer's look, the game's panel having let its activity go" : "at its activity's end")
+                         + (current ? ", the director's current sitting" : ", by its own record (the director's current sitting was another or none)");
+            Logger?.Info("Careers check (class settled): " + c.Key + " on day " + day + ", " + minutes + " of " + length + " minutes sat against " + SittingRules.Needed(length)
+                         + " to count (" + StudyCatalogue.CountedShare + " thousandths): " + what + ", settled " + how + ": "
+                         + (right ? "PASS" : "FAIL, the hourly pass had marked it gone by while it was being sat"));
         }
 
         private void Teach(int skill, int thousandths, int day)

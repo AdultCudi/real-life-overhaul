@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             _workOn = false;
-            if (_sitting != null && (_sitting.Kind == SittingKind.Work || _sitting.Kind == SittingKind.Overtime || _sitting.Kind == SittingKind.Interview))
+            if (_book.Working || _book.Has(SittingKind.Interview))
             {
                 CloseSitting();
             }
@@ -103,9 +103,9 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        private bool Working => _sitting != null && (_sitting.Kind == SittingKind.Work || _sitting.Kind == SittingKind.Overtime);
+        private bool Working => _book.Working;
 
-        private bool InInterview(int post) => _sitting != null && _sitting.Kind == SittingKind.Interview && _sitting.Of == post;
+        private bool InInterview(int post) => post >= 0 && _book.Has(SittingKind.Interview, post);
 
         // The registration's last day: one reminder, the day kept in the save so a reload that day does not send it again.
         private void AgencyEnds(WorkFile w, int day, int hour)
@@ -356,7 +356,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            if (_sitting != null && (_sitting.Kind == SittingKind.Work || _sitting.Kind == SittingKind.Overtime))
+            if (_book.Working)
             {
                 CloseSitting();
             }

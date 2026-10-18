@@ -23,6 +23,9 @@ namespace RealLifeOverhaul.Careers
 
         public static int MinuteOfDay => Save != null ? Save.Hour * 60 + Mathf.FloorToInt(Save.Minute) : 0;
 
+        /// <summary>The game's clock in whole minutes since day 0, as its activity panel reads it (TimeHelper.NowInMinutes): what a sitting's minutes are counted by.</summary>
+        public static int Clock => Save != null ? (int)TimeHelper.NowInMinutes() : 0;
+
         public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
 
         public static float Energy => Save != null ? Save.Energy : 0f;

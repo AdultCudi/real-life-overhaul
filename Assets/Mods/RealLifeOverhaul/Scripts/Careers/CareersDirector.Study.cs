@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.Careers
             }
             StopWork(unloading);
             _studyOn = false;
-            if (_sitting != null && (_sitting.Kind == SittingKind.Class || _sitting.Kind == SittingKind.Homework || _sitting.Kind == SittingKind.Exam))
+            if (_book.Studying)
             {
                 CloseSitting();
             }
@@ -147,7 +147,15 @@ namespace RealLifeOverhaul.Careers
             StudyMode mode = (StudyMode)e.Mode;
             if (!ClassPlayRules.HeldOnline(c, mode) || !StudyRules.JoinWindow(c, mode, day, out int from, out int to))
             {
-                return StudyRules.Miss(e, day);
+                bool missed = StudyRules.Miss(e, day);
+                if (missed && Verbose)
+                {
+                    bool open = InClass(c.Id) && day == Save.Day;
+                    Logger?.Info("Careers check (class settled): " + c.Key + " on day " + day + ", gone by: missed, settled by the "
+                                 + (day == Save.Day ? "hourly pass" : "day's look back") + " with " + (open ? "a sitting of it open" : "no sitting of it open") + ": "
+                                 + (open ? "FAIL, a class being sat was marked missed" : "PASS"));
+                }
+                return missed;
             }
             return GoneBy(e, day, from, to);
         }
@@ -182,10 +190,11 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
-        private bool InClass(int course) => _sitting != null && _sitting.Kind == SittingKind.Class && _sitting.Of == course;
+        // True while a class of the course is open in the book (sat, or on the way to its desk or computer), whatever the current sitting is.
+        private bool InClass(int course) => _book.InClass(course);
 
         /// <summary>The course whose class the player is sitting now, -1 for none: what <see cref="StudyRules.Held"/> and <see cref="StudyRules.NextClass(Enrolment, int, int, int)"/> take.</summary>
-        internal int SittingClass => _sitting != null && _sitting.Kind == SittingKind.Class ? _sitting.Of : -1;
+        internal int SittingClass => _book.ClassOf();
 
         private void StudyDay(int day)
         {
