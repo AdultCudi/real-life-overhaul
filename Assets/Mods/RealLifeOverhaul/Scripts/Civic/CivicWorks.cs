@@ -563,7 +563,6 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>Test button: every site does a full working day at once.</summary>
         public void AdvanceDay(int day)
         {
             float hours = CivicCatalogue.SiteShuts(Permits) - CivicCatalogue.SiteOpens(Permits);

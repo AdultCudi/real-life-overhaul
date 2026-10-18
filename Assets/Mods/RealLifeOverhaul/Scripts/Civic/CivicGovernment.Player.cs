@@ -190,7 +190,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Test button: a campaign starts now, with election day a week off.</summary>
         public void TestCampaign(int day)
         {
             State.Pending.Clear();
@@ -198,7 +197,6 @@ namespace RealLifeOverhaul
             StartCampaign(day, false);
         }
 
-        /// <summary>Test button: today is election day (a campaign is started first if there is none); the polls are open until the count is asked for.</summary>
         public void TestElectionDay(int day, int hour)
         {
             bool already = Campaigning && State.ElectionDay == day;

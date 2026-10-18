@@ -64,13 +64,10 @@ namespace RealLifeOverhaul
         private float _ownGone;         // when the crowd at the player's rally stops waiting, or goes after the speech
         private int _ownColour;
 
-        /// <summary>The share of posters and boards that are the player's own in a council race.</summary>
-        public Func<float> OwnShare;
-
+        // The player's own campaign, set by the director.
+        public Func<float> OwnShare;                    // the share of posters and boards that are theirs in a council race
         public Func<int> OwnColour;
-
-        /// <summary>The player has reached their own rally: the speech is theirs (the number listening, and what to call when it is over).</summary>
-        public Func<int, Action<bool>, bool> OwnArrived;
+        public Func<int, Action<bool>, bool> OwnArrived;   // at their rally: the speech is theirs (listeners; what to call after)
 
         private Transform _pollSign;
         private Vector3 _pollStand;
@@ -247,7 +244,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Test button: a rally gathers near the player now, whatever the day and hour.</summary>
         public void ForceRally()
         {
             _forced = true;

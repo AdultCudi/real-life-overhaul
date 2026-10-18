@@ -99,7 +99,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Test: every policy is taken back at once.</summary>
         public void TestRevert()
         {
             if (!TestReady("Civic revert", false) || HostOwns("Civic revert", 'G'))

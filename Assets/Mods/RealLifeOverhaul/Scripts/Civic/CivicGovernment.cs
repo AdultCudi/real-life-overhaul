@@ -38,26 +38,16 @@ namespace RealLifeOverhaul
         public Action CampaignChanged;   // campaign dressing goes up or comes down
 
         // The player's own part, set by CivicOffice; each is optional and runs no hour of its own.
-        /// <summary>A campaign is starting (true: a recall): the player's candidate if they have filed for mayor, else null.</summary>
-        public Func<bool, Candidate> PlayerStands;
-        /// <summary>The player's part beyond their platform in a district (-1 the city): standing, campaign, home, the economy.</summary>
-        public Func<int, float> PlayerTerm;
-        /// <summary>What the player has of their own in a district at the count: home, businesses, doors and posters.</summary>
-        public Func<int, float> PlayerLocal;
-        /// <summary>The campaign's doors knocked in a district (a little more of it turns out).</summary>
-        public Func<int, int> DistrictDoors;
-        /// <summary>The count is in: the player's council race and office follow (the day).</summary>
-        public Action<int> Counted;
-        /// <summary>A new day has been run (after approval, petitions and the council).</summary>
-        public Action<int> DayBegins;
-        /// <summary>True while the player sits on the council or is mayor: the council meets on the player's calendar.</summary>
-        public Func<bool> OfficeSits;
-        /// <summary>A motion for the council's next meeting while the player sits (the policy, and whether a petition put it there).</summary>
-        public Action<int, bool> ToAgenda;
-        /// <summary>Points of the mayor's approval beyond the city's own (the city's budget, scandals): the player's office.</summary>
-        public Func<float> ApprovalExtra;
-        /// <summary>The city budget's level for a department, -2 to 2 (0 as the city came).</summary>
-        public Func<Department, int> DepartmentLevel;
+        public Func<bool, Candidate> PlayerStands;      // a campaign starts (true: a recall): the player's candidate for mayor, or null
+        public Func<int, float> PlayerTerm;             // the player's part beyond their platform in a district (-1 the city)
+        public Func<int, float> PlayerLocal;            // what the player has of their own in a district at the count
+        public Func<int, int> DistrictDoors;            // doors knocked in a district: a little more of it turns out
+        public Action<int> Counted;                     // the count is in: the player's race and office follow
+        public Action<int> DayBegins;                   // a day has run (after approval, petitions and the council)
+        public Func<bool> OfficeSits;                   // the player sits: the council meets on the player's calendar
+        public Action<int, bool> ToAgenda;              // a motion for the next meeting (the policy; whether a petition put it there)
+        public Func<float> ApprovalExtra;               // the mayor's approval beyond the city's own (budget, scandals)
+        public Func<Department, int> DepartmentLevel;   // a department's budget level, -2 to 2
 
         private int Level(Department department)
         {

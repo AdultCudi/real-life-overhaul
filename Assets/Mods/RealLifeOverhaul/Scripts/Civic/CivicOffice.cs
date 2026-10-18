@@ -574,7 +574,6 @@ namespace RealLifeOverhaul
             return "reallife_civic_office_filed";
         }
 
-        /// <summary>Test button: the player takes an office now, as if just elected.</summary>
         public void TestOffice(OfficeRace race, int day)
         {
             if (State.Running)
