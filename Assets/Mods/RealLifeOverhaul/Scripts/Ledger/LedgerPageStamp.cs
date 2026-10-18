@@ -2,12 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// What a page of the City Ledger was last laid out for (LedgerPage.Turn): the paper, the language, the sheet's
-    /// size and pixel, the face and the two prices it prints. A page turned to again for the same is left as it was
-    /// laid out: laying out the front page measures its type up to forty times, some 20 to 150 ms. Game-free
-    /// (EconomyCheck runs it).
-    /// </summary>
+    /// <summary>What a page was last laid out for (LedgerPage.Turn): laying the front page out again costs 20 to 150 ms. Game-free.</summary>
     public struct LedgerPageStamp
     {
         public object Paper;      // the edition or the special front page, by reference: a new one is a new object

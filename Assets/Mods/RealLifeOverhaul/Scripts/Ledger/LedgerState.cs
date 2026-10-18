@@ -19,10 +19,7 @@ namespace RealLifeOverhaul.Ledger
         public string Building;          // the address of the building it stands in front of (it lights up on the map)
     }
 
-    /// <summary>
-    /// What the City Ledger keeps of a save (<see cref="LedgerStore"/>): the subscription, the copy, the kiosks'
-    /// places, the council's policies at the last edition and the latest edition. Game-free.
-    /// </summary>
+    /// <summary>What the City Ledger keeps of a save (<see cref="LedgerStore"/>). Game-free.</summary>
     public sealed class LedgerState
     {
         public bool Subscribed;

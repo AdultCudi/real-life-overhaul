@@ -4,10 +4,7 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// The city index's little chart on the paper: its closes as one line in ink over three faint rules, the last close
-    /// marked. A graphic of the game's interface, filled once when the page is written: nothing per frame.
-    /// </summary>
+    /// <summary>The city index's little chart on the paper, filled once when the page is written: nothing per frame.</summary>
     public sealed class LedgerSpark : MaskableGraphic
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "LedgerSpark", typeof(LedgerSpark));
@@ -25,7 +22,6 @@ namespace RealLifeOverhaul.Ledger
             return spark;
         }
 
-        /// <summary>Draws these closes (oldest first) in the given ink, with rules in a fainter one.</summary>
         public void Show(List<int> closes, Color ink, Color rule, float thickness)
         {
             _closes.Clear();

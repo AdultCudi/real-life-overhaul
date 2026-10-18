@@ -7,10 +7,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger's typeface, a serif: the game's own Noto Serif (a shop-sign face, asked of the game by name),
-    /// else a serif among the fonts in memory (gone through only then, with Core/SceneFinds), else one of the system's
-    /// serifs made into a font asset once a session with its bold and italic faces; else none, and the game's own font.
-    /// Looked up when the page is built; one line in Player.log says which face and why. The mod ships no font.
+    /// The City Ledger's typeface, a serif: the game's Noto Serif, else one among the fonts in memory (SceneFinds),
+    /// else one of the system's made into a font asset once a session; else the game's own font. The mod ships no font.
     /// </summary>
     public static class LedgerType
     {
@@ -49,8 +47,7 @@ namespace RealLifeOverhaul.Ledger
             }
             else
             {
-                // Only without the game's own serif: everything in memory gone through (the page is built at its first
-                // opening, with the game standing still under the menu).
+                // Only without the game's own serif; the page is built at its first opening, under the menu.
                 loaded = SceneFinds.InMemory<TMP_FontAsset>("ledger: a serif among the game's fonts being looked for (everything in memory gone through)");
                 face = Serif(loaded);
                 _searched = face;

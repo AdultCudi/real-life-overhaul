@@ -75,7 +75,6 @@ namespace RealLifeOverhaul.Ledger
             return Read(text);
         }
 
-
         public static NewsstandState Read(string text)
         {
             var s = new NewsstandState();

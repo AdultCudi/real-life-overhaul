@@ -37,8 +37,8 @@ namespace RealLifeOverhaul.Ledger
             Put(t.rectTransform, x, y + TopFor(h, size), w, h);
         }
 
-        // A lead's head (kicker, headline in two lines at most, standfirst if there is a text for it, byline): placed, or
-        // only measured. Returns where the columns under it start.
+        // A lead's head (kicker, headline in two lines at most, standfirst if there is a text for it, byline): placed,
+        // or only measured. Returns where the columns under it start.
         private float Header(TMP_Text kickerText, TMP_Text headText, TMP_Text standText, TMP_Text bylineText, string kicker, string headline, string stand, string byline,
             float bt, float mw, float hs, float u, bool place)
         {
@@ -95,8 +95,7 @@ namespace RealLifeOverhaul.Ledger
             return y + bs * (_asc + _desc) + 0.011f * u;
         }
 
-        // A section in columns: its label over a rule (none when it goes on from the lead), its stories (a kicker, a
-        // headline, the text; at most so many) and its briefs (a bold lead into the text).
+        // A section in columns: its label over a rule (none when it goes on from the lead), its stories, its briefs.
         private void Section(string labelKey, List<LedgerPiece> pieces, int most, bool label)
         {
             if (pieces.Count == 0)
@@ -147,7 +146,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The page's margins on the sheet, and the room inside them.
         private void Margins(RectTransform page, float u, out float W, out float H)
         {
             page.offsetMin = new Vector2(MarginX * u, MarginY * u);
@@ -169,7 +167,6 @@ namespace RealLifeOverhaul.Ledger
             _b.Append("<size=").Append(size).Append("><b><smallcaps><cspace=0.14em>").Append(Plain(words)).Append("</cspace></smallcaps></b></size>");
         }
 
-        // A brief: its kicker (or headline) in bold, then its words.
         private void Brief(LedgerPiece piece)
         {
             LedgerText.Words(piece, out string kicker, out string headline, out string body);
@@ -186,9 +183,8 @@ namespace RealLifeOverhaul.Ledger
             _b.Append(Plain(body)).Append('\n');
         }
 
-        // A row of a table: the name on the left (smaller if it would run into the figures), then the figure and the
-        // move each right-aligned at its stop, in even figures: the move's up or down mark before it, its per cent sign
-        // after. The stops are the same in every row: the move's field is as wide as a two-figure move with its mark.
+        // A row of a table: the name (smaller if it would run into the figures), then the figure and the move, each
+        // right-aligned at a stop the same in every row, in even figures.
         private void Row(string name, string marks, float width, float size, TMP_Text measure, string figure, int moveBp, bool move)
         {
             float mono = _figure * size;
@@ -265,7 +261,6 @@ namespace RealLifeOverhaul.Ledger
             _b.Append("<pos=").Append(F(x)).Append('>');
         }
 
-        // A move in ink: its mark, up or down, and the figure with its sign.
         private string Move(int bp)
         {
             string figure = LedgerText.Change(bp);
@@ -380,7 +375,6 @@ namespace RealLifeOverhaul.Ledger
             return (hundredths / 100.0).ToString("N2", CultureInfo.CurrentCulture);
         }
 
-        // A line the paper has instead of news: in italic, in the same ink.
         private static string Soft(string words)
         {
             return "<i angle=12>" + Plain(words) + "</i>";

@@ -1,8 +1,4 @@
-using System.Collections.Generic;
 using System.Globalization;
-using Helpers;
-using Localizor;
-using RealLifeOverhaul.GameUi;
 using TMPro;
 using UnityEngine;
 
@@ -153,8 +149,7 @@ namespace RealLifeOverhaul.Ledger
             rules.Down(rx + half + gut * 0.5f, y, rowsH, _px);
         }
 
-        // The markets page's columns: the lead's text after its drop cap, the market's other stories, then the movers
-        // (the risers, the fallers, the most traded: as many as fill the columns) and the bank's figures.
+        // The markets page's columns: the lead's text, the market's other stories, the movers and the bank's figures.
         private string MarketFlow(LedgerEdition e, string body, int capLines, int movers, float width, float size)
         {
             _b.Clear();
@@ -187,7 +182,8 @@ namespace RealLifeOverhaul.Ledger
                     {
                         _b.Append('\n');
                     }
-                    _b.Append("<align=left><b>").Append(Plain(LedgerText.T(g == 0 ? "reallife_ledger_risers" : g == 1 ? "reallife_ledger_fallers" : "reallife_ledger_active"))).Append("</b></align>").Append(VT);
+                    string group = g == 0 ? "reallife_ledger_risers" : g == 1 ? "reallife_ledger_fallers" : "reallife_ledger_active";
+                    _b.Append("<align=left><b>").Append(Plain(LedgerText.T(group))).Append("</b></align>").Append(VT);
                     if (first)
                     {
                         _b.Append(MarkEnd);
@@ -216,8 +212,7 @@ namespace RealLifeOverhaul.Ledger
             return Words();
         }
 
-        // The head of an inside page: the paper's name, the page's in small capitals, the double rule and the dateline
-        // between rules. Returns where the page's own words start.
+        // The head of an inside page: the paper's name, the page's, the rules and the dateline; returns where it ends.
         private float FolioHead(TMP_Text title, TMP_Text name, TMP_Text date, string nameKey, string dateline, float W, float u, Rules rules)
         {
             float fh = 0.072f * u;
@@ -239,7 +234,8 @@ namespace RealLifeOverhaul.Ledger
         private string Dateline(LedgerEdition e)
         {
             return e.HasMarket
-                ? LedgerText.Fill("reallife_ledger_dateline_market", "weekday", Weekday(e.Day), "day", e.Day.ToString(CultureInfo.CurrentCulture), "session", e.MarketDay.ToString(CultureInfo.CurrentCulture))
+                ? LedgerText.Fill("reallife_ledger_dateline_market", "weekday", Weekday(e.Day), "day", e.Day.ToString(CultureInfo.CurrentCulture),
+                    "session", e.MarketDay.ToString(CultureInfo.CurrentCulture))
                 : LedgerText.Fill("reallife_ledger_dateline", "weekday", Weekday(e.Day), "day", e.Day.ToString(CultureInfo.CurrentCulture));
         }
 
@@ -316,8 +312,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // Which quotes each column has (as indexes into the listing), so many rows to a column, counting a sector's
-        // name as one.
+        // Which quotes each column has, so many rows to a column, a sector's name counting as one.
         private void Split(int per, int[] starts, int[] ends)
         {
             int q = 0, sector = -1;
@@ -345,8 +340,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // A column of the share prices: each sector's name in small capitals on a rule, then its companies: the name in
-        // full (smaller only if it would run into the figures), the close and the move right-aligned in even figures.
+        // A column of the share prices: each sector's name on a rule, then its companies, the figures right-aligned.
         private string PriceColumn(LedgerEdition e, int from, int to, float width, float size, TMP_Text measure)
         {
             _b.Clear();

@@ -1,14 +1,6 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
-using Localizor;
 using RealLifeOverhaul.GameUi;
-using TMPro;
 using UI.Notification;
-using UI.Smartphone;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ledger
 {
@@ -31,8 +23,11 @@ namespace RealLifeOverhaul.Ledger
                 row.Set(0, LedgerText.T(NewsstandCatalogue.NameKeys[i]));
                 row.Set(1, LedgerText.T(NewsstandCatalogue.AboutKeys[i]));
                 row.Set(2, LedgerText.Money(NewsstandRules.WeekPrice(i, level)));
-                row.Set(3, x.Subscribed ? (x.Cancelled ? LedgerText.Fill("reallife_ledger_online_state_ends", "day", x.PaidUntil.ToString()) : LedgerText.Fill("reallife_ledger_online_state_renews", "day", (x.PaidUntil + 1).ToString()))
-                    : inPass ? LedgerText.T("reallife_ledger_online_state_in_pass") : "-", x.Subscribed ? (x.Cancelled ? TableRow.Yellow : TableRow.Green) : inPass ? TableRow.Green : TableRow.Plain);
+                string state = x.Subscribed
+                    ? (x.Cancelled ? LedgerText.Fill("reallife_ledger_online_state_ends", "day", x.PaidUntil.ToString())
+                        : LedgerText.Fill("reallife_ledger_online_state_renews", "day", (x.PaidUntil + 1).ToString()))
+                    : inPass ? LedgerText.T("reallife_ledger_online_state_in_pass") : "-";
+                row.Set(3, state, x.Subscribed ? (x.Cancelled ? TableRow.Yellow : TableRow.Green) : inPass ? TableRow.Green : TableRow.Plain);
                 if (!title)
                 {
                     row.Set(4, "-");
@@ -43,7 +38,8 @@ namespace RealLifeOverhaul.Ledger
                 }
                 else if (NewsstandRules.Covered(s, i))
                 {
-                    row.Set(4, outNow ? LedgerText.T("reallife_ledger_online_today_waiting") : LedgerText.Fill("reallife_ledger_online_today_at", "hour", LedgerText.Hour(LedgerCatalogue.DeliveryHour)),
+                    row.Set(4, outNow ? LedgerText.T("reallife_ledger_online_today_waiting")
+                            : LedgerText.Fill("reallife_ledger_online_today_at", "hour", LedgerText.Hour(LedgerCatalogue.DeliveryHour)),
                         outNow ? TableRow.Red : TableRow.Plain);
                 }
                 else
@@ -215,8 +211,7 @@ namespace RealLifeOverhaul.Ledger
             return latest != null && latest.Day == today;
         }
 
-        // The table's rows go back to the pool before they are written again (only for the table: while the page is
-        // read the table under it keeps the rows it shows).
+        // The table's rows back to the pool before they are written again (not while the reading page is over it).
         private void Rows()
         {
             for (int i = 0; i < _rows.Count; i++)

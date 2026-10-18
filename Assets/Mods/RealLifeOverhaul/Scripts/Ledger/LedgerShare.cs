@@ -7,13 +7,9 @@ namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
     /// The City Ledger's lines in a Going Public session (Core/SharedCity, part L): one paper for the city. Game-free.
-    ///
     ///   the whole part   "LS1|day", then the edition as the store writes it (LedgerStore.Edition)
     ///   a guest's asks   N|kind|x|z|detail|amount                 news on the guest's street, for the host's own paper
-    ///                    P|section|weight|key|head|name|value...  a piece about the guest, for today's edition
-    ///
-    /// A piece is taken only with a key of the mod's pieces about a player (<see cref="PersonalPrefixes"/>), a few
-    /// names and short values; a report only of a kind the paper prints.
+    ///                    P|section|weight|key|head|name|value...  a piece about the guest (<see cref="PersonalPrefixes"/>)
     /// </summary>
     public static class LedgerShare
     {
@@ -76,10 +72,7 @@ namespace RealLifeOverhaul.Ledger
             return LedgerStore.Finish(e);
         }
 
-        /// <summary>
-        /// True for a report of the city's (a crash, a knockdown, a crime, an arrest, a break-in), which a guest sends
-        /// to the host's paper; the player's own would be the host player's there.
-        /// </summary>
+        /// <summary>True for the city's kinds of report, which a guest sends to the host's paper (the player's own are not).</summary>
         public static bool CityKind(int kind)
         {
             return kind >= 0 && kind < CityKinds;
@@ -168,11 +161,7 @@ namespace RealLifeOverhaul.Ledger
             return new LedgerPiece((LedgerSection)section, Math.Max(0, Math.Min(100, weight)), f[3], f[4].Length > 0 && f[4].Length <= 80 ? f[4] : null, data);
         }
 
-        /// <summary>
-        /// The host takes a guest's piece for today's edition: each guest's first few
-        /// (<see cref="PiecesPerGuestDay"/>), each once, a few in all, its values through the filter given. True when
-        /// it was taken.
-        /// </summary>
+        /// <summary>The host takes a guest's piece: each guest's first few, each once, a few in all, its values filtered. True if taken.</summary>
         public static bool Admit(List<KeyValuePair<string, LedgerPiece>> pieces, string who, LedgerPiece p, Func<string, string> filter)
         {
             if (p == null || pieces.Count >= GuestPiecesMost)
@@ -208,10 +197,7 @@ namespace RealLifeOverhaul.Ledger
             return true;
         }
 
-        /// <summary>
-        /// When today's edition is printed again with the guests' pieces: a while after the first of them came, not put
-        /// off by each that follows.
-        /// </summary>
+        /// <summary>When today's edition is printed again: a while after the first guest's piece came, not put off by those after.</summary>
         public static float ReprintAt(float set, float now, float wait)
         {
             return set >= 0f ? set : now + wait;
@@ -222,10 +208,7 @@ namespace RealLifeOverhaul.Ledger
             return value != null && value.Length > ValueMost ? value.Substring(0, ValueMost) : value ?? string.Empty;
         }
 
-        /// <summary>
-        /// The guests' pieces for an edition, into <paramref name="into"/>: a few of each guest's, each once (the same
-        /// key and names twice is one piece).
-        /// </summary>
+        /// <summary>The guests' pieces for an edition: a few of each guest's, each once (the same key and names is one piece).</summary>
         public static void Take(List<KeyValuePair<string, LedgerPiece>> asked, List<LedgerPiece> into)
         {
             var count = new Dictionary<string, int>(4);

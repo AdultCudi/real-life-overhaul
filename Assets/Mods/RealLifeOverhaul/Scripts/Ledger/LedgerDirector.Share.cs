@@ -5,11 +5,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The director's Going Public part (Core/SharedCity, part L): one paper for the city. The host prints the edition
-    /// and sends it whole; a guest that follows prints none and reads the host's. A guest sends the host what would be
-    /// news on its street as it happens, and its own pieces of the morning, which the host prints again into today's
-    /// edition (at most once in twenty seconds). The cost: nothing per frame; the host's edition, some ten kilobytes,
-    /// each time it is printed.
+    /// The director's Going Public part (Core/SharedCity, part L): one paper for the city, printed by the host; a guest
+    /// that follows sends its news and pieces to the host. The cost: nothing per frame; about 10 KB each print.
     /// </summary>
     public sealed partial class LedgerDirector
     {
@@ -181,10 +178,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>
-        /// Something the paper would print happened here: on a guest following the host's paper it goes to the host.
-        /// Called as it happens.
-        /// </summary>
+        /// <summary>News that happened here: on a guest following the host's paper it goes to the host, as it happens.</summary>
         public void GuestReport(int kind, float x, float z, string detail, int amount)
         {
             string line = Running && SharedCity.Follows(LedgerShare.Part) ? LedgerShare.AskReport(kind, x, z, detail, amount) : null;

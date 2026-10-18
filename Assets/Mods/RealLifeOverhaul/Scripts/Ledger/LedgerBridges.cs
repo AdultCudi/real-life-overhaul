@@ -7,34 +7,24 @@ namespace RealLifeOverhaul.Ledger
     /// <summary>How the internet stands at the best of the player's homes, with that home's name (null for none).</summary>
     public delegate NetState NetLook(out string home);
 
-    /// <summary>
-    /// What the City Ledger asks of the rest of the mod, set by the wiring (Wiring/LedgerLinks); one left unset is
-    /// simply not in the paper. Reset when the wiring is taken down (the Texts ones by Wiring/TextsLinks).
-    /// </summary>
+    /// <summary>What the City Ledger asks of the rest of the mod, set by the wiring (Wiring/LedgerLinks); unset, it is not in the paper.</summary>
     public static class LedgerBridges
     {
         /// <summary>The day the city's paper (Social/News) was last written for; 0 none.</summary>
         public static Func<int> PaperDay;
 
-        /// <summary>RLO Texts: an edition was written; the briefs it can word are asked for now. Null: nothing.</summary>
+        /// <summary>RLO Texts: an edition was written, so the briefs it can word are asked for now.</summary>
         public static Action<LedgerEdition> TextsEdition;
 
         /// <summary>RLO Texts: the model's words for a piece's story, or null for its written one.</summary>
         public static Func<LedgerPiece, string> TextsBody;
 
-        /// <summary>The city's paper as it stands, as pieces sorted into their sections (the old masthead left out).</summary>
         public static Action<List<LedgerPiece>> Paper;
 
-        /// <summary>
-        /// The host: a guest's piece's value as this city's players are shown it, by its author's id (Flare's filter);
-        /// null: as it came.
-        /// </summary>
+        /// <summary>The host: a guest's piece's value as this city's players see it, by its author's id (Flare's filter).</summary>
         public static Func<string, string, string> Filter;
 
-        /// <summary>
-        /// The market at its last close written into an edition (the index, the sectors, every company), with its news
-        /// from a day on.
-        /// </summary>
+        /// <summary>The market at its last close into an edition, with its news from a day on.</summary>
         public static Action<LedgerEdition, int> Market;
 
         /// <summary>The economy's figures in an edition: the bank rate, inflation, the state of the cycle.</summary>
@@ -43,34 +33,21 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>More pieces for a morning: what is on in the street, a spell of weather.</summary>
         public static Action<int, List<LedgerPiece>> Extra;
 
-        /// <summary>
-        /// The council's policies: given how they stood at the last edition (null for none yet), a piece for each that
-        /// came in or ended since; returns how they stand now.
-        /// </summary>
+        /// <summary>From how the policies stood at the last edition (null: none yet), a piece for each change; returns how they stand.</summary>
         public static Func<string, List<LedgerPiece>, string> Council;
 
-        /// <summary>
-        /// True if a place is within so many metres of another feature's fixture in the street (a bus stop, a
-        /// help-wanted board, a bike dock).
-        /// </summary>
+        /// <summary>True if a place is within so many metres of another feature's fixture in the street.</summary>
         public static Func<Vector3, float, bool> Taken;
 
         /// <summary>A message from the City Ledger's contact on the phone: a locale key and the names that fill it.</summary>
         public static Action<string, Dictionary<string, string>> Say;
 
-        /// <summary>
-        /// How the internet stands at the best of the player's homes (Utilities), and that home's name; unset, or
-        /// NotKept, counts as connected.
-        /// </summary>
+        /// <summary>The internet at the best of the player's homes (Utilities); unset, or NotKept, counts as connected.</summary>
         public static NetLook Connection;
 
-        /// <summary>Opens the Utilities app on its internet page, where a connection is bought; false if it is not on the phone.</summary>
         public static Func<bool> OpenUtilities;
 
-        /// <summary>
-        /// The host of a Going Public session: a guest's report for the city's paper (Social/News: its kind, where, its
-        /// detail, its amount).
-        /// </summary>
+        /// <summary>The host of a Going Public session: a guest's report for the city's paper (Social/News).</summary>
         public static Action<int, float, float, string, int> Report;
 
         public static void Reset()

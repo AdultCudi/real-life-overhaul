@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
-using Helpers;
 using Streets;
 using UI.Load;
 using UI.Notification;
@@ -11,11 +10,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger as a paper in the player's hands. Once a second it prints today's edition once the city's paper
-    /// is out, does the subscription's morning round (<see cref="LedgerRules.Morning"/>), keeps the kiosks near the
-    /// home (LedgerKiosks) and the copy by the door (LedgerHome), and puts the page in the menu (LedgerPage). The
-    /// online titles are in the Online part. The cost: per frame only the kiosk's counter is looked at, and only while
-    /// the player was near a kiosk at the last second's look.
+    /// The City Ledger in the player's hands: once a second it prints today's edition, does the subscription's round,
+    /// and keeps the kiosks (LedgerKiosks), the copy at home (LedgerHome) and the page (LedgerPage). The cost: per
+    /// frame only a kiosk's counter, while the player was near one at the last look.
     /// </summary>
     public sealed partial class LedgerDirector : MonoBehaviour
     {
@@ -42,10 +39,7 @@ namespace RealLifeOverhaul.Ledger
         private BuildingRegistration _homeReg;
         private float _homeLook;
 
-        /// <summary>
-        /// True while a kiosk's counter holds the game's interact key, and in the frame it was pressed: the mod's own
-        /// key stands aside.
-        /// </summary>
+        /// <summary>True while a kiosk's counter holds the game's interact key, and in the frame it was pressed.</summary>
         public static bool TakesInteractKey => Instance != null && Instance._kiosks != null && Instance._kiosks.TakesInteractKey;
 
         public bool Running => _state != null && !_broken;
@@ -72,7 +66,6 @@ namespace RealLifeOverhaul.Ledger
             return -1;
         }
 
-        /// <summary>True if an edition of this day is still held (today's, or one kept to be read again).</summary>
         public bool HasDay(int day)
         {
             if (!Running)
@@ -264,12 +257,12 @@ namespace RealLifeOverhaul.Ledger
             _page = _spare ?? new LedgerPage(this);   // the spare is in the menu already: never two pages of one name
             _spare = null;
             OnlineStart(save);
-            Logger?.Info("City Ledger: ready; " + (_state.Subscribed ? "delivered to the door, paid until day " + _state.PaidUntil + (_state.Cancelled ? " (cancelled)" : string.Empty) : "no subscription")
+            Logger?.Info("City Ledger: ready; "
+                         + (_state.Subscribed ? "delivered to the door, paid until day " + _state.PaidUntil + (_state.Cancelled ? " (cancelled)" : string.Empty) : "no subscription")
                          + "; " + _state.Kiosks.Count + " kiosk(s) near the home; latest edition " + (_state.Edition != null ? "of day " + _state.Edition.Day : "none") + ".");
         }
 
-        // 'keep' saves it first (a stop in play, when the current save is certainly its own); the kiosks, the copy and
-        // the page go.
+        // 'keep' saves first: a stop in play, when the current save is certainly its own.
         private void StandDown(bool keep)
         {
             if (keep)
@@ -319,7 +312,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The paper into the save's data, while the game's current save is the one it belongs to.
         private void WriteSave()
         {
             if (_state != null && Save != null && ReferenceEquals(Save, _save) && Save.modData != null)
@@ -329,12 +321,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>
-        /// A front page of its own (Permadeath's obituary), whether the paper runs or not: the page goes in the menu (a
-        /// spare one while the paper is off, which the paper takes over if it starts) and opens on it.
-        /// <paramref name="closed"/> is told once when it goes down. False while the menu cannot take the page yet (the
-        /// phone is built a little after the city): ask again a moment later.
-        /// </summary>
+        /// <summary>A front page of its own (Permadeath's obituary), paper running or not; false while the menu cannot take it yet.</summary>
         public bool ShowSpecial(LedgerSpecial special, Action closed)
         {
             try
@@ -366,8 +353,7 @@ namespace RealLifeOverhaul.Ledger
             StandDown(false);
         }
 
-        // Today's edition, once the city's paper is out; 'again' writes it anew (the test button, the host's reprint).
-        // Without the city's paper (its feature off) the edition is put together an hour after the round.
+        // Today's edition once the city's paper is out, or an hour after the round without it; 'again' writes it anew.
         private void Print(int day, int hour, bool again)
         {
             int paperDay = LedgerBridges.PaperDay != null ? LedgerBridges.PaperDay() : 0;
@@ -497,10 +483,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>
-        /// The player's first rented home, kept while they keep it so the kiosks and the round stay put; looked up at
-        /// most every five seconds.
-        /// </summary>
+        /// <summary>The player's first rented home, kept while they keep it; looked up at most every five seconds.</summary>
         public BuildingRegistration Home()
         {
             if (Time.unscaledTime < _homeLook)
@@ -532,7 +515,6 @@ namespace RealLifeOverhaul.Ledger
             return _homeReg;
         }
 
-        /// <summary>True while the player stands in a home of their own.</summary>
         public static bool AtHome()
         {
             if (!BuildingManager.IsInsideBuilding)
@@ -553,10 +535,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>
-        /// A subscription from the phone: the first week paid now, nothing for a cancelled one taken up again. False
-        /// with no home, one already running, or not the money (<paramref name="noMoney"/>).
-        /// </summary>
+        /// <summary>A subscription from the phone, its first week paid now (free for a cancelled one taken up again); false if it cannot be.</summary>
         public bool Subscribe(out int firstDay, out bool noMoney)
         {
             firstDay = 0;
@@ -600,10 +579,7 @@ namespace RealLifeOverhaul.Ledger
             return true;
         }
 
-        /// <summary>
-        /// At a kiosk's counter: today's paper bought (or the copy bought read again) and opened. False, with a
-        /// notification, if it is not on sale or the money is not there.
-        /// </summary>
+        /// <summary>At a kiosk's counter: today's paper bought (or the copy bought read again) and opened; false, with a notice, if not.</summary>
         public bool BuyCopy()
         {
             GameInstance save = Save;

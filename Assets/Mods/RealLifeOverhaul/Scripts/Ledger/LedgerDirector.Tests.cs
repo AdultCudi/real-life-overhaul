@@ -7,7 +7,6 @@ namespace RealLifeOverhaul.Ledger
     /// <summary>The director's test buttons.</summary>
     public sealed partial class LedgerDirector
     {
-
         /// <summary>Test button: today's paper opened whatever copy the player has; an edition is put together if there is none yet.</summary>
         public void TestOpen()
         {
@@ -85,7 +84,6 @@ namespace RealLifeOverhaul.Ledger
                          + " pieces); Newsstand is open on the City Ledger.");
         }
 
-        /// <summary>Test button: a kiosk on the nearest shopfront round the player, not kept in the save.</summary>
         public void TestKiosk()
         {
             const string Test = "Place a newspaper kiosk";
@@ -112,7 +110,6 @@ namespace RealLifeOverhaul.Ledger
             Logger?.Info(Test + " test: a kiosk stands " + metres.ToString("F0") + " m away; its counter's panel sells today's paper from 06:00 to 20:00.");
         }
 
-        /// <summary>Test button: the kiosks near the home are forgotten and looked for again.</summary>
         public void TestFindKiosks()
         {
             const string Test = "Find the kiosks again";
@@ -126,7 +123,6 @@ namespace RealLifeOverhaul.Ledger
             Logger?.Info(Test + " test: the kiosks near the home are looked for again over the next seconds.");
         }
 
-        /// <summary>Test button: the test kiosk goes.</summary>
         public void TestBack()
         {
             if (_kiosks != null && _kiosks.TestBack())

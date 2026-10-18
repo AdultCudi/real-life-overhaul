@@ -2,10 +2,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// How the internet stands at the best of the player's homes, the best first (<see cref="NewsstandRules.Best"/>
-    /// takes the lower). NotKept: the utilities are off, so a home counts as connected. Saved nowhere.
-    /// </summary>
+    /// <summary>How the internet stands at the best of the player's homes, best first; NotKept counts as connected. Not saved.</summary>
     public enum NetState { Online = 0, Outage, Installing, Cut, NoLine, NoHome, NotKept }
 
     /// <summary>What a morning came to for one online subscription (<see cref="NewsstandRules.Morning"/>).</summary>
@@ -33,10 +30,7 @@ namespace RealLifeOverhaul.Ledger
         public int LastDay;              // the last morning settled: its edition came, or the days before it were let go uncharged
     }
 
-    /// <summary>
-    /// What Newsstand keeps of a save (<see cref="NewsstandStore"/>), game-free: the subscriptions, the mornings each
-    /// title's edition came, the earlier editions still to be read (today's is LedgerState.Edition) and the last notices.
-    /// </summary>
+    /// <summary>What Newsstand keeps of a save (<see cref="NewsstandStore"/>). Game-free.</summary>
     public sealed class NewsstandState
     {
         public readonly OnlineSub[] Subs = new OnlineSub[NewsstandCatalogue.Subscriptions];

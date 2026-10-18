@@ -8,17 +8,13 @@ namespace RealLifeOverhaul.Ledger
     /// <summary>The paper's page: its rules and its columns.</summary>
     public sealed partial class LedgerPage
     {
-        // Marks in a text, read back from TextMeshPro's layout once the text is laid out (links of no width, never
-        // seen):
+        // Marks in a text, read back from TextMeshPro's layout (links of no width, never seen):
         //   r  a rule across the column above this line        c  a short rule above this line (between two stories)
         //   u  a rule under this line (a label sitting on it)   k  keep from here...   e  ...to here in one column
         private const string MarkRule = "<link=\"r\"></link>", MarkCut = "<link=\"c\"></link>", MarkUnder = "<link=\"u\"></link>";
         private const string MarkKeep = "<link=\"k\"></link>", MarkEnd = "<link=\"e\"></link>";
 
-        /// <summary>
-        /// The thin black rules of a page, from one pool: taken in order as the page is written and the ones left over
-        /// hidden, so a page written again makes no new ones unless it needs more than it ever has.
-        /// </summary>
+        /// <summary>A page's thin rules from one pool, taken in order as it is written; the ones left over are hidden.</summary>
         private sealed class Rules
         {
             private readonly RectTransform _page;
@@ -46,19 +42,16 @@ namespace RealLifeOverhaul.Ledger
                 }
             }
 
-            /// <summary>A rule across, its middle at y (down from the page's top), so thick.</summary>
             public void Across(float x, float y, float w, float thick)
             {
                 Put(Next().rectTransform, x, y - thick * 0.5f, w, thick);
             }
 
-            /// <summary>A rule down, its middle at x.</summary>
             public void Down(float x, float y, float h, float thick)
             {
                 Put(Next().rectTransform, x - thick * 0.5f, y, thick, h);
             }
 
-            /// <summary>A thin frame round a box.</summary>
             public void Frame(float x, float y, float w, float h, float thick)
             {
                 Across(x, y + thick * 0.5f, w, thick);
@@ -90,10 +83,8 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// A story's columns: texts linked one into the next (TextMeshPro's linked overflow), side by side. Laid out as
-        /// shallow as holds everything, so that every column has its share (balanced), and no label or headline is left
-        /// at the foot of a column without the first line under it (the column ends above it instead). With a drop cap
-        /// the first column's top lines are a narrower text beside the cap, linked into the rest of that column.
+        /// A story's columns, linked one into the next (TextMeshPro's linked overflow) and balanced, with no label or
+        /// headline left at a column's foot without its first line; a drop cap has a narrower text beside it.
         /// </summary>
         private sealed class Columns
         {
@@ -165,10 +156,7 @@ namespace RealLifeOverhaul.Ledger
                 }
             }
 
-            /// <summary>
-            /// How many lines deep a drop cap on this text can be (three, else two; none if the text beside it would
-            /// not fill two lines, or it does not open with a letter), in the columns' size and width.
-            /// </summary>
+            /// <summary>How many lines a drop cap on this text can span: three, else two; none if too little text beside it, or no letter.</summary>
             public int CapLines(string text, float w, out bool endsBeside)
             {
                 endsBeside = false;
@@ -205,10 +193,7 @@ namespace RealLifeOverhaul.Ledger
                 }
             }
 
-            /// <summary>
-            /// Lays the text out: column i at x0 + i * (w + gutter), from 'top' (down from the page's top), never
-            /// deeper than 'most'. With a cap letter of 'capLines' lines (two or three), the text follows that letter.
-            /// </summary>
+            /// <summary>Lays the text out in columns from 'top', never deeper than 'most'; with a cap letter, the text follows it.</summary>
             public void Lay(string text, float x0, float w, float gutter, float top, float most, string capLetter, int capLines, bool capThenGap)
             {
                 int k = Cols.Length;
@@ -233,7 +218,6 @@ namespace RealLifeOverhaul.Ledger
                     Put(Cap.rectTransform, x0 - 0.03f * capSize, top + _page._asc * _size + (capLines - 1) * adv - _page._asc * capSize, capWide + capSize, capSize * 1.5f);
                     Show(Cap, true);
                     Put(Narrow.rectTransform, x0 + capWide, top, w - capWide, _page._asc * _size + (capLines - 1) * adv + _page._desc * _size + 0.3f * _size);
-                    // when the lead's text ends beside the cap, the next story starts a paragraph's space below it
                     _restTop = top + capLines * adv + (capThenGap ? Cols[0].paragraphSpacing * 0.01f * _size : 0f);
                 }
                 else
@@ -306,7 +290,6 @@ namespace RealLifeOverhaul.Ledger
                 return _capLines > 0 ? Mathf.Max(0, i - 1) : i;
             }
 
-            // How far below the columns' top a part starts.
             private float TopOf(int i)
             {
                 return _capLines > 0 && i == 1 ? _restTop - _top : 0f;
@@ -423,7 +406,6 @@ namespace RealLifeOverhaul.Ledger
                 }
             }
 
-            /// <summary>The columns' rules: one down the middle of each gutter, as deep as the columns.</summary>
             public void Gutters(Rules rules, float gutter, float thick)
             {
                 for (int i = 1; i < Cols.Length; i++)

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Ledger
@@ -9,19 +8,13 @@ namespace RealLifeOverhaul.Ledger
     /// <summary>The paper's page: a front page of its own (<see cref="LedgerSpecial"/>).</summary>
     public sealed partial class LedgerPage
     {
-
         private LedgerSpecial _special;
         private Action _specialClosed;
         private readonly List<string> _boxScratch = new List<string>(16);
 
-        /// <summary>True while the page is on a special front page rather than an edition.</summary>
         public bool Special => _special != null;
 
-        /// <summary>
-        /// Opens the page on a front page of its own: the paper's masthead, dateline and rules, every word the
-        /// special's, and the inside pages' tabs hidden. <paramref name="closed"/> is told once when the page goes down
-        /// by any way. False if the page is not in the menu yet.
-        /// </summary>
+        /// <summary>Opens the page on a front page of its own, its inside pages hidden; <paramref name="closed"/> is told once when it goes down.</summary>
         public bool ShowSpecial(LedgerSpecial special, Action closed)
         {
             if (_app == null || !_app.Installed || special == null || !_app.Ready() || _shell == null)   // Ready builds the page if it is not built yet
@@ -103,7 +96,6 @@ namespace RealLifeOverhaul.Ledger
             float mw = 0.755f * W, bx = mw + 0.017f * W, bw = W - bx;
             SpecialBox(sp, bx, bt, bw, H - bt, u, rules);
 
-            // The lead and the columns, sized together as the morning's front page is.
             float gut = 0.025f * u;
             float cw = (mw - (FrontColumns - 1) * gut) / FrontColumns;
             float s = BodyStart * u, hs = HeadStart * u;
@@ -139,7 +131,6 @@ namespace RealLifeOverhaul.Ledger
             _fColumns.Marks(rules, _px);
             _fColumns.Gutters(rules, gut, _px);
 
-            // Under the columns: the notice, framed twice.
             float below = top + _fColumns.Depth + BandGap * u * 0.6f;
             Show(_fBand, false);
             Show(_fCaption, false);
@@ -162,7 +153,6 @@ namespace RealLifeOverhaul.Ledger
             return lw;
         }
 
-        // The columns' words: the lead after its drop cap, then each section under its label over a rule.
         private string SpecialFlow(LedgerSpecial sp, Lead lw)
         {
             _b.Clear();

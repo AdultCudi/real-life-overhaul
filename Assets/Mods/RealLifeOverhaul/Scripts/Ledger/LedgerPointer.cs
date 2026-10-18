@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using BAModAPI;
 using Player.HUD.ItemInfoOverlays;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The copy at home as a thing the player can point at, as the game's own objects are (and
-    /// Transport/TransitPointer): a trigger box on the game's layer for interactive items. The game's pointer outlines
-    /// the paper with its call to action, and a left click opens the page. The cost: nothing per frame; the game calls
-    /// it only when the pointer comes onto it, leaves it or clicks.
+    /// The copy at home as a thing to point at: a trigger box on the interactive layer whose call to action opens the
+    /// page. The cost: nothing per frame; the game calls it only when the pointer comes, goes or clicks.
     /// </summary>
     public sealed class LedgerPointer : EntityController
     {
@@ -21,10 +18,7 @@ namespace RealLifeOverhaul.Ledger
 
         private int[] _layers;
 
-        /// <summary>
-        /// A pointer under the paper: a trigger box of the given middle and size in the paper's own axes. Null if the
-        /// game has no layer for it.
-        /// </summary>
+        /// <summary>A pointer under the paper: a trigger box in the paper's own axes; null if the game has no layer for it.</summary>
         public static LedgerPointer Make(Transform paper, Vector3 centre, Vector3 size)
         {
             int layer = LayerMask.NameToLayer("InteractiveItems");
@@ -60,8 +54,7 @@ namespace RealLifeOverhaul.Ledger
             return pointer;
         }
 
-        // The game's own Awake puts the object on the interactive layer (it is there already) and its Start reads
-        // places to walk to that an object placed by the game has; neither is wanted here.
+        // The game's Awake sets the layer (set already), and its Start reads walk-to places the game's objects have.
         public override void Awake()
         {
         }
@@ -127,10 +120,7 @@ namespace RealLifeOverhaul.Ledger
         }
     }
 
-    /// <summary>
-    /// The paper's entry in the game's list of calls to action (CtaManager.CtaBehaviors, private: reached by reflection
-    /// as Home/HomeOffers does). It answers only for the paper's pointer; taken out when the wiring is taken down.
-    /// </summary>
+    /// <summary>The paper's entry in the game's list of calls to action (CtaManager.CtaBehaviors, by reflection as Home/HomeOffers).</summary>
     public static class LedgerCta
     {
         public const string Read = "reallife_ledger_cta_read";
@@ -177,10 +167,7 @@ namespace RealLifeOverhaul.Ledger
         private static List<ICtaBehavior> _list;
         private static bool _failed;
 
-        /// <summary>
-        /// Adds the entry, once. False if the game's list could not be reached (said once in Player.log): the copy is
-        /// then not a click away.
-        /// </summary>
+        /// <summary>Adds the entry, once; false if the game's list could not be reached (said once in Player.log).</summary>
         public static bool Install()
         {
             if (_behaviour != null)
@@ -214,7 +201,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>Takes the entry out of the game's list again.</summary>
         public static void Remove()
         {
             try

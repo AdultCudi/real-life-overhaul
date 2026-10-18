@@ -1,13 +1,11 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The mouse wheel over Newsstand's page: each notch sets where the page is to be, a few lines on, and
-    /// <see cref="NewsstandGlide"/> takes it there. Dragging is the game's ScrollRect's; a drag stops a glide. The
-    /// cost: nothing per frame (no Update); it answers only the wheel and the drag, while the page is open.
+    /// The mouse wheel over Newsstand's page: each notch sets a target a few lines on for <see cref="NewsstandGlide"/>;
+    /// a drag stops it. The cost: nothing per frame (no Update), only the wheel's and the drag's events.
     /// </summary>
     public sealed class NewsstandWheel : MonoBehaviour, IScrollHandler, IBeginDragHandler
     {

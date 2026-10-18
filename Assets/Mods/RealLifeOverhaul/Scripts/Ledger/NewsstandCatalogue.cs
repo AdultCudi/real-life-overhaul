@@ -1,10 +1,6 @@
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// Newsstand's fixed figures: the four titles read on the phone, each written from the same morning's news with its
-    /// own focus, and the pass for all four at less than the four together; what each prints and costs a week, and how
-    /// many mornings are kept. Money is at the start's prices. Game-free.
-    /// </summary>
+    /// <summary>Newsstand's fixed figures: the four titles and the pass, what each prints and costs a week, the mornings kept. Game-free.</summary>
     public static class NewsstandCatalogue
     {
         private const string P = "reallife";   // in parts: a key's beginning, not a key

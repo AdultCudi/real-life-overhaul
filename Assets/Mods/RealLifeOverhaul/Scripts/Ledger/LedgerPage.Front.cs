@@ -1,8 +1,4 @@
-using System.Collections.Generic;
 using System.Globalization;
-using Helpers;
-using Localizor;
-using RealLifeOverhaul.GameUi;
 using TMPro;
 using UnityEngine;
 
@@ -16,7 +12,6 @@ namespace RealLifeOverhaul.Ledger
             float u = _height;
             Margins(_pages[Front], u, out float W, out float H);
 
-            // The masthead between its ears, the double rule, the dateline.
             float mh = 0.122f * u;
             _fTitle.fontSize = 0.083f * u;
             _fTitle.characterSpacing = 6f;
@@ -51,18 +46,17 @@ namespace RealLifeOverhaul.Ledger
             rules.Across(0f, mh + 0.007f * u, W, _px);
             float dy = mh + 0.007f * u, dh = 0.031f * u, ds = 0.0148f * u;
             Dateline(_fDateLeft, LedgerText.Fill("reallife_ledger_dateline", "weekday", Weekday(e.Day), "day", e.Day.ToString(CultureInfo.CurrentCulture)), 0f, dy, W, dh, ds);
-            Dateline(_fDateMiddle, LedgerText.Fill("reallife_ledger_dateline_number", "year", Year(e.Day).ToString(CultureInfo.CurrentCulture), "number", e.Day.ToString(CultureInfo.CurrentCulture)), 0f, dy, W, dh, ds);
+            Dateline(_fDateMiddle, LedgerText.Fill("reallife_ledger_dateline_number", "year", Year(e.Day).ToString(CultureInfo.CurrentCulture),
+                "number", e.Day.ToString(CultureInfo.CurrentCulture)), 0f, dy, W, dh, ds);
             Dateline(_fDateRight, LedgerText.Fill("reallife_ledger_dateline_price", "price", LedgerText.Money(_director.CopyPrice)), 0f, dy, W, dh, ds);
             rules.Across(0f, dy + dh, W, _px);
             float bt = dy + dh + 0.018f * u;
 
-            // The main area, and the box down the side.
             float mw = 0.755f * W, bx = mw + 0.017f * W, bw = W - bx;
             bool chart = e.HasMarket && e.IndexCloses.Count > 1;
             bool aroundInColumns = e.HasMarket;   // without the market the box has the room for around town
             SideBox(e, bx, bt, bw, H - bt, u, aroundInColumns, rules);
 
-            // The lead: its words, its headline's size and the columns' type chosen together.
             LedgerPiece lead = LedgerRules.Lead(e);
             string kicker, headline, body;
             if (lead != null)
@@ -123,7 +117,6 @@ namespace RealLifeOverhaul.Ledger
             _fColumns.Marks(rules, _px);
             _fColumns.Gutters(rules, gut, _px);
 
-            // Under the columns, what a short paper leaves: the index's last sessions, or the paper's own notice.
             float below = top + _fColumns.Depth + BandGap * u * 0.6f;
             bool drawn = band && chart;
             Show(_fBand, drawn);
@@ -153,8 +146,7 @@ namespace RealLifeOverhaul.Ledger
             rules.Frame(x, y - 0.01f * u, w, h + 0.0185f * u, _px);
         }
 
-        // The lead's words in the columns: the standfirst (its first sentence, when what is left still fills two lines
-        // beside the drop cap), the text that follows and the cap.
+        // The lead's words: its standfirst (the first sentence, if the rest fills two lines by the cap), then the rest.
         private struct Lead
         {
             public string Stand, Text, Cap;
@@ -177,14 +169,12 @@ namespace RealLifeOverhaul.Ledger
             return lw;
         }
 
-        // The front page's lead head across the main area, in its own texts.
         private float Header(string kicker, string headline, string stand, string byline, float bt, float mw, float hs, float u, bool place)
         {
             return Header(_fKicker, _fHead, _fStand, _fByline, kicker, headline, stand, byline, bt, mw, hs, u, place);
         }
 
-        // The front page's columns: the lead's text after its drop cap, the rest of its section, the other news
-        // sections under their labels, around town last. An empty section is left out: the next takes its room.
+        // The front page's columns: the lead's text, the rest of its section, the other news, around town last.
         private string FrontFlow(LedgerEdition e, LedgerPiece lead, Lead lw, bool around, int aroundMost = int.MaxValue)
         {
             _b.Clear();
@@ -227,8 +217,7 @@ namespace RealLifeOverhaul.Ledger
             _also.AddRange(_pieces);
         }
 
-        // The box down the side: the markets at a glance (with as many risers and fallers as it has room for), the
-        // weather, then what is inside (or, without the market, around town).
+        // The box down the side: the markets, the weather, then what is inside (or, without the market, around town).
         private void SideBox(LedgerEdition e, float x, float y, float w, float h, float u, bool around, Rules rules)
         {
             float pad = 0.014f * u, size = BoxSize * u;
@@ -295,7 +284,8 @@ namespace RealLifeOverhaul.Ledger
                 _b.Append("<b>").Append(Plain(LedgerText.T("reallife_ledger_inside_markets"))).Append("</b> <i angle=12>").Append(Plain(markets)).Append("</i>\n");
                 _b.Append("<b>").Append(Plain(LedgerText.T("reallife_ledger_inside_prices"))).Append("</b> ")
                   .Append(Plain(e.HasMarket
-                      ? LedgerText.Fill("reallife_ledger_inside_prices_body", "companies", e.Quotes.Count.ToString(CultureInfo.CurrentCulture), "sectors", e.Sectors.Count.ToString(CultureInfo.CurrentCulture))
+                      ? LedgerText.Fill("reallife_ledger_inside_prices_body", "companies", e.Quotes.Count.ToString(CultureInfo.CurrentCulture),
+                          "sectors", e.Sectors.Count.ToString(CultureInfo.CurrentCulture))
                       : LedgerText.T("reallife_ledger_no_market"))).Append('\n');
             }
             else
@@ -313,7 +303,6 @@ namespace RealLifeOverhaul.Ledger
             return Words();
         }
 
-        // A label in the box, sitting on a rule.
         private void BoxLabel(string key)
         {
             _b.Append(MarkUnder).Append("<align=left>");
@@ -359,8 +348,7 @@ namespace RealLifeOverhaul.Ledger
             Put(_fCaption.rectTransform, x, cy + ch + 0.002f * u, w, caption);
         }
 
-        // Without the market's chart, what a short paper leaves holds the paper's own notice, as papers fill a gap: a
-        // framed box as deep as the room, its words in the middle.
+        // Without the market's chart, the room a short paper leaves holds the paper's own notice, framed.
         private void HouseAdvert(float x, float y, float w, float h, float u, Rules rules)
         {
             float bw = 0.7f * w, size = 0.026f * u;
@@ -376,7 +364,6 @@ namespace RealLifeOverhaul.Ledger
             rules.Frame(bx + 0.006f * u, by + 0.006f * u, bw - 0.012f * u, bh - 0.012f * u, _px);
         }
 
-        // A market story's headline as the inside page will print it.
         private static string MarketHead(LedgerPiece piece)
         {
             LedgerText.Words(piece, out _, out string headline, out string body);

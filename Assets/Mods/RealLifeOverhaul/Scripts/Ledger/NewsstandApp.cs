@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using Localizor;
 using RealLifeOverhaul.GameUi;
 using TMPro;
@@ -13,12 +11,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// Newsstand, the newspapers app on the phone, in the game's frame (GameUi.AppShell, from MyEmployees) on two tabs:
-    /// the titles (each title and the pass with its price and subscription; the box subscribes and cancels, or opens
-    /// the Utilities app without a connection) and the reading page (a title's edition as one column of newsprint over
-    /// the table, scrolled by the wheel through <see cref="NewsstandWheel"/> or by dragging). An edition is written for
-    /// the phone once (NewsstandPage) and kept while it is that morning's and the language stays. Nothing runs while
-    /// the app is closed.
+    /// Newsstand, the newspapers app on the phone (GameUi.AppShell): its titles with their subscriptions, and a reading
+    /// page. An edition is written for the phone once (NewsstandPage) and kept; nothing runs while the app is closed.
     /// </summary>
     public sealed partial class NewsstandApp
     {
@@ -99,7 +93,8 @@ namespace RealLifeOverhaul.Ledger
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    LedgerDirector.Logger?.Warn("Newsstand: the game's phone is not built as this version expects, so the app is left off. Subscriptions still renew, and the printed paper still works.");
+                    LedgerDirector.Logger?.Warn("Newsstand: the game's phone is not built as this version expects, so the app is left off. "
+                                                + "Subscriptions still renew, and the printed paper still works.");
                 }
                 return;
             }
@@ -153,7 +148,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>Something has changed (an edition came, a new one was written): the app is written again if it is open.</summary>
         public void Changed()
         {
             if (Showing && !_writing)
@@ -200,8 +194,7 @@ namespace RealLifeOverhaul.Ledger
             return _shell.Root;
         }
 
-        // The reading page: a sheet of newsprint over the table (the game's own list background, tinted), the game's
-        // ScrollRect on it with a masked viewport and the column of text inside, and a copy of the table's scroll bar.
+        // The reading page: a tinted copy of the table's background with a ScrollRect, a masked viewport, a scroll bar.
         private bool BuildSheet()
         {
             var list = _shell.List as RectTransform;
@@ -258,8 +251,7 @@ namespace RealLifeOverhaul.Ledger
             return true;
         }
 
-        // A copy of the table's own scroll bar for the page, its scripts that are not Unity's left off. Without one the
-        // page still scrolls.
+        // A copy of the table's scroll bar without its scripts that are not Unity's; without it the page still scrolls.
         private void Bar(RectTransform list)
         {
             try

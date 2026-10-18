@@ -17,8 +17,8 @@ namespace RealLifeOverhaul.Ledger
     ///   Q|name|ticker|sector|close|change|volume|marks a company's price
     ///   C|close,close,...                             the index's last closes
     ///
-    /// Numbers are invariant; a line that does not read is left out, and an entry of another version is not read at all
-    /// (a new state). Game-free.
+    /// Numbers are invariant; a line that does not read is left out, and another version's entry is not read (a new
+    /// state). Game-free.
     /// </summary>
     public static class LedgerStore
     {
@@ -55,10 +55,7 @@ namespace RealLifeOverhaul.Ledger
             return b.ToString();
         }
 
-        /// <summary>
-        /// An edition as the store writes it: its line and those of its pieces, sectors, companies and closes (each
-        /// after a line break).
-        /// </summary>
+        /// <summary>An edition's lines as the store writes them, each after a line break.</summary>
         public static void Edition(StringBuilder b, LedgerEdition e)
         {
             if (e == null)
@@ -187,10 +184,7 @@ namespace RealLifeOverhaul.Ledger
             return s;
         }
 
-        /// <summary>
-        /// One line of an edition: "E" begins one (given back in <paramref name="e"/>), the others add to it; any other
-        /// line, or one before an "E", is left out.
-        /// </summary>
+        /// <summary>One line of an edition: "E" begins one (given back in <paramref name="e"/>), the others add to it.</summary>
         public static void EditionLine(string[] f, ref LedgerEdition e)
         {
             switch (f[0])

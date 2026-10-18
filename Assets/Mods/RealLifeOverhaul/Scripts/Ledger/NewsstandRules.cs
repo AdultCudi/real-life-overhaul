@@ -4,14 +4,11 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// Newsstand's rules: what a week of a title costs, which titles a player's subscriptions cover, taking one out and
-    /// cancelling it, the morning's edition coming to the phone over the home's connection (a week paid at a time,
-    /// never a morning charged that did not come), the editions that can still be read, and what each title prints of
-    /// the day's paper. Game-free: the checks run it as it ships.
+    /// Newsstand's rules: prices, which titles the subscriptions cover, taking one out and cancelling it, the morning's
+    /// editions over the home's connection, the editions still to be read, and what each title prints. Game-free.
     /// </summary>
     public static class NewsstandRules
     {
-
         /// <summary>A week of a subscription at a price level (tenths of a point, 1000 at the start's prices).</summary>
         public static int WeekPrice(int sub, int level)
         {
@@ -24,7 +21,6 @@ namespace RealLifeOverhaul.Ledger
             return a <= b ? a : b;
         }
 
-        /// <summary>True if editions can come over it: a working connection.</summary>
         public static bool Works(NetState net)
         {
             return net == NetState.Online;
@@ -58,11 +54,7 @@ namespace RealLifeOverhaul.Ledger
             return sum;
         }
 
-        /// <summary>
-        /// Whether a subscription can be taken out over the homes' connection (it needs a working one). A title the
-        /// pass covers is refused; a cancelled one is taken up again with nothing to pay (payNow false); otherwise the
-        /// caller pays the first week, then <see cref="Start"/>.
-        /// </summary>
+        /// <summary>Whether a subscription can be taken out over the homes' connection; payNow false for a cancelled one taken up again.</summary>
         public static OnlineRefusal Subscribe(NewsstandState s, int sub, NetState net, out bool payNow)
         {
             payNow = false;
@@ -93,11 +85,7 @@ namespace RealLifeOverhaul.Ledger
             return OnlineRefusal.None;
         }
 
-        /// <summary>
-        /// After the first week has been paid for: the subscription runs from today, seven mornings, today's edition
-        /// the first (it comes at once if it is out). The pass cancels the titles' own subscriptions, which still run
-        /// to their last day paid for: returns how many it cancelled.
-        /// </summary>
+        /// <summary>The first week paid: the subscription runs from today. The pass cancels the titles' own; returns how many it cancelled.</summary>
         public static int Start(NewsstandState s, int sub, int day)
         {
             OnlineSub x = s.Subs[sub];
@@ -118,10 +106,7 @@ namespace RealLifeOverhaul.Ledger
             return cancelled;
         }
 
-        /// <summary>
-        /// A subscription cancelled: its editions still come until the last day paid for. False if there is none, or it
-        /// is cancelled already.
-        /// </summary>
+        /// <summary>Cancels a subscription: its editions still come until the last day paid for. False if there is none to cancel.</summary>
         public static bool Cancel(NewsstandState s, int sub)
         {
             OnlineSub x = s.Subs[sub];
@@ -140,10 +125,9 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// One subscription's morning, while today's edition is out. Paid-for mornings whose edition never came are
-        /// never charged: the days paid for move on by as many. With no connection nothing comes and nothing is charged
-        /// (Waiting) until there is one. When the days paid for are over a cancelled subscription ends; any other pays
-        /// a week (<paramref name="pay"/>, told which subscription) or lapses.
+        /// One subscription's morning while today's edition is out: paid-for mornings that never came are given back.
+        /// With no connection nothing comes or is charged (Waiting); past the days paid for, a cancelled one ends and
+        /// any other pays a week or lapses.
         /// </summary>
         public static OnlineMorning Morning(NewsstandState s, int sub, int day, bool online, Func<int, bool> pay)
         {
@@ -183,16 +167,12 @@ namespace RealLifeOverhaul.Ledger
             return OnlineMorning.Billed;
         }
 
-        /// <summary>True for a morning whose edition came.</summary>
         public static bool Came(OnlineMorning m)
         {
             return m == OnlineMorning.Loaded || m == OnlineMorning.Billed;
         }
 
-        /// <summary>
-        /// Every subscription's morning (results: one per subscription), then each title whose edition came by its own
-        /// subscription or by the pass is marked as come today. Returns how many titles' editions came now.
-        /// </summary>
+        /// <summary>Every subscription's morning into results, then each title's edition marked as come; returns how many came now.</summary>
         public static int Round(NewsstandState s, int day, bool online, Func<int, bool> pay, OnlineMorning[] results)
         {
             for (int i = 0; i < NewsstandCatalogue.Subscriptions; i++)
@@ -226,7 +206,6 @@ namespace RealLifeOverhaul.Ledger
             return false;
         }
 
-        /// <summary>True if a title's edition of a day came to the phone.</summary>
         public static bool Has(NewsstandState s, int title, int day)
         {
             return s.Loaded[title].Contains(day);
@@ -258,10 +237,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>
-        /// The edition just replaced as the latest, kept to be read again: one per day (a day written again replaces
-        /// its own), its index chart cut to the last closes; those older than the days kept are let go.
-        /// </summary>
+        /// <summary>The edition just replaced as the latest, kept to be read again: one per day, its chart cut, the oldest let go.</summary>
         public static void Keep(NewsstandState s, LedgerEdition old, int today)
         {
             if (old != null && old.Day > today - NewsstandCatalogue.KeepDays && old.Day < today)

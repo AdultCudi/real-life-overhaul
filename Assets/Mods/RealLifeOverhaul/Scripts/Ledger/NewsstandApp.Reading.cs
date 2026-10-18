@@ -1,12 +1,9 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using Localizor;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI.Notification;
-using UI.Smartphone;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,7 +12,6 @@ namespace RealLifeOverhaul.Ledger
     /// <summary>Newsstand's app: the reading page, an edition set as one column of newsprint.</summary>
     public sealed partial class NewsstandApp
     {
-        // One title's edition as written for the phone, kept.
         private sealed class Written
         {
             public int Title, Day, Language;
@@ -155,8 +151,7 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The blocks set one under the next in a column of readable width, in the middle of the sheet; the page goes to
-        // its top when it is another page than the one shown.
+        // The blocks one under the next in a column of readable width; back at the top for a page other than the last.
         private void Lay(List<NewsBlock> blocks, bool fresh)
         {
             if (_viewport == null || _content == null)
@@ -239,7 +234,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // How each kind of block is set: its size against the body's, its alignment and spacing.
         private void Style(TMP_Text t, byte kind, float u)
         {
             float size = 1f;

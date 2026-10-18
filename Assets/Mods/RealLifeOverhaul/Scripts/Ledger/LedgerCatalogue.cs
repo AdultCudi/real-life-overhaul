@@ -1,10 +1,6 @@
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// The City Ledger's fixed figures and its table of kinds of piece: each kind's section, its weight (the front page
-    /// leads with the heaviest) and the paper's own headline where its words have none. Money is at the start's prices,
-    /// through Prices.At when it is charged or shown. Game-free.
-    /// </summary>
+    /// <summary>The City Ledger's fixed figures and its table of kinds of piece. Money is at the start's prices. Game-free.</summary>
     public static class LedgerCatalogue
     {
         private const string P = "reallife";   // in parts: a key's beginning, not a key
@@ -54,10 +50,7 @@ namespace RealLifeOverhaul.Ledger
             return new Kind(P + suffix, section, weight, head != null ? P + "_ledger_head_" + head : null);
         }
 
-        /// <summary>
-        /// The kinds; the first that fits a key wins, so a longer prefix stands before a shorter one it starts with. A
-        /// key that fits none is a city piece of <see cref="UnknownWeight"/>.
-        /// </summary>
+        /// <summary>The first kind that fits a key wins, so a longer prefix stands before a shorter one it starts with.</summary>
         public static readonly Kind[] Kinds =
         {
             // the city: the street, the courts, City Hall
@@ -90,7 +83,6 @@ namespace RealLifeOverhaul.Ledger
             K("_event_today", LedgerSection.AroundTown, 18),
             K("_event_tomorrow", LedgerSection.AroundTown, 16),
 
-            // the economy
             K("_macro_news_rate_up", LedgerSection.Economy, 88, "rate_up"),
             K("_macro_news_rate_down", LedgerSection.Economy, 88, "rate_down"),
             K("_macro_news_rate_hold", LedgerSection.Economy, 50, "rate_hold"),
@@ -162,7 +154,6 @@ namespace RealLifeOverhaul.Ledger
             K("_mkt_news_close", LedgerSection.Markets, 20, "close"),
             K("_mkt_news", LedgerSection.Markets, 30),
 
-            // the rest of the paper
             K("_news_rain_now", LedgerSection.Weather, 10),
             K("_news_rained", LedgerSection.Weather, 10),
             K("_news_dry", LedgerSection.Weather, 10),
@@ -173,7 +164,6 @@ namespace RealLifeOverhaul.Ledger
             K("_news_masthead", LedgerSection.AroundTown, -1)   // the old paper's masthead: the page has its own (left out)
         };
 
-        /// <summary>The weight of a piece that fits no kind.</summary>
         public const int UnknownWeight = 40;
     }
 }

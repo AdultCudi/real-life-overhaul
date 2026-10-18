@@ -10,12 +10,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger as a newspaper in the game's full menu (the game stands still under it): the game's own frame
-    /// (GameUi.AppShell, from MyEmployees, with no button on the phone: it is opened by picking up the paper) with the
-    /// paper's pages as its tabs, and over it one sheet of newsprint, set in a serif (LedgerType) in black ink with
-    /// thin rules and justified columns linked one into the next: the front page, the markets and the share prices. A
-    /// page is placed when it is written (opened or turned), never per frame, and laid out once for each paper,
-    /// language, sheet and face (<see cref="LedgerPageStamp"/>).
+    /// The City Ledger as a newspaper in the game's full menu (GameUi.AppShell), opened by picking up the paper. A page
+    /// is written when opened or turned, once per <see cref="LedgerPageStamp"/>, never per frame.
     /// </summary>
     public sealed partial class LedgerPage
     {
@@ -26,7 +22,6 @@ namespace RealLifeOverhaul.Ledger
         private static readonly string[] TabKeys = { "reallife_ledger_tab_front", "reallife_ledger_tab_markets", "reallife_ledger_tab_prices" };
         private static readonly string[] FromKeys = { "reallife_ledger_header_home", "reallife_ledger_header_kiosk", "reallife_ledger_header_test", "reallife_ledger_header_phone" };
 
-        // The paper's inks: newsprint, ink, the rules' and the chart's faint ones. Moves are in ink, with a mark.
         internal static readonly Color Newsprint = new Color(0.957f, 0.945f, 0.914f, 1f);
         internal static readonly Color Ink = new Color(0.10f, 0.10f, 0.11f, 1f);
         internal static readonly Color RuleInk = new Color(0.12f, 0.12f, 0.13f, 1f);
@@ -52,25 +47,20 @@ namespace RealLifeOverhaul.Ledger
         private int _page;
         private float _height;    // the sheet's height: the type is sized to it
 
-        // The face the paper is set in (null: the game's own) and its measures, as fractions of its size: ascender,
-        // descender and line gap (TextMeshPro's line is the three), the capitals' height over the ascender, the width
-        // of a figure, of the up mark and of the per cent sign; and one screen pixel in canvas units (a hairline rule).
+        // The face (null: the game's own) and its measures, as fractions of its size; _px is a screen pixel.
         private TMP_FontAsset _face;
         private float _asc = 1.07f, _desc = 0.29f, _gap, _cap = 0.72f, _capRatio = 0.67f, _figure = 0.56f, _mark = 0.6f, _percent = 0.9f;
         private bool _marks = true;     // the face (or a fallback) has the up and down marks
         private bool _measured;
         private float _px = 2f;
 
-        // the front page
         private TMP_Text _fTitle, _fEarLeft, _fEarRight, _fDateLeft, _fDateMiddle, _fDateRight, _fKicker, _fHead, _fStand, _fByline, _fBand, _fCaption, _fAd, _fBox;
         private Columns _fColumns;
         private LedgerSpark _fChart;
-        // the markets page
         private TMP_Text _mTitle, _mName, _mDate, _mKicker, _mHead, _mByline, _mIndex, _mCaption, _mSectorsLabel;
         private readonly TMP_Text[] _mSectors = new TMP_Text[2];
         private Columns _mColumns;
         private LedgerSpark _mChart;
-        // the share prices
         private TMP_Text _pTitle, _pName, _pDate, _pLegend;
         private readonly TMP_Text[] _pColumns = new TMP_Text[5];
 
@@ -135,7 +125,6 @@ namespace RealLifeOverhaul.Ledger
             return true;
         }
 
-        // Written now if the page is up, else opened (and written as it opens).
         private void Open()
         {
             if (Showing)
@@ -148,7 +137,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        /// <summary>A new edition was put together: written again if the page is open on the old one.</summary>
         public void Changed()
         {
             LedgerState state = _director.State;
@@ -387,7 +375,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The head of an inside page: the paper's name, the page's, the dateline.
         private void Folio(RectTransform p, out TMP_Text title, out TMP_Text name, out TMP_Text date)
         {
             title = Text(p, "Title", TextAlignmentOptions.TopLeft, FontStyles.Bold);
@@ -397,8 +384,7 @@ namespace RealLifeOverhaul.Ledger
             date = Text(p, "Dateline", TextAlignmentOptions.Top);
         }
 
-        // A text of the game's (the white box's line) lifted out of the box's layout, set in the paper's face and ink;
-        // placed and sized when the page is written.
+        // The white box's line lifted out of its layout, in the paper's face and ink; placed when the page is written.
         private TMP_Text Text(RectTransform parent, string name, TextAlignmentOptions align, FontStyles style = FontStyles.Normal)
         {
             TMP_Text t = _shell.Box.Line(string.Empty, parent);
@@ -462,14 +448,12 @@ namespace RealLifeOverhaul.Ledger
             return 1 + Mathf.Max(0, Mathf.RoundToInt((h - (_asc + _desc) * size) / Mathf.Max(0.01f, Advance(size, lineSpacing))));
         }
 
-        // How tall a text is at a width (its font size set first).
         private static float Tall(TMP_Text t, string words, float width)
         {
             return t.GetPreferredValues(words, Mathf.Max(1f, width), 0f).y;
         }
 
-        // The face's measures, from its own figures and the widths of a few signs: once per page built, when a page is
-        // first shown (with a text of that page, which is awake by then).
+        // The face's measures, once per page built, when a page is first shown (with one of its texts, awake by then).
         private void MeasureFace(TMP_Text t)
         {
             if (_measured || t == null)
@@ -522,8 +506,7 @@ namespace RealLifeOverhaul.Ledger
             return Mathf.Max(1f, 1f / Mathf.Max(0.05f, scale));
         }
 
-        // The sheet's room: over the white box and the table together, from under the tabs to the foot of the table.
-        // False while there is no room at all.
+        // The sheet's room over the white box and the table, under the tabs; false while there is no room at all.
         private bool Bounds(out float x0, out float y0, out float x1, out float y1)
         {
             Rect left = Local(_left), right = Local(_right), tabs = Local(_tabs), list = Local(_list);

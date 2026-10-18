@@ -3,10 +3,7 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ledger
 {
-    /// <summary>
-    /// Moves Newsstand's page towards where the wheel wants it, on the real clock (the game stands still under the
-    /// phone). The cost: enabled only while it moves, nothing per frame otherwise; nothing is allocated.
-    /// </summary>
+    /// <summary>Eases Newsstand's page to where the wheel wants it on the real clock. The cost: enabled only while it moves.</summary>
     public sealed class NewsstandGlide : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "NewsstandGlide", typeof(NewsstandGlide));
@@ -29,7 +26,6 @@ namespace RealLifeOverhaul.Ledger
             enabled = true;
         }
 
-        /// <summary>To the top at once.</summary>
         public void Top()
         {
             Stop();

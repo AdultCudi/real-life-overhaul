@@ -9,15 +9,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The newspaper kiosks near the player's home: two modelled <c>newspaper_kiosk</c>s on the pavement, back to a
-    /// wall a few metres aside from a door (CitySpots.Shopfront, as the help-wanted boards are placed), within a few
-    /// minutes' walk. They are looked for once for each home, a few buildings a second, and their places kept in the
-    /// save. At the counter the game's panel over a place (GameUi.WorldPanel) sells today's paper on the interact key;
-    /// near the player on foot the booth is cut out of the navigation mesh (SolidFootprint). On the city map each is a
-    /// place (World/MapLinks).
-    /// The cost: once a second, a distance to each kiosk and, during a search, three buildings looked at (a few dozen
-    /// physics and navigation queries); per frame nothing unless the player was within 15 m of a kiosk at the last
-    /// look, then the distance to two counters and the panel kept up to date. Nothing is allocated per frame.
+    /// The two newspaper kiosks near the player's home, against a wall on the pavement (CitySpots.Shopfront), found
+    /// once for each home and kept in the save. The cost: once a second a distance to each (and three buildings in a
+    /// search); per frame nothing unless the player is near one, then the counter's panel, with nothing allocated.
     /// </summary>
     public sealed class LedgerKiosks
     {
@@ -66,10 +60,7 @@ namespace RealLifeOverhaul.Ledger
             _onUse = Use;
         }
 
-        /// <summary>
-        /// True while the counter's panel sells or shows the paper on the interact key, and in the frame it was
-        /// pressed; a shut kiosk leaves the key to the doors nearby.
-        /// </summary>
+        /// <summary>True while the counter's panel sells or shows the paper on the interact key, and in the frame it was pressed.</summary>
         public bool TakesInteractKey => (_offer >= 2 && _panel.Showing) || _keyFrame == Time.frameCount;
 
         public int Count => _props.Count;
@@ -197,7 +188,8 @@ namespace RealLifeOverhaul.Ledger
                 if (_offer < 0 && Meta.Dev.Verbose)
                 {
                     LedgerDirector.Logger?.Info("City Ledger check (kiosk counter): the player is " + Mathf.Sqrt(CitySpots.Flat(_fronts[kiosk] - player)).ToString("F1", CultureInfo.InvariantCulture)
-                                                + " m from the counter (offered within " + Reach.ToString("F1", CultureInfo.InvariantCulture) + " m); it offers " + (offer == 0 ? "nothing (shut)" : offer == 1 ? "nothing (not in yet)"
+                                                + " m from the counter (offered within " + Reach.ToString("F1", CultureInfo.InvariantCulture) + " m); it offers "
+                                                + (offer == 0 ? "nothing (shut)" : offer == 1 ? "nothing (not in yet)"
                                                 : offer == 3 ? "the copy bought" : offer == 4 ? "the paper, but there is not the money" : "today's paper") + ": PASS.");
                 }
                 _offer = offer;
@@ -244,7 +236,6 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The panel's button, on the game's interact key or a click.
         private void Use()
         {
             _keyFrame = Time.frameCount;   // the key that pressed the button does nothing else this frame
@@ -307,7 +298,6 @@ namespace RealLifeOverhaul.Ledger
             _candidates.Clear();
         }
 
-        // The city's buildings round the home's door, the nearest first.
         private bool Candidates(CityManager city, BuildingRegistration home)
         {
             CityBuildingController own = city.FindCityBuildingController(home.Address);
@@ -336,7 +326,6 @@ namespace RealLifeOverhaul.Ledger
             return true;
         }
 
-        // A building into the candidates, kept by distance, the nearest first and at most so many.
         private void Candidate(CityBuildingController b, float sqr, int most)
         {
             int place = _distances.Count;
@@ -424,8 +413,7 @@ namespace RealLifeOverhaul.Ledger
             return false;
         }
 
-        // The booth's footprint: its front on the pavement, its back on level ground, nothing standing in it (a lamp
-        // post, a bench), no door within reach, and nothing overhead where its roof will be (an awning, a balcony).
+        // Its front on the pavement, its back on level ground, nothing in it, no door near and nothing overhead.
         private static bool Fits(Vector3 middle, Vector3 outward, float ground)
         {
             Vector3 right = Vector3.Cross(Vector3.up, outward);
@@ -455,8 +443,7 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;
             }
-            // A kept place whose counter is no longer on the pavement (the city changed) starts a new search; asked
-            // only once the walkways can be found at the home's door, or nothing would seem to be on them.
+            // A kept place whose counter is off the pavement now starts a new search, once the walkways can be asked.
             for (int i = 0; i < state.Kiosks.Count && WalkwaysThere(); i++)
             {
                 KioskSpot k = state.Kiosks[i];
@@ -477,7 +464,6 @@ namespace RealLifeOverhaul.Ledger
             Stamp++;
         }
 
-        // One kiosk standing at its place, with its footprint, its counter and the building behind it.
         private Transform Add(KioskSpot k, Mesh mesh, Material material)
         {
             if (_root == null)
@@ -523,10 +509,7 @@ namespace RealLifeOverhaul.Ledger
             _names.RemoveAt(i);
         }
 
-        /// <summary>
-        /// A kiosk on the nearest shopfront round a place, at once, not kept in the save. False if none fits; metres is
-        /// how far was looked.
-        /// </summary>
+        /// <summary>A kiosk on the nearest shopfront round a place, not kept in the save; false if none fits within metres.</summary>
         public bool TestHere(Vector3 at, out float metres)
         {
             metres = 70f;

@@ -5,10 +5,7 @@ namespace RealLifeOverhaul.Ledger
     /// <summary>Where a piece of the paper goes. Saved as a number: a new section goes at the end.</summary>
     public enum LedgerSection { City = 0, Economy, Business, Markets, Weather, People, AroundTown, Count }
 
-    /// <summary>
-    /// One piece of an edition, a story or a brief: a locale key and the names that fill it, written out in the
-    /// language of the moment, with the key of the paper's own headline where it has one. Game-free.
-    /// </summary>
+    /// <summary>One piece of an edition: a locale key and the names that fill it, written out in the language of the moment. Game-free.</summary>
     public sealed class LedgerPiece
     {
         public static readonly string[] NoData = new string[0];
@@ -32,7 +29,6 @@ namespace RealLifeOverhaul.Ledger
             Data = data ?? NoData;
         }
 
-        /// <summary>The value of one of its names, or null.</summary>
         public string Value(string name)
         {
             for (int i = 0; i + 1 < Data.Length; i += 2)
@@ -68,10 +64,7 @@ namespace RealLifeOverhaul.Ledger
         public int ChangeBp;
     }
 
-    /// <summary>
-    /// The paper of one morning, written once when the city's paper is out and read as often as the player likes until
-    /// the next: its pieces, the market's figures at the close before, and the economy's. Game-free.
-    /// </summary>
+    /// <summary>The paper of one morning: its pieces, the market's figures at the close before, and the economy's. Game-free.</summary>
     public sealed class LedgerEdition
     {
         public int Day;
