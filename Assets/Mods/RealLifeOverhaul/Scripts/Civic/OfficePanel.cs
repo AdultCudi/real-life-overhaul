@@ -8,12 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The screen of a scene of the player's run or office (a door, a rally, the debate, result night, a council meeting),
-    /// told as Standing tells the night show: the game's own list window (<see cref="TravelList"/> through a
-    /// <see cref="DeskList"/>), the place and who speaks under the headline, what is said as a note, and an entry with a
-    /// button for each answer, what it means under its name. It cannot be put away with the cancel key until the scene is
-    /// over and the player stands still for it. Nothing is drawn by the mod and nothing runs per frame: a page is written
-    /// once when it is shown, and the director looks once a second whether the window is still there.
+    /// The screen of a scene of the player's run or office in the game's own list window (<see cref="TravelList"/> through a
+    /// <see cref="DeskList"/>): what is said, and a button for each answer; the player stands still for it. Nothing per frame.
     /// </summary>
     internal sealed class OfficePanel
     {

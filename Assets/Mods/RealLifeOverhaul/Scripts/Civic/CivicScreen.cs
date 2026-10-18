@@ -8,14 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What civic life puts on screen, as the game's own interface (nothing is drawn by the mod): the polling station, the
-    /// campaign canvasser, the site notice and the canvassing shift's "offer a leaflet" are the game's panel over a place
-    /// (<see cref="DoorPanel"/>) with one button, which the game labels with the player's key and runs on that key or a click;
-    /// the canvassing shift's figures (leaflets taken, seconds left) are the headline and first line of a copy of the game's job
-    /// panel (<see cref="ShiftCard"/>). Without that copy the figures are sent as a notification each time they change.
-    ///
-    /// The cost: nothing per frame. The director offers a prompt once a second (five times a second during a shift); the panel and
-    /// the card are told only what changed and rebuild their words only when they do.
+    /// What civic life puts on screen, as the game's own interface: prompts in the game's panel over a place (<see cref="DoorPanel"/>),
+    /// and a canvassing shift's figures in a copy of the game's job panel (<see cref="ShiftCard"/>). Cost: nothing per frame.
     /// </summary>
     public sealed class CivicScreen
     {

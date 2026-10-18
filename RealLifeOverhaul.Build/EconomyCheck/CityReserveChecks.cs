@@ -169,7 +169,7 @@ internal static partial class Program
         Check(court.Contains("SpecialBuildings.Players(building)") && host.Contains("SpecialBuildings.Players(b)"), "player's buildings: the courthouse and City Utilities never choose a player's building");
         // A bare reservation is not the mod being there: a career job at a business in a kept office (Barbosa Studios at
         // 17 7th Street) has the game's own desk, and only a building a feature is in counts (SpecialBuildings.Filed).
-        string desk = Read(@"Careers\CareersDirector.Desk.cs"), civic = Read(@"Civic\CivicDirector.cs");
+        string desk = Read(@"Careers\CareersDirector.Desk.cs"), civic = Read(@"Civic\CivicDirector.cs") + Read(@"Civic\CivicDirector.Street.cs");
         Check(!desk.Contains("SpecialBuildings.Holds(") && CampusCount(desk, "SpecialBuildings.Filed(j.Post.Street, j.Post.Number)") == 2
               && !civic.Contains("SpecialBuildings.Holds(") && civic.Contains("SpecialBuildings.Filed(building)"),
             "kept offices: a career's desk and the canvasser's door knock ask whether a feature is in a building, never whether one is only reserved");

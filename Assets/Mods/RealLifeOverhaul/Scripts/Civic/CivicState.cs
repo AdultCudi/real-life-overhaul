@@ -12,7 +12,7 @@ namespace RealLifeOverhaul
         public int Look;                 // a seed for how they look, should a character ever be dressed as them
         public int Lead;                 // the issue they lead on (an Issue)
         public bool Incumbent;
-        public bool Player;              // the player themselves (Civic/CivicOffice): named by the game, never saved in the candidate's own fields
+        public bool Player;              // the player (CivicOffice): named by the game, never saved in these fields
         public readonly int[] Platform = new int[4];   // indices into CivicCatalogue.All; -1 for none
         public int Planks;
 
@@ -57,6 +57,7 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>Where the election cycle stands.</summary>
     public enum ElectionPhase { None, Campaign, Counted }
 
     /// <summary>A change to one lever that has been decided and comes in on a day.</summary>
@@ -65,11 +66,7 @@ namespace RealLifeOverhaul
         public int Lever, Position, Day;
     }
 
-    /// <summary>
-    /// The city's government in one save: mayor, council, where every lever stands, the election
-    /// in progress, what the player has done in it, approval, the petition and the weekly account.
-    /// All of it is data; nothing here touches the game. Kept as one line of text in modData.
-    /// </summary>
+    /// <summary>The city's government in one save, game-free: mayor, council, levers, the election, approval, the petition and the weekly account.</summary>
     public sealed class GovState
     {
         public const int Version = 1;
@@ -86,7 +83,6 @@ namespace RealLifeOverhaul
         public readonly int[] Levers = new int[CivicCatalogue.Levers];          // -1, 0, 1: as applied now
         public readonly List<PendingChange> Pending = new List<PendingChange>(8);
 
-        // ---- the election
         public int Number;                        // elections held so far
         public int ElectionDay;                   // the next (or current) election day
         public ElectionPhase Phase;
@@ -105,14 +101,13 @@ namespace RealLifeOverhaul
         public int Winner = -1;                   // of the election last counted
         public readonly float[] Final = new float[CivicCatalogue.MaxCandidates];      // its city-wide shares
         public int Turnout;                       // votes cast in it
-        public readonly int[] OthersVotes = new int[CivicCatalogue.MaxCandidates];   // the other players' ballots in a Going Public session (Civic/CivicShare)
-        public int VotesCast;                     // elections the player has voted in, ever (for Permadeath's obituary)
-        public int PlayerSlot = -1;               // the candidate who is the player in this election (Civic/CivicOffice); -1 for none
+        public readonly int[] OthersVotes = new int[CivicCatalogue.MaxCandidates];   // the other players' ballots in a Going Public session
+        public int VotesCast;                     // elections the player has voted in, ever (for the obituary)
+        public int PlayerSlot = -1;               // the player's candidate slot in this election; -1 for none
         public bool MayorIsPlayer;                // the mayor in office is the player
-        public readonly float[] DistrictShares = new float[CivicCatalogue.MaxDistricts * CivicCatalogue.MaxCandidates];   // the count's shares in each district, by district then candidate
+        public readonly float[] DistrictShares = new float[CivicCatalogue.MaxDistricts * CivicCatalogue.MaxCandidates];   // the count's shares, by district then candidate
         public int DistrictsCounted;              // districts the count above has
 
-        // ---- between elections
         public int Favours;                       // faster permits owed to the player for donating to the winner
         public float CrimeHeat;                   // recent crime near the player, decaying a day at a time
         public float CrashHeat;                   // recent traffic accidents, likewise
@@ -125,7 +120,7 @@ namespace RealLifeOverhaul
         public int PetitionRest;                  // no new petition before this day
         public int NextCouncilVote;
 
-        // ---- the weekly account (what has run up since the last settlement)
+        // The weekly account: what has run up since the last settlement.
         public int SettleDay;
         public float OwedTax, OwedTrade;          // from each day's sales
         public int SeenDay;                       // the day the three sums below are of
@@ -193,10 +188,19 @@ namespace RealLifeOverhaul
             w.Int(Version).Int(Seed).Int(FirstDay).Long(LastHour);
             WriteCandidate(w, Mayor);
             w.Int(TermStart).Float(Approval).Int(LowDays);
-            for (int i = 0; i < Council.Length; i++) w.Int(Council[i]);
-            for (int i = 0; i < Levers.Length; i++) w.Int(Levers[i]);
+            for (int i = 0; i < Council.Length; i++)
+            {
+                w.Int(Council[i]);
+            }
+            for (int i = 0; i < Levers.Length; i++)
+            {
+                w.Int(Levers[i]);
+            }
             w.Int(Pending.Count);
-            for (int i = 0; i < Pending.Count; i++) w.Int(Pending[i].Lever).Int(Pending[i].Position).Int(Pending[i].Day);
+            for (int i = 0; i < Pending.Count; i++)
+            {
+                w.Int(Pending[i].Lever).Int(Pending[i].Position).Int(Pending[i].Day);
+            }
             w.Int(Number).Int(ElectionDay).Int((int)Phase).Bool(Recall).Int(CandidateCount);
             for (int i = 0; i < Candidates.Length; i++)
             {
@@ -207,14 +211,21 @@ namespace RealLifeOverhaul
             w.Int(Favours).Float(CrimeHeat).Float(CrashHeat);
             w.Int(PetitionPolicy).Int(PetitionSigned).Int(PetitionNeeded).Int(PetitionEnds).Bool(PetitionMine).Bool(PetitionISigned).Int(PetitionRest).Int(NextCouncilVote);
             w.Int(SettleDay).Float(OwedTax).Float(OwedTrade).Int(SeenDay).Float(SeenFines).Float(SeenRides).Int(SeenTickets);
-            for (int i = 0; i < OthersVotes.Length; i++) w.Int(OthersVotes[i]);   // (added with the shared city, at the end: an older line has none)
-            w.Int(VotesCast);   // (added with Permadeath, after them: an older line has none, and counts from nought)
-            w.Int(PlayerSlot).Bool(MayorIsPlayer).Int(DistrictsCounted);   // (added with running for office, after it: an older line has none)
-            for (int i = 0; i < DistrictsCounted * CivicCatalogue.MaxCandidates; i++) w.Float(DistrictShares[i]);
+            // Fields added later, at the end in this order: an older line stops before them.
+            for (int i = 0; i < OthersVotes.Length; i++)
+            {
+                w.Int(OthersVotes[i]);
+            }
+            w.Int(VotesCast);
+            w.Int(PlayerSlot).Bool(MayorIsPlayer).Int(DistrictsCounted);
+            for (int i = 0; i < DistrictsCounted * CivicCatalogue.MaxCandidates; i++)
+            {
+                w.Float(DistrictShares[i]);
+            }
             return w.ToString();
         }
 
-        /// <summary>False (and the state untouched in any way that matters: the caller starts afresh) if the text is not a state of this version.</summary>
+        /// <summary>False if the text is not a state of this version: the caller starts afresh.</summary>
         public bool Read(string text)
         {
             try
@@ -231,8 +242,14 @@ namespace RealLifeOverhaul
                 TermStart = r.Int();
                 Approval = Clamp(r.Float(), 0f, 100f);
                 LowDays = r.Int();
-                for (int i = 0; i < Council.Length; i++) Council[i] = r.Int();
-                for (int i = 0; i < Levers.Length; i++) Levers[i] = Math.Sign(r.Int());
+                for (int i = 0; i < Council.Length; i++)
+                {
+                    Council[i] = r.Int();
+                }
+                for (int i = 0; i < Levers.Length; i++)
+                {
+                    Levers[i] = Math.Sign(r.Int());
+                }
                 Pending.Clear();
                 int pending = Math.Min(r.Int(), 32);
                 for (int i = 0; i < pending; i++)
@@ -298,9 +315,15 @@ namespace RealLifeOverhaul
                     PlayerSlot = slot >= 0 && slot < CandidateCount ? slot : -1;
                     MayorIsPlayer = r.Bool();
                     DistrictsCounted = Math.Max(0, Math.Min(CivicCatalogue.MaxDistricts, r.Int()));
-                    for (int i = 0; i < DistrictsCounted * CivicCatalogue.MaxCandidates; i++) DistrictShares[i] = Clamp(r.Float(), 0f, 1f);
+                    for (int i = 0; i < DistrictsCounted * CivicCatalogue.MaxCandidates; i++)
+                    {
+                        DistrictShares[i] = Clamp(r.Float(), 0f, 1f);
+                    }
                 }
-                for (int i = 0; i < Candidates.Length; i++) Candidates[i].Player = i == PlayerSlot;
+                for (int i = 0; i < Candidates.Length; i++)
+                {
+                    Candidates[i].Player = i == PlayerSlot;
+                }
                 Mayor.Player = MayorIsPlayer;
                 if (PetitionPolicy >= CivicCatalogue.All.Length)
                 {
@@ -314,17 +337,20 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static void WriteCandidate(CivicWriter w, Candidate c)
+        internal static void WriteCandidate(CivicWriter w, Candidate c)
         {
             w.Int(c.First).Int(c.Last).Int(c.Party).Int(c.Slogan).Int(c.Look).Int(c.Lead).Bool(c.Incumbent).Int(c.Planks);
-            for (int i = 0; i < c.Platform.Length; i++) w.Int(c.Platform[i]);
+            for (int i = 0; i < c.Platform.Length; i++)
+            {
+                w.Int(c.Platform[i]);
+            }
         }
 
         internal static void ReadCandidate(CivicReader r, Candidate c)
         {
             c.First = Wrap(r.Int(), CivicCatalogue.FirstNames.Length);
             c.Last = Wrap(r.Int(), CivicCatalogue.LastNames.Length);
-            c.Party = Wrap(r.Int(), CivicCatalogue.Parties.Length + 1);   // (the last is the independent: Civic/CivicCatalogue.Independent)
+            c.Party = Wrap(r.Int(), CivicCatalogue.Parties.Length + 1);   // the last is the independent
             c.Slogan = Wrap(r.Int(), CivicCatalogue.Slogans.Length);
             c.Look = r.Int();
             c.Lead = Wrap(r.Int(), CivicCatalogue.Issues);
@@ -348,11 +374,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// One construction site, as data. Where it is is the building it was started at (its
-    /// address, for the notice) and a point in front of that building's door; what is stood in
-    /// the street is worked out from that point when the player is near (SiteDresser), never saved.
-    /// </summary>
+    /// <summary>One construction site as data: its building and a point before its door. What stands in the street for it is never saved.</summary>
     public sealed class SiteState
     {
         public int Id;
@@ -541,6 +563,7 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>Reads a line <see cref="CivicWriter"/> wrote, field by field; a missing or bad field sets <see cref="Failed"/>.</summary>
     public sealed class CivicReader
     {
         private readonly string[] _fields;

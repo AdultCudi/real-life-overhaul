@@ -13,45 +13,39 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The city's government and building sites in a Going Public session (Core/SharedCity, parts G and W): what of
-    /// <see cref="GovState"/> and <see cref="WorksState"/> is the city's, and how a guest's state takes the host's.
-    /// Game-free (RealLifeOverhaul.Build/EconomyCheck).
-    ///
-    /// The city's government: the mayor and the council, every lever and what is on its way, the election (its
-    /// calendar, phase, candidates, polls, the momentum every player's doings have given each candidate, the count),
-    /// approval and how long it has been low, the heat of crime and accidents, the petition (what it asks, how many have
-    /// signed, by when) and the council's calendar. The player's own: what they gave each candidate, whom they endorsed,
-    /// canvassed for and saw at a rally, their ballot, the scandal of their own record, the favours they are owed, whether
-    /// the petition is theirs and whether they have signed it, and the weekly account of taxes and fines. The votes of
-    /// the other players are the city's too (<see cref="GovState.OthersVotes"/>): a guest's ballot is counted in the
-    /// host's election.
-    ///
-    /// The city's sites: every site of the programme, with its progress, complaints and stops. The player's own: the refit
-    /// of their own shopfront (a guest's runs on its own machine, with an id from <see cref="OwnSites"/> up so that it
-    /// never meets one of the host's), when their shopfront was last refitted, and which sites are next door to them.
+    /// The city's government and building sites in a Going Public session (parts G and W of Core/SharedCity): what of
+    /// <see cref="GovState"/> and <see cref="WorksState"/> is the city's, and how a guest's state takes the host's while
+    /// keeping the player's own part and refit (ids from <see cref="OwnSites"/> up). Game-free.
     /// </summary>
     public static class CivicShare
     {
         public const int Version = 1;
         public const int OwnSites = 1000000;   // a guest's own sites while it follows the host's programme have ids from here
 
-        // ---------------------------------------------------------------- the government
-
         /// <summary>The city's part of the government, as a line. The host's own ballot is written among the other players' votes.</summary>
         public static string WriteGov(GovState s)
         {
             var w = new CivicWriter();
             w.Int(Version).Int(s.Seed).Int(s.FirstDay).Long(s.LastHour);
-            Candidate(w, s.Mayor);
+            GovState.WriteCandidate(w, s.Mayor);
             w.Int(s.TermStart).Float(s.Approval).Int(s.LowDays);
-            for (int i = 0; i < s.Council.Length; i++) w.Int(s.Council[i]);
-            for (int i = 0; i < s.Levers.Length; i++) w.Int(s.Levers[i]);
+            for (int i = 0; i < s.Council.Length; i++)
+            {
+                w.Int(s.Council[i]);
+            }
+            for (int i = 0; i < s.Levers.Length; i++)
+            {
+                w.Int(s.Levers[i]);
+            }
             w.Int(s.Pending.Count);
-            for (int i = 0; i < s.Pending.Count; i++) w.Int(s.Pending[i].Lever).Int(s.Pending[i].Position).Int(s.Pending[i].Day);
+            for (int i = 0; i < s.Pending.Count; i++)
+            {
+                w.Int(s.Pending[i].Lever).Int(s.Pending[i].Position).Int(s.Pending[i].Day);
+            }
             w.Int(s.Number).Int(s.ElectionDay).Int((int)s.Phase).Bool(s.Recall).Int(s.CandidateCount);
             for (int i = 0; i < s.Candidates.Length; i++)
             {
-                Candidate(w, s.Candidates[i]);
+                GovState.WriteCandidate(w, s.Candidates[i]);
                 w.Float(s.Polls[i]).Float(s.Momentum[i]).Float(s.Final[i]).Int(s.OthersVotes[i] + (s.Voted == i ? 1 : 0));
             }
             w.Bool(s.DebateHeld).Int(s.Winner).Int(s.Turnout).Float(s.CrimeHeat).Float(s.CrashHeat);
@@ -59,10 +53,7 @@ namespace RealLifeOverhaul
             return w.ToString();
         }
 
-        /// <summary>
-        /// The host's line applied to a guest's state: the city's part is the host's, the player's own is kept (and what
-        /// the player did in an election that is over is put away). False, and nothing changed, for a line that cannot be read.
-        /// </summary>
+        /// <summary>The host's line applied to a guest's state: the city's part taken, the player's own kept. False, and nothing changed, for a line that cannot be read.</summary>
         public static bool ApplyGov(GovState mine, string text, out GovChange change)
         {
             change = default(GovChange);
@@ -114,7 +105,7 @@ namespace RealLifeOverhaul
             mine.Phase = host.Phase;
             mine.Recall = host.Recall;
             mine.CandidateCount = host.CandidateCount;
-            mine.PlayerSlot = -1;          // (nobody on a guest stands: Civic/CivicOffice is not offered in a session)
+            mine.PlayerSlot = -1;          // nobody on a guest stands: running for office is not offered in a session
             mine.DistrictsCounted = 0;     // the host's district shares are not sent: a guest's district pages divide the city's result itself
             for (int i = 0; i < mine.Candidates.Length; i++)
             {
@@ -122,7 +113,7 @@ namespace RealLifeOverhaul
                 mine.Polls[i] = host.Polls[i];
                 mine.Momentum[i] = host.Momentum[i];
                 mine.Final[i] = host.Final[i];
-                mine.OthersVotes[i] = Math.Max(0, votes[i] - (mine.Voted == i ? 1 : 0));   // (every player's ballot but this one's)
+                mine.OthersVotes[i] = Math.Max(0, votes[i] - (mine.Voted == i ? 1 : 0));   // every player's ballot but this one's
             }
             mine.DebateHeld = host.DebateHeld;
             mine.Winner = host.Winner;
@@ -158,8 +149,14 @@ namespace RealLifeOverhaul
                 s.TermStart = r.Int();
                 s.Approval = Math.Max(0f, Math.Min(100f, r.Float()));
                 s.LowDays = r.Int();
-                for (int i = 0; i < s.Council.Length; i++) s.Council[i] = r.Int();
-                for (int i = 0; i < s.Levers.Length; i++) s.Levers[i] = Math.Sign(r.Int());
+                for (int i = 0; i < s.Council.Length; i++)
+                {
+                    s.Council[i] = r.Int();
+                }
+                for (int i = 0; i < s.Levers.Length; i++)
+                {
+                    s.Levers[i] = Math.Sign(r.Int());
+                }
                 int pending = r.Int();
                 if (pending < 0 || pending > 32)
                 {
@@ -237,14 +234,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static void Candidate(CivicWriter w, Candidate c)
-        {
-            w.Int(c.First).Int(c.Last).Int(c.Party).Int(c.Slogan).Int(c.Look).Int(c.Lead).Bool(c.Incumbent).Int(c.Planks);
-            for (int i = 0; i < c.Platform.Length; i++) w.Int(c.Platform[i]);
-        }
-
-        // ---------------------------------------------------------------- the building sites
-
         /// <summary>The city's programme, as a line: every site, none of them anybody's own.</summary>
         public static string WriteWorks(WorksState s)
         {
@@ -254,7 +243,7 @@ namespace RealLifeOverhaul
             {
                 SiteState site = s.Sites[i];
                 bool mine = site.Mine;
-                site.Mine = false;   // (the host's own refit is a site of the city's to everybody else)
+                site.Mine = false;   // the host's own refit is the city's to everybody else
                 site.Write(w);
                 site.Mine = mine;
             }
@@ -300,11 +289,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            int own = OwnSites;
-            for (int i = 0; i < mine.Sites.Count; i++)
-            {
-                own = Math.Max(own, mine.Sites[i].Id + 1);
-            }
+            int own = NextOwnId(mine);
             // The guest's own refit keeps an id the host's programme never gives; a site of the host's that the guest already has
             // is the same object, changed in place (what stands in the street for it stays up); the rest go, or come.
             for (int i = mine.Sites.Count - 1; i >= 0; i--)
