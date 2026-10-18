@@ -1,4 +1,7 @@
-0.32.5
+0.33.0
 
 Fixed
-- When your internet provider has an outage, an online class, a working day from home or a video interview it keeps you from is no longer held against you. The class is excused and left out of your attendance, the day is excused like a sick day, and the interview moves to the next weekday.
+- A friend who cannot pay back a loan on the day now has the few more days they ask for before it is written off, and you are told if it is. A crime or crash reported while you are indoors is placed where it happened, so the City Ledger names the right street and the right district counts it. A favour asked in a call you missed no longer costs some of their affection when no text could follow it, and the people of a new game never include two personal trainers.
+- A board that cannot hire a new chief executive because your payroll is full keeps the one you have and warns you, instead of naming one who never joins. A pitch to a venture firm whose meeting never opens no longer uses up one of the raise's meetings, and an interview cut short when hiring is switched off no longer says it was held.
+- The bus stops are built behind the loading screen, so the street no longer stutters the first time you go back out.
+- In Going Public a guest's trades that push a price down reach the host whatever language either game is set to. The city's index no longer jumps when new companies join an older save's market, and a crash while the market's record is being written no longer loses it.
