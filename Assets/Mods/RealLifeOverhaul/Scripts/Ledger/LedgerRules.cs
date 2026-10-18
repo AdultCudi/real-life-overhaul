@@ -209,7 +209,8 @@ namespace RealLifeOverhaul.Ledger
 
         /// <summary>
         /// The morning's round, once a day when the paper is out. Mornings it did not come are never charged: the days
-        /// paid for move on by as many. When they run out, a cancelled one ends and any other pays a week or lapses.
+        /// paid for move on by as many of them as were paid for (none past the week's end), as Newsstand's do. When they
+        /// run out, a cancelled one ends and any other pays a week or lapses.
         /// </summary>
         public static LedgerMorning Morning(LedgerState s, int day, Func<bool> payWeek)
         {
@@ -217,9 +218,10 @@ namespace RealLifeOverhaul.Ledger
             {
                 return LedgerMorning.None;
             }
-            if (s.Subscribed && s.LastMorning > 0 && day > s.LastMorning + 1)
+            int missedPaid = s.Subscribed && s.LastMorning > 0 ? Math.Min(day - 1, s.PaidUntil) - s.LastMorning : 0;
+            if (missedPaid > 0)
             {
-                s.PaidUntil += day - s.LastMorning - 1;
+                s.PaidUntil += missedPaid;
             }
             s.LastMorning = day;
             if (!s.Subscribed)

@@ -108,12 +108,18 @@ namespace RealLifeOverhaul.Ledger
             _gaveUp = false;
         }
 
+        /// <summary>True when <see cref="Show"/> would open the page on the edition now: it is in the menu and no special front page is up.</summary>
+        public bool CanShow(LedgerEdition edition)
+        {
+            return _app != null && _app.Installed && edition != null && _special == null;   // a special page is never turned into the morning's under its reader
+        }
+
         /// <summary>Opens the page on an edition. False if the page could not be put in the menu.</summary>
         public bool Show(LedgerEdition edition, int from)
         {
-            if (_app == null || !_app.Installed || edition == null || _special != null)
+            if (!CanShow(edition))
             {
-                return false;   // a special front page is up: not turned into the morning's paper under its reader
+                return false;
             }
             if (!ReferenceEquals(edition, _edition))
             {

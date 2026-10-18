@@ -173,14 +173,32 @@ internal static partial class Program
         int before = charged;
         Check(LedgerRules.Morning(poor, 58, () => false) == LedgerMorning.Lapsed && !poor.Subscribed && charged == before, "a week that cannot be paid stops the subscription and delivers nothing");
 
-        // Mornings the round did not come are not charged: the days paid for move on by as many.
+        // Mornings the round did not come are not charged: the paid ones among them wait, the others were never paid for.
         var away = new LedgerState { LastMorning = 60 };
         LedgerRules.Start(away, 60, 12);   // days 61 to 67
         LedgerRules.Morning(away, 61, payWeek);
         LedgerRules.Morning(away, 62, payWeek);
         before = charged;
         LedgerMorning back = LedgerRules.Morning(away, 70, payWeek);   // days 63 to 69 went by at once
-        Check(back == LedgerMorning.Kept && away.PaidUntil == 74 && charged == before, "seven mornings missed: still paid for, to day 74, and nothing charged (" + back + ", " + away.PaidUntil + ")");
+        Check(back == LedgerMorning.Kept && away.PaidUntil == 72 && charged == before,
+            "seven mornings missed, five of them paid for: those five wait, to day 72, and nothing is charged (" + back + ", " + away.PaidUntil + ")");
+
+        // No home from day 9 to day 29 with the week paid to day 10: two paid mornings wait, the nineteen after are not given away.
+        var gone = new LedgerState { LastMorning = 3 };
+        LedgerRules.Start(gone, 3, 12);   // days 4 to 10
+        for (int day = 4; day <= 8; day++)
+        {
+            LedgerRules.Morning(gone, day, payWeek);
+        }
+        before = charged;
+        LedgerMorning home = LedgerRules.Morning(gone, 30, payWeek);
+        Check(home == LedgerMorning.Billed && charged == before + 1 && gone.PaidUntil == 36 && gone.Weeks == 2,
+            "back on day 30 after the paid days 9 and 10 waited to day 12: a week is paid for, to day 36 (" + home + ", " + gone.PaidUntil + ")");
+        var still = new LedgerState { LastMorning = 3 };
+        LedgerRules.Start(still, 3, 12);
+        LedgerRules.Morning(still, 8, payWeek);   // days 4 to 7 missed: all four paid for
+        Check(still.PaidUntil == 14 && LedgerRules.Morning(still, 12, payWeek) == LedgerMorning.Kept && still.PaidUntil == 17,
+            "mornings missed inside the paid week all wait: to day 14, then to 17 after three more (" + still.PaidUntil + ")");
 
         // Over a long stretch, exactly a week's payment for every seven papers.
         var year = new LedgerState { LastMorning = 100 };

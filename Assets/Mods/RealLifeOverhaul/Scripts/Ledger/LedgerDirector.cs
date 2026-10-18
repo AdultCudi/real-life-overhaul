@@ -592,6 +592,11 @@ namespace RealLifeOverhaul.Ledger
                 Notifications.Show(NotificationType.Info, LedgerRules.KioskOpen(save.Hour) ? "reallife_ledger_note_not_in" : "reallife_ledger_note_closed", null, 5f);
                 return false;
             }
+            if (_page == null || !_page.CanShow(_state.Edition))
+            {
+                Notifications.Show(NotificationType.Info, "reallife_ledger_note_no_page", null, 5f);   // nothing is sold that cannot be read
+                return false;
+            }
             if (!LedgerRules.BoughtCopy(_state))
             {
                 int price = CopyPrice;
@@ -603,8 +608,7 @@ namespace RealLifeOverhaul.Ledger
                 LedgerRules.Buy(_state, save.Day);
                 Logger?.Info("City Ledger: a copy of day " + save.Day + " bought at a kiosk (" + price + ").");
             }
-            Read(LedgerPage.FromKiosk);
-            return true;
+            return Read(LedgerPage.FromKiosk);
         }
 
         /// <summary>Opens the page on the latest edition (<paramref name="from"/>: LedgerPage's From values); false if there is none yet.</summary>
