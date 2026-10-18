@@ -83,7 +83,7 @@ Your saves and the mod's options are not in that folder, so they are kept.
 Each release lists the SHA-256 of its setup and its zip. To check yours, in PowerShell (with the name of the file you downloaded):
 
 ```
-Get-FileHash "$env:USERPROFILE\Downloads\RealLifeOverhaul-0.34.0-setup.exe" -Algorithm SHA256
+Get-FileHash "$env:USERPROFILE\Downloads\RealLifeOverhaul-0.35.0-setup.exe" -Algorithm SHA256
 ```
 
 The value must match the one on the release page. Only download the mod from the Workshop page or this repository's Releases.
