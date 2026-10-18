@@ -25,7 +25,6 @@ namespace RealLifeOverhaul.Markets
         private static readonly double[] PatchFade = Fade(PatchFadeYears);
         private static readonly double[] PriceFade = Fade(InflationFadeYears);
 
-        // How much of something that fades is left, on average over each year to come.
         private static double[] Fade(double years)
         {
             var f = new double[Horizon + 1];
@@ -39,8 +38,7 @@ namespace RealLifeOverhaul.Markets
 
         private static readonly double DebtYear = Math.Exp(-1.0 / MarketCatalogue.DebtRepriceYears), DebtHalfYear = Math.Exp(-0.5 / MarketCatalogue.DebtRepriceYears);
 
-        // How much of what is expected beyond the figures has come through in them, on average over each year to come (the
-        // last for the years after the horizon).
+        // How much of what is expected beyond the figures has come through in them by each year to come.
         private static readonly double[] OutlookShare = MakeOutlookShare();
 
         private static double[] MakeOutlookShare()
@@ -53,7 +51,6 @@ namespace RealLifeOverhaul.Markets
             return f;
         }
 
-        /// <summary>The bank rate a year as the market reads it.</summary>
         public static double BankRate(in MarketEnv env)
         {
             return env.RateBp / 10000.0;
@@ -79,13 +76,11 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(k, TerminalGrowth(s) + SpreadLeast);
         }
 
-        /// <summary>The chance a year that a company fails, by its distress.</summary>
         public static double Hazard(double distress)
         {
             return distress < MarketCatalogue.DistressFrom ? 0.0 : MarketCatalogue.DistressHazardMost * distress * distress;
         }
 
-        /// <summary>The share of the price holders lose on average when a company fails.</summary>
         public static double LossOnFailure(double distress)
         {
             return 1.0 - MarketCatalogue.RecoveryChance * MarketCatalogue.RecoveryMost * (1.0 - Clamp(distress, 0.0, 1.0)) * 0.5;
@@ -124,35 +119,29 @@ namespace RealLifeOverhaul.Markets
             return MarketCatalogue.CrisisSizeScale[(int)s.Size] * (MarketCatalogue.CrisisChanceYear * loss - MarketCatalogue.WindfallChanceYear * gain);
         }
 
-        /// <summary>The discount rate before the chance of failing: the cost of equity with what a bid, a crash or its own news may bring.</summary>
+        /// <summary>The discount rate before failing: the cost of equity with what a bid, a crash or its own news may bring.</summary>
         public static double Rate(Stock s, in MarketEnv env)
         {
             return CostOfEquity(s, env) - TakeoverYield(s) + CrashLoss(s, env) + OwnNewsLoss(s, env);
         }
 
-        /// <summary>
-        /// The share of profit paid out at a growth: what it does not need to keep back to grow. What it pays is what its
-        /// worth is made of, so nothing it earns is lost to its holders.
-        /// </summary>
+        /// <summary>The share of profit paid out at a growth: what it does not need to keep back to grow.</summary>
         public static double Payout(double growth)
         {
             return Clamp(1.0 - growth / MarketCatalogue.RoeLong, 0.0, 0.95);
         }
 
-        /// <summary>The share of profit paid out at a growth; a property trust's at least MarketCatalogue.TrustPayout.</summary>
         public static double PayoutOf(Stock s, double growth)
         {
             double payout = Payout(growth);
             return TrustRules.Is(s) ? Math.Max(MarketCatalogue.TrustPayout, payout) : payout;
         }
 
-        /// <summary>Growth a year as things stand, prices included: what the payout follows.</summary>
         public static double GrowthNow(Stock s, in MarketEnv env)
         {
             return s.Growth + env.InflationBp / 10000.0 * s.Def.PassPct / 100.0;
         }
 
-        /// <summary>Growth for ever after the horizon: the long run and the inflation target the company passes on.</summary>
         public static double TerminalGrowth(Stock s)
         {
             return MarketCatalogue.LongRealGrowth + TargetInflation * s.Def.PassPct / 100.0;
@@ -166,25 +155,21 @@ namespace RealLifeOverhaul.Markets
             return bp / 10000.0 + s.MarginShift;
         }
 
-        /// <summary>What the economy's state does to the margin now, as the market expects it to go on.</summary>
         public static double CycleMargin(Stock s, in MarketEnv env)
         {
             return MarketCatalogue.Expected(MarketCatalogue.CycleMarginBp, env.Cycle) * s.Def.Cyclical / 100.0 / 10000.0;
         }
 
-        /// <summary>What inflation the company cannot pass on takes from its margin, now.</summary>
         public static double InflationCost(Stock s, in MarketEnv env)
         {
             return (1.0 - s.Def.PassPct / 100.0) * Math.Max(0, env.InflationBp - 200) * 0.5 / 10000.0;
         }
 
-        /// <summary>The margin today before its own swings: usual, the cycle, the day's supply, less inflation it cannot pass on.</summary>
         public static double TargetMargin(Stock s, in MarketEnv env)
         {
             return UsualMargin(s, env) + CycleMargin(s, env) + MarketInputs.SupplyBp(env, s.Sector) / 10000.0 - InflationCost(s, env);
         }
 
-        /// <summary>The growth from the city now, the cycle and households' income, which fades within about a year.</summary>
         public static double CityGrowth(Stock s, in MarketEnv env)
         {
             double cycle = MarketCatalogue.Expected(MarketCatalogue.CycleGrowthBp, env.Cycle) * s.Def.Cyclical / 100.0 / 10000.0;
@@ -192,32 +177,24 @@ namespace RealLifeOverhaul.Markets
             return cycle + income;
         }
 
-        /// <summary>Profit after tax a year, in money, of the business at a margin.</summary>
         public static double Profit(Stock s, double margin, double tax)
         {
             double before = s.Rev * margin - s.Debt * s.DebtRate;
             return before > 0.0 ? before * (1.0 - tax) : before;
         }
 
-        /// <summary>Earnings a share a year as things stand, in money.</summary>
         public static double Earnings(Stock s, in MarketEnv env)
         {
             return s.Shares > 0 ? Profit(s, s.Margin, MarketInputs.TaxRate(env)) / s.Shares : 0.0;
         }
 
-        /// <summary>
-        /// One share's worth in money with the market's <see cref="Stock.Outlook"/>, before the dividend built up since the
-        /// last one (<see cref="MarketLife.Accrued"/>).
-        /// </summary>
+        /// <summary>One share's worth in money with its outlook, before the dividend built up since the last one.</summary>
         public static double Fair(Stock s, in MarketEnv env)
         {
             return Worth(s, env, s.Outlook);
         }
 
-        /// <summary>
-        /// One share's worth in money if the market expects so much beyond the figures (ln). Always more than nothing, and
-        /// higher the more is expected.
-        /// </summary>
+        /// <summary>One share's worth in money if the market expects so much beyond the figures (ln); always above nothing.</summary>
         public static double Worth(Stock s, in MarketEnv env, double outlook)
         {
             Terms terms = _worth ?? (_worth = new Terms());
@@ -246,7 +223,6 @@ namespace RealLifeOverhaul.Markets
             private double _floorEach;                                  // the floor: 3% of turnover a share
             private bool _none;                                         // no shares: worth a cent
 
-        /// <summary>Everything the worth is made of but the expectation, for this company and city now.</summary>
             public void Fill(Stock s, in MarketEnv env)
             {
                 _none = s.Shares <= 0;
@@ -297,7 +273,7 @@ namespace RealLifeOverhaul.Markets
                 _floorEach = 0.03 * s.Rev / s.Shares;
             }
 
-        /// <summary>One share's worth in money at an expectation (ln), for the company and city last filled.</summary>
+        /// <summary>One share's worth at an expectation (ln), for the company and city last filled.</summary>
             public double Worth(double outlook)
             {
                 if (_none)
@@ -329,10 +305,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>
-        /// The expectation (ln) at which a share is worth so much, by the secant rule from <paramref name="from"/> (the worth
-        /// only grows with the expectation), within -8 and 8.
-        /// </summary>
+        /// <summary>The expectation (ln) at which a share is worth so much, by the secant rule from <paramref name="from"/>, within -8 and 8.</summary>
         public static double OutlookFor(Stock s, in MarketEnv env, double worth, double from)
         {
             if (!(worth > 0.0))
@@ -378,8 +351,7 @@ namespace RealLifeOverhaul.Markets
             return b;
         }
 
-        // The worth's parts: the usual margin, the patch that fades, the day's supply, inflation it cannot pass on; its debt
-        // on turnover now and as usual, and its cost now and as usual.
+        // The worth's parts: the usual margin, the patch that fades, the day's supply, inflation not passed on, and debt and its cost.
         private static void Paths(Stock s, in MarketEnv env, out double usual, out double patch, out double supply, out double cost, out double debtNow, out double debtUsual,
             out double rateNow, out double rateUsual)
         {
@@ -393,7 +365,7 @@ namespace RealLifeOverhaul.Markets
             rateUsual = UsualDebtRate(s, env);
         }
 
-        /// <summary>What a company's debt costs in its usual shape; its debt comes to cost this over time.</summary>
+        /// <summary>What a company's debt costs in its usual shape, which its debt comes to cost over time.</summary>
         public static double UsualDebtRate(Stock s, in MarketEnv env)
         {
             double debtUsual = s.Def.DebtPct / 100.0;
@@ -406,10 +378,7 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(1.0 + least, (1.0 + k) * Math.Exp(Hazard(distress) * LossOnFailure(distress)));
         }
 
-        /// <summary>
-        /// How near a company is to failing, 0 to 1, from interest it can hardly pay or losses it cannot carry over the year
-        /// to come, as the first year of its worth prices it.
-        /// </summary>
+        /// <summary>How near a company is to failing, 0 to 1, as the first year of its worth prices it.</summary>
         public static double DistressOf(Stock s, in MarketEnv env)
         {
             Paths(s, env, out double usual, out double patch, out double supply, out double cost, out double debtNow, out double debtUsual, out double rateNow, out double rateUsual);
@@ -430,7 +399,6 @@ namespace RealLifeOverhaul.Markets
             return Clamp(Math.Max(byCover * byCover, byLoss), 0.0, 1.0);
         }
 
-        /// <summary>What a company in distress pays on its debt over the bank rate.</summary>
         public static double CreditSpread(double distress)
         {
             return MarketCatalogue.CreditSpreadLeast + (MarketCatalogue.CreditSpreadMost - MarketCatalogue.CreditSpreadLeast) * distress;

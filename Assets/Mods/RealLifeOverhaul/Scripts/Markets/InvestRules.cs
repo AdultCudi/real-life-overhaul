@@ -82,9 +82,8 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// A large investor's portfolio by rule: what each holding is, what it pays over the next year, worked orders' slices
-    /// and day's money, and dividends put back. Game-free with no chance of its own, so the same on every machine. A look at
-    /// each holding when the Portfolio tab is written; nothing per frame.
+    /// A large investor's portfolio by rule: what each holding is and pays over the next year, worked orders' slices and
+    /// money, and dividends put back. No chance of its own, so the same on every machine; nothing per frame.
     /// </summary>
     public static class InvestRules
     {
@@ -111,13 +110,12 @@ namespace RealLifeOverhaul.Markets
             return kind >= HoldingKind.Treasury && kind < HoldingKind.Count;
         }
 
-        /// <summary>A share's income over the next year at its rate now, in cents: its quarterly dividend four times.</summary>
+        /// <summary>A share's income over the next year in cents: its quarterly dividend four times.</summary>
         public static long YearCentsOf(Stock s)
         {
             return s != null && s.Listed ? Math.Max(0, s.DpsCents) * 4L : 0L;
         }
 
-        /// <summary>A bond's interest over the next year before tax, in cents, at its face now.</summary>
         public static long YearInterestCents(BondHolding h, BondDef d, int day, int year)
         {
             if (h == null || d == null)
@@ -137,7 +135,6 @@ namespace RealLifeOverhaul.Markets
             return sum;
         }
 
-        /// <summary>The player's own listed company, or null.</summary>
         public static Stock Founder(MarketState s)
         {
             for (int i = 0; i < s.Stocks.Count; i++)
@@ -153,7 +150,7 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// Every holding in the Portfolio tab's order: the founder's stake, the player's shares, each bot's, then bonds. With
-        /// <paramref name="bondsOn"/> a bond set to roll over repays nothing at its end: its last payment is interest alone.
+        /// <paramref name="bondsOn"/> a bond set to roll over repays nothing at its end.
         /// </summary>
         public static void Holdings(MarketState s, int phase, List<PortfolioRow> into, bool bondsOn = true)
         {
@@ -238,8 +235,7 @@ namespace RealLifeOverhaul.Markets
             return h != null && h.Rollover && bondsOn;
         }
 
-        // A holding of shares' next payment: what is owed after its record day, else the dividend declared and not yet out of
-        // the price. None: Day 0.
+        // A holding's next payment: what is owed after its record day, else the dividend declared; none: Day 0.
         private static ComingPayment NextOf(MarketState s, Stock k, long shares, int firm)
         {
             long cents = 0;
@@ -261,7 +257,6 @@ namespace RealLifeOverhaul.Markets
             return day == 0 || cents == 0 ? default(ComingPayment) : new ComingPayment { Day = day, Cents = cents, Kind = KindOf(k), Stock = k.Id, Firm = firm };
         }
 
-        /// <summary>The holdings added up by kind: what is held, what shorts owe, the founder's stake apart.</summary>
         public static void Sums(List<PortfolioRow> rows, PortfolioSums into)
         {
             into.Clear();
@@ -343,9 +338,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// What the player holds on the market, in money: shares at the bid less shorts at the offer, the bots' shares, bonds
-        /// as sold now, the founder's stake, the margin account's own money and worked orders' money with the broker. A bot's
-        /// money is the player's cash already, so it is not counted.
+        /// What the player holds on the market, in money, shorts at the offer taken off. A bot's money is the player's cash
+        /// already, so it is not counted.
         /// </summary>
         public static long MarketWorth(MarketState s, int phase)
         {
@@ -380,10 +374,7 @@ namespace RealLifeOverhaul.Markets
             return worth;
         }
 
-        /// <summary>
-        /// Worked orders' money with the broker, in money: purchases' parked day of money and sales' takings due. It is out of
-        /// the cash in hand and in no holding meanwhile, so whatever counts what the player has counts it here.
-        /// </summary>
+        /// <summary>Worked orders' money with the broker: out of the cash in hand and in no holding, so counted here.</summary>
         public static long WithBroker(MarketState s, out long parked, out long due)
         {
             parked = due = 0L;
@@ -396,7 +387,7 @@ namespace RealLifeOverhaul.Markets
             return parked + due;
         }
 
-        /// <summary>Every worked order's money with the broker taken off it for the save tools to pay out in one sum; how much.</summary>
+        /// <summary>Every worked order's money with the broker taken off it for the save tools to pay out in one sum.</summary>
         public static long EmptyBroker(MarketState s, out long parked, out long due)
         {
             long all = WithBroker(s, out parked, out due);
@@ -408,7 +399,7 @@ namespace RealLifeOverhaul.Markets
             return all;
         }
 
-        /// <summary>A worked purchase's day of money: so many shares at a price with commission, and a tenth more for the day's moves.</summary>
+        /// <summary>A worked purchase's day of money: shares at a price with commission, and a tenth more for the day's moves.</summary>
         public static long DayPark(long qty, int cents, int least)
         {
             if (qty <= 0 || cents <= 0)
@@ -423,7 +414,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The most the game's money moves in one transaction: a float holds it exactly, where int.MaxValue rounds up.</summary>
         public const long PieceMost = 1L << 30;
 
-        /// <summary>The next piece, at most <see cref="PieceMost"/>, of a sum moved in pieces, taken off what is left.</summary>
+        /// <summary>The next piece, at most <see cref="PieceMost"/>, taken off what is left.</summary>
         public static long Piece(ref long left)
         {
             long piece = Math.Max(0L, Math.Min(left, PieceMost));
@@ -431,10 +422,7 @@ namespace RealLifeOverhaul.Markets
             return piece;
         }
 
-        /// <summary>
-        /// A worked order's slice at a step: what is left of it, never more than one order's share of the step's own trading,
-        /// so about one order's most a day. Nothing in a step that traded nothing.
-        /// </summary>
+        /// <summary>A worked order's slice at a step: at most one order's share of the step's own trading; nothing in a step with none.</summary>
         public static long Slice(long left, long stepVolume)
         {
             if (left <= 0 || stepVolume <= 0)
@@ -444,7 +432,6 @@ namespace RealLifeOverhaul.Markets
             return Math.Min(left, stepVolume * MarketCatalogue.OrderShareOfVolumePct / 100L);
         }
 
-        /// <summary>About how many market days a worked order takes at a company's usual volume; one at least.</summary>
         public static int MarketDays(long qty, double adv)
         {
             if (qty <= 0)
@@ -455,14 +442,14 @@ namespace RealLifeOverhaul.Markets
             return (int)Math.Max(1.0, Math.Min(100000.0, Math.Ceiling(qty / day)));
         }
 
-        /// <summary>What a dividend puts back: the share chosen of what is left after the tax withheld, as on a bond's interest.</summary>
+        /// <summary>The share chosen of what is left after the tax withheld, as on a bond's interest.</summary>
         public static long PutBack(long money, int taxStep, int pct)
         {
             long net = Math.Max(0L, money - ListingVotes.DividendTax(money, taxStep));
             return net * ReinvestOf(Math.Max(0, Math.Min(100, pct))) / 100L;
         }
 
-        /// <summary>The most shares so much money buys at a price with commission, never more than the money; 0 under one share.</summary>
+        /// <summary>The most shares so much money buys at a price with commission; 0 under one share.</summary>
         public static long SharesFor(long money, int cents, int least)
         {
             if (money <= 0 || cents <= 0)

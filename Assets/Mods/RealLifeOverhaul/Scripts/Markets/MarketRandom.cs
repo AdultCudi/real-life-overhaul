@@ -3,9 +3,8 @@ using System;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The market's numbers by chance. Game-free. Every draw is a hash of a secret and what it is for (purpose, step,
-    /// company), so the same secret gives the same market whatever order things are asked in. The secrets come from the
-    /// tape (<see cref="MarketTape"/>), a fresh one each market day.
+    /// The market's numbers by chance: every draw is a hash of a secret and what it is for, so the same secret gives the same
+    /// market whatever order things are asked in. The secrets come from the tape, a fresh one each market day.
     /// </summary>
     public static class MarketRandom
     {
@@ -44,7 +43,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>The key of one draw: a secret and up to three numbers saying what it is for.</summary>
         public static ulong Key(ulong secret, int purpose, int a, int b = 0)
         {
             unchecked
@@ -66,7 +64,7 @@ namespace RealLifeOverhaul.Markets
             return Unit(Key(secret, purpose, a, b));
         }
 
-        /// <summary>A whole number from 0 up to, not including, the count.</summary>
+        /// <summary>From 0 up to, not including, the count.</summary>
         public static int Below(ulong secret, int purpose, int a, int b, int count)
         {
             return count <= 1 ? 0 : (int)(Key(secret, purpose, a, b) % (ulong)count);
@@ -86,7 +84,6 @@ namespace RealLifeOverhaul.Markets
             return z * (tail ? MarketCatalogue.TailScale : MarketCatalogue.BodyScale) / FatSpread;
         }
 
-        /// <summary>The spread of the mixture before it is scaled to 1.</summary>
         public static readonly double FatSpread = Math.Sqrt((1.0 - MarketCatalogue.TailShare) * MarketCatalogue.BodyScale * MarketCatalogue.BodyScale
                                                             + MarketCatalogue.TailShare * MarketCatalogue.TailScale * MarketCatalogue.TailScale);
 

@@ -16,7 +16,6 @@ namespace RealLifeOverhaul.Markets
             public readonly List<double> Scores = new List<double>(160);
         }
 
-        // A company's daily closes, oldest first; how many.
         private static int Closes(Stock s, double[] into)
         {
             int n = Math.Min(s.Daily.Count, into.Length);
@@ -133,7 +132,6 @@ namespace RealLifeOverhaul.Markets
             return count;
         }
 
-        /// <summary>True on the first market day of a month, when the monthly strategies turn their holdings over.</summary>
         public static bool MonthTurns(int day, int year)
         {
             int before = day - 1;
@@ -145,9 +143,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// What a bot will do at the next session's first step, decided at a close or a hire while shut: holdings to sell by its
-        /// rule, then the best companies into the room it has, each for its size of its worth. After capital is added it first
-        /// buys more of what it keeps, once. Prices are reckoned now; the step's price decides.
+        /// What a bot will do at the next session's first step, decided at a close: holdings to sell by its rule, then the best
+        /// companies into the room it has; after capital is added, first more of what it keeps. The step's price decides.
         /// </summary>
         public static void Decide(MarketState state, Bot b, int day, int year, int least, Work w)
         {
@@ -162,7 +159,6 @@ namespace RealLifeOverhaul.Markets
             bool turn = f.Strategy == BotStrategy.Momentum || f.Strategy == BotStrategy.Income;
             bool rebalance = !turn || MonthTurns(MarketTrading.NextTradingDay(day), year) || b.Holdings.Count == 0;
             int slots = Slots(b);
-            // The best now, by the strategy's score.
             w.Ids.Clear();
             w.Scores.Clear();
             for (int i = 0; i < state.Stocks.Count; i++)
@@ -224,7 +220,6 @@ namespace RealLifeOverhaul.Markets
             {
                 return;   // a month's strategy buys new holdings at the month's turn; till then capital added goes into what it holds
             }
-            // Purchases into the room left.
             for (int i = 0; i < w.Ids.Count && kept < slots; i++)
             {
                 if (b.Holding(w.Ids[i]) != null)
@@ -247,8 +242,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // After capital is added: each holding it keeps bought up to its size of the larger worth, out of its money; returns
-        // the money left.
+        // After capital is added: each holding it keeps bought up to its size of the larger worth; returns the money left.
         private static long TopUpHeld(MarketState state, Bot b, int day, int year, int least, long target, long tradeLeast, long money)
         {
             int count = b.Holdings.Count;
@@ -278,7 +272,6 @@ namespace RealLifeOverhaul.Markets
             return money;
         }
 
-        // True when a bot has decided to sell a company.
         private static bool Selling(Bot b, int stockId)
         {
             for (int i = 0; i < b.Pending.Count; i++)

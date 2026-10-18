@@ -14,9 +14,9 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// A new market for a save. Game-free. Every catalogue company listed at the start and up to four of the game's named
-    /// rivals' holdings, at the city's price level, each with a made-up history; a company brought over keeps its price and
-    /// closes. The index and every sector start at 1,000. Seeded by the playthrough and the day, so it is the same twice.
+    /// A new market for a save: every catalogue company listed at the start and up to four rivals' holdings, each with a
+    /// made-up history; a company brought over keeps its price and closes. The index and every sector start at 1,000. Seeded
+    /// by the playthrough and the day, so it is the same twice.
     /// </summary>
     public static class MarketSetup
     {
@@ -84,7 +84,6 @@ namespace RealLifeOverhaul.Markets
             return default(CarriedPrice);
         }
 
-        /// <summary>The rival holding listed under a name; null for none.</summary>
         public static Stock Rival(MarketState state, string name)
         {
             for (int i = 0; i < state.Stocks.Count; i++)
@@ -120,9 +119,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// Catalogue companies a save's market never had (added to the catalogue later), made now with their past as a new
-        /// market makes them, seeded by the save's id. The index takes them without a jump; a sector that had none starts at
-        /// 1,000. Returns how many joined. Once a load, for the save's own market.
+        /// Catalogue companies a save's market never had, made now as a new market makes them, seeded by the save's id; the
+        /// index takes them without a jump. Returns how many joined. Once a load.
         /// </summary>
         public static int Join(MarketState state)
         {
@@ -143,7 +141,6 @@ namespace RealLifeOverhaul.Markets
             {
                 return 0;
             }
-            // What the companies there were and those joining are worth.
             var had = new double[(int)MarketSector.Count];
             var added = new double[(int)MarketSector.Count];
             double before = 0.0, all = 0.0;

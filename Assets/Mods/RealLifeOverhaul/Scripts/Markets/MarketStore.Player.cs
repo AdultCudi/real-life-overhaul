@@ -60,8 +60,8 @@ namespace RealLifeOverhaul.Markets
             return o;
         }
 
-        // Part g read back. It has a limit of its own, apart from part o's, and a worked order still open or with money with
-        // the broker is read whatever the count, so no worked order and none of the player's money is lost on a load.
+        // Part g read back, apart from part o's limit: a worked order still open or with money with the broker is read whatever
+        // the count, so none of the player's money is lost on a load.
         private static void ReadWorked(MarketState s, string body)
         {
             int read = 0;
@@ -242,8 +242,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // A bot's shares written into the player's holding too, taken out of it again; a bot keeps no more of a company than
-        // the line's holding had.
+        // A bot's shares written into the player's holding too, taken out of it again; a bot keeps no more than the line's holding.
         private static void Unmerge(MarketState s)
         {
             for (int i = 0; i < s.Bots.Count; i++)
@@ -281,7 +280,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The player's own way to the market and their company's books.
         private static void Listing(StringBuilder t, ListingFile f)
         {
             t.Append(((int)f.Stage).ToString(Inv));

@@ -24,10 +24,8 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// The way to the market, by rule. Game-free. What it takes, what the advisers, auditors, underwriters and exchange
-    /// charge, the company's books from the game's statements, the prospectus's range and the book that sets the price.
-    /// A share is priced at what the books say it is worth less the advisers' discount; the book's own keenness is drawn
-    /// from the pricing day's secret, so a load does not draw it again.
+    /// The way to the market, by rule: what it takes and costs, the books from the game's statements, the prospectus and the
+    /// book that sets the price. The book's keenness is drawn from the pricing day's secret, so a load does not draw it again.
     /// </summary>
     public static class ListingBook
     {
@@ -35,7 +33,6 @@ namespace RealLifeOverhaul.Markets
         public const int BackTaxes = 1, LateReturns = 2, CashOffBooks = 4, Bankrupt = 8, BribesOut = 16;
         public const int Qualifying = BackTaxes | LateReturns | CashOffBooks | Bankrupt;
 
-        // The requirements, in the order the page lists them.
         public const int NeedYears = 0, NeedQuarters = 1, NeedTurnover = 2, NeedProfit = 3, NeedProfitable = 4, NeedAudit = 5, NeedCount = 6;
 
         /// <summary>One statement day into its quarter of the books; the last twelve quarters are kept.</summary>
@@ -70,7 +67,7 @@ namespace RealLifeOverhaul.Markets
             f.BooksDay = Math.Max(f.BooksDay, statementDay);
         }
 
-        /// <summary>The last complete quarters before the day's, up to so many: their takings, profit before tax and how many made a profit.</summary>
+        /// <summary>The last complete quarters before the day's, up to so many; how many made a profit.</summary>
         public static int Last(ListingFile f, int day, int year, int count, out long revenue, out long profit, out int profitable)
         {
             revenue = profit = 0;
@@ -111,7 +108,7 @@ namespace RealLifeOverhaul.Markets
             return all;
         }
 
-        /// <summary>All requirements but the audit: what the advisers ask before they take the company on.</summary>
+        /// <summary>All requirements but the audit, which the advisers ask before they take the company on.</summary>
         public static bool ReadyForAdvisers(Requirement[] r)
         {
             for (int i = 0; i < NeedCount; i++)
@@ -129,13 +126,11 @@ namespace RealLifeOverhaul.Markets
             into[which] = new Requirement { Which = which, Needed = needed, Has = has, Met = has >= needed };
         }
 
-        /// <summary>A clean audit signed within the time it is good for.</summary>
         public static bool AuditGood(ListingFile f, int day, int year)
         {
             return f.AuditDay > 0 && (f.Findings & Qualifying) == 0 && day - f.AuditDay <= Math.Max(1, Math.Max(8, year) * ListingCatalogue.AuditValidQuarters / 4);
         }
 
-        /// <summary>What the auditors find in the facts, as ListingBook bits.</summary>
         public static int Findings(in ListingFacts facts)
         {
             return (facts.BackTaxes ? BackTaxes : 0) | (facts.LateReturns > 0 ? LateReturns : 0) | (facts.CashOffBooks ? CashOffBooks : 0) | (facts.Bankrupt ? Bankrupt : 0)
@@ -159,13 +154,12 @@ namespace RealLifeOverhaul.Markets
                 At(ListingCatalogue.RetainerMostAtStart, level));
         }
 
-        /// <summary>The auditors: a share of a year's takings, within its bounds.</summary>
         public static long AuditFee(long turnover, double level)
         {
             return Within(Math.Max(0L, turnover) * ListingCatalogue.AuditBp / 10000L, At(ListingCatalogue.AuditLeastAtStart, level), At(ListingCatalogue.AuditMostAtStart, level));
         }
 
-        /// <summary>The underwriters: a share of the money raised (less for a large offer).</summary>
+        /// <summary>A share of the money raised, less for a large offer.</summary>
         public static long Underwriting(long raised, double level)
         {
             int bp = raised >= At(ListingCatalogue.UnderwritingLargeAtStart, level) ? ListingCatalogue.UnderwritingLargeBp : ListingCatalogue.UnderwritingBp;
@@ -178,7 +172,6 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(At(ListingCatalogue.ListingFeeLeastAtStart, level), (long)Math.Round(Math.Max(0.0, worth) * ListingCatalogue.ListingFeeBp / 10000.0));
         }
 
-        /// <summary>The exchange each year after, at least its least.</summary>
         public static long YearlyFee(double worth, double level)
         {
             return Math.Max(At(ListingCatalogue.YearlyFeeLeastAtStart, level), (long)Math.Round(Math.Max(0.0, worth) * ListingCatalogue.YearlyFeeBp / 10000.0));
@@ -191,14 +184,12 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(ListingCatalogue.FounderSharesLeast, (long)Math.Round(Math.Max(0.0, worth) / each / 1000.0) * 1000L);
         }
 
-        /// <summary>The new shares that make so much of the company: the founder keeps the rest.</summary>
         public static long NewShares(long founder, int floatBp)
         {
             int f = Math.Max(1, Math.Min(9000, floatBp));
             return (long)Math.Round(founder * (double)f / (10000.0 - f));
         }
 
-        /// <summary>The nearest float the page offers to a share asked for.</summary>
         public static int FloatStep(int bp)
         {
             int best = ListingCatalogue.FloatSteps[0];
@@ -215,10 +206,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The least price taken: the range's bottom, its middle, or any price at all.</summary>
         public const int WalkLow = 0, WalkMiddle = -2, WalkAny = 1;
 
-        /// <summary>
-        /// The prospectus: the shares offered and a range around the advisers' price, from what the books say a share is
-        /// worth. The least price taken is in cents, or <see cref="WalkLow"/> or <see cref="WalkMiddle"/>.
-        /// </summary>
+        /// <summary>The prospectus: the shares offered and a range around the advisers' price; the least price taken in cents, or a Walk.</summary>
         public static void Prospectus(ListingFile f, int floatBp, int fairCents, int walkCents)
         {
             f.FloatBp = FloatStep(floatBp);
@@ -229,7 +217,6 @@ namespace RealLifeOverhaul.Markets
             f.WalkCents = walkCents > 0 ? walkCents : walkCents == WalkMiddle ? Step((f.LowCents + f.HighCents) * 0.5, false) : f.LowCents;
         }
 
-        /// <summary>A price as a whole number of steps, rounded down or up.</summary>
         public static int Step(double cents, bool up)
         {
             double steps = cents / ListingCatalogue.PriceStepCents;
@@ -238,8 +225,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The price the book comes to, in cents: the range's middle moved by how keen it is (its own chance, the index's
-        /// last month in bp, the founder's Standing, a matter disclosed, how much is offered), held near the range.
+        /// The price the book comes to, in cents: the range's middle moved by how keen it is (its own chance, the index's last
+        /// month, the founder's Standing, a matter disclosed, how much is offered), held near the range.
         /// </summary>
         public static int Price(ListingFile f, ulong secret, int stockId, int indexMonthBp, int standing, out double keen)
         {
@@ -254,7 +241,6 @@ namespace RealLifeOverhaul.Markets
             return Step(MarketValuation.Clamp(price, least, most), false);
         }
 
-        /// <summary>What a share is worth from the books, in cents, with all the shares there will be.</summary>
         public static int FairCents(ListingFile f, ulong owner, int day, int year, in MarketEnv env, long debt)
         {
             Stock s = ListingRules.Provisional(f, owner, day, year, env, debt);
@@ -274,7 +260,6 @@ namespace RealLifeOverhaul.Markets
             return worth;
         }
 
-        /// <summary>The company as a listed stock on its first day, at its price, its last four quarters as past results.</summary>
         public static Stock Make(ListingFile f, ulong owner, int day, int year, in MarketEnv env, long debt, int indexNow)
         {
             Stock s = ListingRules.Provisional(f, owner, day, year, env, debt);

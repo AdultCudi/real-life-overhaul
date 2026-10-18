@@ -25,9 +25,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // 09:30: the open
-
-        // What the open's first pieces leave for its companies and its end.
         private MarketEnv _openEnv;
         private int _openFrom, _openShut, _openRate, _openIndex;
         private double _openNight, _openVariance, _openVs, _openMarketNews, _openMarketMood, _openMarketNewsVar;
@@ -102,7 +99,6 @@ namespace RealLifeOverhaul.Markets
             _openMarketMood = marketMood;
             _openMarketNewsVar = marketNewsVar;
 
-            // A new session: every day's move is measured from the last close until the next open.
             MarketLife.DayBases(State, true);
             // A listing due today comes to the market, and the player's own company is priced or listed.
             if (State.ListingId > 0 && State.ListingDay <= day)
@@ -112,7 +108,6 @@ namespace RealLifeOverhaul.Markets
             OwnMorning(day, env);
         }
 
-        // A company's open: its dividend out of the price, a split, the night's move.
         private void OpenCompany(Stock s, int day)
         {
             if (!s.Listed)
@@ -122,7 +117,6 @@ namespace RealLifeOverhaul.Markets
             MarketEnv env = _openEnv;
             int shut = _openShut;
             double night = _openNight, vs = _openVs, marketNews = _openMarketNews, marketMood = _openMarketMood, marketNewsVar = _openMarketNewsVar;
-            // A dividend whose record day has passed goes out of the price.
             if (s.DeclaredCents > 0 && !s.ExDone && s.RecordDay > 0 && s.RecordDay < day)
             {
                 s.ExDone = true;
@@ -203,7 +197,6 @@ namespace RealLifeOverhaul.Markets
             Margin(day, MarketCatalogue.PhaseOpen);
         }
 
-        // A company's business on every day of the calendar since the last open, its quarters.
         private void Business(Stock s, int day)
         {
             if (!s.Listed)
@@ -238,8 +231,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The share of a company's turnover the player's businesses in its trade take: half their takings there a year,
-        // against all the listed companies in it.
+        // The share of a company's turnover the player's businesses in its trade take, against all listed companies in it.
         private double Competition(Stock s, in MarketEnv env)
         {
             if (s.Def.Trade == null || env.Trades <= 0 || env.TradeOf == null)
@@ -282,7 +274,6 @@ namespace RealLifeOverhaul.Markets
                    * MarketCatalogue.CycleVolatility[MarketValuation.Clamp(env.Cycle, 0, 3)];
         }
 
-        // A company's own moves grow in a nervous market too, by half as much.
         private static double OwnVariance(double marketVariance)
         {
             double m = 0.5 + 0.5 * Math.Sqrt(Math.Max(0.1, marketVariance));
@@ -308,7 +299,6 @@ namespace RealLifeOverhaul.Markets
             return MarketRandom.Unit(_secret, MarketRandom.Crash, 0, 0) < chance;
         }
 
-        // How far the large companies' prices are above what they are worth, on average.
         private double Dearness()
         {
             double sum = 0.0;
@@ -354,8 +344,6 @@ namespace RealLifeOverhaul.Markets
             }
             return 0.0;
         }
-
-        // A step of the session
 
         private void Step(int day, int k)
         {
@@ -466,8 +454,7 @@ namespace RealLifeOverhaul.Markets
 
         private bool[] _capped;   // MarketIndex's scratch
 
-        // The city's index and the sectors': listed companies' free float value (capped for the city's) over their divisors.
-        // An old save has its divisors set right first, so that it does not jump.
+        // The city's index and the sectors': free float value (capped for the city's) over their divisors.
         private void Index(out int index)
         {
             if (!State.Weighted)
@@ -523,8 +510,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // An old save's divisors set so the index and every sector stand where they stood when every share counted, now
-        // weighed by float and capped. Once, at its first step.
+        // An old save's divisors set so every index stands where it stood when every share counted. Once, at its first step.
         private void Rebase()
         {
             State.Weighted = true;

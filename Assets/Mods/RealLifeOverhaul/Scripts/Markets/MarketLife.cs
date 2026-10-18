@@ -16,10 +16,7 @@ namespace RealLifeOverhaul.Markets
         public const double IpoPopMean = 0.06, IpoPopSpread = 0.12;
         public const double StartSpread = 0.04;          // prices against worth when a new market starts
 
-        /// <summary>
-        /// A catalogue company as a listed stock on a day. Its shares are as many as make a share worth its catalogue price at
-        /// the price level, or exactly <paramref name="startCents"/> when given.
-        /// </summary>
+        /// <summary>A catalogue company as a listed stock, its shares as many as make a share worth its price, or <paramref name="startCents"/>.</summary>
         public static Stock Make(CompanyDef d, string name, int day, in MarketEnv env, int year, ulong seed, int startCents)
         {
             var s = new Stock
@@ -43,7 +40,6 @@ namespace RealLifeOverhaul.Markets
             double fair = MarketValuation.Fair(s, env);
             s.Shares = Math.Max(100000L, (long)Math.Round(fair * s.Shares / Math.Max(0.5, price)));
             s.Adv = s.Shares * d.TurnoverBp / 10000.0;
-            // The quarterly dividend: what it can pay out of its earnings.
             double eps = MarketValuation.Earnings(s, env);
             s.DpsCents = eps > 0.0 ? Math.Max(0, (int)Math.Round(eps * MarketValuation.PayoutOf(s, MarketValuation.GrowthNow(s, env)) / 4.0 * 100.0)) : 0;
             s.Quarter = MarketCatalogue.QuarterOf(day, year);
@@ -66,7 +62,7 @@ namespace RealLifeOverhaul.Markets
             return s;
         }
 
-        // Four quarters of results before the market's first day, from the business as it stands, for the figures page.
+        // Four quarters of results before the market's first day, for the figures page.
         private static void PastResults(Stock s, int day, int year, ulong seed, in MarketEnv env)
         {
             double profit = MarketValuation.Profit(s, s.Margin, MarketInputs.TaxRate(env));
@@ -98,8 +94,7 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// One day of a company's business, <paramref name="n"/> the calendar day for its draws. Margin and growth go where the
-        /// day's city puts them at once, so a change is priced the moment it is known, with its own swings fading as new ones
-        /// come; turnover grows, competition takes its share, debt drifts to its usual, and the outlook comes through a little.
+        /// day's city puts them at once, so a change is priced the moment it is known, with its own swings fading.
         /// </summary>
         public static void Business(Stock s, in MarketEnv env, int year, ulong secret, int n, double competition)
         {
@@ -136,10 +131,7 @@ namespace RealLifeOverhaul.Markets
             BearOut(s, env, y);
         }
 
-        /// <summary>
-        /// A day's share of what the market expects beyond the figures comes through in them: turnover and debt move by it and
-        /// the outlook left is less by as much. The price does not move: the worth already counted it.
-        /// </summary>
+        /// <summary>A day's share of the outlook comes through in turnover and debt; the price does not move, as the worth counted it.</summary>
         public static void BearOut(Stock s, in MarketEnv env, double y)
         {
             double outlook = s.Outlook;
@@ -172,10 +164,7 @@ namespace RealLifeOverhaul.Markets
             s.ResultsDay = day;
         }
 
-        /// <summary>
-        /// The waiting quarter's results, the surprise drawn now: the business takes most of it, the market reads it as news of
-        /// the years to come, and the board declares the dividend. The price answers at the open.
-        /// </summary>
+        /// <summary>The waiting quarter's results, the surprise drawn now and read as news of the years to come; the price answers at the open.</summary>
         public static MarketNews Results(Stock s, int day, int year, ulong secret, in MarketEnv env)
         {
             double expected = s.PendingNi;
@@ -235,8 +224,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The dividend built up in the price since the last, in money: the next one times the share of the way to its record
-        /// day, so a price holds all of it on the record day and drops by it the morning after.
+        /// The dividend built up in the price since the last, in money: so a price holds all of it on the record day and drops by
+        /// it the morning after.
         /// </summary>
         public static double Accrued(Stock s, int day, int year)
         {
@@ -259,10 +248,7 @@ namespace RealLifeOverhaul.Markets
             return cents / 100.0 * share;
         }
 
-        /// <summary>
-        /// What the market thinks a share is worth today, as a log: the worth with its outlook and the dividend built up, or
-        /// under a bid the bid less the chance it falls through.
-        /// </summary>
+        /// <summary>What the market thinks a share is worth today (ln): the worth and the dividend built up, or under a bid the bid's.</summary>
         public static double LogFairOf(Stock s, in MarketEnv env, int day, int year)
         {
             return LogFairAt(s, MarketValuation.Fair(s, env), day, year);
@@ -281,9 +267,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// Every listed company's, the index's and each sector's close the day's move is measured from, out of the shared
-        /// histories so every machine agrees: the last close at the open, or by whether a session runs when read from a save.
-        /// Moved only at the open, so the session just ended shows until the next. Once an open or a load; no allocation.
+        /// Every close the day's moves are measured from, out of the shared histories so every machine agrees. Moved only at
+        /// the open, so the session just ended shows until the next. Once an open or a load; no allocation.
         /// </summary>
         public static void DayBases(MarketState state, bool session)
         {
@@ -302,10 +287,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>
-        /// A split takes effect: prices and history divided, the player's holdings and orders multiplied. Worth and cost are
-        /// unchanged; an order's price is rounded so it is no likelier to fill.
-        /// </summary>
+        /// <summary>A split takes effect; an order's price is rounded so it is no likelier to fill.</summary>
         public static void Split(MarketState state, Stock s, int ratio)
         {
             if (ratio <= 1)
@@ -399,16 +381,12 @@ namespace RealLifeOverhaul.Markets
             return cents <= 0 ? cents : Math.Max(1, (int)Math.Round(cents / (double)ratio, MidpointRounding.AwayFromZero));
         }
 
-        /// <summary>The ratio a board splits by at a price: two for one, three for one, five for one.</summary>
         public static int SplitRatioAt(int cents)
         {
             return cents >= 90000 ? 5 : cents >= 60000 ? 3 : 2;
         }
 
-        /// <summary>
-        /// A history for a company just come to a new market, ending at today's price: days walked back with its moves (closes
-        /// brought over used as they are), and months before those. Made once, when the market opens for a save.
-        /// </summary>
+        /// <summary>A made-up history for a company just come to a new market, ending at today's price; once, when the market opens.</summary>
         public static void MakePast(Stock s, int day, int year, ulong seed, double dayVol, int[] knownCloses, int knownCount)
         {
             s.Daily.Clear();

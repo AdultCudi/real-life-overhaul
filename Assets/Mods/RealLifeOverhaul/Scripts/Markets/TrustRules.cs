@@ -4,16 +4,13 @@ using RealLifeOverhaul.Economy;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// Property trusts: listed companies that let buildings, pay out nearly all they earn and pay it every few days. Game-free.
-    /// Each period of CompanyDef.PayDays days has its last market day as record day, and the next distribution is declared at
-    /// the open its last leaves the price, carried in the usual dividend fields so every holder is owed it as for any
-    /// company. Over a year a trust pays its quarterly rate four times whatever the year's length. Its price follows where
-    /// Economy/Estate's property market is heading (<see cref="PropertyFactor"/>), read from the day's MarketEnv so every
-    /// machine agrees. A few comparisons for each trust at each open.
+    /// Property trusts: listed companies that let buildings and pay out nearly all they earn every few days. Each period's
+    /// last market day is its record day, and the distribution goes in the usual dividend fields, so every holder is owed it
+    /// as for any company. Its price follows Economy/Estate's property market through the day's MarketEnv. A few comparisons
+    /// for each trust at each open.
     /// </summary>
     public static class TrustRules
     {
-        /// <summary>True for a property trust: a catalogue company that pays every few days.</summary>
         public static bool Is(Stock s)
         {
             return s != null && s.Own == null && s.Def != null && s.Def.PayDays > 0;
@@ -30,7 +27,6 @@ namespace RealLifeOverhaul.Markets
             return MarketCatalogue.FloorDiv(day - 1, Math.Max(1, every));
         }
 
-        /// <summary>A period's record day: its last market day.</summary>
         public static int RecordDay(int period, int every)
         {
             int day = (period + 1) * every;
@@ -41,7 +37,7 @@ namespace RealLifeOverhaul.Markets
             return day;
         }
 
-        /// <summary>A period's distribution in cents a share, rounded so the fractions carry on and any run of periods sums to the year's rate.</summary>
+        /// <summary>In cents a share, rounded so the fractions carry on and any run of periods sums to the year's rate.</summary>
         public static int Cents(int quarterlyCents, int period, int every, int year)
         {
             if (quarterlyCents <= 0)
@@ -54,8 +50,7 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// At an open, once the last distribution has left the price: the next declared for the first period whose record day
-        /// is today or later (after today when <paramref name="today"/> is false), with any period between whose record day
-        /// had gone. Nothing while one waits for its record day.
+        /// is today or later (after today when <paramref name="today"/> is false). Nothing while one waits for its record day.
         /// </summary>
         public static void Declare(Stock s, int day, int year, bool today = true)
         {
@@ -94,7 +89,6 @@ namespace RealLifeOverhaul.Markets
             s.ExDone = false;
         }
 
-        /// <summary>A trust made: its first distribution declared for a record day after today.</summary>
         public static void Begin(Stock s, int day, int year)
         {
             s.DeclaredCents = 0;
@@ -104,10 +98,7 @@ namespace RealLifeOverhaul.Markets
             Declare(s, day, year, false);
         }
 
-        /// <summary>
-        /// What the property market does to a trust's worth: its buildings' share valued where Economy/Estate's market is heading
-        /// by the market's odds of the next state, at the day's bank rate. 1 at the long-run level.
-        /// </summary>
+        /// <summary>A trust's buildings' share valued where Economy/Estate's market is heading, at the day's bank rate; 1 at the long run.</summary>
         public static double PropertyFactor(in MarketEnv env)
         {
             int quarters = (int)Math.Round((env.RateBp - 300) / 25.0);   // the city's rate in quarter points over the banks' own, as Estate reads it
@@ -121,7 +112,6 @@ namespace RealLifeOverhaul.Markets
             return 1.0 + MarketCatalogue.TrustPropertyShare * (level - 1.0);
         }
 
-        /// <summary>A trust's distributions over a year at its rate now, in cents a share.</summary>
         public static int YearCents(Stock s)
         {
             return Math.Max(0, s.DpsCents) * 4;

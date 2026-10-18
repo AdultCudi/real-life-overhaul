@@ -8,7 +8,6 @@ namespace RealLifeOverhaul.Markets
     {
         private readonly MarketValuation.Terms _terms = new MarketValuation.Terms();   // a company's worth taken apart for its settling
 
-        // A company's day as a candle of its history.
         private void Candles(Stock s, int day)
         {
             if (!s.Listed)
@@ -20,7 +19,6 @@ namespace RealLifeOverhaul.Markets
             s.Adv = s.Adv * 0.95 + Math.Max(s.Adv * 0.3, s.DayVolume) * 0.05;
         }
 
-        // The index's day and the sectors' closes, after every company's.
         private void CloseIndices(int day)
         {
             MarketHistory.AddDay(State.IndexDaily, State.IndexMonthly, new Candle(day, State.IndexOpen, State.IndexHigh, State.IndexLow, State.IndexLast, 0), Year);
@@ -35,7 +33,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // After every company is settled: the money of the day, the companies' lives, tomorrow's variance, the account.
         private void CloseBooks(int day)
         {
             Dividends(day);
@@ -48,7 +45,7 @@ namespace RealLifeOverhaul.Markets
             WorkedClose(day);   // MarketEngine.Invest.cs
         }
 
-        // The close's last piece, after the bots: the day's news, and old news goes.
+        // The close's last piece, after the bots: the day's news; old news goes.
         private void CloseEnd(int day)
         {
             CloseNews(day);
@@ -62,8 +59,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // After the close the day's news goes into the business's Outlook, worked out so the price stays exactly where it
-        // closed; what is left between price and worth is the mood alone.
+        // After the close the day's news goes into Outlook so the price stays exactly where it closed; what is left is mood.
         private void Settle(Stock s, int day)
         {
             if (!s.Listed || s.BidCents > 0)
@@ -84,7 +80,6 @@ namespace RealLifeOverhaul.Markets
             s.Sent = s.Mis;
         }
 
-        // The market's and the sectors' variance for tomorrow, from today's moves.
         private void Variance()
         {
             double z = State.DayVar > 0.0 ? State.DayZ / Math.Sqrt(State.DayVar) : 0.0;
@@ -106,8 +101,6 @@ namespace RealLifeOverhaul.Markets
             State.DayZ = 0.0;
             State.DayVar = 0.0;
         }
-
-        // Dividends
 
         private void Dividends(int day)
         {
@@ -197,8 +190,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The companies' lives
-
         private void Corporate(int day)
         {
             double year = TradingYear;
@@ -215,12 +206,10 @@ namespace RealLifeOverhaul.Markets
                     continue;
                 }
                 bool holding = s.Def != null && s.Def.Holding;   // a rival tycoon's leaves only with its tycoon
-                // A bid due today completes or falls through, decided now.
                 if (s.BidCents > 0 && s.BidEndDay <= day)
                 {
                     if (MarketRandom.Unit(_secret, MarketRandom.Takeover, s.Id, 1) < MarketCatalogue.TakeoverFailChance)
                     {
-                        // Back to what it is worth on its own, from the next open.
                         s.BidCents = 0;
                         s.BidEndDay = 0;
                         s.BidDay = 0;
@@ -239,7 +228,6 @@ namespace RealLifeOverhaul.Markets
                     Leave(s, day, GoneReason.Delisted, s.Last);
                     continue;
                 }
-                // A company in distress may fail; the market prices the chance.
                 double hazard = MarketValuation.Hazard(s.Distress);
                 if (!holding && hazard > 0.0 && MarketRandom.Unit(_secret, MarketRandom.Failure, s.Id, 0) < hazard / year)
                 {
@@ -274,7 +262,6 @@ namespace RealLifeOverhaul.Markets
                         Bid(s, day);
                     }
                 }
-                // A board splits its shares when they trade high.
                 if (s.SplitDay <= 0 && s.BidCents <= 0 && s.Last > MarketCatalogue.SplitAboveCents)
                 {
                     s.SplitRatio = MarketLife.SplitRatioAt(s.Last);
@@ -321,8 +308,7 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = crisis ? MarketNewsKind.Crisis : MarketNewsKind.Windfall, Stock = s.Id, A = (int)Math.Round(Math.Abs(after / before - 1.0) * 10000.0) });
         }
 
-        // A takeover bid at a premium, completing in some weeks; from the next open the price is the bid less the chance it
-        // falls through, and the mood no longer counts.
+        // A takeover bid at a premium; from the next open the price is the bid less the chance it falls through.
         private void Bid(Stock s, int day)
         {
             double premium = MarketCatalogue.TakeoverPremiumLeast
@@ -354,10 +340,10 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.Bid, Stock = s.Id, A = s.BidCents, B = s.BidEndDay, C = s.BidderId });
         }
 
-        /// <summary>A takeover bid for a company now (the test tools); from the next open its price is what the bid is worth.</summary>
+        /// <summary>The test tools: a takeover bid for a company now.</summary>
         public bool BidFor(int stockId)
         {
-            Finish();   // Midway
+            Finish();
             Stock s = State.Stock(stockId);
             if (s == null || !s.Listed || s.BidCents > 0)
             {
@@ -372,10 +358,10 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        /// <summary>A crisis or a windfall at a company now (the test tools); its price follows at the next open.</summary>
+        /// <summary>The test tools: a crisis or a windfall at a company now.</summary>
         public bool NewsFor(int stockId, bool crisis)
         {
-            Finish();   // Midway
+            Finish();
             Stock s = State.Stock(stockId);
             if (s == null || !s.Listed || s.BidCents > 0 || s.Own != null)   // a player's company's news is its books
             {
@@ -385,10 +371,10 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        /// <summary>A company leaves the market now (the test tools): failed paying <paramref name="cents"/> a share, or taken over at it.</summary>
+        /// <summary>The test tools: a company leaves now, failed paying <paramref name="cents"/> a share, or taken over at it.</summary>
         public bool Delist(int stockId, GoneReason reason, int cents)
         {
-            Finish();   // Midway
+            Finish();
             Stock s = State.Stock(stockId);
             if (s == null || !s.Listed)
             {
@@ -398,8 +384,7 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        // A company leaves the market: what is left is paid to its holders (a short closed at the same price) and its orders
-        // go. The news is the reason's, or the one given.
+        // A company leaves the market: what is left is paid to its holders (a short closed at the same price); its orders go.
         private void Leave(Stock s, int day, GoneReason reason, int centsEach, MarketNewsKind kind = MarketNewsKind.Count)
         {
             Reweigh(s, false);
@@ -501,7 +486,6 @@ namespace RealLifeOverhaul.Markets
             return null;
         }
 
-        // The listing announced comes to the market at its price, at today's price level.
         private void List(int day)
         {
             CompanyDef d = MarketCatalogue.Find(State.ListingId);
@@ -524,8 +508,6 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.Listing, Stock = s.Id, A = s.MidCents, B = day });
         }
 
-        // News
-
         private void Say(in MarketNews news)
         {
             State.News.Add(news);
@@ -536,7 +518,6 @@ namespace RealLifeOverhaul.Markets
             _world.Said(news);
         }
 
-        // The day's close: the index, the biggest movers either way and the sector that moved most.
         private void CloseNews(int day)
         {
             int prev = State.IndexPrevClose > 0 ? State.IndexPrevClose : State.IndexOpen;

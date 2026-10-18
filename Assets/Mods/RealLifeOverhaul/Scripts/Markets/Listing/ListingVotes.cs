@@ -14,17 +14,15 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// A listed player's company and its holders: the yearly meeting's votes, an investor who buys in to press a demand,
-    /// and a bid while it is cheap. Game-free; every chance is a draw from the market day's secret. The founder's shares
-    /// vote for the board, an investor's against, and of the others a turnout is cast, more against the worse their year:
-    /// a founder with half the shares carries every vote.
+    /// A listed player's company and its holders: the meeting's votes, an investor who presses a demand, a bid while cheap.
+    /// Every chance is a draw from the day's secret; a founder with half the shares carries every vote.
     /// </summary>
     public static class ListingVotes
     {
         // What went against the founder at a meeting, and what was voted on (OwnListing.Votes).
         public const int PayLost = 1, PayoutVoted = 2, BoardLost = 4, DemandPassed = 8, HadPay = 16, HadPayout = 32, HadDemand = 64, Extraordinary = 128;
 
-        /// <summary>What the holders make of the year: its return with dividends against the index's, the pay, the reserve, the price.</summary>
+        /// <summary>The year's return with dividends against the index's, the pay, the reserve, the price.</summary>
         public static HolderMood Read(Stock s, int indexNow)
         {
             OwnListing o = s.Own;
@@ -49,7 +47,7 @@ namespace RealLifeOverhaul.Markets
             return MarketValuation.Clamp(ListingCatalogue.PayAgainstBase + ListingCatalogue.PayAgainstPerRef * m.PayOver, 0.0, 0.95);
         }
 
-        /// <summary>Of the votes cast by the other holders, the share for a payout of the reserve they ask for.</summary>
+        /// <summary>The share of the other holders' votes for a payout of the reserve.</summary>
         public static double PayoutFor(in HolderMood m)
         {
             return MarketValuation.Clamp(ListingCatalogue.DividendAgainstBase + ListingCatalogue.DividendAgainstHoard * m.Hoard, 0.0, 0.95);
@@ -61,13 +59,12 @@ namespace RealLifeOverhaul.Markets
                                          + ListingCatalogue.BoardAgainstPay * m.PayOver + (m.Activist ? ListingCatalogue.BoardAgainstActivist : 0.0), 0.0, 0.95);
         }
 
-        /// <summary>Of the votes cast by the other holders, the share behind an investor's demand.</summary>
         public static double DemandFor(in HolderMood m)
         {
             return MarketValuation.Clamp(ListingCatalogue.ActivistSupport + BoardAgainst(m), 0.0, 0.95);
         }
 
-        /// <summary>One vote: true if the board's side, the founder's shares with it, carries it.</summary>
+        /// <summary>True if the board's side, the founder's shares with it, carries a vote.</summary>
         public static bool BoardCarries(long founder, long others, long investor, double turnout, double against)
         {
             long free = Math.Max(0L, others - investor);
@@ -77,22 +74,17 @@ namespace RealLifeOverhaul.Markets
             return yes >= no;
         }
 
-        /// <summary>The share of the other holders' votes cast at a meeting: drawn on its day.</summary>
         public static double Turnout(ulong secret, int stockId, int day)
         {
             return ListingCatalogue.TurnoutLeast + (ListingCatalogue.TurnoutMost - ListingCatalogue.TurnoutLeast) * MarketRandom.Unit(secret, MarketRandom.Meeting, stockId, day);
         }
 
-        /// <summary>A share against with the day's mood on it.</summary>
         public static double OnTheDay(double against, ulong secret, int stockId, int resolution)
         {
             return MarketValuation.Clamp(against + ListingCatalogue.AgainstNoise * MarketRandom.Normal(secret, MarketRandom.Meeting, stockId, 100 + resolution), 0.01, 0.99);
         }
 
-        /// <summary>
-        /// The yearly meeting, or the extraordinary one an investor called: what was voted on and what went against the
-        /// founder (the bits above); the share of the votes cast against the board in bp.
-        /// </summary>
+        /// <summary>The yearly or an extraordinary meeting: what went against the founder (the bits above); the share against in bp.</summary>
         public static int Meeting(Stock s, int indexNow, ulong secret, int day, bool extraordinary, out int boardAgainstBp)
         {
             OwnListing o = s.Own;
@@ -134,10 +126,7 @@ namespace RealLifeOverhaul.Markets
             return bits;
         }
 
-        /// <summary>
-        /// After a set of results: whether an investor buys in to press the board, and for what; the strongest reason wins.
-        /// None under a bid, listed less than a quarter, or already pressed.
-        /// </summary>
+        /// <summary>After results: whether an investor buys in to press the board, and for what; none under a bid or already pressed.</summary>
         public static ActivistDemand Reason(Stock s, int indexNow, int day, int year, out double strength)
         {
             OwnListing o = s.Own;
@@ -173,14 +162,12 @@ namespace RealLifeOverhaul.Markets
             return demand;
         }
 
-        /// <summary>The investor's stake, in bp: drawn on the day they buy in.</summary>
         public static int Stake(ulong secret, int stockId, int day)
         {
             return ListingCatalogue.ActivistStakeLeastBp + (int)Math.Round((ListingCatalogue.ActivistStakeMostBp - ListingCatalogue.ActivistStakeLeastBp)
                                                                             * MarketRandom.Unit(secret, MarketRandom.Activist, stockId, day));
         }
 
-        /// <summary>A payout an investor asks for, a share in cents: so much of the reserve.</summary>
         public static int PayoutCents(OwnListing o)
         {
             return (int)Math.Floor(Math.Max(0.0, o.Rps) * ListingCatalogue.SpecialPayoutBp / 10000.0 * 100.0);
@@ -201,7 +188,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>A bid's chance today for a company this cheap.</summary>
         public static double BidChance(in HolderMood m, double tradingYear)
         {
             return m.Cheap <= 0.0 ? 0.0 : ListingCatalogue.OwnTakeoverChanceYear / Math.Max(8.0, tradingYear) * m.Cheap;
@@ -214,13 +200,13 @@ namespace RealLifeOverhaul.Markets
             return MarketValuation.Clamp(ListingCatalogue.AcceptBase + ListingCatalogue.AcceptPerPremium * premium, ListingCatalogue.AcceptLeast, ListingCatalogue.AcceptMost);
         }
 
-        /// <summary>True if a bid can win: the founder holds less than the threshold.</summary>
+        /// <summary>True while the founder holds less than the threshold.</summary>
         public static bool CanWin(Stock s)
         {
             return s.Own.StakeBp(s) < ListingCatalogue.TakeoverThresholdBp;
         }
 
-        /// <summary>The tax withheld from a dividend paid to the player, in its unit: the rate moved by the council's business tax.</summary>
+        /// <summary>The tax withheld from a dividend paid to the player: the rate moved by the council's business tax.</summary>
         public static long DividendTax(long dividend, int businessTaxStep)
         {
             int bp = Math.Max(0, ListingCatalogue.DividendTaxBp + Math.Sign(businessTaxStep) * ListingCatalogue.DividendTaxStepBp);

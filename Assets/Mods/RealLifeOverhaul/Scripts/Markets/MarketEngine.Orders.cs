@@ -5,14 +5,11 @@ namespace RealLifeOverhaul.Markets
     /// <summary>Part of the engine: the player's orders and the margin account.</summary>
     public sealed partial class MarketEngine
     {
-        /// <summary>
-        /// An order the player places now: checked, made, and filled at once if it is at the market while the market trades or
-        /// a limit already met. Null with the reason when it cannot be placed.
-        /// </summary>
+        /// <summary>An order placed now, filled at once at the market or as a limit already met; null with the reason when it cannot be.</summary>
         public Order Place(int stockId, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, bool open, bool held, bool test, out OrderWhy why,
             bool closing = false)
         {
-            Finish();   // Midway
+            Finish();
             Stock s = State.Stock(stockId);
             Order order = MarketTrading.Place(State, s, side, type, life, qty, limitCents, stopCents, Wallet.Cash, _world.CommissionLeast, open, held, State.Phase, test, out why, closing);
             if (order == null || !open)
@@ -128,7 +125,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The host: a guest's trade, played by every market at the next moment of the grid, bounded as a trade can be.</summary>
         public bool GuestTrade(int stockId, int micros, long shares)
         {
-            Finish();   // Midway
+            Finish();
             Stock s = State.Stock(stockId);
             if (s == null || !s.Listed || Replaying || shares <= 0)
             {
@@ -139,7 +136,6 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        // At the open: orders waiting for it, and resting ones against the open's prices.
         private void OpenOrders(int day)
         {
             for (int i = 0; i < State.Orders.Count; i++)
@@ -191,7 +187,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // After a step: resting orders against the prices the step really reached.
         private void RestingOrders(int day, int k)
         {
             int phase = MarketCatalogue.PhaseOpen + k;
@@ -251,15 +246,12 @@ namespace RealLifeOverhaul.Markets
                 {
                     o.EndDay = day;   // cancelled, or its company gone: kept from the day it ended
                 }
-                // Finished orders are kept a while for the app.
                 if (!o.IsOpen && day - Math.Max(o.PlacedDay, o.EndDay) > 10)
                 {
                     State.Orders.RemoveAt(i);
                 }
             }
         }
-
-        // The margin account
 
         private void Interest(int day)
         {
@@ -314,8 +306,7 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// The margin account's health: under maintenance at the close a call is made for the next close; unmet then, or far
-        /// under at any moment, the broker closes the largest positions at the market until it is healthy. What is still owed
-        /// after everything is sold is taken from the player's cash.
+        /// under at any moment, the broker closes the largest positions at the market until it is healthy.
         /// </summary>
         private void Margin(int day, int phase)
         {

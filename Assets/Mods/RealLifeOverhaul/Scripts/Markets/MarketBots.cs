@@ -105,7 +105,7 @@ namespace RealLifeOverhaul.Markets
             return held;
         }
 
-        /// <summary>A bot's money and its holdings at the bid.</summary>
+        /// <summary>Its money and its holdings at the bid.</summary>
         public static long Worth(MarketState state, Bot b, int phase)
         {
             long worth = b.Cash;
@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Markets
             return b.Base * (100 - b.Loss) / 100;
         }
 
-        /// <summary>A holding's stop for its cost a share at the bot's setting; 0 none.</summary>
+        /// <summary>A holding's stop in cents for its cost at the bot's setting; 0 none.</summary>
         public static int StopFor(Bot b, long shares, long cost)
         {
             if (b.Stop <= 0 || shares <= 0)
@@ -138,7 +138,7 @@ namespace RealLifeOverhaul.Markets
             return (int)Math.Max(1, Math.Min(int.MaxValue, each * (100 - b.Stop) / 100));
         }
 
-        /// <summary>The month's fee at a worth before it is shared over the days hired: a share of the worth, the least at least.</summary>
+        /// <summary>The month's fee at a worth, before it is shared over the days hired.</summary>
         public static long Fee(BotFirm f, long worth, int least)
         {
             long share = (Math.Max(0, worth) * f.FeeBp + 9999L) / 10000L;
@@ -156,14 +156,13 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(1, count);
         }
 
-        /// <summary>A company a bot may buy: listed long enough, nobody's own, no bid, not a penny share, of a size it trades.</summary>
+        /// <summary>A company a bot's firm may buy: listed long enough, nobody's own, no bid, not a penny share, of a size it trades.</summary>
         public static bool Buyable(MarketState state, BotFirm f, Stock s, int day)
         {
             return s.Listed && s.Own == null && (s.Def == null || !s.Def.Holding) && s.BidCents <= 0 && day - s.ListedDay >= ListedDaysLeast && (f.Small || s.Size != MarketSize.Small)
                    && s.Last * 1000L >= 2L * MarketCatalogue.PennyCents * Math.Max(100, state.Env.PriceLevel);
         }
 
-        /// <summary>True for a player's company whose founder is this machine's player.</summary>
         public static bool Mine(MarketState state, Stock s)
         {
             return s != null && s.Own != null && state.Me != 0UL && s.Own.Owner == state.Me && !state.Following;
@@ -187,10 +186,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>
-        /// A company a bot may buy now: its firm's market by <see cref="Buyable"/>; one the player chose, of any size, but never
-        /// one listed too short a time, under a bid or a penny share.
-        /// </summary>
+        /// <summary>A company a bot may buy now: by its firm's rule, or one the player chose, of any size.</summary>
         public static bool Allowed(MarketState state, Bot b, Stock s, int day)
         {
             BotFirm f = b.Def;
@@ -206,7 +202,7 @@ namespace RealLifeOverhaul.Markets
                    && s.Last * 1000L >= 2L * MarketCatalogue.PennyCents * Math.Max(100, state.Env.PriceLevel);
         }
 
-        /// <summary>A company picked for a bot or taken off; false when nothing changed or the picks are full.</summary>
+        /// <summary>False when nothing changed or the picks are full.</summary>
         public static bool Pick(Bot b, int stockId, bool on)
         {
             int at = b.Picks.IndexOf(stockId);
@@ -234,9 +230,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The most shares of the player's own company their bots may trade now, keeping every rule its founder deals by and a
-        /// share of its day's volume so no bot moves its price alone. long.MaxValue for any other company; none for another
-        /// player's. Reads only the company and this player's bots, so every machine comes to the same price.
+        /// The most shares of the player's own company their bots may trade now, within its founder's rules and a share of its
+        /// day's volume; long.MaxValue for any other company, none for another player's.
         /// </summary>
         public static long OwnRoom(MarketState state, Stock s, bool buying, int day, int year)
         {
@@ -274,7 +269,6 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(0L, room);
         }
 
-        /// <summary>A bot's trade in the player's own company counted against <see cref="OwnRoom"/>'s limits.</summary>
         public static void OwnCount(Bot b, Stock s, bool buying, long qty, int day, int year)
         {
             if (b.OwnDay != day)
@@ -302,19 +296,17 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>What a bot has made and kept: gains on sales and dividends after tax, less its fees and share.</summary>
+        /// <summary>What a bot has made and kept: gains and dividends after tax, less its fees and share.</summary>
         public static long Profit(Bot b)
         {
             return b.Realised + b.Dividends - b.Fees;
         }
 
-        /// <summary>The losses a bot must make good before it pays anything again.</summary>
         public static long LossesToMakeGood(Bot b)
         {
             return Math.Max(0L, b.PayMark - Profit(b));
         }
 
-        /// <summary>True when a payout falls due at this market day's close.</summary>
         public static bool PayDue(BotPayEvery every, int day, int year)
         {
             int next = MarketTrading.NextTradingDay(day);
@@ -330,9 +322,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// A bot's payout at its time: of profit above <see cref="Bot.PayMark"/> (a loss is made good first), its share is owed
-        /// and paid out of its money not in shares. The money is the player's cash already, so a payout lowers what it trades
-        /// with and every figure its limits are reckoned from, and never counts as a loss. Returns what was paid.
+        /// A bot's payout: its share of profit above <see cref="Bot.PayMark"/>, paid from its money not in shares. The money is
+        /// the player's cash already, so a payout lowers every figure its limits come from. Returns what was paid.
         /// </summary>
         public static long Payout(Bot b)
         {
@@ -358,11 +349,7 @@ namespace RealLifeOverhaul.Markets
             return pay;
         }
 
-        /// <summary>
-        /// More capital given to a running bot; as at a hire no money moves. Every figure reckoned from its capital rises by it,
-        /// so it never counts as profit or loss; its fee counts it for the days it was there (<see cref="FeeWorth"/>). Its next
-        /// decision puts it into what it holds and into new holdings (<see cref="Decide"/>).
-        /// </summary>
+        /// <summary>More capital given to a running bot; no money moves, and every figure reckoned from its capital rises by it.</summary>
         public static void Add(Bot b, long amount)
         {
             if (amount <= 0)
@@ -379,10 +366,7 @@ namespace RealLifeOverhaul.Markets
             b.TopUp = TopUpAdded;
         }
 
-        /// <summary>
-        /// The most that can be taken out of a running bot now without selling: its money not in shares less payouts owed,
-        /// leaving it the least a bot is given and its cushion over its floor (<see cref="Cushion"/>). 0: none.
-        /// </summary>
+        /// <summary>The most that can be taken out of a running bot now without selling, keeping its cushion over its floor; 0: none.</summary>
         public static long MostOut(MarketState state, Bot b, long least, int phase)
         {
             if (b.Status != BotStatus.Running || b.Loss <= 0)
@@ -406,28 +390,24 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(0L, most);
         }
 
-        // True when a bot worth so much keeps its cushion over its floor with so much taken out.
         private static bool Keeps(Bot b, long worth, long taken, long need)
         {
             return worth - taken - (b.Base - taken) * (100 - b.Loss) / 100 >= need;
         }
 
-        /// <summary>
-        /// What a take-out leaves between worth and floor at least: the limit's share of what is in shares, so its shares may
-        /// fall by as much as it may lose in all before it stops. Money not in shares does not move.
-        /// </summary>
+        /// <summary>What a take-out leaves over the floor at least: the limit's share of what is in shares.</summary>
         public static long Cushion(Bot b, long inShares)
         {
             return inShares <= 0 ? 0L : (inShares * b.Loss + 99) / 100;
         }
 
-        /// <summary>True while capital added has been decided on and waits to be traded at the first step.</summary>
+        /// <summary>True while capital added waits for the first step to be traded.</summary>
         public static bool TopUpDue(Bot b)
         {
             return b.TopUp == TopUpDecided || b.TopUp == TopUpDecidedAgain;
         }
 
-        /// <summary>After the first step capital added was traded at: done, or once more the next market day if the cash was short.</summary>
+        /// <summary>After the first step capital added was traded at: done, or once more the next day if the cash was short.</summary>
         public static void TopUpTraded(Bot b, bool cashShort)
         {
             if (b.TopUp == TopUpDecided && cashShort)
@@ -440,7 +420,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>The player's cash already given to their bots: every bot's money not in shares. A hire may use only the cash beyond it.</summary>
+        /// <summary>The player's cash already given to their bots; a hire may use only the cash beyond it.</summary>
         public static long Committed(MarketState state)
         {
             long sum = 0;
@@ -451,7 +431,7 @@ namespace RealLifeOverhaul.Markets
             return sum;
         }
 
-        /// <summary>Capital taken out of a running bot, off its money not in shares; every figure from its capital comes down with it.</summary>
+        /// <summary>Capital taken out of a running bot's money not in shares; every figure from its capital comes down with it.</summary>
         public static void TakeOut(Bot b, long amount)
         {
             if (amount <= 0)
@@ -467,19 +447,15 @@ namespace RealLifeOverhaul.Markets
             b.MonthAdded -= amount * b.MonthDays;
         }
 
-        /// <summary>
-        /// The worth a month's fee is a share of: its worth at the month's end with each sum added or taken out counted only
-        /// for the market days it was there (Bot.MonthAdded).
-        /// </summary>
+        /// <summary>The worth a month's fee is a share of, each sum added or taken out counted only for the days it was there.</summary>
         public static long FeeWorth(Bot b, long worth, int hired)
         {
             return hired > 0 && b.MonthAdded != 0 ? worth - b.MonthAdded / hired : worth;
         }
 
         /// <summary>
-        /// A bot's shares bought or sold at a price, the player's money moved as their own trades move it. False, nothing changed,
-        /// when the bot's money or the cash does not cover a purchase, or it does not hold what it would sell. With
-        /// <paramref name="move"/> false the lasting price move is given in <paramref name="kept"/> for a session's tape.
+        /// A bot's shares bought or sold, the player's money moved as their own trades move it; false, nothing changed, when the
+        /// money or shares are not there. With <paramref name="move"/> false the price move is given in <paramref name="kept"/>.
         /// </summary>
         public static bool Fill(MarketState state, Bot b, Stock s, bool buying, long qty, int cents, int least, IMarketWallet wallet, int phase, bool move, out double kept, out bool shortOfCash)
         {
@@ -567,14 +543,14 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        /// <summary>The most shares a bot may buy now: an order's most, within what the player and their bots may hold together.</summary>
+        /// <summary>The most shares a bot may buy now: an order's most, within what the player and their bots may hold.</summary>
         public static long Room(MarketState state, Stock s)
         {
             long held = Math.Abs(state.Held(s.Id)) + Held(state, s.Id);
             return Math.Max(0L, Math.Min(MarketTrading.MostPerOrder(s), MarketTrading.MostHeld(s) - held));
         }
 
-        /// <summary>A split: every bot's shares, stops and pending trades in the company; a stop rounded down, never easier to reach.</summary>
+        /// <summary>A split: every bot's shares, stops and pending trades in the company; a stop rounded down.</summary>
         public static void Split(MarketState state, Stock s, int ratio)
         {
             for (int i = 0; i < state.Bots.Count; i++)

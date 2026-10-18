@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Markets
         }
     }
 
-    /// <summary>A bot's holding in one company; its cost is money paid, commission included.</summary>
+        /// <summary>Its cost is money paid, commission included.</summary>
     public sealed class BotHolding
     {
         public int StockId;
@@ -71,10 +71,7 @@ namespace RealLifeOverhaul.Markets
         public long Qty;
     }
 
-    /// <summary>
-    /// A trading bot the player has hired. It trades the player's own cash, each trade a transaction of the game's, up to the
-    /// capital it was given; <see cref="Cash"/> is what of that is not in shares.
-    /// </summary>
+    /// <summary>A trading bot the player has hired: it trades the player's own cash up to its capital; <see cref="Cash"/> is what is not in shares.</summary>
     public sealed class Bot
     {
         public int Firm;
@@ -97,7 +94,6 @@ namespace RealLifeOverhaul.Markets
         public readonly List<BotHolding> Holdings = new List<BotHolding>(10);
         public readonly List<BotOrder> Pending = new List<BotOrder>(10);
 
-        // What it trades (MarketBots.InScope).
         public BotScope Scope;
         public readonly List<int> Picks = new List<int>(MarketBots.PicksMost);   // BotScope.Picked
 

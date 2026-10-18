@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Markets
             return id >= ListingCatalogue.IdFirst && id < ListingCatalogue.IdFirst + ListingCatalogue.IdCount;
         }
 
-        /// <summary>A ticker of three or four capitals: the first letters of the name's words, then of the name.</summary>
+        /// <summary>A ticker of three or four capitals from the first letters of the name's words.</summary>
         public static string TickerOf(string name)
         {
             var t = new System.Text.StringBuilder(4);
@@ -59,7 +59,6 @@ namespace RealLifeOverhaul.Markets
             return t.ToString();
         }
 
-        /// <summary>The stock the advisers price from the company's books, with all its shares, old and new.</summary>
         public static Stock Provisional(ListingFile f, ulong owner, int day, int year, in MarketEnv env, long debt)
         {
             int id = f.StockId > 0 ? f.StockId : IdFor(owner);
@@ -78,9 +77,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The books as rates a day: the last four complete quarters' takings and profit after fair pay (with eight on
-        /// record, the lower of the last year and the two years' mean), the last quarter's, and the year's growth in takings
-        /// as a log a year before inflation. All nothing with nothing on record.
+        /// The books as rates a day: the last four complete quarters' takings and profit after fair pay (with eight, the lower
+        /// of the last year and the two years' mean), the last quarter's, and the year's growth as a log before inflation.
         /// </summary>
         public static void Books(ListingFile f, int day, int year, out double revY, out double niY, out double revQ, out double niQ, out double growth)
         {
@@ -145,7 +143,6 @@ namespace RealLifeOverhaul.Markets
             return profit > 0 ? profit - profit * payBp / 10000L : profit;
         }
 
-        /// <summary>The market's view of the business set from rates a day over a year and a quarter.</summary>
         public static void Seed(Stock s, in MarketEnv env, int year, double revY, double niY, double revQ, double niQ, double debt, double growth)
         {
             OwnListing o = s.Own;
@@ -169,16 +166,12 @@ namespace RealLifeOverhaul.Markets
             return MarketValuation.Clamp(MarketCatalogue.LongRealGrowth + ListingCatalogue.GrowthShrink * (real - MarketCatalogue.LongRealGrowth), -0.25, 0.4);
         }
 
-        /// <summary>What the council's policies and the bank rate do to the company's margin, for its sector.</summary>
         public static double LeverMargin(Stock s, in MarketEnv env)
         {
             return (MarketInputs.LeversBp(env, s.Sector) + s.Def.RateBp * (env.RateBp - 300) / 100.0) / 10000.0;
         }
 
-        /// <summary>
-        /// The business as the market sees it: turnover at the quarter's rate, the usual margin the year's with the council's
-        /// policies on top, and the quarter's margin against it as a patch that passes.
-        /// </summary>
+        /// <summary>The business as the market sees it: turnover at the quarter's rate, the margin the year's, the quarter's a passing patch.</summary>
         public static void Figures(Stock s, in MarketEnv env, int year)
         {
             OwnListing o = s.Own;
@@ -244,7 +237,6 @@ namespace RealLifeOverhaul.Markets
             return (Math.Max(0.0, o.Rps) - was) * Math.Max(0L, o.Others(s));
         }
 
-        /// <summary>After a market morning's days: the view set again, and what was expected beyond the figures fading.</summary>
         public static void Morning(Stock s, in MarketEnv env, int year, int days)
         {
             Figures(s, env, year);
@@ -260,7 +252,6 @@ namespace RealLifeOverhaul.Markets
             s.Distress = MarketValuation.DistressOf(s, env);
         }
 
-        /// <summary>A quarter ended: what was expected of the waiting quarter kept, the next one's set from the rate now.</summary>
         public static void CloseQuarter(Stock s, int quarter, int year, in MarketEnv env)
         {
             OwnListing o = s.Own;
@@ -269,7 +260,6 @@ namespace RealLifeOverhaul.Markets
             o.Expect = Expected(s, quarter, year, env);
         }
 
-        /// <summary>What the market expects a quarter to make after tax and pay, at the year's followed rate.</summary>
         public static double Expected(Stock s, int quarter, int year, in MarketEnv env)
         {
             OwnListing o = s.Own;
@@ -278,10 +268,7 @@ namespace RealLifeOverhaul.Markets
             return rate * days;
         }
 
-        /// <summary>
-        /// The waiting quarter's results from the books, nothing drawn: profit against expectation, growth read again, and
-        /// the dividend declared (the founder's proposal while they chair the board, else a share of the reserve).
-        /// </summary>
+        /// <summary>The waiting quarter's results from the books, nothing drawn, and the dividend declared with them.</summary>
         public static MarketNews Results(Stock s, int day, int year, in MarketEnv env)
         {
             OwnListing o = s.Own;
@@ -336,7 +323,6 @@ namespace RealLifeOverhaul.Markets
             return new MarketNews { Day = day, Kind = MarketNewsKind.Results, Stock = s.Id, A = eps, B = consensus };
         }
 
-        /// <summary>The dividend a share the board declares with results, in cents, within the reserve a share.</summary>
         public static int Declared(Stock s)
         {
             OwnListing o = s.Own;
@@ -357,10 +343,7 @@ namespace RealLifeOverhaul.Markets
             s.Own.Rps -= cents / 100.0;
         }
 
-        /// <summary>
-        /// The mood at the open from what the city made of the founder yesterday (ln): their Standing's move, the papers,
-        /// and a scandal, which also cuts the company's outlook for good.
-        /// </summary>
+        /// <summary>The mood at the open (ln) from what the city made of the founder yesterday; a scandal also cuts the outlook.</summary>
         public static double OpenNews(Stock s, in MarketEnv env)
         {
             OwnListing o = s.Own;
@@ -399,7 +382,6 @@ namespace RealLifeOverhaul.Markets
             return day >= next - Math.Max(1, (next - from) / ListingCatalogue.ClosedShare);
         }
 
-        /// <summary>The first day the founder may deal again after a closed time.</summary>
         public static int OpensAgain(Stock s, int day, int year)
         {
             if (!Closed(s, day, year))
@@ -410,10 +392,7 @@ namespace RealLifeOverhaul.Markets
             return MarketTrading.NextTradingDay(results - 1);
         }
 
-        /// <summary>
-        /// A founder's deal before commission, the reserve its shares carry included: positive is what the founder pays,
-        /// negative what they receive.
-        /// </summary>
+        /// <summary>A founder's deal before commission with the reserve its shares carry: positive the founder pays, negative receives.</summary>
         public static long DealMoney(long shares, int cents, double rps, bool buying)
         {
             long value = MarketTrading.Value(Math.Abs(shares), cents, buying);
@@ -422,8 +401,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// A founder's deal matched oldest first against the opposite deals within a year / ShortSwingYearShare; returns
-        /// the gain on the matches, which the founder pays back to the company. What is left is kept for the next deal.
+        /// A founder's deal matched oldest first against opposite deals in the short-swing time; returns the gain on the
+        /// matches, which the founder pays back to the company.
         /// </summary>
         public static long ShortSwing(OwnListing o, int day, long shares, int cents, int year)
         {
@@ -481,7 +460,6 @@ namespace RealLifeOverhaul.Markets
             return Capped(bp, ListingCatalogue.KickMostBp) / 10000.0;
         }
 
-        /// <summary>The year's room for new shares, against the company now.</summary>
         public static long IssueRoom(Stock s, int day, int year)
         {
             OwnListing o = s.Own;
@@ -490,7 +468,6 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(0L, s.Shares * Math.Max(0, ListingCatalogue.IssueMostBpYear - used) / 10000L);
         }
 
-        /// <summary>Why the founder may not deal now; None if they may.</summary>
         public static OwnWhy DealBlocked(Stock s, int day, int year, long shares)
         {
             OwnListing o = s.Own;
@@ -531,13 +508,11 @@ namespace RealLifeOverhaul.Markets
             return of > 0 ? (int)Math.Min(100000L, (shares * 10000L + of - 1) / of) : 100000;
         }
 
-        /// <summary>What has been used of a year's limit this game year.</summary>
         public static int YearUsedBp(OwnListing o, int day, int year, int used)
         {
             return o.DealYear == MarketCatalogue.YearOf(day, Math.Max(8, year)) ? used : 0;
         }
 
-        /// <summary>A deal, a buy-back, counted against the year's limits.</summary>
         public static void Count(OwnListing o, int day, int year, int bought, int sold, int back)
         {
             int y = MarketCatalogue.YearOf(day, Math.Max(8, year));
@@ -552,8 +527,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// What a share is paid when the founder takes the company private: the price with the premium, never under the
-        /// last year's highest close nor, in its first year, its listing price, so running it down first does not pay.
+        /// What a share is paid when the founder takes the company private: never under the last year's highest close nor, in
+        /// its first year, its listing price, so running it down first does not pay.
         /// </summary>
         public static int PrivateCents(Stock s, int day, int year)
         {

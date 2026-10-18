@@ -3,11 +3,10 @@ using System;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The player's cash as the market counts it (MarketEngine.Wallet), in front of the game's: money worked orders have with
-    /// the broker stays the player's for every other purchase and charge (<see cref="Cash"/>). A purchase or charge beyond
-    /// the cash in hand takes back what it needs with a margin for rounding, sales' takings first, then parked money, latest
-    /// order first, one transaction each. A worked order parks from the cash in hand alone (<see cref="Free"/>), so none
-    /// takes another's. Game-free; a look at the orders only when the cash in hand is short.
+    /// The player's cash as the market counts it, in front of the game's: money worked orders have with the broker stays the
+    /// player's for every other purchase. A purchase beyond the cash in hand takes back what it needs, sales' takings first,
+    /// then parked money, latest order first; a worked order parks from the cash in hand alone (<see cref="Free"/>). A look
+    /// at the orders only when the cash in hand is short.
     /// </summary>
     public sealed class BrokerWallet : IMarketWallet
     {
@@ -20,16 +19,15 @@ namespace RealLifeOverhaul.Markets
             _state = state;
         }
 
-        /// <summary>The cash in hand: what the app shows as the cash, and all a worked order parks from.</summary>
+        /// <summary>What the app shows as the cash, and all a worked order parks from.</summary>
         public long Free => _hand.Cash;
 
-        /// <summary>What can be afforded in the market: the cash in hand and the money worked orders have with the broker.</summary>
+        /// <summary>The cash in hand and the money worked orders have with the broker.</summary>
         public long Cash => _hand.Cash + InvestRules.WithBroker(_state, out _, out _);
 
         /// <summary>
         /// What a give-back adds for the game's rounding: its money is a float moved in pieces, so over 2^24 a sum can come a
-        /// few units short and the takes after it round again. A millionth of the sum and 4 covers the worst case found
-        /// (19,077 on 20 billion) four times over. It stays in the cash.
+        /// few units short. A millionth of the sum and 4 covers the worst case found (19,077 on 20 billion) four times over.
         /// </summary>
         public static long Margin(long amount)
         {
@@ -61,10 +59,7 @@ namespace RealLifeOverhaul.Markets
             _hand.Force(amount, why, name);
         }
 
-        /// <summary>
-        /// Charges to come, one or several in a row: what they need beyond the cash in hand, with the margin, given back now
-        /// as far as the broker's money goes, so none takes back again. Unlike Ready, they are taken all the same.
-        /// </summary>
+        /// <summary>Charges to come: what they need beyond the cash in hand, with the margin, given back now so none takes back again.</summary>
         public void Cover(long amount)
         {
             if (amount > _hand.Cash)
@@ -84,8 +79,7 @@ namespace RealLifeOverhaul.Markets
             return amount <= 0 || _hand.Take(amount, why, name);
         }
 
-        // Money with the broker given back, at most 'need': sales' takings first, then parked money, the latest order first
-        // (orders are kept by number), one transaction each.
+        // Money with the broker given back, at most 'need': sales' takings first, then parked money, the latest order first.
         private void Release(long need)
         {
             for (int pass = 0; pass < 2 && need > 0; pass++)

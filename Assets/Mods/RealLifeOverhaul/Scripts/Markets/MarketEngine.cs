@@ -3,21 +3,19 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>What the market needs from outside: fresh secrets, the city, money, and someone to tell. MarketGame is the game's.</summary>
+    /// <summary>What the market needs from outside: fresh secrets, the city, money, and someone to tell. MarketGameWorld is the game's.</summary>
     public interface IMarketWorld
     {
         /// <summary>A secret nobody can guess, for a market day the tape does not have yet.</summary>
         ulong NewSecret();
-        /// <summary>The city as it is now, for a market day being played for the first time.</summary>
+        /// <summary>The city as it is now, for a market day played for the first time.</summary>
         MarketEnv Env(int day);
         IMarketWallet Wallet { get; }
-        /// <summary>The least commission, at today's prices.</summary>
+        /// <summary>At today's prices.</summary>
         int CommissionLeast { get; }
-        /// <summary>A piece of market news.</summary>
         void Said(in MarketNews news);
-        /// <summary>An order (or part of one) was filled, at a price in cents.</summary>
+        /// <summary>An order or part of one was filled, at a price in cents; qty 0 when it was refused.</summary>
         void Filled(Order order, Stock stock, long qty, int cents);
-        /// <summary>Money came in or went out of the account for a reason: a dividend, a payout, interest, what the broker took.</summary>
         void Paid(TradeKind kind, Stock stock, long amount);
         /// <summary>A margin call: so much more equity is needed by the close of a day.</summary>
         void Called(long amount, int byDay);
@@ -41,10 +39,7 @@ namespace RealLifeOverhaul.Markets
         public readonly MarketTape Tape;
         private readonly IMarketWorld _world;
 
-        /// <summary>
-        /// The player's cash as the market counts it: the game's, with worked orders' money with the broker still the player's
-        /// for every other purchase (BrokerWallet). A worked order's own day of money parks from the cash in hand alone.
-        /// </summary>
+        /// <summary>The player's cash as the market counts it, worked orders' money with the broker still the player's.</summary>
         public readonly BrokerWallet Wallet;
         private long _replayUntil;
         private readonly List<MarketEvent> _live = new List<MarketEvent>(16);
@@ -60,8 +55,8 @@ namespace RealLifeOverhaul.Markets
         private int _secretDay = -1;
 
         /// <summary>
-        /// A Going Public host with guests: every player's trades move the one city's prices, so a trade's lasting move goes on
-        /// the tape as an event that every market plays at the next moment of the grid. Off, it is put on the price at once.
+        /// A Going Public host with guests: a trade's lasting move goes on the tape as an event every market plays at the next
+        /// moment. Off, it is put on the price at once.
         /// </summary>
         public bool TradesAsEvents;
 
@@ -90,19 +85,15 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>True while the moments being played are ones the tape has seen before (after a load).</summary>
+        /// <summary>True while the moments being played are ones the tape has seen before.</summary>
         public bool Replaying => State.Now < _replayUntil;
 
-        /// <summary>
-        /// True while orders wait after a load, up to the furthest moment ever played; at that moment orders are taken. A load
-        /// at the save's own moment takes orders at once: the clock stands still while the phone is open.
-        /// </summary>
+        /// <summary>True while orders wait after a load, up to the furthest moment ever played; at that moment orders are taken.</summary>
         public bool Held => State.HeldDay > 0 && State.Now < MarketState.Time(State.HeldDay, State.HeldPhase);
 
-        /// <summary>True while the market trades: a market day, from the open to the close.</summary>
         public bool Trading => State.InSession;
 
-        /// <summary>A save has just been loaded: the tape is followed to its frontier and no order is taken until the market is there again.</summary>
+        /// <summary>A save has just been loaded: no order is taken until the market is back at the tape's frontier.</summary>
         public void HoldAfterLoad()
         {
             _replayUntil = Tape != null ? Tape.Frontier : 0;
@@ -111,10 +102,9 @@ namespace RealLifeOverhaul.Markets
             State.HeldPhase = (int)(until % 100);
         }
 
-        /// <summary>The time up to which the tape is followed.</summary>
         public long ReplayUntil => _replayUntil;
 
-        /// <summary>A Going Public guest follows the host's market, its tape the host's, up to the furthest moment the host has played.</summary>
+        /// <summary>A Going Public guest follows the host's tape up to the furthest moment the host has played.</summary>
         public void Follow(long until)
         {
             if (until > _replayUntil)
@@ -155,7 +145,6 @@ namespace RealLifeOverhaul.Markets
         private static readonly double SectorNews = Math.Sqrt(1.0 - MarketCatalogue.SectorMoodShare), SectorMood = Math.Sqrt(MarketCatalogue.SectorMoodShare);
         private static readonly double OwnNews = Math.Sqrt(1.0 - MarketCatalogue.OwnMoodShare), OwnMood = Math.Sqrt(MarketCatalogue.OwnMoodShare);
 
-        // The sector of the first listed company in a trade, or -1.
         private int SectorOfTrade(int trade)
         {
             if (trade < 0 || trade >= MarketInputs.Trades.Length)
@@ -183,18 +172,15 @@ namespace RealLifeOverhaul.Markets
             _live.Add(new MarketEvent { Day = State.Day, Phase = State.Phase, Kind = kind, A = a, B = b });
         }
 
-        /// <summary>
-        /// Plays the market forward to a moment, doing at most about <paramref name="work"/> company-moments of work; true
-        /// when it got there, false when it will go on next time.
-        /// </summary>
+        /// <summary>Plays the market forward to a moment, at most about <paramref name="work"/> company-moments; true when it got there.</summary>
         public bool RunTo(long target, ref int work)
         {
             return Run(target, ref work, long.MaxValue);
         }
 
         /// <summary>
-        /// Plays the market forward to a moment for at most so many Stopwatch ticks, a piece at a time (a step, or one company's
-        /// or bot's part of the open or close). What it plays does not depend on where the time runs out.
+        /// Plays the market forward to a moment for at most so many Stopwatch ticks; what it plays does not depend on where the
+        /// time runs out.
         /// </summary>
         public bool RunFor(long target, long ticks)
         {
@@ -203,9 +189,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// True while the open or the close is half played. <see cref="MarketState.Now"/> stays at the moment before it until
-        /// its last piece, so the market is behind and takes no order; anything changing the market from outside finishes it
-        /// first (<see cref="Finish"/>), so it plays exactly as in one frame on every machine.
+        /// True while the open or the close is half played: the market is behind and takes no order, and anything changing it
+        /// from outside finishes it first (<see cref="Finish"/>), so it plays exactly as in one frame on every machine.
         /// </summary>
         public bool Midway => _part != Part.None;
 
@@ -265,7 +250,6 @@ namespace RealLifeOverhaul.Markets
         private long Played => _part == Part.None ? State.Now
             : MarketState.Time(_partDay, _part >= Part.CloseCandles ? MarketCatalogue.PhaseClose : MarketCatalogue.PhaseOpen);
 
-        // The pieces of the open and the close worked through over frames.
         private enum Part
         {
             None,
@@ -436,7 +420,6 @@ namespace RealLifeOverhaul.Markets
             _secretDay = day;
         }
 
-        // The city's events that came in during the moment just played, or the tape's.
         private void ApplyEvents(int day, int phase)
         {
             _due.Clear();

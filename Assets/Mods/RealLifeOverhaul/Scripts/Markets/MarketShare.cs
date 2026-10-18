@@ -19,7 +19,6 @@ namespace RealLifeOverhaul.Markets
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>The host's market, whole, for a guest.</summary>
         public static string Write(MarketState s, MarketTape tape)
         {
             var t = new StringBuilder(128 * 1024);
@@ -29,7 +28,7 @@ namespace RealLifeOverhaul.Markets
             return t.ToString();
         }
 
-        /// <summary>The host's update: the tape's new lines and the check of where the market stands; null if nothing moved.</summary>
+        /// <summary>The host's new tape lines and a check of where the market stands; null if nothing moved.</summary>
         public static string Changes(string lines, MarketState s, ref long checkedAt)
         {
             if (string.IsNullOrEmpty(lines) && s.Now == checkedAt)
@@ -48,7 +47,7 @@ namespace RealLifeOverhaul.Markets
             t.Append("K ").Append(s.Day.ToString(Inv)).Append(' ').Append(s.Phase.ToString(Inv)).Append(' ').Append(Checksum(s).ToString(Inv)).Append('\n');
         }
 
-        /// <summary>What the city's market comes to at its moment: every listed company's last price and volume, and the index.</summary>
+        /// <summary>Every listed company's last price and volume, and the index, at the market's moment.</summary>
         public static long Checksum(MarketState s)
         {
             unchecked
@@ -67,10 +66,9 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The host's market for a guest with the guest's own holdings, orders, trades, account, dividends owed and bots, and the
-        /// host's tape from that day on <paramref name="into"/> if it is a copy of the host's (what it played alone since is
-        /// forgotten), else a new one. Null, nothing changed, for a text that cannot be read. A holding in a company the host
-        /// lacks is kept, its company gone at its last price.
+        /// The host's market for a guest with the guest's own holdings, account and bots, and the host's tape on
+        /// <paramref name="into"/> if it is a copy of the host's, else a new one. Null, nothing changed, for a text that cannot
+        /// be read.
         /// </summary>
         public static MarketState Adopt(MarketState mine, string text, List<long> checks, MarketTape into, out MarketTape tape, out long frontier)
         {
@@ -168,9 +166,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The host's tape lines put on a guest's tape, the host's secret and city of a day replacing any it had; the furthest
-        /// moment into <paramref name="frontier"/>, which only grows, and the checks (moment, sum) into the list. False for
-        /// lines that cannot be read.
+        /// The host's tape lines put on a guest's tape, replacing any day it had; the furthest moment into
+        /// <paramref name="frontier"/>, which only grows, and the checks into the list. False for lines that cannot be read.
         /// </summary>
         public static bool Follow(MarketTape tape, string lines, List<long> checks, ref long frontier)
         {
@@ -245,12 +242,11 @@ namespace RealLifeOverhaul.Markets
         }
     }
 
-    /// <summary>
-    /// A Going Public guest's trades on their way to the host: each fill's lasting move and shares added up by company until
-    /// the next request, then sent as "i|stock|micros|shares" lines. A host reads at most <see cref="LinesMost"/> lines a
-    /// request and takes <see cref="MicrosMost"/> at most a line, so a larger sum goes over several lines and the rest waits:
-    /// the host's tape takes the same total as if every fill had been sent alone. Game-free; a line's text once a second.
-    /// </summary>
+        /// <summary>
+        /// A Going Public guest's trades on their way to the host, added up by company until the next request and sent as
+        /// "i|stock|micros|shares" lines; a larger sum goes over several lines, so the host's tape takes the same total as if
+        /// every fill had been sent alone. A line's text once a second.
+        /// </summary>
     public sealed class GuestTrades
     {
         public const int LinesMost = 64;          // a request (MarketDirector.HostRequest)
@@ -281,7 +277,6 @@ namespace RealLifeOverhaul.Markets
             _shares[at] += shares;
         }
 
-        /// <summary>The lines what is waiting comes to.</summary>
         public int Lines
         {
             get
@@ -295,10 +290,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>
-        /// Up to <paramref name="most"/> lines given to <paramref name="send"/>, the company that traded first first, each line's
-        /// shares its part of the move; the rest waits. Returns how many lines were sent.
-        /// </summary>
+        /// <summary>Up to <paramref name="most"/> lines sent, the company that traded first first; the rest waits. How many were sent.</summary>
         public int Send(Action<string> send, int most)
         {
             int sent = 0;

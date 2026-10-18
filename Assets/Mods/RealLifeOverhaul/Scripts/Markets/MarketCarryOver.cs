@@ -5,14 +5,12 @@ using RealLifeOverhaul.Economy.Ventures;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The old Ventures stock market brought into this one, once. Game-free. Each old company maps to one here
-    /// (<see cref="MarketCatalogue.VenturesMap"/>, a rival's by name) and a new market starts them at their old prices; the
-    /// player's holdings move exactly, no money moving, and the old file is emptied and marked as moved. A holding with no
-    /// company here is paid out at its old price.
+    /// The old Ventures stock market brought into this one, once: each old company maps to one here
+    /// (<see cref="MarketCatalogue.VenturesMap"/>, a rival's by name) at its old price, and the player's holdings move
+    /// exactly, no money moving. A holding with no company here is paid out at its old price.
     /// </summary>
     public static class MarketCarryOver
     {
-        /// <summary>What a carry-over did.</summary>
         public struct Result
         {
             public int Moved;
@@ -22,7 +20,6 @@ namespace RealLifeOverhaul.Markets
             public long PaidMoney;
         }
 
-        /// <summary>The id here of one of the old market's companies; 0 for none.</summary>
         public static int IdOf(Company old, MarketState state)
         {
             if (old == null)
@@ -71,10 +68,7 @@ namespace RealLifeOverhaul.Markets
             return file != null && !file.MarketMoved && file.Holdings.Count > 0;
         }
 
-        /// <summary>
-        /// The holdings moved from the old file into the market, once: the old file is emptied and marked as moved whatever
-        /// happens. A holding of a company gone from this market is paid out at its old price with no commission.
-        /// </summary>
+        /// <summary>The holdings moved from the old file, once: the old file is emptied and marked as moved whatever happens.</summary>
         public static Result Move(VenturesFile file, MarketState state, IMarketWallet wallet)
         {
             var result = new Result();

@@ -4,10 +4,7 @@ using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>
-    /// Bonds by rule: their yields, payments, price before their end and what a payment does. Game-free and with no chance
-    /// of its own: everything comes from the day's MarketEnv and the calendar, so every machine pays the same.
-    /// </summary>
+    /// <summary>Bonds by rule, with no chance of their own: everything comes from the day's MarketEnv and the calendar.</summary>
     public static class BondRules
     {
         /// <summary>A bond's yield a year in bp for a term in years; a deposit's at the bank of that rank.</summary>
@@ -29,13 +26,12 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(BondCatalogue.YieldLeastBp, (int)Math.Round(y));
         }
 
-        /// <summary>A bond's whole term in days of a year of so many.</summary>
         public static int TermDays(BondDef d, int year)
         {
             return Math.Max(1, (d.TermQuarters * Math.Max(8, year) + 2) / 4);
         }
 
-        /// <summary>The bonds on offer today: the Treasury's and the city's, and a deposit at each of the banks named (the largest first).</summary>
+        /// <summary>The Treasury's and the city's bonds, and a deposit at each of the banks named.</summary>
         public static void Offers(in MarketEnv env, int year, IList<string> banks, List<BondOffer> into)
         {
             into.Clear();
@@ -58,22 +54,18 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>The least one purchase may be, in money, at the city's price level (1000 at the start).</summary>
+        /// <summary>In money, at the city's price level (1000 at the start).</summary>
         public static long Least(int priceLevel)
         {
             return Math.Max(1L, (long)BondCatalogue.LeastAtStart * Math.Max(100, priceLevel) / 1000L);
         }
 
-        /// <summary>The flat most of one purchase, in money, at the city's price level.</summary>
         public static long Most(int priceLevel)
         {
             return Math.Max(1L, (long)BondCatalogue.MostAtStart * Math.Max(100, priceLevel) / 1000L);
         }
 
-        /// <summary>
-        /// The most one purchase may be for a player worth so much (money, the market's holdings included): the larger of
-        /// the flat sum and a share of their worth, never over the cap.
-        /// </summary>
+        /// <summary>The most one purchase may be for a player worth so much: the larger of the flat sum and a share of their worth, capped.</summary>
         public static long Most(int priceLevel, long worth)
         {
             long flat = Most(priceLevel);
@@ -82,7 +74,6 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(flat, Math.Min(cap, share));
         }
 
-        /// <summary>What <see cref="Most(int, long)"/> never passes, at the city's price level.</summary>
         public static long Cap(int priceLevel)
         {
             return Math.Max(Most(priceLevel), (long)BondCatalogue.MostCapAtStart * Math.Max(100, priceLevel) / 1000L);
@@ -94,13 +85,12 @@ namespace RealLifeOverhaul.Markets
             return large ? BondCatalogue.HoldingsMostLarge : BondCatalogue.HoldingsMost;
         }
 
-        /// <summary>Whether a bond can be bought now for so much money (nothing is changed).</summary>
         public static BondWhy CanBuy(BondBook book, BondOffer offer, long money, long cash, int priceLevel, bool open, bool held, bool on)
         {
             return CanBuy(book, offer, money, cash, open, held, on, Least(priceLevel), Most(priceLevel), 1, BondCatalogue.HoldingsMost);
         }
 
-        /// <summary>The same with the limits given; a ladder makes one holding for each of its terms.</summary>
+        /// <summary>A ladder makes one holding for each of its terms.</summary>
         public static BondWhy CanBuy(BondBook book, BondOffer offer, long money, long cash, bool open, bool held, bool on, long least, long most, int holdings, int holdingsMost)
         {
             if (!on)
@@ -134,7 +124,6 @@ namespace RealLifeOverhaul.Markets
             return money > cash ? BondWhy.NoCash : BondWhy.None;
         }
 
-        /// <summary>The Treasury's bonds a ladder spreads a sum over, shortest first; how many.</summary>
         public static int LadderTerms(List<BondDef> into)
         {
             into.Clear();
@@ -160,10 +149,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>
-        /// A bond at its end bought again: same kind, term, bank and share put back, at the day's yield, for the face given
-        /// in cents. Nothing changes hands, so no purchase limit and no commission.
-        /// </summary>
+        /// <summary>A bond at its end bought again at the day's yield; nothing changes hands, so no purchase limit and no commission.</summary>
         public static BondHolding Rolled(BondHolding h, BondDef d, int id, int yieldBp, long face, int day, int year)
         {
             return new BondHolding
@@ -173,7 +159,6 @@ namespace RealLifeOverhaul.Markets
             };
         }
 
-        /// <summary>A bond bought today for so much money, at its offer's yield; its payments from today.</summary>
         public static BondHolding Make(int id, BondOffer offer, long money, int day, int year, int reinvest, bool test)
         {
             BondDef d = offer.Def;
@@ -185,7 +170,7 @@ namespace RealLifeOverhaul.Markets
             };
         }
 
-        /// <summary>A share to put back held to one of the choices (BondCatalogue.Reinvest): the nearest at or under it.</summary>
+        /// <summary>The nearest of BondCatalogue.Reinvest at or under it.</summary>
         public static int ReinvestOf(int pct)
         {
             int chosen = BondCatalogue.Reinvest[0];
@@ -207,13 +192,12 @@ namespace RealLifeOverhaul.Markets
             return h.BoughtDay + (int)((payment * span * 2L + count) / (2L * count));
         }
 
-        /// <summary>The day of its next payment; 0 when every one is made.</summary>
+        /// <summary>0 when every one is made.</summary>
         public static int NextPayDay(BondHolding h)
         {
             return h.Paid < h.Payments ? PayDay(h, h.Paid + 1) : 0;
         }
 
-        /// <summary>One payment's interest in cents, before tax.</summary>
         public static long InterestCents(BondHolding h, BondDef d)
         {
             return Math.Max(0L, h.Face) * Math.Max(0, h.RateBp) / (10000L * Math.Max(1, d.PaysPerYear));
@@ -229,7 +213,7 @@ namespace RealLifeOverhaul.Markets
             paid = net - back;
         }
 
-        /// <summary>A bond's worth today for each 100 it repays, its payments and face discounted at today's yield for what is left.</summary>
+        /// <summary>For each 100 it repays: its payments and face discounted at today's yield for what is left.</summary>
         public static double Price(BondHolding h, BondDef d, in MarketEnv env, int day, int year)
         {
             double y = Math.Max(8, year);
@@ -246,7 +230,7 @@ namespace RealLifeOverhaul.Markets
             return price + 100.0 * Math.Pow(1.0 + rate, -left * m);
         }
 
-        /// <summary>What selling it now brings, in cents: its price less the spread; a deposit its face less a few months' interest.</summary>
+        /// <summary>In cents: its price less the spread; a deposit its face less a few months' interest.</summary>
         public static long SaleCents(BondHolding h, BondDef d, in MarketEnv env, int day, int year)
         {
             if (d.Kind == BondKind.Deposit)
@@ -273,13 +257,12 @@ namespace RealLifeOverhaul.Markets
             return face;
         }
 
-        /// <summary>Interest paid so far after tax, in cents, paid out and put back.</summary>
         public static long InterestSoFar(BondHolding h)
         {
             return h == null ? 0L : h.Received + h.Reinvested;
         }
 
-        /// <summary>Whole money out of cents with what was carried before; the cents under a unit are carried on.</summary>
+        /// <summary>Whole money out of cents; the cents under a unit are carried on.</summary>
         public static long Money(long cents, ref long carry)
         {
             long all = Math.Max(0L, cents) + Math.Max(0L, carry);

@@ -6,11 +6,9 @@ using System.Text;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The market's journal, kept outside the save in a file per playthrough (MarketGame reads and writes it); it makes the
-    /// market proof against loading. Each market day's secret is written here when the day is first reached, never into
-    /// the save, so a day replayed after a load has the same secret and city and gives the same prices. The furthest time
-    /// reached (the frontier) is kept too: after a load nothing can be traded until the market is past it. Plain lines,
-    /// read once at load; a line that cannot be read is passed over. Game-free.
+    /// The market's journal, kept outside the save in a file per playthrough (MarketTapeFile), so the market is proof against
+    /// loading: a day's secret is written here when first reached, never into the save, so a replayed day gives the same
+    /// prices. After a load nothing is traded until the market is past the frontier. Plain lines, read once at load.
     ///     T1 id                   the header
     ///     D day secret            a day's secret, hexadecimal
     ///     V day n,n,n,...         the city on that day (MarketEnv in a fixed order)
@@ -73,7 +71,7 @@ namespace RealLifeOverhaul.Markets
             AppendEnv(_pending, day, env);
         }
 
-        /// <summary>The events recorded for a moment of the market, applied after the phase, into a list.</summary>
+        /// <summary>The events recorded for a moment, applied after the phase, into a list.</summary>
         public void EventsAt(int day, int phase, List<MarketEvent> into)
         {
             for (int i = 0; i < _events.Count; i++)
@@ -102,17 +100,13 @@ namespace RealLifeOverhaul.Markets
             AppendSecret(_pending, day, secret);
         }
 
-        /// <summary>A day's city from the host's tape, in place of whatever was here.</summary>
         public void SetEnv(int day, in MarketEnv env)
         {
             _envs[day] = env;
             AppendEnv(_pending, day, env);
         }
 
-        /// <summary>
-        /// Every event from a moment on, forgotten: what a guest played alone after it last followed is not the host's. A day's
-        /// secret and city are replaced as the host's come.
-        /// </summary>
+        /// <summary>Every event from a moment on, forgotten: what a guest played alone after it last followed is not the host's.</summary>
         public void Forget(long from)
         {
             _events.RemoveAll(e => MarketState.Time(e.Day, e.Phase) >= from);
@@ -168,7 +162,7 @@ namespace RealLifeOverhaul.Markets
             AppendEvent(_pending, e);
         }
 
-        /// <summary>The frontier moved on, only ever forwards.</summary>
+        /// <summary>Only ever forwards.</summary>
         public void Reach(int day, int phase, bool write)
         {
             if (MarketState.Time(day, phase) <= Frontier)
@@ -188,7 +182,6 @@ namespace RealLifeOverhaul.Markets
             AppendFrontier(_pending);
         }
 
-        /// <summary>The lines to append to the file, and none pending after.</summary>
         public string TakePending()
         {
             string text = _pending.ToString();
@@ -196,7 +189,7 @@ namespace RealLifeOverhaul.Markets
             return text;
         }
 
-        /// <summary>The whole tape as a file, compacted: header, secrets, cities, events, the frontier.</summary>
+        /// <summary>The whole tape as a file, compacted.</summary>
         public string Whole()
         {
             StringBuilder t = _whole;

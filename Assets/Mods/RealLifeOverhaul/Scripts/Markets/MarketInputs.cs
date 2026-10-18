@@ -3,16 +3,14 @@ using System;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// What everything in the city does to the market, by sector. Game-free. A day's <see cref="MarketEnv"/> moves margins
-    /// and growth (lasting while their cause lasts) and the mood; an event during the day moves prices at once by a
-    /// "kick", a one-off move of the mood that fades. A new source of news is an Event kind, its row in
+    /// What everything in the city does to the market, by sector. A day's <see cref="MarketEnv"/> moves margins, growth and
+    /// mood; an event moves prices at once by a "kick" that fades. A new source of news is an Event kind, its row in
     /// <see cref="EventKicks"/> and a line in Wiring/MarketLinks.
     /// </summary>
     public static class MarketInputs
     {
         private const int Sectors = (int)MarketSector.Count;
 
-        // The game's trades the player competes in
         /// <summary>Parts of the game's business type ids a listed company can share a trade with (CompanyDef.Trade).</summary>
         public static readonly string[] Trades =
         {
@@ -51,7 +49,6 @@ namespace RealLifeOverhaul.Markets
             new[] { G(MarketSector.Stores, -20), G(MarketSector.Specialists, -20), G(MarketSector.Industry, 10), G(MarketSector.Construction, -10) },   // home and office
             new[] { G(MarketSector.Stores, -15), G(MarketSector.Logistics, 5) });                                                                // general goods
 
-        /// <summary>A sector's margin effect, in bp, of the day's supply.</summary>
         public static int SupplyBp(in MarketEnv env, MarketSector sector)
         {
             if (env.Supply == null)
@@ -87,7 +84,6 @@ namespace RealLifeOverhaul.Markets
 
         public const int BusinessTaxLever = 2;
 
-        /// <summary>A sector's margin effect, in bp, of the council's policies as they stand.</summary>
         public static int LeversBp(in MarketEnv env, MarketSector sector)
         {
             int bp = 0;
@@ -98,7 +94,6 @@ namespace RealLifeOverhaul.Markets
             return bp;
         }
 
-        /// <summary>The tax on profit as the council's business tax stands.</summary>
         public static double TaxRate(in MarketEnv env)
         {
             return MarketCatalogue.TaxRate + env.Lever(BusinessTaxLever) * MarketCatalogue.TaxPerStep;
@@ -146,16 +141,15 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// What happened (MarketEvent.Kind). On the tape as a number: never renumber. Trade (A the company, B the lasting move
-        /// in millionths of the log price) and Volume (B shares) are a Going Public player's trade; Buzz is Flare's. From
-        /// EventOwn come a listed founder's OwnActions; Company is a tech news item, B in millionths, held to a twentieth.
+        /// What happened (MarketEvent.Kind); on the tape as a number, never renumber. Trade (A the company, B the move in
+        /// millionths) and Volume (B shares) are a Going Public player's; Buzz is Flare's; Company is a tech news item.
         /// </summary>
         public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventBuzz = 8, EventTrade = 9, EventVolume = 10,
             EventOwn = 11, EventCompany = EventOwn + (int)OwnAction.Count, EventCount = EventCompany + 1;
 
         public const int CompanyMicrosMost = 50000;   // millionths of the log price, either way
 
-        /// <summary>A trade's lasting move of a price, in the millionths the tape keeps it in.</summary>
+        /// <summary>In the millionths the tape keeps it in.</summary>
         public static int TradeMicros(double move)
         {
             double micros = Math.Round(move * 1000000.0);
@@ -184,7 +178,7 @@ namespace RealLifeOverhaul.Markets
             return e.Kind == EventBuzz && sector == tradeSector ? Capped(Math.Sign(e.B) * BuzzKickBp, BuzzKickBp) : 0;
         }
 
-        /// <summary>A sector's move in bp when the market hears of an event. A policy has none: it is priced as part of the business.</summary>
+        /// <summary>A policy has no move: it is priced as part of the business.</summary>
         public static int EventBp(in MarketEvent e, MarketSector sector)
         {
             if (e.Kind == EventPolicy)

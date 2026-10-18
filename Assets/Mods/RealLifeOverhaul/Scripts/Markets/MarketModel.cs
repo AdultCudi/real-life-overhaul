@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Markets
 
         public bool Empty => C <= 0;
 
-        /// <summary>This candle with the next one after it: first open, highest high, lowest low, last close, volumes added.</summary>
+        /// <summary>This candle followed by the next: first open, highest high, lowest low, last close, volumes added.</summary>
         public Candle Then(in Candle next)
         {
             if (Empty)
@@ -76,7 +76,6 @@ namespace RealLifeOverhaul.Markets
         public GoneReason Reason;
         public int GoneCents;                    // what each share was paid out at when it left; 0 nothing
 
-        // The price
         public double LogFair;                   // ln of what the market thinks a share is worth, in money
         public double Mis;                       // ln of the price less LogFair: today's moves so far and the mood
         public double Sent;                      // the market's mood about it (ln), which fades
@@ -86,7 +85,6 @@ namespace RealLifeOverhaul.Markets
         public int PrevClose, Open, High, Low, Last;   // cents; PrevClose is what today's move is from (MarketLife.DayBases)
         public long DayVolume;
 
-        // The business
         public double Rev;                      // turnover a year, in money at today's prices
         public double Margin;                   // operating profit on turnover
         public double Growth;                   // real growth a year as things stand
@@ -106,7 +104,6 @@ namespace RealLifeOverhaul.Markets
         public int ResultsDay;                   // when the pending quarter's results come out; 0 none
         public readonly List<QuarterResult> Results = new List<QuarterResult>(MarketCatalogue.QuartersKept + 1);
 
-        // Dividends
         public int DpsCents;                     // the last quarterly dividend declared, a share
         public int DeclaredCents;                // a dividend declared and not yet paid
         public int RecordDay;                    // holders at the close of this day are paid it
@@ -114,7 +111,6 @@ namespace RealLifeOverhaul.Markets
         public bool ExDone;                      // the price has already dropped by it
         public int LastExDay;                    // the day the last dividend left the price
 
-        // The life of the company
         public double Adv;                       // shares traded on an ordinary day
         public int SplitDay, SplitRatio;         // a split announced, effective at the open of that day
         public int BidDay, BidEndDay, BidCents;  // a takeover bid: made, completes on, at; whether it completes is drawn on that day
@@ -122,7 +118,6 @@ namespace RealLifeOverhaul.Markets
         public int ResultsBoostDay;              // its own moves are larger on this day (its results)
         public int LowDays;                      // market days running it has closed under PennyCents
 
-        // Candles
         public readonly Candle[] Bars = new Candle[MarketCatalogue.IntradayBars];   // today's, one a step
         public int BarCount;
         public readonly Candle[] LastBars = new Candle[MarketCatalogue.IntradayBars];  // the session before today's
@@ -139,10 +134,10 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The middle price, in money.</summary>
         public double Mid => Math.Exp(LogFair + Mis);
 
-        /// <summary>The middle price in whole cents (one at least).</summary>
+        /// <summary>The middle price in whole cents, one at least.</summary>
         public int MidCents => Math.Max(1, (int)Math.Round(Mid * 100.0));
 
-        /// <summary>What all its shares are worth at the last price, in money.</summary>
+        /// <summary>All its shares at the last price, in money.</summary>
         public double MarketValue => Shares * (Last > 0 ? Last : MidCents) / 100.0;
     }
 
@@ -183,7 +178,7 @@ namespace RealLifeOverhaul.Markets
         Count
     }
 
-    /// <summary>An order to buy or sell. Prices in cents.</summary>
+        /// <summary>An order to buy or sell; prices in cents.</summary>
     public sealed class Order
     {
         public int Id;
@@ -311,7 +306,6 @@ namespace RealLifeOverhaul.Markets
             return packed;
         }
 
-        /// <summary>One lever's position: -1, 0 or 1.</summary>
         public int Lever(int lever)
         {
             int packed = Levers;
@@ -494,7 +488,6 @@ namespace RealLifeOverhaul.Markets
             return null;
         }
 
-        /// <summary>Shares held of a company: under nothing for a short.</summary>
         public long Held(int stockId)
         {
             Position p = Position(stockId);
@@ -516,7 +509,7 @@ namespace RealLifeOverhaul.Markets
 
         public long Frontier => Time(FrontierDay, FrontierPhase);
 
-        /// <summary>True from a market day's open to its close (the open done, the close not yet).</summary>
+        /// <summary>True from a market day's open to its close.</summary>
         public bool InSession => MarketCatalogue.TradingDay(Day) && Phase >= MarketCatalogue.PhaseOpen && Phase < MarketCatalogue.PhaseClose;
     }
 }

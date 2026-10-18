@@ -13,20 +13,19 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// Part of the engine: the player's bonds. At each close after its dividends a bond makes every payment whose day has
-    /// come, putting back the share chosen and paying the rest out; at its end it repays and goes, or, set to roll over
-    /// while bonds are on, is bought again at the day's yield with no money changing hands. Bought, one or as a ladder, and
-    /// sold while the market trades. Game-free; a look at each bond at a close, nothing per frame.
+    /// Part of the engine: the player's bonds. At each close a bond makes every payment due, putting back the share chosen;
+    /// at its end it repays, or rolls over at the day's yield with no money changing hands. A look at each bond at a close,
+    /// nothing per frame.
     /// </summary>
     public sealed partial class MarketEngine
     {
-        /// <summary>What a bond did, for the director to tell once the frame's work is done.</summary>
+        /// <summary>Told once the frame's work is done.</summary>
         public Action<BondNote> BondTold;
 
         /// <summary>A bond's name for the game's transactions, in the language of the moment; null in the checks.</summary>
         public Func<BondHolding, string> BondName;
 
-        /// <summary>Bonds are on (Settings.MarketsBonds, set by the director); off, a bond set to roll over is repaid at its end.</summary>
+        /// <summary>Settings.MarketsBonds, set by the director; off, a bond set to roll over is repaid at its end.</summary>
         public bool BondsOn = true;
 
         private readonly List<BondDef> _ladder = new List<BondDef>(8);   // the Treasury's bonds a ladder spreads over
@@ -36,8 +35,6 @@ namespace RealLifeOverhaul.Markets
         {
             return BondName != null ? BondName(h) ?? string.Empty : string.Empty;
         }
-
-        // At the close
 
         private void Income(int day)
         {
@@ -79,8 +76,8 @@ namespace RealLifeOverhaul.Markets
             BondTold?.Invoke(new BondNote { Kind = BondNoteKind.Rolled, Holding = next.Id, Def = d.Id, A = face / 100, B = yieldBp, C = next.EndDay });
         }
 
-        // A payment of interest: tax withheld, the share chosen put back at the day's price (none with the last, unless it
-        // rolls over: then into the new bond at 100), the rest paid out.
+        // A payment of interest: tax withheld, the share chosen put back at the day's price (into the new bond at 100 when the
+        // last rolls over), the rest paid out.
         private void Pay(BondHolding h, BondDef d, int day)
         {
             long interest = BondRules.InterestCents(h, d);
@@ -115,7 +112,6 @@ namespace RealLifeOverhaul.Markets
             BondTold?.Invoke(new BondNote { Kind = BondNoteKind.Interest, Holding = h.Id, Def = h.Def, A = money, B = putBack / 100, C = tax / 100 });
         }
 
-        // The end of its term: what it repays, with the cents carried, into the player's cash.
         private void Repay(BondHolding h, int day)
         {
             long money = BondRules.Money(h.Face, ref h.Carry);
@@ -126,15 +122,12 @@ namespace RealLifeOverhaul.Markets
             BondTold?.Invoke(new BondNote { Kind = BondNoteKind.Repaid, Holding = h.Id, Def = h.Def, A = money });
         }
 
-        // The player's asks
-
         /// <summary>The bonds on offer today, a deposit at each of the banks named, the largest first.</summary>
         public void BondOffers(IList<string> banks, List<BondOffer> into)
         {
             BondRules.Offers(State.Env, Year, banks, into);
         }
 
-        /// <summary>A catalogue bond, a deposit at a bank's rank and name, as offered today.</summary>
         public BondOffer Offer(int def, int bank, string issuer)
         {
             BondDef d = BondCatalogue.Find(def);
@@ -150,20 +143,17 @@ namespace RealLifeOverhaul.Markets
             };
         }
 
-        /// <summary>
-        /// Whether a bond can be bought now for so much; <paramref name="worth"/> is what the player is worth for the most of
-        /// one purchase (nothing: the flat sum). More bonds may be held with the large option on.
-        /// </summary>
+        /// <summary>Whether a bond can be bought for so much; <paramref name="worth"/> sets the most of one purchase (0: flat sum).</summary>
         public BondWhy CanBuyBond(BondOffer offer, long money, bool open, bool on, long worth = 0)
         {
             int level = State.Env.PriceLevel;
             return BondRules.CanBuy(State.Bonds, offer, money, Wallet.Cash, open, Held, on, BondRules.Least(level), BondRules.Most(level, worth), 1, BondRules.HoldingsMost(LargeOn));
         }
 
-        /// <summary>A bond bought now for so much of the player's cash at today's yield; null with the reason when it cannot be.</summary>
+        /// <summary>Null with the reason when it cannot be bought.</summary>
         public BondHolding BuyBond(BondOffer offer, long money, int reinvest, bool open, bool on, out BondWhy why, long worth = 0, bool rollover = false)
         {
-            Finish();   // Midway
+            Finish();
             why = CanBuyBond(offer, money, open, on, worth);
             if (why != BondWhy.None)
             {
@@ -181,10 +171,7 @@ namespace RealLifeOverhaul.Markets
             return h;
         }
 
-        /// <summary>
-        /// Whether a ladder can be bought now for so much; nothing is changed. Each piece over the Treasury's terms must be a
-        /// purchase of its own, with room for every piece and cash for all.
-        /// </summary>
+        /// <summary>Whether a ladder can be bought for so much; each piece is a purchase of its own, with room and cash for all.</summary>
         public BondWhy LadderWhy(long money, bool open, bool on, long worth = 0)
         {
             int n = BondRules.LadderTerms(_ladder);
@@ -196,7 +183,6 @@ namespace RealLifeOverhaul.Markets
             int level = State.Env.PriceLevel;
             long most = BondRules.Most(level, worth);
             BondOffer first = Offer(_ladder[0].Id, -1, null);
-            // The smallest piece, with room for all.
             BondWhy why = BondRules.CanBuy(State.Bonds, first, _pieces[n - 1], long.MaxValue, open, Held, on, BondRules.Least(level), most, n, BondRules.HoldingsMost(LargeOn));
             if (why != BondWhy.None)
             {
@@ -205,13 +191,10 @@ namespace RealLifeOverhaul.Markets
             return _pieces[0] > most ? BondWhy.TooMuch : money > Wallet.Cash ? BondWhy.NoCash : BondWhy.None;
         }
 
-        /// <summary>
-        /// A ladder bought now: one sum spread evenly over the Treasury's terms, shortest first, each piece a bond of its own at
-        /// today's yield. Returns how many were bought; 0 with the reason when it cannot be.
-        /// </summary>
+        /// <summary>One sum spread evenly over the Treasury's terms, a bond each; how many were bought, 0 with the reason.</summary>
         public int BuyLadder(long money, int reinvest, bool rollover, bool open, bool on, out BondWhy why, long worth = 0)
         {
-            Finish();   // Midway
+            Finish();
             why = LadderWhy(money, open, on, worth);
             if (why != BondWhy.None)
             {
@@ -235,7 +218,7 @@ namespace RealLifeOverhaul.Markets
             return bought;
         }
 
-        /// <summary>The ladder's pieces for a sum in money, shortest term first, as <see cref="BuyLadder"/> buys; how many.</summary>
+        /// <summary>The ladder's pieces for a sum, shortest term first, as <see cref="BuyLadder"/> buys; how many.</summary>
         public int LadderPieces(long money, long[] into)
         {
             int n = BondRules.LadderTerms(_ladder);
@@ -243,10 +226,9 @@ namespace RealLifeOverhaul.Markets
             return n;
         }
 
-        /// <summary>Whether a bond rolls over at its end, from now on; false with the reason when it cannot be changed.</summary>
         public bool SetBondRollover(int id, bool on, out BondWhy why)
         {
-            Finish();   // Midway
+            Finish();
             BondHolding h = HeldBond(id, out why);
             if (h == null)
             {
@@ -256,10 +238,10 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        /// <summary>A bond sold, or a deposit closed, now into the player's cash; false with the reason when it cannot be.</summary>
+        /// <summary>A bond sold, or a deposit closed, into the player's cash; false with the reason when it cannot be.</summary>
         public bool SellBond(int id, bool open, out long money, out BondWhy why)
         {
-            Finish();   // Midway
+            Finish();
             money = 0;
             BondHolding h = State.Bonds.Holding(id);
             why = h == null ? BondWhy.NotHeld : Held ? BondWhy.Held : !open ? BondWhy.Closed : BondWhy.None;
@@ -276,10 +258,10 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        /// <summary>The share of each payment's interest put back, from its next payment; false with the reason when it cannot be.</summary>
+        /// <summary>From its next payment; false with the reason when it cannot be.</summary>
         public bool SetBondReinvest(int id, int pct, out BondWhy why)
         {
-            Finish();   // Midway
+            Finish();
             BondHolding h = HeldBond(id, out why);
             if (h == null)
             {
@@ -297,24 +279,24 @@ namespace RealLifeOverhaul.Markets
             return why == BondWhy.None ? h : null;
         }
 
-        /// <summary>What a bond would bring if it were sold now, in cents.</summary>
+        /// <summary>What a bond would bring if sold now, in cents.</summary>
         public long BondSale(BondHolding h)
         {
             BondDef d = BondCatalogue.Find(h.Def);
             return d != null ? BondRules.SaleCents(h, d, State.Env, State.Day, Year) : Math.Max(0L, h.Face);
         }
 
-        /// <summary>A bond's price today for each 100 it repays.</summary>
+        /// <summary>For each 100 it repays.</summary>
         public double BondPrice(BondHolding h)
         {
             BondDef d = BondCatalogue.Find(h.Def);
             return d != null ? BondRules.Price(h, d, State.Env, State.Day, Year) : 100.0;
         }
 
-        /// <summary>The test tools: every bond's next payment made now as on its day; one at its end repays or rolls over. How many.</summary>
+        /// <summary>The test tools: every bond's next payment made now; one at its end repays or rolls over. How many.</summary>
         public int PayBondsNow()
         {
-            Finish();   // Midway
+            Finish();
             int count = 0;
             List<BondHolding> held = State.Bonds.Holdings;
             for (int i = held.Count - 1; i >= 0; i--)
@@ -335,13 +317,10 @@ namespace RealLifeOverhaul.Markets
             return count;
         }
 
-        /// <summary>
-        /// The test tools: one bond brought to its end now, every payment to come made, then repaid or rolled over (the first set
-        /// to roll over, else the first held). Its own number, or 0 with none held.
-        /// </summary>
+        /// <summary>The test tools: one bond brought to its end now (the first set to roll over, else the first); its number, 0 with none.</summary>
         public int EndBondNow()
         {
-            Finish();   // Midway
+            Finish();
             List<BondHolding> held = State.Bonds.Holdings;
             int at = -1;
             for (int i = 0; i < held.Count && at < 0; i++)

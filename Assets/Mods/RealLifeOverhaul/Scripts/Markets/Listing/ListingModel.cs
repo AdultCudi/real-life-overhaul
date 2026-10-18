@@ -14,10 +14,7 @@ namespace RealLifeOverhaul.Markets
         Listed = 6       // on the market
     }
 
-    /// <summary>
-    /// What the founder of a listed company asks for, as a tape event (MarketInputs.EventOwn + this). Audit (B the findings)
-    /// and Proceeds (B a business's price in thousands) are not the founder's to ask. Saved as a number.
-    /// </summary>
+    /// <summary>What the founder asks for, as a tape event (MarketInputs.EventOwn + this); Audit and Proceeds are not theirs to ask. Saved as a number.</summary>
     public enum OwnAction { Pay = 0, Dividend = 1, Deal = 2, BuyBack = 3, Issue = 4, Private = 5, Audit = 6, Proceeds = 7, Count }
 
     /// <summary>Why something the founder asked for cannot be done. Saved as a number (in the news); each has a sentence.</summary>
@@ -57,7 +54,7 @@ namespace RealLifeOverhaul.Markets
         }
     }
 
-    /// <summary>The figures of one quarter of the company's own books, from the game's statements.</summary>
+    /// <summary>One quarter of the company's own books, from the game's statements.</summary>
     public struct BookQuarter
     {
         public int Quarter;          // counted from the start of the game (MarketCatalogue.QuarterOf)
@@ -75,10 +72,9 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// A player's company as a listed company, alike on every machine of a session; its founder is the save that hashes
-    /// to <see cref="Owner"/>. Game-free. Each day the other holders' part of its profit after tax and pay is taken from
-    /// the founder's cash into a reserve (<see cref="Rps"/>) that pays dividends, buy-backs and a take-private, and that a
-    /// loss comes back out of.
+    /// A player's company as a listed company, alike on every machine of a session; its founder is the save that hashes to
+    /// <see cref="Owner"/>. Each day the other holders' part of its profit is taken from the founder's cash into a reserve
+    /// (<see cref="Rps"/>) that pays dividends, buy-backs and a take-private, and that a loss comes back out of.
     /// </summary>
     public sealed class OwnListing
     {
@@ -114,13 +110,11 @@ namespace RealLifeOverhaul.Markets
         public double Carry;                     // the other holders' part of the profit not yet moved, under a whole unit
         public readonly List<OwnDeal> Deals = new List<OwnDeal>(8);
 
-        /// <summary>Shares the founder does not hold: the other holders'.</summary>
         public long Others(Stock s)
         {
             return s.Shares - Founder;
         }
 
-        /// <summary>The founder's stake in bp of the shares in issue.</summary>
         public int StakeBp(Stock s)
         {
             return s.Shares > 0 ? (int)(Founder * 10000L / s.Shares) : 0;
@@ -170,7 +164,6 @@ namespace RealLifeOverhaul.Markets
         public bool Empty => Stage == ListingStage.None && Books.Count == 0 && AuditDay == 0 && StockId == 0 && Fees == 0 && FirstDay == 0 && string.IsNullOrEmpty(Suspended)
                              && string.IsNullOrEmpty(Name) && AdvisedDay == 0 && AuditFrom == 0 && HandOver.Count == 0 && string.IsNullOrEmpty(HandOverTo) && Proceeds == 0;
 
-        /// <summary>The index in <see cref="Books"/> of a quarter; -1 for none.</summary>
         public int IndexOf(int quarter)
         {
             for (int i = 0; i < Books.Count; i++)
