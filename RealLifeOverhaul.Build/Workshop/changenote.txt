@@ -1,4 +1,8 @@
-0.34.0
+0.35.0
 
-New
-- Calls with people you know: with an RLO Texts pack, when they bring something up you type your own reply and they answer in their own words. It counts the same as the friendly answer; plans, favours and gifts stay buttons. Without a pack, for Mom, or with Type your own words in calls off, you pick from two answers as before.
+Fixed
+- The first road accident in a city no longer makes the game stutter for a moment.
+- The fee a venue pays for a booked set is now cut for business owners, as every other pay is. With jobs switched off, a booked set no longer says you are busy.
+- A canvasser for your own council campaign hands out your leaflet, not another candidate's, and a donation can no longer take a campaign past what it may take from one person.
+- Once you have met many people, someone you know no longer sometimes has a face that differs from their picture in your contacts.
+- A police station is never furnished in front of you any more, only while the screen is dark or the game is paused, and furnishing it takes less time.
