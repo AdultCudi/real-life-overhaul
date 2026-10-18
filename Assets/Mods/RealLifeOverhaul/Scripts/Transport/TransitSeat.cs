@@ -1,26 +1,13 @@
 using System;
-using BigAmbitions.Characters;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The player sitting on a bus shelter's bench. The game seats the player only inside its
-    /// own activities (a chair or a bench opens the rest or the entertainment screen, which
-    /// runs the clock and cannot be left for a bus), so this is done the way the mod's leisure
-    /// activities hold and animate the player: the game's own navigation blocker keeps them on
-    /// the spot, and the mod's clips are played over the animator (<see cref="ActivityAnimator"/>):
-    /// <c>sit_bench</c> onto the seat, <c>sit_wait</c> while seated, <c>sit_bench_up</c> off it.
-    /// The clips are made for a seat 0.46 m up whose middle is 0.30 m behind the feet, which is
-    /// where <see cref="BusStopDressing"/> has the feet. The player stays an ordinary walker on
-    /// the navigation mesh throughout (nothing of theirs is switched off), so whatever ends the
-    /// sitting, they can walk.
-    ///
-    /// Per frame only while it is on: the last step to the seat and the turn (a third of a
-    /// second), and then one test for any key or click, which stands them up. The director
-    /// stands them up when the bus is at the stop, and calls <see cref="Abort"/> on every way
-    /// out of the feature.
+    /// The player sitting on a bus shelter's bench, held by the game's navigation blocker while the mod's clips play over the
+    /// animator (<see cref="ActivityAnimator"/>); the game seats a player only in activities that run the clock. They stay an
+    /// ordinary walker, so whatever ends it they can walk. Per frame only while on: the last step, then a test for any key.
     /// </summary>
     public sealed class TransitSeat
     {
@@ -44,18 +31,17 @@ namespace RealLifeOverhaul
         /// <summary>From the key press until the player is on their feet and free again.</summary>
         public bool Active => _step != Step.None;
 
-        /// <summary>Sitting, and ready to be stood up.</summary>
-        public bool Seated => _step == Step.Seated || _step == Step.Down;
+        public bool Seated => _step == Step.Seated || _step == Step.Down;   // sitting, ready to stand up
 
         public BusStopDressing At => _at;
 
-        /// <summary>Metres between where the feet were put and where the seat wants them (the mesh may not reach it).</summary>
+        /// <summary>Metres between where the feet were put and where the seat wants them.</summary>
         public float FeetOff { get; private set; }
 
-        /// <summary>Whether the clips and the clip player are there at all (the prompt is not offered otherwise).</summary>
+        /// <summary>Whether the clips and the clip player are there; the prompt is not offered otherwise.</summary>
         public static bool Possible => ClipLibrary.Ready && ActivityAnimators.Working && ClipLibrary.Has("sit_bench") && ClipLibrary.Has("sit_wait") && ClipLibrary.Has("sit_bench_up");
 
-        /// <summary>Sits the player down on a seat of a dressed shelter. False, with why, and nothing changed, if it cannot.</summary>
+        /// <summary>Sits the player on a seat of a dressed shelter. False, with why and nothing changed, if it cannot.</summary>
         public bool Sit(BusStopDressing dressing, int seat, out string why)
         {
             why = null;
@@ -99,11 +85,11 @@ namespace RealLifeOverhaul
             player.SetNavigationBlocker(Blocker);
             _held = true;
             _step = Step.Settling;
-            _until = Time.time + 1.2f;   // the last step is over well before this; it is only the limit
+            _until = Time.time + 1.2f;   // only a limit: the last step is over well before
             return true;
         }
 
-        /// <summary>Per frame, only while <see cref="Active"/>. True in the frame a key or a click asks to get up.</summary>
+        /// <summary>Per frame while <see cref="Active"/>. True in the frame a key or a click asks to get up.</summary>
         public bool Frame(float delta)
         {
             if (_step == Step.Settling && _player != null)
@@ -125,7 +111,7 @@ namespace RealLifeOverhaul
             return (_step == Step.Seated || _step == Step.Down) && Input.anyKeyDown;
         }
 
-        /// <summary>From the director's timer while <see cref="Active"/>: the steps from one clip to the next.</summary>
+        /// <summary>From the director's timer while <see cref="Active"/>: the steps from clip to clip.</summary>
         public void Tick(float now)
         {
             if (_step == Step.None)
@@ -135,7 +121,7 @@ namespace RealLifeOverhaul
             ThirdPersonCharacter body = _player != null ? _player.Character : null;
             if (body == null || body.animator == null || !body.visible || RagdollSystem.Holds(body) || _at == null || _at.Stop == null || !ActivityAnimators.Working)
             {
-                Abort();   // the stop was taken in under them, they were knocked over, the clips were switched off
+                Abort();   // the stop was taken in, they were knocked over, or the clips were switched off
                 return;
             }
             switch (_step)
@@ -146,7 +132,7 @@ namespace RealLifeOverhaul
                     {
                         if (CitySpots.Flat(place.position - _feet) > 0.5f * 0.5f || !_animator.Play(_down.Clip, 0.2f, 1f, ClipEnd.Hold))
                         {
-                            Abort();   // something kept them from the seat: they stay on their feet
+                            Abort();   // something kept them from the seat
                             return;
                         }
                         place.rotation = _facing;
@@ -158,7 +144,7 @@ namespace RealLifeOverhaul
                 case Step.Down:
                     if (now >= _until)
                     {
-                        // sit_bench ends in sit_wait's first pose exactly: no fade.
+                        // sit_bench ends in sit_wait's first pose exactly, so no fade.
                         if (!_animator.Play(_wait.Clip, 0f))
                         {
                             Abort();
@@ -171,7 +157,7 @@ namespace RealLifeOverhaul
                 case Step.Seated:
                     if (!_animator.Active || _animator.Current != _wait.Clip)
                     {
-                        Abort();   // somebody else took the animator: nothing of ours is left on it to undo
+                        Abort();   // something else took the animator, so nothing of ours is left on it
                     }
                     break;
 
@@ -184,7 +170,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Gets up off the seat (the clip, then free). Before they have sat down properly, at once.</summary>
+        /// <summary>Gets up with the clip; before they have sat down properly, at once.</summary>
         public void Stand(float now)
         {
             if (_step == Step.Seated && _animator != null && _animator.Play(_up.Clip, 0.2f))
@@ -199,7 +185,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Everything undone at once, whatever the step. Never throws; safe at any time.</summary>
+        /// <summary>Undoes everything at once, whatever the step. Never throws.</summary>
         public void Abort()
         {
             Finish(0.1f);

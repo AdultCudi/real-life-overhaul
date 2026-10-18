@@ -2,11 +2,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The test tools of the options page: each starts one thing now on the player's own people, so it can be seen
-    /// without waiting for it. What they change is real (a review given, an offer made, a course ended), as it would be
-    /// had the day come.
-    /// </summary>
+    /// <summary>The test tools of the options page: each starts one thing now on the player's own people, for real.</summary>
     public sealed partial class TechDirector
     {
         private Person TestPerson(bool senior)
@@ -58,7 +54,8 @@ namespace RealLifeOverhaul.Tech
             }
             string rival = TechBridges.Rival != null && p.At != null ? TechBridges.Rival(p.At) : null;
             TalentRules.Offer(p.File, string.IsNullOrEmpty(rival) ? TechText.T("reallife_talent_rival_default") : rival, Save.Day);
-            Tell(NotificationType.Warning, "reallife_talent_note_poach", Data("name", p.Name, "rival", p.File.PoachBy, "percent", (p.File.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),
+            Tell(NotificationType.Warning, "reallife_talent_note_poach",
+                Data("name", p.Name, "rival", p.File.PoachBy, "percent", (p.File.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),
                 TabTeam, Row(p.File));
             Changed();
         }
@@ -108,7 +105,8 @@ namespace RealLifeOverhaul.Tech
             }
             for (; made < 3; made++)
             {
-                Seeker s = HiringRules.NewSeeker(_hiring.Seed, _hiring.Next(), Save.Day, false, ad.Role, ad.Level, _rate, ShortageOf(TalentCatalogue.Role(ad.Role).Family), _districts.Count > 0 ? _districts[0] : string.Empty);
+                Seeker s = HiringRules.NewSeeker(_hiring.Seed, _hiring.Next(), Save.Day, false, ad.Role, ad.Level, _rate,
+                    ShortageOf(TalentCatalogue.Role(ad.Role).Family), _districts.Count > 0 ? _districts[0] : string.Empty);
                 HiringGame.Name(s);
                 _hiring.Seekers.Add(s);
                 _hiring.Applicants.Add(new Applicant { Id = _hiring.Next(), Seeker = s.Id, Ad = ad.Id, Day = Save.Day, Interest = HiringRules.Interest(s, ad) });
@@ -133,7 +131,8 @@ namespace RealLifeOverhaul.Tech
             {
                 Said(_notes[i]);
             }
-            Notifications.Show(NotificationType.Info, "reallife_hire_note_market_day", Data("count", HiringRules.Open(_hiring).ToString(), "rivals", _hiring.RivalAds.Count.ToString()), 8f, null, null, false, false);
+            Notifications.Show(NotificationType.Info,
+                "reallife_hire_note_market_day", Data("count", HiringRules.Open(_hiring).ToString(), "rivals", _hiring.RivalAds.Count.ToString()), 8f, null, null, false, false);
             Changed();
         }
 
@@ -210,10 +209,7 @@ namespace RealLifeOverhaul.Tech
             Notifications.ShowError("reallife_tech_test_no_taker");
         }
 
-        /// <summary>
-        /// The council puts a job out to tender now, as it does every so many days, for a firm of the player's that takes on
-        /// its work: its rival bidders are named on its page and on the firms' Competitors pages.
-        /// </summary>
+        /// <summary>The council puts a job out to tender now, for a firm of the player's that takes on its work.</summary>
         public void TestTender()
         {
             if (!_firmsOn || Save == null)
@@ -258,7 +254,7 @@ namespace RealLifeOverhaul.Tech
             p.Users -= gone;
             firm.File.Outages++;
             firm.File.Reputation = System.Math.Max(0, firm.File.Reputation - 30);
-            Tell2(NotificationType.Warning, "reallife_tech_note_outage", Data("product", p.Name, "lost", gone.ToString()), TabProducts, TechApp.ProductRow + p.Id);
+            TellTech(NotificationType.Warning, "reallife_tech_note_outage", Data("product", p.Name, "lost", gone.ToString()), TabProducts, TechApp.ProductRow + p.Id);
             ChangedTech();
         }
 
@@ -304,10 +300,11 @@ namespace RealLifeOverhaul.Tech
                     s.State = (int)StartupState.Raising;
                     s.LastRound = Save.Day;
                     long round = VentureRules.RoundSize(s.Stage + 1);
-                    s.Ask = new TermSheet { Amount = System.Math.Max(VentureCatalogue.TicketLeast, round * VentureCatalogue.AskPlayerShare / 1000), Pre = VentureRules.PreMoney(s.Mrr, VentureRules.Growth(s, mood, HypeNow), mood, s.Stage + 1),
+                    s.Ask = new TermSheet { Amount = System.Math.Max(VentureCatalogue.TicketLeast, round * VentureCatalogue.AskPlayerShare / 1000),
+                        Pre = VentureRules.PreMoney(s.Mrr, VentureRules.Growth(s, mood, HypeNow), mood, s.Stage + 1),
                         Lapse = Save.Day + 7, ProRata = true };
                     Heard(new VentureNote { Kind = VentureRules.NotePitch, Startup = s.Id, Amount = s.Ask.Amount }, Save.Day);
-                    ChangedVenture();
+                    ChangedTech();
                     return;
                 }
             }
@@ -332,7 +329,7 @@ namespace RealLifeOverhaul.Tech
                     {
                         Heard(_ventureNotes[n], Save.Day);
                     }
-                    ChangedVenture();
+                    ChangedTech();
                     return;
                 }
             }
@@ -355,7 +352,7 @@ namespace RealLifeOverhaul.Tech
                     _venture.LastDay = Save.Day - 1;
                     CapsDay(Save.Day, VentureRules.Mood(HiringGame.Cycle));
                     _venture.LastDay = Save.Day;
-                    ChangedVenture();
+                    ChangedTech();
                     return;
                 }
             }
@@ -374,7 +371,7 @@ namespace RealLifeOverhaul.Tech
             d.DownUntil = Save.Day + 1;
             d.Outages++;
             _infra.Cloud.Reputation = System.Math.Max(0, _infra.Cloud.Reputation - 80);
-            Tell2(NotificationType.Warning, "reallife_infra_note_outage", Data("name", d.Name), TabInfra, TechApp.CentreRow + d.Place);
+            TellTech(NotificationType.Warning, "reallife_infra_note_outage", Data("name", d.Name), TabInfra, TechApp.CentreRow + d.Place);
             ChangedTech();
         }
 
@@ -390,7 +387,7 @@ namespace RealLifeOverhaul.Tech
             c.LastCut = Save.Day - FirmsCatalogue.MonthDays;
             InfraRules.PriceWar(c, InfraCatalogue.CloudDemand, Save.Day);
             TechBridges.Stock?.Invoke(107, -30);
-            Tell2(NotificationType.Info, "reallife_infra_note_price_war", Data("name", c.Name, "price", TechText.Mille(c.RivalPrice)), TabInfra, TechApp.CloudRow);
+            TellTech(NotificationType.Info, "reallife_infra_note_price_war", Data("name", c.Name, "price", TechText.Mille(c.RivalPrice)), TabInfra, TechApp.CloudRow);
             ChangedTech();
         }
     }

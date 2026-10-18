@@ -1219,6 +1219,13 @@ internal static partial class Program
         return o;
     }
 
+    // Every part of the market's engine (MarketEngine.cs and MarketEngine.*.cs), as text.
+    private static string[] EngineSources()
+    {
+        string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets"));
+        return System.IO.Directory.Exists(dir) ? System.IO.Directory.GetFiles(dir, "MarketEngine*.cs").Select(System.IO.File.ReadAllText).ToArray() : new string[0];
+    }
+
     private static string ModSource(string relative)
     {
         string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts", relative));
@@ -1627,7 +1634,7 @@ internal static partial class Program
         float exact = InvestRules.PieceMost, wide = int.MaxValue;
         Check((long)exact == InvestRules.PieceMost && (long)wide != int.MaxValue && (double)(float)(InvestRules.PieceMost * 4) == InvestRules.PieceMost * 4,
             "money: a piece is a sum a float holds exactly (2^30), where int.MaxValue becomes 2^31 as a float");
-        string game = ModSource(@"Markets\MarketGame.cs");
+        string game = ModSource(@"Markets\MarketWallet.cs");
         int at = game.IndexOf("public sealed class MarketWallet", StringComparison.Ordinal), end = at >= 0 ? game.IndexOf("public static long Wealth()", at, StringComparison.Ordinal) : -1;
         string wallet = at >= 0 && end > at ? game.Substring(at, end - at) : string.Empty;
         Check(wallet.Contains("InvestRules.Piece(ref left)") && !wallet.Contains("Math.Min(amount, int.MaxValue)") && !wallet.Contains("amount <= int.MaxValue") && wallet.Contains("Move(-1, amount")
@@ -1685,7 +1692,7 @@ internal static partial class Program
               && bridges.Contains("public static Func<long> NetWorth;") && bridges.Contains("NetWorth = null;") && links.Contains("MarketBridges.NetWorth = Books.NetWorth;")
               && books.Contains("public static long NetWorth()") && books.Contains("Owing(file.Accounts[i])") && books.Contains("EconomyBridges.OtherDebts?.Invoke(Debts);")
               && books.Contains("file.Shark.Active") && overview.Contains("if (!Books.Owing(a))") && overview.Contains("FinanceText.Money(Books.NetWorth())")
-              && !ModSource(@"Markets\MarketEngine.cs").Contains("RealLifeOverhaul.Economy"),
+              && EngineSources().Length >= 9 && !EngineSources().Any(e => e.Contains("RealLifeOverhaul.Economy")),
             "invest: the most of one bond purchase reads the Finance app's net worth through the wiring (the same accounts, the same debts), the market adding its own once, and no feature calls the other");
     }
 

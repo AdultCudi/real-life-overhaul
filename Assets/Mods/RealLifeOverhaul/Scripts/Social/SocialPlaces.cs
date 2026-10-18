@@ -13,34 +13,32 @@ namespace RealLifeOverhaul
     public struct Venue
     {
         public CityBuildingController Building;
-        public Vector3 Front;      // where somebody waits: pavement, at street level, clear of vehicles
+        public Vector3 Front;      // where somebody waits: pavement at street level, clear of vehicles
         public Vector3 Door;
         public string Name;        // the business's name, or its address
-        public string Street;      // the game's own street name (not localised: it identifies the address in the save)
+        public string Street;      // the game's own street name, not localised: it identifies the address in the save
         public int Number;
-        public bool Anywhere;      // no building at all: a stretch of pavement (a walk agreed "here", from the test button)
+        public bool Anywhere;      // no building: a stretch of pavement (a walk agreed "here", from the test button)
 
         public bool Valid => Building != null || Anywhere;
     }
 
-    /// <summary>
-    /// Where the social life happens: which of the city's businesses will do for an outing, the
-    /// name of the street a thing happened on, the places on the pavement people wait at, walk
-    /// in from and walk off to. Everything here is asked when a plan is made, a scene is staged
-    /// or the paper is written; nothing is asked on a timer.
-    /// </summary>
+    /// <summary>Where the social life happens: venues, streets, and pavement to wait at, walk in from and walk off to. Nothing on a timer.</summary>
     public static class SocialPlaces
     {
         private const int Nearest = 3;
 
         private static readonly CityBuildingController[] Candidates = new CityBuildingController[Nearest];
         private static readonly float[] CandidateSqr = new float[Nearest];
+        private static readonly Vector3[] Corners = new Vector3[48];
+        private static NavMeshPath _route;
+        private static NavMeshQueryFilter _walk;
 
+        /// <summary>The game's year in days; 60 while its calendar gives fewer than eight.</summary>
         public static int DaysPerYear
         {
             get
             {
-                GameInstance save = SaveGameManager.Current;
                 int days = GameCalendar.DaysPerYear;
                 return days < 8 ? 60 : days;
             }
@@ -48,7 +46,7 @@ namespace RealLifeOverhaul
 
         public static int Districts => NeighborhoodHelper.Neighborhoods != null ? Mathf.Max(1, NeighborhoodHelper.Neighborhoods.Count) : 1;
 
-        /// <summary>What a district of the cast's is called.</summary>
+        /// <summary>The game's neighbourhood at an index, wrapped round its list.</summary>
         public static string District(int index)
         {
             try
@@ -61,15 +59,11 @@ namespace RealLifeOverhaul
             }
             catch (Exception)
             {
-                // the game's list was not there: the plain word below
             }
             return "reallife_social_district_unknown".GetLocalization();
         }
 
-        /// <summary>
-        /// A place as the street knows it: indoors, the entrance of the building the player is in (an interior is a place of
-        /// its own, and its coordinates say nothing about where in the city it is); out of doors, the place itself.
-        /// </summary>
+        /// <summary>Indoors, the building's entrance: an interior's coordinates say nothing of where it is in the city.</summary>
         public static Vector3 OnStreet(Vector3 where)
         {
             if (!BuildingManager.IsInsideBuilding)
@@ -88,7 +82,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The street a point is on, as the game writes it: that of the nearest building's address. A scan of the city: once per line of the paper.</summary>
+        /// <summary>The street of the nearest building's address, as the game writes it. A scan of the city's buildings.</summary>
         public static string StreetAt(Vector3 where)
         {
             try
@@ -123,16 +117,11 @@ namespace RealLifeOverhaul
             }
             catch (Exception)
             {
-                // a building without an address: the plain words below
             }
             return "reallife_news_street_unknown".GetLocalization();
         }
 
-        /// <summary>
-        /// A place for a kind of outing between two distances from a point: one of the three
-        /// nearest that will do, so that it is not always the same one. Outings that need no
-        /// particular business are agreed for "outside" any business with a name.
-        /// </summary>
+        /// <summary>One of the three nearest places that will do for an outing between two distances, so that it is not always the same.</summary>
         public static bool Find(PlanKind kind, Vector3 around, float minDistance, float maxDistance, out Venue venue, CityBuildingController not = null)
         {
             venue = default;
@@ -164,7 +153,6 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                // Kept in order of distance, nearest first.
                 int at = found < Nearest ? found : Nearest - 1;
                 if (found >= Nearest && sqr >= CandidateSqr[at])
                 {
@@ -196,7 +184,7 @@ namespace RealLifeOverhaul
             return made;
         }
 
-        /// <summary>The venue of a plan read from the save. False if the building is no longer what it was.</summary>
+        /// <summary>The venue of a plan read from the save. False if the building is no longer a venue.</summary>
         public static bool Resolve(string street, int number, out Venue venue)
         {
             venue = default;
@@ -222,7 +210,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>True while the player could walk into the venue: it is open, and nothing has it shut.</summary>
+        /// <summary>Open, and nothing has it shut.</summary>
         public static bool Open(in Venue venue)
         {
             try
@@ -236,10 +224,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A place to stand near a point: the point itself if somebody can stand there with room,
-        /// else pavement within a few metres that has it.
-        /// </summary>
+        /// <summary>Pavement with room to stand near a point: within 1.5 m of it, else in a ring of 1.2 to 5 m.</summary>
         public static bool Standing(Vector3 near, out Vector3 spot)
         {
             if (CitySpots.Pavement(near, 1.5f, out spot) && CitySpots.ClearQuietly(spot, 0.45f))
@@ -257,12 +242,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// Pavement the camera is not looking at from which the walk to a goal is short: the whole
-        /// way can be walked, and the route (not the straight line: a goal across the road may be
-        /// a block's walk away) is no longer than <paramref name="most"/> metres. The nearer ring
-        /// (14 to 26 m) is asked first, then 22 to 40 m. Never beside the player.
-        /// </summary>
+        /// <summary>Pavement out of view 14 to 40 m off from which the walk to a goal is at most <paramref name="most"/> metres of route.</summary>
         public static bool WalkIn(Vector3 goal, Vector3 player, float most, out Vector3 from, out float length)
         {
             for (int i = 0; i < 8; i++)
@@ -279,10 +259,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// The walk from one point of pavement to another, as the game's pedestrians would make it.
-        /// False if it cannot be walked the whole way. No allocation after the first call.
-        /// </summary>
+        /// <summary>As the game's pedestrians would walk it; false unless it goes the whole way. No allocation after the first call.</summary>
         public static bool Route(Vector3 from, Vector3 to, out float length)
         {
             length = 0f;
@@ -299,7 +276,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The length of a route; one with more turns than are counted is "very long".</summary>
+        /// <summary>The length of a route in metres; one with more corners than are kept counts 1000 more.</summary>
         public static float Length(NavMeshPath path)
         {
             int count = path.GetCornersNonAlloc(Corners);
@@ -311,7 +288,7 @@ namespace RealLifeOverhaul
             return length;
         }
 
-        /// <summary>How far a point is from the pedestrians' navigation mesh; negative if there is none within a metre.</summary>
+        /// <summary>Metres to the pedestrians' navigation mesh; negative if none is within a metre.</summary>
         public static float OffMesh(Vector3 point)
         {
             if (_route == null)
@@ -321,24 +298,7 @@ namespace RealLifeOverhaul
             return NavMesh.SamplePosition(point, out NavMeshHit hit, 1f, _walk) ? Vector3.Distance(hit.position, point) : -1f;
         }
 
-        /// <summary>True while the player is inside the venue itself (the one place indoors where a plan is being kept, not walked out on).</summary>
-        public static bool InsideVenue(in Venue venue)
-        {
-            try
-            {
-                BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
-                return BuildingManager.IsInsideBuilding && manager != null && venue.Building != null && ReferenceEquals(manager.building, venue.Building.building);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// "Here": the pavement beside a point, with no business to it, called by the name of the
-        /// street. For a walk agreed on the spot (the test button), wherever there is pavement.
-        /// </summary>
+        /// <summary>Pavement within 8 m of a point, called by its street's name: a walk agreed on the spot.</summary>
         public static bool Here(Vector3 around, out Venue venue)
         {
             venue = default;
@@ -353,11 +313,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        private static readonly Vector3[] Corners = new Vector3[48];
-        private static NavMeshPath _route;
-        private static NavMeshQueryFilter _walk;
-
-        /// <summary>Somewhere to walk off to: pavement 30 to 55 m away, out of view if there is any such, that can be walked to.</summary>
+        /// <summary>Pavement 30 to 55 m away that can be walked to, out of view if there is any.</summary>
         public static bool WalkOff(Vector3 from, out Vector3 to)
         {
             for (int i = 0; i < 6; i++)

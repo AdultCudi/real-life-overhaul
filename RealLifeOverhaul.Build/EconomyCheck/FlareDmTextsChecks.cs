@@ -126,7 +126,7 @@ internal static partial class Program
             "flare messages' words: the answer's speaker is read through FlareTextsMap.DmSpeakerOf, never by cutting two characters off the key");
         Check(texts.Contains("FlareTextsMap.DmWants(m, now, data)") && texts.Contains("_textDms.Ended(key, words != null)") && texts.Contains("_textAsked.Ended(id, words != null)"),
             "flare messages' words: the hour's walk asks again every answer and post still to come that came back without words");
-        Check(TextsSource(@"Social\Flare\FlareDirector.Live.cs").Contains("TextsAhead();   // (the hour's answers"),
+        Check(FlareMethod((TextsSource(@"Social\Flare\FlareDirector.Live.cs") + TextsSource(@"Social\Flare\FlareDirector.Cases.cs") + TextsSource(@"Social\Flare\FlareDirector.Posting.cs")), "private void LiveHour(").Contains("TextsAhead();"),
             "flare messages' words: the walk runs on the hour");
     }
 }

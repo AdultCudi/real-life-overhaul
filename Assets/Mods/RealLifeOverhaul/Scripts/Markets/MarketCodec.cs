@@ -5,12 +5,9 @@ using System.Text;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// Candles written small for the save: each as its changes from the candle before (whole cents, so a run of them is
-    /// exact), as variable-length numbers, in the safe letters of base 64. A volume is kept to about one part in
-    /// twenty (a byte), which is all a chart needs. Game-free.
-    ///
-    ///     close - the close before, open - the close before, high - the higher of open and close,
-    ///     the lower of open and close - low, the volume's code; then the day, as a change from the day before
+    /// Candles written small for the save: each as variable-length changes from the one before, in whole cents so a run is
+    /// exact, in base 64's safe letters; a volume kept to about 6% in a byte. Game-free. A candle is the close and open less
+    /// the close before, high over and low under the body, the volume's code, then the day as a change.
     /// </summary>
     public static class MarketCodec
     {
@@ -34,9 +31,7 @@ namespace RealLifeOverhaul.Markets
             return index;
         }
 
-        // ---------------------------------------------------------------- writing
-
-        /// <summary>Candles, oldest first, as text with no separator in it ('|', ';', '~' and ',' never appear).</summary>
+        /// <summary>Candles, oldest first, as text with none of the save's separators in it ('|', ';', '~', ',').</summary>
         public static void Write(StringBuilder into, List<Candle> candles)
         {
             Write(into, candles, null, candles.Count);
@@ -65,7 +60,7 @@ namespace RealLifeOverhaul.Markets
                 prevDay = c.Day;
                 if (_length > Buffer.Length - 64)
                 {
-                    break;   // (never with the counts kept: a hundred candles take under a kilobyte)
+                    break;   // never with the counts kept: a hundred candles take under a kilobyte
                 }
             }
             Encode(into);
@@ -85,7 +80,7 @@ namespace RealLifeOverhaul.Markets
             Encode(into);
         }
 
-        /// <summary>Whole numbers read back (the list cleared first), at most 'most'; false if the text is damaged.</summary>
+        /// <summary>Whole numbers read back, at most <paramref name="most"/>; false if the text is damaged.</summary>
         public static bool ReadInts(string text, List<int> into, int most)
         {
             into.Clear();
@@ -115,7 +110,7 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        /// <summary>A volume as a byte: about 6% apart, from nothing to a hundred billion shares.</summary>
+        /// <summary>A volume as a byte, about 6% apart, up to a hundred billion shares.</summary>
         public static byte VolumeCode(long v)
         {
             if (v <= 0)
@@ -173,9 +168,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- reading
-
-        /// <summary>Candles read back into a list (cleared first), at most 'most'; false if the text is damaged (the list is then empty).</summary>
+        /// <summary>Candles read back, at most <paramref name="most"/>; false and empty if the text is damaged.</summary>
         public static bool Read(string text, List<Candle> into, int most)
         {
             into.Clear();
@@ -200,7 +193,7 @@ namespace RealLifeOverhaul.Markets
                 byte v = Buffer[at++];
                 int close = prevClose + dClose, open = prevClose + dOpen;
                 int day = prevDay + dDay;
-                if (close <= 0 || open <= 0 || day < -1000000)   // (a market's history goes back before the game's first day)
+                if (close <= 0 || open <= 0 || day < -1000000)   // a market's history goes back before the game's first day
                 {
                     into.Clear();
                     return false;
@@ -217,7 +210,7 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        /// <summary>The same into an array; the count read (0 if the text is damaged).</summary>
+        /// <summary>The same into an array; the count read, 0 if the text is damaged.</summary>
         public static int Read(string text, Candle[] into)
         {
             var list = new List<Candle>(into.Length);

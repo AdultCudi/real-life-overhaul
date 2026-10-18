@@ -3,39 +3,25 @@ using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
 using Entities;
-using Extensions;
-using UI.Smartphone.Apps.Contacts;
 using Helpers;
 using Localizor;
 using UI.Notification;
+using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The subway as a journey, on the game's own subway. The game has the stations as places in the street: click an
-    /// entrance and its subway map opens, pick a station, pay its fare of 3, and a camera flies there in a few seconds.
-    /// All of that is the game's and is left as it is. Beside it:
-    ///
-    /// - AT AN ENTRANCE, on foot, the game's panel over a place (<see cref="GameUi.WorldPanel"/>) says the station, how
-    ///   often trains run at this hour and the state of the service. It has no button: the game's own click on the
-    ///   entrance opens the game's own map.
-    /// - THE JOURNEY. Once the game's train has brought the player up at the far end, the clock moves on by what the
-    ///   trip takes (the wait for a train, the stops, any delay) less the minutes the game's ride took, under the bus
-    ///   ride's own fade (<see cref="TransitRide"/>), and a note says where the player came up and how long it took.
-    /// - THE DAY PASS covers the subway too: the game's fare is given back as its ride begins, under its own bank entry
-    ///   (<see cref="CivicBridges.FareGivenBack"/>: civic life does not count that ride as a fare paid).
-    ///
-    /// Service, by rule from the game's clock (so it is the same on every load of the same day): a train every 3 minutes
-    /// in the rush, 5 by day, 7 in the evening, 8 early, 12 at night; in about one three-hour window in eight there are
-    /// delays of 6 to 14 minutes, sent to the phone by the City Transit contact when they begin.
-    /// Ticked by <see cref="TransitDirector"/>; nothing of it runs per frame (the game's ride is seen by its own flag).
+    /// The subway as a journey, beside the game's own subway: at an entrance a panel gives the station, the frequency and the
+    /// service; once the game's train has brought the player up, the clock moves on by what the trip takes beyond the game's
+    /// ride, under the fade (<see cref="TransitRide"/>); a day pass gives the game's fare back. The service is a rule of the
+    /// game's clock, the same on every load of a day. Ticked by <see cref="TransitDirector"/>; nothing per frame.
     /// </summary>
     public sealed class SubwayJourney
     {
         private const float Reach = 7.5f;            // metres from the middle of an entrance: its stairs are that long
-        private const float MetresPerStop = 650f;
-        private const float MinutesPerStop = 2f;
+        private const float MetresPerStop = 650f;    // metres between stations, for counting the stops
+        private const float MinutesPerStop = 2f;     // game minutes
         private const float StartWithin = 10f;       // seconds after the game's ride in which the clock is moved on (another scene may be closing)
 
         private readonly MonoBehaviour _host;
@@ -45,7 +31,7 @@ namespace RealLifeOverhaul
         private int _shownKey = int.MinValue;
         private int _tick;
 
-        // The game's own ride while it runs: from where, to where, and the game minute it began. Then what is still to be added.
+        // The game's ride while it runs, and then what is still to be added.
         private bool _gameRide;
         private SubwayStation _rideFrom, _rideTo;
         private int _rideBegan;
@@ -61,10 +47,7 @@ namespace RealLifeOverhaul
             _ride = ride;
         }
 
-        /// <summary>True while the station's panel is on screen.</summary>
-        public bool Showing => _at != null;
-
-        // ---------------------------------------------------------------- the service, from the clock
+        public bool Showing => _at != null;   // the station's panel is on screen
 
         /// <summary>Minutes between trains now.</summary>
         public static int Frequency()
@@ -113,7 +96,7 @@ namespace RealLifeOverhaul
             return Mathf.Max(1, Mathf.RoundToInt(Vector3.Distance(from.transform.position, to.transform.position) / MetresPerStop));
         }
 
-        // Game minutes of the whole journey: the wait for a train (a part of the interval that depends on the minute), delays, the ride.
+        // Game minutes of the whole journey: the wait for a train, delays, the ride.
         private static float JourneyMinutes(SubwayStation from, SubwayStation to, out int wait)
         {
             int frequency = Frequency();
@@ -130,19 +113,16 @@ namespace RealLifeOverhaul
             return (wait + StopsBetween(from, to) * MinutesPerStop) * speed;
         }
 
-        // The game's clock in minutes since its first day.
         private static int Now()
         {
             return TimeHelper.CurrentDay * 1440 + TimeHelper.CurrentHour * 60 + (int)TimeHelper.CurrentMinute;
         }
 
-        // ---------------------------------------------------------------- ticking
-
         /// <summary>Four times a second.</summary>
         public void Tick(float now, Vector3 at, bool allowed)
         {
             _tick++;
-            WatchRide(now);   // (the day pass covers the game's ride whether or not journeys take time)
+            WatchRide(now);   // the day pass covers the game's ride whether or not journeys take time
             if (!Settings.SubwayJourney)
             {
                 Hide();
@@ -190,8 +170,6 @@ namespace RealLifeOverhaul
             ShowStation();
         }
 
-        // The game's panel over the entrance: the station, how often trains run and the state of the service. No button:
-        // a click on the entrance opens the game's own subway map.
         private void ShowStation()
         {
             int delay = Delay();
@@ -208,8 +186,7 @@ namespace RealLifeOverhaul
             _panel.Show();
         }
 
-        // The game's own ride. As it begins: from where to where, and the fare back on a day pass. Once it has brought the
-        // player up at the far end: the clock moves on by what the journey takes beyond the minutes the ride took.
+        // The game's ride: as it begins, the fare back on a day pass; once it has brought the player up, the time still to add.
         private void WatchRide(float now)
         {
             if (SubwaySystem.IsRiding)
@@ -237,7 +214,7 @@ namespace RealLifeOverhaul
             else if (now > _startBy)
             {
                 _startBy = -1f;
-                _minutes = _took;   // (the note says what it did take)
+                _minutes = _took;   // the note says what it did take
                 TransitDirector.Logger?.Info("Transit check (subway journey): the clock could not be moved on after the game's ride: another scene stood in the way for "
                                              + StartWithin.ToString("F0") + " s: FAIL.");
                 Arrived();
@@ -252,14 +229,14 @@ namespace RealLifeOverhaul
             _rideFrom = system != null ? system.lastSubwayStation : null;
             _rideTo = system != null ? system.destinationSubwayStation : null;
             _rideBegan = Now();
-            _startBy = -1f;   // (a ride begun while the last one's time was still to be added: that time is let go)
+            _startBy = -1f;   // a ride begun while the last one's time was still to be added lets that time go
             _to = null;
             Hide();
             TransitState.SubwayRides++;
             bool pass = TransitState.HasPass;
             if (pass)
             {
-                // The game took its fare in the frame its ride began (SubwaySystem.TravelToCoroutine): the pass covers it.
+                // The game took its fare in the frame its ride began (SubwaySystem.TravelToCoroutine).
                 GameManager.ChangeMoneySafe(SubwayStation.PricePerRide, new TransactionInfo(CivicBridges.FareGivenBack), null, null, force: true, showNotification: true);
             }
             TransitDirector.Logger?.Info("Transit: the game's subway ride from " + (_rideFrom != null ? _rideFrom.stationName.ToString() : "?") + " to "
@@ -301,12 +278,11 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            // (the game's own ride has given the good mood of a subway trip)
             Notifications.Show(NotificationType.Info, "reallife_subway_arrived",
                 new Dictionary<string, string>(2) { { "name", Name(to) }, { "minutes", Mathf.RoundToInt(_minutes).ToString() } }, 7f);
         }
 
-        // Delays go to the phone when they begin: once per window.
+        // Delays go to the phone when they begin, once a window.
         private void Announce()
         {
             if (!TransitPhone.Ready || !TransitState.Loaded)
@@ -321,7 +297,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The panel, down.</summary>
         public void Hide()
         {
             if (_at == null)
@@ -333,7 +308,6 @@ namespace RealLifeOverhaul
             _panel.Hide();
         }
 
-        /// <summary>With the director: the panel goes too.</summary>
         public void Dispose()
         {
             try
@@ -349,10 +323,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Options button: a journey from the nearest station to the one after it in the game's list, by the game's own
-        /// subway (its map in subway mode, its fare, its ride), with the journey's time added when it comes up.
-        /// </summary>
+        /// <summary>Options button: a journey by the game's own subway from the nearest station to the next in its list.</summary>
         public void Test()
         {
             TestRefusal why = !ModState.Loaded || SaveGameManager.Current == null || PlayerHelper.PlayerController == null ? TestRefusal.NotLoaded
@@ -388,8 +359,7 @@ namespace RealLifeOverhaul
                 TestRefusals.Tell(TransitDirector.Logger, "Subway", TestRefusal.NothingFits, 0, "no pair of stations, or no money for the game's fare");
                 return;
             }
-            // As the game's own entrance does it (SubwayStation.Interact), then the game's own pick of a station on its map
-            // once the map has opened, as a player picks one.
+            // As the game's entrance does it (SubwayStation.Interact), then the game's pick of a station on its open map.
             city.subwaySystem.lastSubwayStation = from;
             if (!CityMap.IsOpen)
             {
@@ -404,7 +374,7 @@ namespace RealLifeOverhaul
             _host.StartCoroutine(Guard.Routine(PickOnMap(to)));
         }
 
-        // The game's map pauses the game's clock: this waits on the interface's.
+        // The game's map pauses the game's clock, so this waits on the interface's.
         private IEnumerator PickOnMap(SubwayStation to)
         {
             float until = Time.unscaledTime + 1.5f;
@@ -424,10 +394,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The City Transit contact: service messages arrive from it, and calling it reads out the
-    /// state of the subway and sells a day pass. Registered the way the mod's other contacts are.
-    /// </summary>
+    /// <summary>The City Transit contact: service messages come from it, and a call reads out the subway's state and sells a day pass.</summary>
     public static class TransitPhone
     {
         public const string ContactId = "reallife-transit";
@@ -477,7 +444,8 @@ namespace RealLifeOverhaul
         }
     }
 
-    public class TransitDialog : Dialogs.Dialog
+    /// <summary>City Transit on the line: the service and the day pass.</summary>
+    public sealed class TransitDialog : Dialogs.Dialog
     {
         public TransitDialog()
         {
@@ -507,5 +475,4 @@ namespace RealLifeOverhaul
             DialogController.current.ShowEntry(Guard.Entry(entry));
         }
     }
-
 }

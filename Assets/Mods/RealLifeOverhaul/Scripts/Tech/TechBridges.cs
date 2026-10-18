@@ -4,24 +4,24 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// What the tech sector asks of the rest of the mod. Each is optional and has a default, so Scripts/Tech works on its
-    /// own; Scripts/Wiring/TechLinks.cs fills them in. The tech sector never calls another feature directly.
+    /// What the tech sector asks of the rest of the mod, filled in by Wiring/TechLinks. Each is optional with a default;
+    /// the readers here also take a fault in the other feature as the default.
     /// </summary>
     public static class TechBridges
     {
         /// <summary>The player's standing as an employer, -10 to 10 (Standing's workers). Default: 0.</summary>
         public static Func<int> Esteem;
 
-        /// <summary>A rival's name to put to an approach for one of the player's people at a business. Default: one of the city's tech companies.</summary>
+        /// <summary>A rival's name for an approach to one of the player's people at a business. Default: one of the city's tech companies.</summary>
         public static Func<BuildingRegistration, string> Rival;
 
-        /// <summary>Told when the player's standing as an employer should move: points, signed (a lay-off, a rise refused, a promotion). Default: nobody.</summary>
+        /// <summary>The player's standing as an employer moves by signed points (a lay-off, a rise refused, a promotion). Default: nobody.</summary>
         public static Action<int> Standing;
 
-        /// <summary>True while the company already has a rival's offer or a departure in hand for an employee (by the game's id): no second approach is made. Default: never.</summary>
+        /// <summary>True while the company feature has an offer or a departure in hand for an employee (the game's id). Default: never.</summary>
         public static Func<string, bool> Held;
 
-        /// <summary>The economy's books made again for a day once the tech sector has booked its takings for it (GameBooks.Refresh). Default: nothing.</summary>
+        /// <summary>The economy's books made again for a day once the tech sector has booked its takings. Default: nothing.</summary>
         public static Action<int> Books;
 
         /// <summary>News of a listed company moves its share price: the stock market's id and the move in basis points. Default: nothing.</summary>
@@ -36,22 +36,16 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The player's standing with the public moves: the part (0 customers, 3 integrity) and the points. Default: nobody is told.</summary>
         public static Action<int, int> Fame;
 
-        /// <summary>
-        /// A firm of the player's asks to come to the market: the stock market's listing (Markets/Listing) takes the player's
-        /// company there, and this opens its way. True if it is open. Default: none, and the firm is told it is not.
-        /// </summary>
+        /// <summary>A firm of the player's asks to list: true if the stock market's listing takes it. Default: not open.</summary>
         public static Func<bool> Ipo;
 
         /// <summary>True if a building has the city's power (service 0) or water (1) now. Default: always.</summary>
         public static Func<BuildingRegistration, int, bool> Supplied;
 
-        /// <summary>The speed of a building's internet connection in Mbps; 0 with none or in an outage. Default: unknown (a data centre is taken to be connected).</summary>
+        /// <summary>A building's internet speed in Mbps; 0 with none or in an outage. Default: unknown, and a data centre counts as connected.</summary>
         public static Func<BuildingRegistration, int> Mbps;
 
-        /// <summary>
-        /// The internet of a business that cannot open without it (the utilities): 0 working or not needed, 1 no plan,
-        /// 2 being installed (<paramref name="when"/>: the day it connects), 3 down for a while (when: the hour it is back).
-        /// </summary>
+        /// <summary>A business's internet: 0 working or not needed, 1 no plan, 2 being installed (when: the day), 3 down (when: the hour back).</summary>
         public delegate int NetAsk(BuildingRegistration reg, out int when);
 
         /// <summary>Why a business's internet keeps it closed (<see cref="NetAsk"/>). Default: nothing in the way.</summary>
@@ -60,21 +54,50 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Opens the Utilities app on its internet page; false if it cannot be. Default: none.</summary>
         public static Func<bool> OpenInternet;
 
-        /// <summary>Opens the Company app's rota with a business picked (its place), to plan its shifts; false if it cannot be. Default: none.</summary>
+        /// <summary>Opens the Company app's rota with a business (its place) picked; false if it cannot be. Default: none.</summary>
         public static Func<string, bool> OpenRota;
 
         /// <summary>The days a new internet plan takes to be installed (the utilities). Default: 2.</summary>
         public static Func<int> NetDays;
 
-        public static int NetDaysNow()
+        public static int NetDaysNow() => Ask(NetDays, 0, int.MaxValue, 2);
+
+        /// <summary><see cref="Supplied"/> asked: true with no answer, or if the utilities fault.</summary>
+        public static bool SuppliedAt(BuildingRegistration reg, int service)
         {
             try
             {
-                return NetDays != null ? Math.Max(0, NetDays()) : 2;
+                return Supplied == null || Supplied(reg, service);
             }
             catch (Exception)
             {
-                return 2;
+                return true;
+            }
+        }
+
+        /// <summary>True if a building's internet gives at least <paramref name="mbps"/>; true with no answer, or if the utilities fault.</summary>
+        public static bool FastEnough(BuildingRegistration reg, int mbps)
+        {
+            try
+            {
+                return Mbps == null || Mbps(reg) >= mbps;
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
+
+        /// <summary><see cref="UtilityCents"/> asked; <paramref name="otherwise"/> with no answer, or if the utilities fault.</summary>
+        public static long UtilityCentsAt(int service, long thousandths, long otherwise)
+        {
+            try
+            {
+                return UtilityCents != null ? UtilityCents(service, thousandths) : otherwise;
+            }
+            catch (Exception)
+            {
+                return otherwise;
             }
         }
 
@@ -116,61 +139,33 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A day's power (service 0, thousandths of a kWh) or water (1, thousandths of a cubic metre) at the city's utilities' tariff, cents at today's prices. Default: a plain tariff.</summary>
+        /// <summary>A day's power (service 0, thousandths of a kWh) or water (1, of a cubic metre), cents at today's prices. Default: a plain tariff.</summary>
         public static Func<int, long, long> UtilityCents;
 
-        /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers: the rungs reached in a tech profession, the years, their name). Default: nothing.</summary>
+        /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers). Default: nothing.</summary>
         public static Func<int> Founder;
 
-        /// <summary>What a course costs the player's staff, basis points of its fee (Careers: half with an academy of the player's own). Default: the whole fee.</summary>
+        /// <summary>What a course costs the player's staff, basis points of its fee (less with an academy of their own). Default: the whole fee.</summary>
         public static Func<int> CourseShareBp;
 
-        /// <summary>A degree the business sponsors for a professional: its fee now, whole money, or 0 with the university closed (Careers). Default: none.</summary>
+        /// <summary>A sponsored degree's fee now, whole money, or 0 with the university closed (Careers). Default: none.</summary>
         public static Func<int> DegreeFee;
 
-        /// <summary>
-        /// True once the features that take one of the city's buildings before the tech companies' headquarters have chosen
-        /// theirs (the utilities office, the courthouse, the police stations, the university: Wiring/TechLinks), so that a
-        /// headquarters is never one of them. Default: true.
-        /// </summary>
+        /// <summary>True once the features that take a building before the headquarters have chosen theirs. Default: true.</summary>
         public static Func<bool> OthersPicked;
 
-        /// <summary>The tech company the player works for, by its name (a job of the careers at one of the city's tech companies), or null. Default: none.</summary>
+        /// <summary>The name of the city's tech company the player works for (Careers), or null. Default: none.</summary>
         public static Func<string> Employer;
 
-        public static string EmployerNow()
-        {
-            try
-            {
-                return Employer != null ? Employer() : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        public static string EmployerNow() => Ask(Employer);
 
-        /// <summary>
-        /// The training academy's business type (Careers/AcademyType), while the academy runs (Careers: studying and the
-        /// family's part on), for BizMan's start screen to say its competitors in the city. Default: none, and its card keeps
-        /// the game's count.
-        /// </summary>
+        /// <summary>The training academy's business type while it runs (Careers). Default: none.</summary>
         public static Func<string> AcademyType;
 
-        /// <summary>The places that teach courses, by name, as an academy's competitors: the game's school, and the university while it is open (Careers). Default: none.</summary>
+        /// <summary>The places that teach courses, by name, as an academy's competitors (Careers). Default: none.</summary>
         public static Action<List<string>> Schools;
 
-        public static string AcademyNow()
-        {
-            try
-            {
-                return AcademyType != null ? AcademyType() : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        public static string AcademyNow() => Ask(AcademyType);
 
         public static void SchoolsNow(List<string> into)
         {
@@ -185,87 +180,67 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        public static int CourseShare()
-        {
-            try
-            {
-                return CourseShareBp != null ? Math.Max(0, Math.Min(10000, CourseShareBp())) : 10000;
-            }
-            catch (Exception)
-            {
-                return 10000;
-            }
-        }
+        public static int CourseShare() => Ask(CourseShareBp, 0, 10000, 10000);
 
-        public static int FounderNow()
-        {
-            try
-            {
-                return Founder != null ? Math.Max(0, Math.Min(200, Founder())) : 0;
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
-        }
+        public static int FounderNow() => Ask(Founder, 0, 200, 0);
 
-        /// <summary>Thousandths a professional's morale heads higher for the comfort of their workplace, by its place, 0 to 100 (Scripts/Interiors). Default: nothing.</summary>
+        /// <summary>Thousandths a professional's morale heads higher for the comfort of their workplace, 0 to 100 (Interiors). Default: nothing.</summary>
         public static Func<string, int> Comfort;
 
-        /// <summary>What the player's best office adds to the esteem candidates on the jobs board feel, 0 to 3 (Scripts/Interiors). Default: nothing.</summary>
+        /// <summary>What the player's best office adds to the esteem candidates feel, 0 to 3 (Interiors). Default: nothing.</summary>
         public static Func<int> Office;
 
-        /// <summary>Thousandths a firm's bids weigh better for its office, by its place, 0 to 50 (Scripts/Interiors). Default: nothing.</summary>
+        /// <summary>Thousandths a firm's bids weigh better for its office, 0 to 50 (Interiors). Default: nothing.</summary>
         public static Func<string, int> OfficeBid;
 
-        public static int ComfortAt(string place)
-        {
-            try
-            {
-                return Comfort != null ? Math.Max(0, Math.Min(100, Comfort(place))) : 0;
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
-        }
+        public static int ComfortAt(string place) => Ask(Comfort, place, 0, 100);
 
         /// <summary>The esteem candidates feel: the player's as an employer and their best office's, -10 to 10.</summary>
         public static int HiringEsteem()
         {
-            int office;
-            try
-            {
-                office = Office != null ? Math.Max(0, Math.Min(3, Office())) : 0;
-            }
-            catch (Exception)
-            {
-                office = 0;
-            }
+            int office = Ask(Office, 0, 3, 0);
             return Math.Max(-10, Math.Min(10, EsteemNow() + office));
         }
 
-        public static int OfficeBidAt(string place)
+        public static int OfficeBidAt(string place) => Ask(OfficeBid, place, 0, 50);
+
+        public static int EsteemNow() => Ask(Esteem, -10, 10, 0);
+
+        // A bridge's answer between least and most; otherwise with none, or if it throws.
+        private static int Ask(Func<int> ask, int least, int most, int otherwise)
         {
             try
             {
-                return OfficeBid != null ? Math.Max(0, Math.Min(50, OfficeBid(place))) : 0;
+                return ask != null ? Math.Max(least, Math.Min(most, ask())) : otherwise;
             }
             catch (Exception)
             {
-                return 0;
+                return otherwise;
             }
         }
 
-        public static int EsteemNow()
+        // A bridge's answer for a place between least and most; least with none, or if it throws.
+        private static int Ask(Func<string, int> ask, string place, int least, int most)
         {
             try
             {
-                return Esteem != null ? Math.Max(-10, Math.Min(10, Esteem())) : 0;
+                return ask != null ? Math.Max(least, Math.Min(most, ask(place))) : least;
             }
             catch (Exception)
             {
-                return 0;
+                return least;
+            }
+        }
+
+        private static string Ask(Func<string> ask)
+        {
+            try
+            {
+                return ask != null ? ask() : null;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

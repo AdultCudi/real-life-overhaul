@@ -3,29 +3,21 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>A listed company's news as Flare hears it (Wiring/FlareLinks reads the stock market's own): its results, or the day's biggest move.</summary>
+    /// <summary>A listed company's news as Flare hears it from the stock market: its results, or the day's biggest move.</summary>
     public struct FlareMarketNote
     {
         public int Stock;
         public string Name;
         public bool Mover;           // the day's biggest move (else: results)
         public bool Beat;            // results better than the market expected
-        public int MoveBp;
+        public int MoveBp;   // basis points
         public bool Held;            // the player holds shares in it
     }
 
     /// <summary>
-    /// The rest of the city on Flare, each through one bridge Wiring/FlareLinks fills in (FlareBridges): somebody the
-    /// player has still to meet answering a post and becoming a contact; the partner proud, cool or jealous of a post
-    /// with somebody they could fall for, and minding never being posted; a friend whose texts wait minding the player
-    /// posting all day; the stock market (companies' results in the Feed, the day's biggest mover in Trending, a post
-    /// about shares the player holds with a disclosure, selling them soon after it went viral fined as market abuse, a
-    /// buzz in the market for a viral trade or a brand's scandal); the City Ledger's own account; a post raising an issue
-    /// in the council and the feed's mood pulling on the mayor's approval; a Celebrity's day in court. Each is small,
-    /// capped and logged once, when it happens.
-    ///
-    /// COST: nothing per frame. The day: a few comparisons and the market's news of the day (a short list); the hour: the
-    /// viral posts about shares (four at most) and, once a morning, the paper's headlines.
+    /// Flare's director, the rest of the city through bridges Wiring/FlareLinks fills in: somebody met online, the partner,
+    /// the stock market, the City Ledger, the council and the mayor, a Celebrity's day in court. Each is small, capped and
+    /// logged once. Cost: nothing per frame; a few comparisons a day and an hour.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -34,11 +26,6 @@ namespace RealLifeOverhaul.Flare
         private string _moverName;
         private int _moverBp, _moverDay = -1;
 
-        /// <summary>The day's biggest mover on the market, for Trending; null if there is none.</summary>
-        public string MoverName => Save != null && _moverDay >= Save.Day - 1 ? _moverName : null;
-        public int MoverBp => _moverBp;
-
-        // The city's part of the day.
         private void CityDay(int day)
         {
             int bad = FlareRules.Count(_file.NewsDay >= day - 1 ? _file.NewsToday : 0);
@@ -82,13 +69,13 @@ namespace RealLifeOverhaul.Flare
             Market(day);
         }
 
-        // The market's news of the day: the companies post their results, the biggest move is Trending, results of a company the player holds can be posted.
+        // The market's news of the day: the companies' results, the biggest move for Trending, a draft for shares the player holds.
         private void Market(int day)
         {
             _market.Clear();
             if (Following)
             {
-                return;   // a guest that follows the host's feed has the market's posts from it
+                return;   // a guest that follows has the market's posts from the host
             }
             try
             {
@@ -122,7 +109,7 @@ namespace RealLifeOverhaul.Flare
             FlareRules.Prune(_file);
         }
 
-        // On the hour: the morning paper's headlines on the City Ledger's account, and shares sold soon after a viral post about them.
+        // On the hour: the morning paper's headlines on the City Ledger's account, and shares sold soon after a viral post.
         private void CityHour(int day, int hour)
         {
             if (hour >= 7 && _file.LedgerDay != day && FlareBridges.Headlines != null && !Following)
@@ -146,7 +133,7 @@ namespace RealLifeOverhaul.Flare
                         Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000, Reach = 8000, Likes = 60 + FlareRules.Roll(_file.Seed, id, 5) / 8
                     });
                 }
-                Shared_Changed(null);
+                ShareChanged(null);
                 FlareRules.Prune(_file);
             }
             FollowedNotice(day, hour);
@@ -203,7 +190,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>What happened in the city today and was worth posting about (issues), beside local news (FlareDirector.Cast.cs).</summary>
+        /// <summary>A draft for an issue the city's news had today: one a day.</summary>
         private void IssueFrom(int bit)
         {
             if (Save == null || _file.IssueDay == Save.Day)

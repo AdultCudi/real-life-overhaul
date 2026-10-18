@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
-using Controllers;
 using Helpers;
 using Localizor;
 using PlayerActivity;
@@ -11,25 +10,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The floors of the tech companies' towers (Tech/Sites/Headquarters: several companies to a building, a floor each),
-    /// chosen the way the university's are (Careers/CampusInterior), on the game's own panel:
-    ///
-    ///   at the door   standing at a tower's door outside, the panel names the tower and offers its floors, each with its
-    ///                 company ("Floor 2: Skyvault Systems"), the floor of the company the player works for saying so;
-    ///                 a press goes in to that floor. The game's own click on the building goes in too (its doors are
-    ///                 "always open"), to the player's employer's floor if it is in this tower, else the first
-    ///   inside        the floor the player is on is that company's: its lobby, logo wall and colours, and the rest of its
-    ///                 floor fitted out (TechSites), and the careers' desk of a job there is on it. The panel by the
-    ///                 entrance is the lift: the other floors, a press and the screen goes dark, the floor is laid again
-    ///                 as the other company's, and the player is at the entrance of that floor
-    ///
-    /// Each floor is the building's own interior, the empty unit the game loads for it; nothing of the game's is changed
-    /// but the doors' flag (Headquarters). Nothing is saved: a save made on a floor comes back to the floor the door
-    /// would give. Nothing is sent in a Going Public session: every machine has the same towers and floors, and each
-    /// player chooses their own floor.
-    ///
-    /// The cost: once a second, a look at the three towers' doors while the player is outdoors, or at the lift while on a
-    /// floor; the panel's texts made only when they change. Nothing per frame.
+    /// The floors of the tech companies' towers on the game's own panel, at a tower's door and at the lift inside. Nothing is saved.
+    /// Cost: a look once a second, the panel's texts made only when they change; nothing per frame.
     /// </summary>
     internal sealed class TowerFloors
     {
@@ -79,13 +61,10 @@ namespace RealLifeOverhaul.Tech
         /// <summary>True while a panel of the towers is up, and in the frame its button ran.</summary>
         public bool TakesKey => _door.TakesKey || _lift.TakesKey;
 
-        /// <summary>Asked to change floor from the lift (TechSites lays the floor again under the dark screen).</summary>
+        /// <summary>Asked to change floor from the lift; TechSites lays the floor again under the dark screen.</summary>
         public Action<int> ChangeFloor;
 
-        /// <summary>
-        /// The player is in a tower: the floor they arrive on (a floor pressed at the door, else their employer's, else the
-        /// first), and where they came in. The floor's company is returned.
-        /// </summary>
+        /// <summary>The player is in a tower, on the floor pressed at the door, else their employer's, else the first. Returns its company.</summary>
         public Headquarters.Hq Arrive(Headquarters.Tower tower)
         {
             if (tower == null || tower.Floors.Count == 0)
@@ -183,7 +162,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _door.Hide("away from the towers' doors");
                 _doorOf = null;
-                _pending = null;   // (a floor pressed and the player walked away instead of going in)
+                _pending = null;   // a floor was pressed but the player walked away
                 return;
             }
             if (!ReferenceEquals(near, _doorOf))
@@ -197,7 +176,7 @@ namespace RealLifeOverhaul.Tech
             _door.Show(near.Front, at, 2.2f, () => "at the door of " + near.Name);
         }
 
-        // Up to four buttons: the floors with their companies (leaving out the one the player is on), or three and "more floors".
+        // up to four buttons: the other floors with their companies, or three and "more floors"
         private void Buttons(WorldPanel panel, Headquarters.Tower tower, Action[] press, int[] floors, int page, int skip)
         {
             HqTowers.Page(tower.Floors.Count, skip, page, floors);

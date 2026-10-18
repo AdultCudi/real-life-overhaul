@@ -8,14 +8,10 @@ namespace RealLifeOverhaul.Flare
     {
         Home, Explore, Bell, Mail, Person, Store, Plus, Heart, HeartFull, Reply, Repost, Camera, Picture, At, Back, Close, Flag, Star, StarFull,
         Pin, Calendar, Check, Selfie, City, Send, Mute, Hide,
-        Trash, Prev, Next, Phone, Share   // (the Gallery's: Photos/GalleryApp)
+        Trash, Prev, Next, Phone, Share   // the Gallery's (Photos/GalleryApp)
     }
 
-    /// <summary>
-    /// Flare's glyphs, drawn once each in code into a small white texture with soft edges (as the phone's own skin draws
-    /// its artwork, Phone/PhoneSkin): simple strokes and shapes, tinted by the image that shows them. A glyph is drawn the
-    /// first time a screen asks for it and kept for the session. COST: one 96-pixel square each, once.
-    /// </summary>
+    /// <summary>Flare's glyphs, each drawn once in code into a small soft-edged white texture and tinted where shown. Cost: one 96-pixel square each, once.</summary>
     internal static class FlareIcons
     {
         private const int Size = 96;
@@ -215,7 +211,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- shapes (0 to 1, y up; 'add' false takes away)
+        // Shapes, in 0 to 1 with y up; 'add' false takes away.
 
         private static void Put(int x, int y, float a, bool add)
         {

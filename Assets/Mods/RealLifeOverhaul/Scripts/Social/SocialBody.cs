@@ -5,14 +5,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The player's own body while they are with somebody: kept on the spot for a beat, turned
-    /// to face them, talking, waving, a cup or a box in hand. One for the session, owned by the
-    /// director, which undoes all of it on every way a scene can end (<see cref="Release"/>).
-    ///
-    /// A whole-body clip replaces the legs, so the player is always held still first
-    /// (<see cref="Hold"/>: the game's own navigation blocker); what is done while walking is a
-    /// masked clip over the game's own walk (<see cref="Over"/>). A prop is in a hand only at
-    /// the grip of the clip it was asked for with.
+    /// The player's own body while they are with somebody: held, turned, talking, a cup or a box in hand. The director
+    /// undoes all of it (<see cref="Release"/>) on every way a scene ends. A whole-body clip needs the player held.
     /// </summary>
     public sealed class SocialBody
     {
@@ -34,12 +28,10 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        public bool Holding => _held;
-
         /// <summary>The name of the masked clip that is on, or null.</summary>
         public string OverName => _over != null && _animator != null && _animator.Over != null ? _over : null;
 
-        /// <summary>Told who the player is; a different player object (a load) drops whatever was remembered.</summary>
+        /// <summary>A different player object, after a load, drops what was kept of the last.</summary>
         public void Bind(PlayerController player)
         {
             if (!ReferenceEquals(player, _player))
@@ -53,7 +45,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Keeps the player where they stand: no walking, no click-to-move.</summary>
+        /// <summary>Keeps the player where they stand, by the game's own navigation blocker.</summary>
         public void Hold()
         {
             if (_player == null || _held)
@@ -85,7 +77,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Turns the player on the spot to face a place over a quarter of a second (the game's own turn).</summary>
+        /// <summary>The game's own turn on the spot.</summary>
         public void Turn(MonoBehaviour host, Vector3 towards)
         {
             if (_player == null || _player.Character == null || host == null || !host.isActiveAndEnabled)
@@ -100,12 +92,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// One of the mod's clips on the whole of the player, with its tool if it has one. A loop
-        /// runs until <see cref="Rest"/>; a one-off returns by itself, or with
-        /// <see cref="ClipEnd.Hold"/> keeps its last pose (a glass still in the hand) until
-        /// <see cref="Rest"/>. False, with nothing changed, if it cannot be had. The player must be held first.
-        /// </summary>
+        /// <summary>A clip on the whole held player; a loop or a held pose lasts until <see cref="Rest"/>. False if it cannot be had.</summary>
         public bool Clip(string name, float fade = 0.3f, ClipEnd end = ClipEnd.Return)
         {
             if (!_held || !Ready(name, out CityClip clip, out ActivityAnimator animator, out Animator body))
@@ -126,13 +113,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// One of the mod's clips over part of the player's body while the rest stays the game's:
-        /// a gesture made standing, or something carried while they walk. The clip's tool goes in
-        /// the hand with it, or <paramref name="toolId"/> in its place (a prop of the same build and
-        /// pivot: the printed moving box where the clip was made with a plain parcel). False if it
-        /// cannot be had.
-        /// </summary>
+        /// <summary>A clip over part of the body, the rest the game's; <paramref name="toolId"/> must have the tool's build and pivot.</summary>
         public bool Over(string name, BodyMask mask, float fade = 0.25f, string toolId = null)
         {
             if (!Ready(name, out CityClip clip, out ActivityAnimator animator, out Animator body))
@@ -142,7 +123,7 @@ namespace RealLifeOverhaul
             BodyMask part = mask == BodyMask.Full ? clip.Mask : mask;
             if (part == BodyMask.Full)
             {
-                return false;   // never the whole body from here: the legs are the game's
+                return false;   // the legs are the game's
             }
             if (clip.HasTool && !Tool(body, clip, toolId))
             {
@@ -158,7 +139,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The masked clip off again and what came with it put away.</summary>
+        /// <summary>The masked clip off, and its tool put away unless a whole-body clip is on.</summary>
         public void StopOver(float fade = 0.25f)
         {
             if (_over != null && _animator != null)
@@ -172,7 +153,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Back to the game's own animation, hands empty. The hold stays.</summary>
+        /// <summary>Back to the game's own animation, hands empty; the hold stays.</summary>
         public void Rest(float fade = 0.3f)
         {
             if (_clip != null && _animator != null)
@@ -184,7 +165,7 @@ namespace RealLifeOverhaul
             PutAway();
         }
 
-        /// <summary>Everything undone at once, whatever state it was in. Never throws.</summary>
+        /// <summary>Everything undone, whatever the state. Never throws.</summary>
         public void Release()
         {
             try

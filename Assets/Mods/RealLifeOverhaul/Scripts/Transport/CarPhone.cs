@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using BAModAPI;
 using Dialogs;
 using Entities;
-using Extensions;
 using Helpers;
 using Localizor;
 using Streets;
@@ -13,18 +11,15 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The two phone contacts of car ownership. "Garage" is the page that lists each car the
-    /// player owns with its fuel, condition, distance, next service, tyres, brakes, insurance
-    /// and registration, and where a car is insured or its policy ended. "Roadside Assistance"
-    /// sends a mechanic to a broken-down car, a can of fuel to an empty one, or a tow truck that
-    /// takes the car to the nearest repair shop (the game's own tow). Registered the way the
-    /// mod's other contacts are; the conversations are the game's own dialogue panel.
+    /// The two phone contacts of car ownership: "Garage", a page per car the player owns (fuel, condition, service, tyres,
+    /// brakes, insurance, registration) where a car is insured or its policy ended; and "Roadside Assistance", which sends a
+    /// mechanic, a can of fuel, or the game's own tow to the nearest repair shop. The conversations are the game's dialogue panel.
     /// </summary>
     public static class CarPhone
     {
         public const string GarageId = "reallife-garage";
         public const string RoadsideId = "reallife-roadside";
-        private const float RoadsideReach = 30f;
+        private const float RoadsideReach = 30f;   // metres from the player to a car a roadside call can be for
 
         public static void Setup()
         {
@@ -77,8 +72,7 @@ namespace RealLifeOverhaul
             return count;
         }
 
-        // A motor vehicle of the player's to run. A car of a dealership's stock is the dealership's to sell
-        // (Core/Dealerships): it has no Garage page, as a car on hire has none.
+        // A motor vehicle of the player's to run. A dealership's stock car is the dealership's to sell and has no Garage page.
         private static bool Runs(VehicleInstance car)
         {
             return car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle && !Dealerships.Stock(car);
@@ -133,7 +127,7 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>The Garage page: one car at a time, with what can be done about its insurance.</summary>
-    public class GarageDialog : Dialog
+    public sealed class GarageDialog : Dialog
     {
         public GarageDialog()
         {
@@ -212,7 +206,7 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>Roadside Assistance: what it can do for the car the player is at.</summary>
-    public class RoadsideDialog : Dialog
+    public sealed class RoadsideDialog : Dialog
     {
         public RoadsideDialog()
         {

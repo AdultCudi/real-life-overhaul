@@ -1,14 +1,11 @@
 namespace RealLifeOverhaul.Markets
 {
+    /// <summary>Part of the market director: the test buttons for the player's own company.</summary>
     public sealed partial class MarketDirector
     {
-        // ---------------------------------------------------------------- the test buttons for the player's company
-
         /// <summary>
-        /// Test button: the player's company on the market as the test tools' company: no requirement asked, nothing paid
-        /// and nothing raised, ever. Its book is priced at the next open and it trades from the market day after. A save
-        /// with under four quarters of books is given a test company's books (the real ones are read again from the game's
-        /// statements once the test company is gone).
+        /// Test button: the player's company on the market as the test tools' company, with nothing asked, paid or raised; a
+        /// save with under four quarters of books gets a test company's.
         /// </summary>
         public void TestListing()
         {
@@ -81,7 +78,7 @@ namespace RealLifeOverhaul.Markets
             OpenListing();
         }
 
-        /// <summary>Test button: the player's company's yearly meeting at today's close (the next market day's if the market does not trade today).</summary>
+        /// <summary>Test button: the player's company's yearly meeting at today's close, or the next market day's.</summary>
         public void TestOwnMeeting()
         {
             FinishMoment();
@@ -91,12 +88,13 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            own.Own.AgmDay = MarketCatalogue.TradingDay(_engine.State.Day) && _engine.State.Phase < MarketCatalogue.PhaseClose ? _engine.State.Day : MarketTrading.NextTradingDay(_engine.State.Day);
+            own.Own.AgmDay = MarketCatalogue.TradingDay(_engine.State.Day) && _engine.State.Phase < MarketCatalogue.PhaseClose
+                ? _engine.State.Day : MarketTrading.NextTradingDay(_engine.State.Day);
             Logger?.Info(Test + " test: " + own.Name + "'s shareholders meet at the close of day " + own.Own.AgmDay + ".");
             OpenListing();
         }
 
-        /// <summary>Test button: an investor buys into the player's company to press the board, for the demand its figures give them (a payout if none).</summary>
+        /// <summary>Test button: an investor presses the player's company's board for the demand its figures give, else a payout.</summary>
         public void TestOwnActivist()
         {
             FinishMoment();
@@ -112,7 +110,6 @@ namespace RealLifeOverhaul.Markets
             OpenListing();
         }
 
-        /// <summary>Test button: a bid for the player's company, made as one would be (it wins only while they hold under the threshold).</summary>
         public void TestOwnBid()
         {
             FinishMoment();
@@ -127,12 +124,12 @@ namespace RealLifeOverhaul.Markets
                 TestRefusals.TellKey(Logger, Test, "reallife_mkt_test_no_company");
                 return;
             }
-            Logger?.Info(Test + " test: " + own.Name + " bid for at " + own.BidCents + " cents a share, to complete on day " + own.BidEndDay + "; the founder holds " + own.Own.StakeBp(own) + " bp, the threshold is "
-                         + ListingCatalogue.TakeoverThresholdBp + " bp" + (own.Own.Test ? " (a test's company: nothing is handed over)" : string.Empty) + ".");
+            Logger?.Info(Test + " test: " + own.Name + " bid for at " + own.BidCents + " cents a share, to complete on day " + own.BidEndDay + "; the founder holds " + own.Own.StakeBp(own)
+                         + " bp, the threshold is " + ListingCatalogue.TakeoverThresholdBp + " bp" + (own.Own.Test ? " (a test's company: nothing is handed over)" : string.Empty) + ".");
             OpenListing();
         }
 
-        /// <summary>Test button: the test tools' company off the market, with nothing paid (only the test's).</summary>
+        /// <summary>Test button: the test tools' company off the market with nothing paid; only the test's.</summary>
         public void TestOwnOff()
         {
             FinishMoment();
@@ -154,7 +151,6 @@ namespace RealLifeOverhaul.Markets
             Moved();
         }
 
-        // The player's own company for a test: listed and settled, else the reason told.
         private Stock TestOwn(string test)
         {
             if (!TestReady(test, true))

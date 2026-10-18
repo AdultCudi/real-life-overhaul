@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>A business's front as the bank of city photos knows it: its place, district, kind and where its door is on the ground.</summary>
+    /// <summary>A business's front as the bank of city photos knows it: its place, district, kind and where its door is.</summary>
     public struct FlareFrontSpot
     {
         public string Place;
@@ -20,13 +20,7 @@ namespace RealLifeOverhaul.Flare
         public float X, Z;
     }
 
-    /// <summary>
-    /// Flare's pictures' one door to the game (FlareAvatars, FlareFacePainter, FlareCityCamera, the bank of city photos):
-    /// the game's own logos of its businesses, the game's portrait of the player's character, one of the player's staff as
-    /// the game has them, where the player stands and whether outdoors, whether it rains, a business's front door, and the
-    /// fronts of the city's businesses read a slice at a time. Each is asked when a picture is made or on the director's
-    /// second, never per frame, and each says "none" rather than throw: a picture that cannot be had leaves its stand-in.
-    /// </summary>
+    /// <summary>Flare's pictures' one door to the game, asked when a picture is made or on the director's second; each says "none" rather than throw.</summary>
     public static class FlarePictureGame
     {
         private const string EmptyBusiness = "ba:businesstype_empty";
@@ -36,17 +30,10 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The save's own id (the game's character id), or null.</summary>
         public static string SaveId => SaveGameManager.Current != null ? SaveGameManager.Current.characterId : null;
 
-        /// <summary>The folder of the round pictures, among the contacts' faces (persistentDataPath/RealLifeOverhaul/Portraits).</summary>
+        /// <summary>The folder of the round pictures, among the contacts' faces.</summary>
         public static string FaceFolder => Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Portraits");
 
-        // ---------------------------------------------------------------- logos
-
-        /// <summary>
-        /// The game's own logo of a business or a brand, as its signs and BizMan show it: a business of the player's from the
-        /// save's folder (read once, then the game keeps it), any other from the game's own logos, loaded the game's way
-        /// without waiting. 'back' gets the texture, or null when the game has no logo of that name (asked first, so the
-        /// game's warning for a missing logo is never written). The texture is the game's: shown, never changed or destroyed.
-        /// </summary>
+        /// <summary>The game's logo of a business or brand, loaded without waiting into <paramref name="back"/> (null for none); the game's texture, never destroyed.</summary>
         public static void Logo(string name, bool mine, Action<Texture2D> back)
         {
             try
@@ -69,7 +56,9 @@ namespace RealLifeOverhaul.Flare
                     back(null);
                     return;
                 }
-                LogoHelper.LoadBusinessLogoTextureAsync(name, LogoSize.SquareSign, texture => UiClone.Safe(() => back(texture != null && texture != LogoHelper.GetNullTexture() ? texture : null)));   // (the game may answer later, from its loader: inside the guard)
+                // The game may answer later, from its loader: inside the guard.
+                LogoHelper.LoadBusinessLogoTextureAsync(name, LogoSize.SquareSign,
+                    texture => UiClone.Safe(() => back(texture != null && texture != LogoHelper.GetNullTexture() ? texture : null)));
             }
             catch (Exception e)
             {
@@ -92,9 +81,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- people
-
-        /// <summary>The game's own portrait of the player's character (the picture at the top of the screen), as its file; null if the game has not made one.</summary>
+        /// <summary>The game's portrait of the player's character, as its file; null if the game has not made one.</summary>
         public static string PlayerPortrait()
         {
             try
@@ -126,12 +113,10 @@ namespace RealLifeOverhaul.Flare
             }
             catch (Exception)
             {
-                // (no face: the initials stay)
+                // no face: the initials stay
             }
             return null;
         }
-
-        // ---------------------------------------------------------------- the city photos' places
 
         /// <summary>Where the player stands and which way they face; false indoors, on the main menu or during a load.</summary>
         public static bool Outdoors(out Vector3 position, out Vector3 forward)
@@ -154,7 +139,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>True while the player is in a vehicle: a city photo waits (its renders are a frame of 10 to 30 ms, felt most at the wheel).</summary>
+        /// <summary>True while the player is in a vehicle: a city photo waits, as its renders (a frame of 10 to 30 ms) are felt most at the wheel.</summary>
         public static bool Driving()
         {
             try
@@ -180,12 +165,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The next slice of the city's businesses' fronts, from 'cursor' on, into 'into', until 'budgetTicks' of the
-        /// Stopwatch have passed (the director gives a millisecond a second): each business of the game's register with a
-        /// name and a door (the city's, the player's and another player's alike: a photo is only looked at). True once the
-        /// register is done.
-        /// </summary>
+        /// <summary>The next slice of the businesses' fronts until <paramref name="budgetTicks"/> Stopwatch ticks pass; true once the register is done.</summary>
         public static bool FrontSlice(ref int cursor, List<FlareFrontSpot> into, long budgetTicks)
         {
             try
@@ -208,28 +188,24 @@ namespace RealLifeOverhaul.Flare
                     {
                         continue;
                     }
-                    CityBuildingController controller = city.FindCityBuildingController(reg.Address);
-                    if (controller == null || controller.entranceDoors == null || controller.entranceDoors.Length == 0 || controller.entranceDoors[0] == null
-                        || controller.entranceDoors[0].doorTransform == null)
+                    Transform door = DoorOf(city.FindCityBuildingController(reg.Address));
+                    if (door == null)
                     {
                         continue;
                     }
-                    Vector3 door = controller.entranceDoors[0].doorTransform.position;
-                    into.Add(new FlareFrontSpot { Place = FlareGame.Place(reg), District = reg.Neighborhood, Niche = (int)FlareCast.NicheOf(reg.businessTypeName), X = door.x, Z = door.z });
+                    Vector3 at = door.position;
+                    into.Add(new FlareFrontSpot { Place = FlareGame.Place(reg), District = reg.Neighborhood, Niche = (int)FlareCast.NicheOf(reg.businessTypeName), X = at.x, Z = at.z });
                 }
                 return true;
             }
             catch (Exception)
             {
-                cursor = int.MaxValue;   // (the register could not be read: no fronts this day, the streets still)
+                cursor = int.MaxValue;   // the register could not be read: no fronts this day, the streets still
                 return true;
             }
         }
 
-        /// <summary>
-        /// The front of a business by its place ("street~number"): its first entrance door, and the way out of it (from the
-        /// building's middle to the door, level). False if the city has no such building or door to ask.
-        /// </summary>
+        /// <summary>A business's front by its place: its first entrance door and the way out, level; false for no building or door.</summary>
         public static bool Front(string place, out Vector3 door, out Vector3 outward)
         {
             door = outward = Vector3.zero;
@@ -238,16 +214,17 @@ namespace RealLifeOverhaul.Flare
                 BuildingRegistration reg = FlareLiveGame.AnyBusiness(place);
                 CityManager city = InstanceBehavior<CityManager>.IsInitialized ? InstanceBehavior<CityManager>.Instance : null;
                 CityBuildingController controller = city != null && reg != null && reg.Address != null ? city.FindCityBuildingController(reg.Address) : null;
-                if (controller == null || controller.entranceDoors == null || controller.entranceDoors.Length == 0 || controller.entranceDoors[0] == null || controller.entranceDoors[0].doorTransform == null)
+                Transform doorAt = DoorOf(controller);
+                if (doorAt == null)
                 {
                     return false;
                 }
-                door = controller.entranceDoors[0].doorTransform.position;
+                door = doorAt.position;
                 Vector3 away = door - controller.transform.position;
                 away.y = 0f;
                 if (away.sqrMagnitude < 0.25f)
                 {
-                    away = -controller.entranceDoors[0].doorTransform.forward;
+                    away = -doorAt.forward;
                     away.y = 0f;
                 }
                 outward = away.sqrMagnitude > 0.0001f ? away.normalized : Vector3.forward;
@@ -257,6 +234,13 @@ namespace RealLifeOverhaul.Flare
             {
                 return false;
             }
+        }
+
+        private static Transform DoorOf(CityBuildingController controller)
+        {
+            return controller != null && controller.entranceDoors != null && controller.entranceDoors.Length > 0 && controller.entranceDoors[0] != null
+                ? controller.entranceDoors[0].doorTransform
+                : null;
         }
     }
 }

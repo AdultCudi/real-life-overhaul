@@ -8,10 +8,7 @@ namespace RealLifeOverhaul.Tech
         New = 0, Shortlisted = 1, Interviewed = 2, Offered = 3, Countered = 4, Accepted = 5, Started = 6, Declined = 7, Rejected = 8, Withdrawn = 9, Lapsed = 10
     }
 
-    /// <summary>
-    /// One professional looking for work in the city. Who they are is a <see cref="Profile"/> (role, level, skills,
-    /// experience, school, certificates, a record); what they want and claim is here. Game-free.
-    /// </summary>
+    /// <summary>One professional looking for work: who they are is a <see cref="Profile"/>, what they want and claim is here.</summary>
     public sealed class Seeker
     {
         public int Id;

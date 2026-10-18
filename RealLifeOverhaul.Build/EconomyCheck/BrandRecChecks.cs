@@ -492,8 +492,8 @@ internal static partial class Program
         all = FlareCast.PostsAbout(f, "Gym~1", out own, out last);
         Check(hire.Posted == 7 && all == 8 && last == 11, "Flare: the count holds after the Feed has let the deal's posts go (" + all + ", the last on day " + last + ")");
         Check(FlareCast.PostsAbout(f, "Nowhere~0", out own, out last) == 0 && own == 0 && last == -1, "Flare: a business with no post has none, and no last day");
-        // The Business tab's card and a deal's card read these, not a count of their own (Social/Flare/FlareApp.Screens.cs).
-        string screens = System.IO.File.ReadAllText(System.IO.Path.Combine(LocalesFolder(), @"..\Scripts\Social\Flare\FlareApp.Screens.cs"));
+        // The Business tab's card and a deal's card read these, not a count of their own (Social/Flare/FlareApp.Business.cs).
+        string screens = System.IO.File.ReadAllText(System.IO.Path.Combine(LocalesFolder(), @"..\Scripts\Social\Flare\FlareApp.Business.cs"));
         Check(screens.Contains("FlareCast.PostsAbout(file, row.Key, out own, out last)") && screens.Contains("FlareCast.HirePostsKey(h, day)") && screens.Contains("\"reallife_flare_shop_paid_posts\""),
             "Flare: the Business tab's shop card counts with PostsAbout and a deal's card says where its posts stand");
     }

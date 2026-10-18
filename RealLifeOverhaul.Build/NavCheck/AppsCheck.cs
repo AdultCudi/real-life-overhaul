@@ -115,9 +115,10 @@ internal static partial class Program
         Check(Source(scripts, @"Leisure\Photo\PhotoMode.cs").Contains("PhotoThumbs.MakeSoon(_shotPath)"), "apps: a photo's small copy is started when the photo is taken");
 
         // The Stocks app.
-        string chart = Source(scripts, @"Markets\MarketChart.cs");
+        string chart = Source(scripts, @"Markets\MarketChart.cs"), drawing = Source(scripts, @"Markets\MarketChart.Drawing.cs");
         string move = Body(chart, "public void OnPointerMove(");
-        Check(!chart.Contains("Func<double, float>") && move.Contains("UiSafe(_showHover)") && !move.Contains("_draw") && Body(chart, "public void OnPointerExit(").Contains("UiSafe(_showHover)"),
+        Check(!chart.Contains("Func<double, float>") && drawing.Contains("private void Draw()") && !drawing.Contains("Func<double, float>") && move.Contains("UiSafe(_showHover)")
+              && !move.Contains("_draw") && Body(chart, "public void OnPointerExit(").Contains("UiSafe(_showHover)"),
             "apps: the pointer over the Stocks chart redraws the bar over one candle and the legends, and a drawing makes no function of its own");
         string controls = Body(Source(scripts, @"Markets\MarketPage.cs"), "private void Controls(");
         Check(controls.IndexOf("return;", StringComparison.Ordinal) >= 0 && controls.IndexOf("return;", StringComparison.Ordinal) < controls.IndexOf("Destroy(", StringComparison.Ordinal),

@@ -123,6 +123,9 @@ namespace RealLifeOverhaul
         /// <summary>True once the bundle has loaded (asynchronously, once); false while loading or if it failed.</summary>
         public static bool Ready => _state == State.Ready;
 
+        /// <summary>True once the load has ended, loaded or failed: what is built from the bundle now is what it will be.</summary>
+        public static bool Settled => _state == State.Ready || _state == State.Failed;
+
         /// <summary>Starts the one-off asynchronous load. Safe to call repeatedly.</summary>
         public static void Load(ModContext context)
         {

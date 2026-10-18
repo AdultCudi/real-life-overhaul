@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RealLifeOverhaul.Markets;
 using RealLifeOverhaul.Rivals;
 
@@ -99,7 +100,7 @@ internal static partial class Program
         string director = System.IO.File.ReadAllText(System.IO.Path.Combine(root, @"Rivals\RivalDirector.cs"));
         string counters = System.IO.File.ReadAllText(System.IO.Path.Combine(root, @"Rivals\RivalDirector.Counters.cs"));
         string tests = System.IO.File.ReadAllText(System.IO.Path.Combine(root, @"Rivals\RivalDirector.Tests.cs"));
-        string engine = System.IO.File.ReadAllText(System.IO.Path.Combine(root, @"Markets\MarketEngine.cs"));
+        string engine = string.Concat(System.IO.Directory.GetFiles(System.IO.Path.Combine(root, "Markets"), "MarketEngine*.cs").Select(System.IO.File.ReadAllText));
         int stand = director.IndexOf("private void StandDown(", StringComparison.Ordinal);
         int pay = director.IndexOf("PayBreakUps(Save.Day);", stand, StringComparison.Ordinal);
         string guard = pay > stand ? director.Substring(Math.Max(stand, pay - 120), Math.Min(120, pay - stand)) : string.Empty;

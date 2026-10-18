@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Tech
         public int LastRound, FailedRaises;
         public long Carry;               // millionths of a cent of growth carried day to day
         public readonly List<Holder> Holders = new List<Holder>(6);
-        // ---- a round it is raising now
+        // a round it is raising now
         public TermSheet Ask;            // what the founders ask of the player; null if they have not come to the player
         public bool Diligence;           // a report bought on it
         public int Revealed;             // what a meeting found out: 1 the revenue, 2 the founders, 4 the market
@@ -95,8 +95,8 @@ namespace RealLifeOverhaul.Tech
         public int BridgeDay;
         public int OptionsGranted;       // thousandths of the firm granted to staff
         public long LastMrr;             // the recurring revenue a month when the target was set
-        public long Unassigned;          // shares of the staff options that nobody has been given yet, handed to the firm's people when it has some
-        public int OptionsChecked;       // 1 once options granted before 0.12.4 (when a grant with nobody there went to nobody) have been looked over
+        public long Unassigned;          // staff option shares nobody has been given yet, handed out when the firm has people
+        public int OptionsChecked;       // 1 once the cap's options have been looked over for shares nobody holds
 
         public long Total
         {

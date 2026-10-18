@@ -8,12 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The hiring part: the city's labour market for professionals, the player's ads on the jobs board (the Open Roles
-    /// app), applicants, interviews and offers, executive search, and the game's own recruitment office, which now also
-    /// screens the market and brings more candidates than it was asked for. It runs with the people part (a hire is
-    /// given a file there). Each game day, before the people's day: the market's day (Tech/Hiring/HiringRules.Day),
-    /// searches that deliver, the day's applications, offers answered, hires that start, the office's extra candidates,
-    /// and files for the office's own candidates.
+    /// The hiring part: the labour market, the player's ads, applicants and searches, and the recruitment office's extra candidates.
+    /// Each game day, before the people's.
     /// </summary>
     public sealed partial class TechDirector
     {
@@ -24,21 +20,15 @@ namespace RealLifeOverhaul.Tech
         private readonly List<MarketNote> _notes = new List<MarketNote>(8);
         private readonly List<RecruitmentCampaign> _campaigns = new List<RecruitmentCampaign>(4);
         private readonly List<EmployeeInstance> _candidates = new List<EmployeeInstance>(16);
-        private readonly List<BuildingRegistration> _regs = new List<BuildingRegistration>(16);
         private HiringFile _hiring;
         private bool _hiringOn;
         private HiringRules.RateOf _rate;
         private InterviewMeeting _interview;
 
-        public bool HiringRunning => _hiringOn;
-
         /// <summary>The labour market and the player's hiring; null while the part is off.</summary>
         public HiringFile Hiring => _hiringOn ? _hiring : null;
 
-        /// <summary>
-        /// The player has taken the post of a rival's ad (Careers, through Wiring/CareersLinks): the first ad of that company for
-        /// that family and level is filled, as an ad a seeker takes is. True if there was one.
-        /// </summary>
+        /// <summary>The player has taken a rival's post (Careers): the first such ad is filled. True if there was one.</summary>
         internal bool FillRivalAd(string rival, int family, int level)
         {
             if (!_hiringOn || _hiring == null)
@@ -57,15 +47,10 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        public IReadOnlyList<string> Districts => _districts;
-
-        // ---------------------------------------------------------------- starting and stopping
-
         private void StartHiring()
         {
             GameInstance save = Save;
-            int version;
-            HiringFile file = HiringStore.Load(save.modData, out version);
+            HiringFile file = HiringStore.Load(save.modData, out int version);
             bool fresh = file == null;
             if (fresh)
             {
@@ -85,8 +70,9 @@ namespace RealLifeOverhaul.Tech
                 HiringRules.Day(_hiring, save.Day, HiringGame.Cycle, HiringGame.Summer(save.Day), _rivals, _rate, _districts, null);
                 NameSeekers();
             }
-            Logger?.Info("Tech: the labour market " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + HiringRules.Open(_hiring) + " seeker(s), "
-                         + _hiring.Ads.Count + " ad(s) of the player's, " + _hiring.RivalAds.Count + " of rivals, " + _hiring.Applicants.Count + " applicant(s).");
+            Logger?.Info("Tech: the labour market " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": "
+                         + HiringRules.Open(_hiring) + " seeker(s), " + _hiring.Ads.Count + " ad(s) of the player's, " + _hiring.RivalAds.Count + " of rivals, "
+                         + _hiring.Applicants.Count + " applicant(s).");
         }
 
         private void StopHiring(bool keep)
@@ -122,8 +108,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- the day
-
         private void HiringDay(int day)
         {
             if (_hiring.LastDay >= day)
@@ -132,7 +116,7 @@ namespace RealLifeOverhaul.Tech
             }
             float started = Time.realtimeSinceStartup;
             _notes.Clear();
-            int esteem = TechBridges.HiringEsteem();   // (the player's esteem as an employer, and their best office's: Scripts/Interiors)
+            int esteem = TechBridges.HiringEsteem();   // as an employer, with their best office's
             HiringRules.Day(_hiring, day, HiringGame.Cycle, HiringGame.Summer(day), _rivals, _rate, _districts, _notes);
             int delivered = 0;
             for (int i = 0; i < _hiring.Ads.Count; i++)
@@ -177,9 +161,9 @@ namespace RealLifeOverhaul.Tech
             _hiring.LastDay = day;
             if (Verbose)
             {
-                Logger?.Info("Tech check (labour market, day " + day + "): " + HiringRules.Open(_hiring) + " seeker(s) of " + HiringRules.Target(HiringGame.Cycle, HiringGame.Summer(day)) + " wanted, "
-                             + _hiring.RivalAds.Count + " rival ad(s), " + came + " application(s), " + _notes.Count + " answer(s) and withdrawal(s), " + startedHires + " start(s), "
-                             + delivered + " from searches, " + bonus + " extra from the recruitment office; "
+                Logger?.Info("Tech check (labour market, day " + day + "): " + HiringRules.Open(_hiring) + " seeker(s) of "
+                             + HiringRules.Target(HiringGame.Cycle, HiringGame.Summer(day)) + " wanted, " + _hiring.RivalAds.Count + " rival ad(s), " + came + " application(s), "
+                             + _notes.Count + " answer(s) and withdrawal(s), " + startedHires + " start(s), " + delivered + " from searches, " + bonus + " extra from the recruitment office; "
                              + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }
@@ -196,7 +180,6 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        // What the market did to the player's applicants, in a notification each.
         private void Said(MarketNote note)
         {
             Applicant a = _hiring.ApplicantOf(note.Applicant);
@@ -209,7 +192,8 @@ namespace RealLifeOverhaul.Tech
             switch (note.Kind)
             {
                 case HiringRules.WithdrewNote:
-                    Tell(NotificationType.Warning, "reallife_hire_note_withdrew", Data("name", s.P.Name, "employer", s.Employer.Length > 0 ? s.Employer : TechText.T("reallife_talent_rival_default")), TabApplicants, row);
+                    string employer = s.Employer.Length > 0 ? s.Employer : TechText.T("reallife_talent_rival_default");
+                    Tell(NotificationType.Warning, "reallife_hire_note_withdrew", Data("name", s.P.Name, "employer", employer), TabApplicants, row);
                     break;
                 case HiringRules.LapsedNote:
                     Tell(NotificationType.Info, "reallife_hire_note_counter_lapsed", Data("name", s.P.Name), TabApplicants, row);
@@ -221,7 +205,8 @@ namespace RealLifeOverhaul.Tech
                     }
                     else if (a.At == ApplyStage.Countered)
                     {
-                        Tell(NotificationType.Warning, a.RivalBid > 0 ? "reallife_hire_note_rival_bid" : "reallife_hire_note_countered", Data("name", s.P.Name, "amount", TechText.Rate(a.Counter)), TabApplicants, row);
+                        Tell(NotificationType.Warning, a.RivalBid > 0 ? "reallife_hire_note_rival_bid" : "reallife_hire_note_countered",
+                            Data("name", s.P.Name, "amount", TechText.Rate(a.Counter)), TabApplicants, row);
                     }
                     else
                     {
@@ -231,8 +216,8 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // Accepted applicants whose first day has come start: on the game's books as its own employee (a role the game has,
-        // at the business), or on the mod's payroll (a role it has not, or a job done from home). A search's fee is settled.
+        // Accepted applicants whose first day has come start: as the game's employee, or on the mod's payroll for a role the
+        // game has not or a job done from home. A search's fee is settled.
         private int Starts(int day)
         {
             int n = 0;
@@ -248,7 +233,7 @@ namespace RealLifeOverhaul.Tech
                 BuildingRegistration at = ad != null ? TalentGame.Find(ad.Place) : null;
                 if (s == null || ad == null || at == null)
                 {
-                    a.Stage = (int)ApplyStage.Withdrawn;   // (the business is no longer the player's: the job has gone)
+                    a.Stage = (int)ApplyStage.Withdrawn;   // the business is no longer the player's
                     continue;
                 }
                 bool payroll = !s.P.Def.InGame || ad.Work == (int)Arrangement.Remote;
@@ -268,7 +253,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (!ok)
                 {
-                    continue;   // (tried again tomorrow)
+                    continue;   // tried again tomorrow
                 }
                 if (ad.Search && ad.FeePaid < ad.Fee)
                 {
@@ -278,8 +263,8 @@ namespace RealLifeOverhaul.Tech
                 a.Stage = (int)ApplyStage.Started;
                 s.Taken = true;
                 n++;
-                Tell(NotificationType.Success, payroll ? "reallife_hire_note_started_payroll" : "reallife_hire_note_started", Data("name", s.P.Name, "business", TalentGame.NameOf(at), "role", TechText.Role(s.P.Role)),
-                    TabTeam, null);
+                Tell(NotificationType.Success, payroll ? "reallife_hire_note_started_payroll" : "reallife_hire_note_started",
+                    Data("name", s.P.Name, "business", TalentGame.NameOf(at), "role", TechText.Role(s.P.Role)), TabTeam, null);
             }
             return n;
         }
@@ -309,8 +294,8 @@ namespace RealLifeOverhaul.Tech
         {
             return new Profile
             {
-                Role = from.Role, Level = from.Level, A = from.A, B = from.B, Main = from.Main, YearsDays = from.YearsDays, School = from.School, Certs = from.Certs, Record = from.Record,
-                Female = from.Female, Age = from.Age, Name = from.Name
+                Role = from.Role, Level = from.Level, A = from.A, B = from.B, Main = from.Main, YearsDays = from.YearsDays, School = from.School, Certs = from.Certs,
+                Record = from.Record, Female = from.Female, Age = from.Age, Name = from.Name
             };
         }
 
@@ -343,8 +328,8 @@ namespace RealLifeOverhaul.Tech
             return c.P;
         }
 
-        // The recruitment office: each campaign for a professional skill brings half as many again as asked (four more at
-        // the least), the seekers the market has for the role the business needs, a share each day it runs.
+        // The recruitment office: each campaign for a professional skill brings extra seekers (HiringRules.OfficeBonus) for
+        // the roles the business wants, a share each day it runs.
         private int Office(int day)
         {
             HiringGame.Campaigns(_campaigns);
@@ -360,12 +345,11 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (c == null)
                 {
-                    int from, to;
-                    HiringGame.Days(game, out from, out to);
+                    HiringGame.Days(game, out int from, out int to);
                     c = new OfficeCampaign
                     {
-                        Key = key, Place = HiringGame.Place(game.businessAddress), Agency = HiringGame.Place(game.agencyAddress), Skill = game.skillRequirement.skillName,
-                        From = Math.Max(day, from), To = Math.Max(day, to), Planned = HiringRules.OfficeBonus(game.amountOfCandidates)
+                        Key = key, Place = HiringGame.Place(game.businessAddress), Agency = HiringGame.Place(game.agencyAddress),
+                        Skill = game.skillRequirement.skillName, From = Math.Max(day, from), To = Math.Max(day, to), Planned = HiringRules.OfficeBonus(game.amountOfCandidates)
                     };
                     if (_hiring.Campaigns.Count >= 16)
                     {
@@ -421,8 +405,7 @@ namespace RealLifeOverhaul.Tech
             return made;
         }
 
-        // A file ahead for each of the office's own candidates for a professional skill: a role the business wants, the
-        // level their skill stands at. Files of candidates who are gone (hired and read, or turned away) are dropped.
+        // A file made ahead for each of the office's own candidates; files older than ten days are dropped.
         private void Files(int day)
         {
             HiringGame.OfficeCandidates(_candidates);
@@ -458,9 +441,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- what the player does (the app)
-
-        /// <summary>The going rate for a role at a level: the game's wage at the middle of the level's band, by the role and the family's shortage, cents an hour.</summary>
+        /// <summary>The going rate for a role at a level, cents an hour: the game's wage at the middle of the level's band, by the shortage.</summary>
         internal int GoingFor(int role, int level)
         {
             RoleDef r = TalentCatalogue.Role(role);
@@ -468,11 +449,6 @@ namespace RealLifeOverhaul.Tech
             int mid = (TalentCatalogue.LevelSkillLeast[level] + TalentCatalogue.LevelSkillMost[level]) / 2;
             int shortage = _hiringOn ? HiringRules.Shortage(_hiring, r.Family, Save != null ? Save.Day : 0) : 1000;
             return TalentRules.Going(TalentGame.GameRate(r.GameSkill, mid), r, shortage, 0);
-        }
-
-        internal void Businesses(List<BuildingRegistration> into)
-        {
-            TalentGame.Businesses(into);
         }
 
         /// <summary>An ad posted on the jobs board, paid now by the business. False if there is no room or the cash does not cover it.</summary>
@@ -505,8 +481,8 @@ namespace RealLifeOverhaul.Tech
             }
             _hiring.Ads.Add(new JobAd
             {
-                Id = _hiring.Next(), Place = place, Role = r.Id, Level = TalentCatalogue.Clamp(level, r.LeastLevel, r.MostLevel), PayLeast = payLeast, PayMost = Math.Max(payLeast, payMost),
-                MinSkill = minSkill, Work = work, From = Save.Day, To = Save.Day + days, Boost = boost
+                Id = _hiring.Next(), Place = place, Role = r.Id, Level = TalentCatalogue.Clamp(level, r.LeastLevel, r.MostLevel), PayLeast = payLeast,
+                PayMost = Math.Max(payLeast, payMost), MinSkill = minSkill, Work = work, From = Save.Day, To = Save.Day + days, Boost = boost
             });
             Changed();
             return true;
@@ -621,7 +597,8 @@ namespace RealLifeOverhaul.Tech
             int open = 0;
             for (int i = 0; i < _hiring.Ads.Count; i++)
             {
-                open += _hiring.Ads[i].Search && AnyLive(_hiring.Ads[i].Id) || _hiring.Ads[i].Search && _hiring.Ads[i].Came == 0 ? 1 : 0;
+                JobAd ad = _hiring.Ads[i];
+                open += ad.Search && (ad.Came == 0 || AnyLive(ad.Id)) ? 1 : 0;
             }
             BuildingRegistration at = TalentGame.Find(place);
             RoleDef r = TalentCatalogue.Role(role);
@@ -630,8 +607,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
-            int fee = HiringRules.SearchFee(GoingFor(role, level) * (10000 + HiringCatalogue.EmployedPremiumBp) / 10000);
-            int retainer = HiringRules.Retainer(fee);
+            SearchQuote(role, level, out int fee, out int retainer);
             if (!HiringGame.Pay(retainer, HiringGame.SearchKey, at, TalentGame.NameOf(at)))
             {
                 Notifications.ShowInsufficientMoney();
@@ -640,8 +616,9 @@ namespace RealLifeOverhaul.Tech
             int day = Save.Day;
             _hiring.Ads.Add(new JobAd
             {
-                Id = _hiring.Next(), Place = place, Role = r.Id, Level = level, PayLeast = 0, PayMost = 0, Work = (int)Arrangement.OnSite, From = day, To = day + HiringCatalogue.ApplicantDays,
-                Search = true, Fee = fee, FeePaid = retainer, Due = day + TechRandom.Range(_hiring.Seed, _hiring.NextId, 43, 0, HiringCatalogue.SearchDaysLeast, HiringCatalogue.SearchDaysMost)
+                Id = _hiring.Next(), Place = place, Role = r.Id, Level = level, PayLeast = 0, PayMost = 0, Work = (int)Arrangement.OnSite, From = day,
+                To = day + HiringCatalogue.ApplicantDays, Search = true, Fee = fee, FeePaid = retainer,
+                Due = day + TechRandom.Range(_hiring.Seed, _hiring.NextId, 43, 0, HiringCatalogue.SearchDaysLeast, HiringCatalogue.SearchDaysMost)
             });
             Changed();
             return true;
@@ -655,10 +632,5 @@ namespace RealLifeOverhaul.Tech
         }
 
         internal int ShortageOf(Family family) => _hiringOn && Save != null ? HiringRules.Shortage(_hiring, family, Save.Day) : 1000;
-
-        internal void InterviewEnded()
-        {
-            Changed();
-        }
     }
 }

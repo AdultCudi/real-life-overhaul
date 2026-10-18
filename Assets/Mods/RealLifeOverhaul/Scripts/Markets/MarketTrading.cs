@@ -2,43 +2,38 @@ using System;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>The player's money as the market moves it. Whole units of the game's currency; every movement is a transaction of the game's.</summary>
+    /// <summary>The player's money as the market moves it, in whole units; every movement is a transaction of the game's.</summary>
     public interface IMarketWallet
     {
         /// <summary>Cash in hand, never below nothing.</summary>
         long Cash { get; }
-        /// <summary>Takes an amount. False, and nothing taken, if the cash is not there.</summary>
+        /// <summary>False, and nothing taken, if the cash is not there.</summary>
         bool Take(long amount, string why, string name);
-        /// <summary>
-        /// The cash made ready for a purchase of so much paid in more than one transaction (its price and its commission):
-        /// true when the cash in hand comes to it now (the market's own wallet first takes back what it needs of the money
-        /// worked orders have with the broker, MarketEngine.Invest.cs). Nothing is taken.
-        /// </summary>
+        /// <summary>True when the cash in hand covers a purchase paid in several transactions; may take back worked orders' money first.</summary>
         bool Ready(long amount);
-        /// <summary>Takes an amount even if the cash is not there (what is owed to the broker).</summary>
+        /// <summary>Even if the cash is not there: what is owed to the broker.</summary>
         void Force(long amount, string why, string name);
         void Give(long amount, string why, string name);
     }
 
-    /// <summary>The transaction keys of the market's money. Each has a text and a "_label" in en.json; "shares_" puts them under investments in the Finance app.</summary>
+    /// <summary>The transaction keys of the market's money; "shares_" files them under investments in the Finance app.</summary>
     public static class MarketMoney
     {
         public const string Bought = "reallife_transaction_shares_bought";
         public const string Sold = "reallife_transaction_shares_sold";
         public const string Commission = "reallife_transaction_shares_commission";
         public const string Dividend = "reallife_transaction_shares_dividend";
-        public const string DividendOwed = "reallife_transaction_shares_dividend_owed";
         public const string Payout = "reallife_transaction_shares_payout";
         public const string Interest = "reallife_transaction_shares_margin_interest";
         public const string BorrowFee = "reallife_transaction_shares_borrow_fee";
         public const string Deposit = "reallife_transaction_shares_deposit";
         public const string Withdrawal = "reallife_transaction_shares_withdrawal";
         public const string Shortfall = "reallife_transaction_shares_shortfall";
-        public const string BotFee = "reallife_transaction_shares_bot_fee";       // a trading bot's monthly fee (MarketBots)
+        public const string BotFee = "reallife_transaction_shares_bot_fee";       // a trading bot's monthly fee
         public const string BotShare = "reallife_transaction_shares_bot_share";   // its share of the profit
-        public const string WorkedHeld = "reallife_transaction_shares_worked_held";   // a worked purchase's day of money, parked at its first slice (MarketEngine.Invest.cs)...
+        public const string WorkedHeld = "reallife_transaction_shares_worked_held";   // a worked purchase's day of money, parked at its first slice...
         public const string WorkedBack = "reallife_transaction_shares_worked_back";   // ...and what is left of it, given back at the close or its end
-        public const string WorkedSold = "reallife_transaction_shares_worked_sold";   // a worked sale's takings of the day after the commission, paid at the close or its end
+        public const string WorkedSold = "reallife_transaction_shares_worked_sold";   // a worked sale's day of takings after commission, paid at the close or its end
     }
 
     /// <summary>A price to buy or sell at: the bid, the offer and the middle, in cents.</summary>
@@ -52,35 +47,22 @@ namespace RealLifeOverhaul.Markets
     public struct Estimate
     {
         public long Qty;
-        public int PriceCents;        // the price it would be filled at now (the limit for a limit order)
+        public int PriceCents;        // now; the limit for a limit order
         public long Value;            // money for the shares, before commission
         public long Fee;
-        public long Total;            // what is paid (a purchase) or received (a sale)
-        public int ImpactBp;          // how far the price moves against the order because of its size
+        public long Total;            // paid for a purchase, received for a sale
+        public int ImpactBp;          // how far its size moves the price against it
         public OrderWhy Why;          // None: it can be placed
     }
 
     /// <summary>
-    /// Trading: quotes, the cost of a trade, placing orders and filling them, the account. Game-free.
-    ///
-    /// What protects the market from being played:
-    ///   every purchase is at the offer and every sale at the bid, with a commission on each: a round trip always costs
-    ///   the spread and two commissions; an order moves the price against itself by the square root of its size against
-    ///   a day's volume, counting what the player traded in the company just before (so splitting an order saves
-    ///   nothing); a part of that move stays in the price; one order is at most a fifth of a day's volume (a larger one
-    ///   is worked, a fifth of each step's trading at a time, its slices moving the price as one order of their size and,
-    ///   on a cash account, settling its money once a day: MarketEngine.Invest.cs) and a holding at most a tenth of a
-    ///   company, which no purchase but the broker's own ever passes; nothing is traded while the market is shut,
-    ///   behind or held after a load; a resting order fills only at a price the market reached in that step, at its limit
-    ///   or the step's first price if that was better, a stop at the market's price of the step that reached it (the next
-    ///   price: after a gap or a fast fall, under the stop), and a limit never more than a quarter of the step's volume; a
-    ///   stop loss or a take profit only ever closes what is still held; cash is in whole units, rounded against the player.
+    /// Trading: quotes, the cost of a trade, placing and filling orders, the account. What keeps the market from being
+    /// played: a round trip costs the spread and two commissions; an order moves the price against itself by the square root
+    /// of its size, recent trading counted, so splitting saves nothing; a resting order fills only at a price the step
+    /// reached; cash is rounded against the player.
     /// </summary>
     public static class MarketTrading
     {
-        // ---------------------------------------------------------------- the price of a trade
-
-        /// <summary>A company's ordinary daily move (its own, its sector's and the market's together) in today's markets.</summary>
         public static double DayVol(MarketState state, Stock s)
         {
             double m = MarketCatalogue.IndexDayVol * s.Def.Beta / 100.0;
@@ -89,7 +71,6 @@ namespace RealLifeOverhaul.Markets
             return MarketCatalogue.VolScale(state.YearDays) * Math.Sqrt((m * m + sec * sec) * Math.Max(0.25, state.Variance) + own * own);
         }
 
-        /// <summary>Half the bid-offer spread as a share of the middle: by size, wider in a nervous market, at the open and near the close, and for a company in distress.</summary>
         public static double HalfSpread(MarketState state, Stock s, int phase)
         {
             double bp = s.Def.SpreadBp * 0.5 * Math.Sqrt(Math.Max(0.5, state.Variance)) * (1.0 + 2.0 * s.Distress);
@@ -113,17 +94,12 @@ namespace RealLifeOverhaul.Markets
             double mid = s.Mid * 100.0;
             double half = HalfSpread(state, s, phase);
             var q = new Quote { HalfSpread = half, Mid = Math.Max(1, (int)Math.Round(mid)) };
-            // At least a cent between bid and offer; the bid is never under a cent.
             q.Bid = Math.Max(1, (int)Math.Floor(mid * (1.0 - half)));
             q.Ask = Math.Max(q.Bid + 1, (int)Math.Ceiling(mid * (1.0 + half)));
             return q;
         }
 
-        /// <summary>
-        /// How far an order moves the price against itself, as a share of the price: the square root law of real markets,
-        /// on what the player has just traded in the company and this order together, less what was already paid for
-        /// the first part.
-        /// </summary>
+        /// <summary>How far an order moves the price against itself, a share of the price: the square root law on recent trading with it.</summary>
         public static double Impact(MarketState state, Stock s, long qty)
         {
             if (qty <= 0 || s.Adv <= 1.0)
@@ -136,7 +112,7 @@ namespace RealLifeOverhaul.Markets
             return cost / qty;
         }
 
-        /// <summary>Commission on a purchase or a sale of so much money: a share of it, never less than the least (at today's prices).</summary>
+        /// <summary>A share of the money, never less than the least at today's prices.</summary>
         public static long Commission(long value, int least)
         {
             if (value <= 0)
@@ -154,7 +130,7 @@ namespace RealLifeOverhaul.Markets
             return buying ? (total + 99L) / 100L : total / 100L;
         }
 
-        /// <summary>The price an order at the market would be filled at now, in cents: the offer or the bid, moved against it by its size.</summary>
+        /// <summary>In cents: the offer or the bid, moved against the order by its size.</summary>
         public static int MarketPrice(MarketState state, Stock s, bool buying, long qty, int phase)
         {
             Quote q = QuoteOf(state, s, phase);
@@ -162,9 +138,7 @@ namespace RealLifeOverhaul.Markets
             return buying ? (int)Math.Ceiling(q.Ask * (1.0 + impact)) : Math.Max(1, (int)Math.Floor(q.Bid * (1.0 - impact)));
         }
 
-        // ---------------------------------------------------------------- the account
-
-        /// <summary>The value of every holding at the bid (a short at the offer, under nothing), in money.</summary>
+        /// <summary>Every holding's value in money at the bid; a short at the offer, negative.</summary>
         public static long HoldingsValue(MarketState state, int phase, out long longs, out long shorts)
         {
             longs = shorts = 0;
@@ -189,11 +163,7 @@ namespace RealLifeOverhaul.Markets
             return longs - shorts;
         }
 
-        /// <summary>
-        /// The day's change of the player's own holdings against the previous close (<see cref="Stock.PrevClose"/>, set at
-        /// the open), in cents: a holding gains as its price rises, a short one as it falls. <paramref name="before"/> is
-        /// what they were worth at that close, for the per cent. One pass over the holdings, when the Portfolio is written.
-        /// </summary>
+        /// <summary>The day's change in cents of the holdings against the previous close, and in <paramref name="before"/> their worth then.</summary>
         public static long DayChange(MarketState state, out long before)
         {
             long change = 0;
@@ -212,21 +182,18 @@ namespace RealLifeOverhaul.Markets
             return change;
         }
 
-        /// <summary>The day's change in basis points of what was held at the previous close; 0 with nothing held.</summary>
         public static int DayChangeBp(long change, long before)
         {
             return before > 0 ? (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, change * 10000L / before)) : 0;
         }
 
-        /// <summary>A margin account's equity: its own money, what is held and what is owed on shares sold short.</summary>
         public static long Equity(MarketState state, int phase)
         {
-            long longs, shorts;
-            HoldingsValue(state, phase, out longs, out shorts);
+            HoldingsValue(state, phase, out long longs, out long shorts);
             return state.Account.Cash + longs - shorts;
         }
 
-        /// <summary>What a margin account must keep in equity: a quarter of what is held, three tenths of what is sold short, more for risky companies.</summary>
+        /// <summary>What a margin account must keep in equity: a quarter of what is held, three tenths of shorts, more for risky companies.</summary>
         public static long Maintenance(MarketState state, int phase)
         {
             long need = 0;
@@ -246,20 +213,18 @@ namespace RealLifeOverhaul.Markets
             return need;
         }
 
-        /// <summary>A company a broker is wary of: small, new, in distress or with a bid on it.</summary>
         public static bool Risky(Stock s)
         {
             return s.Size == MarketSize.Small || s.Distress > 0.3 || s.BidCents > 0;
         }
 
-        /// <summary>Whether shares of a company can be borrowed to sell short: not a small company, not one listed in the last month, not one in distress, under a bid, or one of the game's rivals.</summary>
+        /// <summary>Not a small, new or distressed company, one under a bid, or a rival's holding.</summary>
         public static bool Borrowable(MarketState state, Stock s, int day)
         {
             return s.Listed && s.Size != MarketSize.Small && s.Distress < 0.3 && s.BidCents <= 0 && s.RivalId == null && !MarketCatalogue.IsRival(s.Id)
                    && day - s.ListedDay >= Math.Max(5, state.YearDays / 12);
         }
 
-        /// <summary>The fee a year for borrowing a company's shares, in bp: more for smaller and more volatile companies.</summary>
         public static int BorrowFeeBp(MarketState state, Stock s)
         {
             double vol = DayVol(state, s) / 0.02;
@@ -267,12 +232,7 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(MarketCatalogue.BorrowFeeLeastBp, Math.Min(MarketCatalogue.BorrowFeeMostBp, bp));
         }
 
-        // ---------------------------------------------------------------- placing an order
-
-        /// <summary>
-        /// Shares the player has asked to sell that are not sold yet (so the same shares are never sold twice). A stop loss
-        /// or a take profit holds nothing back: it only ever sells what is still held when it fills.
-        /// </summary>
+        /// <summary>Shares already asked to be sold or bought; a stop loss or take profit holds nothing back.</summary>
         public static long Reserved(MarketState state, int stockId, OrderSide side)
         {
             long reserved = 0;
@@ -287,10 +247,6 @@ namespace RealLifeOverhaul.Markets
             return reserved;
         }
 
-        /// <summary>
-        /// What an order would come to now, and whether it can be placed. Nothing is changed. 'open' is whether the
-        /// market trades now; 'held' whether orders wait after a load; 'least' the least commission at today's prices.
-        /// </summary>
         public static Estimate Check(MarketState state, Stock s, OrderSide side, OrderType type, long qty, int limitCents, int stopCents, long cash, int least, bool open, bool held, int phase,
             bool closing = false)
         {
@@ -324,7 +280,7 @@ namespace RealLifeOverhaul.Markets
             long held2 = state.Held(s.Id);
             if (closing)
             {
-                // A stop loss or a take profit: on what is held (a short is bought back), never more, at a price beyond the market's.
+                // A stop loss or a take profit: on what is held, never more, at a price beyond the market's.
                 long holding = buying ? -held2 : held2;
                 Quote now = QuoteOf(state, s, open ? phase : MarketCatalogue.PhaseOpen);
                 e.Why = type == OrderType.Market ? OrderWhy.BadPrice : holding <= 0 ? OrderWhy.NothingHeld : qty > holding ? OrderWhy.NoShares
@@ -338,7 +294,7 @@ namespace RealLifeOverhaul.Markets
             long after = held2 + (buying ? qty + Reserved(state, s.Id, OrderSide.Buy) : -qty - Reserved(state, s.Id, OrderSide.Sell));
             if (closing)
             {
-                after = buying ? Math.Min(0L, held2 + qty) : Math.Max(0L, held2 - qty);   // (it only closes: no limit it could break)
+                after = buying ? Math.Min(0L, held2 + qty) : Math.Max(0L, held2 - qty);   // it only closes: no limit it could break
             }
             if (buying && after > MostHeld(s))
             {
@@ -400,13 +356,11 @@ namespace RealLifeOverhaul.Markets
             return e;
         }
 
-        /// <summary>The most shares of a company one order can be for: a fifth of a day's usual volume.</summary>
         public static long MostPerOrder(Stock s)
         {
             return Math.Max(1L, (long)(s.Adv * MarketCatalogue.OrderShareOfVolumePct / 100.0));
         }
 
-        /// <summary>The most shares of a company the player may hold (or owe): a tenth of its shares in issue.</summary>
         public static long MostHeld(Stock s)
         {
             return Math.Max(1L, s.Shares * MarketCatalogue.HoldingShareBp / 10000L);
@@ -422,10 +376,7 @@ namespace RealLifeOverhaul.Markets
             return count;
         }
 
-        /// <summary>
-        /// Whether a margin account may make a trade: one that only closes (part of) a position always may; one that
-        /// opens or adds must leave half of everything held in equity, after its commission.
-        /// </summary>
+        /// <summary>Whether a margin account may trade: closing always may; opening must leave half of everything held in equity.</summary>
         public static bool MarginAllows(MarketState state, Stock s, bool buying, long qty, long fee, int phase)
         {
             long held = state.Held(s.Id);
@@ -442,19 +393,13 @@ namespace RealLifeOverhaul.Markets
             return equityAfter * 100 >= Math.Max(0L, grossAfter) * MarketCatalogue.InitialMarginPct;
         }
 
-        /// <summary>What every position is worth together, shorts counted as positive.</summary>
         public static long GrossExposure(MarketState state, int phase)
         {
-            long longs, shorts;
-            HoldingsValue(state, phase, out longs, out shorts);
+            HoldingsValue(state, phase, out long longs, out long shorts);
             return longs + shorts;
         }
 
-        /// <summary>
-        /// The order placed. Checks again first: an order that cannot be placed is not made (the reason is in
-        /// <paramref name="why"/>). An order at the market while the market is open, and a limit already met, are filled
-        /// at once by <see cref="MarketEngine"/> (the caller does that); one placed while it is shut waits for the open.
-        /// </summary>
+        /// <summary>The order placed if <see cref="Check"/> allows it, else null; the caller fills one that can fill at once.</summary>
         public static Order Place(MarketState state, Stock s, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, long cash, int least,
             bool open, bool held, int phase, bool test, out OrderWhy why, bool closing = false)
         {
@@ -474,7 +419,6 @@ namespace RealLifeOverhaul.Markets
             return order;
         }
 
-        /// <summary>An open order cancelled. Nothing is charged and nothing in the market moves.</summary>
         public static bool Cancel(MarketState state, int orderId, OrderWhy why = OrderWhy.Cancelled)
         {
             Order o = state.Order(orderId);
@@ -497,7 +441,6 @@ namespace RealLifeOverhaul.Markets
             return d;
         }
 
-        /// <summary>The day so many market days after another.</summary>
         public static int MarketDays(int day, int count)
         {
             int d = day;
@@ -508,23 +451,13 @@ namespace RealLifeOverhaul.Markets
             return d;
         }
 
-        // ---------------------------------------------------------------- filling
-
-        /// <summary>
-        /// Shares bought or sold at a price, with the money moved and the position changed. Returns false, and changes
-        /// nothing, if a purchase cannot be paid for (cash) or would take a margin account under its initial margin.
-        /// A sale of more than is held, in a margin account, sells what is held and sells the rest short.
-        /// </summary>
+        /// <summary>False, changing nothing, if a purchase cannot be paid or breaks the margin.</summary>
         public static bool Fill(MarketState state, Stock s, Order order, long qty, int cents, int least, IMarketWallet wallet, int phase)
         {
             return Fill(state, s, order, qty, cents, least, wallet, phase, true, out _);
         }
 
-        /// <summary>
-        /// As <see cref="Fill(MarketState, Stock, Order, long, int, int, IMarketWallet, int)"/>; with <paramref name="move"/>
-        /// false the lasting move of the price and the shares traded are not put on the company here but given in
-        /// <paramref name="kept"/> (in a Going Public session the city's market applies every player's, on its tape).
-        /// </summary>
+        /// <summary>With <paramref name="move"/> false the lasting price move is given in <paramref name="kept"/> for a session's tape.</summary>
         public static bool Fill(MarketState state, Stock s, Order order, long qty, int cents, int least, IMarketWallet wallet, int phase, bool move, out double kept)
         {
             kept = 0.0;
@@ -542,8 +475,7 @@ namespace RealLifeOverhaul.Markets
             {
                 if (!a.Margin && order.Worked)
                 {
-                    // A worked order's slice on a cash account: paid from the day's money parked for it, with no transaction
-                    // of its own (MarketEngine.Invest.cs: Park and Settle). Short of it, nothing is bought.
+                    // A worked order's slice on a cash account is paid from the day's money parked for it (MarketEngine.Invest.cs).
                     if (order.Parked < value + fee)
                     {
                         return false;
@@ -552,7 +484,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 else if (!a.Margin)
                 {
-                    if (!wallet.Ready(value + fee))   // (what is short taken back from worked orders' money with the broker first)
+                    if (!wallet.Ready(value + fee))   // takes back from worked orders' money first
                     {
                         return false;
                     }
@@ -581,7 +513,7 @@ namespace RealLifeOverhaul.Markets
                     }
                     if (order.Worked)
                     {
-                        order.Due += value - fee;   // (a worked sale's takings wait on it, paid in one transaction at the close or its end)
+                        order.Due += value - fee;   // a worked sale's takings wait, paid at the close or its end
                     }
                     else
                     {
@@ -615,9 +547,8 @@ namespace RealLifeOverhaul.Markets
             {
                 order.State = OrderState.Filled;
             }
-            // The market moves: a part of the order's impact stays in the price (as the market's mood: it fades), and the
-            // player's recent trading in it grows. A worked order's slice moves it by its part of what the order would have
-            // as one (SliceShare): its slices together move it as one order of their size, not each as an order of its own.
+            // A part of the impact stays in the price as mood. A worked order's slices together move it as one order of
+            // their size (SliceShare), not each as an order of its own.
             double share = order.Worked ? SliceShare(s.Impact, qty, s.Adv) : Math.Sqrt(qty / Math.Max(1.0, s.Adv));
             kept = (buying ? 1.0 : -1.0) * MarketCatalogue.ImpactPermanent * MarketCatalogue.ImpactTemporary * DayVol(state, s) * share;
             if (move)
@@ -626,7 +557,7 @@ namespace RealLifeOverhaul.Markets
                 s.Sent += kept;
                 s.DayVolume += qty;
             }
-            s.Impact += qty;   // (the player's own recent trading, whatever moves the price)
+            s.Impact += qty;   // the player's own recent trading, whatever moves the price
             TradeKind kind = buying ? TradeKind.Bought : TradeKind.Sold;
             if (!order.Worked || !AddToLine(state, order.Id, s.Id, kind, qty, buying ? -value : value, fee, phase))
             {
@@ -639,21 +570,14 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        /// <summary>
-        /// The lasting move of a worked order's slice, as a share of the square root law's unit: the square root of the
-        /// player's recent trading in the company with the slice, against a day's volume, less without it. The slices of one
-        /// worked order so come to the move of one order of their size (less the fading of the trading the market remembers),
-        /// as its cost (Impact) already does; an order on its own (nothing traded just before) moves the price as ever.
-        /// </summary>
+        /// <summary>A worked slice's lasting move, so the slices of one order move the price as one order of their size.</summary>
         public static double SliceShare(double recent, long qty, double adv)
         {
             double a = Math.Max(1.0, adv), before = Math.Max(0.0, recent);
             return Math.Sqrt((before + Math.Max(0L, qty)) / a) - Math.Sqrt(before / a);
         }
 
-        // A worked order's slice on the history line of that order's slices of the same day, if there is one: the shares, the
-        // money and the commission added, its price their average. False when there is none yet (the slice is a new line).
-        // Nothing is made for a slice that joins its line.
+        // A worked order's slice added to that order's history line of the day; false when there is none yet.
         private static bool AddToLine(MarketState state, int order, int stockId, TradeKind kind, long qty, long value, long fee, int phase)
         {
             for (int i = state.Trades.Count - 1; i >= 0; i--)
@@ -661,7 +585,7 @@ namespace RealLifeOverhaul.Markets
                 Trade t = state.Trades[i];
                 if (t.Day != state.Day)
                 {
-                    return false;   // (lines are in the order of time: none of today's is further back)
+                    return false;   // lines are in time order: none of today's is further back
                 }
                 if (t.Order == order && t.StockId == stockId && t.Kind == kind)
                 {
@@ -676,10 +600,7 @@ namespace RealLifeOverhaul.Markets
             return false;
         }
 
-        /// <summary>
-        /// A position changed by a number of shares (more than nothing bought) for an amount of money (what was paid, or
-        /// what was received). The cost of what is kept is the average cost of what was held; what is closed is realised.
-        /// </summary>
+        /// <summary>A position changed by shares (positive bought) for money; what is kept keeps its average cost, what is closed is realised.</summary>
         public static void Book(Position p, long shares, long money, Account a)
         {
             long before = p.Shares;
@@ -691,7 +612,7 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             long closing = Math.Min(Math.Abs(shares), Math.Abs(before));
-            long part = before != 0 ? p.Cost * closing / Math.Abs(before) : 0;   // the cost of what is closed, rounded towards nothing
+            long part = before != 0 ? p.Cost * closing / Math.Abs(before) : 0;   // rounded towards nothing
             long moneyClosing = money * closing / Math.Abs(shares);
             long gain = before > 0 ? moneyClosing - part : part - moneyClosing;
             p.Realised += gain;
@@ -701,7 +622,7 @@ namespace RealLifeOverhaul.Markets
             long rest = Math.Abs(shares) - closing;
             if (rest > 0)
             {
-                // Through nothing: the rest opens a position the other way at its share of the money.
+                // Through nothing: the rest opens a position the other way.
                 p.Shares = Math.Sign(shares) * rest;
                 p.Cost = money - moneyClosing;
             }
@@ -720,7 +641,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>What the holdings are worth at the bid, what they cost, and what the gain is, in money.</summary>
         public static long Worth(MarketState state, int phase, out long cost)
         {
             long worth = 0;

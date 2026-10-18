@@ -9,45 +9,37 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// What Flare asks of the rest of the mod. Each is optional and has a default, so Social/Flare works alone (the
-    /// account, the player's own posts and followers); Scripts/Wiring/FlareLinks.cs fills them in. Flare never calls
-    /// another feature directly, and the things that happen elsewhere and become drafts (a picture saved, an outing,
-    /// a good deed, an arrest) are told to it from there (<see cref="FlareDirector.Happened"/>).
-    /// </summary>
+    /// <summary>What Flare asks of the rest of the mod, filled in by Wiring/FlareLinks; each has a default so Flare works alone.</summary>
     public static partial class FlareBridges
     {
-        /// <summary>The people the player has met in the social life, as Flare reads them, into the list given. Default: nobody.</summary>
+        /// <summary>The people the player has met in the social life, as Flare reads them. Default: nobody.</summary>
         public static Action<List<FlarePerson>> People;
 
-        /// <summary>
-        /// The people met as a save holds them, read from its data while the loading screen is up, before the social life has
-        /// read them (only their number, look and whether they are the partner), into the list given. Default: nobody.
-        /// </summary>
+        /// <summary>The people met as a save holds them, read while the loading screen is up. Default: nobody.</summary>
         public static Action<Dictionary<string, string>, List<FlarePerson>> SavedPeople;
 
         /// <summary>What the city thinks of the player, 0 to 100 (the law's public reputation). Default: 50.</summary>
         public static Func<int> PublicStanding;
 
-        /// <summary>The election on now: bit 1 the player has voted in it, bit 2 has endorsed in it, with the candidates' names. Default: no election.</summary>
+        /// <summary>The election on now: bit 1 voted in it, bit 2 endorsed in it, with the candidates' names. Default: no election.</summary>
         public static CivicAsk Civic;
 
         public delegate int CivicAsk(out string voted, out string endorsed);
 
-        /// <summary>The player's employer and rank now (employer * 100 + rank, -1 out of work) and the employer's name. Default: out of work.</summary>
+        /// <summary>The player's employer and rank (employer * 100 + rank, -1 out of work) and the employer's name. Default: out of work.</summary>
         public static CareerAsk Career;
 
         public delegate int CareerAsk(out string employer);
 
-        // ---- the influences (each one line in Wiring/FlareLinks; without them a post changes nothing outside Flare)
+        // The influences: without them a post changes nothing outside Flare.
 
-        /// <summary>Has a business's customers figure written again now that Flare's talk about it has changed (business pressure's own writer), and whether it is the new day. Default: nothing is written.</summary>
+        /// <summary>Has a business's customers figure written again after Flare's talk about it changed, and whether it is a new day. Default: nothing.</summary>
         public static Func<BuildingRegistration, bool, bool> Footfall;
 
-        /// <summary>A friend was tagged in a post (the social life's number), whether it is a selfie taken with them, and whether the post went well. Default: nothing.</summary>
+        /// <summary>A friend was tagged (the social life's number), whether in a selfie with them, and whether the post went well. Default: nothing.</summary>
         public static Action<int, bool, bool> Tagged;
 
-        /// <summary>An honest answer to a scandal at a brand's shop: the shop's place and the recognition to give back (hundredths). Returns what came back. Default: nothing.</summary>
+        /// <summary>An honest answer to a scandal at a brand's shop: the recognition to give back (hundredths); what came back. Default: nothing.</summary>
         public static Func<string, int, int> Answered;
 
         /// <summary>A finished piece for the morning paper (one locale key). Default: nothing is printed.</summary>
@@ -59,15 +51,13 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The police take notice of the player for the rest of the day. Default: nothing.</summary>
         public static Action Noticed;
 
-        /// <summary>The employer and rank of a rota shift the player is clocked on to (employer * 100 + rank), or -1. Default: never on one.</summary>
+        /// <summary>The employer and rank of a rota shift the player is clocked on to (employer * 100 + rank), or -1. Default: never.</summary>
         public static Func<int> OnShift;
 
         /// <summary>A complaint at work: the boss saw the player posting on shift. Default: nothing.</summary>
         public static Action Complaint;
 
-        // ---- the city's influencers, brands and candidates
-
-        /// <summary>True while the council lets the night go on later than the city came with (night life draws influencers). Default: no.</summary>
+        /// <summary>True while the council lets the night go on later than the city came with. Default: no.</summary>
         public static Func<bool> NightLate;
 
         /// <summary>The candidates of the election on now, into the list given (none between elections). Default: none.</summary>
@@ -76,7 +66,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The player's brands and the city's chains, into the list given. Default: none.</summary>
         public static Action<List<string>> Brands;
 
-        /// <summary>What the company would charge and bring for a campaign of a kind at a business now; false with the reason's key if it cannot be booked. Default: none can.</summary>
+        /// <summary>What the company would charge and bring for a campaign of a kind at a business; false with the reason's key. Default: none can.</summary>
         public static QuoteAsk Quote;
 
         public delegate bool QuoteAsk(string place, int kind, out int cost, out int percent, out string why);
@@ -84,24 +74,22 @@ namespace RealLifeOverhaul.Flare
         /// <summary>Has the company book and pay a campaign of a kind at a business. Default: nothing is booked.</summary>
         public static Func<string, int, bool> Book;
 
-        /// <summary>The company's campaigns at the player's businesses, running or booked, into the list given (filled again on each call). Default: none.</summary>
+        /// <summary>The company's campaigns at the player's businesses, running or booked (the list filled again). Default: none.</summary>
         public static Action<List<FlareCampaign>> Campaigns;
 
-        /// <summary>The player ended an influencer's deal: the company's campaign that is the deal (the place, the kind, its first day) ends with it. Default: nothing.</summary>
+        /// <summary>The player ended a deal: the company's campaign that is the deal (place, kind, first day) ends with it. Default: nothing.</summary>
         public static Action<string, int, int> EndCampaign;
 
         /// <summary>A business that hired an influencer is hurt by their scandal: its brand hears of it. Default: nothing.</summary>
         public static Action<string> BrandScandal;
 
-        /// <summary>A star influencer: somebody the player has still to meet in the social life is them, and a friend will introduce them. Their number, or -1. Default: nobody.</summary>
+        /// <summary>A star influencer turns out to be somebody the player can still meet, introduced by a friend: their number, or -1. Default: nobody.</summary>
         public static Func<string, int> MeetStar;
 
-        // ---- the rest of the city
-
-        /// <summary>Somebody the player has still to meet answers a post and becomes a contact (met online). Their name, or null. Default: nobody.</summary>
+        /// <summary>Somebody the player has still to meet answers a post and becomes a contact: their name, or null. Default: nobody.</summary>
         public static Func<string> MeetOnline;
 
-        /// <summary>The partner (the social life's number) sees a post with somebody they could fall for: how they take it (FlareRules.PartnerView). Default: nothing.</summary>
+        /// <summary>The partner (the social life's number) sees a post with somebody they could fall for, and how they take it. Default: nothing.</summary>
         public static Action<int, int> PartnerSees;
 
         /// <summary>The partner minds never being posted. Default: nothing.</summary>
@@ -128,10 +116,10 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A post raised an issue (FlareIssue) in the council, by so many thousandths of a point. Default: nothing.</summary>
         public static Action<int, int> Issue;
 
-        /// <summary>A post about the player's own run for office went out: what it is worth to the campaign, thousandths of a point. Default: nothing.</summary>
+        /// <summary>A post about the player's own run for office: what it is worth to the campaign, thousandths of a point. Default: nothing.</summary>
         public static Action<int> Campaign;
 
-        /// <summary>The degree the player graduated with today at the university's ceremony, in words, or null (Careers). Default: never.</summary>
+        /// <summary>The degree the player graduated with today at the university's ceremony, in words, or null. Default: never.</summary>
         public static Func<string> Graduated;
 
         public static void Reset()
@@ -198,11 +186,7 @@ namespace RealLifeOverhaul.Flare
         }
     }
 
-    /// <summary>
-    /// The one place Flare touches the game: the clock, the player's businesses and their takings from the game's own
-    /// daily statements (through Economy/Finance/Books, the mod's reader of them), and which of them the player is
-    /// standing in. Asked on the hour, the day, a saved picture and a click; never per frame.
-    /// </summary>
+    /// <summary>The one place Flare touches the game: the clock, the player's businesses and takings. Asked on the hour, the day and a click.</summary>
     public static class FlareGame
     {
         private static readonly List<BuildingRegistration> Regs = new List<BuildingRegistration>(16);
@@ -211,7 +195,7 @@ namespace RealLifeOverhaul.Flare
         public static int Hour => SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0;
         public static int MinuteOfDay => SaveGameManager.Current != null ? SaveGameManager.Current.Hour * 60 + Mathf.FloorToInt(SaveGameManager.Current.Minute) : 0;
 
-        /// <summary>A business's place as the company and the brands write it ("street~number"): the key kept for the building (Tech/People/TalentGame.Place, the same text).</summary>
+        /// <summary>A business's place as the company and the brands write it ("street~number"), as Tech/People/TalentGame.Place has it.</summary>
         public static string Place(BuildingRegistration reg)
         {
             return reg == null ? null : Tech.TalentGame.Place(reg);
@@ -253,7 +237,7 @@ namespace RealLifeOverhaul.Flare
             return reg != null ? Mathf.RoundToInt(Books.SalesYesterday(reg.Address)) : 0;
         }
 
-        /// <summary>The game's own satisfaction figures of a business (0 to 100): overall, service, pricing, cleanliness, facility. False if it has none.</summary>
+        /// <summary>The game's satisfaction figures of a business (0 to 100): overall, then service, pricing, cleanliness, facility. False with none.</summary>
         public static bool Satisfaction(BuildingRegistration reg, out int overall, int[] parts)
         {
             overall = 0;
@@ -270,11 +254,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>
-        /// A viral post about a business: the game's own hype for one product it sells (a retail product the game can
-        /// hype, not hyped there already), in its district, as the game makes one (ProductMarketHelper). The product, or
-        /// null if there was none to hype.
-        /// </summary>
+        /// <summary>A viral post's game hype for one retail product the business sells and not yet hyped there, as ProductMarketHelper makes one; null for none.</summary>
         public static string Hype(BuildingRegistration reg)
         {
             List<string> products = reg != null ? reg.cachedAvailableProducts : null;
@@ -317,7 +297,7 @@ namespace RealLifeOverhaul.Flare
             }
             catch (Exception)
             {
-                into.Clear();   // (the game's list is not there: influencers have no home district)
+                into.Clear();   // the game's list is not there: influencers have no home district
             }
         }
 
@@ -351,7 +331,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>True if any business of the player's has staff (one of them may take up posting). Asked once a month.</summary>
+        /// <summary>True if any business of the player's has staff, one of whom may take up posting. Asked once a month.</summary>
         public static bool HasStaff()
         {
             List<BuildingRegistration> all = Businesses();
@@ -384,7 +364,11 @@ namespace RealLifeOverhaul.Flare
             {
                 string place = Place(all[i]);
                 FlareShopSeen seen = f.Shop(place);
-                into.Add(new FlareShop { Place = place, Name = Name(all[i]), Niche = FlareCast.NicheOf(all[i].businessTypeName), District = all[i].Neighborhood, OpenedDay = seen != null ? seen.FirstDay : f.StartDay });
+                into.Add(new FlareShop
+                {
+                    Place = place, Name = Name(all[i]), Niche = FlareCast.NicheOf(all[i].businessTypeName), District = all[i].Neighborhood,
+                    OpenedDay = seen != null ? seen.FirstDay : f.StartDay
+                });
             }
         }
 

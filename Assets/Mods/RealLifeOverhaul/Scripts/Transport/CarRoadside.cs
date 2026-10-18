@@ -1,28 +1,23 @@
 using System.Collections.Generic;
-using Helpers;
 using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
+    /// <summary>What a roadside call is for.</summary>
     public enum RoadsideJob { None, Breakdown, Fuel }
 
     /// <summary>
-    /// Roadside assistance to the player's car where it stands: a mechanic in hi-vis walks up
-    /// from out of view, kneels at the front of the car for a few seconds and walks off again;
-    /// then the car runs (a breakdown) or has ten litres in it (out of fuel), and the call-out
-    /// is charged. One call at a time. The mechanic is a character of this feature's own (a
-    /// JobCast pair made the first time one is needed), placed and moved only on the navigation
-    /// mesh, at a place beside the car found clear of every vehicle. If nobody can be put on
-    /// the street (no way to the car on foot, no place to kneel) the job is still done when
-    /// the time is up, without the visit: the player is never left stranded.
-    /// Ticked twice a second by <see cref="CarOwnership"/> while a call is on.
+    /// Roadside assistance at the player's car: a mechanic in hi-vis (a <see cref="JobCast"/> of this feature's own) walks
+    /// up from out of view on the navigation mesh, kneels at the front for a few seconds and walks off; then the car runs or
+    /// has ten litres in it, and the call-out is charged. If nobody can be put on the street the job is still done when the
+    /// time is up, so the player is never stranded. One call at a time, ticked twice a second by <see cref="CarOwnership"/>.
     /// </summary>
     public sealed class CarRoadside
     {
-        private const float EtaLeast = 22f;
-        private const float EtaMost = 40f;
-        private const float WorkFor = 10f;
+        private const float EtaLeast = 22f;      // seconds from the call to the mechanic's arrival, at least
+        private const float EtaMost = 40f;       // and at most
+        private const float WorkFor = 10f;       // seconds kneeling at the car
         private const float GiveUp = 75f;        // seconds after the call by which the work is done, visit or no visit
 
         private enum Step { None, OnTheWay, Walking, Working, Leaving }
@@ -68,7 +63,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            Finish();   // whoever is still walking away from the last call
+            Finish();   // whoever is still walking away from the last call goes now
             Job = job;
             _car = car;
             _record = record;
@@ -91,7 +86,7 @@ namespace RealLifeOverhaul
             }
             if (_step != Step.Leaving)
             {
-                // The car was driven or towed away, or is gone: nobody comes, nothing is charged.
+                // The car was driven or towed away, or is gone: nobody comes and nothing is charged.
                 if (_car == null || (_car.transform.position - _carAt).sqrMagnitude > 9f)
                 {
                     CarOwnership.Logger?.Info("Roadside: the car is no longer where it was; the call is off.");
@@ -120,7 +115,8 @@ namespace RealLifeOverhaul
                         _step = Step.Walking;
                         if (!Arrive())
                         {
-                            CarOwnership.Logger?.Info("Roadside: nobody could be put on the street near the car (no clear place beside it, or no way to it on foot); the job is done without the visit.");
+                            CarOwnership.Logger?.Info("Roadside: nobody could be put on the street near the car (no clear place beside it, or no way to it on foot); "
+                                                      + "the job is done without the visit.");
                             Complete();
                             Finish();
                         }
@@ -163,7 +159,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The mechanic appears out of view and walks to the front of the car (or a front wheel, if the bonnet is against something).
+        // The mechanic appears out of view and walks to the front of the car, or to a front wheel if the bonnet is against something.
         private bool Arrive()
         {
             JobSpots.CarFrame(_car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth);
@@ -173,7 +169,7 @@ namespace RealLifeOverhaul
             {
                 Vector3 want = i == 0 ? centre + forward * (halfLength + 0.55f)
                     : centre + forward * (halfLength * 0.6f) + right * ((i == 1 ? 1f : -1f) * (halfWidth + 0.5f));
-                // On ground anyone can walk to, touching no vehicle but the car itself, and no parked car or street furniture.
+                // Walkable ground touching no vehicle but the car, and no parked car or street furniture.
                 found = StreetSpots.OnRoad(want, 0.7f, out _spot) && CitySpots.Flat(_spot - want) < 0.4f * 0.4f && JobSpots.Clear(_spot, _car.transform)
                         && !SceneParking.HasParked(_spot, Quaternion.identity, 0.3f, 0.3f);
             }
@@ -201,7 +197,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The work is done: the car is put right and the call-out charged.
         private void Complete()
         {
             if (_done || Job == RoadsideJob.None)
@@ -253,7 +248,7 @@ namespace RealLifeOverhaul
             Finish();
         }
 
-        /// <summary>Everyone back in, at once: the end of a visit, the option switched off, the city going.</summary>
+        /// <summary>Everyone back in at once: the end of a visit, the option switched off, the city going.</summary>
         public void Finish()
         {
             if (_mechanic != null && _cast != null)

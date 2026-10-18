@@ -14,18 +14,18 @@ namespace RealLifeOverhaul.Tech
         OnSite = 0, Hybrid = 1, Remote = 2
     }
 
-    /// <summary>One professional role: its family, the game's own skill it is hired under (none: the game has no such job), its two specialisms and its pay.</summary>
+    /// <summary>One professional role: its family, the game skill it is hired under (none: the game has no such job), its specialisms and pay.</summary>
     public sealed class RoleDef
     {
         public readonly int Id;
         public readonly string Key;          // reallife_talent_role_{Key}
         public readonly Family Family;
-        public readonly string GameSkill;    // the game's skill the role is hired and paid under; empty: a professional the game does not draw (always on the mod's own payroll)
+        public readonly string GameSkill;    // the game's skill it is hired and paid under; empty: always on the mod's own payroll, not drawn
         public readonly int SkillA, SkillB;  // the two specialisms, TalentCatalogue.Skills
         public readonly int Pay;             // thousandths of the engineer's rate at the same level
         public readonly int LeastLevel, MostLevel;
-        public readonly bool Remote;         // the role can be done from home
-        public readonly bool Tech;           // a role of the tech sector (as against the professions every company has)
+        public readonly bool Remote;         // can be done from home
+        public readonly bool Tech;           // a tech sector role, not one of the professions every company has
 
         public RoleDef(int id, string key, Family family, string gameSkill, int skillA, int skillB, int pay, int least, int most, bool remote, bool tech)
         {
@@ -42,27 +42,17 @@ namespace RealLifeOverhaul.Tech
             Tech = tech;
         }
 
-        /// <summary>True for a role the game itself can hire: its people are characters of the game, at a desk in the building.</summary>
+        /// <summary>True for a role the game itself hires: its people are characters at a desk in the building.</summary>
         public bool InGame => GameSkill.Length > 0;
     }
 
     /// <summary>
-    /// Every professional role, specialism, level, school, certificate and course of the tech sector and the
-    /// professions, and the figures that bound them. Game-free (the checkers compile it); every amount is at the
-    /// start's prices and is asked of <see cref="Prices"/> when it is charged or shown.
-    ///
-    /// THE GAME'S OWN, AND WHAT THIS ADDS. The game has 21 skills (ba:skill_...), each an employee holds as a value of 0
-    /// to 100 (shown in its MyEmployees list as a per cent): a primary skill that sets the wage, and for some a secondary
-    /// one. Programmers sit at the web development agency's computers, graphic designers at the graphic designer's;
-    /// lawyers, HR managers and headhunters at their offices. Here a role sits on top of one of those skills: an employee
-    /// with the programmer skill is a back end engineer or a data scientist, junior to principal, with two specialisms of
-    /// their own (0 to 100 as well), years of experience, a school and certificates. A role whose job the game does not
-    /// have (an accountant, an architect, a product manager) is a professional on the mod's own payroll: not drawn in the
-    /// building, paid by the mod, counted at the business they work for.
+    /// Every professional role, specialism, level, school, certificate and course. A role sits on a game skill (a programmer may be
+    /// a data scientist); a role the game has no job for is on the mod's own payroll. Game-free; amounts at the start's prices.
     /// </summary>
     public static class TalentCatalogue
     {
-        // ---------------------------------------------------------------- the game's skills the roles are hired under
+        // The game's skills the roles are hired under
         public const string Programmer = "ba:skill_programmer";
         public const string GraphicDesigner = "ba:skill_graphicdesigner";
         public const string CustomerService = "ba:skill_customerservice";
@@ -70,7 +60,7 @@ namespace RealLifeOverhaul.Tech
         public const string Headhunter = "ba:skill_headhunter";
         public const string Lawyer = "ba:skill_lawyer";
 
-        // ---------------------------------------------------------------- specialisms
+        // Specialisms
         public const int Coding = 0, SystemDesign = 1, Frontend = 2, Backend = 3, Mobile = 4, Automation = 5, Reliability = 6, Pipelines = 7, Statistics = 8,
             Learning = 9, SecurityOps = 10, Testing = 11, Troubleshooting = 12, Networking = 13, ProductSense = 14, Research = 15, Visual = 16, Writing = 17,
             Selling = 18, Relationships = 19, Leadership = 20, Delivery = 21, Accounting = 22, Law = 23, Recruiting = 24, Marketing = 25, Analysis = 26,
@@ -84,7 +74,7 @@ namespace RealLifeOverhaul.Tech
             "delivery", "accounting", "law", "recruiting", "marketing", "analysis", "structures", "site_planning"
         };
 
-        // ---------------------------------------------------------------- levels
+        // Levels
         public const int Junior = 0, Mid = 1, Senior = 2, Staff = 3, Principal = 4, Levels = 5;
 
         /// <summary>reallife_talent_level_{name}</summary>
@@ -101,16 +91,15 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Output at a level, thousandths of a mid-level's, before skill and mood.</summary>
         public static readonly int[] LevelOutput = { 650, 1000, 1300, 1500, 1650 };
 
-        // ---------------------------------------------------------------- pay
-        // A professional's going rate is the game's own wage for their main skill (EmployeeHelper's formula, for the role's
-        // skill or the programmer's where the game has none), times the role's pay and the labour market's shortage.
+        // Pay: the going rate is the game's own wage for the main skill (EmployeeHelper's formula), times the role's pay and
+        // the labour market's shortage.
         public const string RateSkill = Programmer;   // the game's skill whose wage a role without one is priced from
         public const int RateLeast = 1200;            // no professional is offered less, cents an hour at the start's prices
         public const int WeekHours = 40;
         public const int DayHours = 8;
         public const int YearHours = 2000;            // a year's pay for the fees that are a share of one (search fees)
 
-        // ---------------------------------------------------------------- roles
+        // Roles
         public static readonly RoleDef[] Roles =
         {
             new RoleDef(0, "software_engineer", Family.Engineering, Programmer, Coding, SystemDesign, 1000, Junior, Principal, true, true),
@@ -153,16 +142,17 @@ namespace RealLifeOverhaul.Tech
         };
 
         public const int RoleCount = 37;
-        public const int SoftwareEngineer = 0, DevOps = 4, Sre = 5, DataScientist = 7, MlEngineer = 8, SecurityAnalyst = 9, QaTester = 10, ItSupport = 11, NetworkEngineer = 12,
-            EngineeringManager = 13, Cto = 14, ProductManager = 17, UxDesigner = 18, GraphicDesignerRole = 19, WebDesigner = 20, AccountManager = 21, CustomerSuccess = 22,
-            SalesExecutive = 23, Accountant = 28, DataProtection = 33, ResearchScientist = 34, Technician = 35, ChiefExecutive = 36;
+        public const int SoftwareEngineer = 0, DevOps = 4, Sre = 5, DataScientist = 7, MlEngineer = 8, SecurityAnalyst = 9, QaTester = 10, ItSupport = 11,
+            NetworkEngineer = 12, EngineeringManager = 13, Cto = 14, ProductManager = 17, UxDesigner = 18, GraphicDesignerRole = 19, WebDesigner = 20,
+            AccountManager = 21, CustomerSuccess = 22, SalesExecutive = 23, Accountant = 28, DataProtection = 33, ResearchScientist = 34, Technician = 35,
+            ChiefExecutive = 36;
 
         public static RoleDef Role(int id)
         {
             return id >= 0 && id < Roles.Length ? Roles[id] : Roles[0];
         }
 
-        /// <summary>The roles the game's skill can be hired as, the first being the one a newcomer with it is given when nothing else fits.</summary>
+        /// <summary>The roles a game skill can be hired as; the first is a newcomer's when nothing else fits.</summary>
         public static int RolesOf(string gameSkill, int[] into)
         {
             int n = 0;
@@ -176,7 +166,7 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
-        /// <summary>True for a game skill that has professional roles: what the jobs board and these rules are for. Every other skill keeps the game's own hiring.</summary>
+        /// <summary>True for a game skill that has professional roles; every other skill keeps the game's own hiring.</summary>
         public static bool Professional(string gameSkill)
         {
             if (string.IsNullOrEmpty(gameSkill))
@@ -193,7 +183,7 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        // ---------------------------------------------------------------- schools and certificates
+        // Schools and certificates
         public const int SelfTaught = 0, Bootcamp = 1, Diploma = 2, Bachelor = 3, Master = 4, Doctorate = 5, Schools = 6;
 
         /// <summary>reallife_talent_school_{name}</summary>
@@ -238,23 +228,23 @@ namespace RealLifeOverhaul.Tech
 
         public const int CertCount = 12;
 
-        // ---------------------------------------------------------------- courses
+        // Courses
         public const int CourseDays = 3;           // days away for a course
         public const int CourseFee = 250;          // per point of the gain at the start's prices, scaled by the score already held
         public const int CourseGain = 8;           // points of the specialism a course adds (less near the top)
-        public const int ExamDays = 1;
+        public const int ExamDays = 1;             // days away for an exam
         public const int ExamPassBase = 55;        // per cent a candidate who just meets the score passes; up 2 a point over it
         public const int ExamMoraleUp = 60;        // thousandths of morale for a pass
         public const int DegreeDays = 120;         // a degree the business sponsors (study leave), for a year of 365 days
         public const int DegreeGain = 10;          // points it adds to each of the role's two skills
 
-        // ---------------------------------------------------------------- learning on the job
+        // Learning on the job
         public const int LearnPerHour = 15;        // thousandths of a point of a specialism an hour of work, at 0; less as the score rises
         public const int MentorBonus = 600;        // thousandths more for a junior or mid with a senior or above of the family at the same business
         public const int MentorsEach = 3;          // one mentor helps this many
         public const int MainLearnPerHour = 3;     // thousandths of a point of the game's own skill an hour, from a mentor (on top of the game's own)
 
-        // ---------------------------------------------------------------- mood and burnout (thousandths)
+        // Mood and burnout (thousandths)
         public const int MoraleStart = 650;
         public const int BurnoutLong = 45;         // hours a week over which burnout builds
         public const int BurnoutPerHour = 9;       // thousandths of burnout an hour over it
@@ -263,8 +253,8 @@ namespace RealLifeOverhaul.Tech
         public const int BurnoutQuit = 900;        // over this they may hand in their notice
         public const int MoodToGame = 4;           // points of the game's satisfaction a day morale moves it by at most
 
-        // ---------------------------------------------------------------- reviews and promotion
-        public const int ReviewsAYear = 2;
+        // Reviews and promotion
+        public const int ReviewsAYear = 2;         // reviews a year of the game's length
         public const int PromoteRating = 4;        // the rating (1 to 5) a promotion needs
         public const int PromoteDaysInLevel = 180; // days at a level before the next, written for a year of 365 days (Scaled)
         public const int PromotePayBp = 1200;      // a promotion's rise, basis points
@@ -273,25 +263,23 @@ namespace RealLifeOverhaul.Tech
         public const int AskDays = 7;              // days to answer a request for a rise
         public const int RefuseMorale = 70;        // thousandths of morale a refusal costs
 
-        // ---------------------------------------------------------------- notice, probation, severance, restraints
+        // Notice, probation, severance, restraints
         public const int ProbationDays = 90;       // written for a year of 365 days (Scaled)
-        public const int ProbationNotice = 7;
-        public const int NoticePerYear = 7;        // a week of notice a year of service
-        public const int NoticeLeast = 7, NoticeMost = 84;
-        public const int SeveranceWeeksPerYear = 1;
+        public const int ProbationNotice = 7;      // days
+        public const int NoticePerYear = 7;        // days of notice a year of service
+        public const int NoticeLeast = 7, NoticeMost = 84;   // days
+        public const int SeveranceWeeksPerYear = 1;          // weeks' pay a year of service
         public const int SeveranceLeastWeeks = 2;
         public const int LayoffsNews = 3;          // lay-offs in one day that make the paper
         public const int NonCompeteBp = 300;       // what a restraint clause costs in pay, basis points
         public const int NonCompetePoach = 500;    // thousandths of the rivals' chance of an approach with one
 
-        // ---------------------------------------------------------------- poaching of professionals
+        // Poaching of professionals
         public const int PoachLevel = Senior;      // rivals go after seniors and above
         public const int PoachChance = 6;          // per mille a day, before shortage, mood and pay
         public const int PoachPremiumBp = 1500;    // what a rival offers over the professional's pay
-        public const int PoachAnswerDays = 3;
+        public const int PoachAnswerDays = 3;      // days to answer an approach
         public const int PoachRestDays = 21;       // days after an answer before the next approach
-
-        // ---------------------------------------------------------------- the year
 
         /// <summary>A number of days written for a year of 365, in a year of the game's length (at least one).</summary>
         public static int Scaled(int days, int year)

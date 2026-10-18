@@ -14,25 +14,20 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The people of the player's life when they are on the street: two characters at most, the
-    /// social life's own (never the accident pool's, the living city's or the jobs'), made the
-    /// first time somebody is needed and reused after that. A character wears the look of the
-    /// person it stands for: built by the game's own appearance system from that person's seed (or
-    /// the look they had in the street, People/PersonLook), so Dana looks like Dana every time, and rebuilt only when the body is needed for somebody
-    /// else. One costs what one of the game's pedestrians costs while drawn and nothing on the
-    /// shelf. Nothing here runs by itself: the director calls <see cref="Cull"/> on its tick
-    /// while somebody is out.
+    /// The people of the player's life on the street: two characters of the social life's own, made once and reused, each
+    /// dressed as whoever it stands for. One costs what a pedestrian of the game's costs while drawn; nothing runs by itself.
     /// </summary>
     public sealed class SocialCast
     {
         public const int Size = 2;
 
         private const string CharacterPrefab = "Characters/HumanDefinitionLow";
-        private const float HideDistance = 150f;
-        private const float HideBehind = 6f;
-        private const float MaxBuild = 0.55f;   // the clips are made for slim to average (see CityPeople)
+        private const float HideDistance = 150f;   // metres
+        private const float HideBehind = 6f;       // metres behind the camera
+        private const float MaxBuild = 0.55f;      // the game's fatness: the clips are made for slim to average (see CityPeople)
 
         private static readonly AppearanceTag[] CasualWear = { AppearanceTag.Casual };
+        private static NavMeshPath _path;
 
         private readonly CityPerson[] _people = new CityPerson[Size];
         private readonly int[] _wears = { -1, -1 };   // whose look each body has
@@ -50,17 +45,12 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        /// <summary>True while somebody is on the street (not riding in the car).</summary>
+        /// <summary>Somebody on the street, not in the car.</summary>
         public bool AnyOut => (_out[0] && !_seated[0]) || (_out[1] && !_seated[1]);
 
-        /// <summary>True if a body is free for one more person.</summary>
         public bool HasRoom => !_failed && (!_out[0] || !_out[1]);
 
-        /// <summary>
-        /// Puts a person of the cast on the pavement at a spot that was found and tested, facing a
-        /// point, standing. Null if both bodies are out, the spot will not take them or characters
-        /// cannot be made; callers cope with that.
-        /// </summary>
+        /// <summary>At a tested spot, facing a point. Null if both bodies are out, the spot will not take them, or none can be made.</summary>
         public CityPerson Put(SocialPerson who, Vector3 spot, Vector3 face)
         {
             if (_failed || who == null)
@@ -115,11 +105,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Puts somebody who is already out at another tested spot at once, standing, facing a
-        /// point. Only ever for somebody nobody is looking at (they took too long, or their way
-        /// ended short). False, and they stay where they were, if the spot will not take them.
-        /// </summary>
+        /// <summary>At once to another tested spot, for somebody nobody is looking at. False, and unmoved, if it will not take them.</summary>
         public bool Move(CityPerson person, Vector3 spot, Vector3 face)
         {
             int slot = SlotOf(person);
@@ -144,11 +130,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// The walk somebody's own navigation agent would make from where they stand to a place:
-        /// how long, and whether it gets the whole way there. False if there is no route at all.
-        /// Asked when somebody is put out; nothing is changed.
-        /// </summary>
+        /// <summary>The walk their own navigation agent would make to a place; false if there is no route at all.</summary>
         public static bool Walk(CityPerson person, Vector3 to, out float length, out bool whole)
         {
             length = 0f;
@@ -175,9 +157,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        private static NavMeshPath _path;
-
-        /// <summary>Lets somebody walk on the carriageway as well as the pavement: to reach a car door.</summary>
+        /// <summary>The carriageway as well as the pavement, to reach a car door.</summary>
         public static void OnRoad(CityPerson person)
         {
             if (person == null || person.Lost)
@@ -193,7 +173,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Somebody gets into the car: off the street, still the same person, still held.</summary>
+        /// <summary>Into the car: off the street, still held.</summary>
         public void Seat(CityPerson person)
         {
             int slot = SlotOf(person);
@@ -213,7 +193,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Out of the car at a point beside it. False (and still seated) if they cannot stand there.</summary>
+        /// <summary>False, and still seated, if they cannot stand there.</summary>
         public bool Unseat(CityPerson person, Vector3 spot, Vector3 face)
         {
             int slot = SlotOf(person);
@@ -249,7 +229,7 @@ namespace RealLifeOverhaul
             return slot >= 0 && _seated[slot];
         }
 
-        /// <summary>Takes a person off the street. Safe with null and with someone already taken in.</summary>
+        /// <summary>Safe with null and with somebody already taken in.</summary>
         public void Release(CityPerson person)
         {
             int slot = SlotOf(person);
@@ -270,7 +250,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Animation and rendering off for whoever is far away or behind the camera. A few comparisons.</summary>
+        /// <summary>Drawing and animation off for whoever is far away or behind the camera. A few comparisons.</summary>
         public void Cull()
         {
             Camera camera = GameManager.GetMainCamera();
@@ -291,7 +271,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A small emoji over someone's head for a few seconds; skipped for people who are not being drawn.</summary>
+        /// <summary>Nothing for somebody not drawn.</summary>
         public void Emoji(CityPerson person, CharacterEmojiName emoji, float seconds)
         {
             try
@@ -309,7 +289,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The sound of someone getting into or out of a car.</summary>
         public static void DoorSound(Vector3 position)
         {
             SfxManager sounds = InstanceBehavior<SfxManager>.Instance;
@@ -319,7 +298,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The city is going: destroy what was made.</summary>
         public void Dispose()
         {
             for (int i = 0; i < Size; i++)
@@ -374,7 +352,7 @@ namespace RealLifeOverhaul
             person.InUse = false;
             if (taken)
             {
-                // Knocked down: the casualty system has the body and puts it away itself. It is not ours again.
+                // Knocked down: the casualty system has the body and puts it away itself.
                 _people[slot] = null;
                 _wears[slot] = -1;
                 return;
@@ -399,13 +377,13 @@ namespace RealLifeOverhaul
             using var piece = SessionWatch.Piece("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, position, Quaternion.identity, _host.transform);
             character.name = "RealLifeOverhaul Friend";
-            // Idle fidgets would play over what a scene asks of them (a wave, a cup).
+            // Idle fidgets would play over a scene's wave or cup.
             var fidgets = character.GetComponentInChildren<BoredAnimations>(true);
             if (fidgets != null)
             {
                 fidgets.pauseBoredAnimations = true;
             }
-            // They go where their route takes them; left to physics a body is shoved about by whatever it brushes.
+            // Left to physics, a body is shoved about by whatever it brushes.
             if (character.characterRigidbody != null)
             {
                 character.characterRigidbody.isKinematic = true;
@@ -414,8 +392,7 @@ namespace RealLifeOverhaul
             return new CityPerson(character);
         }
 
-        // The look is the game's own, from the person's seed: the same face, hair and clothes every time; somebody met in the
-        // street is the look they had there (People/PersonLook, kept with them). One mesh merge.
+        // From the person's seed, the same every time, or the look kept from the street. One mesh merge.
         private static void Dress(CityPerson person, SocialPerson who)
         {
             person.Look = CityLook.Civilian;
@@ -424,8 +401,7 @@ namespace RealLifeOverhaul
             appearance.data.ageInDays = Mathf.Clamp(who.Age, 18, 85) * SocialPlaces.DaysPerYear;
             if (!PersonLookGame.Dress(appearance, who.Seed))
             {
-                // The game colours a beard to match the hair by a roll of the engine's own dice: the same roll every time for
-                // the same seed (as on their contact's picture, Phone/Contacts/ContactPainter), and the dice put back.
+                // The game colours a beard by the engine's dice: seeded as for their contact's picture, then put back.
                 UnityEngine.Random.State dice = UnityEngine.Random.state;
                 UnityEngine.Random.InitState(who.Seed);
                 try

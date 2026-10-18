@@ -103,7 +103,7 @@ How the figures feel in play: the requirements against what businesses earn, how
 ## Orders that wait and trading bots (`Scripts/Markets`)
 
 Stop losses, take profits and limits on the Stocks app's ticket, and trading bots the player can hire (option "Trading bots", id `markets_bots`, under the stock market's header, on by default).
-No Update and no Harmony patch: the orders fill and the bots trade on the market's own steps (`MarketEngine.cs`, `MarketEngine.Bots.cs`), the option is looked at on the market director's one-second timer, and the Stocks app writes the Bots tab when it is opened.
+No Update and no Harmony patch: the orders fill and the bots trade on the market's own steps (`MarketEngine.Orders.cs`, `MarketEngine.Bots.cs`), the option is looked at on the market director's one-second timer, and the Stocks app writes the Bots tab when it is opened.
 
 ### Orders
 
@@ -123,7 +123,8 @@ A plain stop (a version before closing orders, or a stop to open a position) now
 
 | File | What it is |
 | --- | --- |
-| `MarketBots.cs` | the four firms (`BotFirm`), `Bot`, `BotHolding`, `BotOrder`; every figure; the strategies' scores and exits; `Decide`; the fill booked (`Fill`); the room a company leaves; splits |
+| `Bot.cs` | `BotFirm`, `Bot`, `BotHolding`, `BotOrder` and the enums |
+| `MarketBots.cs`, `.Decide.cs` | the four firms; every figure; the fill booked (`Fill`); the room a company leaves; splits; the strategies' scores and exits and `Decide` |
 | `MarketEngine.Bots.cs` | hiring, settings, selling up, starting again, letting go; the open, each step and the close; the month's fee and share (`Settle`); dividends and a company leaving; `BotNote` for the director |
 | `MarketDirector.Bots.cs` | the option, the asks from the app, the notifications, the dividend tax on a bot's dividends, the save tools, the test |
 | `MarketApp.Bots.cs` | the Bots tab and its box; a bot's holdings on Portfolio, its trades marked on History |

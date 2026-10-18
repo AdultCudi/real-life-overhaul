@@ -8,23 +8,16 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Pictures into Flare: the camera button (a shot of the screen as it is, without the phone), the selfie button (photo
-    /// mode as a selfie, its picture back in the compose sheet), and <see cref="SharePhoto"/>, the one door for a photo of
-    /// another feature's (the Gallery's "Share to Flare"): a photo's full path and, if it has one, its small copy.
-    ///
-    /// A shot: the phone is put away with the game's own close, a third of a second later at the end of a frame the
-    /// screen is read (the engine's copy, outside the managed heap), the phone opens again on the compose sheet at once,
-    /// and on a worker thread the screen is made small (256 pixels wide, Core/PhotoThumbs' format) and written beside the
-    /// photos ("Shots/Thumbs"). Only the small copy is kept: nothing full-size is ever written. COST: one read of the
-    /// screen on the main thread (a few milliseconds, on the press); the rest off it.
+    /// Flare's director, pictures into Flare: the camera button's shot of the screen without the phone, the selfie button,
+    /// and <see cref="SharePhoto"/> for another feature's photo. Cost: one read of the screen on the press (a few
+    /// milliseconds); the shrinking runs on a worker thread.
     /// </summary>
     public sealed partial class FlareDirector
     {
         private const float ShotWait = 0.35f;   // real seconds after the phone is put away (its fade is a tenth of a second)
         private bool _shooting;
 
-        // The camera button's shot (CameraPressed is the one line that chooses what the button does). Not while the game's
-        // question box is up: putting the phone away would leave the box in the picture, so the shot is refused with a word.
+        // The camera button's shot. Not while the game's question box is up: the box would be in the picture.
         private void TakeShot()
         {
             if (_shooting || !Running || _app == null)
@@ -40,8 +33,7 @@ namespace RealLifeOverhaul.Flare
             StartCoroutine(Guard.Routine(Shoot()));
         }
 
-        // Whatever happens from the read of the screen on (a fault, Flare stopping), the screen's copy is let go and the
-        // camera is free again: a finally around it all (on the worker when the worker still has it).
+        // Whatever happens after the read of the screen, its copy is let go and the camera is free again.
         private IEnumerator Shoot()
         {
             FlareLiveGame.Shot shot = null;
@@ -101,27 +93,16 @@ namespace RealLifeOverhaul.Flare
                 }
                 else
                 {
-                    FlareLiveGame.Drop(left);   // (Shrink lets it go itself; a second drop does nothing)
+                    FlareLiveGame.Drop(left);   // Shrink lets it go itself; a second drop does nothing
                 }
             }
         }
 
-        /// <summary>True while the camera is taking a shot (the compose sheet says so).</summary>
         public bool Shooting => _shooting;
 
         /// <summary>
-        /// THE DOOR FOR A PHOTO OF ANOTHER FEATURE'S (the Gallery's "Share to Flare"). Flare opens on its compose sheet with
-        /// the photo attached, as a moment ("a picture") the player can write about and post.
-        ///
-        ///   photoPath      the photo's full path on disk: a PNG (any size; the engine's own capture) or a JPG
-        ///   smallCopyPath  its small copy, or null: Core/PhotoThumbs' format ("RLOT", the width and the height as
-        ///                  little-endian 32-bit integers, then RGB24 rows from the bottom up), 256 pixels wide
-        ///                  (PhotoThumbs.Width), any height. Flare reads it where PhotoThumbs.FileOf(photoPath) says
-        ///                  (the photo's folder, "Thumbs", the photo's file name and ".thumb"); one given elsewhere is
-        ///                  copied there once, off the main thread. With none, Flare makes it from a PNG off the main
-        ///                  thread (PhotoThumbs.Get) the first time it is shown, or the engine draws a JPG small.
-        ///
-        /// False, with nothing done, while Flare is not running or the path is empty. Called on a click, never per frame.
+        /// The door for another feature's photo (the Gallery's "Share to Flare"): the compose sheet opens with it as a moment;
+        /// <paramref name="smallCopyPath"/>, if any, a Core/PhotoThumbs small copy copied off the main thread. False while not running or with no path.
         /// </summary>
         public bool SharePhoto(string photoPath, string smallCopyPath = null)
         {
@@ -146,7 +127,7 @@ namespace RealLifeOverhaul.Flare
                         }
                         catch (Exception)
                         {
-                            // (made from the photo when it is first shown, as for any other)
+                            // made from the photo when it is first shown, as any other
                         }
                     });
                 }

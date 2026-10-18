@@ -9,19 +9,13 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// An interview with an applicant, in the game's own list window (<see cref="TravelList"/> through a
-    /// <see cref="DeskList"/>, as an investor's pitch and a court hearing are): three rounds, each a choice of the
-    /// questions not yet asked (a technical problem, their last project, why this job, what they expect to be paid, how
-    /// they work in a team), and under the headline what the last answer showed. The last page sums up what was learnt.
-    /// The window cannot be put away with the cancel key until it is over and the player stands still for it.
-    ///
-    /// The rules are <see cref="HiringRules.Ask"/>; this shows them. Nothing runs by itself: a click does it all, and the
-    /// director looks once a second whether the window is still there.
+    /// An interview in the game's own list window (<see cref="TravelList"/> through a <see cref="DeskList"/>), the player standing
+    /// still until it is over. Clicks do it all; the director checks once a second that the window is still there.
     /// </summary>
     internal sealed class InterviewMeeting
     {
         private const NavigationBlocker Blocker = (NavigationBlocker)7311;   // a value of our own, so nobody else's is ever lifted
-        private const float InputDelay = 0.4f;
+        private const float InputDelay = 0.4f;   // seconds before a click on a new page counts
         private const int Leave = 10, Close = 11;
         private const string ButtonAsk = "reallife_hire_meet_ask";
         private const string ButtonDo = "reallife_hire_meet_do";
@@ -33,7 +27,8 @@ namespace RealLifeOverhaul.Tech
 
         private static readonly string[] TopicDetailKeys =
         {
-            "reallife_hire_topic_technical_detail", "reallife_hire_topic_project_detail", "reallife_hire_topic_motive_detail", "reallife_hire_topic_pay_detail", "reallife_hire_topic_team_detail"
+            "reallife_hire_topic_technical_detail", "reallife_hire_topic_project_detail", "reallife_hire_topic_motive_detail", "reallife_hire_topic_pay_detail",
+            "reallife_hire_topic_team_detail"
         };
 
         private readonly TechDirector _director;
@@ -92,7 +87,6 @@ namespace RealLifeOverhaul.Tech
 
         private string Title => TechText.T("reallife_hire_meet_title", "name", _s.P.Name, "role", TechText.Role(_ad != null ? _ad.Role : _s.P.Role));
 
-        // A round: what was heard last, and the questions left.
         private bool Show()
         {
             TravelList list = _window.Take(this);
@@ -135,7 +129,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (_over || id == Close)
                 {
-                    End();
+                    Stop(true);
                     return;
                 }
                 if (id == Leave)
@@ -149,7 +143,8 @@ namespace RealLifeOverhaul.Tech
                 }
                 _asked |= 1 << id;
                 int moved = HiringRules.Ask(_a, _s, id);
-                _heard = Heard(id) + " " + TechText.T(moved > 30 ? "reallife_hire_meet_keen" : moved < 0 ? "reallife_hire_meet_cooler" : "reallife_hire_meet_even", "name", _s.P.Name);
+                string mood = moved > 30 ? "reallife_hire_meet_keen" : moved < 0 ? "reallife_hire_meet_cooler" : "reallife_hire_meet_even";
+                _heard = Heard(id) + " " + TechText.T(mood, "name", _s.P.Name);
                 _round++;
                 if (_round >= HiringCatalogue.InterviewRounds)
                 {
@@ -167,18 +162,19 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // What an answer showed, in a sentence.
         private string Heard(int topic)
         {
             switch (topic)
             {
                 case HiringRules.TopicTechnical:
-                    return TechText.Fill(_s.Claim > 5 ? "reallife_hire_meet_heard_skill_less" : "reallife_hire_meet_heard_skill", "name", _s.P.Name, "skill", TechText.Percent(_s.P.Main / 1000),
-                        "cv", TechText.Percent(_s.CvMain));
+                    return TechText.Fill(_s.Claim > 5 ? "reallife_hire_meet_heard_skill_less" : "reallife_hire_meet_heard_skill", "name", _s.P.Name,
+                        "skill", TechText.Percent(_s.P.Main / 1000), "cv", TechText.Percent(_s.CvMain));
                 case HiringRules.TopicProject:
-                    return TechText.Fill("reallife_hire_meet_heard_years", "name", _s.P.Name, "years", TechText.Years(_s.P.YearsDays), "a", TechText.Skill(_s.P.Def.SkillA), "score", TechText.Score(_s.P.A));
+                    return TechText.Fill("reallife_hire_meet_heard_years", "name", _s.P.Name, "years", TechText.Years(_s.P.YearsDays), "a", TechText.Skill(_s.P.Def.SkillA),
+                        "score", TechText.Score(_s.P.A));
                 case HiringRules.TopicMotive:
-                    return TechText.T(_s.Fit >= 650 ? "reallife_hire_meet_heard_fit_good" : _s.Fit >= 400 ? "reallife_hire_meet_heard_fit_fair" : "reallife_hire_meet_heard_fit_poor", "name", _s.P.Name);
+                    return TechText.T(_s.Fit >= 650 ? "reallife_hire_meet_heard_fit_good" : _s.Fit >= 400 ? "reallife_hire_meet_heard_fit_fair" : "reallife_hire_meet_heard_fit_poor",
+                        "name", _s.P.Name);
                 case HiringRules.TopicPay:
                     return TechText.Fill("reallife_hire_meet_heard_ask", "name", _s.P.Name, "ask", TechText.Rate(_s.Ask), "work", TechText.Work(_s.Want));
                 default:
@@ -202,26 +198,34 @@ namespace RealLifeOverhaul.Tech
             list.Add(Close, TechText.T("reallife_hire_meet_close"), TechText.T("reallife_hire_meet_close_detail"), ButtonDo, true);
             _over = true;
             Open(list);
-            _director.InterviewEnded();
+            _director.Changed();
         }
 
+        // The player closed the window: the interview ends as they left it.
         private void Closed()
         {
             if (Active && !_leaving)
             {
-                Free();
+                Free(true);
             }
         }
 
+        // Another of the game's windows took its place: cut short, not held.
         public void Watch()
         {
             if (Active && !_window.OpenFor(this))
             {
-                Free();
+                Free(false);
             }
         }
 
+        /// <summary>Ends an interview the player did not end (the hiring part stopping, a fault): nothing says it was held.</summary>
         public void End()
+        {
+            Stop(false);
+        }
+
+        private void Stop(bool held)
         {
             _leaving = true;
             if (_window.OpenFor(this))
@@ -229,10 +233,11 @@ namespace RealLifeOverhaul.Tech
                 _window.Close();
             }
             _leaving = false;
-            Free();
+            Free(held);
         }
 
-        private void Free()
+        // Gives the player back; "interviewed" is said only of one the player ended themselves.
+        private void Free(bool held)
         {
             bool was = Active;
             Active = false;
@@ -249,9 +254,13 @@ namespace RealLifeOverhaul.Tech
             {
                 TechDirector.Logger?.Error(e);
             }
-            if (was)
+            if (!was)
             {
-                _director.InterviewEnded();
+                return;
+            }
+            _director.Changed();
+            if (held)
+            {
                 Notifications.Show(NotificationType.Info, "reallife_hire_note_interviewed", TechDirector.Data("name", _s != null ? _s.P.Name : "?"), 6f, null, null, false, false);
             }
         }

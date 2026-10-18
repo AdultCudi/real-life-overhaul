@@ -117,9 +117,9 @@ internal static partial class Program
 
     private static void CommentLikeSource()
     {
-        string cells = ReviewSource("Social/Flare/FlareApp.Cells.cs"), screens = ReviewSource("Social/Flare/FlareApp.Screens.cs"), live = ReviewSource("Social/Flare/FlareDirector.Live.cs");
+        string cells = (ReviewSource("Social/Flare/FlareApp.Cells.cs") + ReviewSource("Social/Flare/FlareApp.Cards.cs")), screens = (ReviewSource("Social/Flare/FlareApp.Screens.cs") + ReviewSource("Social/Flare/FlareApp.Profile.cs") + ReviewSource("Social/Flare/FlareApp.Business.cs") + ReviewSource("Social/Flare/FlareApp.Shown.cs") + ReviewSource("Social/Flare/FlareApp.Clicks.cs")), live = (ReviewSource("Social/Flare/FlareDirector.Live.cs") + ReviewSource("Social/Flare/FlareDirector.Cases.cs") + ReviewSource("Social/Flare/FlareDirector.Posting.cs"));
         string like = FlareMethod(live, "public void LikeComment");
-        Check(like.Length > 0 && like.Contains("FlareCommentRules.ToggleLike") && !like.Contains("Shared_") && !like.Contains("Affection") && !like.Contains("Reputation") && !like.Contains("Followers") && !like.Contains("Net."),
+        Check(like.Length > 0 && like.Contains("FlareCommentRules.ToggleLike") && !System.Text.RegularExpressions.Regex.IsMatch(like, @"\bShare(Changed|CaseChanged|WatchesChanged|Own|Like|Repost|Going|Dm)\(") && !like.Contains("Affection") && !like.Contains("Reputation") && !like.Contains("Followers") && !like.Contains("Net."),
             "Flare comment likes: the like is kept in the file and sent nowhere, with no effect on the game");
         string click = FlareMethod(screens, "private void LikeClicked");
         Check(click.Contains("LikeComment") && click.Contains("FlareCommentRules.IsDisplay(row.Post.Id)") && click.IndexOf("LikeComment", StringComparison.Ordinal) < click.IndexOf("LikeReply", StringComparison.Ordinal),

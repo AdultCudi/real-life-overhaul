@@ -9,31 +9,16 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>
-    /// The player's own company in the Stocks app (Markets/Listing): its page, in place of a tab's table, from the Market
-    /// and Portfolio tabs' box ("Your company"), and the ticket on its company page.
-    ///
-    ///   on the way    the box says where the company stands and has the next step's button (advisers, the audit, the
-    ///                 prospectus with its name, the share offered and the least price taken, withdrawing); the table lists
-    ///                 every requirement against the company's own figures, then its books quarter by quarter
-    ///   listed        the box has its price, the founder's stake, the reserve, pay and the board, what is coming (results,
-    ///                 the closed time, the lock-up, the yearly meeting, an investor's demand, a bid) and the board's own
-    ///                 buttons (a dividend proposed, a buy-back, new shares, taking it private); the table its register
-    ///                 and its quarters
-    ///   its page      as every company's (chart and figures), with the founder's own ticket: buy or sell at the market
-    ///                 under the rules a founder deals by
-    ///
-    /// Written when the app opens and when the player does something in it, never per frame.
-    /// </summary>
+    /// <summary>Part of the Stocks app: the player's own company, on its way to the market and listed, and the founder's ticket.</summary>
     public sealed partial class MarketApp
     {
-        public const int OwnPage = -2;   // the player's own company's page (a company's page is its id, the index's IndexPage)
+        public const int OwnPage = -2;   // a company's page is its id, the index's IndexPage
         private const string OwnRow = "own:";
         private const string ListingGuideTitle = "reallife_meta_title_markets_listing";   // the Guide's page the company's pages point to
 
         private int _floatBp = ListingCatalogue.FloatDefault;
         private int _walk;              // the least price taken: 0 the range's bottom, 1 its middle, 2 any price
-        private string _name;           // the company's name as typed for the prospectus
+        private string _name;           // as typed for the prospectus
         private OwnSide _ownSide;
         private long _ownQty = 1000;
         private int _ownView;           // the table: 0 what it takes or the register, 1 the books or the results
@@ -57,9 +42,6 @@ namespace RealLifeOverhaul.Markets
             return listed ? (_ownView == 0 ? MarketTables.ListingRegister : MarketTables.ListingResults) : (_ownView == 0 ? MarketTables.ListingNeeds : MarketTables.ListingBooks);
         }
 
-        // ---------------------------------------------------------------- the way to the page
-
-        // A button to the player's company's page, on a tab's box.
         private void OwnButton(InfoBox box)
         {
             Stock own = _director.MyCompany;
@@ -75,8 +57,6 @@ namespace RealLifeOverhaul.Markets
                 Refresh();
             }));
         }
-
-        // ---------------------------------------------------------------- the page
 
         private TableSpec WriteListing(InfoBox box, MarketState s)
         {
@@ -167,8 +147,8 @@ namespace RealLifeOverhaul.Markets
                     break;
                 case ListingStage.Building:
                 {
-                    box.Line(MarketText.Fill("reallife_lst_box_book", "name", f.Name, "share", MarketText.Percent(f.FloatBp), "low", MarketText.Price(f.LowCents), "high", MarketText.Price(f.HighCents),
-                        "day", f.BookEnd.ToString()));
+                    box.Line(MarketText.Fill("reallife_lst_box_book", "name", f.Name, "share", MarketText.Percent(f.FloatBp), "low", MarketText.Price(f.LowCents), "high",
+                        MarketText.Price(f.HighCents), "day", f.BookEnd.ToString()));
                     box.Line(MarketText.Fill("reallife_lst_box_least", "price", MarketText.Price(f.WalkCents)));
                     Transform row = box.ButtonRow();
                     InfoBox.Button(row, InfoBox.Additional, "reallife_lst_withdraw", () => UiClone.Safe(Withdraw));
@@ -178,7 +158,8 @@ namespace RealLifeOverhaul.Markets
                 case ListingStage.Priced:
                 {
                     long raised = MarketTrading.Value(f.NewShares, f.PriceCents, false);
-                    box.Line(MarketText.Fill("reallife_lst_box_priced", "price", MarketText.Price(f.PriceCents), "day", f.ListDay.ToString(), "amount", MarketText.Money(raised)));
+                    box.Line(MarketText.Fill("reallife_lst_box_priced", "price", MarketText.Price(f.PriceCents), "day", f.ListDay.ToString(), "amount",
+                        MarketText.Money(raised)));
                     BackRow(box);
                     break;
                 }
@@ -188,7 +169,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (f.Stage == ListingStage.None)
             {
-                box.Note(MarketText.T("reallife_lst_box_steps"));   // the way, in one line, under the buttons
+                box.Note(MarketText.T("reallife_lst_box_steps"));   // the way in one line, under the buttons
             }
             Meta.Guide.Point(box, ListingGuideTitle);
             return spec;
@@ -199,13 +180,15 @@ namespace RealLifeOverhaul.Markets
             InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_mkt_back", () => UiClone.Safe(ClosePage));
         }
 
-        // A clean audit in hand: the offer to be made (its name, the share offered, the least price taken) and what it comes to.
+        // A clean audit in hand: the offer to be made, its name, share and least price, and what it comes to.
         private void WriteOffer(InfoBox box, MarketState s, ListingFile f, bool all)
         {
             string name = string.IsNullOrEmpty(_name) ? f.Name : _name;
-            box.Line(MarketText.Fill("reallife_lst_box_audited", "day", f.AuditDay.ToString(), "until", (f.AuditDay + Math.Max(1, s.YearDays * ListingCatalogue.AuditValidQuarters / 4)).ToString()));
+            box.Line(MarketText.Fill("reallife_lst_box_audited", "day", f.AuditDay.ToString(), "until",
+                (f.AuditDay + Math.Max(1, s.YearDays * ListingCatalogue.AuditValidQuarters / 4)).ToString()));
             int at = Array.IndexOf(ListingCatalogue.FloatSteps, _floatBp);
-            box.Selector(ListingCatalogue.FloatSteps.Length, at < 0 ? 0 : at, i => MarketText.Fill("reallife_lst_float", "share", MarketText.Percent(ListingCatalogue.FloatSteps[i])), i => UiClone.Safe(() =>
+            box.Selector(ListingCatalogue.FloatSteps.Length, at < 0 ? 0 : at, i => MarketText.Fill("reallife_lst_float", "share", MarketText.Percent(ListingCatalogue.FloatSteps[i])),
+                i => UiClone.Safe(() =>
             {
                 _floatBp = ListingCatalogue.FloatSteps[i];
                 Refresh();
@@ -215,14 +198,15 @@ namespace RealLifeOverhaul.Markets
                 _walk = i;
                 Refresh();
             }));
-            // What the prospectus would say, worked out on a copy of the file (nothing is changed until it is published).
+            // What the prospectus would say; nothing is changed until it is published.
             double worth = _director.Worth();
             long founder = ListingBook.FounderShares(worth, Prices.Level / 1000.0);
             long offered = ListingBook.NewShares(founder, _floatBp);
             double each = founder + offered > 0 ? worth / (founder + offered) : 0.0;
             int mid = (int)Math.Round(each * 100.0 * (1.0 - ListingCatalogue.IpoDiscount));
             int low = ListingBook.Step(mid * (1.0 - ListingCatalogue.RangeSpread), false), high = ListingBook.Step(mid * (1.0 + ListingCatalogue.RangeSpread), true);
-            box.Line(MarketText.Fill("reallife_lst_box_offer", "name", name, "count", Count(offered), "share", MarketText.Percent(_floatBp), "low", MarketText.Price(low), "high", MarketText.Price(high)));
+            box.Line(MarketText.Fill("reallife_lst_box_offer", "name", name, "count", Count(offered), "share", MarketText.Percent(_floatBp), "low", MarketText.Price(low), "high",
+                MarketText.Price(high)));
             long raised = MarketTrading.Value(offered, (low + high) / 2, false);
             box.Line(MarketText.Fill("reallife_lst_box_raise", "amount", MarketText.Money(raised), "fees", MarketText.Money(ListingBook.Underwriting(raised, Prices.Level / 1000.0)
                 + ListingBook.ListingFee((founder + offered) * ((low + high) / 200.0), Prices.Level / 1000.0)), "stake", MarketText.Percent(10000 - _floatBp)));
@@ -234,7 +218,8 @@ namespace RealLifeOverhaul.Markets
             if (all)
             {
                 int walk = _walk == 0 ? ListingBook.WalkLow : _walk == 1 ? ListingBook.WalkMiddle : ListingBook.WalkAny;
-                string least = _walk == 0 ? MarketText.Price(low) : _walk == 1 ? MarketText.Price(ListingBook.Step((low + high) * 0.5, false)) : MarketText.T("reallife_lst_walk_any");
+                string least = _walk == 0 ? MarketText.Price(low)
+                    : _walk == 1 ? MarketText.Price(ListingBook.Step((low + high) * 0.5, false)) : MarketText.T("reallife_lst_walk_any");
                 InfoBox.Button(row, InfoBox.Positive, "reallife_lst_publish", () => UiClone.Safe(() => Publish(name, walk, least)));
             }
             AskName(row, name);
@@ -242,7 +227,6 @@ namespace RealLifeOverhaul.Markets
             BackRow(box);
         }
 
-        // The game's own text box for the company's name.
         private void AskName(Transform row, string name)
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -250,7 +234,8 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            InfoBox.Button(row, InfoBox.Additional, "reallife_lst_name", () => uis.textInputUi.Show("reallife_lst_name_placeholder", "common_confirm", text => UiClone.Safe(() =>
+            InfoBox.Button(row, InfoBox.Additional, "reallife_lst_name", () => uis.textInputUi.Show("reallife_lst_name_placeholder", "common_confirm",
+                text => UiClone.Safe(() =>
             {
                 string typed = MarketStore.Clean((text ?? string.Empty).Trim());
                 if (typed.Length < 2)
@@ -283,17 +268,17 @@ namespace RealLifeOverhaul.Markets
             }), null, "reallife_lst_withdraw", "common_cancel", false, true);
         }
 
-        // The answer to a step: a refusal is the game's notification with the reason.
+        // The answer to a step: a refusal is a notification with the reason.
         private void Step(OwnWhy why)
         {
             if (why != OwnWhy.None)
             {
-                Notifications.Show(NotificationType.Error, "reallife_lst_note_not_done", new Dictionary<string, string> { { "why", ListingText.Why(why) } }, 8f, null, null, true, false);
+                Notifications.Show(NotificationType.Error, "reallife_lst_note_not_done", new Dictionary<string, string> { { "why", ListingText.Why(why) } }, 8f, null, null, true,
+                    false);
             }
             Refresh();
         }
 
-        // Every requirement against the company's figures.
         private void WriteRequirements(Requirement[] r, int year)
         {
             for (int i = 0; i < r.Length; i++)
@@ -323,7 +308,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The company's books: each quarter's takings, profit and days, newest first.
+        // The company's books, newest first.
         private void WriteBooks(ListingFile f, int day, int year)
         {
             for (int i = f.Books.Count - 1; i >= 0; i--)
@@ -340,8 +325,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- the company on the market
-
         private void WriteListed(InfoBox box, MarketState s, Stock k, ListingFile f)
         {
             OwnListing o = k.Own;
@@ -349,8 +332,10 @@ namespace RealLifeOverhaul.Markets
             box.Chip(MarketText.Change(bp), bp > 0 ? CellTone.Green : bp < 0 ? CellTone.Red : CellTone.Plain);
             box.Section("reallife_ibox_sec_now");
             box.Line(MarketText.Fill("reallife_lst_box_price", "price", MarketText.Price(k.Last), "change", MarketText.Change(bp), "worth", MarketText.Large(k.MarketValue)));
-            box.Line(MarketText.Fill("reallife_lst_box_stake", "count", Count(o.Founder), "share", MarketText.Percent(o.StakeBp(k)), "worth", MarketText.Large(o.Founder * (k.Last / 100.0))));
-            box.Line(MarketText.Fill("reallife_lst_box_reserve", "each", MarketText.Price((int)Math.Round(o.Rps * 100.0)), "amount", MarketText.Large(Math.Max(0.0, o.Rps) * o.Others(k))));
+            box.Line(MarketText.Fill("reallife_lst_box_stake", "count", Count(o.Founder), "share", MarketText.Percent(o.StakeBp(k)), "worth",
+                MarketText.Large(o.Founder * (k.Last / 100.0))));
+            box.Line(MarketText.Fill("reallife_lst_box_reserve", "each", MarketText.Price((int)Math.Round(o.Rps * 100.0)), "amount",
+                MarketText.Large(Math.Max(0.0, o.Rps) * o.Others(k))));
             if (o.Board)
             {
                 int at = Array.IndexOf(ListingCatalogue.PaySteps, o.PayBp);
@@ -368,8 +353,8 @@ namespace RealLifeOverhaul.Markets
             }
             if (k.BidCents > 0)
             {
-                box.Line(MarketText.Fill(ListingVotes.CanWin(k) ? "reallife_lst_box_bid_can" : "reallife_lst_box_bid_cannot", "price", MarketText.Price(k.BidCents), "day", k.BidEndDay.ToString(),
-                    "threshold", MarketText.Percent(ListingCatalogue.TakeoverThresholdBp)));
+                box.Line(MarketText.Fill(ListingVotes.CanWin(k) ? "reallife_lst_box_bid_can" : "reallife_lst_box_bid_cannot", "price", MarketText.Price(k.BidCents), "day",
+                    k.BidEndDay.ToString(), "threshold", MarketText.Percent(ListingCatalogue.TakeoverThresholdBp)));
             }
             else if (o.Votes != 0)
             {
@@ -383,14 +368,14 @@ namespace RealLifeOverhaul.Markets
             }));
             if (o.Board)
             {
-                AskCount(row, InfoBox.Additional, "reallife_lst_dividend", "reallife_lst_dividend_placeholder", true, cents => Step(_director.Ask(OwnAction.Dividend, cents)));
+                AskValue(row, InfoBox.Additional, "reallife_lst_dividend", "reallife_lst_dividend_placeholder", true, false, cents => Step(_director.Ask(OwnAction.Dividend, cents)));
             }
             InfoBox.Button(row, InfoBox.Negative, "reallife_mkt_back", () => UiClone.Safe(ClosePage));
             if (o.Board)
             {
                 Transform board = box.ButtonRow();
-                AskCount(board, InfoBox.Positive, "reallife_lst_buyback", "reallife_mkt_shares_placeholder", false, n => Confirm(k, OwnAction.BuyBack, n));
-                AskCount(board, InfoBox.Additional, "reallife_lst_issue", "reallife_mkt_shares_placeholder", false, n => Confirm(k, OwnAction.Issue, n));
+                AskValue(board, InfoBox.Positive, "reallife_lst_buyback", "reallife_mkt_shares_placeholder", false, false, n => Confirm(k, OwnAction.BuyBack, n));
+                AskValue(board, InfoBox.Additional, "reallife_lst_issue", "reallife_mkt_shares_placeholder", false, false, n => Confirm(k, OwnAction.Issue, n));
                 InfoBox.Button(board, InfoBox.Negative, "reallife_lst_private", () => UiClone.Safe(() => Confirm(k, OwnAction.Private, 0)));
             }
             Meta.Guide.Point(box, ListingGuideTitle);
@@ -404,15 +389,15 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // What is coming: the dividend proposed, the results, the time the founder may not deal, the lock-up, the yearly meeting.
+        // What is coming: the dividend proposed, the results, the closed time, the lock-up, the yearly meeting.
         private static string Coming(MarketState s, Stock k)
         {
             OwnListing o = k.Own;
             string closed = ListingRules.Closed(k, s.Day, s.YearDays)
                 ? MarketText.Fill("reallife_lst_closed_until", "day", ListingRules.OpensAgain(k, s.Day, s.YearDays).ToString())
                 : MarketText.T("reallife_lst_open_now");
-            string text = MarketText.Fill("reallife_lst_box_coming", "proposed", o.ProposedCents > 0 ? MarketText.Price(Math.Min(o.ProposedCents, ListingRules.Most(o))) : MarketText.T("reallife_lst_none"),
-                "results", k.ResultsDay > 0 ? k.ResultsDay.ToString() : "-", "closed", closed);
+            string proposed = o.ProposedCents > 0 ? MarketText.Price(Math.Min(o.ProposedCents, ListingRules.Most(o))) : MarketText.T("reallife_lst_none");
+            string text = MarketText.Fill("reallife_lst_box_coming", "proposed", proposed, "results", k.ResultsDay > 0 ? k.ResultsDay.ToString() : "-", "closed", closed);
             if (s.Day < o.LockDay)
             {
                 text += " " + MarketText.Fill("reallife_lst_box_lockup", "day", o.LockDay.ToString());
@@ -424,7 +409,6 @@ namespace RealLifeOverhaul.Markets
             return text;
         }
 
-        // The register: the founder, an investor pressing the board, the other holders.
         private void WriteRegister(Stock k)
         {
             OwnListing o = k.Own;
@@ -438,7 +422,6 @@ namespace RealLifeOverhaul.Markets
             Holder(2, MarketText.T("reallife_lst_holder_others"), others, k);
         }
 
-        // The company's results, newest first.
         private void WriteResults(Stock k)
         {
             for (int i = k.Results.Count - 1; i >= 0; i--)
@@ -464,28 +447,7 @@ namespace RealLifeOverhaul.Markets
             row.Set(3, MarketText.Large(shares * (k.Last / 100.0)));
         }
 
-        // The game's own text box for a count of shares, or a price (cents) with 'price'.
-        private void AskCount(Transform row, int kind, string key, string placeholderKey, bool price, Action<long> then)
-        {
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            if (uis == null || uis.textInputUi == null)
-            {
-                return;
-            }
-            InfoBox.Button(row, kind, key, () => uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
-            {
-                long value;
-                if (!(price ? TryCents(text, out value) : long.TryParse((text ?? string.Empty).Trim().Replace(",", string.Empty), NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
-                    || value <= 0)
-                {
-                    Notifications.ShowError("common_notification_invalid_amount", null, false);
-                    return;
-                }
-                then(value);
-            }), null, string.Empty, false, TypedLength));
-        }
-
-        // A buy-back, new shares or taking the company private, put to the player with what it comes to before it is asked for.
+        // A buy-back, new shares or taking the company private, put to the player with what it comes to before it is asked.
         private void Confirm(Stock k, OwnAction action, long shares)
         {
             OwnQuote q = _director.Quote(action, shares);
@@ -504,8 +466,6 @@ namespace RealLifeOverhaul.Markets
                 () => UiClone.Safe(() => Step(_director.Ask(action, shares))), null, "common_confirm", "common_cancel", false, action == OwnAction.Private);
         }
 
-        // ---------------------------------------------------------------- the founder's ticket on the company's page
-
         private void WriteOwnTicket(InfoBox box, MarketState s, Stock k)
         {
             OwnListing o = k.Own;
@@ -516,7 +476,8 @@ namespace RealLifeOverhaul.Markets
             box.Chip(MarketText.Change(move), move > 0 ? CellTone.Green : move < 0 ? CellTone.Red : CellTone.Plain);
             box.Section("reallife_ibox_sec_quote");
             box.RowPair("reallife_ibox_bid", MarketText.Price(q.Bid), "reallife_ibox_ask", MarketText.Price(q.Ask));
-            box.Note(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change", MarketText.Change(move)));
+            box.Note(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change",
+                MarketText.Change(move)));
             bool closed = ListingRules.Closed(k, s.Day, s.YearDays);
             if (closed || s.Day < o.LockDay)
             {
@@ -578,8 +539,6 @@ namespace RealLifeOverhaul.Markets
                 }),
                 () => UiClone.Safe(() => Step(_director.Ask(OwnAction.Deal, shares))), null, shares > 0 ? "reallife_mkt_buy" : "reallife_mkt_sell", "common_cancel", false, shares < 0);
         }
-
-        // ---------------------------------------------------------------- the company among the others
 
         // The founder's shares as the "held" figure of their own company on the Companies tab.
         private long HeldOrFounder(MarketState s, Stock k)

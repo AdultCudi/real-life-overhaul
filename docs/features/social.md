@@ -7,22 +7,28 @@ Eight people the player knows (Mom, an old friend and six met in the street), th
 ## Where the code is
 
 - Folder: [`Scripts/Social`](../../Assets/Mods/RealLifeOverhaul/Scripts/Social/). Flare, the city's social media app, is in its [`Flare`](../../Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/) subfolder.
-- Read first: `SocialDirector.cs` (load and save, the hour and the day, the one scene), `SocialModel.cs` (the records and the rules, game-free) and `SocialCatalogue.cs` (names, outings and every line).
+- Read first: `SocialDirector.cs` (load and save, the one scene), `SocialModel.cs`, `SocialRules.cs` and `SocialState.cs` (the records, the rules and the save, game-free) and `SocialCatalogue.cs` (names, outings and every line).
 
 | File | What it is |
 | --- | --- |
-| `SocialModel` | the cast's records, the plan, the rules (stages, what things are worth, neglect), the save: game-free |
+| `SocialModel` | the cast's records, the plan, what waits for an answer: game-free |
+| `SocialRules` | stages, what things are worth, neglect: game-free |
+| `SocialState` | the social part of the save: game-free |
 | `SocialCatalogue` | names, jobs, traits, outings, every line anybody says: game-free |
 | `SocialLife` | what happens between the player and a person, with its consequences in the game; the optional links (ISocialLaw, ISocialWellbeing) |
-| `SocialDirector` | load and save, the hour and the day, who gets in touch, the plan, the one scene, the test buttons; SocialHooks |
-| `SocialScene` | the base of a scene (talking face to face, walking off) and MeetScene (somebody walks up) |
-| `OutingScene` | a plan kept: the eight outings, a lift, helping them move |
-| `SocialDialogs` | the call to a person, the People page, the Ledger read out, the conversation in the street; SocialTalk (topics from what happened) |
-| `SocialPhone` | contacts, icons, the paper delivered, ringing |
+| `SocialDirector` | load and save, the one scene; its parts `.Contact` (who gets in touch, the day's round), `.Meetings` (people on their way), `.Plan` (the plan, the phone ringing), `.Scene`, `.Ui` (the card, the prompt, the marker) and `.Tests` |
+| `SocialHooks` | the calls other features make into the social life |
+| `SocialScene` | the base of a scene: talking face to face, walking off |
+| `MeetScene` | somebody walks up |
+| `OutingScene` | a plan kept, with parts `.Meeting` (getting there, hello), `.Walk`, `.Ride`, `.Boxes` (helping them move) and `.After` |
+| `PersonDialog` | the call to or from a person |
+| `SceneDialog` | the conversation in the street; SceneTalk |
+| `PeopleDialog` | the People page |
+| `SocialTalk` | topics from what happened |
+| `SocialPhone` | contacts, the paper's desk (LedgerDialog) |
 | `SocialCast` | the two characters, wearing the look of whoever they stand for |
 | `SocialBody` | the player's own body in a scene: held, a gesture, a cup, a box |
 | `SocialPlaces` | venues by business type, streets, places to wait, walk in from and walk off to |
-| | (SocialHud removed: the plan is a ShiftCard, the prompt a DoorPanel, the marker a GuideMark)  |
 | `News` | the log any feature reports to (News.Report), and the desk that writes the paper |
 
 ## How it talks to other features

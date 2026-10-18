@@ -472,9 +472,9 @@ internal static partial class Program
     {
         string invites = TextsSource(@"Social\Flare\FlareDirector.Invites.cs");
         string links = TextsSource(@"Wiring\FlareInviteLinks.cs");
-        string live = TextsSource(@"Social\Flare\FlareDirector.Live.cs");
+        string live = (TextsSource(@"Social\Flare\FlareDirector.Live.cs") + TextsSource(@"Social\Flare\FlareDirector.Cases.cs") + TextsSource(@"Social\Flare\FlareDirector.Posting.cs"));
         string director = TextsSource(@"Social\Flare\FlareDirector.cs");
-        string phone = TextsSource(@"Social\SocialDialogs.cs");
+        string phone = TextsSource(@"Social\PersonDialog.cs");
         string flareLinks = TextsSource(@"Wiring\FlareLinks.cs");
         Check(links.Contains("p.Origin = SocialOrigin.Online;") && links.Contains("SocialLife.Meet(p, true);") && flareLinks.Contains("stranger.Origin = SocialOrigin.Online;")
               && flareLinks.Contains("SocialLife.Meet(stranger, true);") && links.Contains("ContactPictures.Person(SocialPhone.IdOf(p)"),
@@ -488,8 +488,8 @@ internal static partial class Program
             "flare invitations: a booking never makes a second plan, finds somebody met meanwhile under their name, and never takes the person a friend is bringing or a star");
         Check(invites.Contains("m.Data += FlareInviteRules.BookedMark;") && invites.Contains("FlareInviteRules.Unbook(m);") && invites.Contains("if (FlareInviteRules.Waiting(m) &&"),
             "flare invitations: the director books only a yes still waiting and marks it either way (never twice)");
-        int shared = live.IndexOf("Shared_Dm(with.Substring(2), text);", StringComparison.Ordinal), invite = live.IndexOf("Invite(with, text, now)", StringComparison.Ordinal);
-        Check(shared > 0 && invite > shared && !invites.Contains("Shared_") && !invites.Contains("FlareNetShare") && !links.Contains("GoingPublic") && !invites.Contains("GoingPublic"),
+        int shared = live.IndexOf("ShareDm(with.Substring(2), text);", StringComparison.Ordinal), invite = live.IndexOf("Invite(with, text, now)", StringComparison.Ordinal);
+        Check(shared > 0 && invite > shared && !System.Text.RegularExpressions.Regex.IsMatch(invites, @"\bShare(Changed|CaseChanged|WatchesChanged|Own|Like|Repost|Going|Dm)\(") && !invites.Contains("FlareNetShare") && !links.Contains("GoingPublic") && !invites.Contains("GoingPublic"),
             "flare invitations: Going Public: a message to another player is sent as typed; an invitation to the city's people is the player's own: nothing sent, nothing shared");
         Check(!invites.Contains("void Update") && !invites.Contains("LateUpdate") && !links.Contains("void Update") && director.Contains("InvitesTick();")
               && invites.Contains("if (_inviteDue == long.MaxValue || Now < _inviteDue)"),

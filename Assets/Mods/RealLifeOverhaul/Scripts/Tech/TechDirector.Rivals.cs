@@ -2,21 +2,14 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The competitors part: who competes with a kind of firm (Tech/Firms/CompetitorRules, the one rule), for the Tech app's
-    /// Competitors page of each of the player's firms, with where each is (a company's tower and floor: Tech/Sites; a
-    /// business's address and district), and how many a kind of business has in the city, for BizMan's start screen
-    /// (Tech/Firms/StartCards). Read when the page is written or the screen is opened, from what the parts and the game hold
-    /// then: the city's startups, the businesses the player and the other players run, the schools (Careers). Nothing is
-    /// kept between two readings and nothing is saved; in a Going Public session another player's business is only read.
-    /// </summary>
+    /// <summary>The competitors part, for the Tech app's Competitors page and BizMan's start screen. Read when asked; nothing kept.</summary>
     public sealed partial class TechDirector
     {
         private readonly List<FirmSeen> _seen = new List<FirmSeen>(8);
         private readonly List<string> _schools = new List<string>(2);
         private readonly List<Competitor> _competitors = new List<Competitor>(32), _competitorPool = new List<Competitor>(32);
 
-        /// <summary>The competitors of one of the player's firms, each with where it is. The list is the director's own, written again on every call.</summary>
+        /// <summary>The competitors of one of the player's firms, with where each is: the director's own list, written again on every call.</summary>
         internal IReadOnlyList<Competitor> RivalsOf(FirmPlace firm)
         {
             for (int i = 0; i < _competitors.Count; i++)
@@ -52,12 +45,7 @@ namespace RealLifeOverhaul.Tech
             return _competitors;
         }
 
-        /// <summary>
-        /// How many competitors a kind of business (CompetitorRules: a FirmKind, or the academy) has in the city, by the same
-        /// rule as the Tech app's page: the companies, the startups that run, the schools for an academy, every business of a
-        /// kind that competes the player or another player runs. With <paramref name="read"/> the businesses and the schools
-        /// are read again (once for each opening of BizMan's start screen).
-        /// </summary>
+        /// <summary>A kind's competitors in the city by the Tech app's rule; <paramref name="read"/> reads the businesses and schools again.</summary>
         internal int InCity(int kind, bool read)
         {
             if (read)

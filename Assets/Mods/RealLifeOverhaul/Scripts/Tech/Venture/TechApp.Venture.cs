@@ -12,8 +12,6 @@ namespace RealLifeOverhaul.Tech
         private int _fundStep = 1;
         private readonly List<Person> _chiefs = new List<Person>(16);
 
-        // ---------------------------------------------------------------- startups
-
         private TableSpec WriteStartups(InfoBox box, int day)
         {
             VentureFile v = _director.Ventures;
@@ -44,7 +42,8 @@ namespace RealLifeOverhaul.Tech
                 Cents(row, 4, _director.Level(s.Post));
                 row.Set(5, put > 0 ? TechText.Mille(share) : "-", share);
                 Cents(row, 6, _director.Level(mine));
-                row.Set(7, s.Ask != null ? TechText.T("reallife_vc_state_asks") : TechText.StartupStateName((StartupState)s.State), s.Ask != null ? TableRow.Green : s.Alive ? TableRow.Plain : TableRow.Yellow);
+                row.Set(7, s.Ask != null ? TechText.T("reallife_vc_state_asks") : TechText.StartupStateName((StartupState)s.State),
+                    s.Ask != null ? TableRow.Green : s.Alive ? TableRow.Plain : TableRow.Yellow);
                 row.Kind = !s.Alive ? TechColumns.Closed : put > 0 ? TechColumns.Yours : s.Ask != null ? TechColumns.AsksYou : TechColumns.Others;
                 if (put > 0)
                 {
@@ -66,7 +65,8 @@ namespace RealLifeOverhaul.Tech
                     "hype", TechText.Mille(_director.HypeNow)));
                 Fund fund = v.Fund;
                 box.Line(fund.Open
-                    ? TechText.Fill("reallife_vc_fund_line", "committed", TechText.Cents(_director.Level(fund.Committed)), "cash", TechText.Cents(_director.Level(fund.Cash)), "invested", TechText.Cents(_director.Level(fund.Invested)),
+                    ? TechText.Fill("reallife_vc_fund_line", "committed", TechText.Cents(_director.Level(fund.Committed)),
+                        "cash", TechText.Cents(_director.Level(fund.Cash)), "invested", TechText.Cents(_director.Level(fund.Invested)),
                         "returned", TechText.Cents(_director.Level(fund.Returned)))
                     : TechText.T("reallife_vc_fund_none"));
                 if (box.HasSelector)
@@ -96,7 +96,8 @@ namespace RealLifeOverhaul.Tech
             box.Subtitle(TechText.VentureName((Venture)s.Sector));
             if (s.Ask != null)
             {
-                box.Line(TechText.Fill("reallife_vc_startup_ask", "amount", TechText.Cents(_director.Level(s.Ask.Amount)), "pre", TechText.Cents(_director.Level(s.Ask.Pre)), "share", TechText.Mille(s.Ask.EquityMille),
+                box.Line(TechText.Fill("reallife_vc_startup_ask", "amount", TechText.Cents(_director.Level(s.Ask.Amount)),
+                    "pre", TechText.Cents(_director.Level(s.Ask.Pre)), "share", TechText.Mille(s.Ask.EquityMille),
                     "day", s.Ask.Lapse.ToString()));
             }
             if (put > 0)
@@ -107,7 +108,8 @@ namespace RealLifeOverhaul.Tech
                 "revenue", TechText.Cents(_director.Level(known ? s.Mrr : VentureRules.Claimed(s))), "said", TechText.T(known ? "reallife_vc_startup_true" : "reallife_vc_startup_claimed"),
                 "value", TechText.Cents(_director.Level(s.Post))));
             box.Line(s.Diligence
-                ? TechText.Fill("reallife_vc_startup_diligence", "quality", TechText.T(s.Quality >= 700 ? "reallife_vc_quality_strong" : s.Quality >= 400 ? "reallife_vc_quality_fair" : "reallife_vc_quality_weak"),
+                ? TechText.Fill("reallife_vc_startup_diligence", "quality",
+                    TechText.T(s.Quality >= 700 ? "reallife_vc_quality_strong" : s.Quality >= 400 ? "reallife_vc_quality_fair" : "reallife_vc_quality_weak"),
                     "claim", TechText.Bp(s.ClaimBp), "runway", VentureRules.Runway(s.Cash, s.Burn, s.Mrr) == int.MaxValue ? "-" : VentureRules.Runway(s.Cash, s.Burn, s.Mrr).ToString())
                 : TechText.T("reallife_vc_startup_no_diligence", "fee", TechText.Cents(_director.Level(VentureCatalogue.DiligenceFee))));
             bool followOn = put > 0 && s.Alive && day - s.LastRound <= VentureCatalogue.ProRataDays && VentureRules.FollowOnAmount(s) > 0;
@@ -136,8 +138,6 @@ namespace RealLifeOverhaul.Tech
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, StartupsGuide);
         }
-
-        // ---------------------------------------------------------------- funding
 
         private TableSpec WriteFunding(InfoBox box, int day)
         {
@@ -173,7 +173,8 @@ namespace RealLifeOverhaul.Tech
                 row.Set(5, c != null ? c.VcSeats + " / " + c.BoardSeats : "-");
                 Cents(row, 6, c != null && c.TargetMrr > 0 ? _director.Level(c.TargetMrr) : 0);
                 row.Set(7, runway < 0 ? "-" : runway.ToString(), runway, runway >= 0 && runway < 60 ? TableRow.Red : TableRow.Plain);
-                row.Set(8, c == null ? "-" : c.RaiseUntil > 0 ? TechText.T("reallife_vc_raising") : c.Pressure == 1 ? TechText.T("reallife_vc_warned") : c.Pressure == 2 ? TechText.T("reallife_vc_replaced") : TechText.T("reallife_vc_steady"),
+                row.Set(8, c == null ? "-" : c.RaiseUntil > 0 ? TechText.T("reallife_vc_raising") : c.Pressure == 1 ? TechText.T("reallife_vc_warned")
+                    : c.Pressure == 2 ? TechText.T("reallife_vc_replaced") : TechText.T("reallife_vc_steady"),
                     c != null && c.Pressure > 0 ? TableRow.Yellow : TableRow.Plain);
                 picked = firm.File.Place == id ? firm : picked;
             }
@@ -192,7 +193,8 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_vc_funding_title"));
-                box.Note(TechText.Fill("reallife_vc_funding_about", "days", VentureCatalogue.RaiseDays.ToString(), "growth", TechText.Mille(VentureCatalogue.TargetGrowth), "target", VentureCatalogue.TargetDays.ToString()));
+                box.Note(TechText.Fill("reallife_vc_funding_about", "days", VentureCatalogue.RaiseDays.ToString(),
+                    "growth", TechText.Mille(VentureCatalogue.TargetGrowth), "target", VentureCatalogue.TargetDays.ToString()));
                 Meta.Guide.Point(box, StartupsGuide);
             }
             return TechColumns.Funding;
@@ -221,7 +223,8 @@ namespace RealLifeOverhaul.Tech
                         : VentureCatalogue.Firms[TalentCatalogue.Clamp(h.Who, 0, VentureCatalogue.FirmCount - 1)].Name).Append(' ').Append(TechText.Mille(VentureRules.ShareOf(h, total)));
                 }
                 box.Row("reallife_vc_cap_holders", words.ToString());
-                box.Line(TechText.Fill("reallife_vc_cap_board", "seats", c.BoardSeats.ToString(), "theirs", c.VcSeats.ToString(), "target", TechText.Cents(_director.Level(c.TargetMrr)), "day", c.TargetDay.ToString(),
+                box.Line(TechText.Fill("reallife_vc_cap_board", "seats", c.BoardSeats.ToString(), "theirs", c.VcSeats.ToString(),
+                    "target", TechText.Cents(_director.Level(c.TargetMrr)), "day", c.TargetDay.ToString(),
                     "now", TechText.Cents(_director.FirmMrr(place)), "misses", c.Misses.ToString()));
             }
             else
@@ -301,8 +304,10 @@ namespace RealLifeOverhaul.Tech
             {
                 TermSheet t = c.Sheets[i];
                 int index = i;
-                box.Line(TechText.Fill("reallife_vc_sheet_line", "vc", VentureCatalogue.Firms[TalentCatalogue.Clamp(t.Vc, 0, VentureCatalogue.FirmCount - 1)].Name, "amount", TechText.Cents(_director.Level(t.Amount)),
-                    "pre", TechText.Cents(_director.Level(t.Pre)), "share", TechText.Mille(t.EquityMille), "board", TechText.T(t.Board ? "reallife_vc_sheet_board" : "reallife_vc_sheet_no_board"), "day", t.Lapse.ToString()));
+                box.Line(TechText.Fill("reallife_vc_sheet_line", "vc", VentureCatalogue.Firms[TalentCatalogue.Clamp(t.Vc, 0, VentureCatalogue.FirmCount - 1)].Name,
+                    "amount", TechText.Cents(_director.Level(t.Amount)),
+                    "pre", TechText.Cents(_director.Level(t.Pre)), "share", TechText.Mille(t.EquityMille),
+                        "board", TechText.T(t.Board ? "reallife_vc_sheet_board" : "reallife_vc_sheet_no_board"), "day", t.Lapse.ToString()));
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_vc_button_take_sheet", () => GameConfirm.Show("reallife_vc_confirm_sheet_title", "reallife_vc_confirm_sheet_body",
                     () => UiClone.Safe(() => Do(() => _director.TakeSheet(place, index))), null, null, null, true, false));
             }

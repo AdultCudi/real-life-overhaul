@@ -4,17 +4,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The professionals in the save: one line of the save's modData under <see cref="Key"/>, written by
-    /// <see cref="TechWriter"/>. Game-free.
-    ///
-    ///     v=1~h:seed|first day|last day|next payroll id~p:...
-    ///
-    ///   p  each professional: id|role|level|A|B|main|years|school|certs|morale|burnout|joined|level day|review day|rating|
-    ///      low runs|arrangement|restraint|notice end|leaving|course slot|course end|exam|rise asked|recognised|offer lapses|
-    ///      offer bp|rival|place|options|record|name|wage|female|age|sick|rise answered by|day counted|its hours|the day before|its hours
-    ///
-    /// Capped at <see cref="PeopleMost"/> professionals. A file of an employee who is no longer the player's is dropped
-    /// when the day is worked through, so the line holds the player's own people only.
+    /// The professionals in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s format, a header (h) and
+    /// the files (p), fields in the order <see cref="Write"/> writes them; at most <see cref="PeopleMost"/> professionals.
     /// </summary>
     public static class TalentStore
     {
@@ -22,24 +13,7 @@ namespace RealLifeOverhaul.Tech
         public const int Version = 1;
         public const int PeopleMost = 600;
 
-        public static TalentFile Load(Dictionary<string, string> data, out int version)
-        {
-            version = 0;
-            string text;
-            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
-            {
-                return null;
-            }
-            try
-            {
-                return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
-            }
-            catch (Exception)
-            {
-                SaveLines.Unreadable(data, Key, "it could not be read");
-                return null;
-            }
-        }
+        public static TalentFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
         public static string Write(TalentFile f)
         {

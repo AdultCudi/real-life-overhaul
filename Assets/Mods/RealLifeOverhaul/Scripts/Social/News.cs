@@ -13,7 +13,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>What kind of thing happened. The paper words each differently.</summary>
+    /// <summary>What kind of thing happened; the paper words each differently. Saved as a number.</summary>
     public enum NewsKind
     {
         Accident,        // amount: 0 minor, 1 moderate, 2 severe
@@ -26,7 +26,7 @@ namespace RealLifeOverhaul
         PlayerCrash,
         PlayerArrested,
         PlayerKnocked,
-        Story            // detail: the locale key of a finished piece with no placeholders (a verdict, an election result, a fire)
+        Story            // detail: the locale key of a finished piece with no placeholders (a verdict, an election, a fire)
     }
 
     /// <summary>One line of the paper: a locale key and what fills its placeholders.</summary>
@@ -37,12 +37,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The city's rolling log of things worth printing, and the desk that writes the morning
-    /// paper from it. Any feature reports with one call, <see cref="Report"/>: it stores a few
-    /// numbers in a slot of a fixed array (nothing is allocated, no text is built, nothing is
-    /// looked up) and returns at once when the paper is switched off or no save is loaded.
-    /// Streets are worked out when the paper is written, once a day. The City Ledger (Scripts/Ledger,
-    /// through Wiring/LedgerLinks) prints what is written here as a newspaper, for a player who has a copy.
+    /// The city's rolling log of things worth printing, and the desk that writes the morning paper from it for the City
+    /// Ledger. <see cref="Report"/> fills a slot of a fixed array and allocates nothing; streets are found once a day.
     /// </summary>
     public static class News
     {
@@ -50,7 +46,7 @@ namespace RealLifeOverhaul
         private const string KeyLog = "reallife:social_news";
         private const string KeyPaper = "reallife:social_paper";
         private const string KeyFiller = "reallife:social_filler";
-        private const int PaperHour = 6;
+        private const int PaperHour = 6;   // game hour from which the day's paper is out
 
         private struct Entry
         {
@@ -74,48 +70,29 @@ namespace RealLifeOverhaul
         /// <summary>The day today's paper was written for; 0 when there has been none.</summary>
         public static int PaperDay { get; private set; }
 
-        /// <summary>
-        /// Pieces another feature has for the day's paper (the city's economy: Wiring/CityLinks). Called once when the
-        /// paper is written, with the day and the paper so far; it adds what it has, after the business piece. It must
-        /// give the same pieces for the same day however often it is asked (the test button writes a day's paper again).
-        /// Nothing while it is not set.
-        /// </summary>
+        /// <summary>The city economy's pieces for a day's paper: the same for the same day however often asked (the test button).</summary>
         public static Action<int, List<NewsItem>> Extra;
 
         /// <summary>Today's paper, masthead first. Empty until one has been written.</summary>
         public static IReadOnlyList<NewsItem> Today => Paper;
 
-        /// <summary>
-        /// Raised for every report while a save is loaded, whether or not the paper prints it (the stock market hears
-        /// of a crime, a break-in or an accident the moment it is reported: Wiring/MarketLinks). With the kind, the
-        /// report's detail and its amount. A handler must not throw; one that does is logged and the report goes on.
-        /// </summary>
+        /// <summary>Every report while a save is loaded, printed or not (Wiring/MarketLinks). A handler that throws is logged.</summary>
         public static event Action<NewsKind, string, int> Reported;
 
-        /// <summary>
-        /// Raised for every report while a save is loaded, whether or not the paper prints it, with the kind and where it
-        /// happened in the street (something reported inside a building is at the building's door; a report with no place
-        /// is at zero). The district view notes crimes by district from it (Wiring/DistrictLinks). A handler must not
-        /// throw; one that does is logged and the report goes on.
-        /// </summary>
+        /// <summary>Every report with where in the street it happened, zero for none (Wiring/DistrictLinks). A throw is logged.</summary>
         public static event Action<NewsKind, Vector3> ReportedAt;
 
         /// <summary>
-        /// The city's reports, also handed on as they are made (a guest of a Going Public session that follows the host's
-        /// paper sends them to the host's: Ledger/LedgerDirector.Share.cs, through Wiring/LedgerLinks): only Accident to
-        /// CarBreakIn (LedgerShare.CityKind). The player's own crash, arrest and knockdown, and a finished story, are never
-        /// handed on: in the host's paper they would read as the host player's; a guest's own go as pieces about that
-        /// player instead. Nothing while it is not set.
+        /// The city's own reports (LedgerShare.CityKind) for a Going Public guest to send to the host's paper. Never the
+        /// player's crash, arrest or knockdown: in the host's paper they would read as the host's.
         /// </summary>
         public static Action<NewsKind, Vector3, string, int> Forward;
 
-        /// <summary>
-        /// Something happened that a newspaper would print. Safe to call from anywhere at any
-        /// time: it does nothing until a save is loaded, or while the paper is switched off.
-        /// </summary>
+        /// <summary>Safe from anywhere at any time; kept only with a save loaded and the paper or the social life on.</summary>
         /// <param name="detail">An id or a name that already exists as a string (never one built for this call).</param>
         public static void Report(NewsKind kind, Vector3 where, string detail = null, int amount = 0)
         {
+            where = InCity(where);
             Action<NewsKind, Vector3, string, int> forward = Forward;
             if (forward != null && Ledger.LedgerShare.CityKind((int)kind) && SaveGameManager.Current != null)
             {
@@ -145,7 +122,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    placed(kind, BuildingManager.IsInsideBuilding && where != Vector3.zero ? SocialPlaces.OnStreet(where) : where);
+                    placed(kind, where);
                 }
                 catch (Exception e)
                 {
@@ -160,10 +137,6 @@ namespace RealLifeOverhaul
             if (save == null)
             {
                 return;
-            }
-            if (BuildingManager.IsInsideBuilding)
-            {
-                where = SocialPlaces.OnStreet(where);   // something in a shop is reported at the shop's door
             }
             ref Entry entry = ref Log[_next];
             entry.Kind = kind;
@@ -181,7 +154,19 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The newest thing of a kind within so many days, for conversation. False if there is none.</summary>
+        // A report made where the player stands indoors goes to the building's door; any other place is the city's already.
+        private static Vector3 InCity(Vector3 where)
+        {
+            PlayerController player = PlayerHelper.PlayerController;
+            if (!BuildingManager.IsInsideBuilding || where == Vector3.zero || player == null)
+            {
+                return where;
+            }
+            Vector3 at = player.transform.position;
+            return SocialRules.AtPlayer(where.x, where.z, at.x, at.z) ? SocialPlaces.OnStreet(where) : where;
+        }
+
+        /// <summary>The newest report of a kind within so many days; false if there is none.</summary>
         public static bool Recent(NewsKind kind, int days, out Vector3 where, out string detail)
         {
             where = default;
@@ -204,7 +189,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>Called once an hour: whether it rained is only known by having looked.</summary>
+        /// <summary>Once an hour: whether it rained is known only by having looked.</summary>
         public static void NoteWeather()
         {
             if (RainHelper.isRaining)
@@ -213,7 +198,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True when the morning's paper is due: after six, once a day.</summary>
         public static bool Due(int day, int hour)
         {
             return _ready && Settings.SocialNewspaper && hour >= PaperHour && PaperDay != day;
@@ -230,8 +214,6 @@ namespace RealLifeOverhaul
             FillerSeen.Clear();
             _lastFiller = -1;
         }
-
-        // ------------------------------------------------------------------ the save
 
         public static void Load(Dictionary<string, string> data)
         {
@@ -288,7 +270,7 @@ namespace RealLifeOverhaul
             }
             catch (Exception)
             {
-                // A log this version cannot read is only yesterday's news: start an empty one.
+                // A log this version cannot read is only yesterday's news: an empty one.
                 _count = 0;
                 _next = 0;
                 Paper.Clear();
@@ -307,7 +289,7 @@ namespace RealLifeOverhaul
             var text = new StringBuilder(1024);
             for (int i = 0; i < _count; i++)
             {
-                // Oldest first, so that reading them back in order keeps the order.
+                // Oldest first, as Load reads them.
                 ref Entry e = ref Log[(_next - _count + i + Capacity * 2) % Capacity];
                 if (text.Length > 0)
                 {
@@ -335,13 +317,7 @@ namespace RealLifeOverhaul
             data[KeyFiller] = string.Join(",", FillerSeen);
         }
 
-        // ------------------------------------------------------------------ writing the paper
-
-        /// <summary>
-        /// Writes the paper for a day from what the log holds and what the save says. Once a day
-        /// (or on the test button): it scans the city's buildings for street names and builds a
-        /// handful of strings.
-        /// </summary>
+        /// <summary>Once a day, or again on the test button: scans the city's buildings for street names and builds a handful of strings.</summary>
         public static void Compose(int day, bool again)
         {
             if (!_ready)
@@ -352,28 +328,36 @@ namespace RealLifeOverhaul
             PaperDay = day;
             Paper.Add(Item("reallife_news_masthead", "day", day.ToString(), "weekday", TimeHelper.GetDayOfWeek(Mathf.Max(1, day)).GetLocalization()));
 
-            // ---- what happened: the worst three, then a tally if there was more
             int accidents = 0, arrests = 0, crimes = 0, fresh = 0;
             for (int i = 0; i < _count; i++)
             {
                 ref Entry e = ref Log[i];
                 if (again && day - e.Day <= 1)
                 {
-                    e.Printed = false;   // the test button prints the day's news again
+                    e.Printed = false;
                 }
                 if (e.Printed || day - e.Day > 1)
                 {
                     continue;
                 }
                 fresh++;
-                if (e.Kind == NewsKind.Accident || e.Kind == NewsKind.PedestrianHit || e.Kind == NewsKind.HitAndRun || e.Kind == NewsKind.PlayerCrash) accidents++;
-                else if (e.Kind == NewsKind.Arrest || e.Kind == NewsKind.PlayerArrested) arrests++;
-                else if (e.Kind != NewsKind.Story) crimes++;
+                if (e.Kind == NewsKind.Accident || e.Kind == NewsKind.PedestrianHit || e.Kind == NewsKind.HitAndRun || e.Kind == NewsKind.PlayerCrash)
+                {
+                    accidents++;
+                }
+                else if (e.Kind == NewsKind.Arrest || e.Kind == NewsKind.PlayerArrested)
+                {
+                    arrests++;
+                }
+                else if (e.Kind != NewsKind.Story)
+                {
+                    crimes++;
+                }
             }
             int printed = 0;
             NewsKind lastKind = (NewsKind)(-1);
             int sameKind = 0;
-            // Four events at most for the city's pages: on a busy day the worst three and a count of the rest.
+            // Four events at most, never three of a kind in a row; on a busy day the worst three and a count of the rest.
             int events = fresh > 4 ? 3 : 4;
             for (int pass = 0; pass < events; pass++)
             {
@@ -419,12 +403,8 @@ namespace RealLifeOverhaul
             {
                 Paper.Add(Item(SocialLines.Pick(SocialCatalogue.NewsTally), "accidents", accidents.ToString(), "arrests", arrests.ToString(), "crimes", crimes.ToString()));
             }
-
-            // ---- the weather
             Paper.Add(Item(SocialLines.Pick(RainHelper.isRaining ? SocialCatalogue.NewsRainNow : _rained ? SocialCatalogue.NewsRained : SocialCatalogue.NewsDry)));
             _rained = false;
-
-            // ---- business: the player's own shops, from the game's own books for yesterday
             Paper.Add(Business(day));
             if (Extra != null)
             {
@@ -437,14 +417,10 @@ namespace RealLifeOverhaul
                     SocialDirector.Logger?.Error(e);
                 }
             }
-
-            // ---- somebody the player knows
             if (People(day, out NewsItem person))
             {
                 Paper.Add(person);
             }
-
-            // ---- colour: never the same piece twice until all have run
             Paper.Add(Filler());
             Paper.Add(Filler());
             if (Paper.Count < 9)
@@ -538,7 +514,7 @@ namespace RealLifeOverhaul
                         }
                     }
                 }
-                // A good day's takings make the page; a loss only when there were no takings to speak of.
+                // A loss makes the page only when there were no takings.
                 FinancialSummary.BusinessIncomeStatement about = best ?? worst;
                 if (about != null)
                 {
@@ -557,6 +533,7 @@ namespace RealLifeOverhaul
             return Item(SocialLines.Pick(SocialCatalogue.NewsShopNone));
         }
 
+        // Whoever has a birthday today, else the first met from a random place in the cast.
         private static bool People(int day, out NewsItem item)
         {
             item = default;
@@ -594,6 +571,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        // Never the same piece twice until all have run.
         private static NewsItem Filler()
         {
             string[] pool = SocialCatalogue.NewsFiller;
@@ -614,9 +592,18 @@ namespace RealLifeOverhaul
         private static NewsItem Item(string key, string a = null, string av = null, string b = null, string bv = null, string c = null, string cv = null)
         {
             var data = new Dictionary<string, string>(3);
-            if (a != null) data[a] = av ?? string.Empty;
-            if (b != null) data[b] = bv ?? string.Empty;
-            if (c != null) data[c] = cv ?? string.Empty;
+            if (a != null)
+            {
+                data[a] = av ?? string.Empty;
+            }
+            if (b != null)
+            {
+                data[b] = bv ?? string.Empty;
+            }
+            if (c != null)
+            {
+                data[c] = cv ?? string.Empty;
+            }
             return new NewsItem { Key = key, Data = data };
         }
 

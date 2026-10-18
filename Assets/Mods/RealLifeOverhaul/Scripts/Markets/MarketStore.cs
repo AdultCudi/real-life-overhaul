@@ -6,69 +6,41 @@ using System.Text;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The market in the save: one line of the save's modData under <see cref="Key"/>. Game-free.
-    ///
-    ///     v=1~h:...~e:...~k:...~p:...~o:...~t:...~w:...~a:...~n:...~d:...~x:...~y:...
-    ///
-    /// Parts are divided by '~' and begin with a letter and a colon; records by ';', fields by '|'.
-    ///   h  the header: the playthrough's id, the clock, the frontier, the market's mood, the indices' divisor...
-    ///   e  the city as the market last saw it
-    ///   k  the companies: their price (what the market expects of them and its mood), their business, this quarter,
-    ///      results, dividends, events, and their history (candles written small: MarketCodec). Today's step candles are
-    ///      kept only for the companies the player watches, holds or has an order in (the others' start again at the load)
-    ///   p  positions, o orders, t the account's history, w the watch list, a the account, n the last days' news,
-    ///   d dividends owed, x the city's index and its history, y the sectors,
-    ///   l the player's own way to the market and their company's books, u their listed company while it is set aside
-    ///      (its founder is a guest in another player's city): Markets/Listing. Never in the city's line.
-    ///   b the player's trading bots (MarketBots): each its firm, money, settings, record, holdings and what it waits to
-    ///      trade, then the shares it trades (its scope and picks), its payouts and its trading in the player's own
-    ///      company (a record without them: its whole market, no payout), then capital added while it runs and the
-    ///      fee's money-days for it (a record without them: none). Never in the city's line, nor is the news of a
-    ///      dividend paid to the player (MarketNewsKind.Paid). A bot's shares are written into the player's holding of part p as well
-    ///      (each holding of b says so), and taken out of it again here: a version that does not know bots reads them as
-    ///      the player's own shares, bought with the player's money, and nothing is lost.
-    ///   f the player's bonds (Markets/Bonds/BondStore). Never in the city's line.
-    ///   g the player's worked orders and dividends waiting to be put back (MarketEngine.Invest.cs): an order's fields as in
-    ///      part o, then whether it is worked or a payout put back, its money, the day it stopped and its last day's slices,
-    ///      then the day's money parked for it, the day's takings due to the player and the day it was parked (a record
-    ///      without them reads nothing parked). It has a limit of its own, and a worked order still open or with money
-    ///      with the broker is always read. Apart from part o, so that a version before them never fills a worked order
-    ///      whole at the open; read back, every order takes its place by its number again. Never in the city's line. (A
-    ///      version before part g, read in the middle of a market day, loses that day's parked money: it knows nothing of it.)
-    ///   A holding of part p may end with the share of each dividend it puts back, a line of part t with the worked order it
-    ///   is the day's slices of and whether it was bought with a dividend put back (each written only when there is one),
-    ///   and a bot's capital added or taken out is a payment in or a withdrawal of that bot's with a mark of 1 after them.
-    /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
-    /// founder, its name and sector, its reserve, board and meetings): another player's is in the city's line too.
-    ///
-    /// No secret of the market's chance is ever in it: those are on the tape (<see cref="MarketTape"/>). A newer
-    /// version adds fields at the end of a record or a part with a new letter; this reader takes the fields it knows,
-    /// skips parts it does not, keeps every figure inside its bounds, and drops a record it cannot read. A line that
-    /// cannot be read at all is left alone and the market opens afresh. A company of the catalogue missing from a line
-    /// (it was damaged) is made again at its catalogue price, so a holding never points at nothing.
+    /// The market in the save: one line of modData under <see cref="Key"/>. Game-free. Parts are divided by '~' and begin
+    /// with a letter and a colon; records by ';', fields by '|'.
+    ///     v=1~h:...~e:...~k:...~p:...~o:...~t:...~w:...~a:...~n:...~d:...~x:...~y:...~b:...~f:...~g:...~l:...~u:...
+    ///   h the header (id, clock, frontier, mood, divisors), e the city as last seen, k the companies with their business,
+    ///   results and candles (MarketCodec; today's step candles only for those the player follows), p positions, o orders,
+    ///   t the account's history, w the watch list, a the account, n the news, d dividends owed, x the index, y the sectors.
+    ///   Never in the city's line a host sends: l the player's way to the market and books, u their listed company while set
+    ///   aside as a guest, b their bots, f their bonds (BondStore), g worked orders and dividends to put back.
+    /// A bot's shares are also written into the player's holding of part p, marked, and taken out again on reading, so an
+    /// older reader takes them as the player's own. A bot's capital added or taken out is a deposit or withdrawal marked 1;
+    /// worked orders are apart from part o so an older reader never fills one whole. A player's listed company is a k record
+    /// with its own fields after the rest. No secret of the market's chance is ever in it: those are on the tape. Newer
+    /// fields go at the end of a record or in a new part; this reader takes what it knows, keeps every figure in bounds and
+    /// drops a record it cannot read; a catalogue company missing from a line is made again so no holding points at nothing.
     /// </summary>
-    public static class MarketStore
+    public static partial class MarketStore
     {
         public const string Key = "reallife:markets";
         public const int Version = 1;
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        // The line being written, kept for the next: its room (about 250 to 400 thousand characters for 140 companies with
-        // their histories) grows once a session instead of over again on every save and autosave. One per thread.
+        // The line being written, kept so its room (250 to 400 thousand characters) grows once a session. One per thread.
         [ThreadStatic] private static StringBuilder _text;
 
         public static MarketState Load(Dictionary<string, string> data, out int version)
         {
             version = 0;
-            string text;
-            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
+            if (data == null || !data.TryGetValue(Key, out string text) || string.IsNullOrEmpty(text))
             {
                 return null;
             }
             try
             {
-                return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+                return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // a line that cannot be read is kept as it is (Core/SaveLines)
             }
             catch (Exception)
             {
@@ -85,17 +57,14 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- writing
-
         public static string Write(MarketState s)
         {
             return Write(s, false);
         }
 
         /// <summary>
-        /// With <paramref name="city"/>, the city's market alone, as a Going Public host sends it to its guests (Markets/
-        /// MarketShare): every company with all its candles, the indices, the news; and nothing of the player's: no
-        /// holding, order, trade, watch list, account, dividend owed or recent trading of theirs.
+        /// With <paramref name="city"/>, the city's market alone as a Going Public host sends it: every company with all its
+        /// candles, the indices and the news, and nothing of the player's.
         /// </summary>
         public static string Write(MarketState s, bool city)
         {
@@ -139,7 +108,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     continue;
                 }
-                // (a bot's shares of the same company with it, unless the player is short of it)
+                // A bot's shares of the same company go with it, unless the player is short of it.
                 long shares = p.Shares, cost = p.Cost;
                 if (p.Shares > 0 && !p.Test)
                 {
@@ -150,7 +119,7 @@ namespace RealLifeOverhaul.Markets
                 Join(t, p.Test ? 1 : 0, p.OpenedDay);
                 if (p.Reinvest > 0)
                 {
-                    Join(t, p.Reinvest);   // the share of each dividend put back (a version before it reads none)
+                    Join(t, p.Reinvest);   // the share of each dividend put back
                 }
             }
             for (int i = 0; i < s.Bots.Count && !city; i++)
@@ -178,14 +147,14 @@ namespace RealLifeOverhaul.Markets
                 Order o = s.Orders[i];
                 if (o.Worked || o.Back)
                 {
-                    worked++;   // (part g)
+                    worked++;   // part g
                     continue;
                 }
                 t.Append(n++ > 0 ? ";" : string.Empty);
                 OrderFields(t, o);
                 if (o.Closing)
                 {
-                    Join(t, 1);   // a stop loss or a take profit (a version before them reads a stop or a limit)
+                    Join(t, 1);   // a stop loss or a take profit; an older reader takes a stop or a limit
                 }
             }
             t.Append("~t:");
@@ -205,11 +174,11 @@ namespace RealLifeOverhaul.Markets
                 }
                 if (r.Order > 0 || r.Back || capital)
                 {
-                    Join(t, r.Order, r.Back ? 1 : 0);   // a worked order's day of slices, a dividend put back (a version before them reads a trade)
+                    Join(t, r.Order, r.Back ? 1 : 0);   // a worked order's day of slices, a dividend put back
                 }
                 if (capital)
                 {
-                    Join(t, 1);   // a bot's capital added or taken out (a version before it reads a payment in or a withdrawal, marked with the bot)
+                    Join(t, 1);   // a bot's capital added or taken out
                 }
             }
             t.Append("~w:");
@@ -230,7 +199,7 @@ namespace RealLifeOverhaul.Markets
                 MarketNews n = s.News[i];
                 if (city && n.Kind == MarketNewsKind.Paid)
                 {
-                    continue;   // (a dividend paid to the host is theirs alone)
+                    continue;   // a dividend paid to the host is theirs alone
                 }
                 t.Append(told++ > 0 ? ";" : string.Empty).Append(n.Day.ToString(Inv));
                 Join(t, (int)n.Kind, n.Stock, n.A, n.B, n.C);
@@ -244,7 +213,7 @@ namespace RealLifeOverhaul.Markets
                 Join(t, d.PayDay, d.Test ? 1 : 0);
                 if (d.Bot > 0)
                 {
-                    Join(t, d.Bot);   // (a version before bots pays it to the player as their own: it is their money either way)
+                    Join(t, d.Bot);   // an older reader pays it to the player as their own: their money either way
                 }
             }
             t.Append("~x:");
@@ -270,7 +239,7 @@ namespace RealLifeOverhaul.Markets
                 D(t, s.SectorDivisor[sec]);
                 Join(t, s.SectorLast[sec], s.SectorPrevClose[sec]);
                 t.Append('|');
-                Ints(t, s.SectorDaily[sec]);
+                MarketCodec.WriteInts(t, s.SectorDaily[sec]);
                 D(t, s.SectorDayZ[sec]);
             }
             if (!city && s.Bots.Count > 0)
@@ -281,12 +250,12 @@ namespace RealLifeOverhaul.Markets
             if (!city && s.Bonds.Holdings.Count > 0)
             {
                 t.Append("~f:");
-                BondStore.Write(t, s.Bonds);   // the player's bonds (Markets/Bonds/BondStore)
+                BondStore.Write(t, s.Bonds);
             }
             if (!city && worked > 0)
             {
                 t.Append("~g:");
-                WorkedOrders(t, s);   // worked orders and dividends to put back (MarketEngine.Invest.cs)
+                WorkedOrders(t, s);
             }
             if (!city && s.Listing != null && !s.Listing.Empty)
             {
@@ -299,523 +268,6 @@ namespace RealLifeOverhaul.Markets
             }
             return t.ToString();
         }
-
-        // ---------------------------------------------------------------- orders
-
-        // An order's own fields, as part o has had them from the first version: its number first.
-        private static void OrderFields(StringBuilder t, Order o)
-        {
-            t.Append(o.Id.ToString(Inv));
-            Join(t, o.StockId, (int)o.Side, (int)o.Type, (int)o.Life);
-            L(t, o.Qty, o.Filled, o.FilledValue);
-            Join(t, o.LimitCents, o.StopCents, o.PlacedDay, o.PlacedPhase, o.ExpireDay, (int)o.State, (int)o.Why, o.Triggered ? 1 : 0, o.Test ? 1 : 0, o.Forced ? 1 : 0);
-        }
-
-        // Part g: worked orders and dividends to put back, each an order's fields, then what it is, its money, the day it
-        // stopped and its last day's slices, then the day's money with the broker (parked for it, due from it) and the day
-        // it was parked.
-        private static void WorkedOrders(StringBuilder t, MarketState s)
-        {
-            int n = 0;
-            for (int i = 0; i < s.Orders.Count; i++)
-            {
-                Order o = s.Orders[i];
-                if (!o.Worked && !o.Back)
-                {
-                    continue;
-                }
-                t.Append(n++ > 0 ? ";" : string.Empty);
-                OrderFields(t, o);
-                Join(t, o.Closing ? 1 : 0, o.Worked ? 1 : 0, o.Back ? 1 : 0);
-                L(t, o.Budget);
-                Join(t, o.EndDay, o.DayOf);
-                L(t, o.DayQty, o.DayValue);
-                L(t, o.Parked, o.Due);
-                Join(t, o.ParkedDay);
-            }
-        }
-
-        // An order's own fields read back; null for one that cannot be (no number, no shares, a limit or a stop with no price).
-        // A payout put back has no shares yet (they are worked out at the open): 'back' lets it through.
-        private static Order ReadOrder(string[] c, bool back)
-        {
-            if (c.Length < 18 || I(c, 0) <= 0 || (L(c, 5) <= 0 && !back))
-            {
-                return null;
-            }
-            var o = new Order
-            {
-                Id = I(c, 0), StockId = I(c, 1), Side = (OrderSide)Clamp(I(c, 2), 0, 1), Type = (OrderType)Clamp(I(c, 3), 0, 2), Life = (OrderLife)Clamp(I(c, 4), 0, 1),
-                Qty = Math.Max(0, L(c, 5)), Filled = Math.Max(0, Math.Min(L(c, 5), L(c, 6))), FilledValue = Math.Max(0, L(c, 7)), LimitCents = Math.Max(0, I(c, 8)),
-                StopCents = Math.Max(0, I(c, 9)), PlacedDay = I(c, 10), PlacedPhase = I(c, 11), ExpireDay = I(c, 12), State = (OrderState)Clamp(I(c, 13), 0, 4),
-                Why = (OrderWhy)Clamp(I(c, 14), 0, (int)OrderWhy.Count - 1), Triggered = I(c, 15) != 0, Test = I(c, 16) != 0, Forced = I(c, 17) != 0, Closing = I(c, 18) != 0
-            };
-            if ((o.Type == OrderType.Limit && o.LimitCents <= 0) || (o.Type == OrderType.Stop && o.StopCents <= 0))
-            {
-                return null;
-            }
-            o.Closing &= o.Type != OrderType.Market;
-            return o;
-        }
-
-        // Part g read back: a worked order (at the market, until it is done) or a payout put back (at the market, for the day,
-        // with its money). It has a limit of its own, apart from part o's (a busy list of orders that are done leaves part o
-        // full), and a worked order still open, or with money with the broker, is read whatever the count: no worked order
-        // and none of the player's money is lost on a load.
-        private static void ReadWorked(MarketState s, string body)
-        {
-            int read = 0;
-            foreach (string record in Records(body))
-            {
-                string[] c = record.Split('|');
-                bool worked = I(c, 19) != 0, back = !worked && I(c, 20) != 0;
-                bool keep = worked && (I(c, 13) == (int)OrderState.Open || L(c, 26) > 0 || L(c, 27) > 0);
-                Order o = (worked || back) && (keep || read < MarketCatalogue.OrdersMost * 2) ? ReadOrder(c, back) : null;
-                if (o == null || s.Order(o.Id) != null || (back && Math.Max(0, L(c, 21)) <= 0))
-                {
-                    continue;
-                }
-                read++;
-                o.Type = OrderType.Market;
-                o.Closing = false;
-                o.Worked = worked;
-                o.Back = back;
-                o.Life = worked ? OrderLife.UntilDone : OrderLife.Day;
-                o.Budget = back ? Math.Max(0, L(c, 21)) : 0;
-                o.EndDay = Math.Max(0, I(c, 22));
-                o.DayOf = Math.Max(0, I(c, 23));
-                o.DayQty = Math.Max(0, L(c, 24));
-                o.DayValue = Math.Max(0, L(c, 25));
-                o.Parked = worked ? Math.Max(0, L(c, 26)) : 0;   // (a record without them: nothing parked, nothing due)
-                o.Due = worked ? Math.Max(0, L(c, 27)) : 0;
-                o.ParkedDay = worked ? Math.Max(0, I(c, 28)) : 0;
-                s.Orders.Add(o);
-            }
-            // (every order in its place again: the market fills them in the order they were placed, by their numbers)
-            s.Orders.Sort(ById);
-        }
-
-        private static readonly Comparison<Order> ById = (a, b) => a.Id.CompareTo(b.Id);
-
-        // ---------------------------------------------------------------- the player's trading bots
-
-        // Every bot's shares of a company added to a holding's figures as it is written; each of their holdings marked as written so.
-        private static void MergeBots(MarketState s, int stockId, ref long shares, ref long cost)
-        {
-            for (int i = 0; i < s.Bots.Count; i++)
-            {
-                BotHolding h = s.Bots[i].Holding(stockId);
-                if (h != null && h.Shares > 0)
-                {
-                    shares += h.Shares;
-                    cost += Math.Max(0, h.Cost);
-                    h.Merged = true;
-                }
-            }
-        }
-
-        private static bool EarlierBotHolds(MarketState s, int bot, int stockId)
-        {
-            for (int i = 0; i < bot; i++)
-            {
-                BotHolding h = s.Bots[i].Holding(stockId);
-                if (h != null && h.Shares > 0)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static void Bots(StringBuilder t, MarketState s)
-        {
-            for (int i = 0; i < s.Bots.Count; i++)
-            {
-                Bot b = s.Bots[i];
-                t.Append(i > 0 ? ";" : string.Empty).Append(b.Firm.ToString(Inv));
-                Join(t, (int)b.Status);
-                L(t, b.Capital, b.Base, b.Cash);
-                Join(t, b.Size, b.Stop, b.Loss, b.HiredDay, b.LastDay);
-                L(t, b.Peak);
-                Join(t, b.DrawdownBp);
-                L(t, b.HighWater);
-                Join(t, b.Trades, b.Closed, b.Wins);
-                L(t, b.Realised, b.Fees, b.Commission, b.Dividends);
-                Join(t, b.Month);
-                L(t, b.MonthWorth);
-                Join(t, b.MonthTrades, b.MonthDays, b.ShortDay);
-                t.Append('|');
-                for (int j = 0; j < b.Holdings.Count; j++)
-                {
-                    BotHolding h = b.Holdings[j];
-                    t.Append(j > 0 ? ":" : string.Empty).Append(h.StockId.ToString(Inv)).Append(',').Append(h.Shares.ToString(Inv)).Append(',').Append(h.Cost.ToString(Inv)).Append(',')
-                        .Append(h.StopCents.ToString(Inv)).Append(',').Append(h.OpenedDay.ToString(Inv)).Append(',').Append(h.Gain.ToString(Inv)).Append(',').Append(h.Merged ? 1 : 0);
-                }
-                t.Append('|');
-                for (int j = 0; j < b.Pending.Count; j++)
-                {
-                    BotOrder o = b.Pending[j];
-                    t.Append(j > 0 ? ":" : string.Empty).Append(o.StockId.ToString(Inv)).Append(',').Append(o.Buy ? 1 : 0).Append(',').Append(o.Qty.ToString(Inv));
-                }
-                // (after what a version before them reads: the shares it trades, its payouts, its trading in the player's own company)
-                Join(t, (int)b.Scope);
-                t.Append('|');
-                for (int j = 0; j < b.Picks.Count; j++)
-                {
-                    t.Append(j > 0 ? ":" : string.Empty).Append(b.Picks[j].ToString(Inv));
-                }
-                Join(t, b.PayPct, (int)b.PayEvery);
-                L(t, b.PayMark, b.PayOwed, b.PaidOut, b.MonthPaid);
-                Join(t, b.OwnDay);
-                L(t, b.OwnQty);
-                Join(t, b.OwnYear, b.OwnBoughtBp, b.OwnSoldBp, b.OwnBuyDay, b.OwnSellDay);
-                Join(t, b.TopUp);   // (after them: capital added while it runs, and the fee's money-days for it; a record without them has none)
-                L(t, b.MonthAdded);
-            }
-        }
-
-        // The bots read back: each figure inside its bounds, a firm that is not one (or one twice) dropped, holdings of companies not in the line dropped.
-        private static void ReadBots(MarketState s, string body)
-        {
-            foreach (string record in Records(body))
-            {
-                string[] c = record.Split('|');
-                int firm = I(c, 0);
-                if (c.Length < 25 || MarketBots.Firm(firm) == null || MarketBots.Hired(s, firm) != null || s.Bots.Count >= MarketBots.FirmsMost)
-                {
-                    continue;
-                }
-                var b = new Bot
-                {
-                    Firm = firm, Status = (BotStatus)Clamp(I(c, 1), 0, 2), Capital = Math.Max(0, L(c, 2)), Base = Math.Max(0, L(c, 3)), Cash = L(c, 4),
-                    Size = MarketBots.Choice(MarketBots.Sizes, I(c, 5)), Stop = MarketBots.Choice(MarketBots.Stops, I(c, 6)), Loss = MarketBots.Choice(MarketBots.Losses, I(c, 7)),
-                    HiredDay = I(c, 8), LastDay = I(c, 9), Peak = Math.Max(0, L(c, 10)), DrawdownBp = Clamp(I(c, 11), 0, 10000), HighWater = L(c, 12), Trades = Math.Max(0, I(c, 13)),
-                    Closed = Math.Max(0, I(c, 14)), Wins = Math.Max(0, I(c, 15)), Realised = L(c, 16), Fees = Math.Max(0, L(c, 17)), Commission = Math.Max(0, L(c, 18)),
-                    Dividends = Math.Max(0, L(c, 19)), Month = I(c, 20), MonthWorth = L(c, 21), MonthTrades = Math.Max(0, I(c, 22)), MonthDays = Math.Max(0, I(c, 23)), ShortDay = I(c, 24)
-                };
-                b.Wins = Math.Min(b.Wins, b.Closed);
-                foreach (string r in S(c, 25).Length > 0 ? c[25].Split(':') : Array.Empty<string>())
-                {
-                    string[] f = r.Split(',');
-                    int id = f.Length >= 7 ? Int(f[0]) : 0;
-                    long shares = f.Length >= 7 ? Long(f[1]) : 0;
-                    if (id <= 0 || shares <= 0 || b.Holding(id) != null || b.Holdings.Count >= 100)
-                    {
-                        continue;
-                    }
-                    b.Holdings.Add(new BotHolding { StockId = id, Shares = shares, Cost = Math.Max(0, Long(f[2])), StopCents = Math.Max(0, Int(f[3])), OpenedDay = Int(f[4]), Gain = Long(f[5]),
-                        Merged = Int(f[6]) != 0 });
-                }
-                foreach (string r in S(c, 26).Length > 0 ? c[26].Split(':') : Array.Empty<string>())
-                {
-                    string[] f = r.Split(',');
-                    if (f.Length >= 3 && Int(f[0]) > 0 && Long(f[2]) > 0 && b.Pending.Count < 100)
-                    {
-                        b.Pending.Add(new BotOrder { StockId = Int(f[0]), Buy = Int(f[1]) != 0, Qty = Long(f[2]) });
-                    }
-                }
-                // A record from before the shares it trades and its payouts: its whole market, nothing paid, and what it
-                // made before counted as reckoned already (only profit from now on is paid out).
-                b.Scope = (BotScope)Clamp(I(c, 27), 0, (int)BotScope.Held);
-                foreach (string r in S(c, 28).Length > 0 ? c[28].Split(':') : Array.Empty<string>())
-                {
-                    int id = Int(r);
-                    if (id > 0 && !b.Picks.Contains(id) && b.Picks.Count < MarketBots.PicksMost)
-                    {
-                        b.Picks.Add(id);
-                    }
-                }
-                b.PayPct = MarketBots.Choice(MarketBots.PayPcts, I(c, 29));
-                b.PayEvery = (BotPayEvery)Clamp(I(c, 30, (int)BotPayEvery.Monthly), 0, (int)BotPayEvery.Monthly);
-                b.PayMark = c.Length > 31 ? L(c, 31) : MarketBots.Profit(b);
-                b.PayOwed = Math.Max(0, L(c, 32));
-                b.PaidOut = Math.Max(0, L(c, 33));
-                b.MonthPaid = Math.Max(0, L(c, 34));
-                b.OwnDay = I(c, 35);
-                b.OwnQty = Math.Max(0, L(c, 36));
-                b.OwnYear = I(c, 37);
-                b.OwnBoughtBp = Clamp(I(c, 38), 0, 100000);
-                b.OwnSoldBp = Clamp(I(c, 39), 0, 100000);
-                b.OwnBuyDay = I(c, 40);
-                b.OwnSellDay = I(c, 41);
-                b.TopUp = Clamp(I(c, 42), 0, MarketBots.TopUpDecidedAgain);
-                b.MonthAdded = L(c, 43);
-                s.Bots.Add(b);
-            }
-        }
-
-        // A bot's shares written into the player's holding too (MergeBots) taken out of it again; a bot keeps no more of a
-        // company than the line's holding had (a line a version before bots wrote again has none of theirs in it).
-        private static void Unmerge(MarketState s)
-        {
-            for (int i = 0; i < s.Bots.Count; i++)
-            {
-                Bot b = s.Bots[i];
-                for (int j = b.Holdings.Count - 1; j >= 0; j--)
-                {
-                    BotHolding h = b.Holdings[j];
-                    if (!h.Merged)
-                    {
-                        continue;
-                    }
-                    h.Merged = false;
-                    Position p = s.Position(h.StockId);
-                    long take = p != null && !p.Test ? Math.Max(0L, Math.Min(h.Shares, p.Shares)) : 0L;
-                    if (take < h.Shares)
-                    {
-                        h.Cost = h.Shares > 0 ? h.Cost * take / h.Shares : 0;
-                        h.Shares = take;
-                    }
-                    if (p != null && take > 0)
-                    {
-                        p.Shares -= take;
-                        p.Cost = Math.Max(0, p.Cost - h.Cost);
-                        if (p.Shares == 0)
-                        {
-                            s.Positions.Remove(p);
-                        }
-                    }
-                    if (h.Shares <= 0)
-                    {
-                        b.Holdings.RemoveAt(j);
-                    }
-                }
-            }
-        }
-
-        // The player's own way to the market and their company's books (never in the city's line).
-        private static void Listing(StringBuilder t, ListingFile f)
-        {
-            t.Append(((int)f.Stage).ToString(Inv));
-            Join(t, f.AdvisedDay, f.AuditFrom, f.AuditDone, f.AuditDay, f.Findings, f.FloatBp, f.LowCents, f.HighCents, f.WalkCents, f.BookFrom, f.BookEnd, f.PriceCents, f.ListDay);
-            L(t, f.OldShares, f.NewShares);
-            Join(t, f.FairCents);
-            t.Append('|').Append(Clean(f.Name)).Append('|').Append(Clean(f.Ticker));
-            Join(t, f.Sector, f.StockId, f.Test ? 1 : 0);
-            L(t, f.Raised, f.Fees);
-            Join(t, f.FeeYear, f.FirstDay, f.BooksDay);
-            t.Append('|');
-            for (int i = 0; i < f.Books.Count; i++)
-            {
-                BookQuarter q = f.Books[i];
-                t.Append(i > 0 ? ":" : string.Empty).Append(q.Quarter.ToString(Inv)).Append(',').Append(q.Revenue.ToString(Inv)).Append(',').Append(q.Profit.ToString(Inv)).Append(',')
-                    .Append(q.Days.ToString(Inv));
-            }
-            Join(t, f.SetAsideDay, f.Trade, f.TestBooks ? 1 : 0);
-            L(t, f.Proceeds);
-            t.Append('|').Append(Clean(f.HandOverTo));
-            Join(t, f.HandOverBy);
-            L(t, f.HandOverOwed);
-            Join(t, f.HandOverCount);
-            t.Append('|');
-            for (int i = 0; i < f.HandOver.Count; i++)
-            {
-                t.Append(i > 0 ? ":" : string.Empty).Append((f.HandOver[i] ?? string.Empty).Replace('~', '!'));   // (a place's own '~' kept apart from the line's)
-            }
-        }
-
-        private static ListingFile ReadListing(string[] c)
-        {
-            var f = new ListingFile
-            {
-                Stage = (ListingStage)Clamp(I(c, 0), 0, (int)ListingStage.Listed), AdvisedDay = I(c, 1), AuditFrom = I(c, 2), AuditDone = I(c, 3), AuditDay = Math.Max(0, I(c, 4)),
-                Findings = Math.Max(0, I(c, 5)), FloatBp = Clamp(I(c, 6), 0, 9000), LowCents = Math.Max(0, I(c, 7)), HighCents = Math.Max(0, I(c, 8)),
-                WalkCents = Math.Max(0, I(c, 9)), BookFrom = I(c, 10), BookEnd = I(c, 11), PriceCents = Math.Max(0, I(c, 12)), ListDay = I(c, 13), OldShares = Math.Max(0, L(c, 14)),
-                NewShares = Math.Max(0, L(c, 15)), FairCents = Math.Max(0, I(c, 16)), Name = S(c, 17), Ticker = S(c, 18), Sector = Clamp(I(c, 19), 0, (int)MarketSector.Count - 1),
-                StockId = I(c, 20), Test = I(c, 21) != 0, Raised = L(c, 22), Fees = Math.Max(0, L(c, 23)), FeeYear = I(c, 24, -1), FirstDay = Math.Max(0, I(c, 25)), BooksDay = I(c, 26)
-            };
-            foreach (string r in S(c, 27).Length > 0 ? c[27].Split(':') : Array.Empty<string>())
-            {
-                string[] q = r.Split(',');
-                if (q.Length >= 4 && f.Books.Count < 12)
-                {
-                    f.Books.Add(new BookQuarter { Quarter = Int(q[0]), Revenue = Math.Max(0, Long(q[1])), Profit = Long(q[2]), Days = Math.Max(0, Int(q[3])) });
-                }
-            }
-            f.SetAsideDay = Math.Max(0, I(c, 28));
-            f.Trade = Clamp(I(c, 29, -1), -1, MarketInputs.Trades.Length - 1);
-            f.TestBooks = I(c, 30) != 0;
-            f.Proceeds = Math.Max(0, L(c, 31));
-            f.HandOverTo = S(c, 32).Length > 0 ? S(c, 32) : null;
-            f.HandOverBy = Math.Max(0, I(c, 33));
-            f.HandOverOwed = Math.Max(0, L(c, 34));
-            f.HandOverCount = Math.Max(0, I(c, 35));
-            foreach (string place in S(c, 36).Length > 0 ? c[36].Split(':') : Array.Empty<string>())
-            {
-                if (place.Length > 0 && f.HandOver.Count < 64)
-                {
-                    f.HandOver.Add(place.Replace('!', '~'));
-                }
-            }
-            if (f.StockId != 0 && !ListingRules.IsPlayer(f.StockId))
-            {
-                f.StockId = 0;
-            }
-            return f;
-        }
-
-        // Today's step candles are kept for the companies the player follows: watched, held or with an order in.
-        private static bool Followed(MarketState state, int id)
-        {
-            if (state.Watching(id) || state.Held(id) != 0)
-            {
-                return true;
-            }
-            for (int i = 0; i < state.Orders.Count; i++)
-            {
-                if (state.Orders[i].StockId == id && state.Orders[i].IsOpen)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static void Stock(StringBuilder t, MarketState state, Stock k, bool city)
-        {
-            t.Append(k.Id.ToString(Inv));
-            Join(t, (int)k.Status, k.ListedDay, k.GoneDay, (int)k.Reason, k.GoneCents);
-            t.Append('|').Append(MarketCatalogue.IsRival(k.Id) ? Clean(k.Name) : string.Empty).Append('|').Append(Clean(k.RivalId));
-            D(t, k.LogFair);
-            D(t, k.Mis);
-            D(t, k.Sent);
-            D(t, k.Outlook);
-            L(t, k.Shares);
-            D(t, city ? 0.0 : k.Impact);
-            Join(t, k.PrevClose, k.Open, k.High, k.Low, k.Last);
-            L(t, k.DayVolume);
-            D(t, k.Rev);
-            D(t, k.Margin);
-            D(t, k.Growth);
-            D(t, k.MarginShift);
-            D(t, k.MarginTarget);
-            D(t, k.GrowthTarget);
-            D(t, k.Debt);
-            D(t, k.DebtRate);
-            D(t, k.Equity);
-            D(t, k.Distress);
-            D(t, k.Competition);
-            Join(t, k.Quarter);
-            D(t, k.QRev);
-            D(t, k.QNi);
-            Join(t, k.PendingQuarter);
-            D(t, k.PendingRev);
-            D(t, k.PendingNi);
-            Join(t, k.ResultsDay, k.DpsCents, k.DeclaredCents, k.RecordDay, k.PayDay, k.ExDone ? 1 : 0, k.LastExDay);
-            D(t, k.Adv);
-            Join(t, k.SplitDay, k.SplitRatio, k.BidDay, k.BidEndDay, k.BidCents, k.BidderId, k.ResultsBoostDay, k.LowDays);
-            t.Append('|');
-            for (int i = 0; i < k.Results.Count; i++)
-            {
-                QuarterResult r = k.Results[i];
-                t.Append(i > 0 ? ":" : string.Empty).Append(r.Quarter.ToString(Inv)).Append(',').Append(r.Day.ToString(Inv)).Append(',').Append(r.RevenueK.ToString(Inv)).Append(',')
-                    .Append(r.ProfitK.ToString(Inv)).Append(',').Append(r.Eps.ToString(Inv)).Append(',').Append(r.Consensus.ToString(Inv)).Append(',').Append(r.DpsCents.ToString(Inv));
-            }
-            t.Append('|');
-            MarketCodec.Write(t, k.Daily);
-            t.Append('|');
-            MarketCodec.Write(t, k.Monthly);
-            bool followed = city || Followed(state, k.Id);
-            t.Append('|');
-            MarketCodec.Write(t, k.Bars, followed ? k.BarCount : 0);
-            t.Append('|');
-            MarketCodec.Write(t, k.LastBars, followed ? k.LastBarCount : 0);
-            Join(t, k.LastBarsDay);
-            if (k.Own != null)
-            {
-                Own(t, k);
-            }
-        }
-
-        /// <summary>One company's record alone (a player's company set aside while its founder is a guest in another city: ListingFile.Suspended).</summary>
-        public static string StockLine(MarketState state, Stock k)
-        {
-            var t = new StringBuilder(4096);
-            Stock(t, state, k, true);
-            return t.ToString();
-        }
-
-        /// <summary>A company read back from its record alone; null if it cannot be read.</summary>
-        public static Stock ReadStockLine(string record, int year)
-        {
-            try
-            {
-                return string.IsNullOrEmpty(record) ? null : ReadStock(record.Split('|'), year);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        // A player's company: its founder, name, ticker, sector and usual debt, then its own figures, then its founder's deals.
-        private static void Own(StringBuilder t, Stock k)
-        {
-            OwnListing o = k.Own;
-            t.Append('|').Append(o.Owner.ToString("X16", Inv)).Append('|').Append(Clean(k.Name)).Append('|').Append(Clean(k.Ticker));
-            Join(t, (int)k.Sector, o.DebtBp);
-            t.Append('|').Append(o.Test ? 1 : 0).Append(',').Append(o.Founder.ToString(Inv)).Append(',').Append(R(o.Rps)).Append(',').Append(o.PayBp.ToString(Inv)).Append(',')
-                .Append(o.ProposedCents.ToString(Inv)).Append(',').Append(o.Board ? 1 : 0).Append(',').Append(R(o.RevQ)).Append(',').Append(R(o.NiQ)).Append(',').Append(R(o.RevY)).Append(',')
-                .Append(R(o.NiY)).Append(',').Append(R(o.LeverY)).Append(',').Append(R(o.Expect)).Append(',').Append(R(o.PendingExpect)).Append(',').Append(o.ListedCents.ToString(Inv)).Append(',')
-                .Append(o.LockDay.ToString(Inv)).Append(',').Append(o.AgmDay.ToString(Inv)).Append(',').Append(o.YearCents.ToString(Inv)).Append(',').Append(o.YearIndex.ToString(Inv)).Append(',')
-                .Append(o.YearScandals.ToString(Inv)).Append(',').Append(o.YearDividendCents.ToString(Inv)).Append(',').Append(o.LastStanding.ToString(Inv)).Append(',')
-                .Append(o.ActBp.ToString(Inv)).Append(',').Append(((int)o.ActDemand).ToString(Inv)).Append(',').Append(o.ActDay.ToString(Inv)).Append(',').Append(o.Votes.ToString(Inv)).Append(',')
-                .Append(o.VotesAgainstBp.ToString(Inv)).Append(',').Append(o.IssuedYear.ToString(Inv)).Append(',').Append(o.IssuedBp.ToString(Inv)).Append(',').Append(o.SaleDay.ToString(Inv))
-                .Append(',').Append(R(o.Carry)).Append(',').Append(o.DealYear.ToString(Inv)).Append(',').Append(o.BoughtBp.ToString(Inv)).Append(',').Append(o.SoldBp.ToString(Inv)).Append(',')
-                .Append(o.BackBp.ToString(Inv));
-            t.Append('|');
-            for (int i = 0; i < o.Deals.Count; i++)
-            {
-                OwnDeal d = o.Deals[i];
-                t.Append(i > 0 ? ":" : string.Empty).Append(d.Day.ToString(Inv)).Append(',').Append(d.Shares.ToString(Inv)).Append(',').Append(d.Cents.ToString(Inv));
-            }
-            t.Append('|').Append(Clean(k.Def.Trade));
-        }
-
-        private static string R(double value)
-        {
-            return double.IsNaN(value) || double.IsInfinity(value) ? "0" : value.ToString("R", Inv);
-        }
-
-        // A player's company read back: its row of the catalogue made again from its own fields, and its figures.
-        private static OwnListing ReadOwn(string[] c, out CompanyDef def, int id)
-        {
-            def = null;
-            if (c.Length < 66 || !ulong.TryParse(S(c, 59), NumberStyles.HexNumber, Inv, out ulong owner) || owner == 0UL)
-            {
-                return null;
-            }
-            string ticker = S(c, 61).Length > 0 ? S(c, 61) : "OWN";
-            int debtBp = Clamp(I(c, 63), 0, 30000);
-            def = MarketCatalogue.PlayerDef(id, S(c, 60), ticker, (MarketSector)Clamp(I(c, 62), 0, (int)MarketSector.Count - 1), debtBp, S(c, 66).Length > 0 ? S(c, 66) : null);
-            string[] f = S(c, 64).Split(',');
-            var o = new OwnListing
-            {
-                Owner = owner, Test = I(f, 0) != 0, Founder = Math.Max(0, L(f, 1)), Rps = Clamp(F(f, 2, 0.0), -1e7, 1e7), PayBp = Clamp(I(f, 3), 0, 10000),
-                ProposedCents = Clamp(I(f, 4), 0, 10000000), Board = I(f, 5, 1) != 0, RevQ = Math.Max(0.0, F(f, 6, 0.0)), NiQ = F(f, 7, 0.0), RevY = Math.Max(0.0, F(f, 8, 0.0)),
-                NiY = F(f, 9, 0.0), LeverY = Clamp(F(f, 10, 0.0), -1.0, 1.0), Expect = F(f, 11, 0.0), PendingExpect = F(f, 12, 0.0), ListedCents = Math.Max(0, I(f, 13)), LockDay = I(f, 14),
-                AgmDay = Math.Max(0, I(f, 15)), YearCents = Math.Max(0, I(f, 16)), YearIndex = Math.Max(0, I(f, 17)), YearScandals = Math.Max(0, I(f, 18)), YearDividendCents = Math.Max(0, I(f, 19)),
-                LastStanding = Clamp(I(f, 20, -1), -1, 100), ActBp = Clamp(I(f, 21), 0, 10000), ActDemand = (ActivistDemand)Clamp(I(f, 22), 0, (int)ActivistDemand.Count - 1),
-                ActDay = Math.Max(0, I(f, 23)), Votes = Math.Max(0, I(f, 24)), VotesAgainstBp = Clamp(I(f, 25), 0, 10000), IssuedYear = I(f, 26, -1), IssuedBp = Math.Max(0, I(f, 27)),
-                SaleDay = Math.Max(0, I(f, 28)), Carry = Clamp(F(f, 29, 0.0), -1.0, 1.0), DebtBp = debtBp, DealYear = I(f, 30, -1), BoughtBp = Math.Max(0, I(f, 31)), SoldBp = Math.Max(0, I(f, 32)),
-                BackBp = Math.Max(0, I(f, 33))
-            };
-            foreach (string r in S(c, 65).Length > 0 ? c[65].Split(':') : Array.Empty<string>())
-            {
-                string[] d = r.Split(',');
-                if (d.Length >= 3 && o.Deals.Count < 16)
-                {
-                    o.Deals.Add(new OwnDeal { Day = Int(d[0]), Shares = Long(d[1]), Cents = Math.Max(1, Int(d[2])) });
-                }
-            }
-            if (o.ActDemand == ActivistDemand.None)
-            {
-                o.ActBp = 0;
-            }
-            return o;
-        }
-
-        // ---------------------------------------------------------------- reading
 
         public static MarketState Read(string text, out int version)
         {
@@ -839,7 +291,7 @@ namespace RealLifeOverhaul.Markets
                 switch (part[0])
                 {
                     case 'h': header = Header(s, body.Split('|')); break;
-                    case 'e': MarketEnv env; if (MarketTape.ReadEnv(body, out env)) s.Env = env; break;
+                    case 'e': if (MarketTape.ReadEnv(body, out MarketEnv env)) s.Env = env; break;
                     case 'k':
                         foreach (string record in Records(body))
                         {
@@ -856,8 +308,11 @@ namespace RealLifeOverhaul.Markets
                             string[] c = record.Split('|');
                             if (c.Length >= 5 && I(c, 0) > 0 && L(c, 1) != 0 && s.Position(I(c, 0)) == null)
                             {
-                                s.Positions.Add(new Position { StockId = I(c, 0), Shares = L(c, 1), Cost = Math.Max(0, L(c, 2)), Dividends = L(c, 3), Realised = L(c, 4), Test = I(c, 5) != 0, OpenedDay = I(c, 6),
-                                    Reinvest = L(c, 1) > 0 ? InvestRules.ReinvestOf(Clamp(I(c, 7), 0, 100)) : 0 });
+                                s.Positions.Add(new Position
+                                {
+                                    StockId = I(c, 0), Shares = L(c, 1), Cost = Math.Max(0, L(c, 2)), Dividends = L(c, 3), Realised = L(c, 4), Test = I(c, 5) != 0, OpenedDay = I(c, 6),
+                                    Reinvest = L(c, 1) > 0 ? InvestRules.ReinvestOf(Clamp(I(c, 7), 0, 100)) : 0
+                                });
                             }
                         }
                         break;
@@ -880,11 +335,14 @@ namespace RealLifeOverhaul.Markets
                             string[] c = record.Split('|');
                             if (c.Length >= 9 && s.Trades.Count < MarketCatalogue.TradesKept)
                             {
-                                var trade = new Trade { Day = I(c, 0), Phase = I(c, 1), StockId = I(c, 2), Kind = (TradeKind)Clamp(I(c, 3), 0, 9), Qty = L(c, 4), PriceCents = I(c, 5), Value = L(c, 6), Fee = L(c, 7), Test = I(c, 8) != 0,
-                                    Bot = MarketBots.Firm(I(c, 9)) != null ? I(c, 9) : 0, Order = Math.Max(0, I(c, 10)), Back = I(c, 11) != 0 };
+                                var trade = new Trade
+                                {
+                                    Day = I(c, 0), Phase = I(c, 1), StockId = I(c, 2), Kind = (TradeKind)Clamp(I(c, 3), 0, 9), Qty = L(c, 4), PriceCents = I(c, 5), Value = L(c, 6),
+                                    Fee = L(c, 7), Test = I(c, 8) != 0, Bot = MarketBots.Firm(I(c, 9)) != null ? I(c, 9) : 0, Order = Math.Max(0, I(c, 10)), Back = I(c, 11) != 0
+                                };
                                 if (I(c, 12) == 1 && trade.Bot > 0 && (trade.Kind == TradeKind.Deposit || trade.Kind == TradeKind.Withdrawal))
                                 {
-                                    trade.Kind = trade.Kind == TradeKind.Deposit ? TradeKind.BotAdded : TradeKind.BotTaken;   // (a bot's capital added or taken out)
+                                    trade.Kind = trade.Kind == TradeKind.Deposit ? TradeKind.BotAdded : TradeKind.BotTaken;   // a bot's capital added or taken out
                                 }
                                 s.Trades.Add(trade);
                             }
@@ -893,8 +351,7 @@ namespace RealLifeOverhaul.Markets
                     case 'w':
                         foreach (string id in body.Length > 0 ? body.Split(',') : Array.Empty<string>())
                         {
-                            int value;
-                            if (int.TryParse(id, NumberStyles.Integer, Inv, out value) && value > 0 && !s.Watch.Contains(value) && s.Watch.Count < MarketCatalogue.WatchMost)
+                            if (int.TryParse(id, NumberStyles.Integer, Inv, out int value) && value > 0 && !s.Watch.Contains(value) && s.Watch.Count < MarketCatalogue.WatchMost)
                             {
                                 s.Watch.Add(value);
                             }
@@ -997,26 +454,25 @@ namespace RealLifeOverhaul.Markets
             }
             if (bots != null)
             {
-                ReadBots(s, bots);   // (after the holdings: their shares are taken out of the player's)
+                ReadBots(s, bots);   // after the holdings: their shares are taken out of the player's
                 Unmerge(s);
             }
             if (worked != null)
             {
-                ReadWorked(s, worked);   // (after part o: every order back in its place by its number)
+                ReadWorked(s, worked);   // after part o: every order back in its place by its number
             }
             if (s.Listing != null && suspended != null && ReadStockLine(suspended, s.YearDays) != null)
             {
                 s.Listing.Suspended = suspended;
             }
             Repair(s);
-            MarketLife.DayBases(s, s.InSession);   // (a save made after a close by 0.15.1 or older has every company's at its close)
+            MarketLife.DayBases(s, s.InSession);   // a save made after a close by an old version has every company's at its close
             return s;
         }
 
         private static bool Header(MarketState s, string[] c)
         {
-            ulong id;
-            if (c.Length < 6 || !ulong.TryParse(c[0], NumberStyles.HexNumber, Inv, out id))
+            if (c.Length < 6 || !ulong.TryParse(c[0], NumberStyles.HexNumber, Inv, out ulong id))
             {
                 return false;
             }
@@ -1046,7 +502,7 @@ namespace RealLifeOverhaul.Markets
             s.HeldPhase = Clamp(I(c, 23), 0, MarketCatalogue.PhaseClose);
             s.DayZ = Clamp(F(c, 24, 0.0), -100.0, 100.0);
             s.DayVar = Clamp(F(c, 25, 0.0), 0.0, 10.0);
-            s.Weighted = I(c, 26) != 0;   // (appended: a save from before has none, and is set right at its first step: MarketEngine.Index)
+            s.Weighted = I(c, 26) != 0;   // appended: an older save has none and is set right at its first step
             if (MarketState.Time(s.FrontierDay, s.FrontierPhase) < s.Now)
             {
                 s.FrontierDay = s.Day;
@@ -1055,116 +511,8 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        private static Stock ReadStock(string[] c, int year)
-        {
-            int id = I(c, 0);
-            CompanyDef def = MarketCatalogue.Find(id);
-            OwnListing own = null;
-            if (def == null && ListingRules.IsPlayer(id))
-            {
-                own = ReadOwn(c, out def, id);   // a player's company: its row is in its record
-            }
-            if (def == null || c.Length < 54)
-            {
-                return null;
-            }
-            var k = new Stock
-            {
-                Id = id, Def = def, Name = MarketCatalogue.IsRival(id) ? S(c, 6) : def.Name, Ticker = def.Ticker, Sector = def.Sector, Size = def.Size,
-                Status = I(c, 1) == (int)StockStatus.Gone ? StockStatus.Gone : StockStatus.Listed, ListedDay = I(c, 2), GoneDay = I(c, 3), Reason = (GoneReason)Clamp(I(c, 4), 0, 3),
-                GoneCents = Math.Max(0, I(c, 5)), RivalId = S(c, 7).Length > 0 ? S(c, 7) : null
-            };
-            if (MarketCatalogue.IsRival(id) && string.IsNullOrEmpty(k.Name))
-            {
-                return null;
-            }
-            k.LogFair = Clamp(F(c, 8, 0.0), -10.0, 15.0);
-            k.Mis = Clamp(F(c, 9, 0.0), -3.0, 3.0);
-            k.Sent = Clamp(F(c, 10, 0.0), -3.0, 3.0);
-            k.Outlook = Clamp(F(c, 11, 0.0), -8.0, 8.0);
-            k.Shares = Math.Max(1000, L(c, 12));
-            k.Impact = Math.Max(0.0, F(c, 13, 0.0));
-            k.PrevClose = Math.Max(1, I(c, 14, 1));
-            k.Open = Math.Max(1, I(c, 15, 1));
-            k.High = Math.Max(1, I(c, 16, 1));
-            k.Low = Math.Max(1, I(c, 17, 1));
-            k.Last = Math.Max(1, I(c, 18, 1));
-            k.DayVolume = Math.Max(0, L(c, 19));
-            k.Rev = Math.Max(1.0, F(c, 20, def.RevenueM * 1e6));
-            k.Margin = Clamp(F(c, 21, def.MarginBp / 10000.0), -0.5, 0.8);
-            k.Growth = Clamp(F(c, 22, def.GrowthBp / 10000.0), -0.25, 0.4);
-            k.MarginShift = own != null ? Clamp(F(c, 23, 0.0), -2.0, 2.0) : Clamp(F(c, 23, 0.0), -0.3, 0.9);   // (a player's company's usual margin is its own books')
-            k.MarginTarget = Clamp(F(c, 24, k.Margin), -1.0, 1.0);
-            k.GrowthTarget = Clamp(F(c, 25, MarketCatalogue.LongRealGrowth), -0.25, 0.4);
-            k.Debt = Math.Max(0.0, F(c, 26, 0.0));
-            k.DebtRate = Clamp(F(c, 27, 0.05), 0.0, 0.5);
-            k.Equity = F(c, 28, 0.0);
-            k.Distress = Clamp(F(c, 29, 0.0), 0.0, 1.0);
-            k.Competition = Clamp(F(c, 30, 0.0), 0.0, MarketInputs.CompetitionMost);
-            k.Quarter = I(c, 31, -1);
-            k.QRev = F(c, 32, 0.0);
-            k.QNi = F(c, 33, 0.0);
-            k.PendingQuarter = I(c, 34, -1);
-            k.PendingRev = F(c, 35, 0.0);
-            k.PendingNi = F(c, 36, 0.0);
-            k.ResultsDay = Math.Max(0, I(c, 37));
-            k.DpsCents = Math.Max(0, I(c, 38));
-            k.DeclaredCents = Math.Max(0, I(c, 39));
-            k.RecordDay = Math.Max(0, I(c, 40));
-            k.PayDay = Math.Max(0, I(c, 41));
-            k.ExDone = I(c, 42, 1) != 0;
-            k.LastExDay = I(c, 43);
-            k.Adv = Math.Max(1.0, F(c, 44, 1000.0));
-            k.SplitDay = Math.Max(0, I(c, 45));
-            k.SplitRatio = Clamp(I(c, 46), 0, 10);
-            k.BidDay = Math.Max(0, I(c, 47));
-            k.BidEndDay = Math.Max(0, I(c, 48));
-            k.BidCents = Math.Max(0, I(c, 49));
-            k.BidderId = Math.Max(0, I(c, 50));
-            k.ResultsBoostDay = I(c, 51);
-            k.LowDays = Math.Max(0, I(c, 52));
-            if (k.SplitDay > 0 && k.SplitRatio < 2)
-            {
-                k.SplitDay = 0;
-            }
-            if (k.BidCents > 0 && k.BidEndDay <= 0)
-            {
-                k.BidCents = 0;
-            }
-            foreach (string r in S(c, 53).Length > 0 ? c[53].Split(':') : Array.Empty<string>())
-            {
-                string[] f = r.Split(',');
-                if (f.Length >= 7 && k.Results.Count < MarketCatalogue.QuartersKept)
-                {
-                    k.Results.Add(new QuarterResult { Quarter = Int(f[0]), Day = Int(f[1]), RevenueK = Long(f[2]), ProfitK = Long(f[3]), Eps = Int(f[4]), Consensus = Int(f[5]), DpsCents = Math.Max(0, Int(f[6])) });
-                }
-            }
-            if (c.Length > 54)
-            {
-                MarketCodec.Read(c[54], k.Daily, MarketCatalogue.DailyKept);
-            }
-            if (c.Length > 55)
-            {
-                MarketCodec.Read(c[55], k.Monthly, MarketCatalogue.MonthlyKept);
-            }
-            k.BarCount = c.Length > 56 ? MarketCodec.Read(c[56], k.Bars) : 0;
-            k.LastBarCount = c.Length > 57 ? MarketCodec.Read(c[57], k.LastBars) : 0;
-            k.LastBarsDay = I(c, 58);
-            if (double.IsNaN(k.LogFair) || double.IsNaN(k.Mis) || double.IsInfinity(k.LogFair + k.Mis))
-            {
-                k.LogFair = Math.Log(k.Last / 100.0);
-                k.Mis = k.Sent = 0.0;
-            }
-            k.Own = own;
-            if (own != null)
-            {
-                own.Founder = Math.Min(own.Founder, k.Shares);
-            }
-            return k;
-        }
-
-        // What points at something that is not there: a holding or an order of a company missing from the line has its
-        // company made again at its catalogue price (a line that lost a record), an order of an unknown company goes.
+        // A holding or order of a company missing from the line has its company made again at its catalogue price; an order
+        // of an unknown company goes.
         private static void Repair(MarketState s)
         {
             MarketEnv env = s.Env;
@@ -1197,8 +545,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- the small parts
-
         private static string[] Records(string body)
         {
             return body.Length == 0 ? Array.Empty<string>() : body.Split(';');
@@ -1225,16 +571,6 @@ namespace RealLifeOverhaul.Markets
             t.Append('|').Append(double.IsNaN(value) || double.IsInfinity(value) ? "0" : value.ToString("R", Inv));
         }
 
-        private static void G(StringBuilder t, double value)
-        {
-            t.Append('|').Append(double.IsNaN(value) || double.IsInfinity(value) ? "0" : value.ToString("G6", Inv));
-        }
-
-        private static void Ints(StringBuilder t, List<int> values)
-        {
-            MarketCodec.WriteInts(t, values);
-        }
-
         private static void ReadInts(string text, List<int> into, int most)
         {
             if (string.IsNullOrEmpty(text) || !MarketCodec.ReadInts(text, into, most))
@@ -1245,20 +581,17 @@ namespace RealLifeOverhaul.Markets
 
         private static int I(string[] c, int at, int fallback = 0)
         {
-            int value;
-            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
+            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out int value) ? value : fallback;
         }
 
         private static long L(string[] c, int at, long fallback = 0)
         {
-            long value;
-            return at < c.Length && long.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
+            return at < c.Length && long.TryParse(c[at], NumberStyles.Integer, Inv, out long value) ? value : fallback;
         }
 
         private static double F(string[] c, int at, double fallback)
         {
-            double value;
-            return at < c.Length && double.TryParse(c[at], NumberStyles.Float, Inv, out value) && !double.IsNaN(value) && !double.IsInfinity(value) ? value : fallback;
+            return at < c.Length && double.TryParse(c[at], NumberStyles.Float, Inv, out double value) && !double.IsNaN(value) && !double.IsInfinity(value) ? value : fallback;
         }
 
         private static string S(string[] c, int at)
@@ -1268,14 +601,12 @@ namespace RealLifeOverhaul.Markets
 
         private static int Int(string text)
         {
-            int value;
-            return int.TryParse(text, NumberStyles.Integer, Inv, out value) ? value : 0;
+            return int.TryParse(text, NumberStyles.Integer, Inv, out int value) ? value : 0;
         }
 
         private static long Long(string text)
         {
-            long value;
-            return long.TryParse(text, NumberStyles.Integer, Inv, out value) ? value : 0;
+            return long.TryParse(text, NumberStyles.Integer, Inv, out long value) ? value : 0;
         }
 
         private static int Clamp(int value, int least, int most)
@@ -1288,7 +619,7 @@ namespace RealLifeOverhaul.Markets
             return value < least ? least : value > most ? most : value;
         }
 
-        /// <summary>A text with the dividers taken out, so that it can never break the line apart.</summary>
+        /// <summary>A text with the line's dividers taken out, so it can never break the line apart.</summary>
         public static string Clean(string text)
         {
             return string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('~', ' ').Replace(':', ' ').Replace(',', ' ');

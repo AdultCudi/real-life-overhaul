@@ -12,20 +12,8 @@ namespace RealLifeOverhaul.Tech
     }
 
     /// <summary>
-    /// Which of the city's office buildings house the tech companies, and on which floor each company is. The twelve
-    /// companies share a few large towers, a floor each, so that the mod holds three office buildings where it held
-    /// twelve and the rest stay on the market for the player.
-    ///
-    ///   how many     <see cref="PerTower"/> companies to a tower: the game's panel at a door has four buttons, so every
-    ///                floor of a tower is offered at once; twelve companies make three towers
-    ///   which        the largest free office buildings: the candidates ranked by floor (ties by address), each tower
-    ///                in a lane of its own of that ranking (<see cref="Pick"/>), so that no two compete for a building
-    ///   the floors   company k is on floor k mod <see cref="PerTower"/> + 1 of tower k / <see cref="PerTower"/>; with
-    ///                fewer buildings than towers the companies are spread over those there are, more floors to each,
-    ///                so every company has a floor while one building is free
-    ///
-    /// Every machine that has the same city gets the same answer (no dice, nothing kept), and a building that is let moves
-    /// only the tower that stood in it. Game-free: checked in NavCheck (TowerCheck.cs).
+    /// Which office buildings house the tech companies, and each company's floor: the same city gives the same answer on every
+    /// machine, and a building let moves only its own tower. Game-free.
     /// </summary>
     public static class HqTowers
     {
@@ -36,21 +24,10 @@ namespace RealLifeOverhaul.Tech
 
         public static string Key(string street, int number) => (street ?? string.Empty) + "#" + number.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-        /// <summary>
-        /// The place key of one company's floor of a tower: the building's place key and the company's name; the building's
-        /// alone where there is no company. The player's desk on a fitted floor is kept by it (FitOut/FitDesks), and the
-        /// careers ask for the desk of a job by the same key, so a desk stands only on the employer's own floor.
-        /// </summary>
+        /// <summary>The place key of a company's floor of a tower, which keeps a job's desk on the employer's own floor.</summary>
         public static string FloorPlace(string place, string company) => string.IsNullOrEmpty(company) || string.IsNullOrEmpty(place) ? place : place + "#" + company;
 
-        /// <summary>
-        /// into[t] is the index among the candidates of tower t's building, or -1 when there are too few. Returns how many
-        /// towers have a building. The candidates are ranked by floor, the largest first (ties by address), whatever is
-        /// in them; tower t's lane is every rank r with r mod the towers equal to t, and the tower takes the largest free
-        /// building of its own lane. So no tower ever competes with another for a building: one let moves only the tower
-        /// that stood in it, and a tower never moves for a building let in another's lane. A tower whose lane has nothing
-        /// free takes the largest free building left, the towers in turn.
-        /// </summary>
+        /// <summary>into[t] is the candidate index of tower t's building (-1 with too few), each tower in its lane of the ranking. Returns how many have one.</summary>
         public static int Pick(IList<HqCandidate> all, int towers, Func<int, bool> taken, int[] into)
         {
             for (int t = 0; t < into.Length; t++)
@@ -106,10 +83,7 @@ namespace RealLifeOverhaul.Tech
             return have;
         }
 
-        /// <summary>
-        /// The tower (towerOf[k], an index into <paramref name="buildings"/>, or -1) and floor (floorOf[k], from 1, or 0) of
-        /// each of so many companies, for the towers' buildings as <see cref="Pick"/> gave them (-1 for a tower without).
-        /// </summary>
+        /// <summary>Each company's tower (towerOf[k], -1 for none) and floor (floorOf[k], from 1, 0 for none).</summary>
         public static void Floors(int companies, int[] buildings, int[] towerOf, int[] floorOf)
         {
             int have = 0;
@@ -150,16 +124,13 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
-        /// <summary>
-        /// The floor the player goes to when coming in by the game's own door: the floor of the company they work for if it is
-        /// in this tower (<paramref name="employerFloor"/> above 0), else the first.
-        /// </summary>
+        /// <summary>The floor the game's door takes the player to: their employer's (<paramref name="employerFloor"/> above 0), else the first.</summary>
         public static int DoorFloor(int floors, int employerFloor)
         {
             return floors <= 0 ? 0 : employerFloor >= 1 && employerFloor <= floors ? employerFloor : 1;
         }
 
-        /// <summary>The floors offered on a page of the game's panel (four buttons; three and "more floors" when they do not fit), leaving out the one the player is on.</summary>
+        /// <summary>The floors on a page of the game's four-button panel (three and "more floors" when they do not fit), less the player's own.</summary>
         public static int Page(int floors, int skip, int page, int[] into)
         {
             int count = Math.Max(0, floors) - (skip >= 1 && skip <= floors ? 1 : 0);

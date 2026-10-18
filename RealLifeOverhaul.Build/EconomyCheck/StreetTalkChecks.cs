@@ -627,7 +627,7 @@ internal static partial class Program
               && TextsSource(@"Meta\FeatureList.cs").Contains("Street.StreetGuide.Register();") && TextsSource(@"Wiring\Wiring.cs").Contains("StreetLinks.Connect")
               && TextsSource(@"World\NearbyInteraction.cs").Contains("Street.StreetDirector.TakesInteractKey"),
             "street talk: its options, its director, its feature entry, its wiring and its say over the interact key are in place");
-        Check(TextsSource(@"Social\SocialModel.cs").Contains("Online, Event, Street }") && TextsSource(@"Social\SocialModel.cs").Contains("p.Origin > SocialOrigin.Street")
+        Check(TextsSource(@"Social\SocialModel.cs").Contains("Online, Event, Street }") && TextsSource(@"Social\SocialState.cs").Contains("p.Origin > SocialOrigin.Street")
               && SocialCatalogue.OriginDesc.Length == (int)SocialOrigin.Street + 1 && SocialCatalogue.OriginWelcome.Length == (int)SocialOrigin.Street + 1 && SocialCatalogue.MeetOpen.Length == (int)SocialOrigin.Street + 1,
             "street talk: met in the street is a place of meeting of the social life's own, at the end, with its words (an older version reads it as an old friend)");
     }

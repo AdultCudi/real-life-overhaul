@@ -10,26 +10,9 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The camera of the city's photos (FlareCityPhotoRules): a camera of the mod's, off screen, set where a phone would be
-    /// held for the bank's photo (FlareDirector.Photos.cs chooses what it shows), rendering the city as the player's own
-    /// camera does (its settings copied: the same lighting, the same sky, the same hour), at 320 by 180.
-    ///
-    /// ONE PHOTO, OVER A FEW FRAMES. The first frame works out where the camera stands: a business's front from across the
-    /// street (its door and the way out of it), a park, a sight or the street event from where the player is, looking at
-    /// it, or the street where the player is, looking down the most open of four ways from the seed (one ray each, once),
-    /// a little of the sky in it. The next frame renders it twice (the
-    /// game's automatic exposure settles in the second, through a volume that exists only for those two renders, as the
-    /// showroom's car photos do) and asks the graphics card for the pixels without waiting for them. A frame or two later
-    /// they are copied once into a buffer kept for the session, and a worker thread writes the photo's small copy.
-    ///
-    /// LIGHTER THAN THE PLAYER'S CAMERA: the photo's own camera has no volumetric fog, motion vectors, screen-space
-    /// reflections, contact shadows, the game's custom passes (outlines, see-through walls) or distortion, and the fast
-    /// antialiasing (no history to need). The main thread's time for the two renders is measured and returned: the director
-    /// waits longer after a slow one (FlareCityPhotoRules.NextPace).
-    ///
-    /// Everything it makes is let go on every path: the render target when the pixels are back (or the request fails), the
-    /// volume and its profile in the same frame as the renders, the camera object when the city unloads (<see cref="Clear"/>).
-    /// COST: nothing per frame and nothing between photos; a photo as above (FlareDirector.Photos.cs paces them).
+    /// The camera of the city's photos: an off-screen camera at 320 by 180 with the player's camera's settings, two renders
+    /// so the automatic exposure settles, the pixels read back without waiting and a worker writing the small copy. Cost:
+    /// nothing per frame between photos; the costly passes are left out and everything made is let go on every path.
     /// </summary>
     internal static class FlareCityCamera
     {
@@ -37,7 +20,7 @@ namespace RealLifeOverhaul.Flare
         private const float Lens = 60f;               // degrees of the field of view: a phone's main camera
         private const float EyeHeight = 1.7f;         // metres
         private const float AcrossStreet = 11f;       // metres from a business's door to where the photo of its front is taken
-        private const float AheadOfPlayer = 2.5f;     // metres in front of the player a street photo is taken from (they are not in it)
+        private const float AheadOfPlayer = 2.5f;     // metres in front of the player a street photo is taken from, so they are not in it
         private const float LookFar = 40f;            // metres a way down the street is looked along for the most open one
         private const float StreetPitch = 4f;         // degrees up for a street: a strip of sky shows the weather
         private const float FocusRise = 3f;           // metres above a sight's or an event's middle the camera looks at
@@ -52,23 +35,19 @@ namespace RealLifeOverhaul.Flare
         private static GameObject _made;
         private static Camera _camera;
         private static HDAdditionalCameraData _data;
-        private static byte[] _pixels;   // the read-back, RGBA (one for the session, made with the first photo)
+        private static byte[] _pixels;   // the read-back, RGBA: one for the session, made with the first photo
         private static byte[] _rows;     // ...as the small copy's RGB rows
-        private static RenderTexture _pending;   // the render target while its pixels are on their way back: let go by Clear if the photo is stopped meanwhile
+        private static RenderTexture _pending;   // the render target while its pixels are on their way back: let go by Clear if the photo is stopped
 
         /// <summary>The result of one photo: whether it was written, and the main thread's time of its renders.</summary>
         public sealed class Result
         {
             public bool Written;
             public double RenderMs;
-            public string Why;   // when not written: why, in a few words, for the log
+            public string Why;   // why, in a few words for the log, when not written
         }
 
-        /// <summary>
-        /// One photo of the bank, written as the small copy at 'thumb'. Started by the director through Guard.Routine; the
-        /// result is filled in before it ends. 'focus' is a park's, a sight's or an event's middle (null for a front or a
-        /// street); 'seed' turns the camera a little.
-        /// </summary>
+        /// <summary>One photo of the bank, written as the small copy at <paramref name="thumb"/>; <paramref name="focus"/> null for a front or a street.</summary>
         public static IEnumerator Take(FlarePhotoKind kind, string place, Vector3? focus, int seed, string thumb, Result result)
         {
             Vector3 from, at;
@@ -76,7 +55,7 @@ namespace RealLifeOverhaul.Flare
             {
                 yield break;
             }
-            yield return null;   // (where it stands in one frame, the renders in the next)
+            yield return null;   // where it stands in one frame, the renders in the next
             RenderTexture target = null;
             AsyncGPUReadbackRequest request = default;
             bool asked = false;
@@ -177,7 +156,7 @@ namespace RealLifeOverhaul.Flare
                 if (to.sqrMagnitude >= FocusLeast * FocusLeast)
                 {
                     from = eye;
-                    at = new Vector3(focus.Value.x, player.y + FocusRise, focus.Value.z);   // (the player's own ground: a sight's middle may sit high or low)
+                    at = new Vector3(focus.Value.x, player.y + FocusRise, focus.Value.z);   // the player's own ground: a sight's middle may sit high or low
                     return true;
                 }
             }
@@ -272,11 +251,11 @@ namespace RealLifeOverhaul.Flare
                     exposureHost.SetActive(false);   // out of the game's volumes now, before its own camera draws the frame
                     UnityEngine.Object.Destroy(exposureHost);
                 }
-                CodeAssets.DropProfile(profile);   // its exposure setting with it: one a photo otherwise
+                CodeAssets.DropProfile(profile);   // its exposure setting with it, else one leaks a photo
             }
         }
 
-        // On the worker: the read-back (RGBA, bottom row first) as the small copy's RGB rows (bottom row first), written whole.
+        // On the worker: the read-back (RGBA) as the small copy's RGB rows, both bottom row first.
         private static bool Write(string thumb)
         {
             int w = FlareCityPhotoRules.Width, h = FlareCityPhotoRules.Height;
@@ -291,8 +270,7 @@ namespace RealLifeOverhaul.Flare
             return System.IO.File.Exists(thumb);
         }
 
-        // The render target back to the engine's pool. A photo stopped between its renders and its pixels (the city unloading)
-        // never reaches its own release: Clear lets the target go then.
+        // The render target back to the pool; a photo stopped between its renders never reaches this, so Clear lets it go then.
         private static void Release()
         {
             if (_pending != null)

@@ -6,13 +6,13 @@ namespace RealLifeOverhaul.Flare
     /// <summary>What an account's picture is made from (FlareAvatarRules.Plan).</summary>
     public enum FlareAvatarKind
     {
-        Initials = 0,   // the styled stand-in: the name's initials on the account's own colour (also while a picture is on its way)
-        Face = 1,       // a face from the game's portrait camera, of a look the mod gives (Female, Age, Seed): the city's people, friends, the boss
-        Staff = 2,      // a face from the game's portrait camera of one of the player's own staff as the game has them (Name)
-        Player = 3,     // the player: their latest selfie on Flare (Name: its picture), else the game's own portrait of their character
-        Selfie = 4,     // another player of a Going Public session: their latest selfie in the shared feed (Name: its picture)
-        Logo = 5,       // a business or a brand: the game's own logo of it (Name; Mine for a business of the player's)
-        Emblem = 6      // an account that is not a person (an official account, the paper, a listed company, a candidate's campaign, a rival tycoon): a drawn emblem (Emblem)
+        Initials = 0,   // the name's initials on the account's colour, also while a picture is on its way
+        Face = 1,       // the game's portrait camera, of a look the mod gives (Female, Age, Seed)
+        Staff = 2,      // the game's portrait camera, of one of the player's staff (Name)
+        Player = 3,     // the player's latest selfie on Flare (Name), else the game's portrait of their character
+        Selfie = 4,     // another player of a session: their latest selfie in the shared feed (Name)
+        Logo = 5,       // a business or a brand: the game's logo of it (Name; Mine for the player's own)
+        Emblem = 6      // an account that is not a person: a drawn emblem (Emblem)
     }
 
     /// <summary>One account's picture, as the rules choose it: the same for the same account every time, on every machine.</summary>
@@ -20,13 +20,13 @@ namespace RealLifeOverhaul.Flare
     {
         public FlareAvatarKind Kind;
         public bool Female;          // a face: the look's sex
-        public int Age;              // ...years
-        public int Seed;             // ...the look's seed (the game's appearance system), never 0
+        public int Age;              // years
+        public int Seed;             // the look's seed, never 0
         public string Name;          // Staff: the employee's name; Logo: the business's or brand's; Player and Selfie: the picture's key, or null
         public int Emblem;           // Emblem: FlareAvatarRules.Emblem*
-        public bool Mine;            // Logo: a business of the player's (the game keeps its logo in the save's folder)
+        public bool Mine;            // Logo: a business of the player's, whose logo the game keeps in the save's folder
 
-        /// <summary>The picture's own key: one texture for every account that shows the same picture (a face by its look, a logo by its name).</summary>
+        /// <summary>The picture's key: one texture for every account that shows the same picture.</summary>
         public string Picture
         {
             get
@@ -44,11 +44,7 @@ namespace RealLifeOverhaul.Flare
         }
     }
 
-    /// <summary>
-    /// What an account's picture is made from, as data the app hands over each time it asks (never kept by the rules):
-    /// the player's friends with their looks, the file (influencers, posts with selfies), the city's seed, and the names of
-    /// the player's own businesses.
-    /// </summary>
+    /// <summary>What an account's picture is made from, handed over each time the app asks; never kept by the rules.</summary>
     public sealed class FlareAvatarFacts
     {
         public IReadOnlyList<FlarePerson> People;
@@ -58,42 +54,17 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Every account's picture on Flare: which kind each account gets and from what, the round picture made from rows of
-    /// pixels, the few textures kept (the ones used last), and the files they are kept in.
-    ///
-    /// THE KINDS. A person gets a face drawn by the game's own portrait camera from a look, as the Contacts app's people are
-    /// (Phone/Contacts/ContactPainter): one of the city's people from the city's seed (the same face on every machine of a
-    /// Going Public session), a friend or the partner from the look the social life builds them in the street with (the
-    /// person the player has met is the face they see), an influencer from their own seed (or the friend they are), the
-    /// boss from the account's seed, one of the staff as the game has them. The player shows their latest selfie posted on
-    /// Flare, else the game's own portrait of their character (the one at the top of the screen). Another player of a
-    /// session shows their latest selfie in the shared feed: no picture is ever sent for it. A business or a brand shows the
-    /// game's own logo of it. An account that is not a person (the City Office, the police, the transit authority, the
-    /// utilities, the bank, the City Ledger, a listed company, a candidate's campaign, a rival tycoon) shows an emblem,
-    /// never a face: the tycoons are parodies, and a face would be somebody's likeness. Until a picture is there, and for
-    /// any account with none, the initials on the account's own colour.
-    ///
-    /// THE PICTURE. Square, <see cref="Size"/> pixels, round: the middle of the source cropped square, made smaller by
-    /// averaging, and a clear corner outside a circle with a soft edge of one pixel, so the app needs no mask (a mask a
-    /// row would cost the canvas a draw call each). RGBA, rows from the bottom up, as the engine keeps them.
-    ///
-    /// THE KEEPING. At most <see cref="Most"/> textures (36 KB each: 18 MB in all), enough for every face a city shows (its
-    /// 400 people, the influencers, the friends, the staff), so a face read once stays for the session; past the bound the
-    /// one used longest ago goes first (<see cref="FlareAvatarLru"/>). A face is kept on disk as its round picture's colour
-    /// rows (Core/PhotoThumbs' format, 27 KB) under the game's data folder, by its look: drawn once per look and shared by
-    /// every save that has it (the folder's bound and clean-up: FlareFaceAheadRules).
-    ///
-    /// Game-free (EconomyCheck, FlarePictureChecks.cs). COST: a plan is a few comparisons (a selfie's a look over the
-    /// posts, two hundred at most), asked when a card is bound, never per frame; a round picture is some 40,000 sums, made
-    /// on a worker thread.
+    /// Every account's picture: a person a face from the game's portrait camera, the same on every machine; a player their
+    /// latest selfie, so no picture is sent; a business its logo; any other account an emblem, never a face. Round with a
+    /// soft edge so the app needs no mask. Game-free. Cost: a plan is a few comparisons; a round picture runs on a worker.
     /// </summary>
     public static class FlareAvatarRules
     {
-        public const int Size = 96;                  // pixels of a round picture: a card's avatar is 60 to 150 of the canvas's 2160 lines, 30 to 75 pixels at 1080p
-        public const int Most = 512;                 // textures kept: a city's 400 people, its influencers and the player's friends all fit (36 KB each: 18 MB)
-        public const int AgeLeast = 19;              // years: the influencers and a friend with no look told (the city's people have their own: FlareLiveRules.CitizenAge)
+        public const int Size = 96;                  // pixels: a card's avatar is 30 to 75 pixels at 1080p
+        public const int Most = 512;                 // textures kept, 36 KB each: a city's 400 people, its influencers and the friends all fit
+        public const int AgeLeast = 19;              // years: the influencers and a friend with no look told
         public const int AgeSpan = 52;               // ...up to 70
-        public const string FilePrefix = "flare96_"; // the round pictures' files among the portrait cache's (Phone/Contacts' faces are "v1_...jpg")
+        public const string FilePrefix = "flare96_"; // the round pictures' files among the portrait cache's
         public const string FileExtension = ".thumb";
 
         public const int EmblemCity = 0, EmblemPolice = 1, EmblemTransit = 2, EmblemUtilities = 3, EmblemBank = 4, EmblemLedger = 5, EmblemCompany = 6,
@@ -101,7 +72,7 @@ namespace RealLifeOverhaul.Flare
 
         private const int SaltSex = 610, SaltAge = 611, SaltSeed = 612, SaltSeedLow = 613, SaltBoss = 620;
 
-        /// <summary>The picture an account shows. Every key the app shows an account by is one of these kinds.</summary>
+        /// <summary>The picture an account shows, by any key the app shows an account by.</summary>
         public static FlareAvatarPlan Plan(string key, FlareAvatarFacts facts)
         {
             var plan = new FlareAvatarPlan { Kind = FlareAvatarKind.Initials };
@@ -157,7 +128,7 @@ namespace RealLifeOverhaul.Flare
                     plan.Emblem = EmblemCandidate;
                     return plan;
                 case 't':
-                    plan.Kind = FlareAvatarKind.Emblem;   // a rival tycoon: never a face (a parody: a face would be somebody's likeness)
+                    plan.Kind = FlareAvatarKind.Emblem;   // a rival tycoon: never a face
                     plan.Emblem = EmblemTycoon;
                     return plan;
                 case 'k':
@@ -187,20 +158,19 @@ namespace RealLifeOverhaul.Flare
                         plan.Kind = FlareAvatarKind.Selfie;
                         plan.Name = selfie;
                     }
-                    return plan;   // (a player of the session with no selfie in the feed keeps the initials: no face that is not theirs)
+                    return plan;   // a session's player with no selfie in the feed keeps the initials
                 default:
                     return plan;
             }
         }
 
-        /// <summary>One of the city's people: a face from the city's seed, of the person's own sex and age (FlareLiveRules.CitizensOf: the name and the age shown with it).</summary>
+        /// <summary>One of the city's people: a face from the city's seed, of the person's own sex and age.</summary>
         public static FlareAvatarPlan Citizen(int citySeed, int index)
         {
             return FacePlan(FlareLiveRules.CitizenFemale(citySeed, index), FlareLiveRules.CitizenAge(citySeed, index), Seed(citySeed, index, SaltSeed));
         }
 
-        // A friend, the partner or anybody of the social life: the look they are built in the street with; one of the
-        // account's own when the social life has not told it.
+        // A friend, the partner or anybody of the social life: the look they are built in the street with, else the account's.
         private static FlareAvatarPlan Person(FlareAvatarFacts facts, int index)
         {
             IReadOnlyList<FlarePerson> people = facts.People;
@@ -242,13 +212,12 @@ namespace RealLifeOverhaul.Flare
             return new FlareAvatarPlan { Kind = FlareAvatarKind.Face, Female = female, Age = Math.Max(18, Math.Min(85, age)), Seed = Math.Max(1, seed) };
         }
 
-        // A look's seed, never 0 (0 means "none" to the portrait cache's name and the contacts).
+        // A look's seed, never 0: 0 means "none" to the portrait cache's name and the contacts.
         private static int Seed(int seed, int index, int salt)
         {
             return 1 + FlareRules.Roll(seed, index, salt) * 1000 + FlareRules.Roll(seed, index, salt + 1);
         }
 
-        /// <summary>The emblem of an official account (FlareOfficial).</summary>
         public static int Official(int official)
         {
             switch ((FlareOfficial)official)
@@ -261,10 +230,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The picture of the latest selfie posted: the player's own (authorId null; a selfie of photo mode or the Camera,
-        /// posted with its picture) or another player's of the session (their shared post's picture, "n:"). Null for none.
-        /// </summary>
+        /// <summary>The picture of the latest selfie posted: the player's own (<paramref name="authorId"/> null) or a session player's ("n:"); null for none.</summary>
         public static string LatestSelfie(FlareFile f, string authorId)
         {
             if (f == null)
@@ -297,10 +263,10 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A face's file among the portrait cache's: its round picture, by its look.</summary>
         public static string FaceName(bool female, int age, int seed)
         {
-            return FilePrefix + "v1_" + (female ? "f" : "m") + Math.Max(0, age) + "_" + Math.Max(0, seed) + PersonLooks.Mark(seed) + FileExtension;   // (a kept look's apart: People/PersonLook)
+            return FilePrefix + "v1_" + (female ? "f" : "m") + Math.Max(0, age) + "_" + Math.Max(0, seed) + PersonLooks.Mark(seed) + FileExtension;   // a kept look's apart: People/PersonLook
         }
 
-        /// <summary>One of the staff's round picture's file, by the save and the name (a stable hash: the same file each session).</summary>
+        /// <summary>One of the staff's round picture's file, by the save and the name: a stable hash, the same file each session.</summary>
         public static string StaffName(string saveId, string name)
         {
             unchecked
@@ -319,14 +285,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- the round picture
-
-        /// <summary>
-        /// The round picture of a source's rows: the middle of it cropped square (a portrait's own square whole; a wide selfie's
-        /// middle), made <see cref="Size"/> pixels by averaging, as RGBA rows from the bottom up with a clear corner outside the
-        /// circle. 'bytes' 3 (RGB) or 4 (RGBA; 'argb' for the engine's ARGB32 order). The rows keep the order they came in.
-        /// False, with nothing written, for a source that is not whole. 'into' must be Size * Size * 4 bytes.
-        /// </summary>
+        /// <summary>The round picture of a source's rows, its middle cropped square, as RGBA <see cref="Size"/> square; false, writing nothing, for a source not whole.</summary>
         public static bool Disc(byte[] src, int w, int h, int bytes, bool argb, byte[] into)
         {
             if (src == null || into == null || w <= 0 || h <= 0 || (bytes != 3 && bytes != 4) || src.Length < (long)w * h * bytes || into.Length < Size * Size * 4)
@@ -361,14 +320,14 @@ namespace RealLifeOverhaul.Flare
                     into[o + 1] = (byte)(g / n);
                     into[o + 2] = (byte)(b / n);
                     float dx = x + 0.5f - centre, dy = y + 0.5f - centre;
-                    float edge = radius - (float)Math.Sqrt(dx * dx + dy * dy) + 0.5f;   // inside by this many pixels (a soft edge of one)
+                    float edge = radius - (float)Math.Sqrt(dx * dx + dy * dy) + 0.5f;   // inside by this many pixels: a soft edge of one
                     into[o + 3] = (byte)(edge >= 1f ? 255 : edge <= 0f ? 0 : (int)(edge * 255f));
                 }
             }
             return true;
         }
 
-        /// <summary>The colour rows of a round picture (for its file: Core/PhotoThumbs' format, RGB): 'into' Size * Size * 3 bytes.</summary>
+        /// <summary>The colour rows of a round picture, for its file (Core/PhotoThumbs' RGB): <paramref name="into"/> Size * Size * 3 bytes.</summary>
         public static void ColourOf(byte[] rgba, byte[] into)
         {
             for (int i = 0, o = 0; i < Size * Size * 4; i += 4, o += 3)
@@ -386,12 +345,7 @@ namespace RealLifeOverhaul.Flare
         }
     }
 
-    /// <summary>
-    /// The textures kept, by their key, the one used last at the end: at most a set number; the one used longest ago goes
-    /// first. A list linked both ways and a dictionary of its links, so a use is a look in the dictionary and a move of one
-    /// link, however many are kept; the links of the keys that go are used again. Game-free. COST: when a card is bound or
-    /// a picture comes, a look in a dictionary; nothing per frame, nothing allocated once the bound is reached.
-    /// </summary>
+    /// <summary>The textures kept by key, at most <see cref="Most"/>, the one used longest ago going first; a use is a look and a move. Game-free.</summary>
     public sealed class FlareAvatarLru
     {
         private readonly LinkedList<string> _used = new LinkedList<string>();
@@ -409,7 +363,7 @@ namespace RealLifeOverhaul.Flare
 
         public bool Contains(string key) => key != null && _at.ContainsKey(key);
 
-        /// <summary>A key used now: to the end. Returns the key that has to go to keep within the bound, or null.</summary>
+        /// <summary>A key used now, to the end; the key that has to go to keep within the bound, or null.</summary>
         public string Use(string key)
         {
             if (key == null)

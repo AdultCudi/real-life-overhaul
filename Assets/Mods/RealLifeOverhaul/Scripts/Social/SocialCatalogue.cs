@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul
 {
@@ -6,14 +7,14 @@ namespace RealLifeOverhaul
     public sealed class OutingDef
     {
         public PlanKind Kind;
-        public string Name;            // "coffee"
+        public string Name;            // locale key: "coffee"
         public string Offer;           // what they say when it is proposed, with {place} and {cost}
         public string[] Match;         // parts of the game's business type names that will do as the venue; null = anywhere
         public int Cost;               // per head
         public int Minutes;            // game minutes spent inside
         public int From, To;           // hours of the day it can be agreed for (To may be past midnight: 27 = 3 in the morning)
         public float Energy;           // of the game's hundred, to the player
-        public float Familiarity, Affection, Trust;
+        public float Familiarity, Affection, Trust;   // points it is worth, before liking and how it went
         public SocialStage Needs = SocialStage.Acquaintance;
         public string Caption;         // shown while the time passes
         public string Transaction;
@@ -22,10 +23,7 @@ namespace RealLifeOverhaul
         public string Invite;          // the text they send when it is their idea
     }
 
-    /// <summary>
-    /// Something to talk about: what they say, the two things the player can answer and what
-    /// each answer gets back. The first answer is the warm one.
-    /// </summary>
+    /// <summary>Something to talk about: their openers, the player's two answers (the first the warm one) and what each gets back.</summary>
     public sealed class SocialTopic
     {
         public int Id;
@@ -35,15 +33,9 @@ namespace RealLifeOverhaul
         public bool BothFine;          // the second answer is a joke, not a slight
     }
 
-    /// <summary>
-    /// Everything about the social life that is data: who can be in the cast, what there is to
-    /// do, every line anybody says. Free of game types. Every locale key is written out in full
-    /// (the catalogue check reads this file).
-    /// </summary>
+    /// <summary>The social life's data: names, outings, every line. Free of game types; every key in full, for the catalogue check.</summary>
     public static class SocialCatalogue
     {
-        // ------------------------------------------------------------------ the cast
-
         internal static readonly string[] Women =
         {
             "Dana", "Priya", "Marisol", "Keisha", "Hannah", "Mei", "Sofia", "Nadia", "Ruth", "Imani", "Greta", "Yuki", "Carmen", "Leila", "Bridget", "Tasha",
@@ -91,18 +83,20 @@ namespace RealLifeOverhaul
             "reallife_social_mood_rough", "reallife_social_mood_low", "reallife_social_mood_fine", "reallife_social_mood_good", "reallife_social_mood_great"
         };
 
-        /// <summary>How each origin is described under the contact's name; Mom and Alex keep the descriptions they always had.</summary>
+        /// <summary>Under the contact's name, by origin.</summary>
         public static readonly string[] OriginDesc =
         {
             "reallife_contact_mom_desc", "reallife_contact_friend_desc", "reallife_social_desc_gym", "reallife_social_desc_work", "reallife_social_desc_cart",
-            "reallife_social_desc_neighbour", "reallife_social_desc_helped", "reallife_social_desc_customer", "reallife_social_desc_online", "reallife_social_desc_event", "reallife_social_desc_street"
+            "reallife_social_desc_neighbour", "reallife_social_desc_helped", "reallife_social_desc_customer", "reallife_social_desc_online", "reallife_social_desc_event",
+            "reallife_social_desc_street"
         };
 
-        /// <summary>The first text in a new contact's thread.</summary>
+        /// <summary>The first text in a new contact's thread, by origin.</summary>
         public static readonly string[] OriginWelcome =
         {
             "reallife_text_mom_welcome", "reallife_text_friend_welcome", "reallife_social_welcome_gym", "reallife_social_welcome_work", "reallife_social_welcome_cart",
-            "reallife_social_welcome_neighbour", "reallife_social_welcome_helped", "reallife_social_welcome_customer", "reallife_social_welcome_online", "reallife_social_welcome_event", "reallife_social_welcome_street"
+            "reallife_social_welcome_neighbour", "reallife_social_welcome_helped", "reallife_social_welcome_customer", "reallife_social_welcome_online",
+            "reallife_social_welcome_event", "reallife_social_welcome_street"
         };
 
         /// <summary>What they say when they walk up, two ways each, by origin (from Gym on).</summary>
@@ -120,7 +114,7 @@ namespace RealLifeOverhaul
             new[] { "reallife_social_meet_street_1", "reallife_social_meet_street_2" }
         };
 
-        // The pairs of traits a person can have: never two that contradict each other.
+        // Never two that contradict each other.
         internal static readonly SocialTrait[][] TraitPairs =
         {
             new[] { SocialTrait.Punctual, SocialTrait.Sporty }, new[] { SocialTrait.Late, SocialTrait.Generous }, new[] { SocialTrait.Foodie, SocialTrait.Supportive },
@@ -129,17 +123,14 @@ namespace RealLifeOverhaul
             new[] { SocialTrait.Punctual, SocialTrait.Careful }, new[] { SocialTrait.Late, SocialTrait.Homebody }, new[] { SocialTrait.Flaky, SocialTrait.Generous }
         };
 
-        /// <summary>
-        /// Rolls the cast of a new save: Mom, Alex and six people to be met, one for each place
-        /// somebody can be met. Deterministic for a seed.
-        /// </summary>
+        /// <summary>Rolls the cast of a new save: Mom, Alex and one person to be met at each place. The same cast for a seed.</summary>
         public static void MakeCast(SocialPerson[] people, int seed, int day, int daysPerYear, int districts)
         {
             var random = new Random(seed);
             daysPerYear = Math.Max(8, daysPerYear);
             districts = Math.Max(1, districts);
 
-            // Names are dealt without replacement, so no two share a first name or a surname.
+            // Dealt without replacement: no two share a first name or a surname.
             int[] first = Shuffled(random, Math.Min(Women.Length, Men.Length));
             int[] last = Shuffled(random, Surnames.Length);
             int[] pairs = Shuffled(random, TraitPairs.Length);
@@ -196,11 +187,11 @@ namespace RealLifeOverhaul
                         {
                             p.Traits |= SocialTrait.Sporty;
                         }
-                        // Three ways a week is laid out: office hours, shifts that end in the afternoon, nights.
+                        // Office hours, shifts that end in the afternoon, nights.
                         int shape = p.Has(SocialTrait.NightOwl) ? 2 : random.Next(3);
                         p.FreeFrom = shape == 0 ? 17 : shape == 1 ? 14 : 11;
                         p.FreeTo = shape == 0 ? 23 : shape == 1 ? 22 : 18;
-                        // Half of the people met could become more than friends, never fewer than two.
+                        // About half could become more than friends, and never fewer than two.
                         p.Compatible = (p.Age < 50 && random.Next(2) == 0) || (romances < 2 && i >= people.Length - 2);
                         if (p.Compatible)
                         {
@@ -210,16 +201,33 @@ namespace RealLifeOverhaul
                 }
                 p.LastContactDay = day;
                 p.StageDay = day;
-                FixLook(p);   // (after the rolls above, so the others are dealt as they always were for a seed)
+                FixLook(p);   // after the rolls, so the rest of the cast is dealt the same for a seed
                 people[i] = p;
+            }
+            OneTrainer(people, jobs);
+        }
+
+        // A gym person who trains people is the one trainer: whoever else was dealt it has the job the gym person was dealt.
+        // No roll is made here, so the rest of the cast is the same for a seed.
+        private static void OneTrainer(SocialPerson[] people, int[] jobs)
+        {
+            int gym = (int)SocialOrigin.Gym;
+            int trainer = Array.IndexOf(Jobs, "reallife_social_job_trainer");
+            if (gym >= people.Length || gym >= jobs.Length || people[gym] == null || people[gym].Job != trainer || jobs[gym] == trainer)
+            {
+                return;
+            }
+            for (int i = 0; i < people.Length; i++)
+            {
+                SocialPerson p = people[i];
+                if (i != gym && p != null && p.Origin != SocialOrigin.Family && p.Job == trainer)
+                {
+                    p.Job = jobs[gym];
+                }
             }
         }
 
-        /// <summary>
-        /// Mom and Alex get the look that is the same in every game (Phone/Contacts/FixedLooks): its sex, age and seed. For
-        /// anybody else nothing changes. A save from before had a look of its own rolled for them: it is changed to this one
-        /// as the save is read, and stays so. True if anything changed.
-        /// </summary>
+        /// <summary>Mom and Alex get the look that is the same in every game (Phone/Contacts/FixedLooks). True if anything changed.</summary>
         public static bool FixLook(SocialPerson p)
         {
             if (p == null || (p.Origin != SocialOrigin.Family && p.Origin != SocialOrigin.OldFriend))
@@ -234,7 +242,7 @@ namespace RealLifeOverhaul
             p.Female = female;
             p.Age = age;
             p.Seed = seed;
-            p.Look = null;   // (never anybody's look from the street)
+            p.Look = null;
             return changed;
         }
 
@@ -254,8 +262,6 @@ namespace RealLifeOverhaul
             }
             return order;
         }
-
-        // ------------------------------------------------------------------ things to do together
 
         public static readonly OutingDef[] Outings =
         {
@@ -333,7 +339,6 @@ namespace RealLifeOverhaul
 
         public static OutingDef Outing(PlanKind kind) => Outings[(int)kind];
 
-        /// <summary>What a memory is called on the People page.</summary>
         public static string MemoryName(MemoryCode code)
         {
             switch (code)
@@ -369,8 +374,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ------------------------------------------------------------------ on the phone
-
         public static readonly string[] CallAcquaintance = { "reallife_social_call_acq_1", "reallife_social_call_acq_2", "reallife_social_call_acq_3" };
         public static readonly string[] CallFriend = { "reallife_social_call_friend_1", "reallife_social_call_friend_2", "reallife_social_call_friend_3", "reallife_social_call_friend_4" };
         public static readonly string[] CallClose = { "reallife_social_call_close_1", "reallife_social_call_close_2", "reallife_social_call_close_3" };
@@ -395,10 +398,7 @@ namespace RealLifeOverhaul
         public static readonly string[] BorrowYes = { "reallife_social_borrow_yes_1", "reallife_social_borrow_yes_2" };
         public static readonly string[] BorrowNo = { "reallife_social_borrow_no_1", "reallife_social_borrow_no_2" };
 
-        /// <summary>
-        /// Everything there is to talk about. Which of them can come up in a given call is decided
-        /// by what really happened (SocialTalk.Fits); the ids are the ones that method switches on.
-        /// </summary>
+        // Which can come up is decided by what really happened (SocialTalk), by these ids.
         public const int TopicCrash = 0, TopicArrest = 1, TopicAccident = 2, TopicCrime = 3, TopicShopGood = 4, TopicShopBad = 5, TopicWork = 6,
             TopicGoodDay = 7, TopicBadDay = 8, TopicTheirJob = 9, TopicRain = 10, TopicFine = 11, TopicMemory = 12, TopicBirthday = 13, TopicRich = 14,
             TopicSick = 15, TopicBreakIn = 16, TopicKnocked = 17, TopicDistrict = 18, TopicQuiet = 19;
@@ -406,48 +406,66 @@ namespace RealLifeOverhaul
         public static readonly SocialTopic[] Topics =
         {
             new SocialTopic { Id = TopicCrash, Open = new[] { "reallife_social_topic_crash_1", "reallife_social_topic_crash_2" },
-                ReplyA = "reallife_social_topic_crash_a", ReplyB = "reallife_social_topic_crash_b", ReactA = "reallife_social_topic_crash_ra", ReactB = "reallife_social_topic_crash_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_crash_a", ReplyB = "reallife_social_topic_crash_b",
+                ReactA = "reallife_social_topic_crash_ra", ReactB = "reallife_social_topic_crash_rb", BothFine = true },
             new SocialTopic { Id = TopicArrest, Open = new[] { "reallife_social_topic_arrest_1", "reallife_social_topic_arrest_2" },
-                ReplyA = "reallife_social_topic_arrest_a", ReplyB = "reallife_social_topic_arrest_b", ReactA = "reallife_social_topic_arrest_ra", ReactB = "reallife_social_topic_arrest_rb" },
+                ReplyA = "reallife_social_topic_arrest_a", ReplyB = "reallife_social_topic_arrest_b",
+                ReactA = "reallife_social_topic_arrest_ra", ReactB = "reallife_social_topic_arrest_rb" },
             new SocialTopic { Id = TopicAccident, Open = new[] { "reallife_social_topic_accident_1", "reallife_social_topic_accident_2" },
-                ReplyA = "reallife_social_topic_accident_a", ReplyB = "reallife_social_topic_accident_b", ReactA = "reallife_social_topic_accident_ra", ReactB = "reallife_social_topic_accident_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_accident_a", ReplyB = "reallife_social_topic_accident_b",
+                ReactA = "reallife_social_topic_accident_ra", ReactB = "reallife_social_topic_accident_rb", BothFine = true },
             new SocialTopic { Id = TopicCrime, Open = new[] { "reallife_social_topic_crime_1", "reallife_social_topic_crime_2" },
-                ReplyA = "reallife_social_topic_crime_a", ReplyB = "reallife_social_topic_crime_b", ReactA = "reallife_social_topic_crime_ra", ReactB = "reallife_social_topic_crime_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_crime_a", ReplyB = "reallife_social_topic_crime_b",
+                ReactA = "reallife_social_topic_crime_ra", ReactB = "reallife_social_topic_crime_rb", BothFine = true },
             new SocialTopic { Id = TopicShopGood, Open = new[] { "reallife_social_topic_shopgood_1", "reallife_social_topic_shopgood_2" },
-                ReplyA = "reallife_social_topic_shopgood_a", ReplyB = "reallife_social_topic_shopgood_b", ReactA = "reallife_social_topic_shopgood_ra", ReactB = "reallife_social_topic_shopgood_rb" },
+                ReplyA = "reallife_social_topic_shopgood_a", ReplyB = "reallife_social_topic_shopgood_b",
+                ReactA = "reallife_social_topic_shopgood_ra", ReactB = "reallife_social_topic_shopgood_rb" },
             new SocialTopic { Id = TopicShopBad, Open = new[] { "reallife_social_topic_shopbad_1", "reallife_social_topic_shopbad_2" },
-                ReplyA = "reallife_social_topic_shopbad_a", ReplyB = "reallife_social_topic_shopbad_b", ReactA = "reallife_social_topic_shopbad_ra", ReactB = "reallife_social_topic_shopbad_rb" },
+                ReplyA = "reallife_social_topic_shopbad_a", ReplyB = "reallife_social_topic_shopbad_b",
+                ReactA = "reallife_social_topic_shopbad_ra", ReactB = "reallife_social_topic_shopbad_rb" },
             new SocialTopic { Id = TopicWork, Open = new[] { "reallife_social_topic_work_1", "reallife_social_topic_work_2" },
-                ReplyA = "reallife_social_topic_work_a", ReplyB = "reallife_social_topic_work_b", ReactA = "reallife_social_topic_work_ra", ReactB = "reallife_social_topic_work_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_work_a", ReplyB = "reallife_social_topic_work_b",
+                ReactA = "reallife_social_topic_work_ra", ReactB = "reallife_social_topic_work_rb", BothFine = true },
             new SocialTopic { Id = TopicGoodDay, Open = new[] { "reallife_social_topic_goodday_1", "reallife_social_topic_goodday_2", "reallife_social_topic_goodday_3" },
-                ReplyA = "reallife_social_topic_goodday_a", ReplyB = "reallife_social_topic_goodday_b", ReactA = "reallife_social_topic_goodday_ra", ReactB = "reallife_social_topic_goodday_rb" },
+                ReplyA = "reallife_social_topic_goodday_a", ReplyB = "reallife_social_topic_goodday_b",
+                ReactA = "reallife_social_topic_goodday_ra", ReactB = "reallife_social_topic_goodday_rb" },
             new SocialTopic { Id = TopicBadDay, Open = new[] { "reallife_social_topic_badday_1", "reallife_social_topic_badday_2", "reallife_social_topic_badday_3" },
-                ReplyA = "reallife_social_topic_badday_a", ReplyB = "reallife_social_topic_badday_b", ReactA = "reallife_social_topic_badday_ra", ReactB = "reallife_social_topic_badday_rb" },
+                ReplyA = "reallife_social_topic_badday_a", ReplyB = "reallife_social_topic_badday_b",
+                ReactA = "reallife_social_topic_badday_ra", ReactB = "reallife_social_topic_badday_rb" },
             new SocialTopic { Id = TopicTheirJob, Open = new[] { "reallife_social_topic_theirjob_1", "reallife_social_topic_theirjob_2" },
-                ReplyA = "reallife_social_topic_theirjob_a", ReplyB = "reallife_social_topic_theirjob_b", ReactA = "reallife_social_topic_theirjob_ra", ReactB = "reallife_social_topic_theirjob_rb" },
+                ReplyA = "reallife_social_topic_theirjob_a", ReplyB = "reallife_social_topic_theirjob_b",
+                ReactA = "reallife_social_topic_theirjob_ra", ReactB = "reallife_social_topic_theirjob_rb" },
             new SocialTopic { Id = TopicRain, Open = new[] { "reallife_social_topic_rain_1", "reallife_social_topic_rain_2" },
-                ReplyA = "reallife_social_topic_rain_a", ReplyB = "reallife_social_topic_rain_b", ReactA = "reallife_social_topic_rain_ra", ReactB = "reallife_social_topic_rain_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_rain_a", ReplyB = "reallife_social_topic_rain_b",
+                ReactA = "reallife_social_topic_rain_ra", ReactB = "reallife_social_topic_rain_rb", BothFine = true },
             new SocialTopic { Id = TopicFine, Open = new[] { "reallife_social_topic_fine_1", "reallife_social_topic_fine_2" },
-                ReplyA = "reallife_social_topic_fine_a", ReplyB = "reallife_social_topic_fine_b", ReactA = "reallife_social_topic_fine_ra", ReactB = "reallife_social_topic_fine_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_fine_a", ReplyB = "reallife_social_topic_fine_b",
+                ReactA = "reallife_social_topic_fine_ra", ReactB = "reallife_social_topic_fine_rb", BothFine = true },
             new SocialTopic { Id = TopicMemory, Open = new[] { "reallife_social_topic_memory_1", "reallife_social_topic_memory_2" },
-                ReplyA = "reallife_social_topic_memory_a", ReplyB = "reallife_social_topic_memory_b", ReactA = "reallife_social_topic_memory_ra", ReactB = "reallife_social_topic_memory_rb" },
+                ReplyA = "reallife_social_topic_memory_a", ReplyB = "reallife_social_topic_memory_b",
+                ReactA = "reallife_social_topic_memory_ra", ReactB = "reallife_social_topic_memory_rb" },
             new SocialTopic { Id = TopicBirthday, Open = new[] { "reallife_social_topic_birthday_1", "reallife_social_topic_birthday_2" },
-                ReplyA = "reallife_social_topic_birthday_a", ReplyB = "reallife_social_topic_birthday_b", ReactA = "reallife_social_topic_birthday_ra", ReactB = "reallife_social_topic_birthday_rb" },
+                ReplyA = "reallife_social_topic_birthday_a", ReplyB = "reallife_social_topic_birthday_b",
+                ReactA = "reallife_social_topic_birthday_ra", ReactB = "reallife_social_topic_birthday_rb" },
             new SocialTopic { Id = TopicRich, Open = new[] { "reallife_social_topic_rich_1", "reallife_social_topic_rich_2" },
-                ReplyA = "reallife_social_topic_rich_a", ReplyB = "reallife_social_topic_rich_b", ReactA = "reallife_social_topic_rich_ra", ReactB = "reallife_social_topic_rich_rb" },
+                ReplyA = "reallife_social_topic_rich_a", ReplyB = "reallife_social_topic_rich_b",
+                ReactA = "reallife_social_topic_rich_ra", ReactB = "reallife_social_topic_rich_rb" },
             new SocialTopic { Id = TopicSick, Open = new[] { "reallife_social_topic_sick_1", "reallife_social_topic_sick_2" },
-                ReplyA = "reallife_social_topic_sick_a", ReplyB = "reallife_social_topic_sick_b", ReactA = "reallife_social_topic_sick_ra", ReactB = "reallife_social_topic_sick_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_sick_a", ReplyB = "reallife_social_topic_sick_b",
+                ReactA = "reallife_social_topic_sick_ra", ReactB = "reallife_social_topic_sick_rb", BothFine = true },
             new SocialTopic { Id = TopicBreakIn, Open = new[] { "reallife_social_topic_breakin_1", "reallife_social_topic_breakin_2" },
-                ReplyA = "reallife_social_topic_breakin_a", ReplyB = "reallife_social_topic_breakin_b", ReactA = "reallife_social_topic_breakin_ra", ReactB = "reallife_social_topic_breakin_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_breakin_a", ReplyB = "reallife_social_topic_breakin_b",
+                ReactA = "reallife_social_topic_breakin_ra", ReactB = "reallife_social_topic_breakin_rb", BothFine = true },
             new SocialTopic { Id = TopicKnocked, Open = new[] { "reallife_social_topic_knocked_1", "reallife_social_topic_knocked_2" },
-                ReplyA = "reallife_social_topic_knocked_a", ReplyB = "reallife_social_topic_knocked_b", ReactA = "reallife_social_topic_knocked_ra", ReactB = "reallife_social_topic_knocked_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_knocked_a", ReplyB = "reallife_social_topic_knocked_b",
+                ReactA = "reallife_social_topic_knocked_ra", ReactB = "reallife_social_topic_knocked_rb", BothFine = true },
             new SocialTopic { Id = TopicDistrict, Open = new[] { "reallife_social_topic_district_1", "reallife_social_topic_district_2" },
-                ReplyA = "reallife_social_topic_district_a", ReplyB = "reallife_social_topic_district_b", ReactA = "reallife_social_topic_district_ra", ReactB = "reallife_social_topic_district_rb", BothFine = true },
+                ReplyA = "reallife_social_topic_district_a", ReplyB = "reallife_social_topic_district_b",
+                ReactA = "reallife_social_topic_district_ra", ReactB = "reallife_social_topic_district_rb", BothFine = true },
             new SocialTopic { Id = TopicQuiet, Open = new[] { "reallife_social_topic_quiet_1", "reallife_social_topic_quiet_2", "reallife_social_topic_quiet_3" },
-                ReplyA = "reallife_social_topic_quiet_a", ReplyB = "reallife_social_topic_quiet_b", ReactA = "reallife_social_topic_quiet_ra", ReactB = "reallife_social_topic_quiet_rb", BothFine = true }
+                ReplyA = "reallife_social_topic_quiet_a", ReplyB = "reallife_social_topic_quiet_b",
+                ReactA = "reallife_social_topic_quiet_ra", ReactB = "reallife_social_topic_quiet_rb", BothFine = true }
         };
-
-        // ------------------------------------------------------------------ face to face
 
         public static readonly string[] GreetAcquaintance = { "reallife_social_greet_acq_1", "reallife_social_greet_acq_2", "reallife_social_greet_acq_3" };
         public static readonly string[] GreetFriend = { "reallife_social_greet_friend_1", "reallife_social_greet_friend_2", "reallife_social_greet_friend_3" };
@@ -459,7 +477,10 @@ namespace RealLifeOverhaul
         public static readonly string[] Parting = { "reallife_social_part_1", "reallife_social_part_2", "reallife_social_part_3", "reallife_social_part_4" };
         public static readonly string[] PartingLove = { "reallife_social_part_love_1", "reallife_social_part_love_2" };
         public static readonly string[] WentBadly = { "reallife_social_after_bad_1", "reallife_social_after_bad_2", "reallife_social_after_bad_3" };
-        public static readonly string[] WalkTalk = { "reallife_social_walk_talk_1", "reallife_social_walk_talk_2", "reallife_social_walk_talk_3", "reallife_social_walk_talk_4", "reallife_social_walk_talk_5" };
+        public static readonly string[] WalkTalk =
+        {
+            "reallife_social_walk_talk_1", "reallife_social_walk_talk_2", "reallife_social_walk_talk_3", "reallife_social_walk_talk_4", "reallife_social_walk_talk_5"
+        };
         public static readonly string[] WalkBehind = { "reallife_social_walk_behind_1", "reallife_social_walk_behind_2" };
         public static readonly string[] RideTalk = { "reallife_social_ride_talk_1", "reallife_social_ride_talk_2", "reallife_social_ride_talk_3", "reallife_social_ride_talk_4" };
         public static readonly string[] RideJolt = { "reallife_social_ride_jolt_1", "reallife_social_ride_jolt_2", "reallife_social_ride_jolt_3" };
@@ -477,8 +498,6 @@ namespace RealLifeOverhaul
         public static readonly string[] DropByShopQuiet = { "reallife_social_dropby_quiet_1", "reallife_social_dropby_quiet_2" };
         public static readonly string[] DropByStreet = { "reallife_social_dropby_street_1", "reallife_social_dropby_street_2" };
         public static readonly string[] Closed = { "reallife_social_closed_1", "reallife_social_closed_2" };
-
-        // ------------------------------------------------------------------ texts
 
         public static readonly string[] TextNews =
         {
@@ -513,8 +532,6 @@ namespace RealLifeOverhaul
         public static readonly string[] TextLiftAsk = { "reallife_social_text_lift_1", "reallife_social_text_lift_2" };
         public static readonly string[] TextLoanAsk = { "reallife_social_text_loan_1", "reallife_social_text_loan_2" };
         public static readonly string[] TextMovingAsk = { "reallife_social_text_moving_1", "reallife_social_text_moving_2" };
-
-        // ------------------------------------------------------------------ the newspaper
 
         public static readonly string[] NewsAccidentMinor = { "reallife_news_accident_minor_1", "reallife_news_accident_minor_2", "reallife_news_accident_minor_3" };
         public static readonly string[] NewsAccidentModerate = { "reallife_news_accident_moderate_1", "reallife_news_accident_moderate_2", "reallife_news_accident_moderate_3" };
@@ -583,16 +600,13 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// One of several lines for the same moment, never the one said last time for that moment.
-    /// The last pick of each pool is remembered for the session by the pool itself (its array),
-    /// so two people greeting one after the other do not say the same thing either.
-    /// </summary>
+    /// <summary>A line from a pool, never the one picked from it last: so two people greeting in turn do not say the same thing.</summary>
     public static class SocialLines
     {
-        private static readonly System.Collections.Generic.Dictionary<string[], int> Last = new System.Collections.Generic.Dictionary<string[], int>(64);
+        private static readonly Dictionary<string[], int> Last = new Dictionary<string[], int>(64);
         private static readonly Random Dice = new Random();
 
+        /// <summary>Null for a null or empty pool.</summary>
         public static string Pick(string[] pool)
         {
             if (pool == null || pool.Length == 0)

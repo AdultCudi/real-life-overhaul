@@ -11,17 +11,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// Everything the hiring part reads from or does to the game.
-    ///
-    /// READ: the game's recruitment campaigns (GameInstance.RecruitmentCampaigns: the office, the business, the skill,
-    /// how many candidates and over which days), the candidates waiting (CandidateEmployeeInstances, with where they came
-    /// from), the districts of the city's buildings, the game's rivals by name, the city's cycle and the season.
-    ///
-    /// DONE, the game's own way: a candidate is made with the game's own call (RecruitmentHelper.GenerateCandidate, as
-    /// the office, a job board and a headhunter make theirs) and given the seeker's name, sex and age; one the player has
-    /// already agreed terms with is hired with the game's own call (EmployeeHelper.HireCandidate) at the wage agreed.
-    /// Every other candidate waits in the game's MyEmployees app, where the game's own interview and pay talk are.
-    /// Money is the mod's own dated transactions at the business.
+    /// What the hiring part reads from or does to the game: the recruitment office's campaigns and candidates, districts and rivals;
+    /// candidates made and hired with the game's own calls; money as dated transactions at the business.
     /// </summary>
     internal static class HiringGame
     {
@@ -32,11 +23,7 @@ namespace RealLifeOverhaul.Tech
 
         public static IModLogger Logger;
 
-        private static readonly List<string> Scratch = new List<string>(32);
-
         private static GameInstance Save => SaveGameManager.Current;
-
-        // ---------------------------------------------------------------- the city
 
         /// <summary>The districts the city's buildings stand in, as the game names them.</summary>
         public static void Districts(List<string> into)
@@ -87,9 +74,7 @@ namespace RealLifeOverhaul.Tech
 
         public static bool Summer(int day) => GameCalendar.SeasonOf(day) == Events.Season.Summer;
 
-        // ---------------------------------------------------------------- the recruitment office
-
-        /// <summary>The campaigns of the game's recruitment office for a professional skill at a business of the player's, each with a key that stays the same while it runs.</summary>
+        /// <summary>The recruitment office's running campaigns for a professional skill at the player's businesses.</summary>
         public static void Campaigns(List<RecruitmentCampaign> into)
         {
             into.Clear();
@@ -97,14 +82,15 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 RecruitmentCampaign c = all[i];
-                if (c != null && !c.finished && c.skillRequirement != null && TalentCatalogue.Professional(c.skillRequirement.skillName) && c.businessAddress != null && c.agencyAddress != null
-                    && c.candidateFindTimes != null && c.candidateFindTimes.Count > 0)
+                if (c != null && !c.finished && c.skillRequirement != null && TalentCatalogue.Professional(c.skillRequirement.skillName) && c.businessAddress != null
+                    && c.agencyAddress != null && c.candidateFindTimes != null && c.candidateFindTimes.Count > 0)
                 {
                     into.Add(c);
                 }
             }
         }
 
+        /// <summary>A campaign's key, the same while it runs.</summary>
         public static string KeyOf(RecruitmentCampaign c)
         {
             int first = int.MaxValue;
@@ -140,8 +126,8 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 EmployeeInstance e = all[i];
-                if (e == null || e.candidateInfo == null || e.candidateInfo.fromJobBoard || e.candidateInfo.sourceAddress == null || e.characterData == null || e.characterData.skills == null
-                    || e.characterData.skills.Count == 0 || !TalentCatalogue.Professional(e.characterData.skills[0].name))
+                if (e == null || e.candidateInfo == null || e.candidateInfo.fromJobBoard || e.candidateInfo.sourceAddress == null || e.characterData == null
+                    || e.characterData.skills == null || e.characterData.skills.Count == 0 || !TalentCatalogue.Professional(e.characterData.skills[0].name))
                 {
                     continue;
                 }
@@ -152,8 +138,6 @@ namespace RealLifeOverhaul.Tech
                 }
             }
         }
-
-        // ---------------------------------------------------------------- making a candidate
 
         /// <summary>A name and a sex for a new seeker, the game's own way (one no employee of the player's has).</summary>
         public static void Name(Seeker s)
@@ -170,10 +154,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>
-        /// A candidate in the game's MyEmployees app made from a seeker, for a business, as the office's own are made: the
-        /// game's skill at the seeker's main skill, the seeker's name, sex and age. Null if the game refused.
-        /// </summary>
+        /// <summary>A candidate in the game's MyEmployees app made from a seeker, as the office makes its own. Null if the game refused.</summary>
         public static EmployeeInstance Candidate(Seeker s, BuildingRegistration business, Address source)
         {
             try
@@ -207,10 +188,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>
-        /// A candidate the player has agreed terms with, hired the game's own way at the wage agreed: never under the game's
-        /// own for the skill, never past WageRules' cap of it.
-        /// </summary>
+        /// <summary>Hires a candidate the game's own way at the wage agreed, between the game's own for the skill and WageRules' cap.</summary>
         public static bool Hire(EmployeeInstance candidate, int cents)
         {
             try
@@ -228,8 +206,6 @@ namespace RealLifeOverhaul.Tech
         }
 
         public static string Id(EmployeeInstance e) => e != null ? e.id : string.Empty;
-
-        // ---------------------------------------------------------------- money
 
         /// <summary>A recruiting cost of a business, cents: deductible, refused if the cash does not cover it.</summary>
         public static bool Pay(int cents, string key, BuildingRegistration at, string name)

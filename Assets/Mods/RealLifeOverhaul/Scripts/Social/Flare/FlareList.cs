@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Flare
     /// <summary>One row of a Flare list: what it shows (a post, a notification, a conversation...) and how tall it is.</summary>
     internal sealed class FlareRow
     {
-        public int Kind;                 // which kind of cell shows it (FlareView's)
+        public int Kind;                 // which kind of cell shows it (FlareApp's Cell*)
         public FlarePost Post;
         public FlareNotice Notice;
         public FlareDm Dm;
@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Flare
         public FlareRow Row;
         public int Kind;
 
-        /// <summary>Shows a row at a width; returns the height it takes.</summary>
+        /// <summary>Shows a row at a width; the height it takes.</summary>
         public abstract float Bind(FlareRow row, float width);
 
         /// <summary>The look changed (light, dark): the colours set again.</summary>
@@ -50,17 +50,13 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// A scrolling list of Flare's: only the rows in view (and a screen's worth either side) have a cell, and cells are
-    /// reused as the list scrolls (the 0.19.2 rule: no hitch on opening or scrolling). A row's height is estimated until its
-    /// cell has shown it once, then measured and kept; what is below moves to fit, and what is in view stays where it is.
-    /// The mouse wheel glides the list smoothly (FlareGlide); dragging is the engine's own ScrollRect, with its momentum.
-    ///
-    /// COST: nothing while it stands still. While it moves, one look a frame at which rows are in view (a binary search over
-    /// their tops), and a cell bound only when a row comes into view: a few texts set.
+    /// A scrolling list of Flare's: only the rows in view and a screen's worth either side have a cell, reused as it scrolls.
+    /// A row's height is estimated until shown, then kept, and what is in view stays put. The wheel glides it (FlareGlide);
+    /// dragging is the engine's ScrollRect. Cost: nothing while still; while it moves a binary search a frame.
     /// </summary>
     internal sealed class FlareList
     {
-        public const float Gap = 18f;
+        public const float Gap = 18f;   // canvas units
         private const float Over = 600f;           // canvas units beyond the view that have cells, either side
 
         public readonly RectTransform Viewport, Content;
@@ -112,9 +108,7 @@ namespace RealLifeOverhaul.Flare
 
         public readonly RectTransform Root;
 
-        public IReadOnlyList<FlareRow> Rows => _rows;
-
-        /// <summary>The rows to show, newest first or as the screen orders them; 'top' takes the list back to its top.</summary>
+        /// <summary>The rows to show, in the screen's order; <paramref name="top"/> takes the list back to its top.</summary>
         public void Set(List<FlareRow> rows, bool top)
         {
             for (int i = 0; i < _live.Count; i++)
@@ -135,7 +129,6 @@ namespace RealLifeOverhaul.Flare
             Fill();
         }
 
-        /// <summary>The look changed: every cell made is painted again.</summary>
         public void Paint(FlareLook look)
         {
             _look = look;
@@ -152,7 +145,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The cells in view shown again as they stand (a like, a picture come in).</summary>
+        /// <summary>The cells in view shown again as they stand: a like, a picture come in.</summary>
         public void Rebind()
         {
             bool moved = false;
@@ -229,7 +222,7 @@ namespace RealLifeOverhaul.Flare
                     }
                     FlareCell c = Take(_rows[i].Kind);
                     c.Row = _rows[i];
-                    FlareKit.Show(c.Rect, true);   // (shown before it is bound: its texts measure themselves as they will be drawn)
+                    FlareKit.Show(c.Rect, true);   // shown before it is bound: its texts measure themselves as they will be drawn
                     float h = c.Bind(_rows[i], _width);
                     _rows[i].Width = _width;
                     if (!_rows[i].Measured || Mathf.Abs(h - _rows[i].Height) > 0.5f)
@@ -363,23 +356,9 @@ namespace RealLifeOverhaul.Flare
             }
             stack.Push(c);
         }
-
-        /// <summary>The width changed (the app was laid out): every row is measured again as it shows.</summary>
-        public void Resized()
-        {
-            float width = Viewport.rect.width;
-            if (Mathf.Abs(width - _width) > 1f)
-            {
-                var rows = new List<FlareRow>(_rows);
-                Set(rows, false);
-            }
-        }
     }
 
-    /// <summary>
-    /// The mouse wheel over a Flare list: each notch sets where the list is to be, a little further on, and the glide takes
-    /// it there smoothly. A drag stops a glide. No Update: it answers the wheel and the drag, only while the app is open.
-    /// </summary>
+    /// <summary>The mouse wheel over a Flare list: a notch sets where it is to be and the glide takes it there. Cost: nothing per frame.</summary>
     internal sealed class FlareWheel : MonoBehaviour, IScrollHandler, IBeginDragHandler
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("flare", "FlareWheel", typeof(FlareWheel));   // the engine's calls of it (Core/Guard)
@@ -427,12 +406,12 @@ namespace RealLifeOverhaul.Flare
         }
     }
 
-    /// <summary>Moves a Flare list towards where the wheel wants it, easing in on the real clock. Switched on only while it moves.</summary>
+    /// <summary>Moves a Flare list towards where the wheel wants it, easing on the real clock. Cost: a lerp a frame while it moves; switched off otherwise.</summary>
     internal sealed class FlareGlide : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("flare", "FlareGlide", typeof(FlareGlide));   // its Update (Core/Guard)
 
-        private const float Speed = 14f;       // most of the way in a sixth of a second
+        private const float Speed = 14f;       // per second: most of the way in a sixth of a second
 
         internal ScrollRect Scroll;
         private float _target;
@@ -460,7 +439,7 @@ namespace RealLifeOverhaul.Flare
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults (Core/Guard)
                 return;
             }
             try

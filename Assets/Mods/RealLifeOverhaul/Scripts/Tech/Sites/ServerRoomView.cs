@@ -9,28 +9,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// A data centre's server room while the player is inside it (the warehouse it is fitted into): the room is measured
-    /// on the way in (Tech/Sites/SiteProps.cs, RoomMeasure), laid out by its tier and its racks
-    /// (<see cref="ServerRoomPlan"/>) and built: the racks, cooling, battery cabinets, trays, raised floor and the
-    /// operations desk, each a model of the prop bundle (or a box of its size until the bundle has loaded).
-    ///
-    /// The status lights: every rack carries the two sets of lights of its door (dc_leds_a, dc_leds_b), drawn in two
-    /// materials of this room's own. Twice a second, and only while the player is in the room, the two materials change
-    /// colour (the one set lit while the other is dark): two property changes, whatever the number of racks. In an outage
-    /// they go amber and red and the room's own lights are dimmed (put back on the way out and when it is over); with no
-    /// power or no connection the lights go red.
-    ///
-    /// The rest of the warehouse's floor round the hall: stores, a staging floor, a staff desk and a break corner
-    /// (FitOut/FitView, a little a frame), kept clear of the player's own furniture and of the drive-in bays.
-    ///
-    /// The technicians: one or two of the mod's people (People/ActorPool) when the data centre has technicians, walking
-    /// the cold aisles end to end and stopping at each end; looked after once a second.
-    ///
-    /// The rows are cut out of the floor people walk on only where the plan found that nothing of the player's is cut
-    /// off by them; otherwise they are only to be seen. Everything is local: nothing is saved, nothing is an item of the
-    /// player's, nothing is sent anywhere. All of it goes when the player leaves; it is built again on the next visit
-    /// (the same room: the plan is the same for the same warehouse and racks). In the game's placement mode it is hidden,
-    /// and built again from the new furniture afterwards.
+    /// A data centre's server room while the player is inside, laid out by <see cref="ServerRoomPlan"/>; the racks' lights are two
+    /// materials of the room's own, so a blink is two property changes. Only to be seen; it goes when the player leaves.
     /// </summary>
     internal sealed class ServerRoomView
     {
@@ -71,7 +51,6 @@ namespace RealLifeOverhaul.Tech
             _logger = logger;
         }
 
-        /// <summary>True while a room stands.</summary>
         public bool Active => _root != null;
 
         /// <summary>The data centre's place key the room is of.</summary>
@@ -80,10 +59,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What the last plan came to, for the log and the test button.</summary>
         public string Said => _said.ToString();
 
-        /// <summary>
-        /// The player is in a data centre's warehouse: the room measured, planned and built. False if the floor could not be
-        /// measured yet (asked again a second later).
-        /// </summary>
+        /// <summary>Measures, plans and builds the room. False if the floor could not be measured yet; asked again a second later.</summary>
         public bool Begin(BuildingManager building, DataCentre centre, int day)
         {
             End();
@@ -180,7 +156,7 @@ namespace RealLifeOverhaul.Tech
                     SiteProps.Solid(piece, new Vector3(0f, spec.Size.y * 0.5f, 0f), new Vector3(spec.Size.x, Mathf.Max(0.5f, spec.Size.y), spec.Size.z));
                 }
             }
-            // One cut for each row of racks, not one a rack.
+            // one cut for each row of racks, not one a rack
             foreach (KeyValuePair<int, Bounds> row in rows)
             {
                 var cut = new GameObject("RealLifeOverhaul Row").transform;
@@ -190,9 +166,8 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The rest of the warehouse's floor round the hall (FitOut/FitView): stores, a staging floor for deliveries of kit,
-        // a staff desk, a break corner, never within reach of the player's own furniture, never on a drive-in bay's way, the
-        // hall and its walkway kept. Only to be seen, as the room is: it never changes the warehouse's walls and floors.
+        // The rest of the warehouse's floor round the hall (FitOut/FitView), clear of the player's furniture, the drive-in
+        // bays and the hall's walkway. Only to be seen: it never changes the warehouse's walls and floors.
         private void Floor(BuildingManager building, RoomGrid grid, float floor, Vector3 door, Vector3 inward, DataCentre centre)
         {
             if (_floor == null)
@@ -252,7 +227,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The room's own lights, to be dimmed in an outage and put back.
+        // the room's own lights, dimmed in an outage and put back
         private void ReadLights(BuildingManager building)
         {
             _lights.Clear();
@@ -289,7 +264,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // What the data centre is doing now: up, in an outage, or without power or a connection.
+        // up, in an outage, or without power or a connection
         private void Apply(DataCentre centre, int day)
         {
             State state = centre.Down(day) ? State.Down : !centre.Power || !centre.Net ? State.Supply : State.Up;
@@ -327,10 +302,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>
-        /// Once a second while the player is inside: the data centre's state, the technicians. True if the room has to be
-        /// built again (the player's furniture has changed, or the game's placement mode is over).
-        /// </summary>
+        /// <summary>Once a second while the player is inside. True if the room must be built again: the furniture changed or placement mode ended.</summary>
         public bool Tick(BuildingManager building, DataCentre centre, int day, float now)
         {
             if (_root == null || centre == null)
@@ -366,7 +338,7 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        // The technicians walk the cold aisles end to end, a pause at each end. Put out one a second at most.
+        // The technicians walk the cold aisles end to end, pausing at each; put out one a second at most.
         private void Cast(float now)
         {
             int points = _plan.Patrol.Count / 2;
@@ -420,7 +392,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>The player has left (or the part is going): everything taken away, the room's lights put back. Safe at any time.</summary>
+        /// <summary>Takes everything away and puts the room's lights back. Safe at any time.</summary>
         public void End()
         {
             try

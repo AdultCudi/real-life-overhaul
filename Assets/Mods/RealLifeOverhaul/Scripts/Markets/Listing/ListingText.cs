@@ -2,13 +2,10 @@ using System.Text;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>
-    /// The words of a player's company on the market (Markets/Listing): every text is a key of en.json; figures come
-    /// from the catalogue. Built when a page is written or a notification goes out, never per frame.
-    /// </summary>
+    /// <summary>The words of a player's company on the market, built when a page or a notification is written.</summary>
     public static class ListingText
     {
-        private const string P = "reallife";   // (apart, so that a key made from parts is not taken for a whole one)
+        private const string P = "reallife";   // apart, so a key made of parts is not taken for a whole key
 
         private static readonly string[] WhyKeys = Keys(P + "_lst_why_", "none", "not_listed", "shut", "held", "closed", "locked_up", "no_money", "no_shares", "too_much", "too_large",
             "board", "bid", "reserve", "control", "suspended", "off", "not_ready", "year_limit");

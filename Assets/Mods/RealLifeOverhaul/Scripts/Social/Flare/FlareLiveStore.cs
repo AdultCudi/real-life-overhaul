@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The living network in a save: one entry of the save's data, short lines, written with Flare's others (FlareStore).
+    /// The living network in a save: one entry of the save's data, short lines, written with Flare's others.
     ///
     ///   reallife:flare_net
     ///     NT1|next case|next message|notifications read to|city day|picture day|pictures today|next picture|replies day|
@@ -18,9 +19,8 @@ namespace RealLifeOverhaul.Flare
     ///     U|player   H|player   G|post   A|net id   E|tally that reached the paper   S|host key (a guest's last host and session)
     ///     B|key                                                what moved a business or the City Office on the moved day
     ///
-    /// Texts are escaped as the shared city's lines are (FlareNetShare.Esc). A line this version does not read is left
-    /// out; a head of another version leaves the network empty (the posts and the account are kept: they are FlareStore's).
-    /// Game-free.
+    /// Texts are escaped as the shared city's are (FlareNetShare.Esc). A line this version does not read is left out; a head
+    /// of another version leaves the network empty. Game-free.
     /// </summary>
     public static class FlareLiveStore
     {
@@ -126,7 +126,7 @@ namespace RealLifeOverhaul.Flare
             n.ReportsToday = Math.Max(0, I(h, 11));
             n.DmDay = I(h, 12, -1);
             n.CitySeed = I(h, 13);
-            n.MovedDay = I(h, 14, -1);   // (a save from before has none)
+            n.MovedDay = I(h, 14, -1);   // an older save has none
             for (int i = 1; i < lines.Length; i++)
             {
                 string[] c = lines[i].TrimEnd('\r').Split('|');
@@ -157,8 +157,8 @@ namespace RealLifeOverhaul.Flare
                         {
                             Id = I(c, 1), Kind = (FlareReport)kind, District = U(c, 3), Place = U(c, 4), Name = U(c, 5), X = F(c, 6), Z = F(c, 7), Filed = L(c, 8), ReplyAt = L(c, 9),
                             State = (FlareCaseState)state, Order = (FlareOrder)order, Ref = I(c, 12, -1), Until = I(c, 13, -1), Post = I(c, 14, -1), Answer = I(c, 15, -1),
-                            Reporter = U(c, 16), Repeats = Math.Max(0, I(c, 17)), ActedDay = I(c, 18, -1), Counted = I(c, 19, 1) != 0,   // (a save from before: counted)
-                            Verdict = I(c, 20, -1), Fault = I(c, 21, -1)   // (a save from before: not judged)
+                            Reporter = U(c, 16), Repeats = Math.Max(0, I(c, 17)), ActedDay = I(c, 18, -1), Counted = I(c, 19, 1) != 0,   // an older save's: counted
+                            Verdict = I(c, 20, -1), Fault = I(c, 21, -1)   // an older save's: not judged
                         });
                     }
                     break;
@@ -254,7 +254,7 @@ namespace RealLifeOverhaul.Flare
             n.HostKey = null;
         }
 
-        private static void Add(System.Collections.Generic.List<string> list, string value, int most)
+        private static void Add(List<string> list, string value, int most)
         {
             if (value != null && list.Count < most && !list.Contains(value))
             {
@@ -262,7 +262,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        private static void Each(StringBuilder b, string tag, System.Collections.Generic.List<string> list)
+        private static void Each(StringBuilder b, string tag, List<string> list)
         {
             for (int i = 0; i < list.Count; i++)
             {

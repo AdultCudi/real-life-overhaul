@@ -6,17 +6,9 @@ using UI.Notification;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The player's bonds in the game (Markets/Bonds, MarketEngine.Bonds.cs): bought (one at a time, or a ladder over the
-    /// Treasury's terms) and sold from the Bonds tab while the market trades, the most of one purchase by what the player
-    /// is worth (BondRules.Most, read on a click), each set to roll over at its end or not, their payments, ends and
-    /// rollovers told as the game's notifications once the frame's work is done, the banks named for their deposits
-    /// (MarketBridges.Banks), and the save tools' and tests' parts. With "Bonds and deposits" off none is bought and none
-    /// rolls over; those held still pay, end and can be sold. A save's market from before a company of the
-    /// catalogue (the property trusts) takes it in at its load (MarketSetup.Join). Nothing here runs per frame.
-    ///
-    /// IN A GOING PUBLIC SESSION a player's bonds are theirs, as their holdings are: they live in their own save's line, a
-    /// guest's come with them into the host's market (MarketShare.Adopt), nothing of them is sent, and they pay on the
-    /// market's own calendar at the city's rates of the day, the same on every machine.
+    /// Part of the market director: the player's bonds, bought and sold from the Bonds tab while the market trades. With
+    /// "Bonds and deposits" off none is bought or rolls over; those held still pay. Never sent in a Going Public session.
+    /// Nothing per frame.
     /// </summary>
     public sealed partial class MarketDirector
     {
@@ -25,7 +17,7 @@ namespace RealLifeOverhaul.Markets
         private Action<BondNote> _bondTold;
         private Func<BondHolding, string> _bondName;
 
-        // Every market engine made (a load, or a Going Public host's market taken on) tells its bonds' news here.
+        // Every engine made, at a load or a host's market taken on, tells its bonds' news here.
         private void HookBonds()
         {
             if (_bondTold == null)
@@ -37,7 +29,7 @@ namespace RealLifeOverhaul.Markets
             _engine.BondName = _bondName;
         }
 
-        // A save's market from before a company of the catalogue: it joins it now (MarketSetup.Join).
+        // A save's market from before a catalogue company joins it now (MarketSetup.Join).
         private void JoinNew(MarketState state, bool fresh)
         {
             if (fresh)
@@ -56,7 +48,7 @@ namespace RealLifeOverhaul.Markets
             return !Running ? BondWhy.Closed : Behind ? BondWhy.Behind : _engine.Held ? BondWhy.Held : trading && !Trading ? BondWhy.Closed : BondWhy.None;
         }
 
-        /// <summary>The bonds on offer today (a deposit at each of the city's three largest banks); empty while the market is not running.</summary>
+        /// <summary>A deposit at each of the three largest banks; empty while the market is not running.</summary>
         public List<BondOffer> BondOffers()
         {
             _offers.Clear();
@@ -78,30 +70,28 @@ namespace RealLifeOverhaul.Markets
             return _offers;
         }
 
-        /// <summary>The least and the most one purchase may be now (the most by what the player is worth, while larger purchases are on); 0 while the market is not running.</summary>
+        /// <summary>The least and the most of one purchase now, the most by what the player is worth while larger purchases are on.</summary>
         public long BondLeast => Running ? BondRules.Least(_engine.State.Env.PriceLevel) : 0;
 
         public long BondMost => Running ? BondRules.Most(_engine.State.Env.PriceLevel, BondWorth()) : 0;
 
-        /// <summary>The flat most and the cap of one purchase now (what the Bonds tab says the most is made of).</summary>
+        /// <summary>Which the Bonds tab says the most is made of.</summary>
         public long BondFlat => Running ? BondRules.Most(_engine.State.Env.PriceLevel) : 0;
 
         public long BondCap => Running ? BondRules.Cap(_engine.State.Env.PriceLevel) : 0;
 
-        // What the player is worth for the most of one purchase: nothing (the flat sum) with larger purchases off.
+        // What the player is worth for the most of one purchase: nothing, the flat sum, with larger purchases off.
         private long BondWorth()
         {
             return Settings.MarketsLarge ? PlayerWorth() : 0L;
         }
 
-        /// <summary>Whether a bond can be bought now for so much money (nothing is changed).</summary>
         public BondWhy CanBuyBond(BondOffer offer, long money)
         {
             BondWhy why = BondReady(true);
             return why != BondWhy.None ? why : _engine.CanBuyBond(offer, money, Trading, Settings.MarketsBonds, BondWorth());
         }
 
-        /// <summary>A bond bought now with so much of the player's cash, set to roll over at its end or not. Null with the reason when it cannot be.</summary>
         public BondHolding BuyBond(BondOffer offer, long money, int reinvest, bool rollover, out BondWhy why)
         {
             FinishMoment();
@@ -128,20 +118,18 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>Whether a ladder can be bought now for so much (nothing is changed).</summary>
         public BondWhy LadderWhy(long money)
         {
             BondWhy why = BondReady(true);
             return why != BondWhy.None ? why : _engine.LadderWhy(money, Trading, Settings.MarketsBonds, BondWorth());
         }
 
-        /// <summary>A ladder's pieces for a sum, the shortest term's first; how many (none while the market is not running).</summary>
         public int LadderPieces(long money, long[] into)
         {
             return Running ? _engine.LadderPieces(money, into) : 0;
         }
 
-        /// <summary>A ladder bought now: one sum spread evenly over the Treasury's terms, a bond each. How many were bought (0 with the reason when it cannot be).</summary>
+        /// <summary>A bond each over the Treasury's terms; how many, 0 with the reason when it cannot be.</summary>
         public int BuyLadder(long money, int reinvest, bool rollover, out BondWhy why)
         {
             FinishMoment();
@@ -168,7 +156,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>Whether a bond rolls over at its end, from now on.</summary>
         public bool SetBondRollover(int id, bool on, out BondWhy why)
         {
             FinishMoment();
@@ -178,7 +165,6 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
-        /// <summary>A bond sold (a deposit closed) now; what it brought. False with the reason when it cannot be.</summary>
         public bool SellBond(int id, out long money, out BondWhy why)
         {
             FinishMoment();
@@ -207,7 +193,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>The share of a bond's interest put back into it, from its next payment on.</summary>
         public bool SetBondReinvest(int id, int pct, out BondWhy why)
         {
             FinishMoment();
@@ -217,7 +202,6 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
-        /// <summary>What a bond would bring if it were sold now, in cents; its price for each 100 it repays.</summary>
         public long BondSale(BondHolding h)
         {
             return Running && h != null ? _engine.BondSale(h) : 0;
@@ -227,8 +211,6 @@ namespace RealLifeOverhaul.Markets
         {
             return Running && h != null ? _engine.BondPrice(h) : 100.0;
         }
-
-        // ---------------------------------------------------------------- what the bonds tell
 
         private void BondHeard(BondNote n)
         {
@@ -258,11 +240,11 @@ namespace RealLifeOverhaul.Markets
             }
             if (n.A <= 0 && n.B <= 0)
             {
-                return;   // (a payment too small for a whole unit: carried on to the next)
+                return;   // a payment under a whole unit is carried on to the next
             }
             if (Settings.MarketsBondSoFar && h != null)
             {
-                string total = MarketText.Money(BondRules.InterestSoFar(h) / 100);   // (this payment included)
+                string total = MarketText.Money(BondRules.InterestSoFar(h) / 100);   // this payment included
                 if (n.B > 0)
                 {
                     Queue(NotificationType.Success, "reallife_mkt_bond_note_paid_back_total", "name", name, "amount", MarketText.Money(n.A), "back", MarketText.Money(n.B), "total", total);
@@ -283,8 +265,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- the save tools and the tests
-
         // Leaving a save: every bond repaid at today's price with no spread, a deposit in full; what that comes to.
         private long BondsSettled(StringBuilder log)
         {
@@ -303,7 +283,6 @@ namespace RealLifeOverhaul.Markets
             return total;
         }
 
-        /// <summary>Test button: the Stocks app opened on its Bonds tab.</summary>
         public void TestBonds()
         {
             FinishMoment();
@@ -322,7 +301,6 @@ namespace RealLifeOverhaul.Markets
             Logger?.Info(Test + " test: the app is open on its Bonds tab (" + State.Bonds.Holdings.Count + " bond(s) held, " + BondOffers().Count + " on offer).");
         }
 
-        /// <summary>Test button: each bond's next payment made now, as on its day (one at its end repays as well).</summary>
         public void TestBondPay()
         {
             FinishMoment();
@@ -341,7 +319,7 @@ namespace RealLifeOverhaul.Markets
             Moved();
         }
 
-        /// <summary>Test button: one bond brought to its end now (the first set to roll over, else the first held), every payment still to come made, then repaid or rolled over.</summary>
+        /// <summary>Test button: the first set to roll over, or else the first held, brought to its end now.</summary>
         public void TestRollover()
         {
             FinishMoment();

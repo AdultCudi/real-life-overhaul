@@ -1,23 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The city's influencers, brands and candidates on Flare (FlareCast): the cast made on the first day, their month
-    /// and their daily posts, hiring them for a business (the company's campaign of the deal's kind, booked through
-    /// Wiring/FlareLinks), what a hire does when it goes late, off message or backfires, a hired influencer's scandal,
-    /// a star the player can meet, and following accounts.
-    ///
-    /// NOTIFICATIONS: nothing notifies unless the player follows it. The accounts they follow send
-    /// one notification a day at most, however many posted ("3 new posts from accounts you follow"); the others only
-    /// show in the Feed. What needs the player (a hired influencer's scandal, a viral moment) is one notification a day
-    /// at most (FlareRules.MayNotify); the option switches all of it off.
-    ///
-    /// COST: nothing per frame. The day: a walk over ten influencers and the player's businesses; the month: the same
-    /// and a look for staff.
-    /// </summary>
+    /// <summary>Flare's director, the city's influencers, brands and candidates. Cost: nothing per frame; a walk over them and the businesses a day.</summary>
     public sealed partial class FlareDirector
     {
         private readonly List<string> _districts = new List<string>(16);
@@ -30,16 +18,15 @@ namespace RealLifeOverhaul.Flare
         private readonly List<int> _plan = new List<int>(3);
         private readonly int[] _heat = new int[(int)FlareNiche.Business + 1];
 
-        /// <summary>The brands' and the candidates' accounts, as read when the app opened.</summary>
         public IReadOnlyList<string> BrandAccounts => _brands;
         public IReadOnlyList<string> CandidateAccounts => _candidates;
 
-        // The hire being quoted or booked: the company asks Flare for its figures while it books (CompanyBridges.Outside).
+        // The hire being quoted or booked: the company asks Flare for its figures while it books.
         private string _hirePlace;
         private int _hireKind = -1;
         private readonly List<int> _hireWho = new List<int>(3);
         private readonly List<FlareCampaign> _campaigns = new List<FlareCampaign>(8);
-        private string _busyLogged;   // the last refusal written to the log, so a page written again does not write it again
+        private string _busyLogged;   // the last refusal logged, so a page written again does not log it again
 
         // A new account, or one from before the influencers: the cast is made, by its own seed.
         private void Cast(FlareFile file, int day)
@@ -62,7 +49,7 @@ namespace RealLifeOverhaul.Flare
 
         private static string CastLine(FlareFile file)
         {
-            var b = new System.Text.StringBuilder(400);
+            var b = new StringBuilder(400);
             for (int i = 0; i < file.Influencers.Count; i++)
             {
                 FlareInfluencer n = file.Influencers[i];
@@ -72,7 +59,7 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
-        // The cast's part of the day: hires that ran out, the month when it is due, the day's posts, the one notification for followed accounts.
+        // The cast's part of the day: hires that ran out, the month when due, the day's posts.
         private void CastDay(int day)
         {
             for (int i = _file.Hires.Count - 1; i >= 0; i--)
@@ -136,7 +123,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The influencers' month: what the city does draws newcomers; each grows, fades, quits, becomes a star or meets a scandal.
+        // The influencers' month: newcomers drawn by what the city does; each grows, fades, quits, becomes a star or meets a scandal.
         private void Month(int day)
         {
             FlareGame.Shops(_file, _shops);
@@ -250,8 +237,6 @@ namespace RealLifeOverhaul.Flare
             return inf != null ? inf.Handle : "?";
         }
 
-        // ---------------------------------------------------------------- what the city's news had today
-
         /// <summary>Something was reported in the city today (Wiring/FlareLinks): local news may post about it.</summary>
         public void CityNews(int bit)
         {
@@ -266,8 +251,6 @@ namespace RealLifeOverhaul.Flare
                 IssueFrom(bit);
             }
         }
-
-        // ---------------------------------------------------------------- hiring, for the app
 
         /// <summary>Who would be in a deal: the one picked, or for a plan the two or three best for the business. False if the deal cannot be made.</summary>
         private bool Who(FlareShop shop, FlareDeal deal, int influencer, int day, List<int> into)
@@ -290,7 +273,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>The company's question while a hire is quoted or booked: its fee (at the start's prices) and its reach, thousandths of the kind's own figure.</summary>
+        /// <summary>The company's question while a hire is quoted or booked: its fee at the start's prices and its reach, thousandths.</summary>
         public bool HireFigures(int kind, string place, out int fee, out int reach)
         {
             fee = 0;
@@ -334,13 +317,13 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        /// <summary>What a deal at a business would cost today and bring, as the company quotes it. False, with the reason's key, if it cannot be made.</summary>
+        /// <summary>What a deal at a business would cost today and bring; false, with the reason's key, if it cannot be made.</summary>
         public bool HireQuote(string place, FlareDeal deal, int influencer, out int cost, out int percent, out string why)
         {
             return HireQuote(place, deal, influencer, out cost, out percent, out why, false);
         }
 
-        // With 'keep' the deal stays in hand for the booking that follows; otherwise the company is offered nothing once the quote is had.
+        // With 'keep' the deal stays in hand for the booking that follows.
         private bool HireQuote(string place, FlareDeal deal, int influencer, out int cost, out int percent, out string why, bool keep)
         {
             cost = percent = 0;
@@ -378,7 +361,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The reason's key when a business has a campaign already (Wiring/FlareLinks.Quote).</summary>
         public const string BusyWhy = "reallife_flare_hire_busy";
 
-        /// <summary>The company's campaigns at the player's businesses, running or booked, as the company has them now. Read when the Business tab is written.</summary>
+        /// <summary>The company's campaigns at the player's businesses, running or booked, read when the Business tab is written.</summary>
         public List<FlareCampaign> Campaigns()
         {
             _campaigns.Clear();
@@ -410,7 +393,7 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        // A hire refused because the business has a campaign already: one line naming it, once for each refusal (the page is written again often).
+        // A hire refused because the business has a campaign already: one line naming it, once a refusal.
         private void LogBusy(string place, string name, FlareDeal deal)
         {
             FlareCampaign c;
@@ -422,8 +405,8 @@ namespace RealLifeOverhaul.Flare
             }
             _busyLogged = key;
             Logger?.Info("Flare: a hire for " + (name ?? place) + " (" + deal + ") was refused on day " + (Save != null ? Save.Day : 0) + ": "
-                         + (known ? c.Campaign + " (kind " + c.Kind + ") is " + (Save != null && Save.Day >= c.From ? "running" : "booked") + " there, " + (c.OnFlare ? "hired on Flare" : "booked from the Company app")
-                                    + ", days " + c.From + " to " + c.To + "; one campaign at a time at a business"
+                         + (known ? c.Campaign + " (kind " + c.Kind + ") is " + (Save != null && Save.Day >= c.From ? "running" : "booked") + " there, "
+                                    + (c.OnFlare ? "hired on Flare" : "booked from the Company app") + ", days " + c.From + " to " + c.To + "; one campaign at a time at a business"
                                   : "the company says a campaign is booked there, but did not say which") + ".");
         }
 
@@ -449,7 +432,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>For the company, through Wiring/FlareLinks: a hire has been booked and paid. It is kept, and how it goes is rolled now.</summary>
+        /// <summary>For the company, through Wiring/FlareLinks: a hire has been booked and paid; how it goes is rolled now.</summary>
         public void Hired(string place, int kind, int from, int to, int percent)
         {
             if (!Running || Save == null)
@@ -458,9 +441,9 @@ namespace RealLifeOverhaul.Flare
             }
             if (kind != _hireKind || place != _hirePlace || _hireWho.Count == 0)
             {
-                // (the company booked a deal Flare was not making: nobody would post for it, so it is said, once, in the log)
-                Logger?.Warn("Flare: the company booked " + kind + " at " + place + " for days " + from + " to " + to + ", but no hire of that kind was being made there on Flare (" + _hireKind + " at " + (_hirePlace ?? "nowhere")
-                             + "); no influencer is set to post for it.");
+                // The company booked a deal Flare was not making: nobody would post for it.
+                Logger?.Warn("Flare: the company booked " + kind + " at " + place + " for days " + from + " to " + to + ", but no hire of that kind was being made there on Flare ("
+                             + _hireKind + " at " + (_hirePlace ?? "nowhere") + "); no influencer is set to post for it.");
                 return;
             }
             try
@@ -475,8 +458,9 @@ namespace RealLifeOverhaul.Flare
                     FlareCast.Outcome(h, lead, _file.CastSeed);
                 }
                 _file.Hires.Add(h);
-                Logger?.Info("Flare: hired " + WhoLine(h) + " for " + h.Name + " (" + (FlareDeal)(kind - FlareCast.FirstDealKind) + ", days " + from + " to " + to + ", " + percent + "% more customers"
-                             + (h.Late ? ", the first post a day late" : string.Empty) + (h.OffMessage ? ", off message" : string.Empty) + (h.Backfired ? ", it will backfire" : string.Empty) + ").");
+                Logger?.Info("Flare: hired " + WhoLine(h) + " for " + h.Name + " (" + (FlareDeal)(kind - FlareCast.FirstDealKind) + ", days " + from + " to " + to + ", " + percent
+                             + "% more customers" + (h.Late ? ", the first post a day late" : string.Empty) + (h.OffMessage ? ", off message" : string.Empty)
+                             + (h.Backfired ? ", it will backfire" : string.Empty) + ").");
                 Changed();
             }
             catch (Exception e)
@@ -487,7 +471,7 @@ namespace RealLifeOverhaul.Flare
 
         public string WhoLine(FlareHire h)
         {
-            var b = new System.Text.StringBuilder(64);
+            var b = new StringBuilder(64);
             for (int i = 0; i < h.Who.Count; i++)
             {
                 b.Append(i > 0 ? ", " : string.Empty).Append(HandleOf(h.Who[i]));
@@ -495,7 +479,7 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
-        /// <summary>The player ends a deal (after a scandal): no more posts, and no more of the talk the scandal brings.</summary>
+        /// <summary>The player ends a deal, after a scandal: no more posts, and no more of the talk the scandal brings.</summary>
         public void EndHire(int id)
         {
             for (int i = 0; Running && i < _file.Hires.Count; i++)
@@ -527,7 +511,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The player follows an account or stops; saved with the save.</summary>
         public void Follow(string key, bool on)
         {
             if (Running && FlareCast.Follow(_file, key, on))

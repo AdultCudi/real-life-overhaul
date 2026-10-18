@@ -345,7 +345,7 @@ internal static partial class Program
             none &= !CameraRules.FlareTakesOver(r, false) && !CameraRules.FlareTakesOver(r, true);
         }
         Check(none, "flare fallback: nothing taken over with nothing to shoot, photo mode on or a window open (the Camera's word is said)");
-        string director = Read(@"Photos\PhotosDirector.cs"), live = Read(@"Social\Flare\FlareDirector.Live.cs"), links = Read(@"Wiring\PhotosLinks.cs");
+        string director = Read(@"Photos\PhotosDirector.cs"), live = (Read(@"Social\Flare\FlareDirector.Live.cs") + Read(@"Social\Flare\FlareDirector.Cases.cs") + Read(@"Social\Flare\FlareDirector.Posting.cs")), links = Read(@"Wiring\PhotosLinks.cs");
         string open = Between(director, "public bool OpenCamera(bool selfie, bool fromFlare)", "private void Refused(");
         Check(Regex.IsMatch(open, @"if \(fromFlare && CameraRules\.FlareTakesOver\(refusal, selfie\)\)\s*\{[^}]*return false;") && open.IndexOf("FlareTakesOver", StringComparison.Ordinal) < open.IndexOf("Refused(refusal)", StringComparison.Ordinal),
             "flare fallback: the Camera answers false, with no word of its own, where Flare's picture takes over");

@@ -7,21 +7,14 @@ using UnityEngine;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The Portfolio tab of the Stocks app: the whole portfolio. Every holding is a row with what it is (a stock, a property
-    /// trust, a Treasury bond, a city bond, a deposit at a bank), the founder's stake and a trading bot's shares marked as
-    /// such, its shares and price, what it cost and is worth, its gain, the income it has paid and its next payment; the
-    /// table is filtered by sector and by kind and ordered by any column (by its kind, the kinds stand together). The box,
-    /// on three pages chosen by its first selector so that it keeps its foot: what is held (worth, cost and gain, the spread
-    /// across kinds as bars with each one's worth and share, the cash, worked orders' money of the day), what it pays (the
-    /// income over the next year by kind, its yield on the worth, the next payments, a bond that rolls over without what it
-    /// repays) and the account (with the margin account and its buttons). A bond's row
-    /// leads to it on the Bonds tab, the Bonds tab being where bonds are bought and managed; a company's to its page.
-    /// Figures from InvestRules. Written when the app opens and when the player does something in it, never per frame.
+    /// Part of the Stocks app: the Portfolio tab, every holding a row with what it is, its worth, gain, income and next
+    /// payment. The box has three pages so it keeps its foot: what is held, what it pays, and the account. A bond's row leads
+    /// to it on the Bonds tab, where bonds are managed; a company's to its page. Figures from InvestRules.
     /// </summary>
     public sealed partial class MarketApp
     {
         private const string PortfolioBondRow = "pb:";
-        private const int PaymentsInBox = 3;   // the next payments the box lists (the table has each holding's own)
+        private const int PaymentsInBox = 3;   // the table has each holding's own
         private const int PageHeld = 0, PagePays = 1, PageAccount = 2;
         private static readonly string[] PortfolioPages = { "reallife_mkt_inv_page_held", "reallife_mkt_inv_page_pays", "reallife_mkt_inv_page_account" };
 
@@ -42,16 +35,16 @@ namespace RealLifeOverhaul.Markets
             return MarketTables.Portfolio;
         }
 
-        // A holding's row: a company's shares (the player's, a bot's, the founder's stake) or a bond.
+        // A holding's row: the player's, a bot's or the founder's shares, or a bond.
         private void WriteHolding(MarketState s, in PortfolioRow h)
         {
             Stock k = h.Stock > 0 ? s.Stock(h.Stock) : null;
             BondHolding bond = h.Bond > 0 ? s.Bonds.Holding(h.Bond) : null;
-            TableRow row = h.Founder ? Row(CompanyRow, h.Stock) : bond != null ? Row(PortfolioBondRow, h.Bond) : h.Firm > 0 ? Row(BotHoldingRow, h.Firm * BotHoldingIds + h.Stock)
-                : Row(HoldingRow, h.Stock);
+            TableRow row = h.Founder ? Row(CompanyRow, h.Stock) : bond != null ? Row(PortfolioBondRow, h.Bond)
+                : h.Firm > 0 ? Row(BotHoldingRow, h.Firm * BotHoldingIds + h.Stock) : Row(HoldingRow, h.Stock);
             row.Kind = k != null ? (int)k.Sector : -1;
             row.Kind2 = (int)h.Kind;
-            row.Pinned = h.Founder;   // (the founder's stake first, in no total: it is their company, not the account's)
+            row.Pinned = h.Founder;   // the founder's stake first, in no total: it is their company, not the account's
             row.NoTotal = h.Founder;
             row.Set(0, HoldingName(h, k, bond));
             row.Set(1, InvestText.Kind(h.Kind), (int)h.Kind);
@@ -75,11 +68,11 @@ namespace RealLifeOverhaul.Markets
             }
             row.Set(4, MarketText.Money(h.Cost), h.Cost);
             row.Set(6, MarketText.Money(h.Gain), h.Gain, Tone(Math.Sign(h.Gain)));
-            row.Set(7, h.Firm > 0 ? "-" : MarketText.Money(h.Paid), h.Firm > 0 ? double.NaN : h.Paid);   // (a bot's dividends are its own record's: the Bots tab)
+            row.Set(7, h.Firm > 0 ? "-" : MarketText.Money(h.Paid), h.Firm > 0 ? double.NaN : h.Paid);   // a bot's dividends are on the Bots tab
             row.Set(8, PaymentWords(h.Next), h.Next.Day > 0 ? h.Next.Day : double.NaN);
         }
 
-        // A holding's name with its marks: the founder's, a bot's firm, a test's, the share of dividends put back, a bond that rolls over.
+        // A holding's name with its marks: the founder's, a bot's firm, a test's, the share put back, a bond that rolls over.
         private static string HoldingName(in PortfolioRow h, Stock k, BondHolding bond)
         {
             string test = h.Test ? InvestText.Mark(MarketText.T("reallife_mkt_test_mark")) : string.Empty;
@@ -100,18 +93,18 @@ namespace RealLifeOverhaul.Markets
             return name + test + (h.Reinvest > 0 ? InvestText.Mark(MarketText.Fill("reallife_mkt_inv_mark_back", "pct", h.Reinvest.ToString())) : string.Empty);
         }
 
-        // A payment to come in words: "120, day 34" (owed on shares sold short: "-120, day 34"; a bond's last: with its end, or that it rolls over).
+        // A payment to come in words: "120, day 34", owed on a short "-120, day 34", a bond's last with its end or rollover.
         private static string PaymentWords(in ComingPayment p)
         {
             if (p.Day <= 0 || p.Cents == 0)
             {
                 return string.Empty;
             }
-            return MarketText.Fill(p.Ends ? "reallife_mkt_inv_next_end" : p.Rolls ? "reallife_mkt_inv_next_roll" : "reallife_mkt_next_pay", "amount", (p.Cents < 0 ? "-" : string.Empty) + BondText.Money(Math.Abs(p.Cents)),
-                "day", p.Day.ToString());
+            return MarketText.Fill(p.Ends ? "reallife_mkt_inv_next_end" : p.Rolls ? "reallife_mkt_inv_next_roll" : "reallife_mkt_next_pay",
+                "amount", (p.Cents < 0 ? "-" : string.Empty) + BondText.Money(Math.Abs(p.Cents)), "day", p.Day.ToString());
         }
 
-        // What a payment to come is from: the company (a bot's shares: with its firm) or the bond.
+        // What a payment to come is from: the company, with a bot's firm, or the bond.
         private static string PaymentName(MarketState s, in ComingPayment p)
         {
             if (p.Bond > 0)
@@ -122,8 +115,6 @@ namespace RealLifeOverhaul.Markets
             BotFirm f = p.Firm > 0 ? MarketBots.Firm(p.Firm) : null;
             return (k != null ? k.Name : string.Empty) + (f != null ? InvestText.Mark(f.Name) : string.Empty);
         }
-
-        // ---------------------------------------------------------------- the box
 
         private void WritePortfolioBox(InfoBox box, MarketState s)
         {
@@ -161,17 +152,18 @@ namespace RealLifeOverhaul.Markets
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // What is held: the worth, cost and gain of it all, the spread across kinds, the cash and worked orders' money of the day.
+        // What is held: worth, cost and gain, the spread across kinds, the cash and worked orders' money of the day.
         private void WriteHeldPage(InfoBox box, MarketState s)
         {
             box.Section("reallife_ibox_sec_now");
             box.Row("reallife_ibox_worth", MarketText.Money(_sums.Net));
             box.Row("reallife_ibox_cost", MarketText.Money(_sums.NetCost));
             box.Row("reallife_ibox_gain", MarketText.Money(_sums.Gain), _sums.Gain > 0 ? CellTone.Green : _sums.Gain < 0 ? CellTone.Red : CellTone.Plain);
-            long day = MarketTrading.DayChange(s, out long dayBefore);   // (today against the previous close, in cents)
+            long day = MarketTrading.DayChange(s, out long dayBefore);   // today against the previous close, in cents
             if (dayBefore > 0)
             {
-                box.Row("reallife_mkt_day_change", MarketText.Fill("reallife_mkt_day_change_value", "money", MarketText.Money(day / 100), "percent", MarketText.Change(MarketTrading.DayChangeBp(day, dayBefore))),
+                box.Row("reallife_mkt_day_change",
+                    MarketText.Fill("reallife_mkt_day_change_value", "money", MarketText.Money(day / 100), "percent", MarketText.Change(MarketTrading.DayChangeBp(day, dayBefore))),
                     day > 0 ? CellTone.Green : day < 0 ? CellTone.Red : CellTone.Plain);
             }
             box.Section("reallife_mkt_inv_sec_kinds");
@@ -184,8 +176,8 @@ namespace RealLifeOverhaul.Markets
                 }
                 any = true;
                 int bp = _sums.ShareBp((HoldingKind)k);
-                box.MeterWords(InvestText.Kind((HoldingKind)k), bp / 10000f, MarketText.Fill("reallife_mkt_inv_share", "worth", MarketText.Money(_sums.Worth[k]), "share", MarketText.Percent(bp)),
-                    CellTone.Plain);
+                box.MeterWords(InvestText.Kind((HoldingKind)k), bp / 10000f,
+                    MarketText.Fill("reallife_mkt_inv_share", "worth", MarketText.Money(_sums.Worth[k]), "share", MarketText.Percent(bp)), CellTone.Plain);
             }
             if (!any)
             {
@@ -200,7 +192,7 @@ namespace RealLifeOverhaul.Markets
                 box.Row("reallife_mkt_inv_founder", MarketText.Money(_sums.Founder));
             }
             box.Row("reallife_mkt_inv_cash", MarketText.Money(_director.Cash));
-            InvestRules.WithBroker(s, out long parked, out long due);   // (worked orders' money of the day: out of the cash in hand until the close)
+            InvestRules.WithBroker(s, out long parked, out long due);   // worked orders' money of the day, out of the cash until the close
             if (parked > 0)
             {
                 box.Row("reallife_mkt_inv_held_money", MarketText.Money(parked));
@@ -215,7 +207,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // What it pays: the income over the next year by kind, before tax, its yield on the worth, and the next payments.
+        // What it pays: the next year's income by kind before tax, its yield, and the next payments.
         private void WritePaysPage(InfoBox box, MarketState s)
         {
             box.Section("reallife_mkt_inv_sec_year");
@@ -311,7 +303,7 @@ namespace RealLifeOverhaul.Markets
                     }
                 });
             }
-            BondsLine(box, s);   // (the bonds held: MarketApp.Bonds.cs)
+            BondsLine(box, s);
         }
     }
 }

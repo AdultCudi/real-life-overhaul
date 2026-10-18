@@ -6,7 +6,7 @@ using System.Text;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare in a save: two entries of the save's data, short lines each.
+    /// Flare in a save: four entries of the save's data, short lines each.
     ///
     ///   reallife:flare_account
     ///     FL1|seed|start|settled|followers|reputation|last post day|last post minute|posts day|posts today|last viral|
@@ -17,12 +17,12 @@ namespace RealLifeOverhaul.Flare
     ///     S|place|first day|best|days                         a business as Flare has seen it
     ///     B|place|percent|until                               talk about a business, in its customers
     ///     V|stock|name|day                                    a viral post about a company the player holds
-    ///     R|key                                               a friend's reply the player liked (key: post number * 32 + the reply's place); an older version skips the line
-    ///     C|post|slot|kind|who                                a comment under another's post the player liked (kind 0 the city's, 1 a friend, 2 an influencer); an older version skips it
+    ///     R|key                                               a friend's reply the player liked (post number * 32 + its place)
+    ///     C|post|slot|kind|who                                a comment the player liked (kind 0 the city's, 1 a friend, 2 an influencer)
     ///   reallife:flare_posts
     ///     P|id|day|hour|author|who|source|tone|tag|place|name|arg|seed|quality|reach|likes|replies|likers|repliers|gained|flags|
     ///         minute|reply to|text|picture|net id|token|author id|author name|district|topic|reactors|mention|reposts|player likes|
-    ///         case|flags2|when|picture in the session                          (the living network's fields, appended: an older save's lines lack them)
+    ///         case|flags2|when|picture in the session        (the living network's fields, appended: an older save's lines lack them)
     ///   reallife:flare_cast
     ///     FC1|cast seed|month day|follow notice day|news today|news day|viral niche day|viral niche
     ///     I|id|handle|niche|district|followers|engagement|reliability|style|reputation|start|quit|star|person|scandal day|seed|staff
@@ -30,10 +30,8 @@ namespace RealLifeOverhaul.Flare
     ///     F|account                                           an account the player follows
     ///   reallife:flare_net                                    (FlareLiveStore: the City Office's cases, the watches, the messages)
     ///
-    /// Every number is written in the invariant culture. What is not understood is left out a line at a time: a post or
-    /// a draft of a kind this version does not know (from a later one) is dropped, never read as something else, so an
-    /// entry from a later version or a damaged one never stops a load. An account line that is not this version's is
-    /// not read at all (a new account). Game-free.
+    /// Numbers are in the invariant culture. What is not understood is left out a line at a time (a kind from a later
+    /// version is dropped, never read as another), so a damaged or later entry never stops a load. Game-free.
     /// </summary>
     public static class FlareStore
     {
@@ -46,7 +44,7 @@ namespace RealLifeOverhaul.Flare
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         // The kinds this version knows: anything past them is from a later one.
-        private const int Sources = (int)FlareSource.Answer + 1;     // (Graduated was once left out of it, so a graduation's post was dropped when the save was read)
+        private const int Sources = (int)FlareSource.Answer + 1;
         private const int Tones = (int)FlareTone.Cheeky + 1;
         private const int Authors = (int)FlareAuthor.Tycoon + 1;
         private const int Niches = (int)FlareNiche.Business + 1;
@@ -74,7 +72,7 @@ namespace RealLifeOverhaul.Flare
             FlareFile f = Peek(data);
             if (f == null)
             {
-                // An account that cannot be read (damaged, or of a later version) is kept as it is, with its posts and cast (Core/SaveLines).
+                // An account that cannot be read is kept as it is, with its posts and cast, for the version that wrote it.
                 SaveLines.Unreadable(data, AccountKey, "it could not be read");
                 if (SaveLines.IsKept(data, AccountKey))
                 {
@@ -86,10 +84,7 @@ namespace RealLifeOverhaul.Flare
             return f;
         }
 
-        /// <summary>
-        /// The save's file as <see cref="Load"/> reads it, the save's data left exactly as it is (an account that does not read
-        /// is not marked to be kept here: Load does that when Flare starts). For Flare's faces drawn behind the loading screen.
-        /// </summary>
+        /// <summary>The save's file as <see cref="Load"/> reads it, the save's data left as it is: for the faces drawn while loading.</summary>
         public static FlareFile Peek(Dictionary<string, string> data)
         {
             string account, posts;
@@ -139,7 +134,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     b.Append(k > 0 ? "," : string.Empty).Append(h.Who[k].ToString(Inv));
                 }
-                Join(b, h.Late ? 1 : 0, h.OffMessage ? 1 : 0, h.Backfired ? 1 : 0, h.Ended ? 1 : 0, h.Posted, h.LastPost, h.Counted ? 1 : 0);   // (the last three appended: a save from before has none)
+                Join(b, h.Late ? 1 : 0, h.OffMessage ? 1 : 0, h.Backfired ? 1 : 0, h.Ended ? 1 : 0, h.Posted, h.LastPost, h.Counted ? 1 : 0);   // the last three appended: an older save lacks them
             }
             for (int i = 0; i < f.Follows.Count; i++)
             {
@@ -148,7 +143,7 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
-        /// <summary>The cast, the hires and the follows into a file. What is not understood is left out a line at a time; another version's entry leaves the file without them (a new cast is made).</summary>
+        /// <summary>The cast, the hires and the follows into a file; another version's entry leaves them out, and a new cast is made.</summary>
         public static void ReadCast(FlareFile f, string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -182,7 +177,8 @@ namespace RealLifeOverhaul.Flare
                         }
                         f.Influencers.Add(new FlareInfluencer
                         {
-                            Id = I(c, 1), Handle = Text(c[2]) ?? "@?", Niche = (FlareNiche)niche, District = Text(c[4]), Followers = Math.Max(0, I(c, 5)), Engagement = FlareRules.Clamp(I(c, 6), 0, 10000),
+                            Id = I(c, 1), Handle = Text(c[2]) ?? "@?", Niche = (FlareNiche)niche, District = Text(c[4]), Followers = Math.Max(0, I(c, 5)),
+                            Engagement = FlareRules.Clamp(I(c, 6), 0, 10000),
                             Reliability = FlareRules.Clamp(I(c, 7), 0, 100), Style = (FlareStyle)style, Reputation = FlareRules.Clamp(I(c, 9), 0, 100), StartDay = I(c, 10), Quit = I(c, 11) != 0,
                             Star = I(c, 12) != 0, Person = I(c, 13, -1), ScandalDay = I(c, 14, -100), Seed = I(c, 15), Staff = I(c, 16) != 0
                         });
@@ -193,7 +189,7 @@ namespace RealLifeOverhaul.Flare
                         {
                             Id = I(c, 1), Kind = I(c, 2), Place = Text(c[3]), Name = Text(c[4]), From = I(c, 5), To = I(c, 6), Percent = I(c, 7),
                             Late = I(c, 9) != 0, OffMessage = I(c, 10) != 0, Backfired = I(c, 11) != 0, Ended = I(c, 12) != 0, Posted = Math.Max(0, I(c, 13)), LastPost = I(c, 14, -1),
-                            Counted = c.Length >= 15 && I(c, 15, 1) != 0   // (a deal saved before the posts were counted: those it had are not known)
+                            Counted = c.Length >= 15 && I(c, 15, 1) != 0   // a deal saved before the posts were counted
                         };
                         string[] who = c[8].Split(',');
                         for (int k = 0; k < who.Length && hire.Who.Count < 3; k++)
@@ -265,7 +261,7 @@ namespace RealLifeOverhaul.Flare
             }
             for (int i = 0; i < f.ReplyLikes.Count; i++)
             {
-                if (f.Post(f.ReplyLikes[i] / 32) != null)   // (one whose post is gone is not kept)
+                if (f.Post(f.ReplyLikes[i] / 32) != null)   // a like whose post is gone is not kept
                 {
                     b.Append("\nR");
                     Join(b, f.ReplyLikes[i]);
@@ -275,7 +271,7 @@ namespace RealLifeOverhaul.Flare
             {
                 int post, slot, kind, who;
                 FlareCommentRules.Parts(f.CommentLikes[i], out post, out slot, out kind, out who);
-                if (f.Post(post) != null)   // (one whose post is gone is not kept)
+                if (f.Post(post) != null)   // the same
                 {
                     b.Append("\nC");
                     Join(b, post, slot, kind, who);
@@ -375,7 +371,7 @@ namespace RealLifeOverhaul.Flare
                         f.CommentLikes.Add(like);
                     }
                 }
-                FlareRules.DropLikesOfGone(f);   // (the posts are read now: a like of a reply or a comment whose post is gone is let go)
+                FlareRules.DropLikesOfGone(f);   // after the posts: a like whose post is gone goes
                 return f;
             }
             catch (Exception)
