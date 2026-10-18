@@ -11740,7 +11740,7 @@
   "reallife_law_station_furniture": "Delegacias mobiliadas",
   "reallife_opt_tip_law_station_furniture": "Mesas, armários, sala de reunião, sala de descanso, paredes e piso do jogo, policiais trabalhando e escritórios no piso vazio de uma delegacia grande. Desligado, fica vazia como antes.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Os carros têm peso: o carro que você dirige roda macio sobre molas longas, balança e se acomoda depois de um meio-fio, inclina nas curvas e abaixa o nariz ao frear. A direção é rápida em baixa velocidade e mais calma em alta, os pneus cedem perto do limite e derrapam, e os freios ganham força sem travar. As peças da oficina de personalização funcionam por cima. A opção Dirigibilidade do carro escolhe Leve, Completo, Pesado ou Desligado.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada banco da cidade tem seu próprio app no celular, com o nome que o jogo dá a ele: sua conta corrente e o extrato, os empréstimos que você deve àquele banco, podendo pagar parte ou tudo, seu cartão, o que ele oferece a você hoje e como ele vê sua pontuação. As condições dos bancos diferem um pouco, então escolher um faz diferença, e abaixo de uma pontuação de 580 nenhum deles empresta. Os contatos do mod têm fotos de verdade do jogo: as pessoas mostram o rosto e os serviços mostram um logotipo. Contatos tem uma caixa de busca no alto. As delegacias são mobiliadas com os móveis do próprio jogo: mesas com computadores, armários, um bebedouro, plantas, um relógio, luminárias e um vaso sanitário na cela. Corrigido: com todos os apps do mod, a fileira de apps no alto do menu de tela cheia passava por baixo do dinheiro e da data e saía da tela; agora ela tem páginas, centralizadas entre o nome do app e o dinheiro, viradas com a roda do mouse ou com os pontos. Corrigido: no mapa da cidade, uma linha do mod (Tribunal, Oficinas de personalização e as outras) podia ficar desmarcada enquanto os seus lugares continuavam no mapa; agora os lugares seguem a marcação que você vê.",
   "reallife_rota_box_stock_ok": "As mercadorias dão conta do plano recomendado.",
@@ -19844,5 +19844,7 @@
   "reallife_opt_sec_tuning": "Ajuste da dirigibilidade",
   "reallife_handling_test_say": "Dizer o que o carro que você dirige tem da dirigibilidade",
   "reallife_handling_test_said": "{car}: {mass} kg, molas de {hz} Hz amortecidas a {zeta}, {roll} graus de inclinação por g, {grip} g de aderência e freios de {brakes} g. O Player.log tem todos os valores.",
-  "reallife_handling_test_none": "{car} mantém a dirigibilidade do próprio jogo. O Player.log diz por quê."
+  "reallife_handling_test_none": "{car} mantém a dirigibilidade do próprio jogo. O Player.log diz por quê.",
+  "reallife_changes_039_0_title": "0.39.0",
+  "reallife_changes_039_0": "Os carros têm peso: o carro que você dirige roda macio sobre molas longas, balança e se acomoda depois de um meio-fio, inclina nas curvas e abaixa o nariz ao frear. A direção é rápida em baixa velocidade e mais calma em alta, os pneus cedem perto do limite e derrapam, e os freios ganham força sem travar. As peças da oficina de personalização funcionam por cima. A opção Dirigibilidade do carro escolhe Leve, Completo, Pesado ou Desligado."
 }
