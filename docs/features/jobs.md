@@ -218,7 +218,7 @@ What the player sees and does is built from four shared pieces of `Scripts/Jobs`
   It hangs on the game's `CurrentJobUI`, in the game's place for it, and under the game's own panel while the player also has the game's job.
   `Title` and `Line(n, words, colour)` write only on change.
 
-For the cart: the rule of the clock is `VendorJob.MinutesEach` (20 game minutes a customer: twelve are the four hours an employer pays basic wage for) and `VendorJob.SkipShare` (85 % of a customer's pay, no tips, no "nobody walked off" bonus).
+For the cart: the rule of the clock is `ShiftRates.Minutes` (20 game minutes a customer: twelve are the four hours an employer pays basic wage for) and `ShiftRates.Share` (85 % of a customer's pay, no tips, no "nobody walked off" bonus).
 
 Units, energy, the level, the employer's hours, lateness, marks and the review are settled by the same code as a shift by hand (`Ctx.Pay`, `CareerDirector.ShiftEnded`); tips count towards a review, so a shift left to the clock scores lower.
 
