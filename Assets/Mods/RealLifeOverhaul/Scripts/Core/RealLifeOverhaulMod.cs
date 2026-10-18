@@ -167,6 +167,8 @@ namespace RealLifeOverhaul
                     v => Settings.NaturalAccidents = v)
                 .AddToggle(Settings.SolidStreetsId, "reallife_solid_streets", Settings.SolidStreets,
                     v => Settings.SolidStreets = v)
+                .AddToggle(Settings.CityDriversId, "reallife_city_drivers", Settings.CityDrivers,
+                    v => Settings.CityDrivers = v)
                 .AddToggle(Settings.PhoneContactsId, "reallife_phone_contacts", Settings.PhoneContacts,
                     v => Settings.PhoneContacts = v)
                 .AddButton("reallife_contacts_test_pictures", ContactPictures.TestReport)
@@ -197,6 +199,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_solid_late", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Late))
                 .AddButton("reallife_test_solid_crowd", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Crowd))
                 .AddButton("reallife_test_solid_senses", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Senses))
+                .AddButton("reallife_test_drivers_park", () => CityDrivers.TestNow(CityDrivers.TestKind.Park))
+                .AddButton("reallife_test_drivers_letout", () => CityDrivers.TestNow(CityDrivers.TestKind.LetOut))
+                .AddButton("reallife_test_wave_through", TrafficAccidents.TestWaveThrough)
                 .AddSplitter()
                 .AddHeader("reallife_crime_header")
                 .AddToggle(Settings.StreetCrimeId, "reallife_crime_enabled", Settings.StreetCrime,
@@ -1165,6 +1170,8 @@ namespace RealLifeOverhaul
             Guard.Step("RecklessDrivers", () => RecklessDrivers.Logger = context.Logger);
             Guard.Step("SolidStreets", () => SolidStreets.Logger = context.Logger);
             Guard.Step("SolidGame", () => SolidGame.Logger = context.Logger);
+            Guard.Step("CityDrivers", () => CityDrivers.Logger = context.Logger);
+            Guard.Step("DriverGame", () => DriverGame.Logger = context.Logger);
             Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
             Guard.Step("PhoneContacts", () => PhoneContacts.Logger = context.Logger);
@@ -1244,6 +1251,7 @@ namespace RealLifeOverhaul
             Guard.Step("HornReactions", () => Guard.Add<HornReactions>(_root));     // people answer the player's horn (People/HornReactions)
             Guard.Step("RecklessDrivers", () => Guard.Add<RecklessDrivers>(_root));   // reckless drivers and the accidents that come of them (Traffic/Reckless); after CarStrikes and TrafficAccidents
             Guard.Step("SolidStreets", () => Guard.Add<SolidStreets>(_root));      // traffic sees people in the road (Traffic/Solid); after HornReactions, CarStrikes and RecklessDrivers
+            Guard.Step("CityDrivers", () => Guard.Add<CityDrivers>(_root));        // the city's cars drive with care (Traffic/Drivers); after SolidStreets, which it leaves people to
             Guard.Step("PlayerKnockdown", () => Guard.Add<PlayerKnockdown>(_root));
             Guard.Step("CityLifeDirector", () => Guard.Add<CityLifeDirector>(_root));   // people at work and about their day: its own pool of eight
             Guard.Step("JobDirector", () => Guard.Add<JobDirector>(_root));   // jobs the player takes themselves (Scripts/Jobs)

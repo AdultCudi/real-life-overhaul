@@ -94,8 +94,52 @@ namespace RealLifeOverhaul
             {
                 _active = value;
                 enabled = value;
+                Listed(value);
             }
         }
+
+        // Every driver with a drive under way, for whoever watches for a unit coming (an accident's officer on traffic).
+        private static readonly EmergencyDriver[] Driving = new EmergencyDriver[16];
+
+        private void Listed(bool driving)
+        {
+            int free = -1;
+            for (int i = 0; i < Driving.Length; i++)
+            {
+                if (ReferenceEquals(Driving[i], this))
+                {
+                    if (!driving)
+                    {
+                        Driving[i] = null;
+                    }
+                    return;
+                }
+                if (free < 0 && Driving[i] == null)
+                {
+                    free = i;   // (a driver destroyed with its host counts as gone)
+                }
+            }
+            if (driving && free >= 0)
+            {
+                Driving[free] = this;
+            }
+        }
+
+        /// <summary>Places in the list of drivers with a drive under way.</summary>
+        public static int ListPlaces => Driving.Length;
+
+        /// <summary>The driver in that place of the list if it drives a vehicle with its emergency lights on now; null otherwise. Field reads.</summary>
+        public static EmergencyDriver LitAt(int place)
+        {
+            EmergencyDriver driver = Driving[place];
+            return driver != null && driver._active && driver.Lit && driver._car != null ? driver : null;
+        }
+
+        /// <summary>True while the vehicle it drives shows emergency lights (an ambulance, a patrol car, the fire engine): its unit says so.</summary>
+        public bool Lit { get; set; }
+
+        /// <summary>The vehicle it drives while a drive is under way; null otherwise.</summary>
+        public VehicleComponent Car => _active ? _car : null;
 
         public bool Arrived { get; private set; }
 

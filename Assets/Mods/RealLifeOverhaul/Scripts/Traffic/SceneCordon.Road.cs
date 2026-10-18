@@ -68,6 +68,32 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>
+        /// A lane point of the lane left open beside the scene, so many metres beyond the far side of the taped area the way that
+        /// lane runs (from its gate, walked on along it); null if no lane is open or it ends first. For a test unit's route.
+        /// </summary>
+        public Waypoint OpenLanePoint(float beyond)
+        {
+            if (!Surveyed || _gates.Count == 0 || !TrafficManager.HasInstance)
+            {
+                return null;
+            }
+            TrafficManager traffic = TrafficManager.Instance;
+            Waypoint point = _gates[0];
+            float way = Vector3.Dot(LaneDirection(point), _forward) >= 0f ? 1f : -1f;
+            float end = way > 0f ? _front : -_back;
+            for (int guard = 0; guard < 120 && point != null; guard++)
+            {
+                float along = Vector3.Dot(point.position - _scene, _forward) * way;
+                if (along >= end + beyond)
+                {
+                    return point;
+                }
+                point = point.neighbors != null && point.neighbors.Count > 0 ? traffic.GetWaypoint(point.neighbors[0]) : null;
+            }
+            return null;
+        }
+
         private static bool IsForked(Waypoint point)
         {
             return point.neighbors.Count > 1 || point.prev.Count > 1 || point.IsInIntersection();

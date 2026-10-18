@@ -29,7 +29,8 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// One police officer at an accident: with two, one keeps the traffic post and the other works the scene (the casualty,
-    /// markers, the witness, the cordon's opening); alone, both by turns. Ticked by AccidentCast.
+    /// markers, the witness, the cordon's opening); alone, both by turns. The one on the post steps out of the open lane and
+    /// waves an emergency unit through it. Ticked by AccidentCast.
     /// </summary>
     internal sealed class SceneOfficer
     {
@@ -42,9 +43,11 @@ namespace RealLifeOverhaul
         private const AnimationType HoldGesture = AnimationType.IDontThinkSo;
         private const AnimationType WaveGesture = AnimationType.DJEncouraging;
 
+        private const float PointClear = 0.5f;     // metres the lane must be to their left for the pointing clip to be the one that lets a unit past
+        private const float PointEvery = 3f;       // seconds between two of those (the clip is 2.6 s long)
         private const float PointInFront = 0.3f;   // cosine: whoever is pointed along must be within about 70 degrees of straight ahead
 
-        private enum Duty { None, Inspect, Interview, Radio, Perimeter, Traffic, Gate, Evidence, Dismiss }
+        private enum Duty { None, Inspect, Interview, Radio, Perimeter, Traffic, Gate, Evidence, Pass, Dismiss }
 
         private Duty _duty = Duty.None;
         private float _until;
@@ -62,6 +65,11 @@ namespace RealLifeOverhaul
         /// <summary>True while standing with a witness, taking their account.</summary>
         public bool Interviewing => _duty == Duty.Interview && _reached && Role.Present;
 
+        /// <summary>True while on the traffic post (there, or on the way to it).</summary>
+        public bool OnPost => _duty == Duty.Traffic && Role.Present;
+
+        /// <summary>True while stepped out of the open lane, letting a unit past.</summary>
+        public bool Passing => _duty == Duty.Pass && Role.Present;
 
         /// <summary>Starts work, with whichever job the scene most needs done.</summary>
         public void Begin(SceneBrief brief, float now)
@@ -85,6 +93,59 @@ namespace RealLifeOverhaul
             if (_duty == Duty.Traffic && _reached)
             {
                 Role.Gesture(WaveGesture, AnimationType.VictoryStanding);
+            }
+        }
+
+        /// <summary>
+        /// A response unit is about to pass the scene by the lane traffic is let through in. Whoever is on the traffic post
+        /// steps out of that lane to a place beside it, turns to the unit and waves it through (the traffic clip, or the wave
+        /// these characters have where that cannot be had), for so many seconds at most. False, and nothing changed, for an
+        /// officer who is not on the post.
+        /// </summary>
+        public bool LetPass(Vector3 aside, Vector3 from, float now, float seconds)
+        {
+            if (_duty != Duty.Traffic || !Role.Present)
+            {
+                return false;
+            }
+            Role.Quiet();
+            Role.Drop();
+            _duty = Duty.Pass;
+            _reached = false;
+            _kneeling = false;
+            _until = now + seconds;
+            // The pointing clip sends whatever passes in front of them along to their own right. That fits where the lane
+            // they step out of is on their left as the unit goes: stood facing that lane, the unit comes by from left to
+            // right and the arm points the way it is going. On the other side of the lane it would point back up the road,
+            // so there (and where the clip cannot be had) they face the unit and work it through as they work traffic.
+            Vector3 way = aside - from;
+            way.y = 0f;
+            Vector3 lane = Role.Position - aside;
+            lane.y = 0f;
+            bool points = ClipLibrary.Has(SceneClips.PointDirect) && way.sqrMagnitude > 1f
+                          && Vector3.Dot(lane, Vector3.Cross(Vector3.up, way.normalized)) < -PointClear;
+            if (points)
+            {
+                Role.Go(aside, Pace.Walk, aside + lane, 6f);
+                Role.Repeat(SceneClips.PointDirect, WaveGesture, AnimationType.VictoryStanding, PointEvery, PointEvery + 0.6f);
+            }
+            else
+            {
+                Role.Go(aside, Pace.Walk, from, 6f);
+                Role.Work(SceneClips.DirectTraffic);
+                Role.Repeat(WaveGesture, AnimationType.VictoryStanding, 1.5f, 2.5f);
+            }
+            ActorPool.Logger?.Info(points ? "People: the officer steps out of the open lane, faces it and points the unit through (point_direct)."
+                : "People: the officer steps out of the open lane, faces the unit and waves it through (the traffic clip, or the wave these characters have).");
+            return true;
+        }
+
+        /// <summary>The unit is past (or is not coming after all): back to the post at the next tick.</summary>
+        public void PassDone(float now)
+        {
+            if (_duty == Duty.Pass)
+            {
+                _until = now;
             }
         }
 
@@ -135,7 +196,10 @@ namespace RealLifeOverhaul
             if (!_reached && Role.Settled)
             {
                 _reached = true;
-                _until = now + Lasts(_duty);
+                if (_duty != Duty.Pass)
+                {
+                    _until = now + Lasts(_duty);   // (letting a unit past lasts until that unit is past, however long the step aside took)
+                }
                 if (_duty == Duty.Evidence)
                 {
                     brief.MarkerDue = true;   // down beside it: the marker is set

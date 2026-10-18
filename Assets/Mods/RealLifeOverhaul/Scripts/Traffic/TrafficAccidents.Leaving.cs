@@ -197,6 +197,12 @@ namespace RealLifeOverhaul
             {
                 _cordon.Lower();
                 PlanExit(attendance);
+                if (!attendance.OwnLane)
+                {
+                    // Round the wrecks by the open lane: the officer on traffic steps out of it and waves it through (the
+                    // officers' recall, due now, waits until it is past).
+                    StartWave(attendance.Unit.Car, now, fromScene: true);
+                }
             }
             Stand(attendance, now, waits: false);
             attendance.At = now + ClearInView;

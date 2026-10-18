@@ -202,5 +202,93 @@ namespace RealLifeOverhaul
         {
             return index >= count - 1 ? Math.Max(0f, length) : index * GateStep;
         }
+
+        // ---------------------------------------------------------------- the officer who waves a unit through
+
+        public const float PassAhead = 45f;     // metres before the traffic post at which a unit coming up the open lane is waved through
+        public const float PassBeyond = 3f;     // metres past the post its tail is before the officer goes back
+        public const float PassMost = 8f;       // seconds a pass lasts at the most
+        public const float PassClear = 0.3f;    // metres kept between where the officer stands aside and a passing unit's look ahead: a person's own width again
+        public const float LookWider = 0.45f;   // metres a unit's look ahead reaches beyond its side for somebody on foot (EmergencyDriver: 0.15 and 0.3)
+        public const float OwnLaneAhead = 5f;   // metres ahead of a unit's nose it still drives in its own lane before it has pulled out
+        public const float LaneHalf = 1.75f;    // metres either side of a lane's line
+
+        /// <summary>Where the officer on the traffic post is: on the post, letting a unit past, or called back to the car.</summary>
+        public enum Pass { Post, Waving, Board }
+
+        /// <summary>
+        /// The officer's next state. On the post, a unit due is waved through (the post's own job paused); waving, it ends when
+        /// the unit is past, and if the officers were called back meanwhile, they board then, not before.
+        /// </summary>
+        /// <param name="due">A unit has reached the open lane (or is leaving by it).</param>
+        /// <param name="over">The unit is past, gone, or the pass has lasted its most.</param>
+        /// <param name="recalled">The officers have been called back to their car.</param>
+        public static Pass NextPass(Pass state, bool due, bool over, bool recalled)
+        {
+            switch (state)
+            {
+                case Pass.Post:
+                    return recalled ? Pass.Board : due ? Pass.Waving : Pass.Post;
+                case Pass.Waving:
+                    return !over ? Pass.Waving : recalled ? Pass.Board : Pass.Post;
+                default:
+                    return Pass.Board;
+            }
+        }
+
+        /// <summary>True if a unit coming up the open lane is to be waved through now: in that lane, facing along it, its nose within reach of the post.</summary>
+        /// <param name="toPost">Metres from its nose to the post, along the way it faces.</param>
+        /// <param name="fromLane">Metres from its middle to the open lane's line.</param>
+        /// <param name="squarely">How squarely it faces along the road: 1 dead along it.</param>
+        public static bool PassDue(float toPost, float fromLane, float squarely)
+        {
+            return toPost > -1f && toPost <= PassAhead && fromLane <= LaneHalf + 0.5f && squarely >= 0.7f;
+        }
+
+        /// <summary>True once a pass is over: the unit's tail is past the post, it has gone, or the most a pass lasts is up.</summary>
+        public static bool PassOver(float tailPastPost, bool gone, float passFor)
+        {
+            return gone || tailPastPost >= PassBeyond || passFor >= PassMost;
+        }
+
+        /// <summary>Metres from a place to a way a unit drives (its line across the road), past the unit's side and its look ahead; negative inside.</summary>
+        public static float Clearance(float placeAcross, float wayAcross, float unitHalfWidth)
+        {
+            return Math.Abs(placeAcross - wayAcross) - unitHalfWidth - LookWider;
+        }
+
+        /// <summary>
+        /// Which place beside the open lane the officer takes: the first clear by PassClear of the open lane and, for a unit
+        /// leaving from the scene, of its own lane where it still drives in it (just ahead of its nose); with none clear, the
+        /// clearest. Places are in the road's frame (along, across); clearance gives the chosen one's.
+        /// </summary>
+        /// <param name="own">The unit leaves from its own lane at the scene (ownAcross, its nose at ownNose along the road).</param>
+        public static int PassPlace(float[] along, float[] across, int places, float laneAcross, float unitHalfWidth, bool own, float ownAcross, float ownNose,
+            float facing, out float clearance)
+        {
+            int best = -1;
+            float most = float.MinValue;
+            for (int i = 0; i < places; i++)
+            {
+                float clear = Clearance(across[i], laneAcross, unitHalfWidth);
+                float ahead = (along[i] - ownNose) * (facing >= 0f ? 1f : -1f);
+                if (own && ahead > -1f && ahead < OwnLaneAhead)
+                {
+                    clear = Math.Min(clear, Clearance(across[i], ownAcross, unitHalfWidth));
+                }
+                if (clear >= PassClear)
+                {
+                    clearance = clear;
+                    return i;
+                }
+                if (clear > most)
+                {
+                    most = clear;
+                    best = i;
+                }
+            }
+            clearance = most;
+            return best;
+        }
     }
 }

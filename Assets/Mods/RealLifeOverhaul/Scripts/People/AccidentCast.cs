@@ -311,6 +311,8 @@ namespace RealLifeOverhaul
             _sideLogged = false;
             _care = Care.Away;
             _officers = Crew.Away;
+            _pass = CordonRules.Pass.Post;
+            _boardAfterPass = false;
         }
 
         private static readonly int HotOnCordonRaised = HotSpots.Slot("Traffic: AccidentCast.OnCordonRaised");
@@ -324,6 +326,92 @@ namespace RealLifeOverhaul
         {
             _officerA.WaveOn();
             _officerB.WaveOn();
+        }
+
+        /// <summary>True while an officer is on the traffic post with the tape up: somebody there to wave a unit through.</summary>
+        public bool OnPost => _active && _cordon != null && _cordon.Up && _officers == Crew.Working && (_officerA.OnPost || _officerB.OnPost);
+
+        /// <summary>True while an officer has stepped out of the open lane, letting a unit past.</summary>
+        public bool Passing => _pass == CordonRules.Pass.Waving;
+
+        /// <summary>When the unit now being let past began to be.</summary>
+        public float PassSince { get; private set; }
+
+        private CordonRules.Pass _pass = CordonRules.Pass.Post;
+        private bool _boardAfterPass;     // the officers were called back while one let a unit past: they board when it is past
+        private float _passClear;         // metres between where the officer stood aside and the unit's way, for the self-check
+        private string _passWhat;
+        private readonly float[] _passAlong = new float[2];
+        private readonly float[] _passAcross = new float[2];
+
+        /// <summary>
+        /// A unit with its lights on is about to pass the scene by the lane traffic is let through in (coming up it, or leaving
+        /// the scene round the wrecks by it): whoever is on the traffic post steps out of that lane to the place beside it
+        /// clearest of the unit's way (CordonRules.PassPlace) and waves it through, until <see cref="UnitPast"/> (or for so many
+        /// seconds at most). False, and nothing changed, if nobody is on the post.
+        /// </summary>
+        /// <param name="fromScene">The unit leaves from its own lane at the scene (the ambulance going round the wrecks).</param>
+        public bool LetUnitPast(float now, Vector3 middle, Vector3 forward, float halfLength, float halfWidth, bool fromScene, string what)
+        {
+            if (_cordon == null || !_cordon.Up || _officers != Crew.Working || _pass != CordonRules.Pass.Post || !_cordon.OpenLane(out float lane)
+                || !_cordon.Frame(out Vector3 scene, out Vector3 road, out Vector3 right, out _, out _, out _, out _))
+            {
+                return false;
+            }
+            // Beside the wrecks once the tape is down (nothing walled there), else before the near barriers, out of the lane.
+            int places = 0;
+            bool beside = _cordon.Lowered;
+            if (beside)
+            {
+                _passAlong[places] = Vector3.Dot(_cordon.PassBeside - scene, road);
+                _passAcross[places++] = Vector3.Dot(_cordon.PassBeside - scene, right);
+            }
+            _passAlong[places] = Vector3.Dot(_cordon.PassPost - scene, road);
+            _passAcross[places++] = Vector3.Dot(_cordon.PassPost - scene, right);
+            float facing = Vector3.Dot(forward, road);
+            float nose = Vector3.Dot(middle - scene, road) + (facing >= 0f ? halfLength : -halfLength);
+            int chosen = CordonRules.PassPlace(_passAlong, _passAcross, places, lane, halfWidth, fromScene, Vector3.Dot(middle - scene, right), nose, facing, out float clear);
+            Vector3 aside = beside && chosen == 0 ? _cordon.PassBeside : _cordon.PassPost;
+            if (!_officerA.LetPass(aside, middle, now, CordonRules.PassMost) && !_officerB.LetPass(aside, middle, now, CordonRules.PassMost))
+            {
+                return false;   // (whoever is on the post says in the log how they let it past)
+            }
+            _pass = CordonRules.NextPass(_pass, due: true, over: false, recalled: false);
+            PassSince = now;
+            _passClear = clear;
+            _passWhat = what;
+            Logger?.Info($"People: a {what} is coming through by the open lane; the officer on traffic steps out of it, "
+                         + (beside && chosen == 0 ? "to beside the wrecks" : "to before the near barriers") + System.FormattableString.Invariant($", {clear:F1} m clear of its way."));
+            return true;
+        }
+
+        /// <summary>The unit is past (or gone, or the pass has lasted its most): the officer goes back to the post, or to the car if called back meanwhile.</summary>
+        public void UnitPast(float now, string why)
+        {
+            if (_pass != CordonRules.Pass.Waving)
+            {
+                return;
+            }
+            _officerA.PassDone(now);
+            _officerB.PassDone(now);
+            bool recalled = _boardAfterPass;
+            _pass = CordonRules.NextPass(_pass, due: false, over: true, recalled);
+            float took = now - PassSince;
+            if (Meta.Dev.Verbose)
+            {
+                bool clear = _passClear >= CordonRules.PassClear;
+                bool soon = took <= CordonRules.PassMost + 0.5f;
+                Logger?.Info(System.FormattableString.Invariant(
+                                 $"Accident check (wave-through): the officer on traffic stood {_passClear:F1} m clear of the {_passWhat}'s way (wanted at least {CordonRules.PassClear:F1}) ")
+                             + System.FormattableString.Invariant($"and waved it through; over after {took:F1} s ({why}; the most is {CordonRules.PassMost:F0}): ")
+                             + (clear && soon ? "PASS" : !clear ? "FAIL, no place beside the open lane was clear of it" : "FAIL, it took too long"));
+            }
+            if (recalled)
+            {
+                _boardAfterPass = false;
+                _pass = CordonRules.Pass.Post;
+                Recall(true);
+            }
         }
 
         /// <summary>The ambulance is loaded and about to drive through: whoever stands in the road is sent to the kerb until it is over.</summary>
@@ -371,9 +459,14 @@ namespace RealLifeOverhaul
             return police ? OfficersOut(car, now) : MedicsOut(car, latest, now);
         }
 
-        /// <summary>The unit is about to go: its crew drops what it is doing and comes back.</summary>
+        /// <summary>The unit is about to go: its crew drops what it is doing and comes back (the officers once a unit being waved through is past).</summary>
         public void Recall(bool police)
         {
+            if (police && _pass == CordonRules.Pass.Waving)
+            {
+                _boardAfterPass = true;   // nobody walks off the post into the open lane while a unit comes by it
+                return;
+            }
             if (police)
             {
                 if (_officers == Crew.Working)
@@ -442,6 +535,8 @@ namespace RealLifeOverhaul
                 _officerA.Role.Exit();
                 _officerB.Role.Exit();
                 _officers = Crew.Away;
+                _pass = CordonRules.Pass.Post;
+                _boardAfterPass = false;
                 return;
             }
             // Whoever is already on the stretcher goes with the ambulance. Anyone still lying where they
