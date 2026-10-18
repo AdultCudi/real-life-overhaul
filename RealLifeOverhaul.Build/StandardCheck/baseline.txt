@@ -259,7 +259,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/TextsPhone.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/UtilityLinks.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/VenturesLinks.cs	1
 RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitOutDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeDirector.cs	1
@@ -282,7 +281,6 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDirector.cs	6
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeScene.cs	7
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/Children.cs	7
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/Courtship.cs	6
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	6
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyState.cs	5
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/HomeLife.cs	3
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	4
@@ -380,7 +378,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/StreetEventScene.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/Children.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/Errands.cs	13
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyDirector.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	11
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/HomeLife.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	3
