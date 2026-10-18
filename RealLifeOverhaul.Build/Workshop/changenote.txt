@@ -1,4 +1,4 @@
-0.38.1
+0.39.0
 
-Fixed
-- The driving test, above all in the school's van, marked collisions that never happened, often as you stopped. The road under the van as its nose dipped, a kerb under the wheels or its load counted as a hit. Now only hitting a car, a person, a post, a building or a wall counts, by how hard you hit it, and the same rule judges crashes on the road, on jobs and on outings.
+New
+- Cars handle with weight: the car you drive rides softly on long springs, bounces and settles after a kerb, leans in bends and dips its nose as you brake. Steering is quick at walking pace and calmer at speed, the tyres give near their limit and slide, and the brakes build without locking. The custom shop's parts work on top. The Car handling option sets Light, Full, Heavy or Off.
