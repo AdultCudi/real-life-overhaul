@@ -8,18 +8,12 @@ using UnityEngine.Rendering;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The models of the tech sector's buildings (PropAssets/scripts/props_tech.py, in the mod's prop bundle) by what they
-    /// are, with the size each stands by: a model from the bundle where it has one, a plain box of the same size until it
-    /// has (the bundle loads in the background). Every piece is one or two renderers with shared meshes and materials,
-    /// no collider, no script, no shadow. The lettering (a company's name, a cloud's) is the game's own font. The racks'
-    /// status lights are drawn in two materials of the room's own (see ServerRoomView), never one per object.
-    /// </summary>
+    /// <summary>The models of the tech sector's buildings from the prop bundle, or a box of the same size until it loads.</summary>
     internal static class SiteProps
     {
-        public const float AiForward = 0.065f;      // dc_rack_ai's front is this much further out than a rack's: its lights with it
+        public const float AiForward = 0.065f;      // metres dc_rack_ai's front stands out past a rack's, and its lights with it
 
-        /// <summary>A model: its id, its size in Unity's axes (x across, y up, z deep), the colour of its box, and whether it hangs on a wall by its back.</summary>
+        /// <summary>A model: its id, its size (x across, y up, z deep, metres), its box's colour, and whether it hangs on a wall by its back.</summary>
         public struct Spec
         {
             public string Id;
@@ -89,7 +83,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A model under a parent at its origin: the bundle's, or a box of its size. modelled says which.</summary>
+        /// <summary>A model under a parent at its origin: the bundle's, or a box of its size; <c>modelled</c> says which.</summary>
         public static Transform Make(Spec spec, Transform parent, out bool modelled)
         {
             var holder = new GameObject("RealLifeOverhaul " + spec.Id).transform;
@@ -107,7 +101,7 @@ namespace RealLifeOverhaul.Tech
             return holder;
         }
 
-        /// <summary>A flat panel of one colour on a model (the company's colour on its logo wall and desk): a box of the size, facing +Z.</summary>
+        /// <summary>A flat panel of one colour on a model (the company's on its logo wall and desk), facing +Z.</summary>
         public static void Panel(Transform parent, Color colour, Vector3 at, Vector3 size)
         {
             Material paint = Shapes.Paint(colour);
@@ -151,7 +145,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>Solid for everyone on foot: a box cut out of the navigation mesh while the piece is switched on (the city's own buildings only).</summary>
+        /// <summary>Makes a piece solid on foot: a box cut out of the navigation mesh while it is on. The city's own buildings only.</summary>
         public static void Solid(Transform holder, Vector3 centre, Vector3 size)
         {
             var cut = holder.gameObject.AddComponent<NavMeshObstacle>();
@@ -166,7 +160,7 @@ namespace RealLifeOverhaul.Tech
         private static readonly int EmissiveColorId = Shader.PropertyToID("_EmissiveColor");
         private static Shader _lit;
 
-        /// <summary>A material of the caller's own (its status lights), made from the game's lit shader: the caller changes and destroys it. Null without the shader.</summary>
+        /// <summary>A material of the caller's own from the game's lit shader, which the caller changes and destroys. Null without the shader.</summary>
         public static Material Own(Color colour, float glow)
         {
             if (_lit == null)
@@ -194,12 +188,7 @@ namespace RealLifeOverhaul.Tech
         }
     }
 
-    /// <summary>
-    /// The floor of the room the player is in, measured once on the way in for the tech sector's plans
-    /// (<see cref="RoomGrid"/>): a grid over the room's interior bounds (BuildingManager.interiorBounds, from the game's own
-    /// interior), each cell open where the game's navigation mesh is, at the floor's height, and under the player's
-    /// furniture where an item of theirs stands on the floor. A few thousand samples, once, under the game's fade.
-    /// </summary>
+    /// <summary>The floor of the room the player is in as a <see cref="RoomGrid"/>, sampled once under the fade.</summary>
     internal static class RoomMeasure
     {
         public const float CellLeast = 0.3f;
@@ -238,7 +227,7 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        /// <summary>The room's floor as a grid, null if no floor could be found (the game may still be putting the room together).</summary>
+        /// <summary>The room's floor as a grid; null if none could be found, as while the game is still putting the room together.</summary>
         public static RoomGrid Measure(BuildingManager building, Vector3 door, bool furniture, out float floor)
         {
             floor = door.y;
@@ -281,7 +270,7 @@ namespace RealLifeOverhaul.Tech
             return open > 0 ? grid : null;
         }
 
-        // Everything of the player's that stands on the floor: the cells under it are theirs.
+        // the cells under everything of the player's that stands on the floor are theirs
         private static void Furniture(BuildingManager building, RoomGrid grid, float floor)
         {
             List<ItemController> items = building.allItemControllers;
@@ -315,7 +304,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (!any || all.min.y > floor + 1.0f || all.max.y < floor - 0.5f)
                 {
-                    continue;   // (on a wall or the ceiling, or on another floor)
+                    continue;   // on a wall, the ceiling or another floor
                 }
                 grid.CellOf(all.min.x - 0.05f, all.min.z - 0.05f, out int c0, out int r0);
                 grid.CellOf(all.max.x + 0.05f, all.max.z + 0.05f, out int c1, out int r1);
@@ -356,7 +345,7 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        /// <summary>The ceiling over a point, where a ray up finds a flat one within six metres.</summary>
+        /// <summary>The ceiling over a point, where a ray up finds a flat one within reach.</summary>
         public static bool Ceiling(Vector3 from, out Vector3 at)
         {
             if (Physics.Raycast(from, Vector3.up, out RaycastHit hit, 6f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) && hit.normal.y < -0.9f)
@@ -374,7 +363,6 @@ namespace RealLifeOverhaul.Tech
             piece.SetPositionAndRotation(new Vector3(p.X, floor + p.Y, p.Z), Quaternion.Euler(0f, p.Yaw, 0f));
         }
 
-        /// <summary>A piece's facing as a direction.</summary>
         public static Vector3 Facing(SitePiece p)
         {
             return Quaternion.Euler(0f, p.Yaw, 0f) * Vector3.forward;
@@ -392,7 +380,7 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        /// <summary>The logger for every view (set once by TechSites).</summary>
+        /// <summary>The logger for every view, set once by TechSites.</summary>
         public static IModLogger Logger;
     }
 }

@@ -4,7 +4,7 @@ The tech sector and the professions: tech firms of the player's own, hiring, the
 
 ## Read first
 
-- `TechDirector.cs`: keeps every part going; one partial file a part.
+- `TechDirector.cs`: keeps every part going; each part in partial files of its own (the apps' actions in `.Roles`, `.FirmsApp` and `.Deals`).
 - `TechBridges.cs`: what it asks of the others.
 - `Firms`: the firms, one folder a part (Hiring, Infra, People, Sites, Venture).
 

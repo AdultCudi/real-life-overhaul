@@ -78,7 +78,8 @@ namespace RealLifeOverhaul.Tech
                 box.Title(TechText.T("reallife_infra_title"));
                 if (f.Cloud.Open)
                 {
-                    box.Line(TechText.Fill("reallife_infra_cloud_line", "sold", f.Cloud.Sold.ToString(), "own", f.Cloud.Own.ToString(), "gpu", f.Cloud.GpuSold.ToString(), "rival", TechText.Mille(f.Cloud.RivalPrice),
+                    box.Line(TechText.Fill("reallife_infra_cloud_line", "sold", f.Cloud.Sold.ToString(), "own", f.Cloud.Own.ToString(),
+                        "gpu", f.Cloud.GpuSold.ToString(), "rival", TechText.Mille(f.Cloud.RivalPrice),
                         "regions", InfraRules.Regions(f.Centres).ToString()));
                 }
                 Owed(box, f);
@@ -88,7 +89,7 @@ namespace RealLifeOverhaul.Tech
             return TechColumns.Infra;
         }
 
-        // What the data centres owe from costs the cash could not meet, whenever there is any (the option on or off, a cloud or none).
+        // What the data centres owe from costs the cash could not meet, shown whether or not the scale is on.
         private static void Owed(InfoBox box, InfraFile f)
         {
             if (f != null && f.Owed > 0)
@@ -104,9 +105,11 @@ namespace RealLifeOverhaul.Tech
             box.Title(TechText.T("reallife_infra_fit_title", "name", TalentGame.NameOf(reg)));
             if (box.HasSelector)
             {
-                box.Selector(InfraCatalogue.Tiers, _fitTier, i => TechText.Fill("reallife_infra_fit_tier", "tier", TechText.InfraTier(i), "outages", TechText.Mille(InfraCatalogue.OutageChance[i] * 10)), i => Set(() => _fitTier = i));
+                box.Selector(InfraCatalogue.Tiers, _fitTier,
+                    i => TechText.Fill("reallife_infra_fit_tier", "tier", TechText.InfraTier(i), "outages", TechText.Mille(InfraCatalogue.OutageChance[i] * 10)), i => Set(() => _fitTier = i));
             }
-            box.Line(TechText.Fill("reallife_infra_fit_cost", "sqm", sqm.ToString(), "racks", (sqm / InfraCatalogue.SqmPerRack).ToString(), "cost", TechText.Cents(_director.Level(InfraRules.FitCost(sqm, _fitTier, TechDirector.BuyScale)))));
+            box.Line(TechText.Fill("reallife_infra_fit_cost", "sqm", sqm.ToString(), "racks", (sqm / InfraCatalogue.SqmPerRack).ToString(),
+                "cost", TechText.Cents(_director.Level(InfraRules.FitCost(sqm, _fitTier, TechDirector.BuyScale)))));
             Transform buttons = box.ButtonRow();
             int tier = _fitTier;
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_infra_button_fit", () => Do(() =>
@@ -136,7 +139,8 @@ namespace RealLifeOverhaul.Tech
             Owed(box, _director.Infra);
             if (share > 0)
             {
-                box.Line(TechText.Fill("reallife_endscale_infra_crews", "operators", d.Crew[InfraCatalogue.Operators].ToString(), "operators_need", InfraRules.CrewNeed(d, InfraCatalogue.Operators, share).ToString(),
+                box.Line(TechText.Fill("reallife_endscale_infra_crews", "operators", d.Crew[InfraCatalogue.Operators].ToString(),
+                    "operators_need", InfraRules.CrewNeed(d, InfraCatalogue.Operators, share).ToString(),
                     "engineers", d.Crew[InfraCatalogue.Engineers].ToString(), "engineers_need", InfraRules.CrewNeed(d, InfraCatalogue.Engineers, share).ToString(),
                     "security", d.Crew[InfraCatalogue.Security].ToString(), "security_need", InfraRules.CrewNeed(d, InfraCatalogue.Security, share).ToString(),
                     "wages", TechText.Cents(_director.Level(InfraRules.Crews(d)))));
@@ -145,7 +149,8 @@ namespace RealLifeOverhaul.Tech
             }
             if (d.Tier < InfraCatalogue.Tiers - 1)
             {
-                box.Line(TechText.T("reallife_infra_centre_upgrade", "tier", TechText.InfraTier(d.Tier + 1), "cost", TechText.Cents(_director.Level(InfraRules.UpgradeCost(d.Sqm, d.Tier, d.Tier + 1, buy)))));
+                box.Line(TechText.T("reallife_infra_centre_upgrade", "tier", TechText.InfraTier(d.Tier + 1),
+                    "cost", TechText.Cents(_director.Level(InfraRules.UpgradeCost(d.Sqm, d.Tier, d.Tier + 1, buy)))));
             }
             Transform buttons = box.ButtonRow();
             int step = InfraRules.RacksStep(buy);
@@ -170,7 +175,8 @@ namespace RealLifeOverhaul.Tech
                 _director.OpenRoles(TechDirector.TabJobs, null);
             });
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
-            box.Line(TechText.Fill("reallife_infra_centre_prices", "rack", TechText.Cents(_director.Level(InfraRules.RackPrice(false, buy))), "gpu", TechText.Cents(_director.Level(InfraRules.RackPrice(true, buy)))));
+            box.Line(TechText.Fill("reallife_infra_centre_prices", "rack", TechText.Cents(_director.Level(InfraRules.RackPrice(false, buy))),
+                "gpu", TechText.Cents(_director.Level(InfraRules.RackPrice(true, buy)))));
             Meta.Guide.Point(box, SectorGuide);
         }
 
@@ -188,7 +194,8 @@ namespace RealLifeOverhaul.Tech
                 if (needs == 0 && uis != null && uis.textInputUi != null)
                 {
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_infra_button_launch", () =>
-                        uis.textInputUi.Show("reallife_infra_cloud_name_placeholder", "common_confirm", text => UiClone.Safe(() => Do(() => _director.LaunchCloud(text))), null, string.Empty, false, 30));
+                        uis.textInputUi.Show("reallife_infra_cloud_name_placeholder", "common_confirm",
+                            text => UiClone.Safe(() => Do(() => _director.LaunchCloud(text))), null, string.Empty, false, 30));
                 }
                 InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
                 box.Note(TechText.Fill("reallife_infra_cloud_about", "racks", InfraRules.CloudRacksLeast(buy).ToString(), "engineers", InfraCatalogue.CloudEngineersLeast.ToString(),
@@ -214,7 +221,9 @@ namespace RealLifeOverhaul.Tech
             }
             if (box.HasSelector)
             {
-                box.Selector(CloudPrices.Length, at, i => TechText.Fill("reallife_infra_cloud_price", "share", TechText.Mille(CloudPrices[i]), "unit", TechText.Rate((int)_director.Level(InfraCatalogue.UnitDay * (long)CloudPrices[i] / 1000))),
+                box.Selector(CloudPrices.Length, at,
+                    i => TechText.Fill("reallife_infra_cloud_price", "share", TechText.Mille(CloudPrices[i]),
+                    "unit", TechText.Rate((int)_director.Level(InfraCatalogue.UnitDay * (long)CloudPrices[i] / 1000))),
                     i => Do(() => _director.SetCloudPrice(CloudPrices[i])));
             }
             Transform row = box.ButtonRow();

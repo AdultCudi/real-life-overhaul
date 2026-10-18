@@ -5,38 +5,15 @@ using System.Text;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The player's tech firms in the save: one line of the save's modData under <see cref="Key"/>, written by
-    /// <see cref="TechWriter"/>. Game-free.
-    ///
-    ///     v=1~h:seed|first day|last day|next id|last tender~f:...~p:...~c:...
-    ///
-    ///   f  each firm: place|kind|founded|focus|debt|reputation|registered until|breaches|outages|research costs|relief day|last 30 days|the 30 days' takings divided by commas
-    ///   p  each product: id|place|name|kind|segment|stage|features|progress|bugs|users|free|tier|marketing|share|launched|hype|scope|revenue|rival features|rival tier|last release|carry|training|training level
-    ///   c  each contract: id|place|kind|client|own place|council|points|done|value|paid|start|due|end|satisfaction|stage|bid|rivals|last billed|told
+    /// The player's tech firms in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s format, a header
+    /// (h) then firms (f), products (p) and contracts (c), each record's fields in the order <see cref="Write"/> writes them.
     /// </summary>
     public static class FirmsStore
     {
         public const string Key = "reallife:tech_firms";
         public const int Version = 1;
 
-        public static FirmsFile Load(Dictionary<string, string> data, out int version)
-        {
-            version = 0;
-            string text;
-            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
-            {
-                return null;
-            }
-            try
-            {
-                return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
-            }
-            catch (Exception)
-            {
-                SaveLines.Unreadable(data, Key, "it could not be read");
-                return null;
-            }
-        }
+        public static FirmsFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
         public static string Write(FirmsFile f)
         {
@@ -62,7 +39,8 @@ namespace RealLifeOverhaul.Tech
             foreach (Product p in f.Products)
             {
                 w.Record().Add(p.Id).Place(p.Place).Add(p.Name).Add(p.Kind).Add(p.Segment).Add(p.Stage).Add(p.Features).Add(p.Progress).Add(p.Bugs).Add(p.Users).Add(p.Free).Add(p.Tier)
-                    .Add(p.Marketing).Add(p.Share).Add(p.Launched).Add(p.Hype).Add(p.Scope).Add(p.Revenue).Add(p.RivalFeatures).Add(p.RivalTier).Add(p.LastRelease).Add(p.Carry).Add(p.Compute).Add(p.Train);
+                    .Add(p.Marketing).Add(p.Share).Add(p.Launched).Add(p.Hype).Add(p.Scope).Add(p.Revenue).Add(p.RivalFeatures).Add(p.RivalTier).Add(p.LastRelease)
+                    .Add(p.Carry).Add(p.Compute).Add(p.Train);
             }
             w.Part('c');
             foreach (Contract c in f.Contracts)
@@ -94,8 +72,7 @@ namespace RealLifeOverhaul.Tech
                 string[] days = x.Text().Split(',');
                 for (int i = 0; i < m.Days.Length && i < days.Length; i++)
                 {
-                    long v;
-                    m.Days[i] = long.TryParse(days[i], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out v) ? v : 0;
+                    m.Days[i] = long.TryParse(days[i], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out long v) ? v : 0;
                 }
                 if (f.Firms.Count < 32)
                 {

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
 {
@@ -20,20 +19,8 @@ namespace RealLifeOverhaul.Tech
     }
 
     /// <summary>
-    /// The lobby of a tech company's headquarters, in the bare interior of the empty office unit it is given (a
-    /// <see cref="RoomGrid"/> measured on the way in), in the frame of the way in: depth straight in from the door, aside
-    /// to the right of somebody walking in.
-    ///
-    ///   the desk       a reception desk across the way in, a little under halfway into the room (3 to 6 m), facing the
-    ///                  door, with a way round at least one end of it to the receptionist's side
-    ///   the logo wall  a free-standing wall in the company's colours two metres behind the desk, or against the far wall
-    ///   seating        a sofa against the wider side wall, a low table and two armchairs facing it
-    ///   plants         by the door's corners, at the ends of the logo wall and beside the desk where the way is wide
-    ///   screens        one on the wall across from the seating, one over the sofa (hung where the wall really is)
-    ///
-    /// Every piece needs all its floor open and reached from the door. The walkway check then keeps from the door the
-    /// visitor's place at the desk, the receptionist's behind it and the front of every seat: seating that closes a way
-    /// goes first, then the logo wall, then the desk.
+    /// A headquarters' lobby laid out on its unit's floor: a reception desk, a logo wall, seating, plants and screens, then the
+    /// walkway check that keeps the desk and every seat reachable from the door.
     /// </summary>
     public static class LobbyPlan
     {
@@ -84,7 +71,7 @@ namespace RealLifeOverhaul.Tech
                 frame.Try(into, SitePieceKind.LogoWall, 0f, logo, 0f, -1f, LogoWidth, LogoDepth, true);
             }
 
-            // The seating group against the wider side.
+            // the seating group against the wider side
             float seats = Math.Max(1.9f, depth - 0.6f);
             int side = frame.Extent(1, seats) >= frame.Extent(-1, seats) ? 1 : -1;
             float reach = Math.Min(frame.Extent(side, seats), Math.Min(frame.Extent(side, seats - 0.9f), frame.Extent(side, seats + 0.9f)));
@@ -103,7 +90,7 @@ namespace RealLifeOverhaul.Tech
             }
             Plants(frame, into, depth, logo);
 
-            // Screens: across from the seating at the desk's depth, and over the sofa.
+            // screens across from the seating at the desk's depth, and over the sofa
             float across = frame.Extent(-side, depth);
             if (across > 1.5f)
             {
@@ -138,8 +125,8 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // From the door: the desk's front, the receptionist's place and every seat's front. What closes a way goes,
-        // seating first, then the logo wall, then the desk itself.
+        // From the door: the desk's front, the receptionist's place and every seat's front; what closes a way goes, seating
+        // first, then the logo wall, then the desk.
         private static void Check(Frame frame, Lobby into, int side, float reach, float seats)
         {
             for (int round = 0; round < 4; round++)
@@ -152,7 +139,7 @@ namespace RealLifeOverhaul.Tech
                 bool seating = true, staff = true;
                 if (into.HasSeating)
                 {
-                    // (the sofa from beside the table's end, the armchairs from behind them)
+                    // the sofa is reached from beside the table's end, the armchairs from behind them
                     frame.Point(side * (reach - 1.3f), seats + 0.95f, out float sx, out float sz);
                     frame.Point(side * (reach - 3.45f), seats - 0.6f, out float ax, out float az);
                     frame.Point(side * (reach - 3.45f), seats + 0.6f, out float bx, out float bz);
@@ -205,7 +192,7 @@ namespace RealLifeOverhaul.Tech
                 z = Dz + Iz * depth - Ix * aside;
             }
 
-            // How far the open, reached floor runs from a point in a direction of the frame.
+            // How far the open, reached floor runs from a point in a direction of the frame, metres.
             public float Run(float aside, float depth, float da, float dd, float most)
             {
                 float run = 0f;
@@ -228,7 +215,7 @@ namespace RealLifeOverhaul.Tech
                 return G.Reached(x, z, Reached) ? Run(0f, depth, side, 0f, 30f) + Step * 0.5f : 0f;
             }
 
-            /// <summary>A piece at a place of the frame, facing along it (faceA aside, faceD in), if its floor is all open, reached and free of the pieces there.</summary>
+            /// <summary>A piece at a place of the frame facing along it (faceA aside, faceD in), if its floor is open, reached and free.</summary>
             public bool Try(SitePlanBase into, SitePieceKind kind, float aside, float depth, float faceA, float faceD, float width, float deep, bool stands, bool keepCorridor = false)
             {
                 Point(aside, depth, out float x, out float z);
@@ -263,25 +250,15 @@ namespace RealLifeOverhaul.Tech
         }
     }
 
-    /// <summary>
-    /// A few tech fittings in an office of the player's that a tech firm runs in (<see cref="OfficeFitPlan"/>), if there is
-    /// room: never on or in front of the player's own furniture, never in the way.
-    /// </summary>
+    /// <summary>A few tech fittings in the player's tech office, as planned (<see cref="OfficeFitPlan"/>).</summary>
     public sealed class OfficeFit : SitePlanBase
     {
     }
 
-    /// <summary>
-    /// The fittings of a tech firm's office: a server closet rack, a bench with two monitors and a whiteboard, each with its
-    /// back to a stretch of wall (the edge of the floor, where there is no floor beyond), a clear metre of floor in front,
-    /// 0.9 m or more from anything of the player's, 2.5 m or more from the door and 1.5 m from each other; deepest in the
-    /// room first. The office must have 20 square metres of floor that can be walked to. Then the walkway check: every
-    /// place from which the player's furniture is used, and the front of each fitting, can still be walked to from the
-    /// door; a fitting that closes one goes, the last placed first.
-    /// </summary>
+    /// <summary>A tech office's fittings, each backed to bare wall clear of the player's furniture and the door, kept only if every way stays open.</summary>
     public static class OfficeFitPlan
     {
-        public const float FromFurniture = 0.9f, FromDoor = 2.5f, Apart = 1.5f, Body = 0.22f, FloorLeast = 20f;
+        public const float FromFurniture = 0.9f, FromDoor = 2.5f, Apart = 1.5f, Body = 0.22f, FloorLeast = 20f;   // metres; FloorLeast square metres
 
         private struct Kind
         {
@@ -358,7 +335,7 @@ namespace RealLifeOverhaul.Tech
                 into.Why = "no stretch of wall with room in front of it";
                 return;
             }
-            // The walkway check, the last fitting first.
+            // the walkway check, the last fitting first
             while (into.Pieces.Count > 0)
             {
                 var closed = new bool[n];
@@ -400,13 +377,10 @@ namespace RealLifeOverhaul.Tech
         }
     }
 
-    /// <summary>
-    /// The colours of the city's tech companies, by their place in the list of the tech sector's rival firms
-    /// (Tech/Hiring/HiringCatalogue.RivalFirms): the logo wall, the reception desk's band and the sign. Invented.
-    /// </summary>
+    /// <summary>The tech companies' invented colours, in the order of HiringCatalogue.RivalFirms: the logo wall, the desk's band and the sign.</summary>
     public static class HqColours
     {
-        // r, g, b of the main colour, then of the second (the lettering), for each company in turn.
+        // r, g, b of the main colour, then of the lettering, for each company in turn
         private static readonly float[] Table =
         {
             0.05f, 0.45f, 0.55f, 0.95f, 0.97f, 0.96f,   // Codeharbour Software: teal

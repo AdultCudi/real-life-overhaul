@@ -14,20 +14,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// Everything the firms part reads from or does to the game.
-    ///
-    /// READ: the player's businesses of the tech sector's types, and their web development agencies and graphic designers
-    /// (the game's own office businesses, which join the same economy); what a game office sold yesterday and its hour's
-    /// price (from the game's statement and ItemHelper.GetPrice), so that only the hours its staff had spare go to the
-    /// tech sector's work; the player's other businesses, as clients; for the competitors' rule, every tech firm and
-    /// academy the player or another player runs, with its address and district.
-    ///
-    /// DONE: money as dated transactions of the mod's own at the firm's address (takings counted among the business's
-    /// takings in the game's statement through the economy's books; hosting and software as a row of its costs; marketing
-    /// in the game's marketing line), the costs marked deductible as the game marks its own; the research and development
-    /// relief given to the game's tax as an extra deductible expense with no money moving (TaxHelper.TrackTransaction, as
-    /// the economy's books give Empire Motors' costs). A fine is charged at once and is not deductible.
-    /// A competitor's tower or business set as the destination, as the game's own Set destination does it.
+    /// What the firms part reads from or does to the game: the player's tech businesses, clients, rivals and working facts,
+    /// and money as dated transactions at the firm, the relief an extra deductible expense with no money moving.
     /// </summary>
     internal static class FirmsGame
     {
@@ -69,7 +57,7 @@ namespace RealLifeOverhaul.Tech
             return type == WebAgency ? (int)FirmKind.WebAgency : type == GraphicDesigner ? (int)FirmKind.Design : -1;
         }
 
-        /// <summary>The player's tech firms: their businesses of the sector's types and their game office businesses. One pass over the buildings.</summary>
+        /// <summary>The player's businesses of the sector's types and their game office businesses. One pass over the buildings.</summary>
         public static void Firms(List<BuildingRegistration> into)
         {
             into.Clear();
@@ -100,10 +88,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>
-        /// The share of a game office's staff hours that went unsold yesterday, thousandths: its hours worked against what
-        /// it sold at its hour's price. All of it for a business of the tech sector's own types, which the game sells nothing for.
-        /// </summary>
+        /// <summary>The share of a game office's staff hours unsold yesterday, thousandths; all of them for the sector's own types.</summary>
         public static int Spare(BuildingRegistration reg, int hoursWorked)
         {
             if (reg == null || TechTypes.Is(reg.businessTypeName))
@@ -128,21 +113,11 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- whether its people can work
-
         private static readonly List<ItemInstance> Stations = new List<ItemInstance>(32);
         private static readonly HashSet<string> WorkerIds = new HashSet<string>();
         private static readonly HashSet<string> WorkerSkills = new HashSet<string>();
 
-        /// <summary>
-        /// What decides whether a firm's people can work on a kind of contract (-1: any of the firm's work), read from the
-        /// game as its own schedule screen reads it: who is at the firm and whose role does that work (and how long they
-        /// worked yesterday), the game's switch and the utilities behind it (the internet the firm needs, the power), the
-        /// days of the week it opens (ScheduleDay.isOpen with opening hours), the workstations they can use
-        /// (GetAssignableItems whose suitable skills hold one of theirs, as ScheduleHelper.HasSkillForWorkstation asks) and
-        /// their shifts on the days it opens (as EmployeeInstance.IsWorking counts them). A professional on the mod's own
-        /// payroll works a plain week with no shift. Read only: nothing of the game's is changed.
-        /// </summary>
+        /// <summary>What decides whether a firm's people can work on a kind of contract (-1: any), read as the game's schedule screen does.</summary>
         public static FirmFacts Facts(BuildingRegistration reg, FirmKind firm, int kind, IReadOnlyList<Person> people, string place, int day)
         {
             var f = new FirmFacts();
@@ -236,7 +211,7 @@ namespace RealLifeOverhaul.Tech
             return f;
         }
 
-        /// <summary>The game's BizMan opened on a business's schedule, where shifts are given (and its own auto fill is). False if it cannot be.</summary>
+        /// <summary>Opens BizMan on a business's schedule, where shifts are given. False if it cannot be.</summary>
         public static bool OpenSchedule(BuildingRegistration reg)
         {
             try
@@ -256,13 +231,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- competitors
-
-        /// <summary>
-        /// Every business the player runs, or another player in a Going Public session (which Going Public puts on this
-        /// machine as rented by the player), that is a tech firm or a training academy (its type: null while the academy is
-        /// off), for the competitors' rule (CompetitorRules.Gather). One pass over the buildings. Read only.
-        /// </summary>
+        /// <summary>Every tech firm or academy (its type, or null while off) any player runs, for the competitors' rule. One pass, read only.</summary>
         public static void Seen(List<FirmSeen> into, string academy)
         {
             into.Clear();
@@ -286,7 +255,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>Where a business of the player's or another player's is, for its competitors' page: its address and its district in words. False if it is not in the city's list.</summary>
+        /// <summary>A player's business's address and district in words, for a competitors' page. False if it is not in the city's list.</summary>
         public static bool Where(string place, out string street, out int number, out string district)
         {
             street = null;
@@ -316,7 +285,6 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        /// <summary>An address as the game writes it.</summary>
         public static string AddressWords(string street, int number)
         {
             try
@@ -329,12 +297,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>
-        /// The destination set at a building, as the game's own Set destination does it (BizManBusiness.SetDestination): the
-        /// address kept in the save, the game's destination marker on it (a special building's own name on the marker, as
-        /// the city map's double click puts it: Navigation), the game's notification naming it, and the phone closed. Only
-        /// the player's own destination is changed. False if it cannot be.
-        /// </summary>
+        /// <summary>Sets the destination at a building as BizManBusiness.SetDestination does, and closes the phone. False if it cannot be.</summary>
         public static bool Destination(string street, int number)
         {
             try
@@ -372,9 +335,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- money
-
-        /// <summary>Takings at the firm, cents, as a dated transaction of the mod's own (counted among its takings in the game's statement).</summary>
+        /// <summary>Takings at the firm, cents, as a dated transaction counted among its takings in the game's statement.</summary>
         public static void Takings(long cents, BuildingRegistration at, string name, int? day)
         {
             if (cents > 0 && Save != null && at != null)
@@ -383,7 +344,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A cost of the firm, cents: deductible; marketing in the game's marketing line. Forced (it was used).</summary>
+        /// <summary>A cost of the firm, cents: deductible, marketing in the game's marketing line. Forced, since it was used.</summary>
         public static void Cost(long cents, string key, BuildingRegistration at, string name, int? day)
         {
             if (cents <= 0 || Save == null)
@@ -416,21 +377,20 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>The research and development relief: an extra deductible expense for the game's tax, with no money moving. Returns what was given, whole money.</summary>
-        public static float Relief(long cents)
+        /// <summary>The research and development relief: an extra deductible expense for the game's tax, with no money moving.</summary>
+        public static void Relief(long cents)
         {
             if (cents <= 0)
             {
-                return 0f;
+                return;
             }
             float amount = Mathf.Round(cents) / 100f;
             var info = new TransactionInfo(ReliefKey);
             info.SetTaxDeductibleName(ReliefDeductKey.GetLocalization());
             TaxHelper.TrackTransaction(new Transaction(info) { amount = -amount });
-            return amount;
         }
 
-        // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
+        // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
         private static TransactionInfo Info(string key, string name, string category)
         {
             var data = new Dictionary<string, string>(2) { { "name", name ?? string.Empty } };

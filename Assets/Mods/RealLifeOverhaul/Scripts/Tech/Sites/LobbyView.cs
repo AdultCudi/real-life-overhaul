@@ -9,21 +9,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The lobby of a tech company's headquarters while the player is in it: the bare interior of the empty office unit
-    /// the company was given (Tech/Sites/Headquarters), measured on the way in and laid out by <see cref="LobbyPlan"/>:
-    ///
-    ///   the reception desk   the mod's model, the company's colour along its front
-    ///   the logo wall        the mod's model, a panel in the company's colour on its plate and the company's name on it
-    ///                        in the game's font, in the company's second colour
-    ///   seating              the game's own sofa, armchairs and low table (Core/GameFurniture: copies to look at, nothing more)
-    ///   plants               the game's own
-    ///   screens              the mod's wall screen, hung where a ray finds the wall
-    ///   the ceiling          the game's own flush lamps along the way in, where a ray finds the ceiling
-    ///
-    /// What stands on the floor is cut out of the navigation mesh (this is the city's own empty building, never a player's).
-    /// The rest of the floor, round the lobby, is fitted out by FitOut/FitView from the same measured room (TechSites).
-    /// The people: a receptionist behind the desk, and a visitor or two waiting on the seats now and then; the mod's own
-    /// people, put out under the fade and looked after once a second. All of it goes when the player leaves.
+    /// A tech company's lobby while the player is in it, laid out by <see cref="LobbyPlan"/>, with a receptionist and now and then a
+    /// visitor. Looked after once a second; all of it goes when the player leaves.
     /// </summary>
     internal sealed class LobbyView
     {
@@ -73,10 +60,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The seats of the lobby, whose fronts are to be kept free.</summary>
         public IReadOnlyList<Transform> SeatsOf => _seats;
 
-        /// <summary>
-        /// The player is in a headquarters' unit: the lobby measured, planned and furnished; its ceiling lamps hung unless the
-        /// rest of the floor brings its own (<paramref name="lamps"/>). False to be asked again a second later.
-        /// </summary>
+        /// <summary>Measures, plans and furnishes the lobby, hanging its lamps with <paramref name="lamps"/>. False to be asked again a second later.</summary>
         public bool Begin(BuildingManager building, Headquarters.Hq hq, bool lamps = true)
         {
             End();
@@ -175,7 +159,7 @@ namespace RealLifeOverhaul.Tech
             return piece;
         }
 
-        // A screen on the wall behind where the plan put it, its back on the wall's real surface.
+        // a screen on the wall behind where the plan put it, its back on the wall's real surface
         private void Hang(SitePiece p, float floor)
         {
             Vector3 face = RoomMeasure.Facing(p);
@@ -188,7 +172,7 @@ namespace RealLifeOverhaul.Tech
             screen.SetPositionAndRotation(new Vector3(surface.x, floor + p.Y, surface.z) + normal * 0.004f, Quaternion.LookRotation(normal, Vector3.up));
         }
 
-        // One of the game's own pieces where the plan put one of its size, its drawn middle on the plan's.
+        // one of the game's own pieces where the plan put one of its size, its drawn middle on the plan's
         private void Furniture(string[] prefabs, SitePiece p, float floor, bool solid, bool seats)
         {
             Transform piece = null;
@@ -226,7 +210,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The game's flush lamps down the way in, where a ray finds the ceiling.
+        // the game's flush lamps down the way in, where a ray finds the ceiling
         private void Lamps(Vector3 door, Vector3 inward, float floor)
         {
             float depth = Mathf.Max(3f, _plan.Depth);
@@ -289,7 +273,7 @@ namespace RealLifeOverhaul.Tech
                 if (_leaving[i])
                 {
                     _leaving[i] = false;
-                    _visitorUntil[i] = now + Random.Range(30f, 90f);   // (gone: the next one some time later)
+                    _visitorUntil[i] = now + Random.Range(30f, 90f);   // gone; the next some time later
                 }
                 if (now < _visitorUntil[i])
                 {
@@ -297,7 +281,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (Random.value < 0.5f)
                 {
-                    _visitorUntil[i] = now + Random.Range(20f, 60f);   // (nobody this time)
+                    _visitorUntil[i] = now + Random.Range(20f, 60f);   // nobody this time
                     continue;
                 }
                 Transform seat = _seats[(i * 2) % _seats.Count];
@@ -306,7 +290,7 @@ namespace RealLifeOverhaul.Tech
                     visitor.Sit(seat);
                     _visitorUntil[i] = now + Random.Range(60f, 150f);
                 }
-                return;   // (one new person at a look)
+                return;   // one new person at a look
             }
         }
 

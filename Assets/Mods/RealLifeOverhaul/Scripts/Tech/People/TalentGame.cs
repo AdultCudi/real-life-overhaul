@@ -10,20 +10,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// Everything the people part reads from or does to the game, in one place.
-    ///
-    /// READ: the player's employees (SaveGameManager.Current.EmployeeInstances, the candidates and the player left out),
-    /// their main skill (the game's skills[0], 0 to 100), whether they are working this hour (EmployeeInstance.IsWorking),
-    /// their wage and hours this week, the business they are assigned to and its type; the game's own wage for a skill
-    /// (EmployeeHelper.CalculateHourlyWageForSkill).
-    ///
-    /// DONE, each the game's own way: a rise is a higher EmployeeInstance.hourlyWage (never a lower one, never past WageRules'
-    /// cap of the game's own wage for the skill; a wage the mod ran past it before the cap is brought back to it on load); morale moves the
-    /// game's satisfaction a few points a day; a burnt-out employee is off sick through the game's own next sick day; one
-    /// who resigns leaves as the game has an employee leave whose complaint went unanswered; a lay-off or a dismissal is
-    /// the game's own firing (RemoveEmployee); a mentor's help is the game's IncreaseSkill. Money is the mod's own dated
-    /// transactions (GameManager.ChangeMoneySafe), at the business, the cost lines marked deductible as the game marks its
-    /// own. Nothing here runs by itself.
+    /// What the people part reads from or does to the game, each the game's own way: the player's professionals, their skill,
+    /// hours and wage, rises within WageRules' cap, sickness, leaving, and money as dated transactions at the business.
     /// </summary>
     internal static class TalentGame
     {
@@ -39,18 +27,13 @@ namespace RealLifeOverhaul.Tech
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        // ---------------------------------------------------------------- who is a professional
-
-        /// <summary>
-        /// True for an employee of the player's whose main skill is a professional one: a programmer, a graphic designer,
-        /// a lawyer, an HR manager or a headhunter anywhere, and customer service only at an office (a shop's till is
-        /// not a professional's job and keeps the game's own hiring).
-        /// </summary>
+        /// <summary>True for an employee whose main skill is a professional one; customer service only at an office, not at a shop's till.</summary>
         public static bool Professional(EmployeeInstance e)
         {
             try
             {
-                if (e == null || e.IsCandidate || e.characterData == null || e.characterData.skills == null || e.characterData.skills.Count == 0 || e.satisfaction <= 0f)
+                if (e == null || e.IsCandidate || e.characterData == null || e.characterData.skills == null || e.characterData.skills.Count == 0
+                    || e.satisfaction <= 0f)
                 {
                     return false;
                 }
@@ -72,10 +55,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>
-        /// The player's professionals. One pass over the save's employees. In a Going Public session one assigned to
-        /// another player's business is theirs, and is left out: nothing of the mod's counts, reads or changes them.
-        /// </summary>
+        /// <summary>The player's professionals, but another player's in a Going Public session. One pass over the save's employees.</summary>
         public static void Employees(List<EmployeeInstance> into)
         {
             into.Clear();
@@ -96,18 +76,6 @@ namespace RealLifeOverhaul.Tech
                 {
                     into.Add(e);
                 }
-            }
-        }
-
-        public static EmployeeInstance Employee(string id)
-        {
-            try
-            {
-                return string.IsNullOrEmpty(id) ? null : EmployeeHelper.GetEmployeeById(id, false);
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 
@@ -132,11 +100,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>
-        /// The hours the game has counted the employee working today (EmployeeInstance.workedHoursToday, added on its hour
-        /// after the mod's own count and emptied at midnight after the mod's first hour of the new day: there it is still
-        /// the whole of the day before).
-        /// </summary>
+        /// <summary>The game's count of hours worked today; at midnight it still holds the day before.</summary>
         public static int WorkedToday(EmployeeInstance e) => e != null ? Math.Max(0, e.workedHoursToday) : 0;
 
         /// <summary>True while a business is closed by the game's own switch (temporarily closed): nobody works there then.</summary>
@@ -144,14 +108,7 @@ namespace RealLifeOverhaul.Tech
 
         public static int WeekHours(EmployeeInstance e) => Math.Max(0, e.workedHoursThisWeek);
 
-        public static bool Absent(EmployeeInstance e) => e.isAbsent;
-
         public static int WageCents(EmployeeInstance e) => Mathf.RoundToInt(e.hourlyWage * 100f);
-
-        /// <summary>The weekly hours the game has the employee down for (40 if none are set).</summary>
-        public static int ContractHours(EmployeeInstance e) => e.assignedWeeklyHours > 0 ? e.assignedWeeklyHours : TalentCatalogue.WeekHours;
-
-        // ---------------------------------------------------------------- places
 
         public static BuildingRegistration Business(EmployeeInstance e)
         {
@@ -165,12 +122,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>
-        /// A business by its address, written as the company writes a place. Made once for each building and kept with the
-        /// street and number it was made from (a dictionary hit and two compares after that, no string made): it is asked
-        /// for every second while the player is indoors (Tech/Sites, FitOut, Careers' desk) and for every professional
-        /// and firm each day. The keys go with the save.
-        /// </summary>
+        /// <summary>A building's place key, kept per building so after the first ask it is a dictionary hit with no string made.</summary>
         public static string Place(BuildingRegistration reg)
         {
             if (reg == null)
@@ -198,15 +150,11 @@ namespace RealLifeOverhaul.Tech
             public string Text;
         }
 
-        private const int KeysMost = 8192;   // buildings whose keys are kept at most (the city has about 2,000; more means another city's are in it)
+        private const int KeysMost = 8192;   // buildings whose keys are kept; the city has about 2,000, so more means another city's are in it
         private static readonly Dictionary<BuildingRegistration, PlaceKey> Keys = new Dictionary<BuildingRegistration, PlaceKey>(256);
         private static GameInstance _keysOf;
 
-        /// <summary>
-        /// One of the player's buildings by its place key; null if it is no longer theirs. The first of the save's buildings
-        /// with that key, as always; a building whose number is not the key's is passed over on an int compare (the key's
-        /// number read once), so a look-up costs a pass of compares over the buildings and makes no string.
-        /// </summary>
+        /// <summary>The player's building with a place key, null if none; other numbers are passed over on an int compare.</summary>
         public static BuildingRegistration Find(string place)
         {
             List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
@@ -241,21 +189,21 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName) && reg.businessTypeName != "ba:businesstype_empty")
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName)
+                    && reg.businessTypeName != "ba:businesstype_empty")
                 {
                     into.Add(reg);
                 }
             }
         }
 
-        // ---------------------------------------------------------------- the game's wage
-
         /// <summary>The game's own wage for a skill at a value, cents an hour.</summary>
         public static int GameRate(string skill, int points)
         {
             try
             {
-                return Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(string.IsNullOrEmpty(skill) ? TalentCatalogue.RateSkill : skill, Mathf.Clamp(points, 0, 100)) * 100f);
+                string rated = string.IsNullOrEmpty(skill) ? TalentCatalogue.RateSkill : skill;
+                return Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(rated, Mathf.Clamp(points, 0, 100)) * 100f);
             }
             catch (Exception)
             {
@@ -263,12 +211,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- doing
-
-        /// <summary>
-        /// The game's own wage for the employee's main skill at its value, cents an hour (EmployeeHelper.CalculateHourlyWageForSkill,
-        /// the figure a hire of the game's starts from): what every raise of the mod's is bounded by (WageRules). 0 if it cannot be read.
-        /// </summary>
+        /// <summary>The game's own wage for the employee's main skill, cents an hour, which bounds every rise of the mod's. 0 if it cannot be read.</summary>
         public static int FormulaCents(EmployeeInstance e)
         {
             try
@@ -289,18 +232,17 @@ namespace RealLifeOverhaul.Tech
             int formula = FormulaCents(e), before = WageCents(e), after = WageRules.Rise(before, bp, formula);
             if (after <= before)
             {
-                Logger?.Info("Tech: " + NameOf(e) + "'s wage stays at " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture) + " (the most a raise of the mod's takes it to is " + (WageRules.Cap(formula) / 100f).ToString("F2", CultureInfo.InvariantCulture) + ").");
+                Logger?.Info("Tech: " + NameOf(e) + "'s wage stays at " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture)
+                             + " (the most a raise of the mod's takes it to is " + (WageRules.Cap(formula) / 100f).ToString("F2", CultureInfo.InvariantCulture) + ").");
                 return false;
             }
             e.hourlyWage = after / 100f;
-            Logger?.Info("Tech: " + NameOf(e) + "'s wage " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture) + " -> " + e.hourlyWage.ToString("F2", CultureInfo.InvariantCulture) + ".");
+            Logger?.Info("Tech: " + NameOf(e) + "'s wage " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture) + " -> "
+                         + e.hourlyWage.ToString("F2", CultureInfo.InvariantCulture) + ".");
             return true;
         }
 
-        /// <summary>
-        /// A wage the mod raised past WageRules' cap (before the bound existed), brought back to the cap as a save loads.
-        /// The game's satisfaction is left as it is. True if it was lowered.
-        /// </summary>
+        /// <summary>A wage over WageRules' cap brought back to it as a save loads, satisfaction left as it is. True if it was lowered.</summary>
         public static bool Mend(EmployeeInstance e)
         {
             int formula = FormulaCents(e), before = WageCents(e), after = WageRules.Mended(before, formula);
@@ -311,7 +253,8 @@ namespace RealLifeOverhaul.Tech
             e.hourlyWage = after / 100f;
             Logger?.Info("Tech: " + NameOf(e) + "'s wage, raised by the mod past " + (WageRules.CapBp / 10000) + " times the game's own for the skill ("
                          + (formula / 100f).ToString("F2", CultureInfo.InvariantCulture)
-                         + "), brought back from " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture) + " to " + e.hourlyWage.ToString("F2", CultureInfo.InvariantCulture) + ".");
+                         + "), brought back from " + (before / 100f).ToString("F2", CultureInfo.InvariantCulture) + " to "
+                         + e.hourlyWage.ToString("F2", CultureInfo.InvariantCulture) + ".");
             return true;
         }
 
@@ -359,12 +302,7 @@ namespace RealLifeOverhaul.Tech
             e.RemoveEmployee();
         }
 
-        // ---------------------------------------------------------------- money
-
-        /// <summary>
-        /// A cost of the business, cents, as a dated transaction of the mod's own at its address; wages in the game's
-        /// salaries line. Deductible. Forced: a wage or severance is owed whatever the cash.
-        /// </summary>
+        /// <summary>A deductible cost of the business at its address, cents; wages in the salaries line; <paramref name="force"/> for what is owed whatever the cash.</summary>
         public static bool Cost(int cents, string key, BuildingRegistration at, string name, bool wages, bool force)
         {
             if (cents <= 0)
@@ -381,7 +319,5 @@ namespace RealLifeOverhaul.Tech
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
             return GameManager.ChangeMoneySafe(-cents / 100f, info, null, at != null ? at.Address : null, force);
         }
-
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
     }
 }

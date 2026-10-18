@@ -51,6 +51,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\StationReach.cs" Link="Mod\StationReach.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Tow\TowRules.cs" Link="Mod\TowRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\SitePlan.cs" Link="Mod\SitePlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\RoomGrid.cs" Link="Mod\RoomGrid.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\RoomPlans.cs" Link="Mod\RoomPlans.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\HqTowers.cs" Link="Mod\HqTowers.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\TechRandom.cs" Link="Mod\TechRandom.cs" />

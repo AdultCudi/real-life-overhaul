@@ -11,17 +11,13 @@ namespace RealLifeOverhaul.Tech
         public string A = string.Empty, AName = string.Empty, B = string.Empty, BName = string.Empty;
     }
 
-    /// <summary>
-    /// The tech sector's stories for the City Ledger, kept so that the paper of a day is the same however often it is
-    /// asked for and after a reload: one line of the save under <see cref="Key"/> (the last <see cref="Most"/>
-    /// stories), written by <see cref="TechWriter"/>. Game-free.
-    /// </summary>
+    /// <summary>The tech sector's stories for the City Ledger, kept in the save so a day's paper is the same however often it is read.</summary>
     public sealed class TechNews
     {
         public const string Key = "reallife:tech_news";
         public const int Version = 1;
-        public const int Most = 40;
-        public const int PerDayMost = 3;
+        public const int Most = 40;          // stories kept
+        public const int PerDayMost = 3;     // stories in one day's paper
 
         public readonly List<TechStory> Stories = new List<TechStory>(Most);
 

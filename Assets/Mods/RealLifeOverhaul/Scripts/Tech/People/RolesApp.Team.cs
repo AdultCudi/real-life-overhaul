@@ -1,17 +1,11 @@
 using System.Collections.Generic;
 using Localizor;
 using RealLifeOverhaul.GameUi;
-using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The Team tab. The table lists every professional of the player's; one that is picked has three pages in the white
-    /// box: their file (role, level, skills, experience, school, certificates, how they feel, pay against the going rate,
-    /// the last review, and whatever waits for an answer), their career (the role, a promotion, a rise, a course or an
-    /// exam) and their contract (where they work, a restraint clause, notice and severance, letting them go).
-    /// </summary>
+    /// <summary>The Team tab: every professional of the player's; a picked one has three pages, their file, their career and their contract.</summary>
     public sealed partial class RolesApp
     {
         public const string TeamRow = "pro:";
@@ -93,7 +87,6 @@ namespace RealLifeOverhaul.Tech
             return kind;
         }
 
-        // What waits or is under way, in a word or two.
         private static string State(Person person, int day, int year)
         {
             Profile p = person.File;
@@ -123,8 +116,6 @@ namespace RealLifeOverhaul.Tech
             }
             return TechText.T("reallife_roles_state_fine");
         }
-
-        // ---------------------------------------------------------------- a professional's file
 
         private void WriteFile(InfoBox box, Person person, int day, int year)
         {
@@ -188,8 +179,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- their career
-
         private void WriteCareer(InfoBox box, Person person, int day, int year)
         {
             Profile p = person.File;
@@ -213,7 +202,8 @@ namespace RealLifeOverhaul.Tech
             bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
             box.Line(promote
                 ? TechText.Fill("reallife_roles_career_promote", "level", TechText.Level(p.Level + 1), "percent", TechText.Bp(TalentCatalogue.PromotePayBp))
-                : TechText.Fill("reallife_roles_career_no_promote", "rating", TalentCatalogue.PromoteRating.ToString(), "least", TechText.Percent(p.Level + 1 < TalentCatalogue.Levels ? TalentCatalogue.LevelSkillLeast[p.Level + 1] - 5 : 100)));
+                : TechText.Fill("reallife_roles_career_no_promote", "rating", TalentCatalogue.PromoteRating.ToString(),
+                    "least", TechText.Percent(p.Level + 1 < TalentCatalogue.Levels ? TalentCatalogue.LevelSkillLeast[p.Level + 1] - 5 : 100)));
             if (TalentRules.CanRise(p, day))
             {
                 Transform rises = box.ButtonRow();
@@ -226,16 +216,16 @@ namespace RealLifeOverhaul.Tech
             }
             else
             {
-                // (one rise or promotion in WageRules' period: the next waits, so a rise is never stacked on a rise day after day)
                 box.Note(TechText.T("reallife_wage_rested_line", "day", WageRules.NextDay(p.RecognisedDay).ToString()));
             }
             if (p.OnCourse(day))
             {
-                box.Line(TechText.T(p.CourseSkill == 2 ? "reallife_roles_career_on_degree" : p.Exam >= 0 ? "reallife_roles_career_on_exam" : "reallife_roles_career_on_course", "day", p.CourseEnd.ToString()));
+                box.Line(TechText.T(p.CourseSkill == 2 ? "reallife_roles_career_on_degree" : p.Exam >= 0 ? "reallife_roles_career_on_exam" : "reallife_roles_career_on_course",
+                    "day", p.CourseEnd.ToString()));
             }
             else
             {
-                int share = TechBridges.CourseShare();   // (the player's own academy: Careers)
+                int share = TechBridges.CourseShare();   // less with the player's own academy
                 int feeA = (int)((long)Prices.At(TalentRules.CourseFee(p.A / 1000)) * share / 10000), feeB = (int)((long)Prices.At(TalentRules.CourseFee(p.B / 1000)) * share / 10000);
                 box.Line(TechText.Fill("reallife_roles_career_courses", "a", TechText.Skill(r.SkillA), "a_gain", TalentRules.CourseGain(p.A / 1000).ToString(), "a_fee", TechText.Money(feeA),
                     "b", TechText.Skill(r.SkillB), "b_gain", TalentRules.CourseGain(p.B / 1000).ToString(), "b_fee", TechText.Money(feeB), "days", TalentCatalogue.CourseDays.ToString()));
@@ -269,7 +259,8 @@ namespace RealLifeOverhaul.Tech
                     int cert = _certs[_exam];
                     int chance = TalentRules.ExamChance(p, cert);
                     box.Line(chance > 0
-                        ? TechText.Fill("reallife_roles_career_exam", "cert", TechText.Cert(cert), "fee", TechText.Money(Prices.At(TalentCatalogue.Certs[cert].Fee)), "chance", TechText.Percent(chance))
+                        ? TechText.Fill("reallife_roles_career_exam", "cert", TechText.Cert(cert),
+                            "fee", TechText.Money(Prices.At(TalentCatalogue.Certs[cert].Fee)), "chance", TechText.Percent(chance))
                         : TechText.Fill("reallife_roles_career_exam_short", "cert", TechText.Cert(cert), "needs", TechText.Percent(TalentCatalogue.Certs[cert].Needs)));
                     if (chance > 0)
                     {
@@ -293,7 +284,7 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, PeopleGuide);
         }
 
-        // The roles this professional can be moved to: the roles of their game skill, or for the mod's own payroll the roles without one of the same family.
+        // The roles a professional can move to: their game skill's, or for the mod's own payroll the family's roles without one.
         private int Roles(Person person)
         {
             int n = 0;
@@ -309,8 +300,6 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
-        // ---------------------------------------------------------------- their contract
-
         private void WriteContract(InfoBox box, Person person, int day, int year)
         {
             Profile p = person.File;
@@ -325,7 +314,8 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Work(p.Work));
             }
-            box.Line(TechText.T(TalentRules.Content(p, _director.TalentSeed) ? "reallife_roles_contract_content" : "reallife_roles_contract_wants", "work", TechText.Work((int)TalentRules.Wants(p, _director.TalentSeed))));
+            box.Line(TechText.T(TalentRules.Content(p, _director.TalentSeed) ? "reallife_roles_contract_content" : "reallife_roles_contract_wants", "work",
+                TechText.Work((int)TalentRules.Wants(p, _director.TalentSeed))));
             bool probation = TalentRules.OnProbation(p, day, year);
             long severance = TalentRules.Severance(p, day, year, p.GameWage * TalentCatalogue.WeekHours, LeaveKind.LaidOff);
             box.Line(TechText.Fill(probation ? "reallife_roles_contract_probation" : "reallife_roles_contract_terms", "notice", TalentRules.NoticeDays(p, day, year).ToString(),

@@ -4,11 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The hiring tabs of Open Roles: the jobs board (the player's ads and the page that posts one), the applicants
-    /// (what is known of each, the checks, the interview and the offer), the labour market by family, and the search
-    /// firms. Each page shows the one thing picked; the figures are the rules' (Tech/Hiring/HiringRules).
-    /// </summary>
+    /// <summary>The hiring tabs of Open Roles: the jobs board, the applicants, the labour market by family and the search firms.</summary>
     public sealed partial class RolesApp
     {
         public const string ApplicantRow = "app:";
@@ -21,8 +17,6 @@ namespace RealLifeOverhaul.Tech
         private int _adPlace, _adRole, _adLevel = 1, _adPay = 1, _adSkill, _adWork, _adDays = 1, _searchRole = TalentCatalogue.SoftwareEngineer, _searchLevel = TalentCatalogue.Senior;
         private bool _adBoost;
         private int _offer = 2;
-
-        // ---------------------------------------------------------------- the jobs board
 
         private TableSpec WriteJobs(InfoBox box, int day)
         {
@@ -97,7 +91,7 @@ namespace RealLifeOverhaul.Tech
 
         private void WriteNewAd(InfoBox box, int day, int open)
         {
-            _director.Businesses(_places);
+            TalentGame.Businesses(_places);
             box.Title(TechText.T("reallife_hire_new_title"));
             if (_places.Count == 0)
             {
@@ -119,8 +113,10 @@ namespace RealLifeOverhaul.Tech
                 box.Selector(_places.Count, _adPlace, i => TalentGame.NameOf(_places[i]), i => Set(() => _adPlace = i));
                 box.Selector(TalentCatalogue.RoleCount, _adRole, TechText.Role, i => Set(() => _adRole = i));
                 box.Selector(r.MostLevel - r.LeastLevel + 1, _adLevel - r.LeastLevel, i => TechText.Level(r.LeastLevel + i), i => Set(() => _adLevel = r.LeastLevel + i));
-                box.Selector(PayBands.Length, _adPay, i => TechText.Fill("reallife_hire_new_pay", "most", TechText.Rate(going * PayBands[i] / 1000), "share", TechText.Mille(PayBands[i])), i => Set(() => _adPay = i));
-                box.Selector(3, _adSkill, i => TechText.T(i == 0 ? "reallife_hire_new_skill_any" : i == 1 ? "reallife_hire_new_skill_level" : "reallife_hire_new_skill_strong"), i => Set(() => _adSkill = i));
+                box.Selector(PayBands.Length, _adPay,
+                    i => TechText.Fill("reallife_hire_new_pay", "most", TechText.Rate(going * PayBands[i] / 1000), "share", TechText.Mille(PayBands[i])), i => Set(() => _adPay = i));
+                box.Selector(3, _adSkill, i => TechText.T(i == 0 ? "reallife_hire_new_skill_any" : i == 1 ? "reallife_hire_new_skill_level" : "reallife_hire_new_skill_strong"),
+                    i => Set(() => _adSkill = i));
                 box.Selector(works, _adWork, TechText.Work, i => Set(() => _adWork = i));
                 box.Selector(HiringCatalogue.AdDays.Length, _adDays, i => TechText.T("reallife_hire_new_days", "days", HiringCatalogue.AdDays[i].ToString()), i => Set(() => _adDays = i));
             }
@@ -129,7 +125,8 @@ namespace RealLifeOverhaul.Tech
                 box.Switch("reallife_hire_new_boost", _adBoost, on => Set(() => _adBoost = on));
             }
             int cost = Prices.At(HiringRules.AdCost(days, _adBoost));
-            box.Line(TechText.Fill("reallife_hire_new_cost", "cost", TechText.Money(cost), "least", TechText.Rate(least), "most", TechText.Rate(most), "skill", skill > 0 ? TechText.Percent(skill) : TechText.T("reallife_talent_none")));
+            box.Line(TechText.Fill("reallife_hire_new_cost", "cost", TechText.Money(cost), "least", TechText.Rate(least), "most", TechText.Rate(most),
+                "skill", skill > 0 ? TechText.Percent(skill) : TechText.T("reallife_talent_none")));
             Transform buttons = box.ButtonRow();
             if (open < HiringCatalogue.AdsMost)
             {
@@ -152,8 +149,6 @@ namespace RealLifeOverhaul.Tech
             change();
             Refresh();
         }
-
-        // ---------------------------------------------------------------- the applicants
 
         private TableSpec WriteApplicants(InfoBox box, int day)
         {
@@ -249,7 +244,8 @@ namespace RealLifeOverhaul.Tech
             string refs = a.Refs ? TechText.T("reallife_hire_refs_value", "score", s.Refs.ToString()) : TechText.T("reallife_hire_refs_none");
             string record = a.Background ? TechText.T(s.P.Record ? "reallife_hire_record_found" : "reallife_hire_record_clean") : TechText.T("reallife_hire_record_none");
             box.Line(refs + " " + record);
-            box.Line(TechText.Fill("reallife_hire_known", "keen", TechText.Mille(a.Interest), "fit", fit ? TechText.T(s.Fit >= 650 ? "reallife_hire_fit_good" : s.Fit >= 400 ? "reallife_hire_fit_fair" : "reallife_hire_fit_poor") : "?",
+            box.Line(TechText.Fill("reallife_hire_known", "keen", TechText.Mille(a.Interest),
+                "fit", fit ? TechText.T(s.Fit >= 650 ? "reallife_hire_fit_good" : s.Fit >= 400 ? "reallife_hire_fit_fair" : "reallife_hire_fit_poor") : "?",
                 "ask", ask ? TechText.Rate(s.Ask) : "?", "work", (a.Revealed & HiringRules.RevealAsk) != 0 ? TechText.Work(s.Want) : "?"));
             Transform first = open || a.At == ApplyStage.Countered ? box.ButtonRow() : null;
             if (open)
@@ -290,8 +286,6 @@ namespace RealLifeOverhaul.Tech
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, JobsGuide);
         }
-
-        // ---------------------------------------------------------------- the market
 
         private TableSpec WriteMarket(InfoBox box, int day)
         {
@@ -414,8 +408,6 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, JobsGuide);
         }
 
-        // ---------------------------------------------------------------- search firms
-
         private TableSpec WriteSearch(InfoBox box, int day)
         {
             HiringFile f = _director.Hiring;
@@ -470,7 +462,7 @@ namespace RealLifeOverhaul.Tech
 
         private void WriteNewSearch(InfoBox box)
         {
-            _director.Businesses(_places);
+            TalentGame.Businesses(_places);
             box.Title(TechText.T("reallife_hire_new_search_title"));
             if (_places.Count == 0)
             {

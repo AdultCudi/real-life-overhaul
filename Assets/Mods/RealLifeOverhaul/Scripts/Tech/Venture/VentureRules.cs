@@ -4,31 +4,25 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The rules of startups and venture capital: the market's mood and the AI wave, a startup's birth and day (growth,
-    /// burn, the runway, raising a round, a down round, failing, being bought), rounds and the dilution they bring, a
-    /// sale's waterfall with its liquidation preferences, what a startup asks of the player, and the player's own firms
-    /// raising (term sheets, the board and its targets, bridges, share options and a sale of shares). Game-free and
-    /// checked by EconomyCheck; every roll is <see cref="TechRandom"/>'s.
+    /// The rules of startups and venture capital; the player's own firms raising are in VentureRules.Caps. Game-free; every roll
+    /// is <see cref="TechRandom"/>'s.
     /// </summary>
-    public static class VentureRules
+    public static partial class VentureRules
     {
-        public const int NoteFounded = 1, NoteRaised = 2, NoteDown = 3, NoteFailed = 4, NoteAcquired = 5, NotePitch = 6, NoteFollowOn = 7, NoteListing = 8, NoteAcquihire = 9;
-        public const long FounderShares = 10000000;
-
-        // ---------------------------------------------------------------- the mood
+        public const int NoteFounded = 1, NoteRaised = 2, NoteDown = 3, NoteFailed = 4, NoteAcquired = 5, NotePitch = 6, NoteFollowOn = 7, NoteListing = 8,
+            NoteAcquihire = 9;
+        public const long FounderShares = 10000000;   // shares the founders start with
 
         /// <summary>The market's mood for startups, thousandths: the city's cycle.</summary>
         public static int Mood(int cycle) => VentureCatalogue.MoodByCycle[TalentCatalogue.Clamp(cycle, 0, 3)];
 
-        /// <summary>The AI wave, thousandths: rising and falling over a couple of the game's years, as hype does.</summary>
+        /// <summary>The AI wave, thousandths: rising and falling over a couple of the game's years.</summary>
         public static int Hype(int seed, int day, int year)
         {
             double period = Math.Max(60, year) * VentureCatalogue.HypeYears;
             double phase = (TechRandom.Mille(seed, 1, 2) / 1000.0) * 2 * Math.PI;
             return 1000 + (int)(VentureCatalogue.HypeSwing * Math.Sin(2 * Math.PI * day / period + phase));
         }
-
-        // ---------------------------------------------------------------- a startup's life
 
         /// <summary>A month's growth of a startup's revenue, thousandths: by its founders, the mood, and for an AI company the wave.</summary>
         public static int Growth(Startup s, int mood, int hype)
@@ -54,7 +48,8 @@ namespace RealLifeOverhaul.Tech
             s.Burn = VentureCatalogue.BurnByStage[0];
             s.Cash = s.Burn * 30 * 6;
             s.Post = VentureCatalogue.FloorValue[0];
-            s.Name = VentureCatalogue.NameA[TechRandom.Range(f.Seed, id, 7, 0, 0, VentureCatalogue.NameA.Length - 1)] + VentureCatalogue.NameB[TechRandom.Range(f.Seed, id, 8, 0, 0, VentureCatalogue.NameB.Length - 1)];
+            s.Name = VentureCatalogue.NameA[TechRandom.Range(f.Seed, id, 7, 0, 0, VentureCatalogue.NameA.Length - 1)]
+                     + VentureCatalogue.NameB[TechRandom.Range(f.Seed, id, 8, 0, 0, VentureCatalogue.NameB.Length - 1)];
             s.Holders.Add(new Holder { Kind = (int)HolderKind.Founders, Shares = FounderShares });
             return s;
         }
@@ -70,23 +65,24 @@ namespace RealLifeOverhaul.Tech
             return (int)Math.Max(0, Math.Min(int.MaxValue, cash / net));
         }
 
-        /// <summary>A round's value before the money, cents: a multiple of its recurring revenue a year (higher for faster growth and a better mood), never under the stage's floor.</summary>
+        /// <summary>A round's value before the money, cents: a multiple of a year's recurring revenue by growth and mood, never under the stage's floor.</summary>
         public static long PreMoney(long mrr, int growth, int mood, int stage)
         {
             int span = VentureCatalogue.GrowthBest - VentureCatalogue.GrowthWorst;
-            long multiple = VentureCatalogue.MultipleLeast * 1000L + (long)(VentureCatalogue.MultipleMost - VentureCatalogue.MultipleLeast) * 1000 * TalentCatalogue.Clamp(growth - VentureCatalogue.GrowthWorst, 0, span) / span;
+            long multiple = VentureCatalogue.MultipleLeast * 1000L
+                            + (long)(VentureCatalogue.MultipleMost - VentureCatalogue.MultipleLeast) * 1000 * TalentCatalogue.Clamp(growth - VentureCatalogue.GrowthWorst, 0, span) / span;
             multiple = multiple * mood / 1000;
             long byRevenue = mrr * 12 * multiple / 1000;
             return Math.Max(VentureCatalogue.FloorValue[TalentCatalogue.Clamp(stage, 0, (int)RoundStage.Count - 1)], byRevenue);
         }
 
-        /// <summary>The size of the next round: eighteen months of the next stage's burn.</summary>
+        /// <summary>The size of the next round, cents: so many months of the next stage's burn.</summary>
         public static long RoundSize(int nextStage)
         {
             return (long)VentureCatalogue.BurnByStage[TalentCatalogue.Clamp(nextStage, 0, (int)RoundStage.Count - 1)] * 30 * VentureCatalogue.RunwayMonthsRaised;
         }
 
-        /// <summary>The lead for a round: a firm that leads at the stage, keen on the sector if one is; -1 for none (the mood decides whether anyone comes).</summary>
+        /// <summary>The lead for a round: a firm that leads at the stage, one keen on the sector first; -1 when the mood brings nobody.</summary>
         public static int Lead(VentureFile f, Startup s, int stage, int mood, int day)
         {
             if (TechRandom.Mille(f.Seed, s.Id, day, 21) >= 300 + mood / 2)
@@ -111,11 +107,7 @@ namespace RealLifeOverhaul.Tech
             return best;
         }
 
-        /// <summary>
-        /// A round closes: new shares at the price the value before the money gives; each investor's line added (a lead
-        /// with a board seat and pro rata rights, every investor a one-times preference); at the seed round a pool for staff
-        /// is set aside out of the founders' share. The stage moves on, the money is in, the burn grows.
-        /// </summary>
+        /// <summary>A round closes: new shares at the pre-money's price, a staff pool at the seed round; the stage moves on.</summary>
         public static void Round(Startup s, long pre, IList<Holder> investors, int day)
         {
             long total = Math.Max(1, s.Total);
@@ -159,11 +151,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A holder's share of the company, thousandths.</summary>
         public static int ShareOf(Holder h, long total) => total > 0 ? (int)(h.Shares * 1000 / total) : 0;
 
-        /// <summary>
-        /// A sale's money shared out by the cap table: an investor whose share of the price is less than their preference
-        /// takes the preference instead (the latest round first while the money lasts); everyone else shares what is left
-        /// by their shares. Returns each line's money, in the cap table's order.
-        /// </summary>
+        /// <summary>A sale's money by the cap table, preferences first (the latest round first). Returns each line's money in order.</summary>
         public static long[] Waterfall(IList<Holder> holders, long price)
         {
             var pay = new long[holders.Count];
@@ -178,7 +166,7 @@ namespace RealLifeOverhaul.Tech
             }
             var prefers = new bool[holders.Count];
             long left = price, sharesLeft = total;
-            // who takes the preference: worked out again until nobody changes their mind
+            // who takes the preference, worked out again until nobody changes their mind
             for (int pass = 0; pass < holders.Count + 1; pass++)
             {
                 bool changed = false;
@@ -216,7 +204,6 @@ namespace RealLifeOverhaul.Tech
                     break;
                 }
             }
-            // preferences, latest round first
             for (int round = (int)RoundStage.Count; round >= 0; round--)
             {
                 for (int i = 0; i < holders.Count; i++)
@@ -230,7 +217,6 @@ namespace RealLifeOverhaul.Tech
                     }
                 }
             }
-            // the rest by shares
             if (left > 0 && sharesLeft > 0)
             {
                 long given = 0;
@@ -246,21 +232,13 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (last >= 0)
                 {
-                    pay[last] += left - given;   // (what rounding left over)
+                    pay[last] += left - given;   // what rounding left over
                 }
             }
             return pay;
         }
 
-        /// <summary>
-        /// A day of one of the city's startups. Revenue grows by its month's growth; money goes by its burn less its
-        /// revenue. With under six months of runway it raises: on the first day it may come to the player as well (an
-        /// ask); after a week and a half the round closes with a lead if its revenue meets the stage's bar and a firm comes
-        /// (the player's own money in it, if they took the ask), a down round if it does not, and failure (or an acqui-hire)
-        /// when the money runs out after two failed raises. From the seed round a buyer may come (more often the later the
-        /// round); a growth company big enough
-        /// could list.
-        /// </summary>
+        /// <summary>A day of a city startup: growth and burn, raising, failing, being bought or listing.</summary>
         public static void Day(VentureFile f, Startup s, int day, int cycle, int hype, bool pitchPlayer, List<VentureNote> notes)
         {
             if (!s.Alive)
@@ -289,7 +267,11 @@ namespace RealLifeOverhaul.Tech
                 if (pitchPlayer && TechRandom.Mille(f.Seed, s.Id, day, 31) < VentureCatalogue.PitchChance)
                 {
                     long round = RoundSize(s.Stage + 1);
-                    s.Ask = new TermSheet { Amount = Math.Max(VentureCatalogue.TicketLeast, round * VentureCatalogue.AskPlayerShare / 1000), Pre = PreMoney(s.Mrr, growth, mood, s.Stage + 1), Lapse = day + 7, ProRata = true };
+                    s.Ask = new TermSheet
+                    {
+                        Amount = Math.Max(VentureCatalogue.TicketLeast, round * VentureCatalogue.AskPlayerShare / 1000), Pre = PreMoney(s.Mrr, growth, mood, s.Stage + 1),
+                        Lapse = day + 7, ProRata = true
+                    };
                     notes?.Add(new VentureNote { Kind = NotePitch, Startup = s.Id, Amount = s.Ask.Amount });
                 }
             }
@@ -306,7 +288,7 @@ namespace RealLifeOverhaul.Tech
                     Sell(f, s, price, acquihire ? NoteAcquihire : NoteFailed, notes);
                     return;
                 }
-                s.Cash = 0;   // (the founders go without pay until the raise)
+                s.Cash = 0;   // the founders go without pay until the raise
             }
             if (s.Alive && s.Stage >= (int)RoundStage.Seed && TechRandom.Mille(f.Seed, s.Id, day, 43) < VentureCatalogue.AcquireChance * Math.Min(3, s.Stage) * mood / 3000)
             {
@@ -320,7 +302,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The round closes: a lead if the bar is met and a firm comes; a down round if the bar is met by nobody; or a failed raise.
+        // The round closes with a lead if the bar is met and a firm comes; else perhaps a down round, else a failed raise.
         private static void Close(VentureFile f, Startup s, int day, int mood, int growth, List<VentureNote> notes)
         {
             int next = s.Stage + 1;
@@ -345,7 +327,7 @@ namespace RealLifeOverhaul.Tech
                 var vc = new Holder { Kind = (int)HolderKind.Vc, Who = insider < 0 ? 5 : insider, Invested = size / 2 };
                 int stage = s.Stage;
                 Round(s, down, new[] { vc }, day);
-                s.Stage = stage;   // (a down round raises money but is no new stage)
+                s.Stage = stage;   // a down round raises money but is no new stage
                 s.Burn = VentureCatalogue.BurnByStage[stage];
                 notes?.Add(new VentureNote { Kind = NoteDown, Startup = s.Id, Amount = size / 2 });
                 return;
@@ -407,11 +389,7 @@ namespace RealLifeOverhaul.Tech
             return pay;
         }
 
-        /// <summary>
-        /// A growth company comes to the market: valued at its recurring revenue by the public multiple (never under its last
-        /// round), its preferences convert, and every holder sells at the offer, as the investors of a listed company do once
-        /// their lock-up ends. Its listed shares are the market's from then on.
-        /// </summary>
+        /// <summary>A growth company lists at the public multiple of its revenue; every holder sells at the offer.</summary>
         public static long[] List(VentureFile f, Startup s, List<VentureNote> notes)
         {
             long price = Math.Max(s.Post, s.Mrr * 12 * VentureCatalogue.ListingMultiple);
@@ -449,9 +427,7 @@ namespace RealLifeOverhaul.Tech
             return s.Alive ? (long)((double)s.Post * shares / total) : 0;
         }
 
-        // ---------------------------------------------------------------- the player as an investor
-
-        /// <summary>The player takes up the founders' ask: the round closes now with the player's money in it, a firm leading the rest if one comes. True if done.</summary>
+        /// <summary>The player takes up the founders' ask: the round closes now, a firm leading the rest if one comes. True if done.</summary>
         public static bool Invest(VentureFile f, Startup s, int kind, bool board, int day, int cycle, int hype, List<VentureNote> notes)
         {
             if (s.Ask == null || !s.Alive || day > s.Ask.Lapse)
@@ -477,10 +453,7 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        /// <summary>
-        /// The player asks for a lower value: founders with a weaker hand (lower quality, a failed raise, a poor mood) take
-        /// the cut; the others hold to their ask. True if the ask came down.
-        /// </summary>
+        /// <summary>The player asks for a lower value; founders with a weaker hand take the cut. True if the ask came down.</summary>
         public static bool Haggle(VentureFile f, Startup s, int cycle, int day)
         {
             if (s.Ask == null)
@@ -530,198 +503,5 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>What a startup's deck says its revenue is: the truth, stretched by its claim.</summary>
         public static long Claimed(Startup s) => s.Mrr * (10000 + s.ClaimBp) / 10000;
-
-        // ---------------------------------------------------------------- the player's own firms
-
-        /// <summary>A cap table for a firm of the player's that is raising for the first time: the player holds it all.</summary>
-        public static Cap NewCap(string place)
-        {
-            var c = new Cap { Place = place, Stage = -1 };
-            c.Holders.Add(new Holder { Kind = (int)HolderKind.Player, Shares = FounderShares });
-            return c;
-        }
-
-        /// <summary>The player's share of a firm, thousandths.</summary>
-        public static int PlayerShare(Cap c)
-        {
-            long total = Math.Max(1, c.Total), mine = 0;
-            for (int i = 0; i < c.Holders.Count; i++)
-            {
-                mine += c.Holders[i].Kind == (int)HolderKind.Player ? c.Holders[i].Shares : 0;
-            }
-            return (int)(mine * 1000 / total);
-        }
-
-        /// <summary>
-        /// A firm's term sheet from a firm met: the value before the money is what the firm is worth by its revenue and
-        /// growth, moved by how the meeting went (six tenths to one and a half) and the mood; the amount is what was asked
-        /// for; a lead takes a board seat and pro rata rights.
-        /// </summary>
-        public static TermSheet Sheet(int vc, long firmValue, long amount, int score, int mood, int day)
-        {
-            long pre = firmValue * (600 + TalentCatalogue.Clamp(score, 0, 1000) * 9 / 10) / 1000 * mood / 1000;
-            pre = Math.Max(VentureCatalogue.FloorValue[0], pre);
-            return new TermSheet { Vc = vc, Amount = amount, Pre = pre, Board = !VentureCatalogue.Firms[TalentCatalogue.Clamp(vc, 0, VentureCatalogue.FirmCount - 1)].Angels, ProRata = true, Lapse = day + VentureCatalogue.TermSheetDays, Score = score };
-        }
-
-        /// <summary>
-        /// A term sheet taken: the firm's new shares go to the investor (a bridge owed converts at a discount to its price
-        /// too), the board gains the investor's seat, and the board sets a growth target for the quarter. Returns the money
-        /// paid into the firm, cents.
-        /// </summary>
-        public static long Accept(Cap c, TermSheet t, long mrr, int day)
-        {
-            long total = Math.Max(1, c.Total);
-            var h = new Holder { Kind = (int)HolderKind.Vc, Who = t.Vc, Invested = t.Amount, Board = t.Board, ProRata = t.ProRata, Round = c.Stage + 1 };
-            h.Shares = (long)((double)t.Amount * total / Math.Max(1, t.Pre));
-            h.Preference = t.Amount * VentureCatalogue.LiquidationPreference / 1000;
-            c.Holders.Add(h);
-            if (c.Bridge > 0)
-            {
-                long price = Math.Max(1, t.Pre) * (1000 - VentureCatalogue.BridgeDiscount) / 1000;
-                c.Holders.Add(new Holder { Kind = (int)HolderKind.Vc, Who = t.Vc, Invested = c.Bridge, Round = c.Stage + 1, Shares = (long)((double)c.Bridge * total / price), Preference = c.Bridge });
-                c.Bridge = 0;
-            }
-            c.Stage = Math.Min((int)RoundStage.Growth, c.Stage + 1);
-            c.Post = t.Pre + t.Amount;
-            if (t.Board)
-            {
-                c.BoardSeats += VentureCatalogue.BoardSeatsPerRound;
-                c.VcSeats += VentureCatalogue.BoardSeatsPerRound;
-            }
-            c.RaiseUntil = 0;
-            c.Sheets.Clear();
-            c.Misses = 0;   // (a new round: the board starts afresh)
-            c.Pressure = 0;
-            Target(c, mrr, day);
-            return t.Amount;
-        }
-
-        /// <summary>The board's target: recurring revenue a quarter on, a set share higher than now.</summary>
-        public static void Target(Cap c, long mrr, int day)
-        {
-            c.LastMrr = mrr;
-            c.TargetMrr = Math.Max(100000, mrr * (1000 + VentureCatalogue.TargetGrowth) / 1000);
-            c.TargetDay = day + VentureCatalogue.TargetDays;
-        }
-
-        /// <summary>
-        /// The board looks at its target on its day: met, a new one is set and misses are forgotten; missed, the board
-        /// warns; missed twice with a majority of the board the investors', it replaces the chief executive. Returns 0 if
-        /// nothing was due, 1 met, 2 warned, 3 replaced.
-        /// </summary>
-        public static int Review(Cap c, long mrr, int day)
-        {
-            if (c.VcSeats == 0 || c.TargetDay <= 0 || day < c.TargetDay)
-            {
-                return 0;
-            }
-            if (mrr >= c.TargetMrr)
-            {
-                c.Misses = 0;
-                c.Pressure = 0;
-                Target(c, mrr, day);
-                return 1;
-            }
-            c.Misses++;
-            Target(c, mrr, day);
-            if (c.Misses >= VentureCatalogue.MissesToReplace && c.VcSeats * 2 > c.BoardSeats)
-            {
-                c.Pressure = 2;
-                c.Misses = 0;
-                return 3;
-            }
-            c.Pressure = 1;
-            return 2;
-        }
-
-        /// <summary>A bridge loan from the last lead: six months of a burn, owed with interest until the next round converts it.</summary>
-        public static long BridgeFor(long burnPerDay) => Math.Max(0, burnPerDay) * 30 * VentureCatalogue.BridgeMonths;
-
-        /// <summary>A day's interest on a bridge, cents.</summary>
-        public static long BridgeInterest(long owed) => owed * VentureCatalogue.BridgeInterestBp / 10000 / 365;
-
-        /// <summary>Share options granted: new shares for the staff pool. Returns the shares made.</summary>
-        public static long Grant(Cap c, int thousandths)
-        {
-            long total = Math.Max(1, c.Total);
-            long shares = total * thousandths / (1000 - thousandths);
-            Holder pool = null;
-            for (int i = 0; i < c.Holders.Count && pool == null; i++)
-            {
-                pool = c.Holders[i].Kind == (int)HolderKind.Pool ? c.Holders[i] : null;
-            }
-            if (pool == null)
-            {
-                pool = new Holder { Kind = (int)HolderKind.Pool };
-                c.Holders.Add(pool);
-            }
-            pool.Shares += shares;
-            c.OptionsGranted += thousandths;
-            return shares;
-        }
-
-        /// <summary>
-        /// Options split evenly among a firm's people: each one's share, with what does not divide left over for the next
-        /// split. With nobody there, nothing is given and all of it is left over.
-        /// </summary>
-        public static long Split(long shares, int people, out long left)
-        {
-            if (people <= 0 || shares <= 0)
-            {
-                left = Math.Max(0L, shares);
-                return 0L;
-            }
-            long each = shares / people;
-            left = shares - each * people;
-            return each;
-        }
-
-        /// <summary>
-        /// The staff options of a firm of the player's that nobody holds: its pool, less what its people hold now. A player's
-        /// firm's pool is made only by grants (a startup's seed round sets one aside of its own, in Round above), so this is
-        /// what grants made while nobody worked there, what did not divide, and what people who left had held. Never below 0.
-        /// </summary>
-        public static long Unheld(Cap c, long held)
-        {
-            long pool = 0L;
-            for (int i = 0; c != null && i < c.Holders.Count; i++)
-            {
-                pool += c.Holders[i].Kind == (int)HolderKind.Pool ? c.Holders[i].Shares : 0L;
-            }
-            return Math.Max(0L, pool - Math.Max(0L, held));
-        }
-
-        /// <summary>The share of a grant that has vested: none in the first year, then by the day over four years.</summary>
-        public static int Vested(int grantedDay, int day, int year)
-        {
-            int y = Math.Max(60, year);
-            int age = day - grantedDay;
-            if (age < VentureCatalogue.CliffYears * y)
-            {
-                return 0;
-            }
-            return Math.Min(1000, age * 1000 / (VentureCatalogue.VestYears * y));
-        }
-
-        /// <summary>The player sells some of their shares to an investor at a fifth off the last round's price. Returns the cents paid to the player.</summary>
-        public static long SellShares(Cap c, int thousandthsOfMine, int vc)
-        {
-            Holder me = null;
-            for (int i = 0; i < c.Holders.Count && me == null; i++)
-            {
-                me = c.Holders[i].Kind == (int)HolderKind.Player ? c.Holders[i] : null;
-            }
-            if (me == null || c.Post <= 0)
-            {
-                return 0;
-            }
-            long total = Math.Max(1, c.Total);
-            long shares = me.Shares * TalentCatalogue.Clamp(thousandthsOfMine, 0, 1000) / 1000;
-            long price = (long)((double)c.Post * shares / total * 800 / 1000);
-            me.Shares -= shares;
-            c.Holders.Add(new Holder { Kind = (int)HolderKind.Vc, Who = vc, Shares = shares, Invested = price, Round = Math.Max(0, c.Stage) });
-            return price;
-        }
     }
 }

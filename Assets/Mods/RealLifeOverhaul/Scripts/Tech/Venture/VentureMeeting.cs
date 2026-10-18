@@ -8,19 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// A pitch meeting in the game's own list window (<see cref="TravelList"/> through a <see cref="DeskList"/>), in the
-    /// style of the investors' pitch (Economy/Ventures/PitchMeeting): three rounds of questions, the window locked and the
-    /// player standing still until it is over. Two kinds:
-    ///
-    ///   founders     a startup pitches the player: ask about its revenue (the deck's figure against the truth), the
-    ///                team (the founders' quality), the market (its sector, the AI wave, the rival), its burn (the runway)
-    ///                or the terms; the last page is the term sheet: take it as an angel or from the fund, ask for a lower
-    ///                value, think it over or pass
-    ///   the player   the player pitches one of their own firms to a venture firm: each question is answered with the
-    ///                true figure, a stretch or a bold claim; the firm's diligence may catch an untrue one, which ends the
-    ///                meeting; otherwise the score sets the value on its term sheet
-    ///
-    /// Nothing runs by itself: a click does it all. The director looks once a second whether the window is still there.
+    /// A pitch meeting in the game's own list window, the player standing still until it is over: founders pitching the player,
+    /// or the player pitching their firm. Clicks do it all; the director checks once a second that the window is still there.
     /// </summary>
     internal sealed class VentureMeeting
     {
@@ -86,7 +75,7 @@ namespace RealLifeOverhaul.Tech
             _revenue = revenue;
             _growth = growthMille;
             _people = people;
-            _score = 500 + TechBridges.FounderNow();   // (a founder who left a profession to start this is listened to: Careers)
+            _score = 500 + TechBridges.FounderNow();   // a founder's record in a profession is listened to
             _heard = TechText.T("reallife_vc_meet_player_open", "firm", VentureCatalogue.Firms[TalentCatalogue.Clamp(vc, 0, VentureCatalogue.FirmCount - 1)].Name);
             return Begin();
         }
@@ -224,7 +213,7 @@ namespace RealLifeOverhaul.Tech
                     }
                     if (Answered(id))
                     {
-                        return;   // (caught: the meeting is over)
+                        return;   // caught: the meeting is over
                     }
                 }
                 _round++;
@@ -244,7 +233,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // What the founders' answer showed.
         private string Heard(int topic)
         {
             Startup s = _startup;
@@ -252,7 +240,8 @@ namespace RealLifeOverhaul.Tech
             {
                 case TopicRevenue:
                     s.Revealed |= 1;
-                    return TechText.Fill(s.ClaimBp > 1000 ? "reallife_vc_heard_revenue_less" : "reallife_vc_heard_revenue", "claimed", TechText.Cents(VentureRules.Claimed(s)), "true", TechText.Cents(s.Mrr));
+                    return TechText.Fill(s.ClaimBp > 1000 ? "reallife_vc_heard_revenue_less" : "reallife_vc_heard_revenue", "claimed", TechText.Cents(VentureRules.Claimed(s)),
+                        "true", TechText.Cents(s.Mrr));
                 case TopicTeam:
                     s.Revealed |= 2;
                     return TechText.T(s.Quality >= 700 ? "reallife_vc_heard_team_strong" : s.Quality >= 400 ? "reallife_vc_heard_team_fair" : "reallife_vc_heard_team_weak", "founder", s.Founder);
@@ -317,7 +306,8 @@ namespace RealLifeOverhaul.Tech
             if (_startup != null && _startup.Ask != null)
             {
                 TermSheet a = _startup.Ask;
-                string terms = TechText.Fill("reallife_vc_meet_terms", "amount", TechText.Cents(_director.Level(a.Amount)), "pre", TechText.Cents(_director.Level(a.Pre)), "share", TechText.Mille(a.EquityMille),
+                string terms = TechText.Fill("reallife_vc_meet_terms", "amount", TechText.Cents(_director.Level(a.Amount)),
+                    "pre", TechText.Cents(_director.Level(a.Pre)), "share", TechText.Mille(a.EquityMille),
                     "day", a.Lapse.ToString());
                 list.AddNote(_startup.Name, terms, list.HeightFor((int)(terms.Length * 1.3f), false));
                 list.Add(TakeAngel, TechText.T("reallife_vc_meet_take_angel"), TechText.T("reallife_vc_meet_take_angel_detail"), ButtonDo, true);
@@ -404,7 +394,7 @@ namespace RealLifeOverhaul.Tech
             {
                 TechDirector.Logger?.Error(e);
             }
-            _director.ChangedVenture();
+            _director.ChangedTech();
         }
 
         public void Dispose()

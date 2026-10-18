@@ -6,31 +6,17 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The Tech app, in the game's frame (GameUi.AppShell) as Open Roles is:
-    ///
-    ///   Firms       every tech firm of the player's with its people, its engineering time, products, contracts and
-    ///               takings; pick one for its crew, its risks, the data protection register, its value and its focus, to
-    ///               start a product, or for its Competitors page (TechApp.Rivals: who it is up against, how its products
-    ///               compare, the tenders both bid for, where each is); with nothing picked, the way from a studio to a
-    ///               hyperscaler and where the player is on it
-    ///   Products    every product with its features against its rival's, customers, recurring revenue and quality; pick one
-    ///               to price it, market it, give it engineering time, launch it or withdraw it
-    ///   Contracts   offers, the council's tenders and work under way; pick one to take it, bid for it or give it up
-    ///   Startups    the city's startups, what they claim and what the player holds of them; pick one to meet its founders,
-    ///               look into it, back it or follow on; with nothing picked, the portfolio and the player's fund
-    ///   Infra       data centres in the player's warehouses, warehouses that could be one, and the cloud; pick one to fit
-    ///               it out, buy racks, launch the cloud, price it or renew its licence
-    ///   Funding     the player's firms with investors: the cap table, the board and its target, the runway; pick one to
-    ///               raise, meet a venture firm, take a term sheet, borrow a bridge, grant share options or sell shares
-    ///
-    /// Nothing runs while the app is closed.
-    /// </summary>
+    /// <summary>The Tech app in the game's frame (GameUi.AppShell), a table and the picked row's page on each tab. Nothing runs while it is closed.</summary>
     public sealed partial class TechApp
     {
-        public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:", StartupRow = "start:", CapRow = "cap:", CentreRow = "dc:", CloudRow = "cloud", FitRow = "fit:";
+        public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:", StartupRow = "start:", CapRow = "cap:", CentreRow = "dc:",
+            CloudRow = "cloud", FitRow = "fit:";
         private const string NewProductRow = "newprod:";
-        private static readonly string[] TabKeys = { "reallife_tech_tab_firms", "reallife_tech_tab_products", "reallife_tech_tab_contracts", "reallife_tech_tab_startups", "reallife_tech_tab_funding", "reallife_tech_tab_infra" };
+        private static readonly string[] TabKeys =
+        {
+            "reallife_tech_tab_firms", "reallife_tech_tab_products", "reallife_tech_tab_contracts", "reallife_tech_tab_startups", "reallife_tech_tab_funding",
+            "reallife_tech_tab_infra"
+        };
 
         public static IModLogger Logger;
 
@@ -217,7 +203,7 @@ namespace RealLifeOverhaul.Tech
 
         private void ClosePick()
         {
-            _picked = RivalsBack(_picked);   // (a competitor's page goes back to its firm's competitors; anything else closes)
+            _picked = RivalsBack(_picked);   // a competitor's page goes back to its firm's competitors; anything else closes
             _page = 0;
             _table.ClearSelection();
             Refresh();

@@ -5,16 +5,12 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The figures the Guide's tech sector pages print: every {name} in their text is filled from the catalogues here, so
-    /// a page can never say anything the rules do not do. Called once, when the feature list is built (Meta/FeatureList);
-    /// each figure is worked out when the page is opened.
-    /// </summary>
+    /// <summary>The figures the Guide's tech pages print, each {name} filled from the catalogues, worked out when its page opens.</summary>
     public static class TechGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        // The end game's scale the Guide's figures are given at: the whole of it with its option on (Core/EndScale), none off.
+        // The end game's scale the figures are given at: all of it with its option on, none off.
         private static int Scale => Settings.EndScale ? EndScaleRules.Full : 0;
 
         public static void AddPeopleFacts(Feature f)
@@ -57,7 +53,8 @@ namespace RealLifeOverhaul.Tech
                 .Fact("tech_launch_features", () => Whole(FirmsCatalogue.LaunchFeatures))
                 .Fact("tech_points", () => Whole(FirmsCatalogue.PointsPerDay))
                 .Fact("tech_net_days", () => Whole(TechBridges.NetDaysNow()))
-                .Fact("tech_tiers", () => Mille(FirmsCatalogue.PriceTiers[0]) + ", " + Mille(FirmsCatalogue.PriceTiers[1]) + " " + TechText.T("reallife_guide_tech_or") + " " + Mille(FirmsCatalogue.PriceTiers[2]))
+                .Fact("tech_tiers", () => Mille(FirmsCatalogue.PriceTiers[0]) + ", " + Mille(FirmsCatalogue.PriceTiers[1]) + " " + TechText.T("reallife_guide_tech_or") + " "
+                                          + Mille(FirmsCatalogue.PriceTiers[2]))
                 .Fact("tech_marketing_most", () => Guide.Money(Prices.At(FirmsCatalogue.MarketingDay[FirmsCatalogue.MarketingDay.Length - 1] / 100)))
                 .Fact("tech_tickets", () => Whole(FirmsCatalogue.TicketsPerPerson))
                 .Fact("tech_seat", () => Guide.Money(Prices.At(FirmsCatalogue.SoftwarePerSeat) / 100f))
@@ -84,7 +81,8 @@ namespace RealLifeOverhaul.Tech
                 .Fact("tech_relief", () => Mille(FirmsCatalogue.ReliefShare))
                 .Fact("tech_scale_monthly", () => Guide.Money(Prices.At((int)(TechPath.ScaleUpMonthly / 100))))
                 .Fact("tech_scale_people", () => Whole(TechPath.ScaleUpPeople))
-                .Fact("infra_fit", () => Guide.Money(Prices.At((int)(InfraRules.FitCost(1, 0, Scale) / 100))) + " " + TechText.T("reallife_guide_tech_to") + " " + Guide.Money(Prices.At((int)(InfraRules.FitCost(1, 3, Scale) / 100))))
+                .Fact("infra_fit", () => Guide.Money(Prices.At((int)(InfraRules.FitCost(1, 0, Scale) / 100))) + " " + TechText.T("reallife_guide_tech_to") + " "
+                                         + Guide.Money(Prices.At((int)(InfraRules.FitCost(1, 3, Scale) / 100))))
                 .Fact("infra_sqm", () => Whole(InfraCatalogue.SqmPerRack))
                 .Fact("infra_rack", () => Guide.Money(Prices.At((int)(InfraRules.RackPrice(false, Scale) / 100))))
                 .Fact("infra_gpu", () => Guide.Money(Prices.At((int)(InfraRules.RackPrice(true, Scale) / 100))))
@@ -112,14 +110,14 @@ namespace RealLifeOverhaul.Tech
                 .Fact("infra_rented", () => Mille(InfraCatalogue.RentedGpuShare));
         }
 
-        // One line per segment: who buys, how many there are, the price a month and the churn.
         private static string Segments()
         {
             var text = new StringBuilder();
             for (int s = 0; s < (int)Segment.Count; s++)
             {
-                text.Append("- ").Append(TechText.Fill("reallife_guide_tech_segment", "segment", TechText.SegmentName((Segment)s), "market", FirmsCatalogue.Market[s].ToString("N0", Inv),
-                    "price", Guide.Money(Prices.At(FirmsCatalogue.Price[s]) / 100f), "churn", Mille(FirmsCatalogue.Churn[s]))).Append('\n');
+                text.Append("- ").Append(TechText.Fill("reallife_guide_tech_segment", "segment", TechText.SegmentName((Segment)s),
+                    "market", FirmsCatalogue.Market[s].ToString("N0", Inv), "price", Guide.Money(Prices.At(FirmsCatalogue.Price[s]) / 100f),
+                    "churn", Mille(FirmsCatalogue.Churn[s]))).Append('\n');
             }
             return text.ToString();
         }
@@ -172,27 +170,27 @@ namespace RealLifeOverhaul.Tech
                 .Fact("vc_option_poach", () => Whole(100 - VentureCatalogue.OptionPoach / 10) + "%");
         }
 
-        // One line per venture firm: its name, the stages it leads and whether it is a group of angels.
         private static string Firms()
         {
             var text = new StringBuilder();
             for (int i = 0; i < VentureCatalogue.Firms.Length; i++)
             {
                 VcDef vc = VentureCatalogue.Firms[i];
-                text.Append("- ").Append(TechText.Fill(vc.Angels ? "reallife_guide_vc_angels" : "reallife_guide_vc_firm", "name", vc.Name, "least", TechText.RoundName((RoundStage)vc.Least),
-                    "most", TechText.RoundName((RoundStage)vc.Most))).Append('\n');
+                text.Append("- ").Append(TechText.Fill(vc.Angels ? "reallife_guide_vc_angels" : "reallife_guide_vc_firm", "name", vc.Name,
+                    "least", TechText.RoundName((RoundStage)vc.Least), "most", TechText.RoundName((RoundStage)vc.Most))).Append('\n');
             }
             return text.ToString();
         }
 
-        // One line per round: the revenue it needs and the least it values a company at.
         private static string Rounds()
         {
             var text = new StringBuilder();
             for (int r = 1; r < (int)RoundStage.Count; r++)
             {
-                text.Append("- ").Append(TechText.Fill("reallife_guide_vc_round", "round", TechText.RoundName((RoundStage)r), "bar", Guide.Money(Prices.At((int)(VentureCatalogue.RoundBar[r] / 100))),
-                    "floor", Guide.Money(Prices.At((int)Math.Min(int.MaxValue, VentureCatalogue.FloorValue[r] / 100))), "burn", Guide.Money(Prices.At(VentureCatalogue.BurnByStage[r] / 100)))).Append('\n');
+                text.Append("- ").Append(TechText.Fill("reallife_guide_vc_round", "round", TechText.RoundName((RoundStage)r),
+                    "bar", Guide.Money(Prices.At((int)(VentureCatalogue.RoundBar[r] / 100))),
+                    "floor", Guide.Money(Prices.At((int)Math.Min(int.MaxValue, VentureCatalogue.FloorValue[r] / 100))),
+                    "burn", Guide.Money(Prices.At(VentureCatalogue.BurnByStage[r] / 100)))).Append('\n');
             }
             return text.ToString();
         }
@@ -204,7 +202,8 @@ namespace RealLifeOverhaul.Tech
                 .Fact("hire_graduates", () => Whole(HiringCatalogue.GraduatesSummer))
                 .Fact("hire_unemployment", Unemployment)
                 .Fact("hire_ad_day", () => Guide.Money(Prices.At(HiringCatalogue.AdDayCost)))
-                .Fact("hire_ad_days", () => Whole(HiringCatalogue.AdDays[0]) + ", " + Whole(HiringCatalogue.AdDays[1]) + " " + TechText.T("reallife_guide_tech_or") + " " + Whole(HiringCatalogue.AdDays[2]))
+                .Fact("hire_ad_days", () => Whole(HiringCatalogue.AdDays[0]) + ", " + Whole(HiringCatalogue.AdDays[1]) + " " + TechText.T("reallife_guide_tech_or") + " "
+                                            + Whole(HiringCatalogue.AdDays[2]))
                 .Fact("hire_boost", () => (HiringCatalogue.BoostCostBp / 10000f).ToString("0.#", Inv))
                 .Fact("hire_week", () => Whole(HiringCatalogue.AdWeekMost))
                 .Fact("hire_week_boosted", () => Whole(HiringCatalogue.AdWeekMostBoosted))
@@ -222,7 +221,7 @@ namespace RealLifeOverhaul.Tech
                 .Fact("hire_offer_days", () => Whole(HiringCatalogue.OfferDays))
                 .Fact("hire_lapse", () => Whole(HiringCatalogue.ApplicantDays))
                 .Fact("hire_search_fee", () => Bp(HiringCatalogue.SearchFeeBp))
-                .Fact("hire_search_retainer", () => Whole(HiringCatalogue.SearchRetainerShare / 10 + 0) + "%")
+                .Fact("hire_search_retainer", () => Whole(HiringCatalogue.SearchRetainerShare / 10) + "%")
                 .Fact("hire_search_count", () => Whole(HiringCatalogue.SearchCandidates))
                 .Fact("hire_search_least", () => Whole(HiringCatalogue.SearchDaysLeast))
                 .Fact("hire_search_most", () => Whole(HiringCatalogue.SearchDaysMost))
@@ -230,7 +229,6 @@ namespace RealLifeOverhaul.Tech
                 .Fact("hire_rivals", () => Whole(HiringCatalogue.RivalAdsByCycle[1]));
         }
 
-        // Unemployment among professionals by the city's cycle, in one line.
         private static string Unemployment()
         {
             return TechText.Fill("reallife_guide_tech_unemployment", "boom", Mille(HiringCatalogue.Unemployment[0]), "steady", Mille(HiringCatalogue.Unemployment[1]),
@@ -239,7 +237,6 @@ namespace RealLifeOverhaul.Tech
 
         internal static string Mille(int thousandths) => (thousandths / 10f).ToString("0.#", Inv) + "%";
 
-        // One line per role: its name, its family's word, whether the game draws them and whether it can be done from home.
         private static string Roles()
         {
             var text = new StringBuilder();

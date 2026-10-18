@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Tech
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];
         public int Dense, DenseGpu;  // of the racks, those of the new kind (bought at scale, Core/EndScale); the rest are the old kind
         public readonly int[] Crew = new int[InfraCatalogue.CrewKinds];   // its crews at scale: operators, engineers, security
-        // ---- read each day, never saved
+        // read each day, never saved
         public string Name = string.Empty;
         public int Technicians;
         public bool Power = true, Net = true;

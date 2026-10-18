@@ -2,44 +2,20 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
-using Streets;
 using UI.Load;
-using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The tech sector's buildings, all of them only to be seen (Scripts/Tech/Sites):
-    ///
-    ///   server rooms   the player's data centres furnished while the player is inside (ServerRoomView), by their tier and
-    ///                  racks: option "Server rooms in data centres", with the tech sector
-    ///   headquarters   the city's tech companies sharing a few of the city's large empty office buildings, a floor each
-    ///                  (Headquarters, the towers), named, on the map, the floor chosen at the door or the lift (TowerFloors),
-    ///                  each floor with its company's furnished lobby (LobbyView) and the rest of the floor fitted out round
-    ///                  it, the game's own office design for the unit and rooms of a tech company's (FitOut/FitView, built a
-    ///                  little a frame on FitOut/FitOutDirector); where their jobs are, the desk of one on its company's
-    ///                  floor: option "Tech company headquarters"
-    ///   frontages      the data centres' signs, booth, barrier and fence, and "Your cloud" on the map (Frontages):
-    ///                  option "Data centre signs and security", with the tech sector
-    ///   tech offices   a few fittings in an office a tech firm of the player's runs in (OfficeView): option "Tech fittings
-    ///                  in your offices", with the tech sector
-    ///
-    /// None of it is saved, none of it is an item of the player's or counted in what their furniture is worth, and nothing
-    /// is sent over Going Public's connection: every machine builds its own from the same city (the headquarters are the
-    /// same for everyone; another player's building is never touched).
-    ///
-    /// The cost: no Update. A one-second timer on the real clock (which room the player is in: a reference compare and the
-    /// building's place key, kept per building by TalentGame.Place, or a few flags with every view off; the headquarters,
-    /// the frontage near the player) and a half-second one that changes two materials' colour while the player is in a
-    /// server room, and does one comparison otherwise. A room is measured and built once on the way in, under the game's
-    /// fade. A fault switches the part it was in off for the session with one line in the log.
+    /// The tech sector's buildings, only to be seen and never saved or sent. Cost: no Update; a one-second timer and a half-second
+    /// one for a server room's lights, one comparison when idle. A fault switches its part off for the session.
     /// </summary>
-    public sealed class TechSites : MonoBehaviour
+    public sealed partial class TechSites : MonoBehaviour
     {
         private const string Warehouse = "ba:buildingtype_warehouse";
         private const string Office = "ba:buildingtype_office";
-        private const int TriesMost = 5;
+        private const int TriesMost = 5;   // tries to build a room in one visit
 
         public static IModLogger Logger;
         public static TechSites Instance { get; private set; }
@@ -88,7 +64,7 @@ namespace RealLifeOverhaul.Tech
             _hqFloor = new FitOut.FitView(Logger);
             _hqFloor.Built += HqFloorBuilt;
             _office = new OfficeView(Logger);
-            _onEnter = Guard.Wrap<Address>(_ => Soon());   // (a fault here never reaches the game's own handlers: Core/Guard)
+            _onEnter = Guard.Wrap<Address>(_ => Soon());   // a fault here never reaches the game's own handlers
             _onExit = Guard.Wrap<Address>(_ => Soon());
             StartCoroutine(Guard.Routine(Tick()));
             StartCoroutine(Guard.Routine(Lights()));
@@ -113,7 +89,7 @@ namespace RealLifeOverhaul.Tech
                 yield return second;
                 while (StartLine.Holds(StartSeats.TechSites))
                 {
-                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                    yield return null;   // the first load after a save waits for a frame of its own
                 }
                 try
                 {
@@ -127,8 +103,7 @@ namespace RealLifeOverhaul.Tech
         }
 
         private static readonly int HotSoon = HotSpots.Slot("Tech: TechSites.Soon");
-        // The player has just gone in or out: the room is looked at as soon as the game has put it together (under its
-        // fade), not at the next second. A few frames' look at one flag, then once.
+        // The player has just gone in or out: the room is looked at as soon as the game has put it together under its fade.
         private void Soon()
         {
             using var hotSpot = HotSpots.Time(HotSoon);
@@ -162,7 +137,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The status lights of a server room, twice a second; one comparison otherwise.
         private IEnumerator Lights()
         {
             var half = new WaitForSecondsRealtime(0.5f);
@@ -186,7 +160,7 @@ namespace RealLifeOverhaul.Tech
         private static readonly int HotTick = HotSpots.Slot("Tech: TechSites.Slow");
         private void Slow()
         {
-            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick, and the look just after a door (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick, and the look just after a door
             if (Save == null || LoadScene.isLoading || !ModState.Loaded || Meta.SaveTools.Dormant)
             {
                 return;
@@ -243,14 +217,12 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- the room the player is in
-
         private void Inside(int day)
         {
-            if (!Settings.TechSiteRooms && !Settings.TechSiteHq && !Settings.TechSiteOffices && _inside == null && _preview == null && !_testFloor && !_lifting
-                && !_room.Active && !_lobby.Active && !_hqFloor.Active && !_office.Active && _floors.In == null)
+            if (!Settings.TechSiteRooms && !Settings.TechSiteHq && !Settings.TechSiteOffices && _inside == null && _preview == null && !_testFloor
+                && !_lifting && !_room.Active && !_lobby.Active && !_hqFloor.Active && !_office.Active && _floors.In == null)
             {
-                return;   // every view off and nothing of one standing: a few flags (the building is looked at again once one is on)
+                return;   // every view off and nothing standing
             }
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             bool inside = BuildingManager.IsInsideBuilding && manager != null && !manager.enteringBuilding && !manager.exitingBuilding
@@ -271,7 +243,7 @@ namespace RealLifeOverhaul.Tech
             if (_testFloor)
             {
                 _hqFloor.Hide(BigAmbitions.PlacementSystem.PlacementSystem.IsInPlacementMode);
-                _hqFloor.Tick(now);   // (the test's floor, until the player leaves: nothing else of this is built meanwhile)
+                _hqFloor.Tick(now);   // the test's floor stands until the player leaves; nothing else is built meanwhile
                 return;
             }
             BuildingRegistration reg = manager.buildingRegistration;
@@ -293,7 +265,7 @@ namespace RealLifeOverhaul.Tech
                         }
                         else if (_room.Active && _room.Tick(manager, centre, day, now))
                         {
-                            _room.End();   // (built again at the next look, round the furniture as it is now)
+                            _room.End();   // built again at the next look, round the furniture as it is now
                             _tries = 0;
                         }
                         return;
@@ -351,7 +323,8 @@ namespace RealLifeOverhaul.Tech
             {
                 try
                 {
-                    bool office = Settings.TechSiteOffices && infra != null && GoingPublic.Mine(reg) && TechTypes.Is(reg.businessTypeName) && TypeOf(reg) == Office;
+                    bool office = Settings.TechSiteOffices && infra != null && GoingPublic.Mine(reg) && TechTypes.Is(reg.businessTypeName)
+                                  && TypeOf(reg) == Office;
                     if (office)
                     {
                         if (!_office.Active && _tries < TriesMost)
@@ -381,8 +354,8 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The company whose floor of a tower the player is in: the floor they arrive on the first time it is asked, and again
-        // if the towers have changed under them (the views laid again for it). Null outside a tower that may be walked into.
+        // The company whose floor of a tower the player is on, laid again if the towers changed under them. Null outside a
+        // tower that may be walked into.
         private Headquarters.Hq OnFloor(BuildingRegistration reg)
         {
             Headquarters.Tower tower = Settings.TechSiteHq && reg != null ? _hq.At(reg.StreetName, reg.StreetNumber) : null;
@@ -401,8 +374,8 @@ namespace RealLifeOverhaul.Tech
             }
             else if (_floorsStamp != _hq.Stamp)
             {
-                // The towers were chosen again while the player was in this one: the floor they are on stays, and is laid again
-                // only if another company is on it now (or, the floors fewer, they are taken to the floor the door would give).
+                // The towers were chosen again while the player was in this one: their floor is laid again only if another
+                // company is on it now, or with fewer floors the one the door would give.
                 _floorsStamp = _hq.Stamp;
                 if (_floors.Here == null)
                 {
@@ -418,24 +391,8 @@ namespace RealLifeOverhaul.Tech
             return _floors.Here;
         }
 
-        /// <summary>The company whose floor of a tower the player is on now, or null (the careers' desk is on its company's floor).</summary>
-        public string FloorCompany()
-        {
-            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
-            if (!Settings.TechSiteHq || !BuildingManager.IsInsideBuilding || manager == null || manager.enteringBuilding || manager.exitingBuilding
-                || Parking.UndergroundParking.UndergroundParkingManager.IsInsideParking)
-            {
-                return null;
-            }
-            Headquarters.Hq hq = OnFloor(manager.buildingRegistration);
-            return hq != null ? hq.Name : null;
-        }
-
-        /// <summary>True while a panel of the towers is up, and in the frame its button ran (World/NearbyInteraction).</summary>
-        public static bool TakesInteractKey => Instance != null && Instance._floors != null && Instance._floors.TakesKey;
-
-        // The lift: the screen dark, this floor's views taken down, the other company's laid on the same room, the player at
-        // the entrance; the screen light again once the floor stands (or after a few seconds).
+        // The lift: behind a dark screen this floor's views come down, the other company's are laid on the same room and the
+        // player stands at the entrance; light again once the floor stands, or after a few seconds.
         private IEnumerator Lift(int floor)
         {
             _lifting = true;
@@ -465,7 +422,7 @@ namespace RealLifeOverhaul.Tech
             }
             for (int frames = 0; frames < 10; frames++)
             {
-                yield return null;   // (what was destroyed is gone, and its cuts out of the walkable floor with it)
+                yield return null;   // what was destroyed is gone, and its cuts out of the walkable floor with it
             }
             _lifting = false;
             if (moved && Save != null)
@@ -481,14 +438,14 @@ namespace RealLifeOverhaul.Tech
                 float until = Time.realtimeSinceStartup + 6f;
                 while (_hqFloor.Active && !_hqFloor.Ready && Time.realtimeSinceStartup < until)
                 {
-                    yield return null;   // (behind the dark screen the floor goes up at the hidden pace)
+                    yield return null;   // behind the dark screen the floor goes up at the hidden pace
                 }
             }
             yield return UI.UiFader.UnFade(0.25f);
         }
 
-        // Once a city load: the city's office buildings counted by who has them, when the mod's buildings have been chosen
-        // (the towers last), or after two minutes whatever is chosen. One look at the city's buildings.
+        // Once a city load: the city's office buildings counted in the log by who has them, once the mod's buildings are chosen
+        // or after two minutes.
         private void Census()
         {
             if (_censusDone)
@@ -516,8 +473,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The kinds of business whose designs of the game's furnish a company's offices, in order: a software house's are the
-        // web agencies', a games studio's the graphic designers', the rest (hardware, chips, payments, networks) a head office's.
+        // The game's business designs that furnish a company's offices, in order of preference.
         private static readonly string[] SoftwareDesigns = { "WebDevelopmentAgency", "GraphicDesigner", "Headquarters", "MarketingAgency", "LawFirm" };
         private static readonly string[] StudioDesigns = { "GraphicDesigner", "WebDevelopmentAgency", "Headquarters", "MarketingAgency", "LawFirm" };
         private static readonly string[] OfficeDesigns = { "Headquarters", "WebDevelopmentAgency", "GraphicDesigner", "LawFirm", "MarketingAgency" };
@@ -534,8 +490,8 @@ namespace RealLifeOverhaul.Tech
                 : OfficeDesigns;
         }
 
-        // The rest of a headquarters' floor round its lobby (FitOut/FitView): the game's design for the unit and the plan's own
-        // rooms of a tech company, the lobby's pieces and the ways to its desk and seats kept. False if it could not be begun.
+        // The rest of a headquarters' floor round its lobby (FitOut/FitView), keeping the ways to its desk and seats. False if
+        // it could not be begun.
         private bool HqFloor(BuildingManager manager, Headquarters.Hq hq)
         {
             FitOut.FitView.Request r = _hqRequest;
@@ -544,7 +500,7 @@ namespace RealLifeOverhaul.Tech
             r.Kind = FitOut.FitKind.TechOffice;
             r.Seed = TechRandom.Of(hq.Name);
             r.Building = manager;
-            r.Place = HqTowers.FloorPlace(TalentGame.Place(manager.buildingRegistration), hq.Name);   // (the desk of a job there is on its company's floor)
+            r.Place = HqTowers.FloorPlace(TalentGame.Place(manager.buildingRegistration), hq.Name);   // a job's desk is on its company's floor
             r.Grid = _lobby.Grid;
             r.Floor = _lobby.Floor;
             r.Door = _lobby.Door;
@@ -560,7 +516,7 @@ namespace RealLifeOverhaul.Tech
             {
                 r.Site.Keep.Add(new FitOut.FitSpot(lobby.StaffX, lobby.StaffZ, 0.5f));
                 r.Site.Keep.Add(new FitOut.FitSpot(lobby.FrontX, lobby.FrontZ, 0.5f));
-                // The way from the door to the desk, and round it to the receptionist's side.
+                // the way from the door to the desk, and round it to the receptionist's side
                 Vector3 door = _lobby.Door;
                 r.Site.KeepFree.Add(new FitOut.FitRect(Mathf.Min(door.x, lobby.FrontX) - 0.7f, Mathf.Min(door.z, lobby.FrontZ) - 0.7f,
                     Mathf.Max(door.x, lobby.FrontX) + 0.7f, Mathf.Max(door.z, lobby.FrontZ) + 0.7f, false));
@@ -583,7 +539,7 @@ namespace RealLifeOverhaul.Tech
             Logger?.Info("Tech sites: headquarters' floor: " + view.Said + ".");
             if (!view.HasLamps && _lobby.Active)
             {
-                _lobby.HangLamps();   // (neither the design nor the plan's rooms hung any)
+                _lobby.HangLamps();   // neither the design nor the plan's rooms hung any
             }
         }
 
@@ -618,194 +574,6 @@ namespace RealLifeOverhaul.Tech
             broken = true;
             Logger?.Error(e);
             Logger?.Warn("Tech sites: " + what + " is switched off for this session after the error above.");
-        }
-
-        // ---------------------------------------------------------------- for others
-
-        /// <summary>A tech company's headquarters by its name: its tower's address (the careers' jobs there).</summary>
-        public bool HeadquartersOf(string company, out string street, out int number)
-        {
-            street = null;
-            number = 0;
-            return Settings.TechSiteHq && _hq != null && _hq.Of(company, out street, out number);
-        }
-
-        /// <summary>A tech company's floor by its name: its tower's name, the floor (from 1) and the tower's address (the Tech app's Competitors page). False while it has none.</summary>
-        public bool FloorOf(string company, out string tower, out int floor, out string street, out int number)
-        {
-            Headquarters.Hq hq = Settings.TechSiteHq && _hq != null ? _hq.Named(company) : null;
-            tower = hq != null && hq.Tower != null ? hq.Tower.Name : null;
-            floor = hq != null ? hq.Floor : 0;
-            street = tower != null ? hq.Street : null;
-            number = tower != null ? hq.Number : 0;
-            return tower != null && !string.IsNullOrEmpty(street);
-        }
-
-        /// <summary>Changes whenever the headquarters do.</summary>
-        public long HeadquartersStamp => Settings.TechSiteHq && _hq != null && _hq.All.Count > 0 ? 1 + _hq.All.Count + _hq.Stamp * 16L : 0;
-
-        /// <summary>The towers as places on the city map: one each, its name and address (its companies are on its card and in the search).</summary>
-        public void HeadquartersPlaces(List<MapPlace> into)
-        {
-            for (int i = 0; _hq != null && i < _hq.Towers.Count; i++)
-            {
-                Headquarters.Tower tower = _hq.Towers[i];
-                if (tower.Building == null)
-                {
-                    continue;
-                }
-                into.Add(new MapPlace(tower.Front, tower.Name + ", " + tower.Building.building.Address.ToFormattedString(), tower.Building) { CardTypeKey = "reallife_hq_tower_card_type" });
-            }
-        }
-
-        /// <summary>Changes whenever the player's data centres, their names or the cloud's do.</summary>
-        public long CloudStamp
-        {
-            get
-            {
-                InfraFile infra = TechDirector.Instance != null ? TechDirector.Instance.Infra : null;
-                if (!Settings.TechSiteCloud || infra == null || infra.Centres.Count == 0)
-                {
-                    return 0;
-                }
-                unchecked
-                {
-                    long stamp = 1 + infra.Centres.Count + _fronts.Stamp * 64L + (infra.Cloud.Open ? TechRandom.Of(infra.Cloud.Name) : 0) * 7L + (infra.Cloud.Hyper ? 3 : 0);
-                    for (int i = 0; i < infra.Centres.Count; i++)
-                    {
-                        stamp = stamp * 31 + TechRandom.Of(infra.Centres[i].Name);
-                    }
-                    return stamp;
-                }
-            }
-        }
-
-        /// <summary>The player's data centres as places on the map: the cloud's regions, a hyperscaler's all of them.</summary>
-        public void CloudPlaces(List<MapPlace> into)
-        {
-            InfraFile infra = TechDirector.Instance != null ? TechDirector.Instance.Infra : null;
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            for (int i = 0; infra != null && i < infra.Centres.Count; i++)
-            {
-                DataCentre d = infra.Centres[i];
-                if (!_fronts.Front(d.Place, out Vector3 front, out CityBuildingController building))
-                {
-                    BuildingRegistration reg = TalentGame.Find(d.Place);
-                    building = reg != null && city != null ? city.FindCityBuildingController(reg.Address) : null;
-                    if (building == null || !JobSpots.Front(building, out front))
-                    {
-                        continue;
-                    }
-                }
-                string region = HiringGame.District(d.District);
-                string name = infra.Cloud.Open && !string.IsNullOrEmpty(infra.Cloud.Name)
-                    ? TechText.Fill("reallife_sites_map_region", "cloud", infra.Cloud.Name, "region", region)
-                    : TechText.Fill("reallife_sites_map_centre", "name", d.Name);
-                into.Add(new MapPlace(front, name) { Lit = building });
-            }
-        }
-
-        // ---------------------------------------------------------------- tests
-
-        /// <summary>The test button: a server room in the warehouse of the player's they stand in, as a tier III data centre with 60 racks would have.</summary>
-        public void TestRoom()
-        {
-            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
-            BuildingRegistration reg = BuildingManager.IsInsideBuilding && manager != null ? manager.buildingRegistration : null;
-            if (reg == null || !GoingPublic.Mine(reg) || TypeOf(reg) != Warehouse)
-            {
-                Notifications.Show(NotificationType.Warning, "reallife_sites_test_room_where", null, 8f, trackOnSaveGame: false);
-                return;
-            }
-            try
-            {
-                EndViews();
-                _inside = TalentGame.Place(reg);
-                _preview = new DataCentre { Place = _inside, Name = TalentGame.NameOf(reg), Tier = 2, Racks = 60, GpuRacks = 12, Technicians = 2, District = InfraGame.District(reg) };
-                bool built = _room.Begin(manager, _preview, Save != null ? Save.Day : 0);
-                Logger?.Info("Tech sites test: server room: " + (built ? _room.Said : "the floor could not be measured") + ".");
-                Notifications.Show(built ? NotificationType.Success : NotificationType.Warning, built ? "reallife_sites_test_room_done" : "reallife_sites_test_room_failed", null, 8f, trackOnSaveGame: false);
-            }
-            catch (Exception e)
-            {
-                Fault(ref _roomBroken, "the server room", e);
-            }
-        }
-
-        /// <summary>
-        /// The test button: the room of the player's they stand in (an office or a warehouse) fitted out as a tech company's floor
-        /// is round their furniture, the plan's own rooms only (never the game's design over their furniture, never a change
-        /// to their walls and floors), until they leave. What a headquarters of that size and shape would look like, without
-        /// walking to one.
-        /// </summary>
-        public void TestFloor()
-        {
-            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
-            BuildingRegistration reg = BuildingManager.IsInsideBuilding && manager != null ? manager.buildingRegistration : null;
-            PlayerController player = Helpers.PlayerHelper.PlayerController;
-            if (reg == null || player == null || !GoingPublic.Mine(reg) || FitOut.FitOutDirector.Instance == null)
-            {
-                Notifications.Show(NotificationType.Warning, "reallife_sites_test_floor_where", null, 8f, trackOnSaveGame: false);
-                return;
-            }
-            try
-            {
-                EndViews();
-                _inside = TalentGame.Place(reg);
-                RoomGrid grid = null;
-                float floor = 0f;
-                if (RoomMeasure.Door(manager, player.transform.position, player.transform.forward, out Vector3 door, out Vector3 inward))
-                {
-                    grid = RoomMeasure.Measure(manager, door, true, out floor);
-                }
-                FitOut.FitView.Request r = _hqRequest;
-                r.Reset();
-                r.Name = "the test floor in " + TalentGame.NameOf(reg);
-                r.Kind = FitOut.FitKind.TechOffice;
-                r.Seed = TechRandom.Of(_inside);
-                r.Building = manager;
-                r.Grid = grid;
-                r.Floor = floor;
-                r.Door = door;
-                r.Inward = inward;
-                r.Look = false;
-                _testFloor = grid != null && _hqFloor.Begin(r, FitOut.FitOutDirector.Instance);
-                Notifications.Show(_testFloor ? NotificationType.Success : NotificationType.Warning, _testFloor ? "reallife_sites_test_floor_done" : "reallife_sites_test_floor_failed", null, 8f, trackOnSaveGame: false);
-            }
-            catch (Exception e)
-            {
-                Fault(ref _lobbyBroken, "the lobby", e);
-            }
-        }
-
-        /// <summary>The test button: every headquarters in the log, and the nearest in a notification.</summary>
-        public void TestHeadquarters()
-        {
-            if (!Settings.TechSiteHq || _hq.All.Count == 0)
-            {
-                Notifications.Show(NotificationType.Warning, "reallife_sites_test_hq_none", null, 8f, trackOnSaveGame: false);
-                return;
-            }
-            PlayerController player = Helpers.PlayerHelper.PlayerController;
-            Headquarters.Hq nearest = null;
-            float best = float.MaxValue;
-            for (int i = 0; i < _hq.All.Count; i++)
-            {
-                Headquarters.Hq hq = _hq.All[i];
-                float sqr = player != null ? (hq.Front - player.transform.position).sqrMagnitude : i;
-                Logger?.Info("Tech sites test: " + hq.Name + " at " + hq.Street + " " + hq.Number + ", floor " + hq.Floor + " of " + hq.Tower.Name
-                             + (Headquarters.Open(hq) ? " (its lobby is open)" : " (let: it moves at the next look)") + ".");
-                if (sqr < best)
-                {
-                    best = sqr;
-                    nearest = hq;
-                }
-            }
-            var data = new Dictionary<string, string>(3)
-            {
-                { "count", _hq.All.Count.ToString() }, { "company", nearest.Name }, { "address", nearest.Building != null ? nearest.Building.building.Address.ToFormattedString() : nearest.Street }
-            };
-            Notifications.Show(NotificationType.Info, "reallife_sites_test_hq_done", data, 12f, trackOnSaveGame: false);
         }
 
         /// <summary>Everything taken away (the feature's clean-up, the city going).</summary>

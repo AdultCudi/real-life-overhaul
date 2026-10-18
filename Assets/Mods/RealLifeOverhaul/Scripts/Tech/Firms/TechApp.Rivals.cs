@@ -5,15 +5,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The Competitors page of each of the player's firms, a page of the Firms tab (opened from the firm's page; the tab
-    /// takes the player back): in the table every competitor the rule gives (Tech/Firms/CompetitorRules: the city's tech
-    /// companies, its startups, the other firms the player and other players run), what each is, where the two meet, how
-    /// many of the firm's products have it as their rival, the council's tenders both bid for, and where it is (a company's
-    /// tower and floor, a business's district). Picked, a competitor's page: the products against it, the firm's against
-    /// theirs (features, its share of the market), the tenders with their bids once decided, and where it is, with the
-    /// game's own Set destination. Written when it is shown, from what the director reads then.
-    /// </summary>
+    /// <summary>The Competitors page of a firm on the Firms tab, and a competitor's own page with the game's Set destination.</summary>
     public sealed partial class TechApp
     {
         public const string RivalsRow = "rivals:", RivalRow = "rival:";
@@ -80,7 +72,6 @@ namespace RealLifeOverhaul.Tech
             return TechColumns.Rivals;
         }
 
-        // The page of the list: whose competitors, how many of each, what the firm makes, how they are found.
         private void WriteRivalsBox(InfoBox box, FirmPlace firm, int companies, int startups, int firms)
         {
             Firm m = firm.File;
@@ -103,7 +94,6 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, SectorGuide);
         }
 
-        // A competitor's page: what it is, where the two meet, the products against it, the tenders both bid for, where it is.
         private void WriteRival(InfoBox box, FirmsFile f, FirmPlace firm, Competitor c, int day)
         {
             Firm m = firm.File;
@@ -157,7 +147,6 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, SectorGuide);
         }
 
-        // The firm's products that have the company as their rival: features against theirs and the share of the market.
         private void RivalProducts(InfoBox box, FirmsFile f, Firm m, int company)
         {
             int shown = 0, more = 0;
@@ -189,7 +178,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The council's tenders the firm and the company both bid for: open, bid, or decided with both bids.
         private void RivalTenders(InfoBox box, FirmsFile f, Firm m, int company, int day)
         {
             int shown = 0, more = 0;
@@ -258,7 +246,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // Where a firm of a kind and a competitor meet: the products and the work both have, or a startup's sector.
+        // The products and work a kind and a competitor share, or a startup's sector.
         private string MeetWords(int kind, Competitor c)
         {
             switch ((RivalKind)c.Kind)
@@ -295,7 +283,7 @@ namespace RealLifeOverhaul.Tech
             return _words.Length > 0 ? _words.ToString() : "-";
         }
 
-        // Where it is, short, for the table: a company's tower and floor, a business's district.
+        // For the table: a company's tower and floor, a business's district.
         private static string WhereShort(Competitor c)
         {
             if (c.Kind == (int)RivalKind.Company)

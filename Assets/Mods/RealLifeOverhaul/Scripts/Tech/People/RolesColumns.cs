@@ -2,14 +2,10 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The Open Roles app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts, what
-    /// its rows can be filtered by and the sentence shown when a filter leaves nothing. The numbers beside each are the
-    /// columns, for whoever writes the rows.
-    /// </summary>
+    /// <summary>The Open Roles app's tables, declared as data (GameUi.TableSpec). The numbers beside each are the columns.</summary>
     public static class RolesColumns
     {
-        // ---- where a professional stands (the second filter of the Team tab)
+        // row kinds: where a professional stands, the Team tab's second filter
         public const int Waiting = 0, Leaving = 1, Learning = 2, Settled = 3;
         private static readonly string[] StateKinds = { "reallife_roles_kind_waiting", "reallife_roles_kind_leaving", "reallife_roles_kind_learning", "reallife_roles_kind_settled" };
 
@@ -30,7 +26,7 @@ namespace RealLifeOverhaul.Tech
             .Filter("reallife_roles_all_states", StateKinds)
             .Empty("reallife_roles_empty_team");
 
-        // ---- the jobs board
+        // row kinds: the jobs board
         public const int AdOpen = 0, AdClosed = 1;
         private static readonly string[] AdKinds = { "reallife_hire_kind_ad_open", "reallife_hire_kind_ad_closed" };
 
@@ -47,7 +43,7 @@ namespace RealLifeOverhaul.Tech
             .Filter("reallife_hire_all_ads", AdKinds)
             .Empty("reallife_hire_empty_jobs");
 
-        // ---- the applicants
+        // row kinds: the applicants
         public const int StageNew = 0, StageScreened = 1, StageOffer = 2, StageHired = 3, StageGone = 4;
         private static readonly string[] StageKinds = { "reallife_hire_kind_new", "reallife_hire_kind_screened", "reallife_hire_kind_offer", "reallife_hire_kind_hired", "reallife_hire_kind_gone" };
 
@@ -66,7 +62,7 @@ namespace RealLifeOverhaul.Tech
             .Filter("reallife_hire_all_jobs")
             .Empty("reallife_hire_empty_applicants");
 
-        /// <summary>Market: 0 family, 1 seekers, 2 juniors, 3 mids, 4 seniors and above, 5 rivals' openings, 6 your ads, 7 shortage, 8 going rate of its first role at mid level.</summary>
+        /// <summary>Market: 0 family, 1 seekers, 2 juniors, 3 mids, 4 seniors up, 5 rivals' openings, 6 your ads, 7 shortage, 8 first role's going rate at mid.</summary>
         public static readonly TableSpec Market = new TableSpec("Open Roles", "Market")
             .Column("reallife_hire_col_family", 330f, TableSort.Text, flexible: true)
             .Column("reallife_hire_col_seekers", 170f, TableSort.Number)

@@ -16,16 +16,14 @@ namespace RealLifeOverhaul.Tech
 
         private static long Level(long cents) => cents * Prices.Level / 1000;
 
-        // The Guide's pages the tabs point to at their foot: the tech sector, and startups and venture capital.
+        private const string Mod = "reallife";
         private const string SectorGuide = "reallife_meta_title_tech_sector", StartupsGuide = "reallife_meta_title_tech_startups";
-
-        // ---------------------------------------------------------------- firms
 
         private TableSpec WriteFirms(InfoBox box, FirmsFile f, int day)
         {
             if (Picked(_picked, RivalsRow) != null || Picked(_picked, RivalRow) != null)
             {
-                return WriteRivals(box, f, day);   // (a firm's Competitors page: TechApp.Rivals)
+                return WriteRivals(box, f, day);
             }
             IReadOnlyList<FirmPlace> firms = _director.FirmPlaces;
             FirmPlace picked = null;
@@ -97,7 +95,8 @@ namespace RealLifeOverhaul.Tech
             Step(box, studios > 0, "reallife_tech_path_studio", null);
             Step(box, live > 0, "reallife_tech_path_product", null);
             Step(box, monthly >= scale && people >= TechPath.ScaleUpPeople, "reallife_tech_path_scale",
-                TechText.Fill("reallife_tech_path_scale_needs", "monthly", TechText.Cents(monthly), "target", TechText.Cents(scale), "people", people.ToString(), "least", TechPath.ScaleUpPeople.ToString()));
+                TechText.Fill("reallife_tech_path_scale_needs", "monthly", TechText.Cents(monthly), "target", TechText.Cents(scale), "people", people.ToString(),
+                    "least", TechPath.ScaleUpPeople.ToString()));
             _director.PathMore(box);
         }
 
@@ -132,8 +131,7 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Selector((int)Focus.Count, m.Focus, i => TechText.T("reallife_tech_firm_focus", "focus", TechText.FocusName((Focus)i)), i => Do(() => _director.SetFocus(place, i)));
             }
-            // A row's button of a kind is one button (InfoBox.Button): starting a product and registering, both positive, take a
-            // row each when both are wanted; the Competitors page is the second row's other button.
+            // A row holds one button of each kind, so starting a product and registering, both positive, take a row each.
             bool makes = FirmsCatalogue.MakesProducts[m.Kind] != 0, register = day >= m.RegisteredUntil - 7;
             Transform buttons = box.ButtonRow();
             if (makes)
@@ -164,9 +162,8 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, SectorGuide);
         }
 
-        // Who worked yesterday at a firm (of those whose role does the work: -1 any of the firm's, else a kind of contract)
-        // and for how long; if nobody did, why and what to do, in one line. A line more when something is in the way from
-        // now on. Returns what is in the way now, else what was yesterday, else none.
+        // Who worked yesterday on a kind of contract (-1: any of the firm's work) and for how long, or why nobody did; a line
+        // more when something is in the way from now on. Returns what is in the way now, else what was yesterday.
         private Idle WorkLines(InfoBox box, FirmPlace firm, int kind, bool contract)
         {
             FirmFacts facts = _director.FactsOf(firm, kind);
@@ -215,9 +212,8 @@ namespace RealLifeOverhaul.Tech
             return now != Idle.None ? now : why;
         }
 
-        // The buttons that put right what keeps a firm's people from work: the Utilities app for the internet, the game's
-        // schedule for opening hours, shifts and its switch, the Company app's rota to plan the week. On the firm's page the
-        // schedule and the rota are always there; on a contract's only when they are what is in the way.
+        // The buttons that put right what keeps a firm's people from work; on the firm's page (always) the schedule or rota
+        // is there whatever is in the way.
         private void WorkButtons(InfoBox box, FirmPlace firm, Idle idle, bool always)
         {
             bool net = idle == Idle.NetNone || idle == Idle.NetInstalling;
@@ -232,7 +228,7 @@ namespace RealLifeOverhaul.Tech
             {
                 InfoBox.Button(row, InfoBox.Positive, "reallife_tech_button_internet", () => Do(() => _director.OpenInternet()));
             }
-            // (one additional button to a row: the rota, which plans the shifts, where it can be opened; else the game's schedule)
+            // one additional button to a row: the rota where it can be opened, else the game's schedule
             if (rota)
             {
                 InfoBox.Button(row, InfoBox.Additional, "reallife_tech_button_rota", () => Do(() => _director.OpenRota(firm)));
@@ -243,7 +239,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The firms of the player's that make products, in the Firms tab's order.
         private void Makers(List<FirmPlace> into)
         {
             into.Clear();
@@ -257,7 +252,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // What each kind of product needs, one line a kind: those the player's firms make, or every kind with none.
+        // What each kind of product the player's firms make needs, or every kind with no maker.
         private void Needs(InfoBox box, List<FirmPlace> makers)
         {
             for (int k = 0; k < (int)ProductKind.Count; k++)
@@ -351,10 +346,6 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, SectorGuide);
         }
 
-        private const string Mod = "reallife";
-
-        // ---------------------------------------------------------------- products
-
         private TableSpec WriteProducts(InfoBox box, FirmsFile f, int day)
         {
             Product picked = null;
@@ -369,7 +360,8 @@ namespace RealLifeOverhaul.Tech
                 row.Set(2, TechText.ProductName(p.K) + (p.K == ProductKind.Saas ? ", " + TechText.SegmentName(p.S) : string.Empty));
                 row.Set(3, State(p), FirmsRules.CanLaunch(p) ? TableRow.Green : TableRow.Plain);
                 row.Set(4, p.K == ProductKind.Game ? TechText.Mille((int)System.Math.Min(1000L, (long)p.Progress * 1000 / FirmsCatalogue.GameScope[TalentCatalogue.Clamp(p.Scope, 0, 2)]))
-                    : TechText.T("reallife_tech_row_features", "ours", p.Features.ToString(), "theirs", p.RivalFeatures.ToString()), p.Features, p.Features < p.RivalFeatures ? TableRow.Yellow : TableRow.Plain);
+                    : TechText.T("reallife_tech_row_features", "ours", p.Features.ToString(), "theirs", p.RivalFeatures.ToString()), p.Features,
+                        p.Features < p.RivalFeatures ? TableRow.Yellow : TableRow.Plain);
                 row.Set(5, TechText.Whole(p.Users), p.Users);
                 Cents(row, 6, Level(FirmsRules.MonthlyRevenue(p)));
                 int q = FirmsRules.Quality(p);
@@ -446,12 +438,14 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Fill("reallife_tech_product_build", "features", p.Features.ToString(), "rival", FirmsCatalogue.RivalName(rival), "theirs", p.RivalFeatures.ToString(),
                     "next", (FirmsRules.FeatureCost(p.Features) - p.Progress).ToString()));
-                box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free), "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
+                box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
+                    "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
             }
             if (p.K == ProductKind.Model)
             {
-                box.Line(TechText.Fill("reallife_tech_product_training", "done", TechText.Whole(p.Compute), "need", TechText.Whole(InfraRules.TrainNeed(p.Features)), "inference", InfraRules.Inference(p).ToString()));
+                box.Line(TechText.Fill("reallife_tech_product_training", "done", TechText.Whole(p.Compute),
+                    "need", TechText.Whole(InfraRules.TrainNeed(p.Features)), "inference", InfraRules.Inference(p).ToString()));
             }
             box.Line(TechText.Fill("reallife_tech_product_quality", "quality", TechText.Mille(FirmsRules.Quality(p)), "bugs", p.Bugs.ToString(),
                 "appeal", firm != null ? TechText.Mille(FirmsRules.Appeal(p, firm.File, firm.Crew)) : "-"));
@@ -459,14 +453,16 @@ namespace RealLifeOverhaul.Tech
             {
                 if (p.K != ProductKind.Game)
                 {
-                    box.Selector(3, p.Tier, i => TechText.Fill("reallife_tech_product_tier", "tier", TechText.Tier(i), "price", TechText.Cents(Level(FirmsCatalogue.Price[p.Segment] * (long)FirmsCatalogue.PriceTiers[i] / 1000))),
+                    box.Selector(3, p.Tier, i => TechText.Fill("reallife_tech_product_tier", "tier", TechText.Tier(i),
+                        "price", TechText.Cents(Level(FirmsCatalogue.Price[p.Segment] * (long)FirmsCatalogue.PriceTiers[i] / 1000))),
                         i => Do(() => _director.SetProduct(id, i, -1, -1)));
                 }
                 box.Selector(FirmsCatalogue.MarketingDay.Length, p.Marketing, TechText.MarketingLevel, i => Do(() => _director.SetProduct(id, -1, i, -1)));
                 if (p.K == ProductKind.Model)
                 {
                     box.Selector(InfraRules.TrainLevels.Length, p.Train, i => TechText.Fill("reallife_tech_product_train", "units", InfraRules.TrainLevels[i].ToString(),
-                        "cost", TechText.Cents(_director.Level((long)InfraRules.TrainLevels[i] * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000))), i => Do(() => _director.SetTraining(id, i)));
+                        "cost", TechText.Cents(_director.Level((long)InfraRules.TrainLevels[i] * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000))),
+                        i => Do(() => _director.SetTraining(id, i)));
                 }
                 int at = 0;
                 for (int i = 0; i < Shares.Length; i++)
@@ -489,9 +485,6 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, SectorGuide);
         }
 
-        // ---------------------------------------------------------------- contracts
-
-        // Who bids against the player on a council tender: the companies the competitors' rule names (CompetitorRules.TenderRival).
         private void TenderRivals(InfoBox box, FirmsFile f, Contract t)
         {
             _words.Clear();
@@ -555,7 +548,8 @@ namespace RealLifeOverhaul.Tech
             Idle idle = Idle.None;
             box.Title(w.Client);
             box.Subtitle(TechText.Work(w.K));
-            box.Chip(TechText.StageName(w.At), w.At == WorkStage.Offered || w.At == WorkStage.Active ? CellTone.Green : w.At == WorkStage.Tender || w.At == WorkStage.Bid ? CellTone.Plain : CellTone.Yellow);
+            box.Chip(TechText.StageName(w.At),
+                w.At == WorkStage.Offered || w.At == WorkStage.Active ? CellTone.Green : w.At == WorkStage.Tender || w.At == WorkStage.Bid ? CellTone.Plain : CellTone.Yellow);
             box.Section("reallife_ibox_sec_now");
             switch (w.At)
             {

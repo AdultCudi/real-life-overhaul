@@ -1,24 +1,16 @@
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The labour market for professionals and the ways to hire from it: the city's job seekers, the jobs board (the Open
-    /// Roles app), the game's own recruitment office and the executive search firms. Game-free (the checkers compile it);
-    /// every amount is at the start's prices and is asked of <see cref="Prices"/> when it is charged or shown.
-    ///
-    /// ONE MARKET FOR EVERYBODY. The seekers are one list for the whole city: the player's ads, the rivals' ads and the
-    /// recruitment office all draw on it, and a seeker who takes one job is gone for the others. The recruitment office
-    /// stays the proper way to hire: it brings what the player asks it for and at least <see cref="OfficeBonusLeast"/>
-    /// more besides, picked from the seekers for the role the business needs, where a week's ad on the board brings at
-    /// most <see cref="AdWeekMost"/> applicants (<see cref="AdWeekMostBoosted"/> boosted) of whoever happens to see it.
+    /// The labour market's figures: one list of seekers the player's ads, the rivals and the recruitment office all draw on.
+    /// Game-free; amounts at the start's prices.
     /// </summary>
     public static class HiringCatalogue
     {
-        // ---------------------------------------------------------------- the seekers
-        public const int SeekersLeast = 50;
+        // The seekers
+        public const int SeekersLeast = 50;                         // seekers on the market
         public const int SeekersMost = 160;
-        public const int SeekerDaysLeast = 10, SeekerDaysMost = 40;   // how long a seeker looks before they find work elsewhere
+        public const int SeekerDaysLeast = 10, SeekerDaysMost = 40;   // days a seeker looks before they find work elsewhere
         public const int GraduatesSummer = 30;                      // more juniors in the summer
-        public const int JoinRivalsShare = 600;                     // thousandths of the seekers who leave the market that go to a rival
 
         /// <summary>Unemployment among professionals by the city's cycle (boom, steady, slowdown, recession), per mille.</summary>
         public static readonly int[] Unemployment = { 35, 50, 70, 100 };
@@ -26,7 +18,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The share of seekers in each family, thousandths, in the order of <see cref="Family"/>.</summary>
         public static readonly int[] FamilyShare = { 200, 80, 50, 80, 70, 100, 150, 110, 130, 30 };
 
-        /// <summary>The shortage of a family before the market's own figures, thousandths: engineers, data people, security and infrastructure are scarce.</summary>
+        /// <summary>A family's shortage before the market's own figures, thousandths: engineers, data, security and infrastructure are scarce.</summary>
         public static readonly int[] FamilyScarcity = { 1150, 1200, 1250, 1180, 1050, 980, 950, 900, 1000, 1050 };
 
         /// <summary>The share of seekers at each level, thousandths: seniors and above are few.</summary>
@@ -36,18 +28,18 @@ namespace RealLifeOverhaul.Tech
         public const int EmployedPremiumBp = 800;
         public const int UnemployedDiscountBp = 500;
         public const int AskSpreadBp = 800;         // a seeker's own ask either side of the going rate
-        public const int ShortageLeast = 850, ShortageMost = 1500;
+        public const int ShortageLeast = 850, ShortageMost = 1500;   // thousandths
 
-        // ---------------------------------------------------------------- the rivals' ads
+        // The rivals' ads
         public const int RivalAdsMost = 40;
-        public const int RivalAdDays = 14;
-        public static readonly int[] RivalAdsByCycle = { 30, 22, 14, 8 };
+        public const int RivalAdDays = 14;                          // days an ad runs
+        public static readonly int[] RivalAdsByCycle = { 30, 22, 14, 8 };   // ads, boom to recession
         public const int RivalTakeChance = 120;     // per mille a day a rival's ad fills from a matching seeker
 
-        // ---------------------------------------------------------------- the player's ads
+        // The player's ads
         public const int AdsMost = 12;
-        public static readonly int[] AdDays = { 7, 14, 30 };
-        public const int AdDayCost = 25;            // at the start's prices, a day
+        public static readonly int[] AdDays = { 7, 14, 30 };   // days an ad can run
+        public const int AdDayCost = 25;            // whole money a day at the start's prices
         public const int BoostCostBp = 25000;       // a boosted ad costs this much of a plain one
         public const int AdWeekMost = 3;            // applicants a week of an ad brings at most
         public const int AdWeekMostBoosted = 4;
@@ -55,9 +47,9 @@ namespace RealLifeOverhaul.Tech
         public const int UnderRequirement = 200;    // thousandths of that for a seeker short of the skill asked
         public const int BoostReach = 2000;         // thousandths: a boosted ad is seen by twice as many
 
-        // ---------------------------------------------------------------- screening, interviews and offers
-        public const int ReferencesCost = 60;
-        public const int BackgroundCost = 120;
+        // Screening, interviews and offers
+        public const int ReferencesCost = 60;       // whole money at the start's prices
+        public const int BackgroundCost = 120;      // whole money at the start's prices
         public const int ClaimMost = 15;            // points a CV may claim over the truth
         public const int InterviewRounds = 3;
         public const int AcceptBp = 9700;           // an offer this share of the ask (or more) is taken
@@ -70,13 +62,13 @@ namespace RealLifeOverhaul.Tech
         public const int StartLeast = 1, StartUnemployedMost = 3;
         public const int ApplicantsMost = 120;
 
-        // ---------------------------------------------------------------- the recruitment office
+        // The recruitment office
         public const string AgencyType = "ba:businesstype_recruitmentagency";
         public const int OfficeBonusLeast = 4;      // more candidates than asked for, at the least
         public const int OfficeBonusShare = 500;    // ...or half as many again, if more
         public const int OfficeSkillFloor = 25;     // the office's own candidates are screened to this at the least
 
-        // ---------------------------------------------------------------- executive search
+        // Executive search
         public const int SearchesMost = 4;
         public const int SearchFeeBp = 2000;        // a share of a year's pay at the ask
         public const int SearchRetainerShare = 333; // thousandths of the fee paid when the search starts; the rest on a hire
