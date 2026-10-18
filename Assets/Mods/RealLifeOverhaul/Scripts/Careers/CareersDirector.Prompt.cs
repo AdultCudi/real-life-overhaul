@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Careers
     ///                   exam" (Careers/SchoolDesk). The game's own courses at the desk are as they were.
     ///   the university the classrooms of its floors, at their doors, with the same panel (Careers/CampusInterior)
     ///   at home         an online or distance class, and homework, at the player's own computer: its buttons beside the
-    ///                   game's Pass the time (Careers/ComputerButtons, Careers/ComputerClass)
+    ///                   game's Pass the time (Careers/ComputerButtons, Careers/ComputerSitting)
     ///   elsewhere       at the university's sign or door while its floors are not there, on a ward of a hospital or clinic:
     ///                   the game's own panel (<see cref="DoorPanel"/>) over the place with one button, "Attend {course}"
     ///                   or "Sit the {course} exam", on the game's interact key. While it is up the key is the class's
@@ -238,6 +238,13 @@ namespace RealLifeOverhaul.Careers
             if (_computer != null && !_computer.Open)
             {
                 _computer = null;
+            }
+            if (_sitting != null && !SittingNow && !(_deskWork != null && _deskWork.Open))
+            {
+                // Nothing on the game's panel holds it any more: let go, so that it never leaves every class and day "under way".
+                Logger?.Info("Careers: a " + _sitting.Kind + " sitting was left with no desk, computer or panel of its own; let go, nothing counted.");
+                _sitting = null;
+                CareersGame.Tiring(false);   // (its energy spent no more, if it had begun)
             }
         }
 
@@ -466,7 +473,14 @@ namespace RealLifeOverhaul.Careers
 
         private static string Words(SittingKind kind)
         {
-            return kind == SittingKind.Exam ? "the exam" : kind == SittingKind.Homework ? "a piece of homework" : "a class";
+            switch (kind)
+            {
+                case SittingKind.Exam: return "the exam";
+                case SittingKind.Homework: return "a piece of homework";
+                case SittingKind.Work: return "a working day";
+                case SittingKind.Overtime: return "overtime";
+                default: return "a class";
+            }
         }
 
         // ---------------------------------------------------------------- the hour a class begins

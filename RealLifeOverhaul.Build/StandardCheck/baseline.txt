@@ -358,7 +358,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Own.cs	
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Study.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Work.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersStore.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/DeskWork.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/PersonaEducation.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/SchoolDesk.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Study/CampusRules.cs	1
@@ -392,7 +391,7 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/CustomerDraw.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/DayRollGuard.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/DayRollRules.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameConfirm.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameContract.cs	14
+RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameContract.cs	13
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/InfoBox.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/TableView.cs	1

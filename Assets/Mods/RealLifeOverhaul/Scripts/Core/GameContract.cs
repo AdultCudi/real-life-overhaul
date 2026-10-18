@@ -73,7 +73,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart BodyFade = ContractBook.Part("body_fade", "ragdoll", "showing a body the game faded beside a car");
         public static readonly GamePart BusStops = ContractBook.Part("bus_stops", "transport", "bus stops kept clear of parked cars");
         public static readonly GamePart SchoolDeskPart = ContractBook.Part("school_desk", "careers_study", "attending a class at a desk of the school");
-        public static readonly GamePart ComputerClassPart = ContractBook.Part("computer_class", "careers_study", "an online class or homework from the buttons of the computer at home");
+        public static readonly GamePart ComputerClassPart = ContractBook.Part("computer_class", "careers_study",
+            "an online class, homework or a working day, from the buttons of the computer at home");
         public static readonly GamePart FurnitureSeats = ContractBook.Part("furniture_seats", "law", "people seated on the furniture of the mod's rooms");
         public static readonly GamePart SpecialHeadline = ContractBook.Part("special_headline", null, "a special building's own name over the game's building panel");
         public static readonly GamePart SpecialSearch = ContractBook.Part("special_search", null, "the special buildings' own names in the city map's search");

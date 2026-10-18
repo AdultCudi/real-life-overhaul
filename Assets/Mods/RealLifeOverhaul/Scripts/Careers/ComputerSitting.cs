@@ -12,25 +12,27 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// An online class or a piece of homework at the player's computer at home, done the way the game's own computer
-    /// passes the time (PlayerActivity.EntertainActivity, opened by ComputerController.PerformActivity): the player walks
-    /// to the computer's chair, sits at it with their hands on it, its screen shows the game's work video, they type now
-    /// and then; the game's panel shows the progress, the time left, fast forward, "skip time" and Stop. Pressed once
-    /// (the computer's own button, Careers/ComputerButtons, or the Campus app's Attend at home), it goes the whole way
-    /// without a second press: the panel sees it for one frame not started, then on its way, as the game's own activities
-    /// are after their Start, and the walk order is given a frame later, as theirs is.
+    /// An online class, a piece of homework or a working day at the player's computer at home, done the way the game's own
+    /// computer passes the time (PlayerActivity.EntertainActivity, opened by ComputerController.PerformActivity): the
+    /// player walks to the computer's chair, sits at it with their hands on it, its screen shows the game's work video,
+    /// they type now and then; the game's panel shows the progress, the time left, fast forward, "skip time" and Stop.
+    /// Pressed once (the computer's own buttons, Careers/ComputerButtons, or the Campus app's Attend at home), it goes the
+    /// whole way without a second press: the panel sees it for one frame not started, then on its way, as the game's own
+    /// activities are after their Start, and the walk order is given in that frame (docs/features/careers.md, "Setting
+    /// off").
     ///
-    /// Whichever way it ends (the end of the time, Stop, fast forward or skip time to the end, energy running out, the
-    /// game's panel letting it go, the walk called off by a click elsewhere) the minutes are counted to the enrolment
-    /// once (<see cref="ClassTally"/>, then CareersDirector.Ended), as a class or homework is from anywhere else; a walk
-    /// called off counts nothing and says nothing. The player stands up as the game's computer stands them up.
+    /// Whichever way it ends (the end of the time, Stop, fast forward or skip time to the end, energy running out in a class
+    /// or homework, the game's panel letting it go, the walk called off by a click elsewhere) the minutes are counted once
+    /// (<see cref="ClassTally"/>, then CareersDirector.Ended: to the enrolment, or as the day's work), as from anywhere
+    /// else; a walk called off counts nothing and says nothing. The player stands up as the game's computer stands them
+    /// up, and its study blocker goes whatever else fails, so that nothing leaves them held at the computer.
     ///
     /// One object per press. Its cost: a few integer sums when the game's clock moves a minute while it runs; the
     /// director looks once a second whether the game's panel still has it. Nothing per frame of its own.
     /// </summary>
-    internal sealed class ComputerClass : IPlayerActivity
+    internal sealed class ComputerSitting : IPlayerActivity
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "ComputerClass", typeof(ComputerClass));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "ComputerSitting", typeof(ComputerSitting));   // the game's calls of it (Core/Guard)
 
         private readonly CareersDirector _director;
         private readonly ComputerController _computer;
@@ -38,20 +40,23 @@ namespace RealLifeOverhaul.Careers
         private readonly ClassTally _tally;
         private readonly LabelInfo _title;
         private readonly string _typing;          // the computer's own using animation, as the game's computer has its user type
+        private readonly bool _work;              // a working day or overtime (else a class or homework)
         private Sitting _sitting;
         private LabelInfo[] _labels;
         private ButtonInfo[] _stop;
         private PlayerActivityState _state = PlayerActivityState.NotStarted;
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
         private float _nextType;
+        private int _orderFrame = -1;             // the frame the walk order to the computer was given in (DeskGame.SetOffSeen)
 
-        public ComputerClass(CareersDirector director, ComputerController computer, Sitting sitting)
+        public ComputerSitting(CareersDirector director, ComputerController computer, Sitting sitting)
         {
             _director = director;
             _computer = computer;
             _sitting = sitting;
             _tally = new ClassTally(sitting.SkipMinutes);
             _title = DeskGame.Label(sitting.SkipTitle, 0);
+            _work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime;
             _chair = computer.FindChair();
             AnimationType typing = AnimationType.UsingDesktopComputer;
             try
@@ -109,6 +114,7 @@ namespace RealLifeOverhaul.Careers
             }
             else
             {
+                _orderFrame = Time.frameCount;
                 player.SetGoal(target, Guard.Listener(Arrived));
             }
         }
@@ -137,6 +143,7 @@ namespace RealLifeOverhaul.Careers
                 _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
                 _tally.Begin();
                 _sitting?.SkipStarted();
+                DeskGame.SetOffSeen("the computer", true, _orderFrame);
             }
             catch (Exception e)
             {
@@ -171,38 +178,24 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             PlayerActivityState was = _state;
+            _before = was;
+            _state = PlayerActivityState.Finished;   // (first: whatever the game's calls below do, nothing here runs twice)
+            PlayerController player = InstanceBehavior<GameManager>.Instance != null ? InstanceBehavior<GameManager>.Instance.playerController : null;
             try
             {
-                PlayerController player = InstanceBehavior<GameManager>.Instance != null ? InstanceBehavior<GameManager>.Instance.playerController : null;
                 if (player != null && was == PlayerActivityState.MovingTowardsActivity && walking)
                 {
                     player.ResetNavigation();
                 }
                 else if (player != null && (was == PlayerActivityState.Started || was == PlayerActivityState.Running))
                 {
-                    ThirdPersonCharacter character = player.Character;
-                    if (_chair != null)
-                    {
-                        character.Reset();
-                        InstanceBehavior<SfxManager>.Instance?.PlayAudio(SoundType.ChairStandUp, player.transform.position, 1f, isPlayerCreatedSound: true);
-                        _chair.Occupied = false;
-                    }
-                    if (_computer != null)
-                    {
-                        _computer.Occupied = false;
-                        _computer.StopVideoOnScreen();
-                    }
-                    character.SetItemIKTargets(null);
-                    player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
-                    PlayerHelper.GetAnimator().ResetTrigger(_typing);
+                    StandUp(player);
                 }
             }
             catch (Exception e)
             {
                 CareersDirector.Logger?.Error(e);
             }
-            _before = was;
-            _state = PlayerActivityState.Finished;
             Sitting sitting = _sitting;
             _sitting = null;
             TallyEnd end = _tally.Settle(out int minutes, out bool whole);
@@ -220,9 +213,38 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        // Up from the chair as the game's computer stands its user up. The study blocker goes whatever the game's calls
+        // before it do, so that nothing can leave the player held at the computer.
+        private void StandUp(PlayerController player)
+        {
+            try
+            {
+                ThirdPersonCharacter character = player.Character;
+                if (_chair != null)
+                {
+                    character.Reset();
+                    InstanceBehavior<SfxManager>.Instance?.PlayAudio(SoundType.ChairStandUp, player.transform.position, 1f, isPlayerCreatedSound: true);
+                    _chair.Occupied = false;
+                }
+                if (_computer != null)
+                {
+                    _computer.Occupied = false;
+                    _computer.StopVideoOnScreen();
+                }
+                character.SetItemIKTargets(null);
+                PlayerHelper.GetAnimator().ResetTrigger(_typing);
+            }
+            finally
+            {
+                player.UnsetNavigationBlocker(NavigationBlocker.StudyActivity);
+            }
+        }
+
         // ---------------------------------------------------------------- the game's contract
 
-        public bool RequiresEnergy() => true;
+        // A class or homework ends when the player's energy runs out, as the game's studying does; a working day does not, as
+        // it does not at the desk (Careers/DeskWork) or on the Career app's panel (Jobs/ShiftSkip), so that it counts the same.
+        public bool RequiresEnergy() => !_work;
 
         public bool BlocksAutoSave() => true;
 
@@ -249,8 +271,14 @@ namespace RealLifeOverhaul.Careers
         {
             try
             {
+                if (state == PlayerActivityState.Finished)
+                {
+                    Finish();   // however the panel ends it: the minutes counted once, and the player stood up
+                    return;
+                }
                 if (_state == PlayerActivityState.MovingTowardsActivity && state == PlayerActivityState.NotStarted)
                 {
+                    DeskGame.SetOffSeen("the computer", false, _orderFrame);
                     End(true, false);   // the game's panel called the walk off for a click elsewhere, and let it go
                     return;
                 }

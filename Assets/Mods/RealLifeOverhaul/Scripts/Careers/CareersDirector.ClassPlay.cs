@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Careers
     ///   at home         an online or distance class, and homework, at the player's computer: its own buttons beside the
     ///                   game's Pass the time (Careers/ComputerButtons), or the Campus app's Attend and Homework at home,
     ///                   walk the player to it and sit them there as the game's computer passes the time
-    ///                   (Careers/ComputerClass). A home with no computer, or no working internet for an online class, says so.
+    ///                   (Careers/ComputerSitting). A home with no computer, or no working internet for an online class, says so.
     ///
     /// Where nothing in the world fits (a hospital's ward, the university while its floors are not there) the game's panel
     /// where the player stands, as before (<see cref="Offer"/>). The minutes count to the enrolment once, however it ends
@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Careers
     {
         private const int BeginFrames = 3;   // frames a desk's panel opened for the player may take to be seen by the watch on the game's panel
 
-        private ComputerClass _computer;     // a class or homework at the computer at home, from its press until it is over
+        private ComputerSitting _computer;   // a class, homework or a working day at the computer at home, from its press until it is over
         private int _beginCourse = -1;       // the course whose class (exam, homework) is to be begun at its desk for the player...
         private SittingKind _beginKind;      // ...which
         private int _beginFrame = -1;        // ...and the frame its desk's panel was opened in (-1: not yet)
@@ -169,7 +169,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>
         /// An online or distance class, or a piece of homework, at a computer of the player's home: the one pressed, or
         /// (from the Campus app) the first the game would pass the time at. The player walks there and sits, and the game's
-        /// panel runs it (Careers/ComputerClass). Null if under way; else the reason key.
+        /// panel runs it (Careers/ComputerSitting). Null if under way; else the reason key.
         /// </summary>
         internal string AtComputer(int course, SittingKind kind, ComputerController computer)
         {
@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Careers
         private string StartAtComputer(ComputerController computer, Sitting sitting, string what)
         {
             CloseApps();
-            var activity = new ComputerClass(this, computer, sitting);
+            var activity = new ComputerSitting(this, computer, sitting);
             if (!DeskGame.Show(activity))
             {
                 return "reallife_study_why_game_busy";
