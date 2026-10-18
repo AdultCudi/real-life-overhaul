@@ -1,7 +1,9 @@
-0.32.1
+0.32.2
+
+New
+- On a day worked from home, your computer has a Start the working day button beside Pass Time, and Work late once the day is worked: you sit down at it and work, with fast forward and skip, as for an online class.
 
 Fixed
-- Buying on finance charges the approval's interest only on the part the lender finances and only for the days before you buy, as the new account charges its own from that day, and the approval's question, its page and the Guide say so.
-- A card's minimum paid before its due day counts as a payment on time, the student loan stays in your credit rating when the economy is switched off and on again, and a bank app asks before it cancels an approval and keeps the loan you picked when another is paid off.
-- Changing the game's interest multiplier keeps each loan at the rate it was taken at, consolidation is no longer offered while the game's own bankruptcy quest runs, and the private lender names the fee for more time before you agree to it.
-- Switching Investors off no longer stops the deals you have: shares are still paid and called sums still collected, and only new offers, pitches and meetings stop.
+- The game's panel no longer closes when you press a class's button at a desk of the school or the university, or Start working at your desk at work: you are taken there. At the university the class's button is now on the same key as the game's own Start.
+- At a desk computer at work you now sit on its chair and type, rather than stand beside it.
+- A working day at home no longer leaves you unable to move when it ends: you stand up from the computer and can walk away.
