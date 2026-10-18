@@ -169,10 +169,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// One of the game's bars (<see cref="GameBar"/>) in the place of the card's last two lines, which the owner leaves
-        /// blank; made on first ask and kept with the card. Null if the game's top bar could not be copied.
-        /// </summary>
+        /// <summary>One of the game's bars (<see cref="GameBar"/>) in place of the card's last two lines; null if the game's bar could not be copied.</summary>
         public GameBar Bar()
         {
             if (_bar == null && !_barTried && _panel != null)

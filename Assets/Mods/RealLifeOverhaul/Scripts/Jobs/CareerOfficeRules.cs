@@ -3,9 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Rules for telling the player where an employer's office (its help-wanted board) is, checked offline by
-    /// CatalogueCheck's JobOfficeCheck. A text that sends the player there has a twin, its key plus "_at", that names the
-    /// address; the plain one is for an employer with no board in this city, reached by phone.
+    /// Where an employer's office is, as rules checked offline by JobOfficeCheck. A text sending the player there has a twin, its
+    /// key plus "_at", naming the address; the plain one is for an employer with no board in this city.
     /// </summary>
     public static class CareerOfficeRules
     {

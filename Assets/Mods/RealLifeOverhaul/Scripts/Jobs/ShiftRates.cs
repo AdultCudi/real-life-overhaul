@@ -10,8 +10,7 @@ namespace RealLifeOverhaul
         /// <summary>The share of a unit's pay the shift earns when the clock does the unit.</summary>
         public const float Share = 0.85f;
 
-        /// <summary>Game minutes in a whole shift.</summary>
-        public const int ShiftMinutes = 240;
+        public const int ShiftMinutes = 240;   // game minutes in a whole shift
 
         /// <summary>Game minutes the clock takes for one unit of this job's shift.</summary>
         public static int Minutes(JobDef def)

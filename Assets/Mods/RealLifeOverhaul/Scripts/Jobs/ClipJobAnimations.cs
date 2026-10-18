@@ -66,8 +66,7 @@ namespace RealLifeOverhaul
                 ActivityAnimator player = ActivityAnimators.For(animator);
                 bool enters = clip == JobClip.CarEnter || clip == JobClip.CarEnterLeft;
                 bool exits = clip == JobClip.CarExit || clip == JobClip.CarExitLeft;
-                // Into a car the seated pose is held until they are taken off the street, or they would be seen standing up again
-                // first; out of one they are in the seat from the first frame drawn, not faded into it.
+                // Into a car the seated pose is held until they leave the street; out of one they are seated from the first frame drawn.
                 if (player != null && player.Usable
                     && (Whole(clip) ? player.Play(found.Clip, exits ? 0f : Fade, speed, enters ? ClipEnd.Hold : ClipEnd.Return)
                                     : player.PlayOver(found.Clip, BodyMask.Upper, Fade, speed)))
@@ -134,8 +133,7 @@ namespace RealLifeOverhaul
             Choice[] choices = Table[(int)clip];
             for (int i = 0; i < choices.Length; i++)
             {
-                // Has first: a clip a bundle lacks is not worth a warning each time it is looked for. A loop will do only for a
-                // motion that goes on (hailing), which is ended with Stop.
+                // Has first, so a missing clip logs nothing; a loop only for a motion that goes on (hailing), ended by Stop.
                 if (ClipLibrary.Has(choices[i].Name) && ClipLibrary.TryGet(choices[i].Name, out found) && (!found.Loop || clip == JobClip.Hail))
                 {
                     speed = choices[i].Speed;

@@ -6,10 +6,7 @@ using RealLifeOverhaul.Events;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A gig's offer (<see cref="GigOffers"/>) in words for the Gig Line and the shift's panel, so nothing the dice decided
-    /// is hidden: "a generous client, a busy day, a quiet street, rain pay". Built when a job is asked about or started.
-    /// </summary>
+    /// <summary>A gig's offer in words for the Gig Line and the card, so nothing the dice decided is hidden: "a generous client, a busy day".</summary>
     public static class GigWords
     {
         private static readonly StringBuilder Text = new StringBuilder(96);

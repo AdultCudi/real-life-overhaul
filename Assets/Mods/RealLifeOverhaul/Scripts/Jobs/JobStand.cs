@@ -64,10 +64,7 @@ namespace RealLifeOverhaul
             _armed = true;
         }
 
-        /// <summary>
-        /// On the job's tick: takes a player on foot who walked into the zone, keeps the working pose on between one-off
-        /// motions, and lets go if something else has their body. Returns <see cref="Standing"/>.
-        /// </summary>
+        /// <summary>On the job's tick: takes a player who walked into the zone and keeps the working pose on; returns <see cref="Standing"/>.</summary>
         public bool Tick(PlayerController player, bool onFoot, float now)
         {
             if (!_placed || player == null)

@@ -38,8 +38,7 @@ namespace RealLifeOverhaul
             if (!moved && (there || (now > _stepEnd && gap < 3f)))
             {
                 JobCast.DoorSound(_boardSpot);
-                // With the clip, and only from the place it is made for (nobody is slid the last step): they turn to the door, open it
-                // and get in, and only then are they in the car.
+                // With the clip, and only from its place (nobody is slid the last step), they turn, open the door and get in.
                 bool atDoor = _doorClip && gap < DoorExact;
                 Vector3 here = _passenger.Position;
                 _passenger.StandAt(here, atDoor ? here + _doorInwards * 3f : _car.transform.position);
@@ -100,8 +99,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            // With a clip for getting out they come out where it ends: square on to the door, facing the car, 0.75 m out from the
-            // middle of the seat. Without one, or with nowhere to stand there, beside the door.
+            // With the getting-out clip they come out where it ends, facing the car; without it, or with no room there, beside the door.
             JobSpots.AtDoor(_car, spot, out Vector3 door, out Vector3 inwards, out bool right);
             JobClip exit = right ? JobClip.CarExit : JobClip.CarExitLeft;
             bool atDoor = ClipJobAnimations.Has(exit) && Ctx.Cast.Unseat(person, door, true);

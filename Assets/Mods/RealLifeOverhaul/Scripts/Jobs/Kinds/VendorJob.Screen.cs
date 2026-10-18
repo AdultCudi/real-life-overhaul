@@ -21,8 +21,7 @@ namespace RealLifeOverhaul
         private int _panelState = int.MinValue;
         private int _panelUp;         // 0 not up, 1 up, 2 refused by another panel
 
-        // The order and its buttons while somebody orders, else what the vendor can do. Texts are made only on a change; the
-        // patience is one of the texts made at the start.
+        // The order and its buttons while somebody orders, else the vendor's own; texts are made only on a change.
         private void Panel(float now)
         {
             bool ordering = _front >= 0 && _state[_front] == Guest.Ordering;

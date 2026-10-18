@@ -22,7 +22,6 @@ namespace RealLifeOverhaul
         private bool _gigGuided;
         private float _gigRetry;
 
-        /// <summary>True while a booked set is waiting to be played.</summary>
         public bool GigPending => _gig != null;
 
         public string GigVenue => _gig != null ? _gig.VenueName : null;

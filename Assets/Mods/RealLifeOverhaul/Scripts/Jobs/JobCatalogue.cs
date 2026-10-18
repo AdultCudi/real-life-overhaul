@@ -104,8 +104,7 @@ namespace RealLifeOverhaul
             // Five parcels a round, about four minutes with a car: 50 a door plus the distance, about 310 to 340 a round (the van job pays 100 an hour).
             new JobDef(Courier, "reallife_job_courier_name", "reallife_job_courier_pitch", "reallife_transaction_job_courier",
                 JobNeed.Outdoors | JobNeed.Car, 50f, 0.085f, 1.6f, 0.04f, DeliveryDriver, 15, 15, 5, 2),
-            // A fare of 600 m: 22 + 117 = 139 and a tip of up to 30 %, about one and a half times what a taxi charges the player
-            // (90): the driver also drives to the pick-up, and has the car, the endorsement and the reference.
+            // A 600 m fare: 22 + 117 = 139 and a tip of up to 30 %, about 1.5 times what a taxi charges the player (90).
             new JobDef(Taxi, "reallife_job_taxi_name", "reallife_job_taxi_pitch", "reallife_transaction_job_taxi",
                 JobNeed.Outdoors | JobNeed.Car | JobNeed.Reference | JobNeed.CleanRecord, 22f, 0.195f, 2.2f, 0.05f, CustomerService, 14, 12, 0)
         };
@@ -129,10 +128,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>
-        /// Shifts only an employer gives: a unit is a dispatch plan (42 for a perfect one) or a lead's call made well (36);
-        /// most of their pay is the rank's wage. Not on the phone, not counted in JobState's levels.
-        /// </summary>
+        /// <summary>Shifts only an employer gives (a dispatch plan, a lead's call); not on the phone and not in JobState's levels.</summary>
         public static readonly JobDef[] Career =
         {
             new JobDef(Dispatch, "reallife_job_dispatch_name", "reallife_job_dispatch_name", "reallife_transaction_job_dispatch",

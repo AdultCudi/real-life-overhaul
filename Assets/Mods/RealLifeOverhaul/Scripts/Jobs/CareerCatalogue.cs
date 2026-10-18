@@ -259,10 +259,7 @@ namespace RealLifeOverhaul
             return -1;
         }
 
-        /// <summary>
-        /// The hours of basic wage for a shift that ended so many game minutes after clock-on: every hour begun, one to
-        /// <see cref="ShiftHours"/>, one less for a late clock-on. The one rule, on the street and from a save (<see cref="JobSave.Settle"/>).
-        /// </summary>
+        /// <summary>Hours of basic wage for a shift that ended so many game minutes after clock-on: every hour begun, 1 to <see cref="ShiftHours"/>, one less if late.</summary>
         public static int PaidHours(float elapsedMinutes, bool late)
         {
             int hours = (int)Math.Ceiling(elapsedMinutes / 60f);
@@ -270,7 +267,6 @@ namespace RealLifeOverhaul
             return hours - (late ? 1 : 0);
         }
 
-        /// <summary>What so many hours of basic wage come to, in whole money.</summary>
         public static int Wage(int hours, float hourly)
         {
             return hours > 0 ? (int)Math.Round(hours * hourly) : 0;
@@ -283,10 +279,7 @@ namespace RealLifeOverhaul
             return factor < 0.55f ? 0.55f : factor;
         }
 
-        /// <summary>
-        /// Rota shifts credited towards the first review for levels reached in the employer's own gig (two each above the first)
-        /// and a related one (one each); never the whole review.
-        /// </summary>
+        /// <summary>Rota shifts credited to the first review for levels in the employer's gig (two each above the first) and a related one (one each).</summary>
         public static int CarryOver(int ownLevel, int relatedLevel)
         {
             int credit = (ownLevel > 1 ? (ownLevel - 1) * 2 : 0) + (relatedLevel > 1 ? relatedLevel - 1 : 0);

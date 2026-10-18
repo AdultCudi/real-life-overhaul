@@ -10,21 +10,16 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A shift at a pavement drinks cart, as a gig or an employer's rota shift. The cart is put down on the player's stretch
-    /// of pavement and is solid (<see cref="SolidFootprint"/>); walking behind it takes the place (<see cref="JobStand"/>).
-    /// Customers (the job's two characters) come along the pavement, queue, and order one of three drinks on the game's
-    /// panel over the cart (<see cref="WorldPanel"/>): the right drink quickly earns a tip, the wrong one costs patience,
-    /// and three walk-offs end the shift. One who cannot reach the cart leaves the queue without blame
-    /// (<see cref="CartQueueRules"/>). Calling out (<see cref="Hawk"/>) may bring more customers; the rest of the shift can
-    /// be left to the game's clock (<see cref="ShiftSkip"/>) at <see cref="ShiftRates.Share"/> of the pay, without tips.
-    /// Runs on the director's tick.
+    /// A shift at a pavement drinks cart, as a gig or a rota shift: the solid cart (<see cref="SolidFootprint"/>) is put down
+    /// on the player's pavement and taken by walking behind it (<see cref="JobStand"/>). Customers queue and order on the panel
+    /// over the cart; the right drink quickly earns a tip, the wrong one costs patience, and three walk-offs end the shift.
+    /// Calling out (<see cref="Hawk"/>) brings more; the rest can be left to the game's clock (<see cref="ShiftSkip"/>).
     /// </summary>
     public sealed partial class VendorJob : Job, ISkippableShift
     {
         private enum Guest { None, Coming, Queued, Stepping, Ordering, Served, Leaving }
 
-        // The clips fix where the two stand and where the cup goes (CityAssets/README.md, "A counter"): the vendor sets it down
-        // 0.78 m ahead and the customer takes it 0.62 m ahead, one spot on a counter 0.80 m deep.
+        // The clips fix the spots (CityAssets/README.md, "A counter"): set down 0.78 m ahead, taken 0.62 m ahead, on a 0.80 m counter.
         private const float VendorBack = 0.68f;      // metres from the cart's middle to where the vendor stands
         private const float CustomerOut = 0.72f;     // ...and to the customer at the counter
         private const float CupOut = 0.10f;          // ...and to the cup on the counter between them
@@ -117,7 +112,6 @@ namespace RealLifeOverhaul
 
         public override bool PassingTime => _skip != null && _skip.Working;
 
-        /// <summary>While the panel over the cart is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => Ctx.Stand.Standing;
 
         public override bool QuitIsFailure => _came > 0 && _served * 2 < _came;
@@ -203,8 +197,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Along the pavement, counter towards the side with room: the cart's corners, the vendor's place, the counter and the
-        // queue all on pavement, with a way on foot from the counter to the vendor's place.
+        // Along the pavement, counter to the side with room: corners, places and queue on pavement, the counter reachable from the vendor.
         private bool FindPitch(Vector3 near)
         {
             if (!CitySpots.Pavement(near, 8f, out Vector3 start))

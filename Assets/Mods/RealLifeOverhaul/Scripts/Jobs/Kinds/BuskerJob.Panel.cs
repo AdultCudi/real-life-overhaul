@@ -16,8 +16,7 @@ namespace RealLifeOverhaul
         private int _panelState = int.MinValue;
         private int _cardStrums = int.MinValue;
 
-        // Songs while one is to be picked, the strum while one is played; More has Step away and Let time pass. Texts and
-        // buttons are made only on a change.
+        // The songs to pick, or the strum while one plays; More has Step away and Let time pass.
         private void Panel(float now)
         {
             int songs = _songsWanted - _songs;
@@ -85,7 +84,6 @@ namespace RealLifeOverhaul
             Show(_objBack);
         }
 
-        // Five lines of the game's job panel, each written only when its figures change.
         private void Figures(float now)
         {
             bool clock = _clock.Working;

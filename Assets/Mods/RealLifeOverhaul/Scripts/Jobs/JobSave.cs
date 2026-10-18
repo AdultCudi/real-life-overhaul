@@ -103,10 +103,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// What a saved shift is settled at: the owed slip's total, and for a rota shift with work done the wage for the hours
-        /// from clock-on to the save by <see cref="CareerCatalogue.PaidHours"/>.
-        /// </summary>
+        /// <summary>What a saved shift is settled at: the owed slip, and for a rota shift with work done the wage by <see cref="CareerCatalogue.PaidHours"/>.</summary>
         public static ShiftSettlement Settle(SavedShift shift)
         {
             var result = new ShiftSettlement();

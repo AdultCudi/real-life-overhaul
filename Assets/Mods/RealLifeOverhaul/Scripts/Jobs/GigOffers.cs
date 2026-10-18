@@ -132,7 +132,6 @@ namespace RealLifeOverhaul
         public const float ColdPay = 1.10f;
         public const float IcePay = 1.20f;
 
-        /// <summary>The events a gig can have.</summary>
         public static GigEvents EventsOf(string id)
         {
             switch (id)
@@ -214,10 +213,7 @@ namespace RealLifeOverhaul
             return rank >= 1 && rank <= busy ? GigDay.Busy : GigDay.Normal;
         }
 
-        /// <summary>
-        /// The offer for a gig in an hour of a day. <paramref name="weather"/> is the sky at the moment of asking, for gigs worked
-        /// out of doors.
-        /// </summary>
+        /// <summary>The offer for a gig in an hour of a day; <paramref name="weather"/> is the sky when asked, for gigs out of doors.</summary>
         public static GigOffer Draw(JobDef def, int day, int hour, GigWeather weather)
         {
             GigEvents events = EventsOf(def.Id);
@@ -319,10 +315,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// A small seeded source of numbers, the same on every machine and in the offline check (not UnityEngine.Random, whose
-    /// state the game uses). A struct, so a draw makes nothing.
-    /// </summary>
+    /// <summary>A seeded source of numbers, the same on every machine (not UnityEngine.Random, whose state the game uses); a struct, so a draw makes nothing.</summary>
     public struct GigDice
     {
         private uint _state;

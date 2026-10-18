@@ -136,7 +136,6 @@ namespace RealLifeOverhaul
             spares.Push(new Spare { Prop = prop, Modelled = modelled });
         }
 
-        /// <summary>The city is going: everything made here goes with it.</summary>
         public void Dispose()
         {
             _shelf.Clear();
@@ -191,8 +190,7 @@ namespace RealLifeOverhaul
                     return true;
 
                 case "floor_patch":
-                    // A spill on a shop floor: a flat disc a few millimetres proud of the floor so it does not flicker, pale and a little
-                    // blue to be seen on dark and light floors alike.
+                    // A spill: a flat disc a few millimetres proud of the floor, pale and bluish so it shows on any floor.
                     Shapes.Piece("Spill", prop, Shapes.Drum, Shapes.Paint(new Color(0.55f, 0.66f, 0.74f)), new Vector3(0f, 0.002f, 0f), new Vector3(1.05f, 0.006f, 0.85f));
                     Shapes.Piece("Splash", prop, Shapes.Drum, Shapes.Paint(new Color(0.62f, 0.72f, 0.80f)), new Vector3(0.40f, 0.002f, 0.26f), new Vector3(0.38f, 0.006f, 0.30f));
                     return true;

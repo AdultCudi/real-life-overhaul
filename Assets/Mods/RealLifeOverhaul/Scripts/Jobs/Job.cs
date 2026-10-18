@@ -280,10 +280,7 @@ namespace RealLifeOverhaul
             _eventBonus = 0;
         }
 
-        /// <summary>
-        /// A unit is done, <paramref name="done"/> so far. The shift's one big tipper, if the offer drew one, tips here: so many
-        /// units of <paramref name="unitMoney"/>, paid with the next slip.
-        /// </summary>
+        /// <summary>A unit is done, <paramref name="done"/> so far: the offer's big tipper, if any, tips here so many units of <paramref name="unitMoney"/>.</summary>
         protected void UnitDone(int done, int unitMoney)
         {
             GigOffer offer = Ctx.Offer;

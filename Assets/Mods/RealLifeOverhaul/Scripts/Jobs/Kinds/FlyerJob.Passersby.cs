@@ -11,8 +11,7 @@ namespace RealLifeOverhaul
     /// <summary>Flyers: who is in reach to be offered one, and whether the street is busy.</summary>
     public sealed partial class FlyerJob
     {
-        // The nearest person on foot not asked lately: the game's walkers and everyone standing or sitting about (StreetPeople).
-        // Someone the player faces counts as nearer.
+        // The nearest person on foot not asked lately, walkers and those standing or sitting; someone in front counts as nearer.
         private void Find(float reach, out BaseHuman best, out Pedestrian bestWalker)
         {
             best = null;

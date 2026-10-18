@@ -53,8 +53,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The parcels in the car are a count, not cargo: a box the game stowed in the car (it does when the player gets in
-        // holding one) is taken out with the game's clean-up for sealed boxes. Never during a delivery of the game's own.
+        // The parcels in the car are a count, not cargo: a box the game stowed is cleared, never during a delivery of the game's own.
         private void ClearStowed()
         {
             try
@@ -70,10 +69,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// After a load: a sealed parcel left in the player's hands or cars by a saved round is taken away. Never during a
-        /// delivery of the game's own: those boxes are its.
-        /// </summary>
+        /// <summary>After a load: a sealed parcel a saved round left in the player's hands or cars is taken away, never during a game delivery.</summary>
         public static void ClearLeftovers(BAModAPI.IModLogger logger)
         {
             try

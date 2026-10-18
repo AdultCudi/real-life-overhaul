@@ -135,8 +135,7 @@ namespace RealLifeOverhaul
             _onDouble.Clear();
         }
 
-        // The detailed double is dressed from a copy of the player's data: the same outfit goes into that copy, from the
-        // double's own garments and colour entries.
+        // The detailed double is dressed from a copy of the player's data, with its own garments and colours.
         private void OverDouble(AppearanceSetter body, List<AppearanceElementData> elements)
         {
             if (!_on || body == null || elements == null)

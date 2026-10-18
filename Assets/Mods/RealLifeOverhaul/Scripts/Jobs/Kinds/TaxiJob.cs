@@ -8,14 +8,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Ride-hail driver, in the player's own car or a van hired for the day (<see cref="JobRental"/>), with a roof sign for
-    /// the shift. A passenger waits outside a building, waves as the car comes into the street, walks to a rear door once
-    /// it stops beside them and gets in; at the other address they get out on the kerb side and walk to their door. The fare
-    /// is by distance; the tip by how the ride felt (hard braking, bumps, speeding, police, a crash) and how quick it was.
-    /// What counts as a hard stop is worked out from each car: the most its brakes and engine can do, within what the tyres
-    /// hold, of which a passenger puts up with <see cref="Tolerated"/>. Getting in and out is the mod's clips at the door
-    /// where the bundle has them, else the door's sound alone. Nothing is done on foot, so there is no panel over a place,
-    /// and no clock to leave the shift to.
+    /// Ride-hail in the player's own car or a hired van, with a roof sign: a passenger waves from the pavement, gets in at a
+    /// rear door when the car stops beside them and gets out at the other address. The fare is by distance, the tip by how the
+    /// ride felt (hard braking, bumps, speeding, police, crashes) and how quick it was; a hard stop is judged by what each car
+    /// can do (<see cref="Tolerated"/>). Nothing is done on foot, so no panel and no clock.
     /// </summary>
     public sealed partial class TaxiJob : Job
     {
@@ -43,8 +39,7 @@ namespace RealLifeOverhaul
         private const string SignProp = "taxi_sign";
         private const float DoorExact = 0.35f;          // metres from the place the getting-in clip is made for within which it is played
         private const float SpeedingAbove = 26f;        // m/s: about 94 km/h, with a passenger aboard
-        /// <summary>Missed fares that end the shift.</summary>
-        public const int MissesAllowed = 2;
+        public const int MissesAllowed = 2;             // missed fares that end the shift
 
         private static readonly string[] Greetings =
         {
@@ -123,13 +118,11 @@ namespace RealLifeOverhaul
         private string _pickupLabel;
         private string _dropLabel;
 
-        // The game's own interface.
         private ShiftFigures _figures;
         private int _cardKey = int.MinValue;
 
         public override JobDef Def => _def;
 
-        /// <summary>Giving up with someone waving at the kerb, or sitting in the back, counts against the driver.</summary>
         public override bool QuitIsFailure => _step == Step.Boarding || _step == Step.Riding;
 
         protected override bool OnBegin(float now)
@@ -165,7 +158,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The shift's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             _figures.Objective(Objective);
@@ -318,8 +310,7 @@ namespace RealLifeOverhaul
             _doorClip = false;
             if (room)
             {
-                // With a clip for getting in they walk to where it is made for: square on to the rear door, 0.75 m out from the middle
-                // of the seat. Without one, to the ground beside the door.
+                // With a getting-in clip they walk to where it is made for, square to the rear door; without one, beside the door.
                 JobSpots.AtDoor(Ctx.Car, _boardSpot, out Vector3 door, out _doorInwards, out _doorRight);
                 if (ClipJobAnimations.Has(_doorRight ? JobClip.CarEnter : JobClip.CarEnterLeft))
                 {

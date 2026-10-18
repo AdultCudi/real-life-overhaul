@@ -64,10 +64,7 @@ namespace RealLifeOverhaul
         /// <summary>True from the offer until it is over, whichever way.</summary>
         public bool Open => _state != PlayerActivityState.Finished;
 
-        /// <summary>
-        /// True while the game's panel still has this activity. The game can drop one without a word (a click elsewhere while it
-        /// is on its way): whoever offered it then lets it go.
-        /// </summary>
+        /// <summary>True while the game's panel still has this activity: the game can drop one without a word.</summary>
         public bool Shown
         {
             get

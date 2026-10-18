@@ -2,10 +2,7 @@ using UI.Overlays;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The interaction key and the names of the keys in texts. Texts never name a key: they carry {key} (the interaction
-    /// key) or {key1} to {key3} (the choice keys), filled in by <see cref="Fill"/>.
-    /// </summary>
+    /// <summary>The interaction key, and key names in texts: they carry {key} or {key1} to {key3}, filled in by <see cref="Fill"/>.</summary>
     public static class JobKeys
     {
         public const int Choices = 3;

@@ -48,10 +48,7 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        /// <summary>
-        /// Behind the loading screen: the people are made, dressed and shelved now, so the first job, lesson or test that needs
-        /// somebody does not make one in play. A fault leaves them to be made on first need.
-        /// </summary>
+        /// <summary>Behind the loading screen: the people are made and shelved now, so none is made in play.</summary>
         public bool Prewarm(int people)
         {
             if (_failed || _host == null)
@@ -89,7 +86,6 @@ namespace RealLifeOverhaul
             return seed != 0 && _wears[slot] == seed && _wearsHow[slot] == ((female ? 1 : 0) | (formal ? 2 : 0));
         }
 
-        /// <summary>True while somebody is out on the street.</summary>
         public bool AnyOut => (_out[0] && !_seated[0]) || (_out[1] && !_seated[1]);
 
         /// <summary>Puts a person on a point already found on the navigation mesh. Null if both are out, the point cannot be stood on, or characters cannot be made.</summary>
@@ -99,10 +95,7 @@ namespace RealLifeOverhaul
             return Put(spot, onRoad, 0, false, false);
         }
 
-        /// <summary>
-        /// The same for somebody who is the same person every time (a boss, a colleague): with a seed other than zero their looks
-        /// are rolled from it, in formal or everyday wear, and nothing of the game's own random sequence is used up.
-        /// </summary>
+        /// <summary>The same for somebody who is the same person every time: a seed rolls their looks without using the game's random sequence.</summary>
         public StreetActor Put(Vector3 spot, bool onRoad, int seed, bool female, bool formal = true)
         {
             if (_failed)
@@ -274,7 +267,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The city is going: destroy what was made.</summary>
         public void Dispose()
         {
             for (int i = 0; i < Size; i++)
@@ -380,8 +372,7 @@ namespace RealLifeOverhaul
         private const float RefreshAfter = 0.75f;   // seconds after leaving before a new look is thought of
         private static readonly int HotRefresh = HotSpots.Slot("Jobs: JobCast.Refresh");
 
-        // A new look for whoever left the street, one at a time while shelved: a moment after leaving, then each when
-        // People/Looks allows (Looks.Free).
+        // A new look for whoever left the street, one at a time while shelved, when People/Looks allows (Looks.Free).
         private IEnumerator Refresh()
         {
             yield return new WaitForSeconds(RefreshAfter);

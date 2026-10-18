@@ -34,7 +34,6 @@ namespace RealLifeOverhaul
         private bool _wanted;                       // the job wants its list on the registration
         private bool _inPlace;                      // ...and it is there now
 
-        /// <summary>True while the job's list is on the client's registration.</summary>
         public bool InPlace => _inPlace;
 
         /// <summary>Cells the floor has, and how many of them were dirtied.</summary>
@@ -54,10 +53,7 @@ namespace RealLifeOverhaul
                    && ReferenceEquals(InstanceBehavior<BuildingManager>.Instance.buildingRegistration, _registration);
         }
 
-        /// <summary>
-        /// Dirties the client's floor: <paramref name="units"/> sizes the job (eight is the table's), the dice say where and how
-        /// thickly. False with the reason, nothing changed, if the game's dirt cannot be had here.
-        /// </summary>
+        /// <summary>Dirties the client's floor, <paramref name="units"/> sizing the job; false with the reason, nothing changed, if the game's dirt cannot be had.</summary>
         public bool Lay(BuildingRegistration registration, int units, System.Random dice, out string why)
         {
             why = null;
@@ -119,8 +115,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Patches rather than single cells, as spills are: some centres at random and the cells nearest them, so one click of
-        // the mop, which takes the cells round the one clicked, cleans several.
+        // Patches rather than cells, as spills are, so one click of the mop (it takes the cells round the one clicked) cleans several.
         private void Spoil(int units, System.Random dice)
         {
             int count = _spots.Count;
@@ -264,10 +259,7 @@ namespace RealLifeOverhaul
             Refresh();
         }
 
-        /// <summary>
-        /// Puts dirt back on the last <paramref name="share"/> of the dirtied cells (the patches' edges) at <paramref name="strength"/>
-        /// of their mean. Returns how many cells.
-        /// </summary>
+        /// <summary>Puts dirt back on the last <paramref name="share"/> of the dirtied cells at <paramref name="strength"/> of their mean; returns how many.</summary>
         public int Redo(float share, float strength)
         {
             if (_order == null || !_inPlace)

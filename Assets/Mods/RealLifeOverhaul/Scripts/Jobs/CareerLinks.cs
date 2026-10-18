@@ -1,9 +1,6 @@
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Somebody the player has come to know at work. A social feature that wants acquaintances sets
-    /// <see cref="CareerLinks.Social"/>; with nothing set, nothing is told to anyone.
-    /// </summary>
+    /// <summary>Somebody the player came to know at work, told to a social feature through <see cref="CareerLinks.Social"/>.</summary>
     public interface ICareerAcquaintances
     {
         /// <summary>The player worked a shift alongside this person, or reports to them; at most once a shift per person.</summary>
@@ -14,10 +11,7 @@ namespace RealLifeOverhaul
         void Met(string personId, string nameKey, string employerNameKey, bool isBoss);
     }
 
-    /// <summary>
-    /// The player's record with the law as an employer reads it on a CV, set by a law feature through
-    /// <see cref="CareerLinks.Law"/>; without one the CV shows only police stops on the job.
-    /// </summary>
+    /// <summary>The player's record with the law as an employer reads it on a CV, set through <see cref="CareerLinks.Law"/>.</summary>
     public interface ICareerRecord
     {
         /// <summary>True if there is nothing on the record an employer would mind.</summary>
@@ -33,10 +27,7 @@ namespace RealLifeOverhaul
         bool Covers(int day);
     }
 
-    /// <summary>
-    /// The career ladder's three optional doors to other features, each null until somebody sets it. Every use is null-safe
-    /// and wrapped, so an absent or faulty feature costs the career nothing.
-    /// </summary>
+    /// <summary>The career's optional doors to other features, null until set; every use is wrapped, so an absent or faulty feature costs nothing.</summary>
     public static class CareerLinks
     {
         public static ICareerAcquaintances Social;

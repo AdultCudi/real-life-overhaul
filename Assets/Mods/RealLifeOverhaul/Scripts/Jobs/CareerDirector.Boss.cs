@@ -128,8 +128,7 @@ namespace RealLifeOverhaul
             _logger?.Info("Careers: no room to stand " + CareerCatalogue.All[employer].Id + "'s boss by the board; the board itself is the office.");
         }
 
-        // On a day the player is on the rota here, whoever is on the same shift waits at the office too: on the other side
-        // of the board from the boss, put out at the same (unseen) moment, with the same face every time.
+        // On the player's rota day a colleague waits at the office too, across the board from the boss, with the same face every time.
         private void PutMate(int employer, Employer who, Vector3 place, Vector3 outward)
         {
             int day = TimeHelper.CurrentDay;

@@ -11,8 +11,7 @@ namespace RealLifeOverhaul
     {
         private static readonly RaycastHit[] RoofHits = new RaycastHit[12];
 
-        // The sign stands on the roof of the car the shift is driven in, found with one ray from above; moved only when the
-        // player changes cars.
+        // The sign stands on the roof, found with one ray from above, and moves only when the player changes cars.
         private void Sign(CarController car)
         {
             if (car == null || ReferenceEquals(car, _signOn))

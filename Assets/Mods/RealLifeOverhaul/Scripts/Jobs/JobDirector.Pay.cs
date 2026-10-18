@@ -29,8 +29,7 @@ namespace RealLifeOverhaul
             JobDef def = job.Def;
             int total = slip.Total;
             job.Shift.Add(slip);
-            // A shift in charge trains what the employer's line of work calls for. A test button's work is paid, so the slip can
-            // be seen, but earns no experience.
+            // A lead shift trains the employer's own skill; a test button's work is paid but earns no experience.
             PayOut(def, slip, def.Id == JobCatalogue.Lead && _context.Shift != null && _context.Shift.Employer.LeadSkill != null ? _context.Shift.Employer.LeadSkill : def.Skill,
                 !_context.Test);
             // One notification for the whole shift, when it ends (SlipNote).
@@ -126,8 +125,7 @@ namespace RealLifeOverhaul
 
         private readonly SavedShift _saved = new SavedShift();   // one, written over at each save
 
-        // The save's line for the shift that is on: paid so far, and owed now by the job's own rule for stopping early.
-        // Empty for no shift, a test shift, or figures that cannot be read.
+        // The save's line for the shift on: paid so far and owed now; empty for no shift, a test, or figures that cannot be read.
         private string LiveLine()
         {
             Job job = _job;
@@ -165,8 +163,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // After a load, a shift on at the save is settled once, as one ended early through nobody's fault. The line is emptied
-        // first, so it is never settled twice.
+        // After a load a shift on at the save is settled once; the line is emptied first, so it is never settled twice.
         private void SettleSaved(Dictionary<string, string> data)
         {
             if (data == null || !data.TryGetValue(JobSave.Key, out string line) || string.IsNullOrEmpty(line))

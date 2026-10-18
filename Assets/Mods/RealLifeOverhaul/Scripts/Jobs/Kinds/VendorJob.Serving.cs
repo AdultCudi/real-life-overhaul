@@ -16,8 +16,7 @@ namespace RealLifeOverhaul
         private static readonly string[] Thanks = { "reallife_job_vendor_thanks_1", "reallife_job_vendor_thanks_2", "reallife_job_vendor_thanks_3" };
         private static readonly string[] Wrong = { "reallife_job_vendor_wrong_1", "reallife_job_vendor_wrong_2" };
 
-        // A drink served with the mod's clips, a moment at a time: the customer reaches, the cup is put down as the vendor's
-        // hand lets go, and is theirs as their hand closes. 0: nothing pending.
+        // A drink served with the mod's clips, a moment at a time: the reach, the cup put down, the cup taken. 0: nothing pending.
         private const int BeatReach = 1, BeatCupDown = 2, BeatCupTaken = 3;
         private int _beat;
         private StreetActor _beatWho;
@@ -25,7 +24,6 @@ namespace RealLifeOverhaul
         private float _cupDownAt;
         private float _cupTakenAt;
 
-        /// <summary>A drink button (0, 1 or 2), run by the game on its key or a click.</summary>
         public override void Choose(int choice, float now)
         {
             if (_front < 0 || _state[_front] != Guest.Ordering || !Ctx.Stand.Ready || now < _serveUntil || _skip != null)
@@ -83,8 +81,7 @@ namespace RealLifeOverhaul
             float release = Ctx.Animations.Moment(JobClip.Serve, "release");
             if (release >= 0f && ActivityAnimators.Working && ClipLibrary.Has(ReachClip) && ClipLibrary.TryGet(ReachClip, out CityClip reaching))
             {
-                // Both clips are the mod's: each thing happens at its clip's moment, to the frame; the customer's hand closes just
-                // after the vendor's lets go.
+                // Both clips are the mod's: each thing happens at its clip's moment, the customer's hand closing just after the vendor's lets go.
                 float grip = reaching.Mark("grip", reaching.Length * 0.4f);
                 float reachAt = now + Mathf.Max(0f, release + CupRest - grip);
                 _cupDownAt = now + release;

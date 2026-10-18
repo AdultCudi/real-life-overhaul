@@ -117,10 +117,7 @@ namespace RealLifeOverhaul
             return CareerOfficeRules.Key(key, address);
         }
 
-        /// <summary>
-        /// "Show me the office": the game's destination marker on the employer's board, off when the player is near, after a
-        /// quarter of an hour, or when the career is put away. False with no board, or with the marker on a job or an outing.
-        /// </summary>
+        /// <summary>"Show me the office": the game's destination marker on the board until the player is near or 15 minutes pass. False without a board or with the marker in use.</summary>
         public bool ShowOffice(int employer)
         {
             if (!DepotPlace(employer, out Vector3 place, out string address))
@@ -165,8 +162,7 @@ namespace RealLifeOverhaul
             _officeMark.Hide();
         }
 
-        // Each employer takes the board at the kind of building it would have its office in, best match first; the rest
-        // take what is left, in order. The boards are the same in every game, so the employers are too.
+        // Each employer takes the board at its kind of building, best match first, the rest what is left: the same in every game.
         private void Map(JobBoards boards)
         {
             _mapped = true;
@@ -346,8 +342,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's own employer job (the cashier), read only: an hour worked there is remembered for the CV and
-        // counts as experience when signing on with the retail chain. Nothing of the game's job is touched.
+        // The game's own cashier job, read only: an hour worked there counts for the CV and as retail experience.
         private void CountCashierHour()
         {
             try
@@ -546,10 +541,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Settles a rota shift that was on at the save (<see cref="JobSave"/>): the basic wage for the hours clocked, and the
-        /// shift on the review's count if work was done. No complaint and no mark: the day was handled at clock-on.
-        /// </summary>
+        /// <summary>Settles a rota shift on at the save (<see cref="JobSave"/>): the wage for the hours clocked, and the shift counted if worked; no complaint, no mark.</summary>
         public void SettleSaved(JobDef def, SavedShift saved, in ShiftSettlement sum)
         {
             if (sum.Wage > 0)
@@ -565,8 +557,7 @@ namespace RealLifeOverhaul
                           + (sum.Worked ? "; counted as a shift worked." : "; no work had been done: not counted as a shift."));
         }
 
-        // The payslip: what the work paid, the basic wage, and the tax line. The game takes no tax from wages (its own
-        // employer job pays its hourly rate in full, and income tax is on business sales only), so the line reads zero.
+        // The game takes no tax from wages (its own job pays the rate in full), so the payslip's tax line reads zero.
         private void Payslip(Job job, CareerShift shift, int piece, int hours, int wage)
         {
             var data = new Dictionary<string, string>(6)

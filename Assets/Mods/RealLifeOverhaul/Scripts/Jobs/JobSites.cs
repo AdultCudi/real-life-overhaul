@@ -74,10 +74,7 @@ namespace RealLifeOverhaul
                    && ReferenceEquals(InstanceBehavior<BuildingManager>.Instance.building, spot.Building.building);
         }
 
-        /// <summary>
-        /// A place on the floor of the building the player is in: clear all round, on their storey, walkable to, and at least
-        /// <paramref name="apart"/> from the places taken. False if the floor has none left.
-        /// </summary>
+        /// <summary>A clear place on the floor of the building the player is in, on their storey, walkable to and <paramref name="apart"/> from those taken.</summary>
         public static bool FloorSpot(Vector3 from, Vector3[] taken, int count, float apart, out Vector3 spot)
         {
             spot = default;

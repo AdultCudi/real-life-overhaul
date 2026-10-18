@@ -55,10 +55,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// RLO Texts (Wiring/TextsPhone): true when a text about to go out (from whom, the line's key, its values, how to send)
-        /// is held for the model's words and sent later through the last argument. Null or false: sent now, as written.
-        /// </summary>
+        /// <summary>RLO Texts: true when a text (from, key, values, how to send) is held for the model's words and sent later; null or false: sent now.</summary>
         public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
 
         /// <summary>A letter or reminder from work, as a text of the Work contact; nothing without the contact.</summary>

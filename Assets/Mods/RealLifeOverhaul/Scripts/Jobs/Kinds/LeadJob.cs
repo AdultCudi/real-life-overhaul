@@ -8,12 +8,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A shift in charge (depot supervisor, crew lead, shift lead, team lead, assistant manager): the work is other people.
-    /// Two of the team stand near the office, each seen to be getting on, slacking or stuck; the lead walks up and makes the
-    /// call that fits (praise, a word, or a hand). Then two incidents come in, each a choice of three. A good call is a unit of
-    /// work; a bad one a complaint in the making; most of the pay is the rank's hourly wage. The team are the jobs' two
-    /// characters with the same faces every shift (seeded); with nobody to put out, the shift is the incidents alone. The
-    /// choices are the buttons of the game's panel (<see cref="JobPanel"/>); every call is a decision, so there is no clock.
+    /// A shift in charge: two of the team stand near the office, getting on, slacking or stuck, and the lead makes the call
+    /// that fits (praise, a word, or a hand); then two incidents, each a choice of three. A good call is a unit of work, a bad
+    /// one a complaint in the making; most of the pay is the rank's wage. The team keep the same faces every shift (seeded).
     /// </summary>
     public sealed class LeadJob : Job
     {
@@ -74,7 +71,6 @@ namespace RealLifeOverhaul
         private bool _paid;
         private int _line = -1;
 
-        // The game's own interface.
         private readonly JobPanel _panel = new JobPanel("lead panel");
         private readonly Action[] _onChoice = new Action[JobKeys.Choices];
         private ShiftFigures _figures;
@@ -92,7 +88,6 @@ namespace RealLifeOverhaul
 
         public override JobDef Def => _def;
 
-        /// <summary>While the panel is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
         public override bool QuitIsFailure => _calls > 0 && _good * 2 < _calls;
@@ -205,7 +200,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The shift's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             _figures.Objective(Objective);
@@ -223,8 +217,7 @@ namespace RealLifeOverhaul
             _figures.Time(-1);
         }
 
-        // The panel over the team member in reach or over the player, rebuilt only when the state changes: the three choices,
-        // or the one Check on them.
+        // The panel over the team member or the player, rebuilt only on a change: the three choices, or Check on them.
         private void Up(Transform over, float lift, string first, string left, string right, Color32 colour, int state, string[] choiceKeys)
         {
             _wanted = true;
@@ -336,7 +329,6 @@ namespace RealLifeOverhaul
             CareerLinks.TellMet(_employer, _target);
         }
 
-        /// <summary>A choice button (0, 1 or 2), run by the game on its key or a click.</summary>
         public override void Choose(int choice, float now)
         {
             if (Over || now - _stepAt < Debounce)

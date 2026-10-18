@@ -174,8 +174,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // One of the two who may stop and look: taken from the game where they stand, turned to the cart by its look target,
-        // and handed back walking a few seconds later (as the busker's listener is).
+        // One of two who stop and look: taken from the game, turned to the cart and handed back walking, as the busker's listener.
         private bool Look(Pedestrian walker, float now)
         {
             for (int i = 0; i < LookersMost; i++)

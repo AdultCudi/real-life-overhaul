@@ -42,7 +42,6 @@ namespace RealLifeOverhaul
         public static string ActiveJobId => Instance != null && Instance._job != null ? Instance._job.Def.Id : null;
         /// <summary>The id of the last job the player worked this session, or null.</summary>
         public static string LastJobId { get; private set; }
-        /// <summary>What the player has earned from jobs today.</summary>
         public static int EarnedToday => JobState.Loaded ? JobState.EarnedToday : 0;
 
         private readonly JobContext _context = new JobContext();
@@ -272,10 +271,7 @@ namespace RealLifeOverhaul
         /// <summary>The jobs there are, for the phone. Never null.</summary>
         public static JobDef[] Offers => JobCatalogue.All;
 
-        /// <summary>
-        /// The factor on every pay and every quote: the pay option, less for an owner of businesses
-        /// (<see cref="CareerCatalogue.OwnerFactor"/>), at the city's price level.
-        /// </summary>
+        /// <summary>The factor on every pay and quote: the pay option, less for owners (<see cref="CareerCatalogue.OwnerFactor"/>), at the city's price level.</summary>
         public static float PayScale()
         {
             return Mathf.Clamp(Settings.JobPay, 25, 300) / 100f * CareerCatalogue.OwnerFactor(BusinessGame.RevenueBusinesses()) * Prices.Level / 1000f;
@@ -408,8 +404,7 @@ namespace RealLifeOverhaul
             _context.Gig = gig;
             float scale = PayScale();
             _context.Level = JobState.Level(def);
-            // A freelance gig is worked as the Gig Line quoted it (the same day, hour and gig give the same offer); the rest at the
-            // table's figures.
+            // A freelance gig is worked as the Gig Line quoted it; the rest at the table's figures.
             bool freelance = shift == null && gig == null && !test;
             _context.Offer = freelance ? GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky()) : GigOffer.Table(def);
             _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Rank.Piece : 1f) * _context.Offer.Fee;
@@ -476,8 +471,7 @@ namespace RealLifeOverhaul
             RefreshContext();
             _body.Tick(now);
 
-            // Signalled to pull over for something they did: not a patrol car still on its way, and not the wait after
-            // a crash to see whether the driver stops (that already cost the job a crash).
+            // Signalled to pull over for something done: not a patrol on its way, nor the wait after a crash, which cost the job already.
             bool pulledOver = PoliceAttention.PulledOver;
             if (pulledOver && !_wasPulledOver)
             {
@@ -526,8 +520,7 @@ namespace RealLifeOverhaul
 
         private void Draw()
         {
-            // The one per-frame task: the card stays off screen while a game menu is open, but up behind the activity panel,
-            // which is the shift being worked.
+            // The one per-frame task: the card hides under a game menu, but stays up behind the activity panel.
             if (_card != null)
             {
                 _card.Show(!ThirdPersonCamera.IsUiOpen() || PlayerActivityUI.IsPanelOpen);
@@ -538,7 +531,6 @@ namespace RealLifeOverhaul
         public JobBoards HelpBoards => _boards;
         public IJobAnimations Animations => _context.Animations;
 
-        /// <summary>True while the job that is on is a rota shift for an employer.</summary>
         public bool OnRotaShift => _job != null && _context.Shift != null;
 
         /// <summary>Starts a rota shift's work where the player stands. A test ends any job first and waives the energy needed.</summary>
@@ -571,7 +563,6 @@ namespace RealLifeOverhaul
             return StartJob(def, test, out reasonKey, shift, null);
         }
 
-        /// <summary>Starts a set the agency booked, at its venue.</summary>
         public bool StartGig(BookedGig gig, out string reasonKey)
         {
             reasonKey = null;

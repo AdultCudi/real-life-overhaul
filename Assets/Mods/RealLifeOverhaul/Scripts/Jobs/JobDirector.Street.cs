@@ -77,8 +77,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's own destination guider, as its delivery jobs use, so the place shows on the city map too. If the game
-        // refuses it once, the mod's own marker is all there is.
+        // The game's own destination guider, so the place shows on the city map too; refused once, the mod's marker is all there is.
         private void Guide()
         {
             if (_guiderBroken || _job == null)
@@ -156,10 +155,7 @@ namespace RealLifeOverhaul
             return _rental.Hire(gm.playerController.transform.position, test, out reasonKey);
         }
 
-        /// <summary>
-        /// The car being driven, else the nearest of the player's own within a distance. Scooters, hand trucks and the game's
-        /// job van do not count; a van hired for the shift does. Null if none.
-        /// </summary>
+        /// <summary>The car being driven, else the player's own nearest within a distance (no scooter or game job van; a hired van counts), or null.</summary>
         public static CarController NearestCar(float within)
         {
             var gm = InstanceBehavior<GameManager>.Instance;

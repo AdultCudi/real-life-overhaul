@@ -8,7 +8,6 @@ namespace RealLifeOverhaul
     /// <summary>What a job tells its <see cref="ShiftClock"/> about the units of its shift.</summary>
     public interface IClockedShift
     {
-        /// <summary>Units of work the shift still has.</summary>
         int ClockLeft { get; }
 
         /// <summary>What one unit pays when it is done by hand, in whole money, before <see cref="ShiftRates.Share"/>.</summary>
@@ -61,7 +60,6 @@ namespace RealLifeOverhaul
             _each = ShiftRates.Minutes(job.Def);
         }
 
-        /// <summary>True while the clock is doing the work.</summary>
         public bool Working => _skip != null && _skip.Working;
 
         /// <summary>True from the offer until it is over.</summary>
@@ -70,7 +68,6 @@ namespace RealLifeOverhaul
         /// <summary>Units the clock has done so far in this run (for the card).</summary>
         public int Done => Working ? _done : 0;
 
-        /// <summary>Game minutes the clock takes for one unit.</summary>
         public int MinutesEach => _each;
 
         /// <summary>Shows the offer on the game's panel. False if there is nothing left to do or the panel is busy.</summary>

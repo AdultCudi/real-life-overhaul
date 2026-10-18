@@ -7,11 +7,9 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Shelf stocker: a delivery for a shop near the player, not theirs, stands on the pavement by its door. Pick up a box (the
-    /// game's own carry), take it in, carry it to one of the shop's real shelves and stock it, then back out for the next.
-    /// Paid per box shelved, a little more for clearing the pile in time. Nothing is added to the shop's stock: the boxes
-    /// are the job's. The game's panel over a place (<see cref="JobPanel"/>) offers each step, and at the pile the rest of
-    /// the boxes can be left to the game's clock (<see cref="ShiftClock"/>) at <see cref="ShiftRates.Share"/> of the pay.
+    /// Shelf stocker: carry a delivery's boxes (the game's own carry) from the pavement into a shop near the player and on to
+    /// its real shelves, then back for the next. Paid per box, a little more for clearing the pile in time; nothing is added
+    /// to the shop's stock. At the pile the rest can be left to the game's clock (<see cref="ShiftClock"/>).
     /// </summary>
     public sealed class StockerJob : Job, IClockedShift
     {
@@ -91,7 +89,6 @@ namespace RealLifeOverhaul
 
         public override bool PassingTime => _clock != null && _clock.Working;
 
-        /// <summary>While the panel is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
         int IClockedShift.ClockLeft => Mathf.Max(0, _boxes - _stocked);
@@ -277,7 +274,6 @@ namespace RealLifeOverhaul
             _panel.Show(over, Ctx.Player);
         }
 
-        // The shift's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             bool clock = _clock.Working;
@@ -332,7 +328,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel's first button, run by the game on its key or a click.
         private void Act(string action)
         {
             if (Over)

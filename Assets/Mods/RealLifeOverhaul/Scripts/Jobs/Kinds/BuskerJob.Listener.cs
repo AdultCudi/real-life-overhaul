@@ -108,8 +108,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A punch of the fist: the listener's own clip on the game's pedestrian, standing with its steering off. False, with
-        // nothing changed, if the clip cannot be had.
+        // A punch of the fist on the listener, standing with its steering off; false, with nothing changed, without the clip.
         private bool Cheer(ThirdPersonCharacter body, float now)
         {
             _cheerDue = false;

@@ -70,10 +70,7 @@ namespace RealLifeOverhaul
             return reasonKey == null;
         }
 
-        /// <summary>
-        /// Puts a hired van at the roadside near a point and charges the day's fee if not paid today. Null, with nothing charged
-        /// or left behind, if there is no free road near or the game would not make one.
-        /// </summary>
+        /// <summary>Puts a hired van at the roadside near a point, charging the day's fee if unpaid; null, with nothing charged or left, if it cannot.</summary>
         public CarController Hire(Vector3 near, bool test, out string reasonKey)
         {
             reasonKey = null;
@@ -316,8 +313,7 @@ namespace RealLifeOverhaul
             _returning = false;
             if (car != null)
             {
-                // As the game removes its own job van: the object is destroyed and its component takes it off the save's list. Taken
-                // off here as well, so a save in the same frame cannot carry it.
+                // As the game removes its job van; taken off the save's list here too, so a save in the same frame cannot carry it.
                 VehicleInstance instance = car.vehicleInstance;
                 UnityEngine.Object.Destroy(car.gameObject);
                 if (instance != null && SaveGameManager.Current != null)

@@ -7,14 +7,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Parcel courier in the player's own car, or a van hired for the day (<see cref="JobRental"/>). Collect a round of
-    /// parcels from a shop hand at a door nearby, load the car, then deliver to the round's doors in any order against the
-    /// clock: park, take a parcel from the car, carry it to the door and hand it over. Paid per door and by the round's
-    /// length, with a bonus for beating the clock and tips at some doors, less for crashes and police stops. Unlike the
-    /// game's van job it needs no van and is over in minutes. The parcel is the game's own sealed box; the recipient carries
-    /// it indoors when the clips allow, else it is set down on the step. The game's panel over a place
-    /// (<see cref="JobPanel"/>) offers each step on the interact key; there is no clock to leave the round to, as the car
-    /// would have to move.
+    /// Parcel courier in the player's own car or a hired van (<see cref="JobRental"/>): collect a round from a shop hand, load
+    /// the car, and deliver to the round's doors in any order against the clock, carrying each parcel (the game's sealed box)
+    /// to the door. Paid per door and by the round's length, with a bonus for beating the clock and tips, less for crashes
+    /// and police stops. Each step is on the game's panel over the place; the car would have to move, so there is no clock.
     /// </summary>
     public sealed partial class CourierJob : Job
     {
@@ -83,7 +79,6 @@ namespace RealLifeOverhaul
         private string _carLabel;
         private string _doorLabel;
 
-        // The game's own interface.
         private readonly JobPanel _panel;
         private ShiftFigures _figures;
         private string _panelDepot;
@@ -100,10 +95,8 @@ namespace RealLifeOverhaul
 
         public override JobDef Def => _def;
 
-        /// <summary>While the panel is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
-        /// <summary>Giving up with most of a loaded round undelivered is a bad shift.</summary>
         public override bool QuitIsFailure => _step == Step.Round && _delivered * 2 < _count;
 
         protected override bool OnBegin(float now)
@@ -229,7 +222,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel over a place, with one button on the interact key.
         private void Up(string first, string action, bool actionOn, Vector3 over)
         {
             _wanted = true;
@@ -237,7 +229,6 @@ namespace RealLifeOverhaul
             _panel.Show(over, Ctx.Player);
         }
 
-        // The round's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             _figures.Objective(Objective);
@@ -432,7 +423,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel's button, run by the game on its key or a click.
         private void Act(string action)
         {
             if (Over)
@@ -501,8 +491,7 @@ namespace RealLifeOverhaul
                 {
                     Ctx.Self.Hold(Mathf.Min(reach, 1.4f));
                 }
-                // With the mod's clip the parcel is theirs as the clip closes their hands on it, to the frame, and their arms settle
-                // into carrying as it ends; without it, at once.
+                // With the mod's clip the parcel is theirs as their hands close on it, and their arms settle as it ends; without, at once.
                 float grip = Ctx.Animations.Moment(JobClip.ReceiveBox, "grip");
                 float taking = Ctx.Animations.Play(_recipient.Character, JobClip.ReceiveBox);
                 if (grip >= 0f && taking > grip)
@@ -571,7 +560,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The objective line, rebuilt only when what it says changes.
         private void Hint(int which, string key, string place)
         {
             if (which == _hint)

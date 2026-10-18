@@ -9,10 +9,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The Gig Line contact: its call goes through the jobs one at a time, each with what it pays now, the player's level,
-    /// what is left today and why it cannot be taken; a job in progress is given up there too.
-    /// </summary>
+    /// <summary>The Gig Line contact: its call offers the jobs one at a time with today's pay and level, and gives up a job in progress.</summary>
     public static class JobPhone
     {
         public const string ContactId = "reallife-jobs";
@@ -141,8 +138,7 @@ namespace RealLifeOverhaul
             string reason = null;
             bool available = director != null && director.Available(def, out reason);
             int level = JobState.Level(def);
-            // What the work will really pay, owners' cut and today's client included: the offer is drawn from the day, the hour
-            // and the gig, so it is the one worked if the job is taken in the same hour.
+            // What the work will really pay: the offer drawn now is the one worked if the job is taken this hour.
             GigOffer offer = GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky());
             float rate = JobCatalogue.PayFactor(level) * JobDirector.PayScale() * offer.Fee;
             int size = offer.Units > 0 ? offer.Units : def.ShiftUnits;

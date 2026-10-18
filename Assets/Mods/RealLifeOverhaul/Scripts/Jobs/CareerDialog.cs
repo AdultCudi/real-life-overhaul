@@ -276,7 +276,6 @@ namespace RealLifeOverhaul
             return entry;
         }
 
-        // The office of the job the player has, when this city has a board for it.
         private static bool OfficeOffered()
         {
             CareerDirector career = Career;
@@ -303,7 +302,6 @@ namespace RealLifeOverhaul
             };
         }
 
-        // Puts the game's destination marker on an employer's board, and says where it is.
         private static DialogEntry ShowOffice(int employer)
         {
             CareerDirector career = Career;
@@ -476,8 +474,7 @@ namespace RealLifeOverhaul
             };
         }
 
-        // Applying by phone: the six employers in turn. Asking one for work goes to the same page as speaking to the boss
-        // (Hire), so the checks, the rota and the sign-on are one code.
+        // Applying by phone goes through the employers in turn, to the same page as at the office (Hire).
         private static DialogEntry Apply(int index)
         {
             Employer[] all = CareerCatalogue.All;

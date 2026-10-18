@@ -81,7 +81,6 @@ namespace RealLifeOverhaul
             return Of(def).SackedUntil > day;
         }
 
-        /// <summary>How many units of this job are still to be had today.</summary>
         public static int LeftToday(JobDef def)
         {
             int left = def.DailyUnits - Of(def).Today;

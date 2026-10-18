@@ -122,11 +122,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// One of the mod's clips on the player, with its tool if it has one; the player must be held. A loop runs until
-        /// <see cref="Rest"/>; a one-off returns by itself, or with <see cref="ClipEnd.Hold"/> keeps its last pose and tool. All or
-        /// nothing: false, with nothing changed, if the clip or its tool cannot be had.
-        /// </summary>
+        /// <summary>One of the mod's clips on the held player, with its tool; a loop until <see cref="Rest"/>. All or nothing: false, nothing changed, if it cannot be had.</summary>
         public bool Clip(string name, float fade = 0.25f, ClipEnd end = ClipEnd.Return)
         {
             _next = null;   // whatever was to follow the clip before this one no longer does
@@ -159,11 +155,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Two clips made to follow one another (down on a knee, then the kneeling loop): the first played once and held on its
-        /// last pose, the second from <see cref="Tick"/> the moment it is over, the tool kept if both hold it. All or nothing.
-        /// <see cref="Rest"/>, <see cref="Release"/> or another <see cref="Clip"/> ends the chain.
-        /// </summary>
+        /// <summary>Two clips made to follow one another (down on a knee, then kneeling), the second started from <see cref="Tick"/>. All or nothing.</summary>
         public bool Chain(string first, string then, float fade = 0.25f, float thenFade = 0.15f)
         {
             if (!ClipLibrary.Has(first) || !ClipLibrary.Has(then) || !ClipLibrary.TryGet(first, out CityClip one) || one.Loop
@@ -177,11 +169,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// One of the mod's loops over part of the body (an arm, both arms) while the rest stays the game's: how something is
-        /// carried while walking. Until <see cref="StopOver"/>; asking again for the one on changes nothing. No tool comes with it
-        /// and the player need not be held. False if it cannot be had.
-        /// </summary>
+        /// <summary>One of the mod's loops over an arm or both while the rest stays the game's, as when carrying while walking; until <see cref="StopOver"/>.</summary>
         public bool Over(string name, BodyMask mask, float fade = 0.25f)
         {
             if (_player == null || !ActivityAnimators.Working || !ClipLibrary.Has(name) || !ClipLibrary.TryGet(name, out CityClip clip) || !clip.Loop)
@@ -230,10 +218,7 @@ namespace RealLifeOverhaul
                    && _player.Character.animator.HasParameter(pose.ToString());
         }
 
-        /// <summary>
-        /// One of the game's own loops on the player, until <see cref="Rest"/>; false if their animator has none such. A loop that
-        /// sits on another (mopping on the mop-in-hand idle) names that one as <paramref name="under"/>.
-        /// </summary>
+        /// <summary>One of the game's loops on the player until <see cref="Rest"/>; a loop that sits on another names that one as <paramref name="under"/>.</summary>
         public bool Pose(PermanentAnimationType pose, PermanentAnimationType? under = null)
         {
             if (!Knows(pose) || (under.HasValue && !Knows(under.Value)))
@@ -253,10 +238,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// One of the game's carried objects on the player, as the game places it: on its bone (a hand, or the upper chest for a
-        /// strap) at its own or the data's offset. Looks only: colliders and scripts are switched off. Removed by <see cref="Rest"/>.
-        /// </summary>
+        /// <summary>One of the game's carried objects on a bone of the player, as the game places it, for looks only; removed by <see cref="Rest"/>.</summary>
         public bool GameProp(string prefab, Transform hand, Vector3? position = null, Quaternion? rotation = null)
         {
             if (_player == null || _player.Character == null || string.IsNullOrEmpty(prefab))

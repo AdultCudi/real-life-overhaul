@@ -28,7 +28,6 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        /// <summary>True while the mop is in the player's hands.</summary>
         public static bool Holding => PlayerHelper.IsHoldingAMop;
 
         /// <summary>True while the game's mop is cleaning a spot.</summary>

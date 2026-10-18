@@ -122,8 +122,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // One more spill on clear floor, away from those lying and those done: a quarter of a second apart, until the floor's
-        // spills that are left all lie there or there is no more room.
+        // One more spill on clear floor away from the others, a quarter of a second apart, until all are down or there is no room.
         private void LayMore(float now)
         {
             if (now < _nextLay || _mopped + _laidCount >= _units || _laidCount >= _laid.Length || _layTries >= MostTries)

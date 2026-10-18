@@ -11,13 +11,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Busking: a pitch on the pavement, back to a wall where there is one, taken by walking on to it (<see cref="JobStand"/>).
-    /// Before each song the player picks one of three on the game's panel over the pitch (<see cref="JobPanel"/>); during it a
-    /// strum is called for every few seconds and "Strum" must come inside the moment, any other press being a wrong note.
-    /// Tips come at the end of each song by the crowd, the hour, the song and the playing; now and then a passer-by stops to
-    /// listen and drops something in the case, and after a couple of songs the police may move the busker on. The rest of
-    /// the set can be left to the game's clock (<see cref="ShiftClock"/>) at <see cref="ShiftRates.Share"/> of what a song
-    /// usually brings in. Playing is the mod's guitar clip, else the game's own street performance, else its singing.
+    /// Busking on a pitch taken by walking on to it (<see cref="JobStand"/>): the player picks one of three songs on the
+    /// panel over the pitch, then hits Strum in each moment a strum is called for. Tips come at a song's end by the crowd, the
+    /// hour, the song and the playing; a passer-by may stop to listen, and the police may move the busker on. The rest of the
+    /// set can be left to the game's clock (<see cref="ShiftClock"/>). Played with the mod's guitar clip or the game's act.
     /// </summary>
     public sealed partial class BuskerJob : Job, IClockedShift
     {
@@ -108,7 +105,6 @@ namespace RealLifeOverhaul
 
         public override bool PassingTime => _clock != null && _clock.Working;
 
-        /// <summary>While the player is on the pitch its panel's first button has the interact key.</summary>
         public override bool OwnsInteractKey => Ctx.Stand.Standing;
 
         int IClockedShift.ClockLeft => Mathf.Max(0, _songsWanted - _songs);
@@ -332,7 +328,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A song button (0, 1 or 2), run by the game on its key or a click.</summary>
         public override void Choose(int choice, float now)
         {
             if (Over || _step != Step.Pick || _more || !Ctx.Stand.Ready || _clock.Offered || now - _songOver < Debounce)
@@ -390,8 +385,7 @@ namespace RealLifeOverhaul
         /// <summary>What a song usually brings in, for the clock's share: the middle song, played at <see cref="AveragePlay"/>.</summary>
         private float AverageTip() => SongTip(Crowd(), 1, AveragePlay);
 
-        // What a song brings in by the crowd, the hour, the song and the share of strums hit; the offer's crowd factor
-        // makes a quiet street or a rush.
+        // What a song brings in by the crowd, the hour, the song and the strums hit, times the offer's crowd factor.
         private float SongTip(int crowd, int song, float played)
         {
             float street = 0.5f + Mathf.Min(crowd, CrowdFull) / (float)CrowdFull;
@@ -528,8 +522,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            // A booked set adds the venue's fee to the hat when at least half was played, by hand or by the clock. The clock's
-            // songs were paid as it ended.
+            // A booked set adds the venue's fee when at least half was played; the clock's songs were paid as it ended.
             slip = new PaySlip { Units = _handSongs, Tips = _tips, Bonus = Ctx.Gig != null && _songs * 2 >= _songsWanted ? Ctx.Gig.Fee : 0 };
             return true;
         }

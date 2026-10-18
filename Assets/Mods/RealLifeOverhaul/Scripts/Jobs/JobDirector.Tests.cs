@@ -97,10 +97,7 @@ namespace RealLifeOverhaul
             JobText.Toast(NotificationType.Success, "reallife_career_test_promoted", "title", JobText.T(CareerState.CurrentRank.TitleKey), 9f);
         }
 
-        /// <summary>
-        /// Options page: a shift of a kind of work here, on no record. The desk is the courier firm's; a lead shift is the
-        /// current employer's, else the retail chain's; a rota shift is the current rank's.
-        /// </summary>
+        /// <summary>Options page: a shift of a kind of work here, on no record: the courier firm's desk, a lead shift, or the current rank's shift.</summary>
         public void TestShift(CareerWork work, bool current)
         {
             if (!CareerTestReady())

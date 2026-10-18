@@ -113,11 +113,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A shift at the dispatch desk, a courier firm's third rank. Three batches of six parcels come in; each parcel goes on
-    /// one of three vans (three at most each) against the clock, on a small map (<see cref="DispatchList"/>) that lists each
-    /// van's round as it grows, or with the buttons of the game's panel over the desk (<see cref="JobPanel"/>). A plan is
-    /// paid by how near it came to the best there was; two poor ones make a bad shift. Worked on foot at the depot; walking
-    /// off ends it. A plan is a decision, so there is no clock to leave it to.
+    /// A shift at the dispatch desk, a courier firm's third rank: three batches of six parcels, each put on one of three vans
+    /// against the clock, on a map (<see cref="DispatchList"/>) or the panel over the desk. A plan is paid by how near it came
+    /// to the best; two poor ones make a bad shift. Worked on foot at the depot; a plan is a decision, so there is no clock.
     /// </summary>
     public sealed class DispatchJob : Job
     {
@@ -164,7 +162,6 @@ namespace RealLifeOverhaul
         private string _title;
         private float _fullSaid = -10f;
 
-        // The game's own interface.
         private readonly JobPanel _panel = new JobPanel("dispatch panel");
         private readonly Action[] _onVan = new Action[DispatchPlan.Vans];
         private readonly string[] _asks = new string[DispatchPlan.Parcels];
@@ -179,7 +176,6 @@ namespace RealLifeOverhaul
 
         public override JobDef Def => _def;
 
-        /// <summary>While the panel is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
         public override bool QuitIsFailure => _plan < Plans && _plan > 0 && _poor * 2 >= _plan;
@@ -286,7 +282,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The shift's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             _figures.Objective(Objective);

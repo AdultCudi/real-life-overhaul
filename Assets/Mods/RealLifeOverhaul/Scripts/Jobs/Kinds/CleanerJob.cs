@@ -7,13 +7,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Contract cleaner: an open business near the player, not theirs, is dirty; go in and clean its floor to 100 %, the
-    /// game's own way. The client's floor is given the game's dirt (<see cref="JobDirt"/>), the player the game's mop
-    /// (<see cref="JobMop"/>) with its highlighting, and the game walks them to each patch and cleans it at its own pace. Pay
-    /// follows the share of the dirt taken off; half or more is a shift done. The shift goes on inside that one building
-    /// (<see cref="WorksInside"/>), and the player may step out and back. Where the game's dirt cannot be had, the mod's own
-    /// spills stand in (the Spills part). The rest of the floor can be left to the game's clock (<see cref="ShiftClock"/>)
-    /// at <see cref="ShiftRates.Share"/> of the pay. The player wears the cleaner's uniform.
+    /// Contract cleaner: clean the floor of an open business near the player, not theirs, to 100 % the game's own way, with
+    /// its dirt (<see cref="JobDirt"/>) and its mop (<see cref="JobMop"/>), inside that one building (<see cref="WorksInside"/>).
+    /// Pay follows the share of the dirt taken off; half is a shift done. Without the game's dirt the mod's spills stand in;
+    /// the rest of the floor can be left to the game's clock (<see cref="ShiftClock"/>). In the cleaner's uniform.
     /// </summary>
     public sealed partial class CleanerJob : Job, IClockedShift
     {
@@ -90,14 +87,12 @@ namespace RealLifeOverhaul
 
         public override bool PassingTime => _clock != null && _clock.Working;
 
-        /// <summary>While the panel is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
         int IClockedShift.ClockLeft => LeftUnits();
 
         float IClockedShift.ClockPay => UnitPay();
 
-        /// <summary>Walking out on a floor that is mostly still dirty is a bad shift.</summary>
         public override bool QuitIsFailure => TotalShare > 0f && TotalShare < Half;
 
         public override bool WorksInside(Buildings.Building building)
@@ -262,7 +257,6 @@ namespace RealLifeOverhaul
             _step = Step.ToClient;
         }
 
-        // The shift's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             bool clock = _clock.Working;
@@ -440,7 +434,6 @@ namespace RealLifeOverhaul
             _panel.Show(Ctx.Player.transform, PanelOver, Ctx.Player);
         }
 
-        // The panel's first button, run by the game on its key or a click.
         private void Act(string action)
         {
             if (Over)
@@ -582,7 +575,6 @@ namespace RealLifeOverhaul
             _dirt.Discard();   // the client's registration is the game's again
         }
 
-        // The line under the job's name, rebuilt only when it changes.
         private void Hint(int which)
         {
             if (which == _hint)

@@ -9,13 +9,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Handing out flyers, the job that needs nothing: a bundle, a pitch (the stretch of street the player was on) and a few
-    /// minutes. The player offers one to a passer-by on the game's panel over them (<see cref="JobPanel"/>): they stop and
-    /// turn, take it or wave it away, and walk on; each is asked once. Paid per flyer taken, with a bonus for each on a busy
-    /// street. Passers-by are the game's pedestrians, borrowed for the moment it takes (<see cref="PedestrianTakeover"/>).
-    /// The stack is held in the left hand by a masked clip over the game's walk; the one flyer offered is in the taker's hand
-    /// from the moment the offering hand opens. With nobody in reach the panel offers to leave the rest to the game's clock
-    /// (<see cref="ShiftClock"/>) at <see cref="ShiftRates.Share"/> of a flyer's pay. The player wears a canvasser's outfit.
+    /// Handing out flyers, the job that needs nothing: a bundle, a pitch and a few minutes. Offered on the panel over a
+    /// passer-by (<see cref="JobPanel"/>), each stops and turns, takes one or waves it away, and walks on; each is asked once.
+    /// Paid per flyer taken, more on a busy street. The flyer changes hands as the offering hand opens; with nobody in reach
+    /// the rest can be left to the game's clock (<see cref="ShiftClock"/>). In a canvasser's outfit.
     /// </summary>
     public sealed partial class FlyerJob : Job, IClockedShift
     {
@@ -53,8 +50,7 @@ namespace RealLifeOverhaul
         private readonly HeldProp _given = new HeldProp();          // the same flyer in the taker's hand
         private float _begun;
         private float _nextGrip;
-        // Who was offered one, and when. The game reuses a pedestrian's object for the next walker, so after a while the same
-        // object is somebody new.
+        // Who was offered one and when: the game reuses a pedestrian's object, so after a while it is somebody new.
         private readonly List<int> _asked = new List<int>(64);
         private readonly List<float> _askedAt = new List<float>(64);
 
@@ -82,7 +78,6 @@ namespace RealLifeOverhaul
         private int _line = -1;
         private string _markerText;
 
-        // The game's own interface.
         private readonly JobPanel _panel;
         private ShiftFigures _figures;
         private ShiftClock _clock;
@@ -111,10 +106,8 @@ namespace RealLifeOverhaul
 
         public override bool PassingTime => _clock != null && _clock.Working;
 
-        /// <summary>While the panel is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
-        /// <summary>Walking off with most of the bundle still in hand is a bad shift.</summary>
         public override bool QuitIsFailure => DoneCount > 0 && DoneCount * 3 < _bundle && DoneCount + _refusals < FairTry;
 
         private int DoneCount => _taken + _clocked;
@@ -240,7 +233,6 @@ namespace RealLifeOverhaul
             Panel(onFoot && !away);
         }
 
-        // The shift's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             bool clock = _clock.Working;
@@ -283,7 +275,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel's first button, run by the game on its key or a click.
         private void Act(string action)
         {
             if (!Over && ReferenceEquals(action, ButtonOffer))
@@ -335,9 +326,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The left arm holds the stack to the chest: the clip its grip was measured in, on that arm alone over whatever the game
-        // does with the body. Asked for on a change and again after an offer, whose gesture had the arms; where it cannot be had
-        // the stack hangs in the hand at the same grip.
+        // The left arm holds the stack by its clip over whatever the game does with the body, again after an offer's gesture.
         private void Carry(float now, bool on)
         {
             if (on && _armed && _armAgainAt >= 0f && now >= _armAgainAt)

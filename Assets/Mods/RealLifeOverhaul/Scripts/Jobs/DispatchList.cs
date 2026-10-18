@@ -69,7 +69,6 @@ namespace RealLifeOverhaul
             _takeBack = takeBack;
             list.Begin(title ?? string.Empty, foot ?? string.Empty);
 
-            // The parcels not yet on a van.
             _text.Length = 0;
             int waiting = 0;
             for (int i = 0; i < DispatchPlan.Parcels; i++)
@@ -96,7 +95,6 @@ namespace RealLifeOverhaul
             }
             list.AddNote(JobText.T("reallife_job_dispatch_list_waiting"), _text.ToString(), list.HeightFor(_text.Length + 40 * Math.Max(1, waiting), false));
 
-            // What each van carries, and how long its round is.
             for (int v = 0; v < DispatchPlan.Vans; v++)
             {
                 _parcels.Length = 0;

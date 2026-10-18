@@ -40,7 +40,6 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        /// <summary>True while the player stands in front of a board.</summary>
         public bool InReach { get; private set; }
 
         public int Count => _boards.Count;
@@ -54,7 +53,6 @@ namespace RealLifeOverhaul
         /// <summary>The board itself, on the ground against its wall.</summary>
         public Vector3 At(int board) => _boards[board] != null ? _boards[board].position : _fronts[board];
 
-        /// <summary>The way a board faces: out from its wall.</summary>
         public Vector3 Outward(int board) => _outward[board];
 
         /// <summary>The game's name for the kind of service building a board stands at.</summary>

@@ -191,7 +191,6 @@ namespace RealLifeOverhaul
             return Marks >= CareerCatalogue.MarksToDismiss;
         }
 
-        /// <summary>The shift clocked on to is over.</summary>
         public static void ShiftDone(bool failed, int tips, int earned)
         {
             Shifts++;
@@ -259,10 +258,7 @@ namespace RealLifeOverhaul
             return CareerCatalogue.ReviewScore(OnTime, Late, NoShow, Complaints, Crashes, Stops, Tips, Shifts);
         }
 
-        /// <summary>
-        /// The review is held: the score decides, the counters start again. <paramref name="mayPromote"/> is
-        /// false when the next rank cannot be given (there is none, or the player is working their notice).
-        /// </summary>
+        /// <summary>Holds the review: the score decides, the counts start again. <paramref name="mayPromote"/> is false with no next rank or on notice.</summary>
         public static ReviewOutcome Review(bool mayPromote, out float score)
         {
             score = Score();

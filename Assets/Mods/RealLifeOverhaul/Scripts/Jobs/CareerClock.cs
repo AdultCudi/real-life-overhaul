@@ -2,10 +2,7 @@ using Localizor;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// How a rota shift's time is said, in one place: always start and end in the game's own clock format (its 12 or 24
-    /// hour option), as "13:00 to 17:00". The Planner writes the same times with its own formatter.
-    /// </summary>
+    /// <summary>How a rota shift's time is said: start and end in the game's own clock format, as "13:00 to 17:00".</summary>
     public static class CareerClock
     {
         /// <summary>An hour of the day on the game's clock: "13:00", or "01:00 PM" with the game's 12 hour option.</summary>

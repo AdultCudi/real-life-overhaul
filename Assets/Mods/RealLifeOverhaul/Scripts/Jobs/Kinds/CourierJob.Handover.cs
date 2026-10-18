@@ -30,8 +30,7 @@ namespace RealLifeOverhaul
         private StreetActor _passTo;        // whoever is reaching for the parcel: theirs at the clip's grip...
         private float _passHoldAt = -1f;    // ...and their arms settle into carrying it at this time
 
-        // The parcel leaves the player's hands and is seen to arrive: in the recipient's arms if the bundle has the clips to
-        // hold and walk with one, otherwise on the step between them.
+        // The parcel is seen to arrive: in the recipient's arms where the clips allow, else on the step between them.
         private void PassParcel(StreetActor to)
         {
             DropParcel();
@@ -77,8 +76,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A box in someone's arms: the arms-only clip over the game's own animation; where a bundle has only the whole-body walk,
-        // that, once they walk, kept in step with the ground by SeeIn.
+        // The arms-only clip over the game's animation; failing that the whole-body walk, once they walk, kept in step by SeeIn.
         private void Carry(StreetActor who, bool walking)
         {
             ActivityAnimator player = ActivityAnimators.Working && who.Character != null ? ActivityAnimators.For(who.Character.animator) : null;

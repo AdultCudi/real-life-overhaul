@@ -40,8 +40,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            // To the counter if it is free, else to the place behind; only from where the walk is whole and no detour round the
-            // block (an accident, a vehicle on the crossing).
+            // To the counter if free, else the place behind; only from where the walk is whole and no detour round the block.
             bool counterFree = _front < 0;
             Vector3 place = counterFree ? _counter : _queue;
             float straight = JobSpots.Flat(from, place);
@@ -194,7 +193,6 @@ namespace RealLifeOverhaul
             return person != null && person.IsValid && person.InUse && person.Lease == _lease[i] && person.Character.gameObject.activeInHierarchy;
         }
 
-        // A customer on their way to a place (CartQueueRules.Walking).
         private CartGuest Walking(int i, StreetActor person, Vector3 place, float now)
         {
             if (!Held(i))
@@ -211,8 +209,7 @@ namespace RealLifeOverhaul
             return fate;
         }
 
-        // Out of the queue at once, never a walk-off: back among those still to come, or the shift one shorter
-        // (CartQueueRules.Account). Somebody in view walks away; anybody else is taken off the street now.
+        // Out of the queue at once and never a walk-off (CartQueueRules.Account): someone in view walks away, anyone else goes now.
         private void Withdraw(int i, CartGuest why, float now)
         {
             StreetActor person = _who[i];
