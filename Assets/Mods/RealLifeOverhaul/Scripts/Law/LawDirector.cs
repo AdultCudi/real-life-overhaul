@@ -230,6 +230,7 @@ namespace RealLifeOverhaul.Law
             bool entered = _entered;
             _entered = false;
             _exited = false;
+            _roomOwed = null;   // the door's own event decides now; the tick owes the room again if this leaves it bare
             Idle();
             _desk.Close();
             if (!_precincts.Chosen || !LawState.Loaded)
@@ -288,12 +289,16 @@ namespace RealLifeOverhaul.Law
             {
                 return;
             }
-            if (_interior.Dressed || !BuildingManager.IsInsideBuilding)
+            BuildingManager buildings = InstanceBehavior<BuildingManager>.Instance;
+            if (_interior.Dressed || !BuildingManager.IsInsideBuilding || buildings == null)
             {
                 _roomOwed = null;
                 return;
             }
-            Furnish(owed);
+            if (!buildings.enteringBuilding && !buildings.exitingBuilding)
+            {
+                Furnish(owed);
+            }
         }
 
         private void Look()
