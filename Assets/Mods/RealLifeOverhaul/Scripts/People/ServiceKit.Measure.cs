@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using Helpers;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace RealLifeOverhaul
 {

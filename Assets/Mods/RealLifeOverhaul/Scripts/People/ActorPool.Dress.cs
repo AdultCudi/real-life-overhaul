@@ -1,18 +1,13 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using BAModAPI;
 using BigAmbitions.Characters;
 using BigAmbitions.Characters.Appearance;
-using BigAmbitions.SoundSystem;
 using Character;
-using Characters;
 using Characters.EmojiSystem;
 using Extensions;
 using Helpers;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul

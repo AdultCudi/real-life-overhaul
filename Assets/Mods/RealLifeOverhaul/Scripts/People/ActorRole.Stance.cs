@@ -1,6 +1,5 @@
 using BigAmbitions.Characters;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using BAModAPI;
 using Extensions;
-using Helpers;
 using Streets.Pedestrians;
 using UnityEngine;
 using UnityEngine.AI;

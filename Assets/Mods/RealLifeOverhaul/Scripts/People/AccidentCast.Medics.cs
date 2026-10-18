@@ -1,4 +1,3 @@
-using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Characters;
 using GleyTrafficSystem;

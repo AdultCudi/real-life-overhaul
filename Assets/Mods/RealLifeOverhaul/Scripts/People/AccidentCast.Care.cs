@@ -1,9 +1,7 @@
-using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Characters;
 using GleyTrafficSystem;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {

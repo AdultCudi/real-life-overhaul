@@ -34,7 +34,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Law/RecordPhone.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Meta/SettingsTable.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavModel.cs	4
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/People/StreetActor.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	4
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Planner/PlannerModel.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Traffic/ResponseUnit.cs	1
@@ -58,10 +57,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/VendorJob.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Law/Custody.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Meta/SaveTools.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavHud.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/People/ActorRole.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/People/StreetSpots.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/People/Stretcher.cs	2
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/People/SupinePose.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Photos/PhotosGame.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/Ragdoll.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetRules.cs	1
@@ -76,7 +71,6 @@ RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusInterior.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/People/HornReactions.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Performance/Tweaks/FarDistricts.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextServer.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Traffic/Reckless/RecklessDrivers.cs	1
@@ -155,7 +149,6 @@ RLO-STY-001	Assets/Mods/RealLifeOverhaul/Scripts/Character/ModAssets.cs	28
 RLO-STY-001	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/ClipLibrary.cs	18
 RLO-STY-001	Assets/Mods/RealLifeOverhaul/Scripts/Core/PropLibrary.cs	12
 RLO-STY-001	Assets/Mods/RealLifeOverhaul/Scripts/Traffic/Tow/TowRoads.cs	1
-RLO-STY-003	Assets/Mods/RealLifeOverhaul/Scripts/People/CrewWay.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/WorkModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/StandingScenes.cs	1
@@ -437,9 +430,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavHud.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavMarks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavModel.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Offices/Conversions.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/People/AccidentCast.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/People/HornReactions.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/People/ServiceKit.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfBench.cs	11
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfCensus.cs	37
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfGame.cs	2

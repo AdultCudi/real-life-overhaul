@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
-using BigAmbitions.Characters;
 using BigAmbitions.InputSystem;
 using Helpers;
 using Streets.Pedestrians;

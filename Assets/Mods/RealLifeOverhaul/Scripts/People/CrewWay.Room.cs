@@ -1,4 +1,3 @@
-using System.Globalization;
 using GleyTrafficSystem;
 using UnityEngine;
 using UnityEngine.AI;
