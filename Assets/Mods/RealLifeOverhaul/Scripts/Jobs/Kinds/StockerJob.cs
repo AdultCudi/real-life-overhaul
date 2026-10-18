@@ -7,44 +7,32 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Shelf stocker. A delivery for a shop near the player has been set down on the pavement
-    /// by its door: a pile of boxes. Pick one up (the game's own two-handed carry), take it in
-    /// through the shop's door, carry it to the shelf it is for and stock the shelf; then back
-    /// out for the next. Paid per box shelved, a little more for clearing the pile in time.
-    ///
-    /// The shop is one of the city's own that is not the player's, has shelves and is open; the
-    /// shelf is one of its real shelves, and the place to stand at it is on the shop's own
-    /// navigation mesh. Stocking is JobClip.Stock on the player (the mod's stock_shelf clip, or
-    /// the game's reach), who is held still for it; the emptied box stays on the floor by the
-    /// shelf until the shift ends. Nothing is added to the shop's stock: the boxes are the job's.
-    ///
-    /// IN THE GAME'S OWN INTERFACE. The game's panel over a place (<see cref="JobPanel"/>) stands over the pile with
-    /// "Pick up" (and "Let time pass" beside it, which hands the rest of the boxes to the game's clock,
-    /// <see cref="ShiftClock"/>: <see cref="ShiftRates"/> minutes a box, at <see cref="ShiftRates.Share"/> of a box's
-    /// pay, no bonus), over the shop's door with "Go in", and over the shelf with "Put on the shelf". The figures are on
-    /// the HUD in a copy of the game's job panel (<see cref="ShiftFigures"/>). The game has no shop assistant's outfit,
-    /// so the player works in their own clothes.
+    /// Shelf stocker: a delivery for a shop near the player, not theirs, stands on the pavement by its door. Pick up a box (the
+    /// game's own carry), take it in, carry it to one of the shop's real shelves and stock it, then back out for the next.
+    /// Paid per box shelved, a little more for clearing the pile in time. Nothing is added to the shop's stock: the boxes
+    /// are the job's. The game's panel over a place (<see cref="JobPanel"/>) offers each step, and at the pile the rest of
+    /// the boxes can be left to the game's clock (<see cref="ShiftClock"/>) at <see cref="ShiftRates.Share"/> of the pay.
     /// </summary>
     public sealed class StockerJob : Job, IClockedShift
     {
         private enum Step { ToPile, CarryIn, ToShelf, Stocking }
 
-        private const float Debounce = 0.7f;      // seconds after a box is shelved in which the panel's "let time pass" does nothing
-        private const float PanelUp = 1.6f;       // metres over the place the panel stands
+        private const float Debounce = 0.7f;      // seconds after a box is shelved in which Let time pass does nothing
+        private const float PanelUp = 1.6f;       // metres over the place
         private const string ButtonPick = "reallife_job_stocker_button_pick";
         private const string ButtonEnter = "reallife_job_button_enter";
         private const string ButtonStock = "reallife_job_stocker_button_stock";
         private const string ButtonSkip = "reallife_job_button_skip";
 
         private const int MaxBoxes = 8;            // the most a delivery can be: the table's six and the offer's spread of two
-        private const float ClientMin = 15f;
-        private const float ClientMax = 260f;
-        private const float DoorReach = 3.2f;
-        private const float PileReach = 2.2f;
-        private const float ShelfReach = 1.3f;
-        private const float ShelvesApart = 1.8f;
-        private const float Seconds = 300f;
-        private const float SecondsPerMetre = 0.5f;
+        private const float ClientMin = 15f;       // metres from the player
+        private const float ClientMax = 260f;         // metres
+        private const float DoorReach = 3.2f;         // metres
+        private const float PileReach = 2.2f;         // metres
+        private const float ShelfReach = 1.3f;        // metres
+        private const float ShelvesApart = 1.8f;      // metres between two shelves stocked
+        private const float Seconds = 300f;           // seconds for the delivery, the walk there included
+        private const float SecondsPerMetre = 0.5f;   // seconds a metre more for a shop further off
         private const string BoxProp = "shelf_box";
 
         // Where each box of the pile sits, in the pile's own space: three on the ground, two on those, one on top.
@@ -81,7 +69,7 @@ namespace RealLifeOverhaul
         private string _panelLeft;
         private string _objClock;
         private int _shownSeconds = int.MinValue;
-        private bool _wanted;          // the panel is wanted somewhere on this tick
+        private bool _wanted;          // the panel is wanted somewhere this tick
         private Vector3 _shelfStand;
         private Vector3 _shelfAt;
         private bool _hasShelf;
@@ -103,7 +91,7 @@ namespace RealLifeOverhaul
 
         public override bool PassingTime => _clock != null && _clock.Working;
 
-        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>
+        /// <summary>While the panel is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
         int IClockedShift.ClockLeft => Mathf.Max(0, _boxes - _stocked);
@@ -124,7 +112,7 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_on_foot";
                 return false;
             }
-            _boxes = ShiftSize();   // the offer's delivery
+            _boxes = ShiftSize();
             if (_boxes <= 0)
             {
                 Refusal = "reallife_job_no_daily";
@@ -162,7 +150,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The delivery on the pavement: a little to one side of the door, on pavement with room, out of the doorway.
+        // The delivery stands a little to one side of the door, on pavement with room, out of the doorway.
         private bool StandPile()
         {
             Vector3 front = _client.Front;
@@ -198,7 +186,7 @@ namespace RealLifeOverhaul
         {
             if (_clock.Hold())
             {
-                Figures(now);   // the clock is doing the work (or the offer is up, with the game paused)
+                Figures(now);   // the clock is working, or its offer is up with the game paused
                 return;
             }
             if (now >= _endsAt && _step != Step.Stocking)
@@ -210,7 +198,7 @@ namespace RealLifeOverhaul
             }
             if (_step == Step.ToPile && _left <= 0 && _stocked >= _boxes)
             {
-                Ctx.Say("reallife_job_stocker_done", 7f);   // (the last of them was done by the clock)
+                Ctx.Say("reallife_job_stocker_done", 7f);   // the last of them was done by the clock
                 _panel.Hide();
                 Conclude();
                 return;
@@ -220,7 +208,7 @@ namespace RealLifeOverhaul
             _wanted = false;
             if (_step != Step.ToPile && _step != Step.Stocking && _carry.Lost)
             {
-                // The box left their hands some other way (the game stows one if they get into a car): it is back on the pile.
+                // The box left their hands some other way (the game stows one in a car they get into): it is back on the pile.
                 _carry.ClearStowed();
                 PutBack();
                 _step = Step.ToPile;
@@ -281,7 +269,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel over a place: its words, the first button (on the game's interact key) and, beside it, "Let time pass".
+        // The panel over a place: its words, the first button on the interact key, and Let time pass beside it.
         private void Up(string first, string action, bool actionOn, bool skip, Vector3 over)
         {
             _wanted = true;
@@ -289,7 +277,7 @@ namespace RealLifeOverhaul
             _panel.Show(over, Ctx.Player);
         }
 
-        // The shift's figures on the card: each line is written only when what it says changes.
+        // The shift's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             bool clock = _clock.Working;
@@ -329,7 +317,7 @@ namespace RealLifeOverhaul
                 {
                     if (++_tries >= 5)
                     {
-                        Ctx.Say("reallife_job_stocker_no_shelf", 8f);   // a shop with no shelf to walk to: the round is called off, paid for what was done
+                        Ctx.Say("reallife_job_stocker_no_shelf", 8f);   // no shelf to walk to: the round is called off, paid for what was done
                         Conclude();
                     }
                     return;
@@ -344,7 +332,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel's first button was pressed (the game ran it on its key or on a click).
+        // The panel's first button, run by the game on its key or a click.
         private void Act(string action)
         {
             if (Ctx == null || Over)
@@ -378,7 +366,7 @@ namespace RealLifeOverhaul
             }
             else if (ReferenceEquals(action, ButtonStock) && _step == Step.ToShelf && _hasShelf)
             {
-                _carry.Take();   // out of the arms: its contents go on the shelf, the box by it
+                _carry.Take();   // out of the arms: its contents go on the shelf, the box beside it
                 Ctx.TurnPlayer(_shelfAt);
                 float reach = Mathf.Max(1.2f, Ctx.Animations.Play(Ctx.Player.Character, JobClip.Stock));
                 Ctx.Self.Hold(reach);
@@ -386,7 +374,7 @@ namespace RealLifeOverhaul
                 _step = Step.Stocking;
                 Unmark();
                 Hint(3);
-                // The emptied box on the floor beside them, where there is clear floor for it (never pushed into the shelf).
+                // The emptied box goes on the floor beside them, where it is clear (never pushed into the shelf).
                 Vector3 facing = Flat(_shelfAt - _shelfStand);
                 Vector3 beside = _shelfStand + Vector3.Cross(Vector3.up, facing) * 0.6f;
                 if (_hand < MaxBoxes && ShopFloor.Standable(beside, 0.15f, out Vector3 floor)
@@ -492,7 +480,7 @@ namespace RealLifeOverhaul
             Ctx.Pay(this, slip, "reallife_job_stocker_slip");
         }
 
-        // (A delivery that stops early is not the whole delivery.)
+        // A delivery that stops early is not the whole delivery.
         protected override bool Owed(out PaySlip slip) => Owed(false, out slip);
 
         private bool Owed(bool all, out PaySlip slip)
@@ -507,14 +495,12 @@ namespace RealLifeOverhaul
             {
                 Units = _hand,
                 Base = _hand * each,
-                Bonus = all ? Mathf.RoundToInt(_hand * each * 0.1f) : 0   // (the clock's boxes earn no bonus)
+                Bonus = all ? Mathf.RoundToInt(_hand * each * 0.1f) : 0   // the clock's boxes earn no bonus
             };
             return true;
         }
 
         protected override ShiftClock Clocked => _clock;
-
-        // ---------------------------------------------------------------- the rest of the boxes by the clock
 
         private void OfferSkip()
         {
@@ -532,7 +518,7 @@ namespace RealLifeOverhaul
 
         void IClockedShift.ClockEnded(int count, int pay, float away)
         {
-            // The boxes the clock shelved are gone from the pile, top first.
+            // The boxes the clock shelved go from the pile, top first.
             for (int i = 0; i < count && _left > 0; i++)
             {
                 _left--;
