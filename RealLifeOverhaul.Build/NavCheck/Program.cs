@@ -78,6 +78,7 @@ internal static partial class Program
         StationReaches(); // a police station's door and desk: from the doorstep, as the game's own door, never from the road; JobSpots.Flat never squared (StationReachCheck.cs)
         MeshCutLabels();  // what the session record names as the mod's last change to the walking mesh: a constant text that says where (MeshCutCheck.cs)
         Drivers();        // the city's drivers against a model of the game's own traffic, and the officer's wave-through (DriverCheck.cs)
+        PanelPicks();     // who has the game's one panel box near two places, the key to what it shows, and every panel through that rule (PanelPickCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

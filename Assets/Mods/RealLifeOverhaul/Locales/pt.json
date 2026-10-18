@@ -11740,7 +11740,7 @@
   "reallife_law_station_furniture": "Delegacias mobiliadas",
   "reallife_opt_tip_law_station_furniture": "Mesas, armários, sala de reunião, sala de descanso, paredes e piso do jogo, policiais trabalhando e escritórios no piso vazio de uma delegacia grande. Desligado, fica vazia como antes.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Nada ainda.",
+  "reallife_changes_next": "Corrigido: a pessoa que você veio encontrar agora sempre recebe o painel para dizer oi, também ao lado de uma entrada do metrô, de um ponto de ônibus ou de uma banca. Entre dois lugares com painel, fica com ele o que está mais perto e à sua frente, e se ainda assim ele não puder aparecer, o jogo pergunta se você quer dizer oi.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada banco da cidade tem seu próprio app no celular, com o nome que o jogo dá a ele: sua conta corrente e o extrato, os empréstimos que você deve àquele banco, podendo pagar parte ou tudo, seu cartão, o que ele oferece a você hoje e como ele vê sua pontuação. As condições dos bancos diferem um pouco, então escolher um faz diferença, e abaixo de uma pontuação de 580 nenhum deles empresta. Os contatos do mod têm fotos de verdade do jogo: as pessoas mostram o rosto e os serviços mostram um logotipo. Contatos tem uma caixa de busca no alto. As delegacias são mobiliadas com os móveis do próprio jogo: mesas com computadores, armários, um bebedouro, plantas, um relógio, luminárias e um vaso sanitário na cela. Corrigido: com todos os apps do mod, a fileira de apps no alto do menu de tela cheia passava por baixo do dinheiro e da data e saía da tela; agora ela tem páginas, centralizadas entre o nome do app e o dinheiro, viradas com a roda do mouse ou com os pontos. Corrigido: no mapa da cidade, uma linha do mod (Tribunal, Oficinas de personalização e as outras) podia ficar desmarcada enquanto os seus lugares continuavam no mapa; agora os lugares seguem a marcação que você vê.",
   "reallife_rota_box_stock_ok": "As mercadorias dão conta do plano recomendado.",
@@ -19804,5 +19804,6 @@
   "reallife_test_drivers_park_started": "O próximo carro que vier pela faixa para a {metres} m atrás do seu carro e espera até {seconds} segundos, como faria enquanto você entra de ré numa vaga.",
   "reallife_test_drivers_letout_started": "Saia agora: o próximo carro que vier pela faixa para a {metres} m atrás do seu carro e espera até {seconds} segundos para deixar você sair.",
   "reallife_changes_037_0_title": "0.37.0",
-  "reallife_changes_037_0": "O trânsito perto de você agora freia com antecedência e com suavidade, e não com força no último instante. Ele deixa espaço atrás de você enquanto você estaciona e deixa você sair de uma vaga. Num acidente, o policial do trânsito sai da frente para dar passagem a uma ambulância, a um caminhão de bombeiros ou a uma viatura."
+  "reallife_changes_037_0": "O trânsito perto de você agora freia com antecedência e com suavidade, e não com força no último instante. Ele deixa espaço atrás de você enquanto você estaciona e deixa você sair de uma vaga. Num acidente, o policial do trânsito sai da frente para dar passagem a uma ambulância, a um caminhão de bombeiros ou a uma viatura.",
+  "reallife_social_hello_ask": "{first} está bem aqui ao seu lado. Dizer oi agora?"
 }
