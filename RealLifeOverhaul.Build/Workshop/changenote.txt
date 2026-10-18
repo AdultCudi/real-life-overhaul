@@ -1,4 +1,7 @@
-0.39.0
+0.39.1
 
-New
-- Cars handle with weight: the car you drive rides softly on long springs, bounces and settles after a kerb, leans in bends and dips its nose as you brake. Steering is quick at walking pace and calmer at speed, the tyres give near their limit and slide, and the brakes build without locking. The custom shop's parts work on top. The Car handling option sets Light, Full, Heavy or Off.
+Fixed
+- Resting or sleeping in a hotel room no longer gives you a cold when it rains. The room counted as standing in the street, so an hour of rain while you were up there made you ill.
+- A night or a nap in a hotel room now counts as sleep. It used to count as hours awake, so sleep debt and stress went up overnight instead of down.
+- You can now go up to your hotel room while the game is paused. It used to say you were busy with something else.
+- With Developer diagnostics on, the log's line for a long frame now names the mod's costliest piece of work in that frame, and also the newest when they differ. It used to name only the newest, which could blame a small job for another's cost.
