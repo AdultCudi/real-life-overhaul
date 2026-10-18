@@ -11,7 +11,9 @@ namespace RealLifeOverhaul.GameUi
     /// is known to have been used this frame so that the mod's own interact key does nothing else with it
     /// (<see cref="TakesKey"/>, read by <c>NearbyInteraction</c> through the feature's static
     /// <c>TakesInteractKey</c>). One line goes to the log when the game accepts or refuses the panel and when it goes.
-    /// Like every <see cref="WorldPanel"/> it steps aside for the game's building box (WorldPanel.Beside.cs).
+    /// Like every <see cref="WorldPanel"/> it steps aside for the game's building box (WorldPanel.Beside.cs), and has
+    /// the game's one box by the rule between places (<see cref="PanelPickRules"/>): it is measured from its place, not
+    /// from where the box stands.
     ///
     /// The cost: nothing per frame. The owner calls <see cref="Show"/> from its once-a-second timer and builds the
     /// texts only when what they say has changed.
@@ -29,6 +31,14 @@ namespace RealLifeOverhaul.GameUi
         {
             _logger = logger;
             _check = check;
+            Panel.Name = NameOf(check);
+        }
+
+        // "Social check (prompt panel)" is the "Social prompt panel" in the log's line about who has the box.
+        private static string NameOf(string check)
+        {
+            int at = check != null ? check.IndexOf(" check (", StringComparison.Ordinal) : -1;
+            return at > 0 && check.EndsWith(")", StringComparison.Ordinal) ? check.Substring(0, at) + " " + check.Substring(at + 8, check.Length - at - 9) : check ?? "place";
         }
 
         /// <summary>The game's panel, for the owner to give lines and buttons to.</summary>
@@ -56,6 +66,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public bool Show(Vector3 place, Vector3 player, float up, Func<string> what)
         {
+            Panel.For(place);
             Vector3 over = place + Vector3.up * up;
             Camera camera = GameManager.GetMainCamera();
             if (camera != null && Vector3.Dot(over - camera.transform.position, camera.transform.forward) < 0.5f)
@@ -72,7 +83,8 @@ namespace RealLifeOverhaul.GameUi
                     _logger?.Info(_check + ": " + (what != null ? what() : string.Empty) + ": "
                                   + (state == 1 ? "the game's own panel is up: PASS"
                                       : state == 3 ? "the game's building box leaves it no room on any side, so it waits and is tried again while the player stands here: PASS"
-                                      : "FAIL (the game's panel is showing another place; it is tried again while the player stands here)") + ".");
+                                      : "FAIL (another panel has the game's box and keeps it by the rule, see the 'Panel check (who has the box)' line;"
+                                         + " it is tried again while the player stands here)") + ".");
                 }
             }
             return state == 1;

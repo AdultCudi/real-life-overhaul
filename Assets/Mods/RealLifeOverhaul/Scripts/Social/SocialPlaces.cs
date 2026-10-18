@@ -27,6 +27,17 @@ namespace RealLifeOverhaul
     public static class SocialPlaces
     {
         private const int Nearest = 3;
+        private const int SpotTries = 12;          // places to stand looked at round a door for one clear of other panels' places
+        private const int BusyMost = 32;           // other panels' places counted round a door at most
+        private const float BusyWithin = 16f;      // metres round the door within which they are counted: the widest reach (7.5 m) beyond the widest ring
+        private const float WideRing = 8f;         // metres from the door the wider half of the tries reaches, where the street allows
+
+        private static readonly float[] BusyX = new float[BusyMost];
+        private static readonly float[] BusyZ = new float[BusyMost];
+        private static readonly float[] BusyReach = new float[BusyMost];
+        private static readonly Vector3[] Spots = new Vector3[SpotTries + 1];
+        private static readonly float[] SpotX = new float[SpotTries + 1];
+        private static readonly float[] SpotZ = new float[SpotTries + 1];
 
         private static readonly CityBuildingController[] Candidates = new CityBuildingController[Nearest];
         private static readonly float[] CandidateSqr = new float[Nearest];
@@ -240,6 +251,66 @@ namespace RealLifeOverhaul
             }
             spot = default;
             return false;
+        }
+
+        /// <summary>
+        /// As <see cref="Standing"/>, but clear of the places where the mod's other panels are offered (a subway entrance, a
+        /// stop, a bike dock, a kiosk: Core/GameUi/PanelPlaces) where the street allows: the place nearest the door with room
+        /// outside all their reaches, else the roomiest found (<see cref="GameUi.PanelPickRules.Pick"/>). A person met
+        /// there then has the game's one box to themselves. <paramref name="room"/>: metres outside the nearest reach;
+        /// <paramref name="busy"/>: how many such places are near. A few looks at the pavement, on an event.
+        /// </summary>
+        public static bool StandingClear(Vector3 near, out Vector3 spot, out float room, out int busy)
+        {
+            busy = GameUi.PanelPlaces.Near(near, BusyWithin, BusyX, BusyZ, BusyReach);
+            room = float.MaxValue;
+            if (busy == 0)
+            {
+                return Standing(near, out spot);
+            }
+            int count = 0;
+            if (CitySpots.Pavement(near, 1.5f, out Vector3 at) && CitySpots.ClearQuietly(at, 0.45f))
+            {
+                count = Keep(near, at, count);
+            }
+            for (int i = 0; i < SpotTries; i++)
+            {
+                if (CitySpots.PavementRing(near, 1.2f, i < SpotTries / 2 ? 5f : WideRing, false, out at) && CitySpots.ClearQuietly(at, 0.45f))
+                {
+                    count = Keep(near, at, count);
+                }
+            }
+            int best = GameUi.PanelPickRules.Pick(SpotX, SpotZ, count, BusyX, BusyZ, BusyReach, busy);
+            if (best < 0)
+            {
+                spot = default;
+                return false;
+            }
+            spot = Spots[best];
+            room = GameUi.PanelPickRules.Room(SpotX[best], SpotZ[best], BusyX, BusyZ, BusyReach, busy);
+            return true;
+        }
+
+        // Keeps a place to stand in order of its distance from the door, nearest first: the order of preference for the rule.
+        private static int Keep(Vector3 door, Vector3 at, int count)
+        {
+            if (count >= Spots.Length)
+            {
+                return count;
+            }
+            float far = JobSpots.Flat(at, door);
+            int i = count;
+            while (i > 0 && JobSpots.Flat(Spots[i - 1], door) > far)
+            {
+                Spots[i] = Spots[i - 1];
+                SpotX[i] = SpotX[i - 1];
+                SpotZ[i] = SpotZ[i - 1];
+                i--;
+            }
+            Spots[i] = at;
+            SpotX[i] = at.x;
+            SpotZ[i] = at.z;
+            return count + 1;
         }
 
         /// <summary>Pavement out of view 14 to 40 m off from which the walk to a goal is at most <paramref name="most"/> metres of route.</summary>

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -33,6 +34,7 @@ namespace RealLifeOverhaul
         private string _greetMine, _greetTheirs;     // the player's half and theirs; null: a wave
         private bool _greetWhole;                    // whole-body clips (a real hug, a kiss on the cheek), not the upper body only
         private Hello _hello;
+        private bool _spotSaid;                      // the self-check on the place to wait has been written
 
         private void Travel(float now)
         {
@@ -202,7 +204,13 @@ namespace RealLifeOverhaul
         {
             _nextTry = now + 1.5f;
             _placeTries++;
-            if (!SocialPlaces.Standing(_venue.Front, out _spot) && (_placeTries < 3 || !CitySpots.Pavement(_venue.Front, 6f, out _spot)))
+            // Clear of the places other panels are offered at (a subway entrance, a stop): the hello's panel then has the game's box alone.
+            bool clear = SocialPlaces.StandingClear(_venue.Front, out _spot, out float room, out int busy);
+            if (clear)
+            {
+                SaySpot(room, busy);
+            }
+            if (!clear && (_placeTries < 3 || !CitySpots.Pavement(_venue.Front, 6f, out _spot)))
             {
                 // No room outside just now (a van on the pavement): from the third try any pavement within 6 m will do.
                 _spot = _venue.Front;
@@ -256,6 +264,22 @@ namespace RealLifeOverhaul
             Line = SocialLife.T(Rides ? "reallife_social_obj_meet_car" : "reallife_social_obj_there", SocialLife.Data(_who, "place", _venue.Name));
             LogPut(_who, _friend, _spot, "is waiting outside " + _venue.Name + (unseen ? ": put there while the player is indoors"
                 : watched ? ": no short way in from out of view in " + (_placeTries - 1) + " tries, so put at the place" : ": put at the place, nobody looking that way"));
+        }
+
+        // Once an outing: how clear of other panels' places the place to wait is.
+        private void SaySpot(float room, int busy)
+        {
+            if (_spotSaid || !Meta.Dev.Verbose)
+            {
+                return;
+            }
+            _spotSaid = true;
+            SocialDirector.Logger?.Info("Social check (meeting place): outside " + _venue.Name + ", " + busy + " place(s) of other panels within 16 m; "
+                                        + (busy == 0 ? "none to keep clear of: PASS."
+                                            : "the place to wait is " + room.ToString("F1", CultureInfo.InvariantCulture) + " m outside the nearest one's reach (wanted "
+                                              + GameUi.PanelPickRules.StandClear.ToString("F1", CultureInfo.InvariantCulture) + "): "
+                                              + (room >= GameUi.PanelPickRules.StandClear ? "PASS."
+                                                  : "FAIL (no clear pavement near the door; the roomiest place was taken, and the person met still has the box first).")));
         }
 
         private void NoPlace(string why)

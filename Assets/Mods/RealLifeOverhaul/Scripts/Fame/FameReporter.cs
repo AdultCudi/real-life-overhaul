@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Fame
         private const float LeaveMost = 15f;       // ...and to walk off out of view
 
         private readonly FameDirector _director;
-        private readonly WorldPanel _panel = new WorldPanel { FollowLift = 2.15f };
+        private readonly WorldPanel _panel = new WorldPanel { FollowLift = 2.15f, Name = "reporter" };
         private readonly Action _answer, _decline;
         private StreetActor _actor;
         private Stage _stage;

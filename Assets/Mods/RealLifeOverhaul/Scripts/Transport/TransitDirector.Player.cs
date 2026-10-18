@@ -88,6 +88,28 @@ namespace RealLifeOverhaul
             _onMapClosed = MapClosed;
             _chooseOnArrival = ChooseOnArrival;
             _sitOnArrival = SitOnArrival;
+            GameUi.PanelPlaces.Set("bus stop", StopsNear);   // somebody waiting for the player is stood clear of them
+        }
+
+        // The stops near a point, with the reach of the stop's panel from its pole, its waiting place and its shelter (Core/GameUi/PanelPlaces).
+        private static int StopsNear(Vector3 around, float within, float[] x, float[] z, float[] reach, int count)
+        {
+            List<TransitStop> stops = TransitMap.Places;
+            for (int i = 0; i < stops.Count; i++)
+            {
+                TransitStop stop = stops[i];
+                if (stop == null)
+                {
+                    continue;
+                }
+                count = GameUi.PanelPlaces.Add(around, within, stop.Sign, Reach, x, z, reach, count);
+                count = GameUi.PanelPlaces.Add(around, within, stop.Wait, Reach, x, z, reach, count);
+                if (stop.Shelter)
+                {
+                    count = GameUi.PanelPlaces.Add(around, within, stop.ShelterAt, Reach, x, z, reach, count);
+                }
+            }
+            return count;
         }
 
         private void RunPlayer(float now, Vector3 at, bool onFoot)
@@ -116,7 +138,9 @@ namespace RealLifeOverhaul
                 CloseList("another screen or prompt came up");
                 listOpen = false;
             }
-            bool free = onFoot && !JobDirector.TakesInteractKey && !_subway.Showing && (listOpen || !ThirdPersonCamera.IsUiOpen());
+            // A subway entrance's panel near the stop is not a reason to stop serving it: which of the two has the game's box is
+            // the panels' own rule (Core/GameUi/PanelPickRules), the nearer place the player faces.
+            bool free = onFoot && !JobDirector.TakesInteractKey && (listOpen || !ThirdPersonCamera.IsUiOpen());
 
             _sitAt = null;
             _sitSeat = -1;
@@ -214,6 +238,7 @@ namespace RealLifeOverhaul
             {
                 over = at + Vector3.up * 2.1f;
             }
+            _panel.For(_served.Sign);
             _panel.Position = over;
             int state = _panel.Show() ? 1 : _panel.Waiting ? 3 : 2;
             if (state != _panelState)

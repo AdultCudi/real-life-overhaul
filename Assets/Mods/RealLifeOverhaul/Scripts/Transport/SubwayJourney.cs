@@ -26,7 +26,7 @@ namespace RealLifeOverhaul
 
         private readonly MonoBehaviour _host;
         private readonly TransitRide _ride;
-        private readonly GameUi.WorldPanel _panel = new GameUi.WorldPanel();
+        private readonly GameUi.WorldPanel _panel = new GameUi.WorldPanel { Name = "subway entrance" };
         private SubwayStation _at;
         private int _shownKey = int.MinValue;
         private int _tick;
@@ -45,9 +45,27 @@ namespace RealLifeOverhaul
         {
             _host = host;
             _ride = ride;
+            GameUi.PanelPlaces.Set("subway entrance", Entrances);   // somebody waiting for the player is stood clear of them
         }
 
-        public bool Showing => _at != null;   // the station's panel is on screen
+        // The game's subway entrances near a point, each with the reach of its panel (Core/GameUi/PanelPlaces). On an event, never per frame.
+        private static int Entrances(Vector3 around, float within, float[] x, float[] z, float[] reach, int count)
+        {
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            if (city == null || city.subwayStations == null)
+            {
+                return count;
+            }
+            for (int i = 0; i < city.subwayStations.Count; i++)
+            {
+                SubwayStation station = city.subwayStations[i];
+                if (station != null)
+                {
+                    count = GameUi.PanelPlaces.Add(around, within, station.transform.position, Reach, x, z, reach, count);
+                }
+            }
+            return count;
+        }
 
         /// <summary>Minutes between trains now.</summary>
         public static int Frequency()
@@ -182,6 +200,7 @@ namespace RealLifeOverhaul
                     delay > 0 ? GameUi.WorldPanel.Yellow() : GameUi.WorldPanel.Green());
                 _panel.Buttons(null, null, false, null, null, false);
             }
+            _panel.For(_at.transform.position);
             _panel.Position = _at.transform.position + Vector3.up * 2.2f;
             _panel.Show();
         }

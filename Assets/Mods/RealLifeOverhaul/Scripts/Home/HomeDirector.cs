@@ -63,7 +63,7 @@ namespace RealLifeOverhaul
         private HomeWish _wish;
         private float _wishUntil;
         private ItemController _clicked;     // the coffee machine a click was on: the cup is made at that one
-        private readonly GameUi.WorldPanel _doctor = new GameUi.WorldPanel();
+        private readonly GameUi.WorldPanel _doctor = new GameUi.WorldPanel { Name = "doctor's desk" };
         private Action _onDoctor;
         private int _keyFrame = -1;
         private float _nextSlow;

@@ -61,6 +61,12 @@ namespace RealLifeOverhaul
                 return;
             }
 
+            // The game sends its interact key to what its panel box shows: a button there on that key runs, and nothing else does.
+            if (!GameUi.WorldPanel.InteractFree())
+            {
+                return;
+            }
+
             var gm = InstanceBehavior<GameManager>.Instance;
             if (gm == null || gm.playerController == null || gm.selectedVehicle != null || PlayerHelper.IsUsingVehicle
                 || gm.playerController.NavigationDisabled || GameManager.IsAnyMiniGameActive() || ThirdPersonCamera.IsUiOpen())

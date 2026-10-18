@@ -56,6 +56,7 @@ namespace RealLifeOverhaul
             {
                 over = Ctx.Player.transform.position + Vector3.up * 2.1f;
             }
+            _panel.For(_cartAt);
             _panel.Position = over;
             int up = _panel.Show() ? 1 : 2;
             if (up != _panelUp)

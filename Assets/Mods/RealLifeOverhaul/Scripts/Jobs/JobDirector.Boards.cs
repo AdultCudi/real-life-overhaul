@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// <summary>Jobs' director: the help-wanted boards and the game's panel over them.</summary>
     public partial class JobDirector
     {
-        private readonly GameUi.WorldPanel _boardPanel = new GameUi.WorldPanel();
+        private readonly GameUi.WorldPanel _boardPanel = new GameUi.WorldPanel { Name = "job board" };
         private Action _onBoard;
         private int _boardShown = int.MinValue;   // the board and employer the panel was last written for
 
@@ -48,6 +48,7 @@ namespace RealLifeOverhaul
                 _boardPanel.Lines(employer >= 0 ? JobText.T(CareerCatalogue.All[employer].NameKey) : JobText.T("reallife_job_board_title"), _boards.Address(board), null,
                     GameUi.WorldPanel.White());
                 _boardPanel.Buttons(employer >= 0 ? "reallife_career_board_speak" : "reallife_job_board_read", _onBoard, true, null, null, false);
+                _boardPanel.For(_boards.At(board));
                 _boardPanel.Position = _boards.At(board) + Vector3.up * 1.9f;
                 if (Meta.Dev.Verbose)
                 {

@@ -277,16 +277,30 @@ OverlayUI [VerticalLayoutGroup (padding 30/30/55/40, spacing 20), ContentSizeFit
 - The game's bindings (`PlayerInput`): Interact F, SecondaryInteract P, SpecialInteract O, Confirm Enter, Cancel
   Esc; the Player map has keyboard and mouse bindings only. The UI map has a gamepad's south button on Click and
   its east button on Cancel, so with a gamepad a button of this panel is clicked, not pressed by its key.
-- There is one box. The game uses it at filling stations, the private driver's garage and lifts
-  (`BuildingEntranceOverlay` exists but nothing shows it). `WorldPanel.Show` returns false while another panel has
-  the box and takes it when it is free; whoever owns a `WorldPanel` calls `Show` from its timer while it wants it up.
+- There is one box. The game uses it at filling stations, the private driver's garage and lifts, each shown by a
+  trigger the player or the player's car has entered (`BuildingEntranceOverlay` exists but nothing shows it); a subway
+  entrance, a door, a cash machine or a stand puts nothing in it. `OverlayUI.Show` simply replaces what is there, and
+  the game's keys go to whatever is in it. Whoever owns a `WorldPanel` calls `Show` from its timer while it wants it
+  up, and gives the panel its place with `For` (or `Follow` for a person); `Meet` marks a person the player came to meet.
+- **Who has the box** (`GameUi/PanelPickRules.cs`, the rule; `GameUi/WorldPanel.Pick.cs`, the part that measures):
+  a `Show` that finds another of the mod's panels in the box measures both places from the player. The nearer place
+  the player faces has it (a place straight behind counts twice its distance); a person met counts nearest of all
+  within 3.5 m; the one asking takes the box only when it counts nearer by 0.75 m or a fifth, whichever is more, so
+  the box never goes to and fro. The one put out asks again at its owner's next look and takes the box back as soon
+  as the player turns or steps to its place. The game's own panels keep the box: the player stands in their place,
+  and the game has no way to be asked for it back. One line, `Panel check (who has the box)`, says each new outcome.
+- The places where the mod's panels over a place are offered (subway entrances, stops, bike places, kiosks) are named
+  to `GameUi/PanelPlaces.cs`, and somebody put out to wait for the player stands clear of their reaches where the
+  street allows (`SocialPlaces.StandingClear`).
 - `OverlayUI.IsVisible` is static. It must not be left true when the city unloads (`WorldPanel.Hide` sees to it):
   the mod's second interact key (E) stands aside while it is true.
 - Making the buttons again destroys and instantiates them (`SetUpButtons`), so a change of a line alone goes
   through the private `SetUpHeader` (a delegate made once) and only a change of the buttons through
   `RefreshButtons`.
 - While a `WorldPanel` with a button on Interact is up, the mod's own interact key must do nothing else:
-  `TransitDirector.TakesInteractKey` is true while it shows and in the frame its button ran.
+  `TransitDirector.TakesInteractKey` is true while it shows and in the frame its button ran, and the mod's own door
+  and car key (`NearbyInteraction`) asks `WorldPanel.InteractFree()`, false while the box shows any panel's button on
+  Interact, the game's own included.
 - A panel has four places for buttons, one for each key the game sends to its box, in this order: Interact,
   SecondaryInteract, SpecialInteract, Confirm (`WorldPanel.Button(place, key, action, enabled, blue)`; the older
   `Buttons` sets the first two). A button that is not `interactable` is drawn dimmed and ignores its key. The drinks

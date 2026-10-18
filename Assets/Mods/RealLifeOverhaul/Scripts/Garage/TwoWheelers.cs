@@ -64,7 +64,7 @@ namespace RealLifeOverhaul
         private string _listClosing;
 
         // the game's panel at a dock, a rack or a stand
-        private readonly WorldPanel _world = new WorldPanel();
+        private readonly WorldPanel _world = new WorldPanel { Name = "bike place" };
         private readonly Action _onUse;
         private BikePlace _promptPlace;
         private int _promptState;       // 1 hire, 2 return, 3 browse
@@ -92,6 +92,21 @@ namespace RealLifeOverhaul
             _onUse = UseClicked;
             _onPick = Picked;
             _onListClosed = ListClosed;
+            PanelPlaces.Set("bike place", BikesNear);   // somebody waiting for the player is stood clear of them
+        }
+
+        // The docks, racks and stands near a point, with the reach of their panel (Core/GameUi/PanelPlaces).
+        private int BikesNear(Vector3 around, float within, float[] x, float[] z, float[] reach, int count)
+        {
+            IReadOnlyList<BikePlace> all = _places.All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] != null)
+                {
+                    count = PanelPlaces.Add(around, within, all[i].Position, BikePlaces.Reach, x, z, reach, count);
+                }
+            }
+            return count;
         }
 
         /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
@@ -583,6 +598,7 @@ namespace RealLifeOverhaul
             {
                 over = player + Vector3.up * 2.1f;
             }
+            _world.For(place.Position);
             _world.Position = over;
             int shown = _world.Show() ? 1 : 2;
             if (shown != _worldState)
