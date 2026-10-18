@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
-using Streets;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -18,29 +17,9 @@ namespace RealLifeOverhaul.Roommates
     }
 
     /// <summary>
-    /// Sharing the flat: a notice (or a friend) brings somebody in, they pay a share of the rent every week, they are
-    /// in the flat when their hours say so, the day at home leaves things to talk about, and it ends by notice either
-    /// way. This class owns the state and the timing; the rules are RoommateRules, the game is RoommateGame, the
-    /// character is RoommateFlat, the pages are RoommatePhone and RoommateTalk.
-    ///
-    /// COST
-    ///   each frame      one test of a flag (is the roommate out as a character) and one comparison of the clock with
-    ///                   the next look; with the roommate out, the cast's turn and hide as well (as the partner's)
-    ///   a look          once a MINUTE while the player is not in the home with a roommate: whether the game's hour has
-    ///                   changed (one comparison of two numbers), and whether the player stands in that home (one flag
-    ///                   and, indoors only, an address). Once a SECOND while they are in it together: the same, and
-    ///                   the flat's own second (RoommateFlat.Tick). Coming into a building asks for a look at once
-    ///                   (the game's own event) and four more a second apart, so nobody waits a minute for the roommate.
-    ///   an hour         answers to a notice that have come, the rent on a rent day: a few comparisons
-    ///   a day           one pass over the home's furniture, the day's events from the seed, the Planner's rows
-    ///   nothing is allocated on a frame or a look; texts are built when something happens
-    ///
-    /// A look that comes late (a night slept through, a skip of time) catches up: the hours are compared as "on or
-    /// after", and every day that went by gets its day, fourteen at most.
-    ///
-    /// The option off: the roommate is put away, the state is written into the save as it stands and nothing runs;
-    /// on again, every date is moved on by the days it was off (RoommateState.Shift) and things go on.
-    /// A fault switches the feature off for the session with one line; the save keeps the arrangement.
+    /// Sharing the flat: the state and the timing; the rules are <see cref="RoommateRules"/>, the game <see cref="RoommateGame"/>,
+    /// the character <see cref="RoommateFlat"/>. Cost: each frame one flag test and one clock compare; a look once a minute, once
+    /// a second in the shared home. A late look catches up the days missed, fourteen at most.
     /// </summary>
     public sealed partial class RoommateDirector : MonoBehaviour
     {
@@ -73,7 +52,6 @@ namespace RealLifeOverhaul.Roommates
         private Action _onSave;
         private Action<Address> _onEnter, _enterSeen;
 
-        /// <summary>One line for the mod's start-up: the logger and the component.</summary>
         public static void Attach(GameObject root, IModLogger logger)
         {
             Logger = logger;
@@ -94,7 +72,6 @@ namespace RealLifeOverhaul.Roommates
 
         public bool HasHome => RoommateGame.AnyHome() != null;
 
-        /// <summary>Where the roommate is at this hour.</summary>
         public RoomWhere WhereNow
         {
             get
@@ -147,7 +124,7 @@ namespace RealLifeOverhaul.Roommates
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -239,8 +216,6 @@ namespace RealLifeOverhaul.Roommates
                 }
             }
         }
-
-        // ---------------------------------------------------------------- the save
 
         private void Load()
         {
@@ -368,13 +343,10 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        // ---------------------------------------------------------------- the home and the money
-
         private BuildingRegistration Home => _state.Living ? RoommateGame.HomeAt(_state.HomeStreet, _state.HomeNumber) : RoommateGame.AnyHome();
 
         private static bool PartnerIn => RoommateBridges.PartnerLivesIn != null && RoommateBridges.PartnerLivesIn();
 
-        /// <summary>What a week of a share of this home's rent comes to now.</summary>
         public int WeeklyFor(int sharePct)
         {
             return RoommateRules.Weekly(RoommateGame.RentPerDay(Home, out _), sharePct);
@@ -388,8 +360,6 @@ namespace RealLifeOverhaul.Roommates
             weekly = RoommateRules.Weekly(RoommateGame.RentPerDay(home, out lodger), RoommateRules.SharePct(RoommateRules.FriendSharePct, room));
             return room;
         }
-
-        // ---------------------------------------------------------------- finding one
 
         /// <summary>Puts a notice up. Null if it is up; otherwise why not (a locale key).</summary>
         public string Advertise()
@@ -496,8 +466,6 @@ namespace RealLifeOverhaul.Roommates
             return null;
         }
 
-        // ---------------------------------------------------------------- the relationship
-
         // Something happened between the two: the person's own figures move, and social life is told if they are one of its people.
         private void Moment(RoomMoment moment)
         {
@@ -517,7 +485,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        // A trait has shown itself: the player knows it from now on.
         private void Seen(RoomTrait trait)
         {
             Flatmate m = _state.Mate;
@@ -527,8 +494,6 @@ namespace RealLifeOverhaul.Roommates
                 RoommateText.Toast(NotificationType.Info, "reallife_roommate_trait_seen", Fill.For(m.Person.Name).With(RoommateText.Trait(trait)), 8f);
             }
         }
-
-        // ---------------------------------------------------------------- the Planner's rows
 
         private void BuildAlerts()
         {
@@ -551,7 +516,8 @@ namespace RealLifeOverhaul.Roommates
             if (!s.OnNotice || s.RentDay < s.LeaveDay)
             {
                 int weekly = WeeklyFor(s.Mate.SharePct);
-                Alert(1, s.RentDay, true, "reallife_roommate_plan_rent", s.Lodger ? "reallife_roommate_plan_rent_lodger" : "reallife_roommate_plan_rent_what", f, RoommateText.T("reallife_roommate_plan_pays", f.Cost(weekly)));
+                Alert(1, s.RentDay, true, "reallife_roommate_plan_rent", s.Lodger ? "reallife_roommate_plan_rent_lodger" : "reallife_roommate_plan_rent_what", f,
+                    RoommateText.T("reallife_roommate_plan_pays", f.Cost(weekly)));
             }
             if (s.Owed > 0)
             {

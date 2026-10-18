@@ -6,26 +6,23 @@ using System.Text;
 namespace RealLifeOverhaul.Roommates
 {
     /// <summary>
-    /// The roommate in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
+    /// The roommate in the save: one line of modData under <see cref="Key"/>, game-free.
     ///
-    ///     v=1^h:...^m:...^a:...^c:...;...
+    ///     v=1^h:...^m:...^a:...^c:...
     ///
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
-    ///   h  the header: seed|last day|last hour stamp|notice up|its stamp|notices so far
-    ///   m  the roommate, as a person (below); absent when nobody lives in
+    ///   h  seed|last day|last hour stamp|notice up|its stamp|notices so far
+    ///   m  the roommate, as a person; absent when nobody lives in
     ///   a  the arrangement: street|number|lodger|sofa|moved in|next rent day|last rent day|weekly|owed|owed due|slips|
     ///      loan|loan due|asked to borrow|topics|what was taken|raid week|raids|asked to stop|asked for quiet|
     ///      weeks covered|meals left|last talk|last meal|last company|last greeting|made a friend|introduced|
     ///      partner seen|notice|leave day
-    ///   c  the people who answered the notice, each a person
+    ///   c  the people who answered the notice
     ///   a person: name|female|age|look seed|job|social traits|familiarity|affection|trust (tenths)|traits|known|
     ///             share|answers at|told|place in the social cast
     ///
-    /// Names and addresses are written escaped, so no character of theirs can be taken for a divider. Every figure is
-    /// a whole number. A NEWER VERSION adds fields at the end of a record or a part with a new letter; this reader
-    /// takes the fields it knows and skips parts it does not. A figure out of its bounds is put inside them; a line
-    /// that cannot be read at all gives null and the feature starts afresh. Nothing here is the game's: a save loads
-    /// in the plain game, or with the option off, with this line ignored and kept.
+    /// Names and addresses are escaped. A newer version adds fields at the end or a part with a new letter: this reader
+    /// takes what it knows, puts every figure inside its bounds, and gives null for a line it cannot read at all.
     /// </summary>
     public static class RoommateStore
     {

@@ -4,14 +4,9 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Roommates
 {
-    /// <summary>
-    /// The roommate's days and hours, and what the player's replies do. Everything here runs on the hour or the day
-    /// that the director's look found changed, or on a button; see RoommateDirector for the cost.
-    /// </summary>
+    /// <summary>The roommate's days and hours, and what the player's replies do: run on the hour or the day a look found changed, or on a button.</summary>
     public sealed partial class RoommateDirector
     {
-        // ---------------------------------------------------------------- the hour and the day
-
         // The game's hour has changed since the last look: every day that went by gets its day, then the hour's work is done.
         private void Rounds(int stamp)
         {
@@ -120,7 +115,6 @@ namespace RealLifeOverhaul.Roommates
             string name = m.Person.Name;
             bool partner = PartnerIn;
 
-            // The home: still theirs, moved, or given up.
             BuildingRegistration home = RoommateGame.HomeAt(s.HomeStreet, s.HomeNumber);
             if (home == null)
             {
@@ -164,7 +158,6 @@ namespace RealLifeOverhaul.Roommates
             }
             else if (!s.OnNotice && RoommateRules.Room(beds, sofas, partner) == RoomKind.None)
             {
-                // The bed or the sofa they had has been sold or taken away.
                 s.GiveNotice(EndWhy.NoRoomAfterMove, day);
                 RoommateText.Message("reallife_text_roommate_no_bed", Fill.For(name).On(RoommateText.When(s.LeaveDay)));
             }
@@ -185,7 +178,6 @@ namespace RealLifeOverhaul.Roommates
                 Seen(shown);
             }
 
-            // Rent that was promised, and a loan.
             if (s.Owed > 0 && day >= s.OwedDue)
             {
                 if (RoommateRules.PaysArrears(m.Person.Seed, day, m.Traits, s.OwedSlips))
@@ -223,7 +215,6 @@ namespace RealLifeOverhaul.Roommates
                 }
             }
 
-            // What the day brings.
             int week = daysIn / 7;
             if (week != s.RaidWeek)
             {
@@ -397,8 +388,6 @@ namespace RealLifeOverhaul.Roommates
             s.ClearMate();
             BuildAlerts();
         }
-
-        // ---------------------------------------------------------------- what the player's replies do
 
         private void Done(Topic topic)
         {

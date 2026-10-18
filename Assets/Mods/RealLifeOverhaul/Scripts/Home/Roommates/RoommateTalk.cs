@@ -9,16 +9,9 @@ using UI.Notification;
 namespace RealLifeOverhaul.Roommates
 {
     /// <summary>
-    /// The conversations with a roommate, in the game's own dialogue panel, face to face in the flat or on the phone.
-    /// What is talked about is whatever the day left waiting (<see cref="Topic"/>): their notice, the player's partner
-    /// moving in, rent that is late, last night's noise, food that went, a loan, a meal they left; with nothing
-    /// waiting, their day, once a day. Each has two or three replies, and each reply does something: the panel's two
-    /// buttons and its third (the game's own "cancel" place, relabelled), whose answer comes as a notice because the
-    /// panel closes on it.
-    ///
-    /// A reply acts the moment it is pressed, and the topic is done only then: a save made with the panel open, or a
-    /// conversation walked away from, leaves the topic waiting for the next one. Built when the panel opens or a
-    /// button is pressed; nothing here runs otherwise.
+    /// The conversations with a roommate in the game's dialogue panel, face to face or on the phone: whatever the day left
+    /// waiting (<see cref="Topic"/>), or their day. A topic is done only when a reply is pressed; the third reply sits in the
+    /// panel's cancel place, which closes the panel, so its answer comes as a notice.
     /// </summary>
     internal static class RoommateTalk
     {
@@ -39,10 +32,7 @@ namespace RealLifeOverhaul.Roommates
             return Safe(first ?? Nothing)();
         }
 
-        /// <summary>
-        /// Opens the conversation face to face (the game's own panel, as its counters and desks open one).
-        /// <paramref name="closed"/> is called when it ends, however it ends.
-        /// </summary>
+        /// <summary>Opens the conversation face to face, as the game's counters open one; <paramref name="closed"/> runs when it ends, however it ends.</summary>
         public static bool Open(Action closed, ThirdPersonCharacter with)
         {
             var uis = InstanceBehavior<UI.UIs>.Instance;
@@ -57,8 +47,6 @@ namespace RealLifeOverhaul.Roommates
             uis.playerHUD.dialogUI.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, null, Guard.Way(closed), with);
             return true;
         }
-
-        // ---------------------------------------------------------------- the pieces
 
         private static bool OnPhone => DialogController.current != null && DialogController.current.dialogType == DialogType.PhoneCall;
 
@@ -150,8 +138,6 @@ namespace RealLifeOverhaul.Roommates
                 OnCancel = third ?? Leave
             };
         }
-
-        // ---------------------------------------------------------------- what is talked about
 
         /// <summary>The conversation for whatever waits; their day when nothing does; a closing line when that has been had today.</summary>
         public static DialogEntry Next()
@@ -252,7 +238,7 @@ namespace RealLifeOverhaul.Roommates
     }
 
     /// <summary>The face-to-face conversation: whatever <see cref="RoommateTalk.Open"/> was given.</summary>
-    public class RoommateDialog : Dialog
+    public sealed class RoommateDialog : Dialog
     {
         public RoommateDialog()
         {
