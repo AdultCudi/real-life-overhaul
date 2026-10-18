@@ -105,6 +105,21 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
+        /// <summary>
+        /// The card that answers the player's own typed words to somebody of the social life on a call (Wiring/TextsCalls):
+        /// data v3's answer to a message, for a friend and for the partner, the typed words the history's last line as they
+        /// were trained. Null for Mom and anybody else: no pack has a card that answers what is said to them.
+        /// </summary>
+        public static string Answering(From from)
+        {
+            switch (from)
+            {
+                case From.Friend: return "friend.dm.answer";
+                case From.Partner: return "partner.dm.answer";
+                default: return null;
+            }
+        }
+
         /// <summary>A piece of the City Ledger's intent by its key (the city's economy's briefs), and the names its values go by; null for a piece with none.</summary>
         public static string Ledger(string key)
         {

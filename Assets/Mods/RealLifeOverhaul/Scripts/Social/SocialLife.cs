@@ -51,8 +51,23 @@ namespace RealLifeOverhaul
         /// <summary>RLO Texts: the greeting guessed, taken at the click; null for the written line.</summary>
         public static Func<SocialPerson, string> TakeGreeting;
 
+        /// <summary>RLO Texts: null when it can answer a person's call in their own words now (a call's composer); otherwise why not.</summary>
+        public static Func<SocialPerson, string> ComposerWhyNot;
+
+        /// <summary>RLO Texts: the player's typed words as they may be shown and sent (TextCheck.Typed); null for nothing left.</summary>
+        public static Func<string, string> CleanTyped;
+
+        /// <summary>RLO Texts: asks for a person's answer to the player's typed words on a call (see <see cref="SocialAnswerAsk"/>).</summary>
+        public static SocialAnswerAsk AnswerTyped;
+
         public const string WordsKey = "reallife_texts_line";
     }
+
+    /// <summary>
+    /// Asks RLO Texts for a person's answer to the call's last lines, the player's typed words last. True: <paramref name="done"/>
+    /// comes once, later, on the game's thread, with the words (or null) and how they came (or why not); false: not asked, and why.
+    /// </summary>
+    public delegate bool SocialAnswerAsk(SocialPerson person, IReadOnlyList<SocialCallLine> lines, Func<bool> wanted, Action<string, string> done, out string why);
 
     /// <summary>What happens between the player and a person, with its effects in the game. The phone, scenes and director go through here.</summary>
     public static class SocialLife

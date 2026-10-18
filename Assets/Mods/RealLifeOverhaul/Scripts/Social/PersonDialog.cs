@@ -7,8 +7,11 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>A call to or from somebody the player knows: a chat, plans, what they asked, and the other things to say.</summary>
-    public sealed class PersonDialog : Dialog
+    /// <summary>
+    /// A call to or from somebody the player knows: a chat, plans, what they asked, and the other things to say. A chat's
+    /// topic is answered with one of two answers, or with the player's own typed words (PersonDialog.Composer).
+    /// </summary>
+    public sealed partial class PersonDialog : Dialog
     {
         private static int GiftPrice => Prices.At(60);
         private const int AskOutGapDays = 5;
@@ -65,11 +68,13 @@ namespace RealLifeOverhaul
         {
             data = data ?? SocialLife.Data(_p);
             SocialLife.Said(_p, key, data);
+            TheySaid(_p.LastSaid);
             return new DialogEntry { messageData = key.Localize(data), OnCancel = PhoneContacts.HangUp };
         }
 
         private DialogEntry Close(string key, Dictionary<string, string> data = null)
         {
+            _typing = null;
             data = data ?? SocialLife.Data(_p);
             SocialLife.Said(_p, key, data);
             return PhoneContacts.Closing(key, data);
@@ -94,7 +99,7 @@ namespace RealLifeOverhaul
 
         private DialogEntry Chat()
         {
-            if (_topics == 0 && _p.LastCallDay == SocialLife.Day)
+            if (SocialRules.ChatHad(_topics, _p.LastCallDay, SocialLife.Day))
             {
                 // One chat a day; anything else can still be asked.
                 SocialLife.Contacted(_p);
@@ -105,6 +110,10 @@ namespace RealLifeOverhaul
             }
             SocialTopic topic = SocialTalk.Pick(_p, out Dictionary<string, string> data);
             DialogEntry entry = Line(SocialLines.Pick(topic.Open), data);
+            if (Composing(topic, data, entry))
+            {
+                return entry;   // (the player's own words answer it: PersonDialog.Composer)
+            }
             entry.ConfirmTextOverride = topic.ReplyA.Localize(data);
             entry.OnConfirm = () => Reply(topic, true, data);
             entry.SecondOptionTextOverride = topic.ReplyB;
@@ -114,10 +123,21 @@ namespace RealLifeOverhaul
 
         private DialogEntry Reply(SocialTopic topic, bool warm, Dictionary<string, string> data)
         {
+            return Onward(Line(Answered(topic, warm), data));
+        }
+
+        // What an answer is worth, a choice's or typed words' alike, settled now; the key of their written reaction.
+        private string Answered(SocialTopic topic, bool warm)
+        {
             string react = SocialTalk.Answer(_p, topic, warm, false, _topics == 0);
             _topics++;
-            DialogEntry entry = Line(react, data);
-            if (_topics < 2)
+            return react;
+        }
+
+        // Their reaction, and after it another topic or the goodbye, or something else.
+        private DialogEntry Onward(DialogEntry entry)
+        {
+            if (_topics < SocialRules.CallTopics)
             {
                 entry.ConfirmTextOverride = "reallife_social_btn_go_on".Localize();
                 entry.OnConfirm = Chat;
@@ -135,6 +155,7 @@ namespace RealLifeOverhaul
         // One thing at a time, and only what is possible now.
         private DialogEntry Menu(int at)
         {
+            _typing = null;
             _actions.Clear();
             int day = SocialLife.Day;
             _actions.Add("plans");

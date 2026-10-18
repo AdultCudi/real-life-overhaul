@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
         ///              through FlareBridges.TextKept (Social/Flare/FlareDirector.Texts.cs)
         ///   the phone  friends, the partner, Mom, the in-laws, roommates, the boss and the lender: a text held back a moment
         ///              for its words (TextsPhone), sent with the written line when they are not there in time
+        ///   calls      a friend's or the partner's answer to what the player types on a call (TextsCalls)
         ///   face to face  a friend's greeting at an outing, guessed when the player walks up and taken at the click
         ///   answers    with a v3 pack, the authors' answers under the player's typed replies and the answers to typed
         ///              messages and mentions (Social/Flare/FlareDirector.Answers.cs, FlareDirector.Texts.cs)
@@ -47,6 +48,7 @@ namespace RealLifeOverhaul
                 TextsDirector.StillThere = StillThere;
                 LedgerShown.Clear();
                 TextsPhone.Connect();
+                TextsCalls.Connect();
             }
 
             internal static void Disconnect()
@@ -63,6 +65,7 @@ namespace RealLifeOverhaul
                 LedgerBridges.TextsBody = null;
                 TextsDirector.StillThere = null;
                 TextsPhone.Disconnect();
+                TextsCalls.Disconnect();
             }
 
             // The player's listed company's name (a rival's stake in it or bid for it names it); null while there is none.

@@ -21,7 +21,8 @@ Eight people the player knows (Mom, an old friend and six met in the street), th
 | `SocialScene` | the base of a scene: talking face to face, walking off |
 | `MeetScene` | somebody walks up |
 | `OutingScene` | a plan kept, with parts `.Meeting` (getting there, hello), `.Walk`, `.Ride`, `.Boxes` (helping them move) and `.After` |
-| `PersonDialog` | the call to or from a person |
+| `PersonDialog` | the call to or from a person; its part `.Composer` (a topic answered in the player's own typed words) |
+| `SocialComposerRules` | when a call's topic is typed, what typed words count as, which lines go on RLO Texts' card: game-free |
 | `SceneDialog` | the conversation in the street; SceneTalk |
 | `PeopleDialog` | the People page |
 | `SocialTalk` | topics from what happened |
@@ -183,6 +184,20 @@ The topics: the player's crash, arrest or knock-down and the street it was on; a
 
 Each has two answers and a reaction to each.
 
+### Typing on a call (the composer)
+
+On a call, with an RLO Texts pack that can answer this person now and "Type your own words in calls" on (`social_composer`, default on, under the social life's options; it needs RLO Texts on), a topic they raise is answered in the player's own words rather than with its two answers (`PersonDialog.Composer`, `SocialComposerRules`):
+
+- The topic's entry has "Type a reply" (the game's own text box, `Core/GameUi/TextBox`, as Flare and street talk use it: placeholder "What do you say?", at most 160 characters) and "Something else". The words sent show as "You: ..." with only the hang-up button, and their answer follows.
+- What typed words are worth is settled the moment they are sent, and never from what either side wrote: they count as the topic's warm answer (its first, the friendly one: `SocialComposerRules.TypedWarm`), through the same `SocialTalk.Answer` as the choice. So a day's chat is worth exactly what it was: the talk once a day (`SocialRules.ChatHad`: a second call that day is "we covered everything"), two topics a call (`SocialRules.CallTopics`), the warm answer each. Typing can never be worth more than choosing.
+- Their answer is asked of RLO Texts off the game's thread (`Wiring/TextsCalls`), at the queue's first priority with a hold of 6 real seconds: data v3's answer to a message (`friend.dm.answer`, `partner.dm.answer`: the person's own card, as their texts have it, with the call's last three lines and the typed words last). Words that do not come in time, fail the checks or speak of chat ("message", "Flare": the card was trained on Flare messages) give way to the warm answer's written reaction. A call hung up meanwhile lets them go.
+- The typed words are made one clean line (`TextCheck.Typed`: no line breaks or control characters, no text markup, none of the card's turn markers, at most 160 characters) before they are shown or put on the card.
+- The two answers, exactly as before, whenever the composer cannot answer: no pack, RLO Texts or its messages from people off, the game not in English, the model loading or failed, a machine that writes only what is asked well ahead, a pack of data v2 (it has no such card), and Mom (no pack has a card that answers what is said to her). The choice is made again at every topic, so a model that fails mid-call gives the next topic its two answers.
+- Plans, birthdays and gifts, paying back, asking out, making it official, moving in, borrowing and introductions stay buttons under "Something else": each is a rule of the game, and typing never triggers one.
+- With Developer diagnostics on, one `Social check (composer)` line for each topic (typed or the two answers, and why) and each typed message (what it counted as, measured against the rule's own figures, and the words' card and time or why the written answer was shown). Nothing is sent anywhere: the words are this machine's and change nothing in a Going Public session.
+
+What the next pack would need for Mom, and for a call of its own, is said in [RLO Texts' notes below](#what-a-later-pack-could-add-to-calls).
+
 They get in touch themselves (`SocialDirector.Hourly`: each waking hour a chance of 9 % plus 2 % per person known): an invitation, a favour (a lift, a loan repaid or excused in five to nine days, help moving), news of their day, an introduction, or a reaction to the player's crash, break-in, arrest or wealth (10 k, 50 k, 250 k, 1 M, 5 M: the supportive are pleased, the envious are not).
 
 Texts are the game's own: a `TextMessage` in that contact's thread, with the game's "new message" notification.
@@ -190,6 +205,15 @@ Never more than "Most texts in a day" (3) from everybody together, one a person 
 
 Somebody close may ring instead: a prompt for 22 s, the interaction key answers, and the call opens in the contacts app with what they rang about.
 An invitation or favour is answered by calling them.
+
+### What a later pack could add to calls
+
+The packs' intents are fixed by their data version, so the composer uses what data v3 already has. A later data version could add:
+
+- `mom.dm.answer` (voice `mom`, Mom's face, `news: Mom answers what you said`), so Mom's calls are typed too. Until then her calls keep their two answers.
+- Better still, a call's own cards, `friend.call.said`, `partner.call.said` and `mom.call.said`: channel `spoken` (a call, not a Flare message), at most 140 characters, `write: spoken: on the phone`, history the last three lines of the call oldest first (their line, the player's, theirs, with the player's typed words last), and an optional fact `topic: {topic}` naming what they brought up (the crash, the shop's takings, their birthday coming). Trained on the same rows as `friend.dm.answer` with the call's framing, they would never speak of messages or Flare.
+
+Each would be registered in `Texts/TextIntents.cs` with its data version and the generator's fixtures, and `Texts/TextsMapRules.Answering` would name it; the composer asks `TextsHub.WhyNot` with the pack's data, so an older pack keeps the cards it has.
 
 ## The City Ledger (`News`)
 
@@ -220,6 +244,8 @@ The outing ones play the real thing (walk-in, marker, hello, the activity) and r
 Its label is `reallife_social_test_mom`, and its row is in the chain in `Core/RealLifeOverhaulMod.cs`: `.AddButton("reallife_social_test_mom", () => SocialDirector.Instance?.TestOutingWithMom())`.
 "Test: a walk with the chosen person, here" does the same thing for the chosen person (Mom until another is chosen): it is agreed for the pavement where the player stands, and looks for a business only if there is no pavement within 8 m.
 
+"Call the chosen person now and type the chat" (`reallife_social_test_composer`, `SocialDirector.TestComposer`) opens a call at once, in the game's contacts app, with the chosen person or else anybody met whose chat today is still to come; press Chat and the topic has "Type a reply". It says why when it cannot: typing in calls switched off, no pack running (or RLO Texts' messages from people off, or the game not in English), or nobody it can be (Mom has no typed chat, and the others have had today's chat).
+
 ## On screen: the game's own interface (Social)
 
 The mod draws nothing of its own for the social life (`SocialHud` is gone).
@@ -245,6 +271,8 @@ That the navigation agent's own route agrees with the pedestrians' filter (it is
 
 How the marker on somebody looks beside an incident's marker (they are separate plates; the social one keeps 85 px lower at the top edge).
 The wording and length of the new notifications on screen.
+
+Typing on a call has not been seen in the game: that the game's text box opens over a call in the contacts app and hands its words back while the call is open, how "You: ..." and the model's answer look in the call's thread, and how long a pack takes to answer on the owner's machine (the hold is 6 s, then the written answer).
 
 ## Wish-list (drop in by id, no code change)
 

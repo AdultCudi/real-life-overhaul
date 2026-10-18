@@ -232,7 +232,7 @@ namespace RealLifeOverhaul.Meta
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
-                    .Opt("social_texts_max", "social_texts").Also("friends dating date people"),
+                    .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people").Also("friends dating date people calls typing"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),
                 S("flare").For("flare").Main("social_media").Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
                     .Also("social media app followers posts likes selfie influencer"),

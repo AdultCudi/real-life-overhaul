@@ -42,7 +42,9 @@ namespace RealLifeOverhaul.Texts
     ///              so a post or comment about the city's AI labs passes ("an AI lab", "as an AI researcher"); the words
     ///              "chatbot" and "language model" pass only when the card itself names them
     ///
-    /// Game-free (EconomyCheck, TextsChecks.cs: each rule made to fail). COST: one pass over a line of 200 characters.
+    /// The player's own typed words (a call's composer) are made fit to be shown and sent by <see cref="Typed"/>.
+    ///
+    /// Game-free (EconomyCheck, TextsChecks.cs and ComposerChecks.cs: each rule made to fail). COST: one pass over a line of 200 characters.
     /// </summary>
     public static class TextCheck
     {
@@ -66,6 +68,52 @@ namespace RealLifeOverhaul.Texts
                 start++;
             }
             return raw.Substring(start).Trim();
+        }
+
+        /// <summary>
+        /// What the player typed, as it may be shown and put on a card: one line (line breaks and other control characters
+        /// made spaces, a run of spaces made one), the prompt's turn markers taken out (<see cref="TextIntents.Plain"/>), the
+        /// angle brackets of text markup made harmless (‹ ›, so "&lt;b&gt;" is never bold), trimmed, and cut at
+        /// <paramref name="most"/> characters without splitting a character in two. Null when nothing is left.
+        /// </summary>
+        public static string Typed(string text, int most)
+        {
+            string plain = TextIntents.Plain(text);
+            if (string.IsNullOrEmpty(plain) || most <= 0)
+            {
+                return null;
+            }
+            var typed = new StringBuilder(Math.Min(plain.Length, most));
+            bool space = false;
+            for (int i = 0; i < plain.Length && typed.Length < most; i++)
+            {
+                char c = plain[i];
+                if (char.IsWhiteSpace(c) || char.IsControl(c))
+                {
+                    space = typed.Length > 0;
+                    continue;
+                }
+                if (space)
+                {
+                    if (typed.Length >= most - 1)
+                    {
+                        break;   // (a space at the very end would be trimmed off anyway)
+                    }
+                    typed.Append(' ');
+                    space = false;
+                }
+                if (char.IsHighSurrogate(c))
+                {
+                    if (i + 1 >= plain.Length || typed.Length >= most - 1)
+                    {
+                        break;   // (both halves, or neither)
+                    }
+                    typed.Append(c).Append(plain[++i]);
+                    continue;
+                }
+                typed.Append(c == '<' ? '‹' : c == '>' ? '›' : c);
+            }
+            return typed.Length > 0 ? typed.ToString() : null;
         }
 
         private static bool Starts(char c)

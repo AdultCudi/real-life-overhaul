@@ -215,43 +215,33 @@ namespace RealLifeOverhaul
         /// <summary>What the answer and the first exchange of the day are worth, more face to face. Returns their reply's key.</summary>
         public static string Answer(SocialPerson person, SocialTopic topic, bool warm, bool inPerson, bool firstOfTalk)
         {
-            float familiarity = 0f, affection = 0f, trust = 0f;
-            if (firstOfTalk && (person.LastCallDay != SocialLife.Day || inPerson))
+            bool firstOfDay = FirstOfDay(person, inPerson, firstOfTalk);
+            SocialWorth worth = Worth(person, topic, warm, inPerson, firstOfTalk);
+            if (firstOfDay)
             {
-                float scale = inPerson ? 1.5f : 1f;
-                familiarity = SocialRules.CallFamiliarity * scale;
-                affection = SocialRules.CallAffection * scale;
-                trust = SocialRules.CallTrust * scale;
-                if (person.LastTextDay > 0 && person.LastTextDay >= SocialLife.Day - 1)
-                {
-                    familiarity += SocialRules.TextReply;   // they wrote, and the player got back to them
-                    affection += 0.5f;
-                }
                 ModState.AddModifier(person.IsFamily ? ModState.Family : ModState.Social);
             }
-            if (warm)
+            if (!warm && !topic.BothFine && person.Affection + worth.Affection < 15f)
             {
-                affection += SocialRules.WarmReply;
-            }
-            else if (!topic.BothFine)
-            {
-                affection += SocialRules.BluntReply;
-                if (person.Affection + affection < 15f)
-                {
-                    SocialLife.Remember(person, MemoryCode.Rude);
-                }
-            }
-            else
-            {
-                affection += 0.5f;
+                SocialLife.Remember(person, MemoryCode.Rude);
             }
             SocialLife.Contacted(person);
             if (!inPerson)
             {
                 person.LastCallDay = SocialLife.Day;
             }
-            SocialLife.Change(person, familiarity, affection, trust);
+            SocialLife.Change(person, worth.Familiarity, worth.Affection, worth.Trust);
             return warm ? topic.ReactA : topic.ReactB;
         }
+
+        /// <summary>What <see cref="Answer"/> would be worth now, changing nothing (SocialRules.Chat with this person's day).</summary>
+        public static SocialWorth Worth(SocialPerson person, SocialTopic topic, bool warm, bool inPerson, bool firstOfTalk)
+        {
+            bool textedLately = person.LastTextDay > 0 && person.LastTextDay >= SocialLife.Day - 1;
+            return SocialRules.Chat(FirstOfDay(person, inPerson, firstOfTalk), inPerson, textedLately, warm, topic.BothFine);
+        }
+
+        // The talk's first exchange counts the talk itself: on a call once a day, face to face every time.
+        private static bool FirstOfDay(SocialPerson person, bool inPerson, bool firstOfTalk) => firstOfTalk && (person.LastCallDay != SocialLife.Day || inPerson);
     }
 }

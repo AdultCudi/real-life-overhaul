@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 
@@ -116,6 +117,68 @@ namespace RealLifeOverhaul
             _callWhenFree = friend;
             _callUntil = Time.unscaledTime + 60f;
             SocialLife.Toast(NotificationType.Info, "reallife_social_test_call_soon", SocialLife.Data(friend), 6f);
+        }
+
+        /// <summary>
+        /// A call opened now with somebody whose chat the player types (the chosen person first, then anybody else met whose
+        /// chat today is still to come); says why not: the option off, no pack running, nobody it can be. Records nothing
+        /// beyond what the call itself does.
+        /// </summary>
+        public void TestComposer()
+        {
+            const string test = "A call with typing";
+            if (!TestReady(test, false))
+            {
+                return;
+            }
+            if (!Settings.SocialComposer)
+            {
+                TestRefusals.TellKey(Logger, test, "reallife_social_test_composer_off");
+                return;
+            }
+            if (SocialPhone.DialogOpen || DialogController.current != null)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.ScreenBusy, 0, "a conversation is open");
+                return;
+            }
+            SocialPerson person = null;
+            string noPack = null;
+            bool chatted = false;
+            for (int i = -1; i < SocialRules.CastSize && person == null; i++)
+            {
+                SocialPerson p = SocialState.Get(i < 0 ? SocialState.TestPerson : i);
+                if (p == null || !p.Met || p.IsFamily)
+                {
+                    continue;
+                }
+                string textsWhy = SocialLinks.ComposerWhyNot != null ? SocialLinks.ComposerWhyNot(p) : "RLO Texts is not running";
+                string why = SocialComposerRules.Why(Settings.Social, true, TextBox.CanType, textsWhy);
+                if (why != null)
+                {
+                    noPack = noPack ?? why;
+                }
+                else if (p.LastCallDay == SocialLife.Day)
+                {
+                    chatted = true;
+                }
+                else
+                {
+                    person = p;
+                }
+            }
+            if (person == null)
+            {
+                TestRefusals.TellKey(Logger, test, noPack != null ? "reallife_social_test_composer_nopack" : "reallife_social_test_composer_nobody",
+                    noPack ?? (chatted ? "everybody it could be has had today's chat" : "nobody but Mom is known, and no pack answers her yet"));
+                return;
+            }
+            bool opened = SocialPhone.Call(person);
+            Logger?.Info("Social check (composer test): a call with " + person.Name
+                         + (opened ? " opened; press Chat and type an answer to the topic: PASS" : ": FAIL, the phone could not open the call"));
+            if (!opened)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.ScreenBusy, 0, "the phone could not open the call");
+            }
         }
 
         /// <summary>Whatever the day's cap; the switch still holds.</summary>

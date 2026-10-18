@@ -53,7 +53,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `TaxiLinks.cs` | `TaxiBridges` and the minimap's mark for the called taxi |
 | `OfficeLinks.cs` | empty shops made offices, once the other features' buildings are chosen |
 | `StreetLinks.cs`, `StreetTexts.cs` | street talk with the rest of the mod, and its words from RLO Texts |
-| `TextsLinks.cs`, `TextsPhone.cs` | RLO Texts with Flare and the phone's texts |
+| `TextsLinks.cs`, `TextsPhone.cs`, `Wiring.TextsCalls.cs` | RLO Texts with Flare, the phone's texts and the answers to what the player types on a call |
 
 ## Who does what at an arrest
 
