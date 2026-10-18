@@ -6,18 +6,16 @@ using Localizor;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The words of Flare. A post is kept as a source, a tone, a person and a seed (FlarePost); here it becomes words,
-    /// when it is shown, from en.json's templates: the seed picks the variant, so a post always reads the same. Every
-    /// text is a key; nothing here is kept. Called when the app shows something or a notification is made, never
-    /// otherwise.
-    /// </summary>
+    /// <summary>The words of Flare: a post becomes words when shown, from the locale's templates, its seed picking the variant so it always reads the same.</summary>
     public static partial class FlareText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private static readonly StringBuilder Words = new StringBuilder(256);
 
-        public static readonly string[] TabKeys = { "reallife_flare_tab_feed", "reallife_flare_tab_post", "reallife_flare_tab_me", "reallife_flare_tab_business", "reallife_flare_tab_city" };
+        public static readonly string[] TabKeys =
+        {
+            "reallife_flare_tab_feed", "reallife_flare_tab_post", "reallife_flare_tab_me", "reallife_flare_tab_business", "reallife_flare_tab_city"
+        };
         public static readonly string[] TierKeys = { "reallife_flare_tier_0", "reallife_flare_tier_1", "reallife_flare_tier_2", "reallife_flare_tier_3", "reallife_flare_tier_4" };
         public static readonly string[] ToneKeys = { "reallife_flare_tone_0", "reallife_flare_tone_1", "reallife_flare_tone_2", "reallife_flare_tone_3" };
         public static readonly string[] OutingKeys =
@@ -25,9 +23,8 @@ namespace RealLifeOverhaul.Flare
             "reallife_flare_outing_0", "reallife_flare_outing_1", "reallife_flare_outing_2", "reallife_flare_outing_3", "reallife_flare_outing_4",
             "reallife_flare_outing_5", "reallife_flare_outing_6", "reallife_flare_outing_7", "reallife_flare_outing_8", "reallife_flare_outing_9"
         };
-        public const int PostVariants = 2, ToneVariants = 2, ReplyVariants = 3;
 
-        // ---- every key written out in full, by FlareSource (the locale check finds each one in en.json)
+        // Every key written out in full, by FlareSource, so the locale check finds each one in en.json.
         private static readonly string[] DraftKeys =
         {
             "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_selfie", "reallife_flare_draft_outing", "reallife_flare_draft_promotion",
@@ -157,7 +154,8 @@ namespace RealLifeOverhaul.Flare
         /// <summary>How the city reads the account: one of five words.</summary>
         public static string Reputation(int reputation)
         {
-            return T(reputation < 25 ? "reallife_flare_rep_1" : reputation < 45 ? "reallife_flare_rep_2" : reputation < 65 ? "reallife_flare_rep_3" : reputation < 85 ? "reallife_flare_rep_4" : "reallife_flare_rep_5");
+            return T(reputation < 25 ? "reallife_flare_rep_1" : reputation < 45 ? "reallife_flare_rep_2" : reputation < 65 ? "reallife_flare_rep_3"
+                : reputation < 85 ? "reallife_flare_rep_4" : "reallife_flare_rep_5");
         }
 
         /// <summary>What a draft is, in a line: "A selfie with Alex", "Record day at Copper Kettle".</summary>
@@ -169,22 +167,13 @@ namespace RealLifeOverhaul.Flare
             return Fill(key, "name", d.Name, "friend", friend, "kind", Outing(d.Arg));
         }
 
-        /// <summary>The name of whoever wrote a post: "You", or the friend's first name.</summary>
-        public static string Author(FlarePost p, string friend)
-        {
-            return p.Author == FlareAuthor.Player ? T("reallife_flare_you") : friend ?? "?";
-        }
-
-        /// <summary>
-        /// The words of a post: the player's, a template of its source with the tone's line after it and the tag; a
-        /// friend's, a template of its topic with their job or part of town.
-        /// </summary>
+        /// <summary>The words of a post: the player's, their source's template with the tone's line and tag; a friend's, by topic with their job or part of town.</summary>
         public static string Post(FlarePost p, string tagged, string job, string district, int niche = 0)
         {
             Words.Length = 0;
             if (p.Author >= FlareAuthor.Influencer && p.Author != FlareAuthor.Network)
             {
-                return Other(p, district, niche);   // (another player's moment of a session reads as the player's own would)
+                return Other(p, district, niche);   // another player's moment in a session reads as the player's own would
             }
             if (p.Author == FlareAuthor.Friend)
             {
@@ -212,7 +201,10 @@ namespace RealLifeOverhaul.Flare
             "reallife_flare_niche_0", "reallife_flare_niche_1", "reallife_flare_niche_2", "reallife_flare_niche_3", "reallife_flare_niche_4", "reallife_flare_niche_5", "reallife_flare_niche_6"
         };
         public static readonly string[] StyleKeys = { "reallife_flare_style_0", "reallife_flare_style_1", "reallife_flare_style_2", "reallife_flare_style_3" };
-        public static readonly string[] DealKeys = { "reallife_flare_deal_0", "reallife_flare_deal_1", "reallife_flare_deal_2", "reallife_flare_deal_3", "reallife_flare_deal_4", "reallife_flare_deal_5" };
+        public static readonly string[] DealKeys =
+        {
+            "reallife_flare_deal_0", "reallife_flare_deal_1", "reallife_flare_deal_2", "reallife_flare_deal_3", "reallife_flare_deal_4", "reallife_flare_deal_5"
+        };
         public static readonly string[] DealAboutKeys =
         {
             "reallife_flare_deal_about_0", "reallife_flare_deal_about_1", "reallife_flare_deal_about_2", "reallife_flare_deal_about_3", "reallife_flare_deal_about_4", "reallife_flare_deal_about_5"
@@ -234,7 +226,10 @@ namespace RealLifeOverhaul.Flare
         private static readonly string[] CandidateKeys = { "reallife_flare_cand_1", "reallife_flare_cand_2" };
         private static readonly string[] SorryKeys = { "reallife_flare_inf_sorry_1", "reallife_flare_inf_sorry_2" };
         private static readonly string[] BrandKeys = { "reallife_flare_brand_1", "reallife_flare_brand_2" };
-        private static readonly string[] CityNewsKeys = { "reallife_flare_city_accident", "reallife_flare_city_crime", "reallife_flare_city_fire", "reallife_flare_city_arrest", "reallife_flare_city_breakin" };
+        private static readonly string[] CityNewsKeys =
+        {
+            "reallife_flare_city_accident", "reallife_flare_city_crime", "reallife_flare_city_fire", "reallife_flare_city_arrest", "reallife_flare_city_breakin"
+        };
 
         public static string Niche(FlareNiche niche)
         {
@@ -251,10 +246,7 @@ namespace RealLifeOverhaul.Flare
             return T(Of(DealKeys, deal));
         }
 
-        /// <summary>
-        /// What keeps a business from a new hire, in a sentence: the campaign, how it was booked and its days.
-        /// "Midtown Electronics has a campaign booked for day 34: Discount day, booked from the Company app. You can hire once it ends."
-        /// </summary>
+        /// <summary>What keeps a business from a new hire, in a sentence naming the booked campaign and its day.</summary>
         public static string Busy(FlareCampaign c, int day)
         {
             string when = Fill(FlareRules.BusyWhenKey(day, c.From, c.To), "day", c.From.ToString(Inv), "from", c.From.ToString(Inv), "to", c.To.ToString(Inv));
@@ -305,20 +297,9 @@ namespace RealLifeOverhaul.Flare
             return T(keys[Pick(p.Seed + person * 7919, 3, keys.Length) - 1]);
         }
 
-        /// <summary>The followers over the last days, oldest first: "120, 131, 140".</summary>
-        public static string History(int[] history)
-        {
-            Words.Length = 0;
-            for (int i = 0; i < history.Length; i++)
-            {
-                Words.Append(i > 0 ? ", " : string.Empty).Append(N(history[i]));
-            }
-            return Words.ToString();
-        }
-
         public static Dictionary<string, string> Data(params string[] pairs)
         {
-            var data = new Dictionary<string, string>(pairs.Length / 2);   // (a dictionary each: the game keeps a notification's data)
+            var data = new Dictionary<string, string>(pairs.Length / 2);   // a dictionary each: the game keeps a notification's data
             for (int i = 0; i + 1 < pairs.Length; i += 2)
             {
                 data[pairs[i]] = pairs[i + 1] ?? string.Empty;

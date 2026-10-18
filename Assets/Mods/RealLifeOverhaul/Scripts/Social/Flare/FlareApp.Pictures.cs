@@ -8,26 +8,12 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The pictures in the posts, by their key (FlarePost.Pic):
-    ///
-    ///   "f:" a picture of the player's: a photo of photo mode (a file name of the Shots folder), a shot of the camera button
-    ///        (its small copy alone), or a photo another feature shared (its full path: FlareDirector.SharePhoto). Shown as
-    ///        its small copy (Core/PhotoThumbs, 256 pixels wide): read off the main thread, made there the first time for a
-    ///        photo that has none yet, and uploaded on it as it is, with no decode. A photo whose small copy cannot be made
-    ///        (not a PNG this reads) is drawn small by the engine, as every picture once was.
-    ///   "n:" a picture of the session's (FlareSnap: 192 pixels wide at most): its Base64 from the director, decoded on a
-    ///        worker thread, uploaded as it is.
-    ///
-    /// At most <see cref="Most"/> textures are kept, the ones used last; they stay while the city is loaded, so a picture
-    /// scrolled back to shows at once, and are destroyed when the city unloads or Flare stops. A picture not there (moved,
-    /// deleted, not come yet) shows its card without it, and is looked for again the next time the app opens.
-    ///
-    /// COST: nothing per frame and nothing while the app is closed. A card with a picture not yet loaded starts one read
-    /// of some 100 KB (or one decode of 16 KB) off the main thread; a frame or two later one upload.
+    /// The pictures in the posts by key: "f:" the player's, its small copy read off the main thread; "n:" the session's,
+    /// decoded on a worker. At most <see cref="Most"/> textures. Cost: nothing per frame; a new picture one read and one upload.
     /// </summary>
     internal sealed class FlarePictures
     {
-        public const int Most = 16;
+        public const int Most = 16;   // textures
 
         private readonly Dictionary<string, Texture2D> _made = new Dictionary<string, Texture2D>(Most);
         private readonly List<string> _used = new List<string>(Most);   // the keys, used last at the end
@@ -44,7 +30,7 @@ namespace RealLifeOverhaul.Flare
 
         public static string Folder => Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Shots");
 
-        /// <summary>The file a picture of the player's is (or would be, for a shot that is only its small copy); null for a key that is not one.</summary>
+        /// <summary>The file a picture of the player's is, or would be for a shot that is only its small copy; null for another key.</summary>
         public static string PathOf(string pic)
         {
             if (string.IsNullOrEmpty(pic) || pic.Length < 3 || !pic.StartsWith("f:", StringComparison.Ordinal))
@@ -55,7 +41,7 @@ namespace RealLifeOverhaul.Flare
             return Path.IsPathRooted(name) ? name : Path.Combine(Folder, Path.GetFileName(name));
         }
 
-        /// <summary>A post's picture key, an older post's own photo too (its picture was its file name).</summary>
+        /// <summary>A post's picture key, an older post's own photo too, whose picture was its file name.</summary>
         public static string KeyOf(FlarePost p)
         {
             if (!string.IsNullOrEmpty(p.Pic))
@@ -119,7 +105,7 @@ namespace RealLifeOverhaul.Flare
             Task<Found> read = Task.Run(() =>
             {
                 var found = new Found();
-                found.Rows = PhotoThumbs.Read(PhotoThumbs.FileOf(path), out found.Width, out found.Height);   // a shot's is all there is of it
+                found.Rows = PhotoThumbs.Read(PhotoThumbs.FileOf(path), out found.Width, out found.Height);   // a shot's small copy is all there is of it
                 if (found.Rows == null)
                 {
                     found.Rows = PhotoThumbs.Get(path, out found.Width, out found.Height, out found.Undecoded);
@@ -138,7 +124,7 @@ namespace RealLifeOverhaul.Flare
             }
             else if (copy != null && copy.Undecoded)
             {
-                // A picture the small copy is not made from (a JPG, an unusual PNG): drawn small by the engine, as every picture once was.
+                // A picture the small copy is not made from (a JPG, an unusual PNG): drawn small by the engine.
                 Task<byte[]> whole = Task.Run(() => File.Exists(path) ? File.ReadAllBytes(path) : null);
                 while (!whole.IsCompleted)
                 {
@@ -209,7 +195,7 @@ namespace RealLifeOverhaul.Flare
             _loaded?.Invoke();
         }
 
-        // The rows, as they are, into a texture of the kind the engine's copy was (RGB24, sRGB, no mipmaps), its copy in main memory let go.
+        // The rows, as they are, into an RGB24 texture without mipmaps, its copy in main memory let go.
         private static Texture2D Upload(byte[] rows, int width, int height, string name)
         {
             Texture2D small = null;
@@ -253,7 +239,7 @@ namespace RealLifeOverhaul.Flare
                     }
                     finally
                     {
-                        RenderTexture.active = before;   // on a fault too: the target is not kept, nor drawn into again
+                        RenderTexture.active = before;   // on a fault too
                         RenderTexture.ReleaseTemporary(rt);
                     }
                 }
@@ -274,7 +260,7 @@ namespace RealLifeOverhaul.Flare
             return small;
         }
 
-        /// <summary>The app has closed: the pictures made are kept for its next opening; one that could not be had is looked for again then.</summary>
+        /// <summary>The app has closed: the pictures are kept; one that could not be had is looked for again next time.</summary>
         public void Closed()
         {
             _asked.Clear();
@@ -287,7 +273,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>Every texture destroyed: the city is unloading, or Flare stops.</summary>
+        /// <summary>Every texture destroyed: the city unloads or Flare stops.</summary>
         public void Clear()
         {
             foreach (KeyValuePair<string, Texture2D> pair in _made)

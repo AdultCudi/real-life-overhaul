@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using RealLifeOverhaul.Texts;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>What Flare asks of RLO Texts (Scripts/Texts), wired by Wiring/TextsLinks. Without it Flare words everything as before.</summary>
+    /// <summary>What Flare asks of RLO Texts (Scripts/Texts), wired by Wiring/TextsLinks. Without it Flare keeps its written lines.</summary>
     public static partial class FlareBridges
     {
         /// <summary>Asks for words (true: they come through the request's Done; false: the written line).</summary>
@@ -25,7 +24,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The data version of the running pack (TextsHub.Data): which intents may be asked. Default: v2's.</summary>
         public static Func<int> TextData;
 
-        /// <summary>A friend or the partner of the social life as a card's speaker, by their number (false: not known); 'partner' says which.</summary>
+        /// <summary>A friend or the partner of the social life as a card's speaker by their number (false: not known).</summary>
         public static TextFriendOf TextFriend;
 
         /// <summary>The player's listed company's name, or null (a rival's stake or bid names it).</summary>
@@ -36,27 +35,19 @@ namespace RealLifeOverhaul.Flare
     public delegate bool TextFriendOf(int index, TextWho who, out bool partner);
 
     /// <summary>
-    /// Flare's posts worded by RLO Texts: when the game has made a post that goes up later (the city's posts of the day,
-    /// the replies under the player's post over the hours, an account's answer, a tycoon's post, a business's), its card is
-    /// built and the words asked at once, with its going up as the deadline; the words are kept by the post's number (in
-    /// the session's shared feed, by the session's number) and shown in place of the written line from then on. Words that
-    /// come back after the post went up are not used (a post never changes its words in front of the player). A friend's
-    /// reply under the player's post and the answer to a message of the player's are the player's own (never shared).
-    /// In a Going Public session only the host asks for the shared feed's words; a guest shows what the host sent.
-    /// A request handed back without words (the model restarted on a change of device or threads, still loading, a miss)
-    /// is asked again on the next event while its post or answer is still to come (FlareTextsAsked, at most three asks).
-    /// COST: on the events that make posts (the day, the hour, a post of the player's, a message), one walk over the posts
-    /// not yet up (a few dozen) and the messages (at most 120); a request per post or answer the model words; nothing per frame.
+    /// Flare's director, posts worded by RLO Texts: a post going up later has its words asked at once, its going up the
+    /// deadline, and words that come later are not used, so a post never changes before the player. Cost: on the events
+    /// that make posts, a walk over the posts not yet up and the messages; nothing per frame.
     /// </summary>
     public sealed partial class FlareDirector
     {
         private readonly FlareTextsAsked<int> _textAsked = new FlareTextsAsked<int>();         // the posts, by number
         private readonly FlareTextsAsked<string> _textDms = new FlareTextsAsked<string>();     // the answers to the player's messages, by key
 
-        // The data version of the pack in use: a v3 intent is asked only of a v3 pack (the hub refuses it otherwise too).
+        // The data version of the pack in use: a v3 intent is asked only of a v3 pack.
         private static int TextData => FlareBridges.TextData != null ? FlareBridges.TextData() : TextIntents.DataV2;
 
-        /// <summary>The model's words for a post, or null for its written line: the post's own (its number, or the session's on a guest's copy).</summary>
+        /// <summary>The model's words for a post, or null for its written line.</summary>
         public string ModelWords(FlarePost p)
         {
             if (p == null || p.Text != null || FlareBridges.TextKept == null)
@@ -78,8 +69,7 @@ namespace RealLifeOverhaul.Flare
             return m != null && m.Text == null && FlareBridges.TextKept != null ? FlareBridges.TextKept(FlareTextsMap.DmKey(m)) : null;
         }
 
-        // Every post made that goes up later and has an intent, and every answer to a message of the player's still to come:
-        // its words asked now, its going up the deadline. One handed back without words is asked again here (FlareTextsAsked).
+        // Every post that goes up later and has an intent, and every answer to a message of the player's still to come.
         private void TextsAhead()
         {
             if (FlareBridges.TextAsk == null || _file == null || Save == null)
@@ -94,7 +84,7 @@ namespace RealLifeOverhaul.Flare
                 FlarePost p = _file.Posts[i];
                 if (data >= TextIntents.DataV3 && p.Author == FlareAuthor.Player && p.Source == FlareSource.Reply)
                 {
-                    TextsAnswer(p, now);   // (the author's answer to a reply of the player's: FlareDirector.Answers)
+                    TextsAnswer(p, now);   // the author's answer to a reply of the player's (FlareDirector.Answers)
                 }
                 if (p.At <= now || p.Text != null || p.Shared || !_textAsked.May(p.Id))
                 {
@@ -112,12 +102,12 @@ namespace RealLifeOverhaul.Flare
                 r.Day = p.Day;
                 r.Seconds = Seconds(p.At - now);
                 FlarePost post = p;
-                r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;   // (words after it went up are not used)
+                r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;   // words after it went up are not used
                 int id = p.Id;
-                r.Done = words => _textAsked.Ended(id, words != null);   // (kept by the hub under the post's key and drawn from there; none: asked again on the next event)
+                r.Done = words => _textAsked.Ended(id, words != null);   // kept by the hub under the post's key; none: asked again on the next event
                 if (FlareBridges.TextAsk(r))
                 {
-                    _textAsked.Asked(id);   // (asked: not again while it waits; one not asked is looked at again on the next event)
+                    _textAsked.Asked(id);   // not again while it waits
                 }
             }
             for (int i = 0; i < _file.Net.Dms.Count; i++)
@@ -129,10 +119,10 @@ namespace RealLifeOverhaul.Flare
                     TextsDm(m, asked != null ? asked.Text : null);
                 }
             }
-            CommentsAhead(null);   // (the comments under the posts not the player's: a few more asked, FlareDirector.Comments)
+            CommentsAhead(null);   // a few more of the comments under others' posts
         }
 
-        // The friends' replies of a post of the player's, as its reactors say (FlareLiveRules.Reactors): asked when it is posted.
+        // The friends' replies of a post of the player's, as its reactors say: asked when it is posted.
         private void TextsFriends(FlarePost p)
         {
             string kind = FlareTextsMap.PostKind(p.Source);
@@ -172,11 +162,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The answer to a message of the player's (FlareDirector.SendDm): asked when it is scheduled, and again on the next
-        // event while it is still to come if it came back without words. Its speaker is read as Flare keys the account
-        // (FlareTextsMap.DmSpeakerOf): with a v3 pack every account the city answers for answers what was typed (a city
-        // person, an influencer, a friend, the partner, an official account, a brand or a business, a rival); with a v2
-        // pack only a city person's chat and an influencer's. An invitation the game decided has its own card.
+        // The answer to a message of the player's: asked when scheduled, and again while it comes back without words.
         private void TextsDm(FlareDm answer, string typed)
         {
             int data = TextData;
@@ -195,12 +181,12 @@ namespace RealLifeOverhaul.Flare
             {
                 return;
             }
-            InviteCard(answer, data, r);   // (an invitation's answer: its own intent and values)
+            InviteCard(answer, data, r);   // an invitation's answer: its own intent and values
             r.History.Add(new TextSaid(MyName, typed));
             long at = answer.At;
             r.Seconds = Seconds(at - Now);
             r.Wanted = () => Now < at;
-            r.Done = words => _textDms.Ended(key, words != null);   // (kept by the hub under its key and drawn from there; none: asked again on the next event)
+            r.Done = words => _textDms.Ended(key, words != null);   // kept by the hub under its key; none: asked again on the next event
             if (FlareBridges.TextAsk(r))
             {
                 _textDms.Asked(key);
@@ -221,7 +207,7 @@ namespace RealLifeOverhaul.Flare
                     FlareCitizen c = _citizens[number];
                     FlareTextsMap.Fill(r.Who, c, FlareGame.DistrictName(c.District), citySeed, When());
                     r.Who.Mood = FlareInviteRules.CardMood(answer.Key, FlareTextsMap.Mood(citySeed, number, Save.Day, c.Persona == FlarePersona.Grumpy));
-                    r.Speaker = "c:" + number;   // (as the city person's posts and replies name them, for the repeat check)
+                    r.Speaker = "c:" + number;   // as the city person's posts and replies name them, for the repeat check
                     return true;
                 case FlareDmSpeaker.Influencer:
                     FlareInfluencer inf = _file.Influencer(number);
@@ -244,7 +230,7 @@ namespace RealLifeOverhaul.Flare
                     {
                         return false;
                     }
-                    r.Intent = partner ? "partner.dm.answer" : "friend.dm.answer";   // (who they are to the player now, whatever the conversation's key)
+                    r.Intent = partner ? "partner.dm.answer" : "friend.dm.answer";   // who they are to the player now, whatever the conversation's key
                     r.Speaker = (partner ? "p" : "f") + number;
                     return true;
                 case FlareDmSpeaker.Official:
@@ -283,7 +269,7 @@ namespace RealLifeOverhaul.Flare
                         return null;
                     }
                     FlarePost parent = _file.Post(p.ReplyTo);
-                    r.Intent = FlareTextsMap.Reply(parent, (FlareReplyKind)p.Arg, TextData);   // (its words, its kind, or a comment on its kind: the game chose the reply)
+                    r.Intent = FlareTextsMap.Reply(parent, (FlareReplyKind)p.Arg, TextData);   // its words, its kind, or a comment on its kind: the game chose the reply
                     if (r.Intent == null)
                     {
                         return null;
@@ -378,7 +364,7 @@ namespace RealLifeOverhaul.Flare
             }
             r.Priority = TextPriority.Soon;
             bool typed = FlareTextsMap.AnswersMention((FlareAnswer)p.Arg) && parent.Author == FlareAuthor.Player && !string.IsNullOrEmpty(parent.Text);
-            r.Intent = (typed ? FlareTextsMap.Said(p.Author, TextData) : null) ?? FlareTextsMap.Answer((FlareAnswer)p.Arg, p.Author);   // (data v3: what was typed, answered)
+            r.Intent = (typed ? FlareTextsMap.Said(p.Author, TextData) : null) ?? FlareTextsMap.Answer((FlareAnswer)p.Arg, p.Author);   // data v3: what was typed, answered
             typed &= r.Intent != null && r.Intent.EndsWith(".said", StringComparison.Ordinal);
             if (r.Intent == null)
             {
@@ -407,7 +393,7 @@ namespace RealLifeOverhaul.Flare
                 case FlareAuthor.Brand:
                     if (!typed || string.IsNullOrEmpty(p.Name))
                     {
-                        return null;   // (a brand answers in words of its own only what was typed to it: business.answer.said)
+                        return null;   // a brand answers in its own words only what was typed to it
                     }
                     r.Use = TextUse.Posts;
                     r.Who.Name = p.Name;
@@ -425,13 +411,12 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The request if its use may ask now; null otherwise (nothing built for nothing).
+        // The request if its use may ask now; null otherwise.
         private TextRequest Use(TextRequest r, bool shared)
         {
             return FlareBridges.TextWants == null || FlareBridges.TextWants(r.Use, shared) ? r : null;
         }
 
-        // A city person as the card's speaker.
         private bool Citizen(int number, TextRequest r)
         {
             if (number < 0 || number >= _citizens.Count)
@@ -455,7 +440,7 @@ namespace RealLifeOverhaul.Flare
             r.Speaker = "t:" + v;
         }
 
-        // A rival's stake or bid names the player's listed company; a suit, the player (data v3's tycoon.stake, .bid, .suit).
+        // A rival's stake or bid names the player's listed company; a suit names the player.
         private void TycoonTarget(int move, TextSlots slots)
         {
             if (move == 3 || move == 4)
@@ -463,7 +448,7 @@ namespace RealLifeOverhaul.Flare
                 string listed = FlareBridges.TextListed != null ? FlareBridges.TextListed() : null;
                 if (!string.IsNullOrEmpty(listed))
                 {
-                    slots.Set("target", listed);   // (none: the card is not built, the written line)
+                    slots.Set("target", listed);   // none: the card is not built, the written line
                 }
             }
             else if (move == 6)
@@ -472,7 +457,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A post's author as a thread line names them.
         private string AuthorName(FlarePost p)
         {
             switch (p.Author)

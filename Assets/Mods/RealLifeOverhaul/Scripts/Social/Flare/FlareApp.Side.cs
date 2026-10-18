@@ -5,11 +5,7 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The side of Flare's screens: the player's account at a glance (followers, tier, reputation, the week as bars),
-    /// Trending in the city (the day's tags, a click shows their posts), Who to follow, and in a Going Public session
-    /// the players of the session, each with mute and hide. Fixed parts made once, written on a refresh.
-    /// </summary>
+    /// <summary>The Flare app's side: the account at a glance, Trending, Who to follow and a session's players; made once, written on a refresh.</summary>
     public sealed partial class FlareApp
     {
         private const int TrendRows = 5, FollowRows = 3, PlayerRows = 4;
@@ -117,7 +113,7 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < FollowRows; i++)
             {
                 FlareKit.Place(_followHits[i].rectTransform, 12f, 86f + i * 100f, w - 24f, 96f);
-                _followAvatarX = p - 12f;   // (placed when the row is written: Avatar.Show)
+                _followAvatarX = p - 12f;   // placed when the row is written (Avatar.Show)
                 FlareKit.Place(_followNames[i].rectTransform, p + 76f, 14f, w - p * 2f - 260f, 38f);
                 FlareKit.Place(_followHandles[i].rectTransform, p + 76f, 52f, w - p * 2f - 260f, 30f);
                 FlareKit.Place(_followButtons[i].rectTransform, w - 24f - 190f - p + 12f, 22f, 190f, 56f);
@@ -355,7 +351,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>An account's handle, as shown under its name.</summary>
         private string Handle(string key, string name)
         {
             if (key == null)

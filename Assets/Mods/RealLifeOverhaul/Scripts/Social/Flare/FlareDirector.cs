@@ -10,21 +10,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare, the city's social media app: an account with followers and a reputation, posts made only about what
-    /// really happened (a picture or a selfie saved, an outing, a promotion, a shop opened or a record day, a ballot,
-    /// an endorsement, a good deed, an arrest), and the player's friends who follow, like and answer. See the Guide's
-    /// Flare page.
-    ///
-    /// This class keeps it going and nothing more. It has no Update. A one-second timer on the real clock waits for
-    /// the save, puts the app on the phone and keeps the three event handlers in place (the game empties its events
-    /// on every load). The work is done on the game's own events: the hour (has the player been promoted, voted or
-    /// endorsed: two delegate calls and two comparisons), the day (the daily round of FlareRules and a look at each
-    /// business's takings), the save, a thing that happened (told by Wiring/FlareLinks, one draft made), and a click in
-    /// the app. PER FRAME: NOTHING, open or closed. What a post does to the other features is FlareDirector.Links.cs.
-    ///
-    /// The rules are game-free (FlareRules, FlareModel, FlareStore); this class reads what they need through
-    /// FlareGame and FlareBridges and says what happened. Nothing is written into the game's own records. A fault
-    /// anywhere switches Flare off for the session with one line and leaves the game and every other feature alone.
+    /// Flare, the city's social media app: an account, posts only about what really happened, friends who follow and
+    /// answer. Cost: nothing per frame, open or closed: a one-second real-time timer holds it, the work runs on the game's
+    /// hour, day and save, on Wiring/FlareLinks and on clicks. A fault switches Flare off for the session.
     /// </summary>
     public sealed partial class FlareDirector : MonoBehaviour
     {
@@ -63,7 +51,7 @@ namespace RealLifeOverhaul.Flare
             _openMessages = () => Open(TabMessages);
             _openCompose = () => Open(TabPost);
             ShareRegister();
-            FlareFacePainter.HoldAtLoad();   // (made behind the loading screen: the faces likely to be seen first are drawn while it is up, Core/LoadHold)
+            FlareFacePainter.HoldAtLoad();   // the likeliest faces are drawn while the loading screen is up (Core/LoadHold)
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -99,7 +87,7 @@ namespace RealLifeOverhaul.Flare
                 }
                 while (StartLine.Holds(StartSeats.Flare))
                 {
-                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                    yield return null;   // its first load after a save waits for a frame of its own (Core/StartLine)
                 }
                 try
                 {
@@ -113,10 +101,10 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly int HotTick = HotSpots.Slot("Social: FlareDirector.Tick");
-        // Once a second: start when the save is ready, stand down when the option goes off, hold the handlers, the app on the phone.
+        // Once a second: start when the save is ready, stand down when the option goes off, hold the handlers and the app.
         private void Slow()
         {
-            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotTick);
             if (Save == null || LoadScene.isLoading || !ModState.Loaded)
             {
                 return;
@@ -141,15 +129,13 @@ namespace RealLifeOverhaul.Flare
                 Install();
             }
             ShareSecond();
-            InvitesTick();   // (a yes due is booked: one comparison otherwise, FlareDirector.Invites.cs)
+            InvitesTick();   // a yes due is booked; one comparison otherwise
             if (Running)
             {
                 PhotosSecond();
-                CommentsSecond();   // (a comment's words came back: the next asked now; one comparison otherwise, FlareDirector.Comments.cs)
+                CommentsSecond();   // a comment's words came back: the next is asked; one comparison otherwise
             }
         }
-
-        // ---------------------------------------------------------------- starting and stopping
 
         private void StartUp()
         {
@@ -177,10 +163,7 @@ namespace RealLifeOverhaul.Flare
             }
             Cast(file, day);
             LiveStart(file);
-            _textAsked.Clear();   // (RLO Texts: post numbers are this file's)
-            _textDms.Clear();
-            _textAnswers.Clear();
-            CommentsForget();
+            ForgetAsked();
             _file = file;
             _running = true;
             if (FlareLiveRules.StartDay(file.Net, day, Following))
@@ -189,12 +172,14 @@ namespace RealLifeOverhaul.Flare
             }
             ShareStart();
             PhotosStart();
-            Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed " + file.Seed + ")"
-                                            : "the account is read: " + file.Followers + " followers, reputation " + file.Reputation + ", " + file.Posts.Count + " post(s), " + file.Drafts.Count + " draft(s)") + ".");
+            Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed "
+                                            + file.Seed + ")"
+                                            : "the account is read: " + file.Followers + " followers, reputation " + file.Reputation + ", " + file.Posts.Count + " post(s), "
+                                              + file.Drafts.Count + " draft(s)") + ".");
             Badge();
         }
 
-        // Flare stops: the app leaves the phone. With 'keep' the account goes into the save's data first (a stop in the middle of play).
+        // Flare stops and the app leaves the phone; with 'keep' the account goes into the save's data first.
         private void StandDown(bool keep)
         {
             if (keep && _running && Save != null && _file != null)
@@ -206,10 +191,7 @@ namespace RealLifeOverhaul.Flare
             FlareBridges.Watched?.Invoke(false, false);   // no patrols or cleaners of Flare's once it stops (Crime/CityWatch back to 1)
             _running = false;
             _file = null;
-            _textAsked.Clear();
-            _textDms.Clear();
-            _textAnswers.Clear();
-            CommentsForget();
+            ForgetAsked();
             if (_view != null)
             {
                 _view.Dispose();
@@ -223,7 +205,7 @@ namespace RealLifeOverhaul.Flare
             _gaveUp = false;
         }
 
-        /// <summary>A fault: one line, and nothing more of Flare this session. What the save holds of it is left as it is.</summary>
+        /// <summary>A fault: one line, and nothing more of Flare this session; the save is left as it is.</summary>
         private void Fault(string where, Exception e)
         {
             _broken = true;
@@ -236,7 +218,8 @@ namespace RealLifeOverhaul.Flare
             {
                 Logger?.Error(second);
             }
-            Logger?.Warn("Flare: switched off for this session after an error in " + where + ". The account stands still; what the save holds of it is untouched, and the game and the rest of the mod are not affected.");
+            Logger?.Warn("Flare: switched off for this session after an error in " + where
+                         + ". The account stands still; what the save holds of it is untouched, and the game and the rest of the mod are not affected.");
         }
 
         /// <summary>For the options page: everything of Flare's for this save is forgotten, and a new account opens on the next second.</summary>
@@ -244,14 +227,20 @@ namespace RealLifeOverhaul.Flare
         {
             _running = false;
             _file = null;
-            _textAsked.Clear();
-            _textDms.Clear();
-            _textAnswers.Clear();
-            CommentsForget();
+            ForgetAsked();
             if (_view != null)
             {
                 _view.Changed();
             }
+        }
+
+        // What was asked of RLO Texts and the comments: by this file's post numbers.
+        private void ForgetAsked()
+        {
+            _textAsked.Clear();
+            _textDms.Clear();
+            _textAnswers.Clear();
+            CommentsForget();
         }
 
         private void Install()
@@ -294,10 +283,8 @@ namespace RealLifeOverhaul.Flare
             return null;
         }
 
-        // ---------------------------------------------------------------- the hour and the day
-
         private static readonly int HotOnHour = HotSpots.Slot("Social: FlareDirector.OnHour");
-        // GlobalEvents.onNewHour: a promotion, a ballot or an endorsement since the last hour becomes a draft.
+        // A promotion, a ballot or an endorsement since the last hour becomes a draft.
         private void OnHour()
         {
             using var hotSpot = HotSpots.Time(HotOnHour);
@@ -352,7 +339,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Social: FlareDirector.OnDay");
-        // GlobalEvents.onNewDay: after the game's daily run, so yesterday's statement of every business is there.
+        // After the game's daily run, so yesterday's statement of every business is there.
         private void OnDay()
         {
             using var hotSpot = HotSpots.Time(HotOnDay);
@@ -383,7 +370,7 @@ namespace RealLifeOverhaul.Flare
             CastDay(day);
             CityDay(day);
             LiveDay(day);
-            FacesAhead(day);   // (the faces of the day's likely accounts, behind the next black screens)
+            FacesAhead(day);   // the day's likely faces, drawn behind the next black screens
             List<BuildingRegistration> shops = FlareGame.Businesses();
             for (int i = 0; i < shops.Count; i++)
             {
@@ -396,14 +383,14 @@ namespace RealLifeOverhaul.Flare
             }
             if (r.FollowersAfter != r.FollowersBefore || r.ReputationAfter != r.ReputationBefore)
             {
-                Logger?.Info("Flare: day " + day + ": followers " + r.FollowersBefore + " to " + r.FollowersAfter + (r.Lost > 0 ? " (" + r.Lost + " drifted away after " + r.Silent + " days without a post)" : string.Empty)
+                Logger?.Info("Flare: day " + day + ": followers " + r.FollowersBefore + " to " + r.FollowersAfter
+                             + (r.Lost > 0 ? " (" + r.Lost + " drifted away after " + r.Silent + " days without a post)" : string.Empty)
                              + ", reputation " + r.ReputationBefore + " to " + r.ReputationAfter + " (the city's opinion " + FlareBridges.Standing() + "), " + r.Following + " friend(s) follow, "
                              + r.FriendPosts + " posted, " + r.DraftsGone + " draft(s) lapsed.");
             }
             Changed();
         }
 
-        // The social life's people as they stand now, through the bridge; nobody without it.
         private void ReadPeople()
         {
             _people.Clear();
@@ -418,12 +405,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- what happened
-
-        /// <summary>
-        /// Something happened that the player can post about (told by Wiring/FlareLinks): a picture saved, an outing,
-        /// a good deed, an arrest. One draft; nothing while Flare is not running.
-        /// </summary>
+        /// <summary>Something happened that the player can post about, told by Wiring/FlareLinks: one draft.</summary>
         public void Happened(FlareSource source, int person, string place, string name, int arg)
         {
             if (!Running || Save == null)
@@ -446,18 +428,17 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A draft was made: one line, and the app's badge (never a notification: the player looks when they like).
+        // A draft was made: one line and the badge, never a notification.
         private void Made(FlareDraft d)
         {
             if (d == null)
             {
                 return;
             }
-            Logger?.Info("Flare: a draft (" + d.Source + (d.Person >= 0 ? ", with " + PersonName(d.Person) : string.Empty) + (d.Place != null ? ", at " + d.Place : string.Empty) + ") on day " + d.Day + ".");
+            Logger?.Info("Flare: a draft (" + d.Source + (d.Person >= 0 ? ", with " + PersonName(d.Person) : string.Empty) + (d.Place != null ? ", at " + d.Place : string.Empty)
+                         + ") on day " + d.Day + ".");
             Changed();
         }
-
-        // ---------------------------------------------------------------- what the app asks
 
         /// <summary>The app has been opened: what the badge counted has been seen.</summary>
         public bool AppOpened()
@@ -483,50 +464,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The player posts a draft, at any time and as often as they like (the day's first three move the account:
-        /// FlareRules.Counts). False only if the draft is gone. What it brought is said by a notification and a line.
-        /// </summary>
-        public bool PostDraft(int draftId, FlareTone tone, bool tag)
-        {
-            FlareDraft d = Running ? _file.Draft(draftId) : null;
-            if (d == null || Save == null)
-            {
-                return false;
-            }
-            try
-            {
-                int day = Save.Day, minute = FlareGame.MinuteOfDay;
-                int before = _file.Followers, reputation = _file.Reputation;
-                ReadPeople();
-                FlarePost p = FlareRules.Post(_file, d, tone, tag ? d.Person : -1, _people, day, Save.Hour, minute, _testViral);
-                _testViral = false;
-                Logger?.Info("Flare: posted (" + p.Source + ", " + p.Tone + (p.Tag >= 0 ? ", " + PersonName(p.Tag) + " tagged" : string.Empty) + "): quality " + p.Quality + ", tone fit "
-                             + FlareRules.ToneFit(p.Source, p.Tone) + ", seen by " + p.Reach + ", " + p.Likes + " likes, " + p.Replies + " replies, followers " + before + " to " + _file.Followers
-                             + ", reputation " + reputation + " to " + _file.Reputation + (p.Viral ? ", viral" : string.Empty) + (p.Bad ? ", went badly" : string.Empty) + ".");
-                if (p.Viral && FlareRules.MayNotify(_file, day, Settings.SocialMediaNotices))
-                {
-                    Tell(NotificationType.Success, "reallife_flare_note_viral", _openFeed, "followers", FlareText.N(p.Gained));
-                }
-                if (p.Source == FlareSource.Photo || p.Source == FlareSource.Selfie)
-                {
-                    p.Pic = !string.IsNullOrEmpty(p.Name) ? "f:" + p.Name : null;
-                }
-                p.Minute = minute % 60;
-                Influence(p, d);
-                CityInfluence(p, d);
-                PostLive(p);
-                Changed();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Fault("a post", e);
-                return false;
-            }
-        }
-
-        /// <summary>A friend's first name by the social life's number, or null.</summary>
         public string PersonName(int index)
         {
             FlarePerson p;
@@ -547,8 +484,6 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        // ---------------------------------------------------------------- saying things
-
         /// <summary>A notification of the game's: the key's text with its names filled in (name, value, name, value).</summary>
         internal void Tell(NotificationType type, string key, Action click, params string[] pairs)
         {
@@ -568,7 +503,7 @@ namespace RealLifeOverhaul.Flare
         {
             if (_app != null && _file != null)
             {
-                _app.SetBadge(_app.Showing ? 0 : _unread + _file.Drafts.Count);   // (the friends' likes and replies are among the notifications now)
+                _app.SetBadge(_app.Showing ? 0 : _unread + _file.Drafts.Count);
             }
         }
 

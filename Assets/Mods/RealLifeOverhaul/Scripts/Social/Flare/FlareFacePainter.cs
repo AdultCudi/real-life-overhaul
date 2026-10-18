@@ -13,36 +13,16 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Draws the faces Flare's accounts show (FlareAvatars) that are not on disk yet, one at a time, through the game's
-    /// portrait camera (Phone/Contacts/PortraitTurn, shared with the contacts' faces), and keeps each as its round
-    /// picture's file under the game's data folder (FlareAvatarRules: 27 KB, by its look; drawn once per look). A face the
-    /// contacts already have (their JPEG of the same look) is made round from that, without the camera.
-    ///
-    /// WHEN (<see cref="Now"/>, the one place that says so). Only when it costs the player nothing they would feel:
-    ///   behind the loading screen   while a save loads, the loading screen held for it (Core/LoadHold, two seconds at most):
-    ///                               the faces likely to be seen first that are not on disk (FlareFaceAheadRules.Likely, at
-    ///                               most a hundred), one after another with no rest, while the time left holds one more at
-    ///                               the cost measured so far (<see cref="LoadStep"/>); the rest wait for the black screens
-    ///   behind the game's black screen  (a door, sleep, travel) the faces still waiting ahead, made again from the live
-    ///                               account when Flare starts and each game day (<see cref="Ahead"/>), a quarter of a second apart
-    ///   with Flare open             a face a card in view asks for, two seconds apart; the initials meanwhile
-    /// Never in plain play with the phone down, never in a pause, never during a load that is not held for it.
-    ///
-    /// THE DISK. Behind the loading screen the folder is listed on a worker thread (which faces are there, and when each was
-    /// last used); past FlareFaceAheadRules.DiskMost faces the ones used longest ago are deleted there, never one this load
-    /// wants. Going Public: nothing is sent; each machine draws its own faces from the seeds and looks it already shares.
-    ///
-    /// COST. Nothing while there is nothing to draw: the component switches itself off. While faces wait but may not be
-    /// drawn now: two comparisons a frame. A face: the game's portrait render and read-back (measured and logged with
-    /// Developer diagnostics, told to the session watch first), or a JPEG of the contacts' decoded (about a millisecond);
-    /// then on a worker thread the round picture is made and written.
+    /// Draws the faces not on disk yet through the game's portrait camera (Phone/Contacts/PortraitTurn), only when the
+    /// player feels nothing (<see cref="Now"/>). Cost: nothing while there is nothing to draw (it switches itself off); two
+    /// comparisons a frame while faces wait; a face is the game's render and read-back, then a worker writes it.
     /// </summary>
     internal sealed class FlareFacePainter : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("flare", "FlareFacePainter", typeof(FlareFacePainter));   // its Update (Core/Guard)
 
-        private const int WantedMost = 64;           // faces asked for by cards in view waiting at most (a screen shows a dozen); one past it is asked again when its card is bound again
-        private const int SourceMost = 256 * 256 * 4; // bytes: the largest face the game gives (its portraits are 256 square, ARGB32 at most)
+        private const int WantedMost = 64;           // faces asked for by cards in view waiting at most; one past it is asked again when its card is bound again
+        private const int SourceMost = 256 * 256 * 4; // bytes: the largest face the game gives, 256 square, ARGB32 at most
 
         /// <summary>When a face may be drawn now (<see cref="Now"/>).</summary>
         private enum Moment
@@ -58,7 +38,7 @@ namespace RealLifeOverhaul.Flare
             public FlareAvatarPlan Plan;
             public string Picture;   // FlareAvatarPlan.Picture
             public string File;      // its round picture's file
-            public bool Wanted;      // asked for by a card in view (else drawn ahead, behind the loading screen or a black screen only)
+            public bool Wanted;      // asked for by a card in view, else drawn ahead behind the loading screen or a black screen only
             public bool Load;        // one of the faces asked for behind the loading screen
         }
 
@@ -74,15 +54,15 @@ namespace RealLifeOverhaul.Flare
         private static FlareFacePainter _instance;
         private static readonly List<Job> Waiting = new List<Job>(WantedMost + FlareFaceAheadRules.AheadMost);
         private static readonly HashSet<string> Queued = new HashSet<string>(StringComparer.Ordinal);
-        private static readonly HashSet<string> OnDisk = new HashSet<string>(StringComparer.OrdinalIgnoreCase);   // faces' file names known to be there (the load's listing, and each written since)
+        private static readonly HashSet<string> OnDisk = new HashSet<string>(StringComparer.OrdinalIgnoreCase);   // faces' file names known to be there: the load's listing, and each written since
         private static readonly List<FlareAvatarPlan> Plans = new List<FlareAvatarPlan>(FlareFaceAheadRules.AheadMost);
         private static readonly List<FlareAvatarPlan> ToDraw = new List<FlareAvatarPlan>(FlareFaceAheadRules.AheadMost);
         private static int _wanted, _ahead;
-        private static byte[] _source;               // a face as the game gives it, for the worker (one for the session)
+        private static byte[] _source;               // a face as the game gives it, for the worker: one for the session
         private static readonly byte[] Disc = new byte[FlareAvatarRules.Size * FlareAvatarRules.Size * 4];
         private static readonly byte[] Colour = new byte[FlareAvatarRules.Size * FlareAvatarRules.Size * 3];
 
-        // The faces behind the loading screen (LoadStep, LoadEnd): where it is, what came of it.
+        // The faces behind the loading screen: where it stands, what came of it.
         private static int _loadStage;               // 0 not begun, 1 the folder being listed, 2 drawing, 3 over
         private static bool _loadOn, _loadStop;
         private static int _loadAsked, _loadDrawn, _loadDisk, _loadMissed;
@@ -96,7 +76,7 @@ namespace RealLifeOverhaul.Flare
         private long _askedAt;
         private double _mainMs;
         private Action<Sprite> _drawn;
-        private Texture2D _decode;                   // a JPEG of the contacts' decoded into it (one for the session)
+        private Texture2D _decode;                   // a contacts' JPEG decoded into it: one for the session
 
         /// <summary>A face's round picture's file: by its look, or for one of the staff by the save and the name.</summary>
         public static string FileOf(FlareAvatarPlan plan)
@@ -104,7 +84,7 @@ namespace RealLifeOverhaul.Flare
             return Path.Combine(FlarePictureGame.FaceFolder, FlareFaceAheadRules.FileName(plan, FlarePictureGame.SaveId));
         }
 
-        /// <summary>A face to draw: one in view first; one ahead only behind the loading screen or a black screen. Asked again while it waits, it is not added twice.</summary>
+        /// <summary>A face to draw, one in view first; one ahead only behind the loading screen or a black screen. Never added twice.</summary>
         public static void Want(FlareAvatarPlan plan, string picture, string file, bool wanted)
         {
             Want(plan, picture, file, wanted, false);
@@ -137,7 +117,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (wanted ? _wanted >= WantedMost : _ahead >= FlareFaceAheadRules.AheadMost)
             {
-                return;   // (in view: asked again when its card is bound again; ahead: the list is made again each game day)
+                return;   // in view: asked again when its card is bound again; ahead: the list is made again each game day
             }
             Waiting.Add(new Job { Plan = plan, Picture = picture, File = file, Wanted = wanted, Load = load });
             Queued.Add(picture);
@@ -146,11 +126,7 @@ namespace RealLifeOverhaul.Flare
             Wake();
         }
 
-        /// <summary>
-        /// The faces likely to be seen soon (FlareFaceAheadRules.Likely, from the live account and the people met), to be
-        /// drawn behind the game's black screens: those not known to be on disk (a look at each file is made when its turn
-        /// comes). Flare calls it when it starts and each game day.
-        /// </summary>
+        /// <summary>The likely faces not known to be on disk, drawn behind the black screens; when Flare starts and each game day.</summary>
         public static void Ahead(FlareAvatarFacts facts, int day)
         {
             FlareFaceAheadRules.Likely(facts, day, FlareFaceAheadRules.AheadMost, Plans);
@@ -161,9 +137,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- behind the loading screen
-
-        /// <summary>A city is loading (Flare's director is made behind the loading screen): the faces' piece handed to Core/LoadHold.</summary>
+        /// <summary>A city is loading: the faces' piece handed to Core/LoadHold.</summary>
         public static void HoldAtLoad()
         {
             _loadStage = 0;
@@ -171,18 +145,13 @@ namespace RealLifeOverhaul.Flare
             LoadHold.Add("flare: the faces likely to be seen first", LoadStep, LoadEnd);
         }
 
-        /// <summary>
-        /// The faces behind the loading screen, a step a frame while Core/LoadHold holds it: the folder listed on a worker; the
-        /// save's account and the people met read from the save as it is (FlareStore.Peek, FlareBridges.SavedPeople); the faces
-        /// likely to be seen first that are not on disk asked for; the old cities' faces cleaned up on the worker past the
-        /// folder's bound. True when there is nothing more to do now.
-        /// </summary>
+        /// <summary>The faces behind the loading screen, a step a frame while Core/LoadHold holds it; true when there is nothing more to do now.</summary>
         public static bool LoadStep()
         {
             switch (_loadStage)
             {
                 case 0:
-                    LoadReset();   // (once a load: HoldAtLoad set the stage)
+                    LoadReset();   // once a load: HoldAtLoad set the stage
                     GameInstance save = SaveGameManager.Current;
                     if (!Settings.SocialMedia || !Settings.FlarePictures || save == null)
                     {
@@ -231,7 +200,7 @@ namespace RealLifeOverhaul.Flare
             {
                 keep.Add(FlareFaceAheadRules.FileName(Plans[i], saveId));
             }
-            _loadDisk = FlareFaceAheadRules.Split(Plans, OnDisk, saveId, ToDraw);   // (those drawn before, by this save or another of the city: read when their card is shown)
+            _loadDisk = FlareFaceAheadRules.Split(Plans, OnDisk, saveId, ToDraw);   // those drawn before, by any save: read when their card is shown
             for (int i = 0; i < ToDraw.Count; i++)
             {
                 Want(ToDraw[i], ToDraw[i].Picture, FileOf(ToDraw[i]), false, true);
@@ -240,14 +209,14 @@ namespace RealLifeOverhaul.Flare
             if (files != null && files.Count > FlareFaceAheadRules.DiskMost)
             {
                 var gone = new List<string>(files.Count - FlareFaceAheadRules.DiskKeep);
-                FlareFaceAheadRules.Evict(files, keep, gone);   // (a sort of the folder's list, some 2,000 names: a millisecond, behind the loading screen)
+                FlareFaceAheadRules.Evict(files, keep, gone);   // a sort of some 2,000 names: a millisecond, behind the loading screen
                 for (int i = 0; i < gone.Count; i++)
                 {
                     OnDisk.Remove(gone[i]);
                 }
                 string folder = _listed;
                 int had = files.Count;
-                Task.Run(() => Clean(folder, had, gone));   // (the files deleted on a worker)
+                Task.Run(() => Clean(folder, had, gone));   // the files deleted on a worker
             }
             _loadOn = _loadAsked > 0;
             _loadStage = 2;
@@ -266,7 +235,7 @@ namespace RealLifeOverhaul.Flare
                 if (Waiting[i].Load)
                 {
                     Job j = Waiting[i];
-                    j.Load = false;   // (an ordinary face ahead now: behind the next black screen)
+                    j.Load = false;   // an ordinary face ahead now, for the next black screen
                     Waiting[i] = j;
                 }
             }
@@ -330,7 +299,7 @@ namespace RealLifeOverhaul.Flare
                 }
                 catch (IOException)
                 {
-                    // (in use, or gone meanwhile: looked at again at the next load)
+                    // in use, or gone meanwhile: looked at again at the next load
                 }
                 catch (UnauthorizedAccessException)
                 {
@@ -338,14 +307,13 @@ namespace RealLifeOverhaul.Flare
             }
             if (Meta.Dev.Verbose)
             {
-                FlareDirector.Logger?.Info("Flare check (faces on disk): " + had + " kept, past the most of " + FlareFaceAheadRules.DiskMost + "; " + deleted + " used longest ago deleted, down to "
-                                           + (had - deleted) + " (" + FlareFaceAheadRules.DiskKeep + " wanted): " + (had - deleted <= FlareFaceAheadRules.DiskKeep ? "PASS" : "FAIL (some could not be deleted)"));
+                FlareDirector.Logger?.Info("Flare check (faces on disk): " + had + " kept, past the most of " + FlareFaceAheadRules.DiskMost + "; " + deleted
+                                           + " used longest ago deleted, down to " + (had - deleted) + " (" + FlareFaceAheadRules.DiskKeep + " wanted): "
+                                           + (had - deleted <= FlareFaceAheadRules.DiskKeep ? "PASS" : "FAIL (some could not be deleted)"));
             }
         }
 
-        // ---------------------------------------------------------------- the drawing
-
-        /// <summary>Flare stops: nothing more is drawn (a face on its way is still kept on disk).</summary>
+        /// <summary>Flare stops: nothing more is drawn; a face on its way is still kept on disk.</summary>
         public static void Forget()
         {
             Waiting.Clear();
@@ -354,7 +322,7 @@ namespace RealLifeOverhaul.Flare
             _ahead = 0;
         }
 
-        /// <summary>For the diagnostics and the test: faces waiting, and how many of them are in view.</summary>
+        /// <summary>For the diagnostics and the test: the faces waiting, in view and known on disk.</summary>
         public static string Report()
         {
             return Waiting.Count + " face(s) waiting, " + _wanted + " in view, " + OnDisk.Count + " known on disk";
@@ -372,10 +340,7 @@ namespace RealLifeOverhaul.Flare
             _instance.enabled = true;
         }
 
-        /// <summary>
-        /// When a face may be drawn now: behind the loading screen held for the faces, behind the game's black screen, or
-        /// with Flare open for the faces in view. Nothing else, and never while a load that is not held for it is on.
-        /// </summary>
+        /// <summary>When a face may be drawn now: behind the held loading screen, a black screen, or with Flare open for the faces in view.</summary>
         private static Moment Now()
         {
             if (LoadHold.Holding)
@@ -384,7 +349,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (LoadScene.isLoading)
             {
-                return Moment.None;   // (a load not held for the faces: the city's portrait camera may not be there)
+                return Moment.None;   // a load not held for the faces: the city's portrait camera may not be there
             }
             if (UI.UiFader.isFading)
             {
@@ -404,7 +369,7 @@ namespace RealLifeOverhaul.Flare
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults (Core/Guard)
                 return;
             }
             try
@@ -439,7 +404,7 @@ namespace RealLifeOverhaul.Flare
             Moment moment = Now();
             if (moment == Moment.None || !PortraitTurn.Free(now))
             {
-                return;   // (two comparisons a frame while faces wait for their moment)
+                return;   // two comparisons a frame while faces wait for their moment
             }
             if (moment == Moment.Load && !FlareFaceAheadRules.Another(LoadHold.Spent, _loadMs, _loadDrawn, FlareFaceAheadRules.LoadBudgetMs))
             {
@@ -453,11 +418,11 @@ namespace RealLifeOverhaul.Flare
             }
             if (at < 0 && moment == Moment.App)
             {
-                return;   // (with the app open only the faces in view)
+                return;   // with the app open only the faces in view
             }
             if (at < 0)
             {
-                at = 0;   // (behind the loading screen or a black screen: the faces drawn ahead, most likely first)
+                at = 0;   // behind the loading screen or a black screen: the faces drawn ahead, most likely first
             }
             _job = Waiting[at];
             Waiting.RemoveAt(at);
@@ -474,7 +439,7 @@ namespace RealLifeOverhaul.Flare
             {
                 OnDisk.Add(Path.GetFileName(_job.File));
                 _loadDisk += _job.Load ? 1 : 0;
-                Painted?.Invoke(_job.Picture, null);   // made meanwhile (another save, the other painter): read from disk
+                Painted?.Invoke(_job.Picture, null);   // made meanwhile, by another save or the contacts: read from disk
                 return;
             }
             _askedAt = Stopwatch.GetTimestamp();
@@ -492,7 +457,7 @@ namespace RealLifeOverhaul.Flare
                 Want(_job.Plan, _job.Picture, _job.File, _job.Wanted, _job.Load);   // the camera is not there yet: asked again later
                 if (_job.Load)
                 {
-                    _loadStop = true;   // (behind the loading screen the camera is not there: the rest wait for the black screens)
+                    _loadStop = true;   // behind the loading screen the camera is not there: the rest wait for the black screens
                 }
                 return;
             }
@@ -508,7 +473,7 @@ namespace RealLifeOverhaul.Flare
             _since = now;
             var watch = Stopwatch.StartNew();
             bool asked;
-            using (SessionWatch.Piece("flare: a face drawn by the game's portrait camera"))   // once per look: a render and a read-back
+            using (SessionWatch.Piece("flare: a face drawn by the game's portrait camera"))   // once a look: a render and a read-back
             {
                 asked = staff != null ? PortraitTurn.Character(staff, _drawn) : PortraitTurn.Face(_job.Plan.Female, _job.Plan.Age, _job.Plan.Seed, _drawn);
             }
@@ -524,8 +489,9 @@ namespace RealLifeOverhaul.Flare
             }
             if (Meta.Dev.Verbose && moment != Moment.Load)
             {
-                FlareDirector.Logger?.Info("Flare check (faces): a face asked of the game's portrait camera in " + _mainMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms of the main thread ("
-                                           + (moment == Moment.Black ? "behind a black screen" : "the app open") + ", wanted under " + PortraitTurn.Timeout + " s a face); " + Report() + ": PASS");
+                FlareDirector.Logger?.Info("Flare check (faces): a face asked of the game's portrait camera in " + _mainMs.ToString("0.0", CultureInfo.InvariantCulture)
+                                           + " ms of the main thread (" + (moment == Moment.Black ? "behind a black screen" : "the app open") + ", wanted under "
+                                           + PortraitTurn.Timeout + " s a face); " + Report() + ": PASS");
             }
         }
 
@@ -536,7 +502,7 @@ namespace RealLifeOverhaul.Flare
             PortraitTurn.Give(this, Time.realtimeSinceStartup, _rest);
             if (!_busy || !_rendering)
             {
-                Let(sprite, texture);   // (late: the time-out let it go)
+                Let(sprite, texture);   // late: the time-out let it go
                 return;
             }
             _rendering = false;
@@ -621,7 +587,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // On the worker: the round picture made and written; back here, handed to the app (and counted for the load's line).
+        // On the worker: the round picture made and written; back here, handed to the app and counted for the load's line.
         private IEnumerator Finish(Job job, int w, int h, int bytes, bool argb)
         {
             Task<bool> work = Task.Run(() =>

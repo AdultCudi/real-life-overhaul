@@ -341,7 +341,7 @@ internal static partial class Program
         Check(head[0] == 'R' && head[1] == 'L' && head[2] == 'O' && head[3] == 'T' && BitConverter.ToInt32(head, 4) == 256 && BitConverter.ToInt32(head, 8) == 144,
             "photos to Flare: the file starts RLOT, then the width and the height as little-endian 32-bit integers");
 
-        string flare = Read(@"Social\Flare\FlareDirector.Camera.cs"), live = Read(@"Social\Flare\FlareDirector.Live.cs"), links = Read(@"Wiring\PhotosLinks.cs");
+        string flare = Read(@"Social\Flare\FlareDirector.Camera.cs"), live = (Read(@"Social\Flare\FlareDirector.Live.cs") + Read(@"Social\Flare\FlareDirector.Cases.cs") + Read(@"Social\Flare\FlareDirector.Posting.cs")), links = Read(@"Wiring\PhotosLinks.cs");
         string gallery = GalleryText(), mode = Read(@"Photos\CameraMode.cs");
         Check(flare.Contains("public bool SharePhoto(string photoPath, string smallCopyPath = null)"), "photos to Flare: Flare's hook is there as the Camera calls it");
         Check(links.Contains("FlareDirector.Instance.SharePhoto(photo, small)") && Regex.IsMatch(gallery, @"ShareToFlare\(path, PhotoThumbs\.FileOf\(path\)\)")

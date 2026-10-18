@@ -4,28 +4,18 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// What a post does outside Flare, each through one bridge that Wiring/FlareLinks fills in (FlareBridges): talk about a
-    /// business is a share of its customers for three days, inside business pressure's own bounds and Flare's cap of 6%;
-    /// a viral post about one raises the game's own hype for a product it sells (once a fortnight) and gives the City
-    /// Ledger a piece (once a day); a friend tagged is closer for it; an honest answer to a scandal wins back part of what
-    /// it cost the brand; an arrest trends; a picture posted while wanted draws the police's eye for a day; a post on a
-    /// rota shift is a complaint when the boss follows the player. Each is logged once, when it happens.
-    ///
-    /// Also here: what the company asks of a sponsored post (its quote) and is told when one is booked, what business
-    /// pressure asks of a business's customers (<see cref="FootfallOf"/>), and what brands ask of a scandal.
-    /// COST: nothing per frame; <see cref="FootfallOf"/> is a walk over the talk there is (none, most days) each time a
-    /// business's figure is written.
+    /// Flare's director, what a post does outside Flare through bridges Wiring/FlareLinks fills in, and what the company,
+    /// business pressure and brands ask of Flare. Cost: nothing per frame; <see cref="FootfallOf"/> walks the talk there is.
     /// </summary>
     public sealed partial class FlareDirector
     {
         private readonly List<string> _talked = new List<string>(8);
 
-        // After a post: everything it does elsewhere.
         private void Influence(FlarePost p, FlareDraft d)
         {
             int day = p.Day;
             int buzz = FlareRules.BuzzOf(p);
-            if (buzz != 0 && FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.TalkKey(p.Place)))   // (a business talked about once a day, however many posts)
+            if (buzz != 0 && FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.TalkKey(p.Place)))   // a business is talked about once a day, however many posts
             {
                 int now = FlareRules.AddBuzz(_file, p.Place, buzz, day, FlareRules.BuzzDays);
                 Logger?.Info("Flare: the post about " + p.Name + " is talked about: " + now + "% more customers there until day " + (day + FlareRules.BuzzDays - 1) + ".");
@@ -35,7 +25,7 @@ namespace RealLifeOverhaul.Flare
             {
                 Viral(p, day);
             }
-            if (p.Tag >= 0 && FlareBridges.Tagged != null && FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.FriendKey('T', p.Tag)))   // (closer once a day)
+            if (p.Tag >= 0 && FlareBridges.Tagged != null && FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.FriendKey('T', p.Tag)))   // closer once a day
             {
                 FlareBridges.Tagged(p.Tag, p.Source == FlareSource.Selfie && d.Person == p.Tag, !p.Bad);
             }
@@ -85,7 +75,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // An arrest trends: followers and reputation (once a day, from Local on).
+        // An arrest trends: followers and reputation, once a day, from Local on.
         private void Trended(int day)
         {
             int before = _file.Reputation;
@@ -96,7 +86,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The businesses talked about now, into the list given (before the day takes some talk away).
+        // The businesses talked about now, before the day takes some talk away.
         private void Talked(List<string> into)
         {
             into.Clear();
@@ -130,13 +120,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- what the others ask
-
-        /// <summary>
-        /// What Flare's talk adds to a business's customers now, per cent (asked each time business pressure writes the
-        /// figure: Wiring/FlareLinks), and a point more in a district the City Office's cleaners are going round. Nothing
-        /// while Flare is not running or nobody talks about a business.
-        /// </summary>
+        /// <summary>What Flare's talk adds to a business's customers now, per cent, a point more where the cleaners go; 0 while not running.</summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             FlareDirector d = Instance;
@@ -155,7 +139,7 @@ namespace RealLifeOverhaul.Flare
             return Running ? FlareRules.ScandalScale(_file.Reputation) : 1000;
         }
 
-        /// <summary>For brands: a scandal has cost a brand at a shop: an answer can be posted, and an honest one wins back part of it.</summary>
+        /// <summary>For brands: a scandal cost a brand at a shop: an answer can be posted, and an honest one wins back part of it.</summary>
         public void Scandal(string place, string name, int lost, int scale)
         {
             Happened(FlareSource.Scandal, -1, place, name, FlareRules.Answered(lost, scale));
@@ -165,7 +149,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>For the company: a sponsored post at a business can be booked now (from Local on), at these shares of its base cost and of its customers.</summary>
+        /// <summary>For the company: whether a sponsored post can be booked now (from Local on), and its shares of the base cost and customers.</summary>
         public bool SponsoredQuote(out int cost, out int reach)
         {
             reach = Running ? FlareRules.SponsoredReach(_file.Followers) : 0;
@@ -196,7 +180,8 @@ namespace RealLifeOverhaul.Flare
                     Quality = 1000, Reach = FlareRules.Reach(_file.Followers, 1000, 1000)
                 });
                 FlareRules.Prune(_file);
-                Logger?.Info("Flare: a sponsored post for " + place + " is posted: days " + from + " to " + to + ", " + percent + "% more customers, as the company's campaign measures it.");
+                Logger?.Info("Flare: a sponsored post for " + place + " is posted: days " + from + " to " + to + ", " + percent
+                             + "% more customers, as the company's campaign measures it.");
                 Changed();
             }
             catch (Exception e)

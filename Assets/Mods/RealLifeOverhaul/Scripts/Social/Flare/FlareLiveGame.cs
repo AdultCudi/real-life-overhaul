@@ -9,12 +9,7 @@ using UnityEngine.Experimental.Rendering;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The one place the living network touches the game and the engine (beside FlareGame): any business by its place,
-    /// the one the player stands in, a sample of the city's businesses for the day's posts, where the player is, Steam's
-    /// own text filter, putting the phone away for a shot of the screen and taking that shot. Asked on a post, a click,
-    /// the hour and the day; never per frame.
-    /// </summary>
+    /// <summary>Where the living network touches the game beside FlareGame. Asked on a post, a click, the hour and the day; never per frame.</summary>
     public static class FlareLiveGame
     {
         public static IModLogger Logger;
@@ -25,8 +20,6 @@ namespace RealLifeOverhaul.Flare
         private static bool _filterTried, _filterOn;
         private static object _chat, _nobody;
         private static FieldInfo _steamIdValue;
-
-        // ---------------------------------------------------------------- businesses
 
         /// <summary>Any business at a place, the player's, another player's or the city's; null for none.</summary>
         public static BuildingRegistration AnyBusiness(string place)
@@ -64,10 +57,7 @@ namespace RealLifeOverhaul.Flare
             return here != null && !string.IsNullOrEmpty(here.BusinessName) && here.businessTypeName != EmptyBusiness ? here : null;
         }
 
-        /// <summary>
-        /// A sample of the city's businesses for the day's posts (named, not empty, nobody's), spread over the save's list
-        /// so that every part of the city has its turn; into the list given. One pass over the buildings, once a day.
-        /// </summary>
+        /// <summary>A sample of the city's businesses (named, not empty, nobody's) spread over the save's list for the day's posts; one pass a day.</summary>
         public static void CityShops(List<FlareBiz> into)
         {
             into.Clear();
@@ -98,7 +88,6 @@ namespace RealLifeOverhaul.Flare
             return reg != null && !reg.RentedByPlayer && reg.HasValidAddress && !string.IsNullOrEmpty(reg.BusinessName) && reg.businessTypeName != EmptyBusiness;
         }
 
-        /// <summary>A business as the day's posts see it.</summary>
         public static FlareBiz Biz(BuildingRegistration reg, bool mine)
         {
             Satisfaction s = reg.satisfaction;
@@ -109,9 +98,7 @@ namespace RealLifeOverhaul.Flare
             };
         }
 
-        // ---------------------------------------------------------------- the player
-
-        /// <summary>Where the player is in the city (at the door of a building they are in), on the ground.</summary>
+        /// <summary>Where the player is in the city, on the ground (at the door of a building they are in).</summary>
         public static bool PlayerPoint(out float x, out float z)
         {
             x = z = 0f;
@@ -132,14 +119,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- Steam's own filter
-
-        /// <summary>
-        /// What another player typed, through Steam's own text filter (ISteamUtils.FilterText, through the game's Steam
-        /// library, Core/GameContract): profanity and slurs starred as Steam does for the player's own settings. Null when
-        /// Steam's filter is not there (not running, an older library): the caller then uses the mod's word list. The
-        /// author's session id is passed as their Steam account when it is one (FlareFilter.SteamIdOf), else nobody.
-        /// </summary>
+        /// <summary>What another player typed through Steam's text filter (Core/GameContract); null when the filter is not there.</summary>
         public static string SteamFilter(string text, string author = null)
         {
             if (string.IsNullOrEmpty(text))
@@ -179,7 +159,7 @@ namespace RealLifeOverhaul.Flare
                 if (id != 0UL && _steamIdValue != null && _steamIdValue.FieldType == typeof(ulong))
                 {
                     who = Activator.CreateInstance(_nobody.GetType());
-                    _steamIdValue.SetValue(who, id);   // (a boxed copy: set in place)
+                    _steamIdValue.SetValue(who, id);   // a boxed copy: set in place
                 }
                 return GameContract.SteamFilterText.Method.Invoke(null, new[] { _chat, who, text }) as string;
             }
@@ -191,8 +171,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- the camera
-
         /// <summary>The phone is put away (the game's own close of the full menu), for a shot of the screen as it is.</summary>
         public static void CloseMenu()
         {
@@ -203,7 +181,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The screen's pixels, as the engine reads them (a copy outside the managed heap: a 4K screen is 33 MB), for a worker to make small.</summary>
+        /// <summary>The screen's pixels as the engine reads them, outside the managed heap (a 4K screen is 33 MB), for a worker to make small.</summary>
         public sealed class Shot
         {
             public NativeArray<byte> Pixels;
@@ -220,11 +198,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// On a worker thread: the shot made small by averaging (as FlareSnap.Shrink does, read straight from the engine's
-        /// copy so that the screen is never copied into the managed heap) to RGB24 rows, bottom row first as the engine
-        /// keeps them: the small copy's own format (Core/PhotoThumbs). Its pixels are let go.
-        /// </summary>
+        /// <summary>On a worker: the shot shrunk by averaging to RGB24 rows bottom row first (Core/PhotoThumbs' format); its pixels let go.</summary>
         public static byte[] Shrink(Shot shot, int width, int tallMost, out int outW, out int outH)
         {
             outW = outH = 0;
@@ -280,11 +254,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The screen as it is drawn (called after WaitForEndOfFrame), as "Report a bug" takes it: its pixels copied out of
-        /// the engine's texture, the texture let go at once. Null when it cannot be taken, or is of a kind of pixel this
-        /// does not read (then there is no picture).
-        /// </summary>
+        /// <summary>The screen as drawn (after WaitForEndOfFrame), copied out and the texture let go at once; null when it cannot be read.</summary>
         public static Shot Capture()
         {
             Texture2D texture = null;

@@ -3,21 +3,13 @@ using RealLifeOverhaul.Texts;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The author of a post answers the player's typed reply under it (data v3 of RLO Texts: citizen.answer.reply for a
-    /// city person under their own post, official.answer.said, business.answer.said and tycoon.answer.said for an account
-    /// under its own). Whether and when is the game's (FlareCommentRules.AuthorAnswer: from the reply's seed, a city
-    /// person within an hour or so, an account within two); the words are the model's alone, asked when the reply is posted
-    /// and again on Flare's events while the answer is still to come, and kept by the reply's number. Like the comments
-    /// under others' posts it has no written line: an answer the model did not word in time is not shown, and with RLO
-    /// Texts, its use (Flare comments and replies, official replies, Flare posts, rivals) or a v3 pack missing nothing
-    /// changes at all. It is the player's own: shown only in their thread, never saved in Flare's file, never sent in a
-    /// Going Public session.
-    /// COST: on Flare's events, a few rolls for each reply of the player's still waiting for its answer; one request each;
-    /// when a thread is drawn, a few rolls and a look-up for each reply of the player's in it. Nothing per frame.
+    /// Flare's director, the author's answer to the player's typed reply under their post (RLO Texts data v3): whether and
+    /// when is the game's, the words the model's, and one not worded in time is not shown. Never saved or sent. Cost: a few
+    /// rolls a waiting reply on Flare's events, a look-up a reply when a thread is drawn.
     /// </summary>
     public sealed partial class FlareDirector
     {
-        private readonly FlareTextsAsked<int> _textAnswers = new FlareTextsAsked<int>();   // the answers under the player's replies, by the reply's number
+        private readonly FlareTextsAsked<int> _textAnswers = new FlareTextsAsked<int>();   // by the reply's number
 
         // An answer still to come under a reply of the player's: its words asked now, its time the deadline.
         private void TextsAnswer(FlarePost reply, long now)
@@ -46,7 +38,7 @@ namespace RealLifeOverhaul.Flare
             r.Keep = true;
             r.Day = (int)(at / 1440);
             r.Seconds = Seconds(at - now);
-            r.Wanted = () => _file != null && _file.Post(id) == reply && Now < at;   // (words after its time are not used: it never appears late)
+            r.Wanted = () => _file != null && _file.Post(id) == reply && Now < at;   // words after its time are not used: it never appears late
             r.Done = words => _textAnswers.Ended(id, words != null);
             if (FlareBridges.TextAsk(r))
             {
@@ -102,12 +94,12 @@ namespace RealLifeOverhaul.Flare
                     return null;
             }
             string author = AuthorName(parent);
-            r.History.Add(new TextSaid(author, WordsFor(parent, author)));   // (its own post as the reader sees it)
+            r.History.Add(new TextSaid(author, WordsFor(parent, author)));   // its own post as the reader sees it
             r.History.Add(new TextSaid(MyName, reply.Text));
-            return Use(r, false);   // (the player's own: never the shared feed's)
+            return Use(r, false);   // the player's own: never the shared feed's
         }
 
-        /// <summary>The author's answer under a reply of the player's, made for display once its time has come and its words are here; null otherwise.</summary>
+        /// <summary>The author's answer under a reply of the player's, made for display once its time has come and its words are here.</summary>
         public FlarePost AnswerShown(FlarePost reply, long now)
         {
             if (_file == null || FlareBridges.TextKept == null || reply == null || reply.Author != FlareAuthor.Player || reply.Source != FlareSource.Reply)

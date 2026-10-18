@@ -68,7 +68,7 @@ internal static partial class Program
         string director = FaultSource(scripts, "Faults/FaultDirector.cs");
         string reports = FaultSource(scripts, "Faults/FaultDirector.Reports.cs");
         string world = FaultSource(scripts, "Faults/FaultWorld.cs");
-        string flare = FaultSource(scripts, "Social/Flare/FlareDirector.Live.cs");
+        string flare = (FaultSource(scripts, "Social/Flare/FlareDirector.Live.cs") + FaultSource(scripts, "Social/Flare/FlareDirector.Cases.cs") + FaultSource(scripts, "Social/Flare/FlareDirector.Posting.cs"));
         Check(director.Contains("if (!Following && !GoingPublic.IsGuest)") && Regex.IsMatch(director, @"public void Crime\(Vector3 where\)\s*\{\s*if \([^)]*GoingPublic\.IsGuest")
               && reports.Contains("|| Following || GoingPublic.IsGuest)"),
             "faults, review: a Going Public guest never rolls, turns or reports faults, nor marks a hot spot, even while the host sends none");
@@ -538,7 +538,7 @@ internal static partial class Program
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts"));
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         var key = new Regex("\"(reallife_(?:faults|meta_title_faults|guide_faults|opt_sec_faults|flare_answer_1[6-9]|flare_report_real|flare_note_nothing|flare_note_warned|flare_note_barred)[a-z0-9_]*)\"");
-        foreach (string file in new[] { "Faults/FaultGuide.cs", "Faults/FaultDirector.Tests.cs", "Social/Flare/FlareText.Live.cs", "Social/Flare/FlareDirector.Live.cs" })
+        foreach (string file in new[] { "Faults/FaultGuide.cs", "Faults/FaultDirector.Tests.cs", "Social/Flare/FlareText.Live.cs", "Social/Flare/FlareDirector.Live.cs", "Social/Flare/FlareDirector.Cases.cs", "Social/Flare/FlareDirector.Posting.cs" })
         {
             foreach (Match m in key.Matches(FaultSource(scripts, file)))
             {

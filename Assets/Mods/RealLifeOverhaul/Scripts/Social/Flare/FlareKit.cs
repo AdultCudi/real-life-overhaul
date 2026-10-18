@@ -7,19 +7,13 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare's own look, the one place the mod draws an interface of its own (an exception: Flare must look like a social
-    /// media app, not the game's generic interface). It stays inside the game's phone: the app's panel is the
-    /// game's (GameUi.AppShell), the lettering is the game's own font (GameUi.GameFont), the typing is the game's own text
-    /// box. Here: the colours (light, dark, and dark at night when it follows the phone), the type sizes and spacing, and
-    /// the parts every screen is made of: a rounded card, a pill, a circle, an image, a text, a button.
-    ///
-    /// The rounded shapes are drawn once into three small textures (a rounded square, a circle, a pill), with soft edges,
-    /// and used as nine-sliced sprites at any size. COST: those three textures once a session (a few thousand pixels);
-    /// a part is made when a screen first needs it and reused after (FlareList, FlareView).
+    /// Flare's own look, the one interface the mod draws itself (Flare must look like a social media app), kept inside the
+    /// game's phone with its panel, font and text box: colours, type sizes, spacing and the parts of every screen. The
+    /// rounded shapes are drawn once into soft-edged textures, nine-sliced at any size. Cost: those textures once a session.
     /// </summary>
     internal static class FlareKit
     {
-        // ---- the type scale and the spacing (canvas units of the game's 3840 x 2160)
+        // Type sizes and spacing, in canvas units of the game's 3840 x 2160.
         public const float Body = 31f;           // a post's words
         public const float Name = 31f;           // who
         public const float Small = 26f;          // a handle, a time, a count
@@ -30,7 +24,6 @@ namespace RealLifeOverhaul.Flare
         public const float Gap = 22f;            // between parts
         public const float Avatar = 84f;
         public const float Radius = 30f;         // a card's corners
-        public const float LineGap = 6f;
 
         private const int TexSize = 64, TexRadius = 30;
         private static Sprite _round, _circle;
@@ -43,7 +36,7 @@ namespace RealLifeOverhaul.Flare
 
         public const float Corner = TexRadius;
 
-        // A white shape with soft edges, as a sprite whose corners stretch not.
+        // A white shape with soft edges, as a sprite whose corners do not stretch.
         private static Sprite Make(bool circle)
         {
             var tex = new Texture2D(TexSize, TexSize, TextureFormat.RGBA32, false) { name = circle ? "FlareCircle" : "FlareRound", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
@@ -56,7 +49,7 @@ namespace RealLifeOverhaul.Flare
                     float cx = x + 0.5f, cy = y + 0.5f;
                     float dx = Mathf.Max(Mathf.Max(r - cx, cx - (TexSize - r)), 0f);
                     float dy = Mathf.Max(Mathf.Max(r - cy, cy - (TexSize - r)), 0f);
-                    float d = Mathf.Sqrt(dx * dx + dy * dy) - r;   // the distance outside the shape (negative inside)
+                    float d = Mathf.Sqrt(dx * dx + dy * dy) - r;   // the distance outside the shape, negative inside
                     float a = Mathf.Clamp01(0.5f - d);
                     px[y * TexSize + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * 255f));
                 }
@@ -66,8 +59,6 @@ namespace RealLifeOverhaul.Flare
             float border = circle ? TexSize / 2f - 1f : TexRadius;
             return Sprite.Create(tex, new Rect(0, 0, TexSize, TexSize), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(border, border, border, border));
         }
-
-        // ---------------------------------------------------------------- parts
 
         public static RectTransform Rect(Transform parent, string name)
         {
@@ -79,7 +70,7 @@ namespace RealLifeOverhaul.Flare
             return r;
         }
 
-        /// <summary>An image of a colour, square, rounded (corners of 'radius' canvas units) or a circle/pill.</summary>
+        /// <summary>An image of a colour: square, rounded (corners of <paramref name="radius"/> canvas units), or a circle or pill.</summary>
         public static Image Box(Transform parent, string name, Color color, float radius = 0f, bool circle = false, bool raycast = false)
         {
             RectTransform r = Rect(parent, name);
@@ -100,7 +91,6 @@ namespace RealLifeOverhaul.Flare
             return image;
         }
 
-        /// <summary>A text in the game's own font.</summary>
         public static TextMeshProUGUI Text(Transform parent, string name, float size, Color color, FontStyles style = FontStyles.Normal, TextAlignmentOptions align = TextAlignmentOptions.TopLeft)
         {
             RectTransform r = Rect(parent, name);
@@ -123,7 +113,6 @@ namespace RealLifeOverhaul.Flare
             return t;
         }
 
-        /// <summary>A picture.</summary>
         public static RawImage Picture(Transform parent, string name)
         {
             RectTransform r = Rect(parent, name);
@@ -132,10 +121,7 @@ namespace RealLifeOverhaul.Flare
             return image;
         }
 
-        /// <summary>
-        /// A click on a graphic, made once when the part is made (a pooled card keeps its button and what it calls: the
-        /// card's own method, which reads what it shows now). Run inside the guard (UiClone.Safe).
-        /// </summary>
+        /// <summary>A click on a graphic, made once with the part, so a pooled card keeps its button; run inside the guard (UiClone.Safe).</summary>
         public static Button Click(Graphic target, Action action)
         {
             target.raycastTarget = true;
@@ -180,7 +166,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>A text set only when it changes (TextMeshPro builds its mesh again on every set).</summary>
+        /// <summary>A text set only when it changes, as TextMeshPro builds its mesh again on every set.</summary>
         public static void Set(TMP_Text t, string text)
         {
             text = text ?? string.Empty;
@@ -197,7 +183,7 @@ namespace RealLifeOverhaul.Flare
         }
     }
 
-    /// <summary>Flare's colours, light or dark. The brand's own coral-to-rose (the app's icon) is its accent.</summary>
+    /// <summary>Flare's colours, light or dark; the brand's own coral-to-rose (the app's icon) is its accent.</summary>
     internal sealed class FlareLook
     {
         public Color Back, Card, Raised, Text, Muted, Line, Accent, AccentSoft, Like, Share, Chip, ChipText, Shade, Good, Bad;
@@ -217,7 +203,7 @@ namespace RealLifeOverhaul.Flare
             ChipText = C(220, 224, 228), Shade = new Color(0f, 0f, 0f, 0.6f), Good = C(60, 200, 140), Bad = C(255, 90, 95), Dark = true
         };
 
-        /// <summary>The look for now: the option, or (following the phone) dark from 19:00 to 07:00 of the game's clock.</summary>
+        /// <summary>The look for now: the option or, following the phone, dark from 19:00 to 07:00 of the game's clock.</summary>
         public static FlareLook Now(int hour)
         {
             switch (Settings.FlareTheme)

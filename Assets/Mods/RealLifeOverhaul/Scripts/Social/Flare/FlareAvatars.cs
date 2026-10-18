@@ -17,25 +17,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// The pictures beside every account's name in Flare (FlareAvatarRules says which picture each account gets):
-    ///
-    ///   a face      its round picture's file (FlareAvatarRules, under the game's data folder), read and uploaded; one not
-    ///               drawn yet is asked of FlareFacePainter, and the initials stand in until it comes
-    ///   the player  their latest selfie's small copy (Core/PhotoThumbs), else the game's own portrait of their character,
-    ///               made round on a worker thread (the portrait's JPEG decoded here first, about a millisecond)
-    ///   a player    of the session: their latest selfie in the shared feed (FlareSnap), made round on a worker thread
-    ///   a logo      the game's own texture of it, shown as it is in a white disc (the game keeps it; never ours to destroy)
-    ///   an emblem   one of Flare's glyphs on the account's colour; the initials for any other
-    ///
-    /// At most <see cref="FlareAvatarRules.Most"/> round textures are kept (96 pixels, 36 KB each: 18 MB at most, every face
-    /// a city shows), each read from its file the first time its card is shown and kept for the session; past the bound the
-    /// one used longest ago is destroyed first; all of them when the city unloads or Flare stops. One that could not be had
-    /// is looked for again the next time the app opens. A face read more than a day after its file was last written has its
-    /// file's time brought forward (FlareFaceAheadRules.Stale), so the folder's clean-up takes the old cities' faces first. In Going Public nothing is sent for a picture: each machine makes them
-    /// from the seeds and looks it shares already, and another player's from the selfie the session already shared.
-    ///
-    /// COST: nothing per frame, nothing while the app is closed. Binding a card: a plan (a few comparisons) and a look in a
-    /// dictionary. A picture not read yet: one read of 27 KB off the main thread and one upload of 36 KB on it.
+    /// The pictures beside every account's name, as FlareAvatarRules says, at most <see cref="FlareAvatarRules.Most"/>
+    /// round textures, the longest unused destroyed first. Cost: nothing per frame or while closed; binding a card is a
+    /// plan and a dictionary look, a new picture one read off the main thread and one upload.
     /// </summary>
     internal sealed class FlareAvatars
     {
@@ -63,7 +47,7 @@ namespace RealLifeOverhaul.Flare
             _missed = Missed;
         }
 
-        /// <summary>The app opens or its screen is written again: what the plans are made from, read once here (the player's businesses with 'all').</summary>
+        /// <summary>The app opens or its screen is written again: what the plans are made from, the player's businesses too with <paramref name="all"/>.</summary>
         public void Refresh(bool all)
         {
             _facts.File = _director.File;
@@ -83,7 +67,7 @@ namespace RealLifeOverhaul.Flare
             var shown = new FlareAvatarShown { Emblem = -1 };
             if (!Settings.FlarePictures || _facts.File == null)
             {
-                return shown;   // (the option off: the initials, as before)
+                return shown;   // the option off: the initials
             }
             FlareAvatarPlan plan = FlareAvatarRules.Plan(key, _facts);
             switch (plan.Kind)
@@ -93,7 +77,7 @@ namespace RealLifeOverhaul.Flare
                     return shown;
                 case FlareAvatarKind.Logo:
                     shown.Logo = Logo(plan);
-                    shown.Emblem = shown.Logo == null ? FlareAvatarRules.EmblemBusiness : -1;   // (the shop's emblem while its logo comes, and for one the game has none of)
+                    shown.Emblem = shown.Logo == null ? FlareAvatarRules.EmblemBusiness : -1;   // the shop's emblem while its logo comes, and for one the game has none of
                     return shown;
                 case FlareAvatarKind.Initials:
                     return shown;
@@ -132,7 +116,7 @@ namespace RealLifeOverhaul.Flare
                         string portrait = FlarePictureGame.PlayerPortrait();
                         if (portrait == null)
                         {
-                            return;   // (the game has made none yet: asked again when the app opens again)
+                            return;   // the game has made none yet: asked again when the app opens again
                         }
                         _director.StartCoroutine(Guard.Routine(Portrait(picture, portrait, _opening)));
                     }
@@ -179,7 +163,7 @@ namespace RealLifeOverhaul.Flare
             _buffers.Push(into);
         }
 
-        // On the worker: a face read later than a day after its file was last written has the file's time brought forward.
+        // On the worker: a face read a day after its file was last written has the file's time brought forward.
         private static void Touch(string file)
         {
             try
@@ -192,7 +176,7 @@ namespace RealLifeOverhaul.Flare
             }
             catch (IOException)
             {
-                // (in use: its time stays, and it is read again another day)
+                // in use: its time stays, and it is read again another day
             }
             catch (UnauthorizedAccessException)
             {
@@ -262,7 +246,7 @@ namespace RealLifeOverhaul.Flare
                 yield break;
             }
             int w = _decode.width, h = _decode.height;
-            var rows = new byte[w * h * 3];   // (once a session: the player's portrait)
+            var rows = new byte[w * h * 3];   // once a session: the player's portrait
             NativeArray<byte>.Copy(_decode.GetPixelData<byte>(0), rows, rows.Length);
             byte[] into = Buffer();
             Task<bool> round = Task.Run(() => FlareAvatarRules.Disc(rows, w, h, 3, false, into));
@@ -292,13 +276,13 @@ namespace RealLifeOverhaul.Flare
             }
             else
             {
-                _loaded?.Invoke();   // (the cards in view ask again, and read it from its file)
+                _loaded?.Invoke();   // the cards in view ask again, and read it from its file
             }
         }
 
         private void Missed(string picture)
         {
-            // (kept as asked: the initials stay until the app opens again)
+            // kept as asked: the initials stay until the app opens again
         }
 
         // A round picture's rows into a texture of its own (RGBA, no mipmaps), its copy in main memory let go.
@@ -353,7 +337,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     return logo;
                 }
-                _logos.Remove(plan.Name);   // (the game let it go: asked again)
+                _logos.Remove(plan.Name);   // the game let it go: asked again
             }
             if (_noLogo.Contains(plan.Name) || !_asked.Add("logo:" + plan.Name))
             {
@@ -361,7 +345,7 @@ namespace RealLifeOverhaul.Flare
             }
             string name = plan.Name;
             int opening = _opening;
-            bool asking = true;   // (the game may answer at once, inside this card's binding: then the card shows it now, with no new binding)
+            bool asking = true;   // the game may answer at once, inside this card's binding: then the card shows it now
             FlarePictureGame.Logo(name, plan.Mine, texture =>
             {
                 _asked.Remove("logo:" + name);
@@ -386,7 +370,7 @@ namespace RealLifeOverhaul.Flare
             return _logos.TryGetValue(name, out logo) ? logo : null;
         }
 
-        /// <summary>The app has closed: the pictures made are kept for its next opening; one that could not be had is looked for again then.</summary>
+        /// <summary>The app has closed: the pictures made are kept; one that could not be had is looked for again at the next opening.</summary>
         public void Closed()
         {
             _asked.Clear();
@@ -400,13 +384,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>For the diagnostics and the test: the pictures kept.</summary>
-        public string Report()
-        {
-            return _made.Count + " picture(s) of " + FlareAvatarRules.Most + " kept, " + _logos.Count + " logo(s), " + _noLogo.Count + " without a logo";
-        }
-
-        /// <summary>Every texture of ours destroyed (the game's logos are the game's): the city is unloading, or Flare stops.</summary>
+        /// <summary>Every texture of ours destroyed, the game's logos being the game's: the city is unloading, or Flare stops.</summary>
         public void Clear()
         {
             foreach (KeyValuePair<string, Texture2D> pair in _made)

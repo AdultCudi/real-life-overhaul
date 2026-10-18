@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>What a post was drafted from: something that really happened. Saved as a number: new kinds go at the end, never renumbered.</summary>
+    /// <summary>What a post was drafted from. Saved as a number: new kinds go at the end.</summary>
     public enum FlareSource
     {
         None = 0,
@@ -31,10 +31,10 @@ namespace RealLifeOverhaul.Flare
         Results = 23,      // a listed company's own post of its results
         Headline = 24,     // the City Ledger's own account: a headline of the morning paper
         Issue = 25,        // the player about an issue in the city (safety after a crime, the roads after a crash)
-        Campaign = 26,     // the player about their own run for office or their office (Civic/CivicOffice, through Wiring/FlareLinks)
-        Graduated = 27,    // the player graduated at the university's ceremony (Careers, through Wiring/FlareLinks)
-        Interior = 28,     // a business of the player's with a striking interior (Scripts/Interiors, through Wiring/InteriorLinks)
-        Report = 29,       // a report or a complaint to the city (Arg: FlareReport; District, Place): the City Office answers and acts (FlareLiveRules)
+        Campaign = 26,     // the player about their run for office, or their office
+        Graduated = 27,    // the player graduated at the university's ceremony
+        Interior = 28,     // a business of the player's with a striking interior
+        Report = 29,       // a report or a complaint to the city (Arg: FlareReport; District, Place): the City Office answers
         Review = 30,       // a review of a business (Arg: the stars, 1 to 5; Place, Name)
         Announce = 31,     // an announcement for a business of the player's (Arg: FlareAnnounce; Place, Name)
         Reply = 32,        // a reply to a post (ReplyTo); its words are the typed text, or a line of its kind (Arg: FlareReplyKind)
@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Flare
         Official = 8,     // an official account (Who: FlareOfficial)
         Business = 9,     // a business of the city's (Place, Name)
         Network = 10,     // another player of a Going Public session (AuthorId, AuthorName)
-        Tycoon = 11       // a rival tycoon of the end game (Name), once that feature is in the mod (FlareBridges.Tycoons)
+        Tycoon = 11       // a rival tycoon of the end game (Name)
     }
 
     /// <summary>The account's tier, by followers (FlareRules.TierFrom).</summary>
@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Flare
         Celebrity = 4
     }
 
-    /// <summary>What a friend cares about, as Flare reads it (the social life's traits, turned into Flare's own by Wiring/FlareLinks).</summary>
+    /// <summary>What a friend cares about, as Flare reads it (Wiring/FlareLinks turns the social life's traits into these).</summary>
     [System.Flags]
     public enum FlareTaste
     {
@@ -123,25 +123,22 @@ namespace RealLifeOverhaul.Flare
         Flaky = 64      // often does not look
     }
 
-    /// <summary>
-    /// One person of the social life as Flare sees them: handed over by Wiring/FlareLinks when the day is played or
-    /// a post is made, never kept. Without the social life there is nobody, and Flare runs with followers alone.
-    /// </summary>
+    /// <summary>One person of the social life as Flare sees them, handed over when needed and never kept.</summary>
     public struct FlarePerson
     {
         public int Index;            // the social life's own number for them
-        public string First;         // first name
+        public string First;
         public int Stage;            // 0 stranger ... 5 partner, the social life's stages
         public FlareTaste Taste;
         public int Closeness;        // 0 to 100
         public bool Partner;         // dating or partner
-        public string Job;           // their job and their part of town, in words
+        public string Job;           // in words
         public string District;
         public bool Compatible;      // a romance with them is possible
         public bool Unanswered;      // they texted lately and the player has not answered
-        public bool Female;          // their look, as the social life builds them in the street (Flare's picture of them: FlareAvatarRules)
-        public int Age;              // ...years
-        public int LookSeed;         // ...the look's seed; 0 when not told
+        public bool Female;          // their look, as the social life builds them in the street
+        public int Age;              // years
+        public int LookSeed;         // the look's seed; 0 when not told
 
         /// <summary>Acquaintances and closer follow the player.</summary>
         public bool Follows => Stage >= FlareRules.FollowFromStage;
@@ -159,10 +156,7 @@ namespace RealLifeOverhaul.Flare
         public int Arg;              // the outing's kind, the new rank
     }
 
-    /// <summary>
-    /// One post, the player's or a friend's. Not text: a source, a tone, who and a seed. The words are made when it is
-    /// shown (FlareText), so a change of language changes every post.
-    /// </summary>
+    /// <summary>One post: not text but a source, a tone, an author and a seed, worded by FlareText when shown.</summary>
     public sealed class FlarePost
     {
         public int Id;
@@ -187,7 +181,7 @@ namespace RealLifeOverhaul.Flare
         public bool Bad;             // it went badly: the wrong tone for what it was about
         public bool Disclosed;       // a post about a company the player holds, from an account big enough to say so
 
-        // ---- the living network (FlareLiveRules), each appended to the save's post line after the older fields
+        // The living network's fields, appended to the save's post line after the older ones.
         public int Minute;           // the minute of the hour it went up (0 to 59): it shows from then on
         public int ReplyTo = -1;     // the post it answers (a local post's number); -1 for none
         public string Text;          // the words the player typed, as typed (never what decides an effect: the built part does)
@@ -203,7 +197,7 @@ namespace RealLifeOverhaul.Flare
         public int Reposts;          // shares, the city's and the players'
         public int PlayerLikes;      // likes from other players of the session
         public int Case = -1;        // the City Office's case it opened (FlareCase.Id); -1 for none
-        public int Slot = -1;        // made for display (never saved): a friend's reply under a post of the player's, its place among that post's reactions; a comment under another's post, its slot (FlareComment.Slot); -1 for any other
+        public int Slot = -1;        // display only, never saved: a reply's place among its post's reactions, or a comment's FlareComment.Slot; -1 otherwise
         public bool Liked;           // the player liked it
         public bool Reposted;        // the player shared it
         public bool Shared;          // it came from the session's shared feed (a guest's copy of the host's)
@@ -259,7 +253,7 @@ namespace RealLifeOverhaul.Flare
         public readonly List<FlareBuzz> Buzz = new List<FlareBuzz>(8);
         public readonly List<FlareInfluencer> Influencers = new List<FlareInfluencer>(FlareCast.Level);
         public readonly List<FlareHire> Hires = new List<FlareHire>(8);
-        public readonly List<string> Follows = new List<string>(8);   // the accounts the player follows ("i:3", "b:Copper Kettle", "c:Name"); a new game follows nobody
+        public readonly List<string> Follows = new List<string>(8);   // the accounts the player follows ("i:3", "b:Copper Kettle", "c:Name")
         public int CastSeed;             // the cast's own seed: the same cast for the same seed
         public int MonthDay = -1;        // the day the influencers' month was last played
         public int FollowNoticeDay = -1; // the last day the one notification of posts from followed accounts was sent
@@ -276,9 +270,9 @@ namespace RealLifeOverhaul.Flare
         public int MayorMood;            // -100 to 100: how the feed feels about the city's running, which pulls a little on the mayor's approval
         public int IssueDay = -1;        // the last day an issue was drafted
         public readonly List<FlareViralShares> ViralShares = new List<FlareViralShares>(4);   // viral posts about companies the player holds: selling soon after is market abuse
-        public readonly List<int> ReplyLikes = new List<int>(4);   // the friends' replies the player liked, each as FlareRules.ReplyKey (post and place): those replies are made for display and have no post of their own
-        public readonly List<long> CommentLikes = new List<long>(4);   // the comments under others' posts the player liked, each as FlareCommentRules.LikeKey (post, slot and who): made for display too
-        public readonly FlareNet Net = new FlareNet();   // the living network: the City Office's cases, the messages, the watches (FlareLiveModel)
+        public readonly List<int> ReplyLikes = new List<int>(4);   // friends' replies the player liked (FlareRules.ReplyKey); such replies have no post of their own
+        public readonly List<long> CommentLikes = new List<long>(4);   // comments under others' posts the player liked (FlareCommentRules.LikeKey)
+        public readonly FlareNet Net = new FlareNet();   // the living network: the City Office's cases, the messages, the watches
 
         public FlareInfluencer Influencer(int id)
         {
@@ -342,11 +336,7 @@ namespace RealLifeOverhaul.Flare
             return null;
         }
 
-        /// <summary>
-        /// The first shop seen at a place, or null. From an index of the list (it only grows: a shop seen is added at its
-        /// end, by the day's round or the save's reader), brought up to the list's end at each look-up: a dictionary hit
-        /// where the day's round asked a pass of compares of every business (300 businesses: 90,000 compares a day).
-        /// </summary>
+        /// <summary>The first shop seen at a place, or null; the index by place is brought up to date as the list grows.</summary>
         public FlareShopSeen Shop(string place)
         {
             if (place == null)
@@ -362,7 +352,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (_shopsIndexed > Shops.Count)
             {
-                _shopOf.Clear();   // (a list made shorter: indexed again from its start)
+                _shopOf.Clear();   // the list was cut: index it again
                 _shopsIndexed = 0;
             }
             for (; _shopsIndexed < Shops.Count; _shopsIndexed++)
@@ -370,7 +360,7 @@ namespace RealLifeOverhaul.Flare
                 FlareShopSeen s = Shops[_shopsIndexed];
                 if (s != null && s.Place != null && !_shopOf.ContainsKey(s.Place))
                 {
-                    _shopOf.Add(s.Place, s);   // (the first of a place, as the list's order has it)
+                    _shopOf.Add(s.Place, s);   // the first of a place wins
                 }
             }
             return _shopOf.TryGetValue(place, out FlareShopSeen seen) ? seen : null;
@@ -422,10 +412,7 @@ namespace RealLifeOverhaul.Flare
         public int Until;            // the first day without it
     }
 
-    /// <summary>
-    /// One of the city's influencers: made by seed, kept in the save, growing, fading, quitting or caught in a scandal by
-    /// the month. They post under a handle; a star may turn out to be somebody the player can meet (Person).
-    /// </summary>
+    /// <summary>One of the city's influencers: made by seed, kept in the save, changing by the month; a star may be somebody to meet.</summary>
     public sealed class FlareInfluencer
     {
         public int Id;
@@ -445,7 +432,6 @@ namespace RealLifeOverhaul.Flare
         public int ScandalDay = -100;
         public int Seed;
 
-        /// <summary>The followers who answer a post.</summary>
         public int Engaged => (int)((long)Followers * Engagement / 10000);
 
         public bool Active => !Quit;
@@ -465,17 +451,14 @@ namespace RealLifeOverhaul.Flare
         public bool OffMessage;
         public bool Backfired;
         public bool Ended;           // the player ended it (a scandal), or it ran out
-        public int Posted;           // the paid posts made for it so far (the Feed keeps only the newest posts, so they are counted here)
+        public int Posted;           // the paid posts made so far: the Feed keeps only the newest posts, so they are counted here
         public int LastPost = -1;    // the day of the last of them; -1 before the first
-        public bool Counted = true;  // Posted counts every post since the deal began; false for a deal saved half run before the posts were counted
+        public bool Counted = true;  // false for a deal saved half run, before the posts were counted
 
         public bool On(int day) => !Ended && day >= From && day <= To;
     }
 
-    /// <summary>
-    /// A campaign of the company's at one of the player's businesses, running or booked, as Flare is told of it
-    /// (Wiring/FlareLinks): read when the Business tab is written, never kept.
-    /// </summary>
+    /// <summary>A campaign of the company's at one of the player's businesses, as Flare is told of it for the Business tab; never kept.</summary>
     public struct FlareCampaign
     {
         public string Place;
