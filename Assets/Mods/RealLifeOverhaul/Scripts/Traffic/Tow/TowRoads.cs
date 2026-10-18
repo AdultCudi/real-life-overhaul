@@ -6,35 +6,26 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The road the tow truck takes to a wreck, looked up on the traffic system's lane points when it is sent, once.
-    ///
-    /// WHERE IT STANDS. A rollback loads over its tail, so it must stand ahead of the wreck, facing the way the wreck's lane
-    /// runs, in that lane: the stretch of the lane ahead of a wreck is the one place on a busy road that nothing drives into
-    /// (whatever comes along the lane stops behind the wreck), so the bed comes down and the wreck is drawn up it with
-    /// nothing in the way. It gets there along a lane BESIDE the wreck's that runs the same way: past the wreck, over into
-    /// its lane, and on to its stand (TowRules.Stretch). A wreck in a lane that has no such lane beside it, or on a bend, at
-    /// a junction or on a closed road, is not sent a truck: it goes as it always has.
-    ///
-    /// WHERE IT STARTS. Some 170 m back along the lane beside (as near that as can be had, from 70 to 280 m), on a plain
-    /// lane point where nobody can see it and not within TransitSight.NearKeep of the player, with nothing standing there.
-    ///
-    /// The search is once per truck sent: one question for the nearest lane point (the lane grid: TrafficTools.ClosestWaypoint), walks along lanes,
-    /// a few boxes and a few dozen rays for the start. Nothing per frame.
+    /// The road the tow truck takes to a wreck, looked up once on the traffic system's lane points when it is sent. A rollback
+    /// loads over its tail, so it stands ahead of the wreck in the wreck's own lane (the one stretch of a busy road nothing
+    /// drives into), reached along a lane beside it that runs the same way: past the wreck, over, and on to its stand
+    /// (TowRules.Stretch). No such lane, a bend, a junction or a closed road: no truck. It starts some 170 m back (70 to 280 m)
+    /// where nobody can see it, away from the player, with nothing standing there. Nothing per frame.
     /// </summary>
     public static class TowRoads
     {
         private const float WreckReach = 9f;         // metres from a wreck's middle its lane point is looked for
         private const float BesideLeast = 2.4f;      // metres across to the middle of a lane beside it
-        private const float BesideMost = 6.5f;
+        private const float BesideMost = 6.5f;       // metres
         private const float BehindLook = 12f;        // metres of the wreck's lane behind it whose lanes beside are looked at
         private const float Straight = 0.97f;        // the cosine of the most a lane may turn over the stretch (14 degrees)
         private const float WalkBack = 280f;         // metres of the lane beside walked back for a start
-        private const float StartLeast = 70f;
-        private const float StartPrefer = 170f;
+        private const float StartLeast = 70f;        // metres
+        private const float StartPrefer = 170f;      // metres
         private const int StartTries = 24;
         private const float MergeStep = 3f;          // metres between the points laid for its move over
         private const float RoomMargin = 0.3f;       // metres all round the body that its start and its stand must be clear
-        private const float PassMargin = 0.45f;      // metres clear between the wreck and the truck as it passes it (its driver looks 0.2 wider than it)
+        private const float PassMargin = 0.45f;      // metres clear between the wreck and the truck as it passes (its driver looks 0.2 wider)
 
         private static readonly List<Waypoint> Walk = new List<Waypoint>(220);
         private static readonly List<Waypoint> Lane = new List<Waypoint>(32);
@@ -58,10 +49,7 @@ namespace RealLifeOverhaul
             public string Refusal;           // why there is none, for the log
         }
 
-        /// <summary>
-        /// Where a truck can stand for this wreck (its middle, the way it points, half its length) and the road there.
-        /// False, with <see cref="Plan.Refusal"/> said, if there is none.
-        /// </summary>
+        /// <summary>Where a truck can stand for this wreck, and the road there; false, with Plan.Refusal said, if there is none.</summary>
         public static bool Find(Vector3 centre, Vector3 forward, float halfLength, float halfWidth, Rigidbody wreck, Plan plan)
         {
             plan.Route.Clear();
@@ -119,13 +107,13 @@ namespace RealLifeOverhaul
             TowRules.Stretch(middle, middle + reach, across, halfLength, out float mergeFrom, out float mergeTo, out float standAt);
 
             // Both lanes plain and straight over the stretch: the wreck's from behind it to beyond the stand, the one beside up to the move.
-            if (!Straight_(traffic, own, origin, along, standAt + 8f, Lane) || Lane.Count < 2)
+            if (!StraightLane(traffic, own, origin, along, standAt + 8f, Lane) || Lane.Count < 2)
             {
                 plan.Refusal = "the wreck's lane is not plain and straight for " + (standAt + 8f).ToString("F0") + " m ahead";
                 return false;
             }
             plan.Onward = Lane[Lane.Count - 1];
-            if (!Straight_(traffic, beside, origin, along, mergeFrom, Lane) || Lane.Count < 1)
+            if (!StraightLane(traffic, beside, origin, along, mergeFrom, Lane) || Lane.Count < 1)
             {
                 plan.Refusal = "the lane beside is not plain and straight up to the wreck";
                 return false;
@@ -195,9 +183,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Picks where on the lane beside it starts, as it is now (the player may have moved since the road was found): the
-        /// point nearest StartPrefer back that nobody can see, away from the player, with nothing standing there; then lays
-        /// the route from there. False if there is none now.
+        /// Picks the start on the lane beside as things are now (the player may have moved): out of sight, away from the player,
+        /// with nothing standing there; then lays the route. False if there is none now.
         /// </summary>
         public static bool PickStart(Plan plan)
         {
@@ -299,8 +286,6 @@ namespace RealLifeOverhaul
             return route.Count >= 2;
         }
 
-        // ---------------------------------------------------------------- the lanes
-
         private static bool Usable(Waypoint point)
         {
             return point != null && RoadGraph.Drivable(point) && !point.temporaryDisabled;
@@ -340,7 +325,7 @@ namespace RealLifeOverhaul
 
         // Walks a lane forward from a point while it is plain, open and straight along `along`, until it is `upTo` metres
         // along from the origin; the points walked go into `into`. False if it ends, bends, closes or meets a junction first.
-        private static bool Straight_(TrafficManager traffic, Waypoint start, Vector3 origin, Vector3 along, float upTo, List<Waypoint> into)
+        private static bool StraightLane(TrafficManager traffic, Waypoint start, Vector3 origin, Vector3 along, float upTo, List<Waypoint> into)
         {
             into.Clear();
             Waypoint point = start;
