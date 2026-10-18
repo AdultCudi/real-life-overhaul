@@ -1,6 +1,5 @@
 using System;
 using Helpers;
-using NWH.VehiclePhysics2.Damage;
 using UI;
 using UI.Load;
 using UnityEngine;
@@ -359,19 +358,19 @@ namespace RealLifeOverhaul
 
         private void OnCollision(Collision collision)
         {
-            if (_scene == null || _broken || Time.time - _lastCrash < 2.5f)
+            if (_scene == null || _broken || Time.time - _lastCrash < 2.5f || _hookedCar == null)
             {
                 return;
             }
             try
             {
-                float speed = collision.relativeVelocity.magnitude;
-                if (speed < 3f || !DamageHandler.IsCollisionValid(collision))
+                CarContact contact = CarContacts.Judge(collision, _hookedCar.transform);   // the car hitting something, never the road or a kerb
+                if (!contact.Counts(3f))
                 {
                     return;
                 }
                 _lastCrash = Time.time;
-                _scene.OnCrash(speed);
+                _scene.OnCrash(contact.Impact);
             }
             catch (Exception e)
             {

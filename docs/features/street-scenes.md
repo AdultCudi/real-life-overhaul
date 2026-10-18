@@ -32,7 +32,7 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
 | `Tow/TowTruck` | the mod's own rollback (props tow_truck, tow_truck_tilt, tow_truck_bed, the bus's wheels): solid, driven by BusDriver, its bed posed, its light bar and lamps, the winch's cable |
 | `Tow/TowRoads` | where it stands (ahead of the wreck in its lane, come by the lane beside) and where it starts (out of sight, 70 to 280 m back): once per truck sent |
 | `Tow/TowRules` | game-free (NavCheck/TowCheck): the bed's motion, a car drawn along the road and up the bed, the stretch it takes, the time it is said to take, when it may come and go |
-| `CrashConsequences` | crashing the player's car matters beyond bodywork: liability when hitting another car (settled on the spot if the player stops, otherwise a matter for `PolicePursuit`), injuries at speed, and an ambulance to hospital after a severe crash |
+| `CrashConsequences` | crashing the player's car matters beyond bodywork: liability when hitting another car (settled on the spot if the player stops, otherwise a matter for `PolicePursuit`), injuries at speed, and an ambulance to hospital after a severe crash; a crash is the car hitting something, by the speed into it (`CarContacts`, `CarContactRules`: never the road, a kerb or its load) |
 | `PolicePursuit` | what happens after the player's car hits a traffic car: a few seconds to stop and settle it, or a hit-and-run with a patrol car on the trail |
 | `RoadChase` | one car running from one patrol car, from the moment it bolts until it is stopped or lost: the hit-and-run's and the reckless driver's chase |
 | `CordonRules` | who is inside a cordon, and where they are put outside it, as plain geometry (game-free: NavCheck's `CordonCheck.cs`) |

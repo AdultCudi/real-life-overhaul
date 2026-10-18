@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using BAModAPI;
 using Extensions;
 using GleyTrafficSystem;
-using NWH.VehiclePhysics2.Damage;
 using UI.Notification;
 using UnityEngine;
 using UnityEngine.Events;
@@ -19,7 +18,7 @@ namespace RealLifeOverhaul
         private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "CrashConsequences", typeof(CrashConsequences));
 
         internal const float LiabilityLeast = 150f, LiabilityMost = 3000f;   // damages to another car, at the start's prices
-        // Impact speeds in m/s (relative velocity of the two colliders).
+        // Impact speeds in m/s along the contact's normal (CarContacts: only the car hitting something, never the road or a kerb).
         private const float LiabilitySpeed = 7f;    // ~25 km/h
         private const float InjurySpeed = 10f;      // ~36 km/h
         private const float SeriousSpeed = 14f;     // ~50 km/h: may put the player in hospital
@@ -89,16 +88,17 @@ namespace RealLifeOverhaul
         private void OnCollision(Collision collision)
         {
             if (!Settings.CrashConsequences || !ModState.Loaded || LifeEvents.Instance == null
-                || Time.unscaledTime - _lastCrashTime < Cooldown || !DamageHandler.IsCollisionValid(collision))
+                || Time.unscaledTime - _lastCrashTime < Cooldown || _hookedCar == null)
             {
                 return;
             }
 
-            float speed = collision.relativeVelocity.magnitude;
-            if (speed < LiabilitySpeed)
+            CarContact contact = CarContacts.Judge(collision, _hookedCar.transform);
+            if (!contact.Counts(LiabilitySpeed))
             {
                 return;
             }
+            float speed = contact.Impact;
             // Running into a person (or a body in the road) is PedestrianIncidents' business, and does not hurt the driver.
             if (collision.collider != null && collision.collider.GetComponentInParent<ThirdPersonCharacter>() != null)
             {

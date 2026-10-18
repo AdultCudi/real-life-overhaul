@@ -32,6 +32,7 @@ Licences/
     DrivingQuestions   the 66 theory questions in seven subjects
     PracticalTest      a lesson or test, driven: examiner, checkpoints, what is marked, the bay, the result page
     TestRoute          five to seven checkpoints along real lanes and a marked bay at the kerb
+    TestContactRules   what the examiner marks for a contact the shared rule (Traffic/CarContactRules) calls a hit
     TestCar            the school's car: made the game's way, never in a save, the player seen out of it when the drive ends (and again if they get back in), taken back with the game's own delete
     DrivingEnforcement penalty points, the licence asked for at a stop, impound, arrest, the routine roadside check
 ```
@@ -100,7 +101,7 @@ Twelve suspend every licence for 7 days, after which the record starts from zero
 
 - Fallbacks: no window, no written test (the fee is returned), the desk speaks through the dialogue panel, results are notifications.
   No job panel: each instruction is a notification.
-- Log lines: "Licences check (desk panel)", "(desk list)", "(theory): question 4 of 12 ...: PASS", "(report)", "(choice)".
+- Log lines: "Licences check (desk panel)", "(desk list)", "(theory): question 4 of 12 ...: PASS", "(report)", "(choice)", "(contact)": what the car met (its name and layer), the normal, the impact along it, its height over the body's underside and whether it counted (one a contact; those that did not count at most one a second, with how many more since).
 - Not checked in the game: any of it.
 
 ## The driven test
@@ -112,7 +113,11 @@ Marked ten times a second from the car's body against `Crime/RoadMap`:
 - crossing a stop line on red (serious), stopping past it (minor);
 - more than 10 km/h over the lane's limit for two seconds (minor) or 30 over (serious);
 - out of the lane for three seconds (minor), on the pavement or against the traffic (serious);
-- a stop harder than 9 m/s² from speed (minor), a touch (minor) or a collision of 2.5 m/s or more (serious);
+- a stop harder than 9 m/s² from speed (minor), a touch of 1 m/s or more (minor) or a collision of 3.5 m/s or more (serious), measured along the contact's normal;
+- only the car hitting something is a touch or a collision (`Traffic/CarContactRules`, the one rule crashes, jobs and outings use too): another vehicle, a person, street furniture, a building or a wall, or a tree or barrier standing on the road's layer.
+  Never the ground: a contact whose normal is mostly upward is the road under the car, whatever its layer, which is what a bottomed spring gives (the Mersaidi Dash's front springs sit at nine tenths of their travel at rest, so braking bottoms them and the wheels' solid lower halves meet the road).
+  Never a kerb: on the road, pavement, crossing and ground layers a contact less than 0.3 m over the body's own underside, in the car's frame, is a kerb or a seam.
+  Never the car's own colliders, its load, or a trigger. Standing or crawling (under 1.5 m/s) the car was run into, and that is not marked;
 - the parking: inside the box and within 12 degrees (else minor; more than 0.6 m over or 25 degrees off is serious), reversed into for the commercial class.
 
 Pass: no serious fault and at most six minor ones.
