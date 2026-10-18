@@ -204,13 +204,22 @@ namespace RealLifeOverhaul.Flare
             int age = Age(c, 77);
             Want(age == FlareLiveRules.CitizenAge(77, 3) && Age(c, 77) == age, "a city person's card says their own age, the one their face has, the same every time");
             c.Persona = FlarePersona.Grumpy;
-            Want(Style(c, 77).StartsWith("grumpy", StringComparison.Ordinal) && Style(c, 77) == Style(c, 77), "the grumpy write grumpily, the same every time");
-            bool moods = true, grumpyLow = true;
+            // Against the person's own seed, and another card for the same person: the style is theirs, whatever else the card says.
+            string own = TextWords.CitizenStyle(77 * 31 + c.Index);
+            int comma = own.IndexOf(',');
+            var same = new FlareCitizen { Index = 3, First = "Test", Last = "Person", Handle = "@test_person", Persona = FlarePersona.Grumpy };
+            Want(Style(c, 77) == "grumpy" + (comma > 0 ? own.Substring(comma) : string.Empty) && Style(same, 77) == Style(c, 77)
+                 && Style(new FlareCitizen { Index = 3, Persona = FlarePersona.Student }, 77) == own,
+                "the grumpy write grumpily, the rest of their style their own seed's, the same every time");
+            bool moods = true, grumpyLow = true, seeded = true;
             for (int d = 0; d < 40; d++)
             {
-                moods &= Mood(77, 3, d, false) == Mood(77, 3, d, false) && Array.IndexOf(TextWords.Moods, Mood(77, 3, d, false)) >= 0;
+                int roll = FlareRules.Roll(77 * 31 + 3, d, 1207);
+                seeded &= Mood(77, 3, d, false) == TextWords.Moods[roll % TextWords.Moods.Length] && Mood(77, 3, d, true) == TextWords.Moods[roll % 3];
+                moods &= Array.IndexOf(TextWords.Moods, Mood(77, 3, d, false)) >= 0;
                 grumpyLow &= Array.IndexOf(TextWords.Moods, Mood(77, 3, d, true)) <= 2;
             }
+            Want(seeded, "a city person's mood is their own seed's for the day, the grumpy's from the lower three");
             Want(moods && grumpyLow && Mood(77, 3, 1, false) != null, "a city person's mood is one of the five, the same all day; the grumpy never better than fine");
             return p;
         }
