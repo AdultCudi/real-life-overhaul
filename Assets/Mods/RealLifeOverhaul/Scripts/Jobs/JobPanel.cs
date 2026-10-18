@@ -1,23 +1,12 @@
 using System;
-using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A job's use of the game's panel over a place (<see cref="WorldPanel"/>): shows it, takes it down, keeps it over the
-    /// right place and says in the log, once per change, whether the game took it. A job makes one of these for the shift
-    /// and takes it down in its End.
-    ///
-    /// For a job that does one thing at a time on the interact key (take the parcels, mop the spill, offer a flyer) the
-    /// panel is set with <see cref="Offer"/>: the first button runs the job's action by the locale key that names it,
-    /// the second is the job's "let time pass". For anything else the job sets the buttons on <see cref="Panel"/>
-    /// itself, as the drinks cart does. The buttons carry their key (the game writes it) and also take a click, so the
-    /// mod reads no key.
-    ///
-    /// The cost: texts and buttons are made only when what they say changes (the panel compares them); the game puts the
-    /// box over the place every frame by itself.
+    /// A job's use of the game's panel over a place (<see cref="WorldPanel"/>): <see cref="Offer"/> puts one action on the
+    /// interact key, or a job sets its own buttons on <see cref="Panel"/>; the game runs them on its keys or a click.
     /// </summary>
     public sealed class JobPanel
     {
@@ -34,7 +23,7 @@ namespace RealLifeOverhaul
         private int _up;   // 0 not up, 1 up, 2 refused by another panel
 
         /// <param name="name">What the log calls this panel ("flyer panel").</param>
-        /// <param name="run">Runs the action the first button names (its locale key), when the game says it was pressed.</param>
+        /// <param name="run">Runs the action the first button names (its locale key) when it is pressed.</param>
         /// <param name="second">Runs the second button; null when the job has none.</param>
         public JobPanel(string name, Action<string> run = null, Action second = null)
         {
@@ -51,10 +40,7 @@ namespace RealLifeOverhaul
         /// <summary>True while the game is showing this panel: the interact key is then the panel's first button.</summary>
         public bool Up => _up == 1;
 
-        /// <summary>
-        /// The words and the one or two buttons. A button is a locale key (null leaves it out); the first is the action
-        /// the job names, the second the job's own button.
-        /// </summary>
+        /// <summary>The words and the one or two buttons, each a locale key (null leaves it out): the job's action, then its own second button.</summary>
         public void Offer(string first, string left, string right, Color32 rightColour, string action, bool actionOn, string secondKey, bool secondOn)
         {
             _action = action;
@@ -83,7 +69,7 @@ namespace RealLifeOverhaul
             return Note(_panel.Show());
         }
 
-        /// <summary>Over a person or thing that moves; the game follows it every frame. Over the player's head while it is behind the camera.</summary>
+        /// <summary>Over a person or thing that moves, followed by the game every frame; over the player's head while it is behind the camera.</summary>
         public bool Show(Transform over, float lift, PlayerController player)
         {
             Vector3 at = over.position + Vector3.up * lift;

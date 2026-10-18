@@ -27,9 +27,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeActivity.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomePhone.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Home/Roommates/RoommateRules.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/CareerPhone.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobCatalogue.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobPhone.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Law/RecordPhone.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Meta/SettingsTable.cs	1
@@ -50,9 +47,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	2
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobSpots.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/CartQueueRules.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/VendorJob.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Law/Custody.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Meta/SaveTools.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavHud.cs	1
@@ -161,7 +155,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Family/Wedding.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitRules.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeCooking.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobAnimations.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Justice/JusticeBridges.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Law/LawBridges.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Law/StationPlan.cs	1
@@ -249,9 +242,6 @@ RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Family/FamilyPhone.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitOutDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Home/HomeDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/CareerDirector.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobBoards.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobSites.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetGame.cs	1
@@ -385,17 +375,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorDirector.cs	7
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/CareerCatalogue.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/CareerDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/GigWords.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Job.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobCatalogue.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/BuskerJob.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/CartQueueRules.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/CleanerJob.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/CourierJob.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/LeadJob.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/Kinds/VendorJob.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Law/Custody.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Law/PrecinctFrontage.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Law/Precincts.cs	1

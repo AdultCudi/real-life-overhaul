@@ -4,14 +4,7 @@ using System.Text;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What a savegame remembers about the player's jobs: experience, strikes and sackings per
-    /// job, what was earned today and this week. Kept as one line of text in the save's modData
-    /// (a plain string dictionary the base game carries along without reading), so a save made
-    /// with jobs loads without the mod, and one from before jobs simply starts at nothing.
-    /// A job in progress is not saved: loading a game always starts with no job on.
-    /// Game-free: the director tells it the day.
-    /// </summary>
+    /// <summary>The player's jobs as a save remembers them (experience, strikes, today's and the week's pay), one line in modData. Game-free.</summary>
     public static class JobState
     {
         private const string Key = "reallife:jobs";
@@ -84,7 +77,6 @@ namespace RealLifeOverhaul
             return Of(def).SackedUntil > day;
         }
 
-        /// <summary>How many units of this job are still to be had today.</summary>
         public static int LeftToday(JobDef def)
         {
             int left = def.DailyUnits - Of(def).Today;
@@ -107,12 +99,7 @@ namespace RealLifeOverhaul
             Day = EarnedToday = Week = EarnedThisWeek = ShiftsThisWeek = LastPoliceStopDay = 0;
         }
 
-        // ---------------------------------------------------------------- what happens
-
-        /// <summary>
-        /// Moves on to a new day (today's counts start again). Returns true when a week has ended
-        /// in which something was earned: the totals are then in the out values, and reset.
-        /// </summary>
+        /// <summary>Moves on to a new day. True when a week in which something was earned has ended: its totals are in the out values, and reset.</summary>
         public static bool NewDay(int day, out int weekEarned, out int weekShifts)
         {
             weekEarned = 0;
@@ -152,10 +139,7 @@ namespace RealLifeOverhaul
             return JobCatalogue.LevelFor(def, record.Units) > before;
         }
 
-        /// <summary>
-        /// A shift that was cut short by a save and a load (<see cref="JobSave"/>) and had work done on it: it counts as a
-        /// shift worked, and the strikes stay as they were. It is neither a failed shift nor a good one.
-        /// </summary>
+        /// <summary>A shift cut short by a save and a load (<see cref="JobSave"/>) with work done: a shift worked, neither failed nor good, the strikes as they were.</summary>
         public static void ShiftCut(JobDef def)
         {
             Of(def).Shifts++;
@@ -191,8 +175,6 @@ namespace RealLifeOverhaul
             LastPoliceStopDay = day;
         }
 
-        // ---------------------------------------------------------------- the save
-
         public static void Load(Dictionary<string, string> data, int day)
         {
             Clear();
@@ -206,7 +188,7 @@ namespace RealLifeOverhaul
                 catch (System.Exception)
                 {
                     Clear();   // a damaged line costs this save's jobs, never the load
-                    SaveLines.Unreadable(data, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
+                    SaveLines.Unreadable(data, Key, "it could not be read");   // the line is kept as it is (Core/SaveLines)
                 }
             }
             if (Day == 0)

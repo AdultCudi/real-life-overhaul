@@ -26,10 +26,7 @@ namespace RealLifeOverhaul
         Weather = 16   // pay for working out in bad weather
     }
 
-    /// <summary>
-    /// Everything that makes one shift of a gig differ from another, drawn once when it is asked for or started and never
-    /// again. Plain data: the jobs read it and roll nothing of their own for these things.
-    /// </summary>
+    /// <summary>What makes one shift of a gig differ from another, drawn once when asked for or started. Jobs roll none of it themselves.</summary>
     public readonly struct GigOffer
     {
         public readonly string Id;
@@ -44,7 +41,7 @@ namespace RealLifeOverhaul
         public readonly float WeatherFactor;  // 1 in fair weather
         public readonly float Fee;            // all of that and the calibration: what the shift's pay is multiplied by
         public readonly float CrowdFactor;    // quiet 0.70, normal 1, rush 1.30
-        public readonly int Units;            // the size of the shift (0 for a gig that goes on until the player stops)
+        public readonly int Units;            // the size of the shift; 0 for a gig that goes on until the player stops
         public readonly int TipperAt;         // the unit at which a big tipper turns up (1 on), or 0
         public readonly float TipperUnits;    // ...and the tip, in units of the gig's pay
         public readonly float SpeedUnits;     // the speed bonus, in units of the gig's pay, or 0
@@ -76,7 +73,6 @@ namespace RealLifeOverhaul
 
         public bool Open => Day != GigDay.Closed;
         public bool HasSpeed => SpeedUnits > 0f;
-        public bool HasTipper => TipperAt > 0;
 
         /// <summary>The offer a shift without one is worked at: the table's figures.</summary>
         public static GigOffer Table(JobDef def)
@@ -86,66 +82,53 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The one place the variation between shifts of a gig is decided. Game-free, like the catalogues, so that the
-    /// offline check (RealLifeOverhaul.Build/CatalogueCheck) draws thousands of offers and tests the ranges and the
-    /// averages. Nothing is hidden: the fee, the size, the client, the day, the crowd and the events are all said on the
-    /// Gig Line and on the shift's panel.
-    ///
-    /// Every draw comes from a seed made of the day, the hour and the gig, so asking again in the same hour gives the
-    /// same offer, and the offer quoted on the phone is the one that is worked. The day's board (which gigs are busy,
-    /// which has nothing) is made from the day and the gig alone.
-    ///
-    /// Fair means: over many shifts, a gig's pay averages the table's figure (<see cref="JobCatalogue"/>) for a shift
-    /// played well in fair weather. The client's factor and the day's factor each average exactly 1; the size is
-    /// symmetrical round the table's; the crowd's factor averages 1; and the expected money of the events (a big tip,
-    /// a speed bonus), taken as won, is taken off the fee (<see cref="Calibration"/>), so adding them back gives 1.
-    /// Only weather pay is extra, and only when it is bad.
+    /// The one place shifts of a gig are varied; game-free, so CatalogueCheck draws thousands of offers. Every draw is seeded
+    /// by the day, hour and gig, so the offer quoted is the one worked. Over many shifts a gig's pay averages the table's figure
+    /// (<see cref="Calibration"/> takes the events' expected money off the fee); only bad-weather pay is extra.
     /// </summary>
     public static class GigOffers
     {
-        // ---- the client: one of three bands, each uniform inside, contiguous; the mean is 0.4 x 0.875 + 0.4 x 1.0125 + 0.2 x 1.225 = 1
+        // The client: three contiguous uniform bands; the mean is 0.4 x 0.875 + 0.4 x 1.0125 + 0.2 x 1.225 = 1.
         public const float ClientLow = 0.80f;
         public const float TightTop = 0.95f;
         public const float FairTop = 1.075f;
         public const float ClientHigh = 1.375f;
         public const float TightShare = 0.4f;
-        public const float FairShare = 0.4f;     // (the generous are the rest: 0.2)
+        public const float FairShare = 0.4f;     // the generous are the rest: 0.2
 
-        // ---- the day's board: of the gigs on the Gig Line, on average 2.5 are busy and 0.5 have nothing
+        // The day's board: of the gigs on the Gig Line, on average 2.5 are busy and 0.5 have nothing.
         public const float BusyPerDay = 2.5f;
         public const float ClosedPerDay = 0.5f;
         public const float BusyFee = 1.20f;
-        /// <summary>The fee on a day that is neither busy nor closed: the figure that makes a gig's fee average 1 over the shifts that are on offer.</summary>
+        /// <summary>The fee on a day neither busy nor closed: the figure that makes a gig's fee average 1 over the shifts on offer.</summary>
         public static float NormalFee(int gigs)
         {
             float busy = BusyPerDay / (gigs - ClosedPerDay);   // the share of offered shifts that are busy
             return (1f - busy * BusyFee) / (1f - busy);
         }
 
-        // ---- the street: 0.25 x 0.70 + 0.5 x 1.00 + 0.25 x 1.30 = 1
+        // The street: 0.25 x 0.70 + 0.5 x 1.00 + 0.25 x 1.30 = 1.
         public const float QuietCrowd = 0.70f;
         public const float RushCrowd = 1.30f;
         public const float CrowdShare = 0.25f;   // quiet, and the same for a rush
 
-        // ---- events
-        public const float TipperChance = 0.25f;
+        public const float TipperChance = 0.25f;   // a shift's chance of a big tipper
         public const float TipperLow = 1f;       // the tip, in units of the gig's pay
         public const float TipperHigh = 2f;
-        public const float SpeedChance = 0.30f;
+        public const float SpeedChance = 0.30f;  // a shift's chance of a speed bonus
         public const float SpeedLow = 0.5f;      // the bonus, in units of the gig's pay
         public const float SpeedHigh = 1.5f;
         public const float SpeedTime = 0.6f;     // paid if done within this share of the time allowed
-        public const float RedoChance = 0.20f;
+        public const float RedoChance = 0.20f;   // a shift's chance of a difficult customer
         public const int TaxiShift = 4;          // a ride-hail shift is taken to be this many fares for the events
 
-        // ---- weather pay, outdoors: a share of the fee more
+        // Weather pay, out of doors: a share of the fee more.
         public const float RainPay = 1.15f;
         public const float StormPay = 1.25f;
         public const float HeatPay = 1.10f;
         public const float ColdPay = 1.10f;
         public const float IcePay = 1.20f;
 
-        /// <summary>The events a gig can have.</summary>
         public static GigEvents EventsOf(string id)
         {
             switch (id)
@@ -175,10 +158,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The money the events are expected to add to a shift, as a share of the shift's pay, taking the speed bonus as won.
-        /// Worked out from the chances and the middle of each range.
-        /// </summary>
+        /// <summary>The money the events are expected to add to a shift, as a share of its pay, from the chances and the middle of each range, the speed bonus taken as won.</summary>
         public static float EventShare(JobDef def)
         {
             GigEvents events = EventsOf(def.Id);
@@ -201,8 +181,6 @@ namespace RealLifeOverhaul
             return 1f / (1f + EventShare(def));
         }
 
-        // ---------------------------------------------------------------- the day's board
-
         /// <summary>How the day goes for a gig: busy, closed or neither. Decided by the day and the gig alone.</summary>
         public static GigDay DayOf(string id, int day)
         {
@@ -212,7 +190,7 @@ namespace RealLifeOverhaul
             {
                 return GigDay.Normal;
             }
-            // Rank the gigs for the day by a hash; the lowest may be shut, the next two or three are busy. No list is made.
+            // The gigs ranked for the day by a hash: the lowest may be shut, the next two or three are busy. No list is made.
             uint own = Mix((uint)day, (uint)mine, 0u, 0x51ED2701u);
             int rank = 0;
             for (int i = 0; i < gigs; i++)
@@ -232,13 +210,7 @@ namespace RealLifeOverhaul
             return rank >= 1 && rank <= busy ? GigDay.Busy : GigDay.Normal;
         }
 
-        // ---------------------------------------------------------------- one shift's offer
-
-        /// <summary>
-        /// The offer for a gig in an hour of a day. <paramref name="weather"/> is what the sky is at the moment of asking
-        /// (and only matters to gigs worked out of doors). A flat offer is the table's figures, for shifts that are not
-        /// freelance gigs.
-        /// </summary>
+        /// <summary>The offer for a gig in an hour of a day; <paramref name="weather"/> is the sky when asked, for gigs out of doors.</summary>
         public static GigOffer Draw(JobDef def, int day, int hour, GigWeather weather)
         {
             GigEvents events = EventsOf(def.Id);
@@ -251,7 +223,6 @@ namespace RealLifeOverhaul
             var dice = new GigDice(seed);
             GigDay board = DayOf(def.Id, day);
 
-            // the client
             float pick = dice.Next();
             GigClient client;
             float clientFactor;
@@ -275,11 +246,9 @@ namespace RealLifeOverhaul
             weather = weatherFactor > 1f ? weather : GigWeather.Fair;
             float fee = clientFactor * dayFactor * Calibration(def) * weatherFactor;
 
-            // the size
             int units = def.ShiftUnits > 0 ? def.ShiftUnits + dice.Range(-def.UnitsSpread, def.UnitsSpread) : 0;
             int span = units > 0 ? units : TaxiShift;
 
-            // the street
             GigCrowd crowd = GigCrowd.Normal;
             float crowdFactor = 1f;
             float street = dice.Next();
@@ -297,7 +266,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // the events
+            // Every number is drawn whatever the gig's events, so each part of an offer always comes from the same draw.
             int tipperAt = 0;
             float tipperUnits = 0f;
             float chance = dice.Next();
@@ -326,8 +295,6 @@ namespace RealLifeOverhaul
                 speedUnits, SpeedTime, redoAt);
         }
 
-        // ---------------------------------------------------------------- dice
-
         /// <summary>A hash of up to three numbers and a salt: the seed of a draw.</summary>
         public static uint Mix(uint a, uint b, uint c, uint salt)
         {
@@ -345,10 +312,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// A small seeded source of numbers, the same on every machine and in the offline check (not UnityEngine.Random,
-    /// whose state the rest of the game uses). A struct, so a draw makes nothing.
-    /// </summary>
+    /// <summary>A seeded source of numbers, the same on every machine (not UnityEngine.Random, whose state the game uses); a struct, so a draw makes nothing.</summary>
     public struct GigDice
     {
         private uint _state;

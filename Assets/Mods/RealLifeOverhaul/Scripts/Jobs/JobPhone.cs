@@ -9,12 +9,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Finding work: a "Gig Line" contact on the phone. Calling it goes through the jobs there
-    /// are, one at a time, each with what it pays right now, the player's level in it, how much
-    /// of it is left today and, if it cannot be taken, why not. It is also where a job in
-    /// progress is given up. Registered the way the mod's other contacts are (PhoneContacts).
-    /// </summary>
+    /// <summary>The Gig Line contact: its call offers the jobs one at a time with today's pay and level, and gives up a job in progress.</summary>
     public static class JobPhone
     {
         public const string ContactId = "reallife-jobs";
@@ -59,10 +54,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The same conversation face to face, at a help-wanted board: the game's own dialogue
-        /// panel, the way its counters and desks open one.
-        /// </summary>
+        /// <summary>The same conversation face to face at a help-wanted board, in the game's dialogue panel as its counters open one.</summary>
         public static void OpenInPerson()
         {
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_jobs_calldialogtype");
@@ -95,7 +87,8 @@ namespace RealLifeOverhaul
         }
     }
 
-    public class JobLineDialog : Dialog
+    /// <summary>The Gig Line's conversation, by phone or at a board.</summary>
+    public sealed class JobLineDialog : Dialog
     {
         public JobLineDialog()
         {
@@ -145,8 +138,7 @@ namespace RealLifeOverhaul
             string reason = null;
             bool available = director != null && director.Available(def, out reason);
             int level = JobState.Level(def);
-            // What the work will really pay, owners' cut and today's client included: the offer is drawn from the day, the hour and the gig,
-            // so it is the one the job is started with if it is taken in the same hour.
+            // What the work will really pay: the offer drawn now is the one worked if the job is taken this hour.
             GigOffer offer = GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky());
             float rate = JobCatalogue.PayFactor(level) * JobDirector.PayScale() * offer.Fee;
             int size = offer.Units > 0 ? offer.Units : def.ShiftUnits;

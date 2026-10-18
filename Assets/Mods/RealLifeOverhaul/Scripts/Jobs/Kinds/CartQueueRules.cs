@@ -14,40 +14,29 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The pavement drinks cart's queue (Jobs/Kinds/VendorJob), as rules with no Unity or game types, checked offline.
-    /// A customer on their way who cannot get to the cart (their route cut by an accident's scene, a vehicle standing
-    /// on the crossing, a carved cordon; a route that stops short; nobody nearer for seconds on end) leaves the queue at
-    /// once, never on a long timer, and so does one who is no longer the cart's to direct. None of that is the
-    /// customer walking off: only a customer kept waiting at the counter is a walk-off (VendorJob's Ordering step,
-    /// never decided here), and only one who truly gave up waiting makes the shift one shorter. Whoever left for
-    /// something not of their own doing goes back among those still to come, so the cart gets its next customer, unless
-    /// that has happened <see cref="RetriesMost"/> times in a row, when the shift is one shorter instead and cannot be
-    /// held open by a street nobody can walk.
-    /// A few comparisons a customer a tick, five times a second while the cart is open; nothing allocated.
+    /// The drinks cart's queue as rules with no game types, checked offline. A customer who cannot reach the cart leaves the queue
+    /// at once, never as a walk-off; only one who gave up waiting makes the shift shorter, the rest go back among those to come
+    /// unless <see cref="RetriesMost"/> in a row could not. A few comparisons a customer a tick.
     /// </summary>
     public static class CartQueueRules
     {
         public const float ReachedWithin = 0.9f;     // metres from their place that counts as being there
-        public const float ShortOf = 2.5f;           // metres from their place a walker who has stopped is plainly short of it (nearer, the engine may still be closing in, its stopping distance short of the goal)
+        public const float ShortOf = 2.5f;           // metres from their place a stopped walker is plainly short of it (nearer, the engine may still be closing in)
         public const float ProgressStep = 0.3f;      // metres nearer their place that counts as getting on
         public const float StuckAfter = 6f;          // seconds no nearer before a walker is stuck (one stopped by a passer-by for a moment is not)
         public const float WalkMost = 40f;           // seconds any walk to the cart may take: from 34 m away at a walk, about 30
         public const float WaitMost = 75f;           // seconds a customer waits their turn behind the counter before giving up
-        public const float RouteMost = 2.2f;         // a route to the cart this many times the distance as the crow flies is a detour round the block: nobody is sent along it
+        public const float RouteMost = 2.2f;         // a route this many times the straight distance is a detour round the block: nobody is sent along it
         public const float RouteSlack = 8f;          // ...plus these metres, for the way along a pavement and over a crossing
-        public const float RouteLongest = 45f;       // metres of route at most, whatever the distance: walked in about 35 s, inside WalkMost
+        public const float RouteLongest = 45f;       // metres of route at most, walked in about 35 s, inside WalkMost
         public const float NextSoon = 1.5f;          // seconds after one left for nothing of their own doing before the next sets off
         public const int RetriesMost = 4;            // customers in a row who could not get to the cart before the shift is one shorter
 
-        /// <summary>
-        /// A customer on their way, to the place behind the counter or to the counter itself. <paramref name="best"/> and
-        /// <paramref name="bestAt"/> are the nearest they have been to their place and when; set them to the first
-        /// distance and the time they set off, and leave them to this after that.
-        /// </summary>
+        /// <summary>A customer on their way; <paramref name="best"/> and <paramref name="bestAt"/> start at the first distance and time, then are kept here.</summary>
         /// <param name="held">Still the cart's: on the street, in use, the same lease as when they set off.</param>
-        /// <param name="routeKnown">The route asked for has been worked out (it is no longer pending).</param>
+        /// <param name="routeKnown">The route asked for has been worked out.</param>
         /// <param name="routeWhole">...and it reaches their place.</param>
-        /// <param name="stopped">The engine says they are not walking on: at the end of their route (or within its stopping distance of it), with none, or off the navigation mesh.</param>
+        /// <param name="stopped">The engine has them not walking on: at their route's end, with none, or off the navigation mesh.</param>
         /// <param name="distance">Metres from their place, across the ground.</param>
         /// <param name="until">When the walk is over whatever happens (set off plus <see cref="WalkMost"/>).</param>
         public static CartGuest Walking(bool held, bool routeKnown, bool routeWhole, bool stopped, float distance, float now, float until, ref float best, ref float bestAt)
@@ -91,9 +80,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether a customer who left the queue this way makes the shift one shorter. One who gave up waiting their turn
-        /// does. One the cart could not get to it (the street, or the mod) goes back among those to come, unless
-        /// <paramref name="inARow"/> (counting this one) has reached <see cref="RetriesMost"/>.
+        /// Whether a customer who left this way makes the shift one shorter: one who gave up waiting does; one who could not get
+        /// there goes back among those to come, unless <paramref name="inARow"/>, this one counted, has reached <see cref="RetriesMost"/>.
         /// </summary>
         public static bool Shorter(CartGuest why, int inARow)
         {
@@ -110,9 +98,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The cart's counts when a customer leaves the queue this way: <paramref name="came"/> (how many have set off),
-        /// <paramref name="lost"/> (came and went unserved) and <paramref name="inARow"/> (in a row who could not get
-        /// there). The walk-offs are not among them: nothing here is one. True when the shift is one shorter.
+        /// Updates the cart's counts when a customer leaves the queue this way (none of it a walk-off): <paramref name="came"/>
+        /// set off, <paramref name="lost"/> came and went unserved, <paramref name="inARow"/> could not get there in a row. True
+        /// when the shift is one shorter.
         /// </summary>
         public static bool Account(CartGuest why, ref int came, ref int lost, ref int inARow)
         {

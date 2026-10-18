@@ -2,28 +2,13 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.Characters.Appearance;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Work clothes on the player for a shift, over their own and never in their place.
-    ///
-    /// The game itself dresses the player for a while this way (its swimwear, the uniform at one of its own
-    /// tills): <c>AppearanceSetter.UpdateVisuals(list)</c> draws the pieces of the list where it has one and the
-    /// character's own everywhere else, and writes nothing into the character's appearance data.
-    /// <c>UpdateVisuals()</c> draws the character's own again. So the player's own clothes are never changed, a
-    /// save made in uniform holds the player's own clothes, and a save loaded with or without the mod shows them.
-    ///
-    /// The outfit is one of the living city's (CityLife/CityOutfits: the game's own garments, found by name and
-    /// recoloured through the colour entry the game reads). What is recoloured on the player's body is recorded
-    /// and put back before the body is drawn in its own clothes again. Where the player is shown by the detailed
-    /// double (Character/PlayerDouble), the double is dressed the same way through its own hook.
-    ///
-    /// One for the session, owned by <see cref="JobDirector"/>, which takes the uniform off on every way a job
-    /// can stop (the end of the shift, a fault, the feature switched off, the city unloading). A job only says
-    /// <see cref="Wear"/>. Each change is one rebuild of the player's look (the game's mesh merge, a few
-    /// milliseconds): twice a shift, at the moment the player takes their place and when the shift is over.
+    /// Work clothes over the player's own, drawn as the game draws its swimwear (<c>AppearanceSetter.UpdateVisuals(list)</c>), so
+    /// nothing is written into their appearance data and no save holds the uniform. Owned by <see cref="JobDirector"/>, which
+    /// takes it off on every way a job stops; one mesh merge each way.
     /// </summary>
     public sealed class JobUniform
     {
@@ -44,13 +29,7 @@ namespace RealLifeOverhaul
             _overDouble = OverDouble;
         }
 
-        /// <summary>True while the player is in work clothes.</summary>
-        public bool Worn => _on;
-
-        /// <summary>
-        /// Puts one of the living city's outfits on the player over their own clothes. False, with nothing changed,
-        /// if the player cannot be dressed now. Asking again while it is worn does nothing.
-        /// </summary>
+        /// <summary>Puts one of the living city's outfits on over the player's own. False, nothing changed, if they cannot be dressed now.</summary>
         public bool Wear(PlayerController player, CityLook outfit)
         {
             if (_on && _outfit == outfit)
@@ -81,7 +60,7 @@ namespace RealLifeOverhaul
                 _on = true;
                 PlayerDouble.Workwear = _overDouble;
                 Looks.Count("jobs: the player's uniform put on");
-                look.UpdateVisuals(_worn);   // their own data is untouched; the double hears of it and is dressed through OverDouble
+                look.UpdateVisuals(_worn);   // their own data untouched; the double is dressed through OverDouble
                 Looks.Done();
                 if (Meta.Dev.Verbose)
                 {
@@ -119,7 +98,7 @@ namespace RealLifeOverhaul
                 CityOutfits.Restore(_dyes);
                 AppearanceSetter look = _look;
                 _look = null;
-                if (was && look != null)   // (gone with the city: nothing to draw, and the next player is built from their own data)
+                if (was && look != null)   // gone with the city: nothing to draw, the next player is built from their own data
                 {
                     Looks.Count("jobs: the player's uniform taken off");
                     look.UpdateVisuals();
@@ -153,8 +132,7 @@ namespace RealLifeOverhaul
             _onDouble.Clear();
         }
 
-        // The detailed double is being dressed from a copy of the player's data: the same outfit goes into that copy,
-        // from the double's own garments (found by name there) and its own colour entries.
+        // The detailed double is dressed from a copy of the player's data, with its own garments and colours.
         private void OverDouble(AppearanceSetter body, List<AppearanceElementData> elements)
         {
             if (!_on || body == null || elements == null)
@@ -185,7 +163,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The torso, legs, feet and hat of a look, by the names of the game's pieces: for the log only.
+        // The torso, legs, feet and hat of a look by the game's piece names, for the log.
         private static string Describe(AppearanceSetter look, List<AppearanceElementData> elements)
         {
             var text = new System.Text.StringBuilder(96);

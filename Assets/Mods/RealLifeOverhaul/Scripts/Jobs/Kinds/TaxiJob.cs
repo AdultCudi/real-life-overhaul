@@ -1,4 +1,3 @@
-using System.Globalization;
 using BigAmbitions.Characters;
 using Characters.EmojiSystem;
 using RealLifeOverhaul.GameUi;
@@ -9,57 +8,38 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Ride-hail driver, in the player's own car or a van hired for the day (JobRental), with
-    /// a roof sign on it for the length of the shift. A fare is called in: a passenger waits on
-    /// the pavement outside a building, waves when the car comes into the street, walks to a
-    /// rear door once it has stopped beside them and gets in. They are driven to another
-    /// address, get out on the kerb side, say what they thought of the ride and walk to the
-    /// door. The fare is by distance; the tip is by how the ride felt (hard braking, bumps,
-    /// speeding, being pulled over, a crash) and whether it was quick. Then the next call comes.
-    ///
-    /// Uses: the game's walk for the passenger, JobClip.Hail, Thank and Annoyed, and for getting
-    /// in and out JobClip.CarEnter and CarExit at the door: with the clips, the passenger opens
-    /// the door and gets in before they are taken off the street; without them it is the sound
-    /// of the door alone (the game has no such animation, and none is faked). Either way they
-    /// are only ever on their feet at a place beside the car that was found clear, never in it.
-    ///
-    /// What counts as a hard stop is worked out from the car being driven, each ride: the most
-    /// its brakes and its engine can do (never more than the tyres can hold), of which a
-    /// passenger puts up with seven tenths. A gentle car is therefore judged gently.
-    ///
-    /// IN THE GAME'S OWN INTERFACE. Nothing in this job is done on foot with a key, so there is no panel over a place:
-    /// the shift's figures are on the HUD in a copy of the game's job panel (<see cref="ShiftFigures"/>), the fare to
-    /// reach or the ride's comfort and the missed fares of the two allowed on its second line. There is no "Let time
-    /// pass": the car would have to be moved by the clock. The driver works in their own clothes.
+    /// Ride-hail in the player's own car or a hired van, with a roof sign: a passenger waves from the pavement, gets in at a
+    /// rear door when the car stops beside them and gets out at the other address. The fare is by distance, the tip by how the
+    /// ride felt (hard braking, bumps, speeding, police, crashes) and how quick it was; a hard stop is judged by what each car
+    /// can do (<see cref="Tolerated"/>). Nothing is done on foot, so no panel and no clock.
     /// </summary>
-    public sealed class TaxiJob : Job
+    public sealed partial class TaxiJob : Job
     {
         private enum Step { ToPickup, Boarding, Riding, Between }
 
         private const float PickupMin = 70f;            // metres from the player a fare may wait
-        private const float PickupMax = 380f;
-        private const float TripMin = 280f;
-        private const float TripMax = 950f;
-        private const float LaneWithin = 13f;           // a door only counts if a car can pull up this near it
-        private const float StopWithin = 17f;           // the car has "arrived" when stopped this near the door front
+        private const float PickupMax = 380f;           // metres
+        private const float TripMin = 280f;             // metres from the pickup
+        private const float TripMax = 950f;             // metres
+        private const float LaneWithin = 13f;           // metres: a door only counts if a car can pull up this near it
+        private const float StopWithin = 17f;           // metres: the car has arrived when stopped this near the door front
         private const float StoppedSpeed = 0.7f;        // m/s
-        private const float StoppedFor = 0.5f;
-        private const float PersonAppears = 130f;       // the passenger is put on the street when the player is this near
-        private const float HailWithin = 34f;
-        private const float BoardAllow = 30f;
+        private const float StoppedFor = 0.5f;          // seconds
+        private const float PersonAppears = 130f;       // metres: the passenger is put on the street when the player is this near
+        private const float HailWithin = 34f;           // metres
+        private const float BoardAllow = 30f;           // seconds for the passenger to get in
         private const float AwayAllow = 25f;            // seconds the driver may leave a passenger sitting in the car
-        private const float HarshG = 9.5f;              // m/s2 of braking or swerving, held over two ticks: an emergency stop. The most it is ever set to.
+        private const float HarshG = 9.5f;              // m/s2 of braking or swerving held over two ticks: an emergency stop, and the most it is ever set to
         private const float HarshLeast = 4.5f;          // ...and the least: nobody minds less than this
-        private const float BumpOver = 5.5f;            // this much more in a single tick is a jolt: a kerb, a nudge
+        private const float BumpOver = 5.5f;            // m/s2 more in a single tick is a jolt: a kerb, a nudge
         private const float Grip = 9f;                  // m/s2 the tyres hold on a dry road
         private const float Tolerated = 0.7f;           // the share of what the car can do that a passenger puts up with
-        private const float WheelRadius = 0.33f;
+        private const float WheelRadius = 0.33f;        // metres
         private const float LaunchSpeed = 5f;           // m/s at which the engine's pull is taken
         private const string SignProp = "taxi_sign";
         private const float DoorExact = 0.35f;          // metres from the place the getting-in clip is made for within which it is played
         private const float SpeedingAbove = 26f;        // m/s: about 94 km/h, with a passenger aboard
-        /// <summary>Missed fares that end the shift.</summary>
-        public const int MissesAllowed = 2;
+        public const int MissesAllowed = 2;             // missed fares that end the shift
 
         private static readonly string[] Greetings =
         {
@@ -102,8 +82,8 @@ namespace RealLifeOverhaul
         private Vector3 _boardCarAt;
         private float _nextHail;
         private bool _hailed;
-        private bool _hailing;              // the passenger's arm is up (a clip that goes on until it is stopped)
-        private bool _doorClip;             // they board at the place the getting-in clip is made for, and there is such a clip
+        private bool _hailing;              // the passenger's arm is up: a clip that goes on until it is stopped
+        private bool _doorClip;             // they board where the getting-in clip is made for, and there is such a clip
         private bool _doorRight;            // ...at a door on the car's right side
         private Vector3 _doorInwards;       // ...facing this way: square to the car
         private bool _onFootShown;
@@ -138,13 +118,11 @@ namespace RealLifeOverhaul
         private string _pickupLabel;
         private string _dropLabel;
 
-        // The game's own interface.
         private ShiftFigures _figures;
         private int _cardKey = int.MinValue;
 
         public override JobDef Def => _def;
 
-        /// <summary>Giving up with someone waving at the kerb, or sitting in the back, counts against the driver.</summary>
         public override bool QuitIsFailure => _step == Step.Boarding || _step == Step.Riding;
 
         protected override bool OnBegin(float now)
@@ -180,7 +158,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The shift's figures on the card: each line is written only when what it says changes.
         private void Figures(float now)
         {
             _figures.Objective(Objective);
@@ -198,95 +175,6 @@ namespace RealLifeOverhaul
             _figures.Money(Shift.Total, Shift.Tips);
             _figures.Time(-1);
         }
-
-        // ---------------------------------------------------------------- the roof sign
-
-        private static readonly RaycastHit[] RoofHits = new RaycastHit[12];
-
-        // The sign stands on the roof of the car the shift is driven in: on the car's own body, found with one ray
-        // from above. Moved only when the player changes cars; taken off at the end of the shift.
-        private void Sign(CarController car)
-        {
-            if (car == null || ReferenceEquals(car, _signOn))
-            {
-                return;
-            }
-            Unsign();
-            int mask = TrafficTools.VehicleMask;
-            Transform body = car.transform;
-            JobSpots.CarFrame(car, out Vector3 centre, out _, out _, out _);
-            int hits = mask != 0 ? Physics.RaycastNonAlloc(centre + body.up * 4f, -body.up, RoofHits, 5f, mask, QueryTriggerInteraction.Ignore) : 0;
-            float nearest = float.MaxValue;
-            Vector3 roof = default;
-            for (int i = 0; i < hits; i++)
-            {
-                if (RoofHits[i].collider != null && RoofHits[i].collider.transform.IsChildOf(body) && RoofHits[i].distance < nearest)
-                {
-                    nearest = RoofHits[i].distance;
-                    roof = RoofHits[i].point;
-                }
-                RoofHits[i] = default;
-            }
-            if (nearest > 4.5f)
-            {
-                return;   // nothing of the car's under the ray: no sign rather than one in the air
-            }
-            _sign = Ctx.Props.Take(SignProp);
-            if (_sign == null)
-            {
-                return;
-            }
-            _sign.SetParent(body, false);
-            _sign.localPosition = body.InverseTransformPoint(roof);
-            _sign.localRotation = Quaternion.identity;
-            Vector3 scale = body.lossyScale;
-            _sign.localScale = new Vector3(1f / Mathf.Max(0.01f, scale.x), 1f / Mathf.Max(0.01f, scale.y), 1f / Mathf.Max(0.01f, scale.z));
-            _signOn = car;
-        }
-
-        private void Unsign()
-        {
-            if (_sign != null)
-            {
-                Ctx.Props.Return(_sign);   // back under the jobs' own root, at scale one, switched off
-            }
-            _sign = null;
-            _signOn = null;
-        }
-
-        // What this car can do, and so what a passenger in it calls a hard stop.
-        private void Tune(CarController car)
-        {
-            _harsh = HarshG;
-            try
-            {
-                Rigidbody body = Ctx.Body;
-                var vehicle = car != null ? car.vehicleController : null;
-                if (vehicle != null && body != null && body.mass > 100f)
-                {
-                    float brakes = vehicle.brakes != null ? 4f * vehicle.brakes.maxTorque / (WheelRadius * body.mass) : Grip;
-                    float engine = vehicle.powertrain != null && vehicle.powertrain.engine != null
-                        ? vehicle.powertrain.engine.maxPower * 1000f / (body.mass * LaunchSpeed) : Grip;
-                    float most = Mathf.Min(Grip, Mathf.Max(brakes, engine));
-                    _harsh = Mathf.Clamp(most * Tolerated, HarshLeast, HarshG);
-                    Ctx.Logger?.Info("Jobs: taxi comfort for this car: brakes " + brakes.ToString("F1", CultureInfo.InvariantCulture) + " m/s2, engine "
-                                     + engine.ToString("F1", CultureInfo.InvariantCulture)
-                                     + " m/s2 at " + LaunchSpeed.ToString("F0") + " m/s, " + body.mass.ToString("F0") + " kg; a hard stop is " + _harsh.ToString("F1", CultureInfo.InvariantCulture)
-                                     + " m/s2.");
-                }
-            }
-            catch (System.Exception e)
-            {
-                Ctx.Logger?.Error(e);
-            }
-            if (Ctx.Perk(CareerPerk.Premium))
-            {
-                _harsh = Mathf.Max(HarshLeast * 0.8f, _harsh * CareerCatalogue.PremiumHarsh);   // a premium passenger minds sooner
-            }
-            _bump = _harsh + BumpOver;
-        }
-
-        // ---------------------------------------------------------------- a new fare
 
         private bool NextFare(float now)
         {
@@ -318,8 +206,6 @@ namespace RealLifeOverhaul
             _stepEnd = now + seconds;
         }
 
-        // ---------------------------------------------------------------- the tick
-
         public override void Tick(float now)
         {
             float dt = Mathf.Max(0.05f, now - _lastTick);
@@ -331,7 +217,7 @@ namespace RealLifeOverhaul
             }
             if (_hired && Ctx.Rental.Car == null && JobDirector.NearestCar(60f) == null)
             {
-                // The hired van is gone (wrecked, and taken away by the game): the shift is over, nobody's bad one.
+                // The hired van is gone (wrecked and taken away by the game): the shift is over, nobody's bad one.
                 Ctx.Say("reallife_job_rental_lost", 9f);
                 Finish(JobEnd.Interrupted);
                 return;
@@ -354,7 +240,6 @@ namespace RealLifeOverhaul
         private void ToPickup(float now)
         {
             int left = Mathf.CeilToInt(_stepEnd - now);
-            // (the countdown is on the card: see Figures)
             if (left <= 0)
             {
                 Missed(now);
@@ -366,7 +251,7 @@ namespace RealLifeOverhaul
                 _passenger = Ctx.Cast.Put(_pickup.Front, true);
                 if (_passenger == null)
                 {
-                    // Nobody could be put there (the door front turned out not to be standable): another call instead.
+                    // Nobody could be put there (the door front was not standable): another call instead.
                     Ctx.Logger?.Info("Jobs: nobody could be put at " + _pickup.Name + "; the fare is replaced.");
                     Replace(now);
                     return;
@@ -383,7 +268,7 @@ namespace RealLifeOverhaul
                 if (Ctx.Driving && now >= _nextHail && _passenger.HasArrived)   // not while walking back to the kerb
                 {
                     _nextHail = now + 3.5f;
-                    _hailing = Ctx.Animations.Play(_passenger.Character, JobClip.Hail) > 0f;   // (the mod's clip goes on by itself; the game's gesture is made again)
+                    _hailing = Ctx.Animations.Play(_passenger.Character, JobClip.Hail) > 0f;   // the mod's clip goes on by itself; the game's gesture is made again
                     if (!_hailed)
                     {
                         _hailed = true;
@@ -425,8 +310,7 @@ namespace RealLifeOverhaul
             _doorClip = false;
             if (room)
             {
-                // With a clip for getting in they walk to where that clip is made for: square on to the rear door, the
-                // feet 0.75 m out from the middle of the seat. Without one, to the ground beside the door as before.
+                // With a getting-in clip they walk to where it is made for, square to the rear door; without one, beside the door.
                 JobSpots.AtDoor(Ctx.Car, _boardSpot, out Vector3 door, out _doorInwards, out _doorRight);
                 if (ClipJobAnimations.Has(_doorRight ? JobClip.CarEnter : JobClip.CarEnterLeft))
                 {
@@ -448,82 +332,6 @@ namespace RealLifeOverhaul
             Unmark();
             Show(JobText.T("reallife_job_taxi_obj_boarding"));
             Go(Step.Boarding, now, BoardAllow);
-        }
-
-        private void Boarding(float now)
-        {
-            if (_passenger == null || !_passenger.IsValid)
-            {
-                _passenger = null;
-                Replace(now);
-                return;
-            }
-            bool moved = !Ctx.Driving || Ctx.Car != _car || Ctx.Speed > 1.5f || JobSpots.Flat(Ctx.Car.transform.position, _boardCarAt) > 1.2f;
-            float gap = JobSpots.Flat(_passenger.Position, _boardSpot);
-            if (_enterUntil >= 0f)
-            {
-                // At the door, getting in. If the car pulls away now they are left standing, and say so below.
-                if (!moved && now < _enterUntil)
-                {
-                    return;
-                }
-                _enterUntil = -1f;
-                if (!moved)
-                {
-                    Ctx.Cast.Seat(_passenger);
-                    _rider = _passenger;
-                    _passenger = null;
-                    StartRide(now);
-                    return;
-                }
-                ActivityAnimators.Forget(_passenger.Character.animator);   // the door is gone from under their hand: nobody walks off half way into a car
-            }
-            bool there = now - _stepFrom > 0.6f && _passenger.HasArrived && gap < 1.3f;
-            if (!moved && (there || (now > _stepEnd && gap < 3f)))
-            {
-                JobCast.DoorSound(_boardSpot);
-                // With the clip, and only from the place it is made for (they stop where the walk left them: nobody is
-                // slid the last step): they turn square to the door, open it and get in, and only then are they in the car.
-                bool atDoor = _doorClip && gap < DoorExact;
-                Vector3 here = _passenger.Position;
-                _passenger.StandAt(here, atDoor ? here + _doorInwards * 3f : _car.transform.position);
-                float getIn = atDoor ? Ctx.Animations.Play(_passenger.Character, _doorRight ? JobClip.CarEnter : JobClip.CarEnterLeft) : 0f;
-                Ctx.Logger?.Info(getIn > 0f
-                    ? "Jobs: the passenger gets in at the " + (_doorRight ? "right" : "left") + " rear door, " + gap.ToString("F2", CultureInfo.InvariantCulture)
-                        + " m from where the clip is made for."
-                    : "Jobs: the passenger is in the car (no getting-in clip"
-                        + (_doorClip ? ": they stopped " + gap.ToString("F2", CultureInfo.InvariantCulture) + " m from the door)." : " to be had)."));
-                if (getIn > 0f)
-                {
-                    _enterUntil = now + getIn;
-                    return;
-                }
-                Ctx.Cast.Seat(_passenger);
-                _rider = _passenger;
-                _passenger = null;
-                StartRide(now);
-                return;
-            }
-            if (moved || now > _stepEnd)
-            {
-                // The car pulled away (or they could not get to it): they walk back to the pavement and wait there again.
-                if (!_passenger.MoveTo(_pickup.Front, Pace.Walk))
-                {
-                    _passenger.Halt();
-                }
-                if (moved)
-                {
-                    Ctx.Say(JobText.Pick(Hold, ref _line), 5f);
-                }
-                _stoppedSince = -1f;
-                // Not asked again where the car stands now; and the wait is not started afresh, only never cut below a fair chance.
-                _tried = !moved;
-                _triedAt = _boardCarAt;
-                _pickupBy = Mathf.Max(_pickupBy, now + 20f);
-                Go(Step.ToPickup, now, _pickupBy - now);
-                Mark(_pickup.Front, _pickupLabel);
-                Show(JobText.T("reallife_job_taxi_obj_stop"));
-            }
         }
 
         private void StartRide(float now)
@@ -561,7 +369,7 @@ namespace RealLifeOverhaul
                 }
                 else if (now - _awaySince > AwayAllow)
                 {
-                    // Left sitting in the car: they have got out and gone by the time the driver is back, and the fare is lost.
+                    // Left sitting in the car: they are gone by the time the driver is back, and the fare is lost.
                     Ctx.Say("reallife_job_taxi_abandoned", 8f);
                     Finish(JobEnd.Failed);
                 }
@@ -574,7 +382,7 @@ namespace RealLifeOverhaul
                 Show(JobText.T("reallife_job_taxi_obj_drive", "place", _drop.Name));
             }
 
-            // How hard the car is being thrown about, whichever way: braking, swerving, a bump.
+            // How hard the car is thrown about, whichever way: braking, swerving, a bump.
             float g = (Ctx.Velocity - _lastVelocity).magnitude / dt;
             bool harsh = g > _harsh;
             if (((harsh && _wasHarsh) || g > _bump) && now - _lastJolt > 3f)
@@ -616,61 +424,10 @@ namespace RealLifeOverhaul
             Show(JobText.T("reallife_job_taxi_obj_room_out"));
             if (now - _lookingSince >= 12f)
             {
-                // Boxed in for a good while: they are paid for anyway, having squeezed out unseen.
+                // Boxed in for a good while: paid anyway, having squeezed out unseen.
                 Ctx.Logger?.Info("Jobs: no room beside the car at " + _drop.Name + " after 12 s; the fare is settled without the walk to the door.");
                 Settle(now);
             }
-        }
-
-        // The passenger gets out on the side nearer where they are going. False if there is no room on either side.
-        private bool StepOut(Vector3 towards, float now)
-        {
-            if (_car == null || !JobSpots.BesideCar(_car, towards, out Vector3 spot))
-            {
-                return false;
-            }
-            StreetActor person = _rider;
-            if (person == null)
-            {
-                return false;
-            }
-            // With a clip for getting out they come out where that clip ends: square on to the door, facing the car, the
-            // feet 0.75 m out from the middle of the seat. Without one (or if nobody can stand there), beside the door.
-            JobSpots.AtDoor(_car, spot, out Vector3 door, out Vector3 inwards, out bool right);
-            JobClip exit = right ? JobClip.CarExit : JobClip.CarExitLeft;
-            bool atDoor = ClipJobAnimations.Has(exit) && Ctx.Cast.Unseat(person, door, true);
-            if (!atDoor && !Ctx.Cast.Unseat(person, spot, true))
-            {
-                return false;
-            }
-            _rider = null;
-            JobCast.DoorSound(spot);
-            float getOut = 0f;
-            if (atDoor)
-            {
-                person.StandAt(door, door + inwards * 3f);
-                getOut = Ctx.Animations.Play(person.Character, exit);
-            }
-            else
-            {
-                // Out of the door with their back to the car.
-                Vector3 away = spot + (spot - _car.transform.position);
-                away.y = spot.y;
-                person.StandAt(spot, away);
-            }
-            Ctx.Logger?.Info(getOut > 0f ? "Jobs: the passenger gets out at the " + (right ? "right" : "left") + " rear door (clip)."
-                : "Jobs: the passenger is out beside the car (no getting-out clip to be had there).");
-            if (_leaving != null)
-            {
-                Ctx.Cast.Release(_leaving);
-            }
-            _leaving = person;
-            _leaveTo = towards;
-            _leavingWalks = false;
-            _farewellAt = now + getOut;          // what they thought of the ride is said once they are out
-            _leaveAt = now + getOut + 1.8f;
-            _leavingUntil = now + 40f;
-            return true;
         }
 
         private void Settle(float now)
@@ -750,9 +507,7 @@ namespace RealLifeOverhaul
             Go(Step.Between, now, 8f);   // nothing nearby this time: listen a little longer
         }
 
-        // ---------------------------------------------------------------- when it goes wrong
-
-        // The passenger was not reached in time: they give up. Twice in a shift and the dispatcher stops calling.
+        // The passenger was not reached in time and gives up; twice in a shift and the dispatcher stops calling.
         private void Missed(float now)
         {
             Ctx.Say(JobText.Pick(GaveUp, ref _line), 7f);
@@ -774,85 +529,6 @@ namespace RealLifeOverhaul
             Unmark();
             Show(JobText.T("reallife_job_taxi_obj_between"));
             Go(Step.Between, now, 3f);
-        }
-
-        // Whoever is waiting at the kerb walks off instead.
-        private void LetGo(float now)
-        {
-            if (_passenger == null)
-            {
-                return;
-            }
-            if (_leaving != null)
-            {
-                Ctx.Cast.Release(_leaving);
-            }
-            Unhail();
-            _leaving = _passenger;
-            _passenger = null;
-            _enterUntil = -1f;
-            _farewellAt = -1f;
-            if (!StreetSpots.AwayFrom(_leaving.Position, Ctx.PlayerPosition, 30f, false, out _leaveTo))
-            {
-                _leaveTo = _leaving.Position;
-            }
-            _leavingWalks = false;
-            _leaveAt = now + 0.5f;
-            _leavingUntil = now + 25f;
-        }
-
-        // The arm comes down (the hailing clip goes on until it is told; the game's gesture ends by itself).
-        private void Unhail()
-        {
-            if (_hailing)
-            {
-                _hailing = false;
-                if (_passenger != null && _passenger.IsValid)
-                {
-                    Ctx.Animations.Stop(_passenger.Character);
-                }
-            }
-        }
-
-        // The last passenger: a moment by the car, then to their door, then gone (through it, or once far behind).
-        private void SeeOff(float now)
-        {
-            if (_leaving == null)
-            {
-                return;
-            }
-            if (!_leaving.IsValid)
-            {
-                _leaving = null;
-                _farewellAt = -1f;
-                return;
-            }
-            if (_farewellAt >= 0f && now >= _farewellAt)
-            {
-                _farewellAt = -1f;
-                _leaving.Face(Ctx.PlayerPosition);
-                Ctx.Animations.Play(_leaving.Character, _farewell);
-            }
-            if (!_leavingWalks)
-            {
-                if (now < _leaveAt)
-                {
-                    return;
-                }
-                _leavingWalks = true;
-                if (JobSpots.Flat(_leaving.Position, _leaveTo) < 1.5f || !_leaving.MoveTo(_leaveTo, Pace.Walk))
-                {
-                    Ctx.Cast.Release(_leaving);
-                    _leaving = null;
-                }
-                return;
-            }
-            bool arrived = now - _leaveAt > 1.5f && _leaving.HasArrived;
-            if (arrived || now > _leavingUntil || JobSpots.Flat(_leaving.Position, Ctx.PlayerPosition) > 90f)
-            {
-                Ctx.Cast.Release(_leaving);
-                _leaving = null;
-            }
         }
 
         public override void OnCrash(float speed)
@@ -881,7 +557,7 @@ namespace RealLifeOverhaul
             ShowComfort();
         }
 
-        // Shown in steps of five, so the text is rebuilt a few times a ride and not every tick.
+        // In steps of five, so the card's text is rebuilt a few times a ride and not every tick.
         private void ShowComfort()
         {
             int shown = Mathf.Clamp(Mathf.CeilToInt(_comfort / 5f) * 5, 0, 100);
@@ -908,10 +584,6 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (Ctx == null)
-            {
-                return;
-            }
             Ctx.Cast.Release(_passenger);
             Ctx.Cast.Release(_rider);
             Ctx.Cast.Release(_leaving);

@@ -8,33 +8,19 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's own dirt on a client's floor, for the length of one cleaning job.
-    ///
-    /// How the game does dirt. A building's floor is a grid of <c>DirtSpotObject</c>s that every interior carries (the
-    /// player's shop and anybody else's alike); each reads its dirtiness, 0 to 100, from its place in the registration's
-    /// <c>dirtSpots</c> list. Only a business the player rents is given that list (and dirtied, and cleaned by staff), so a
-    /// client's list is empty or missing. The game's cleanliness (<c>BuildingCleanliness.GetCleanliness</c>) is
-    /// 100 minus the floor's mean dirtiness minus the mean over the visible spots (5 or more), and exactly 100 when no
-    /// spot shows dirt.
-    ///
-    /// What this does. It builds a list of its own for the client's floor (same cells, same order), puts dirt in it
-    /// with the game's own call (<c>BuildingCleanliness.SetDirtiness</c>) and hangs the list on the client's registration while the
-    /// player is inside, so the game's floor objects draw it, the game's mop cleans it and the game's own percentage
-    /// reads it. Nothing else is touched:
-    ///  - never a business the player rents (refused in <see cref="Lay"/>);
-    ///  - the registration's own list is put back whenever the player leaves, when the job ends and while the game writes
-    ///    a save (<see cref="Suspend"/>), so no job dirt can reach a save file;
-    ///  - the job's list lives in this object only.
+    /// The game's own dirt on a client's floor: a list of the floor's cells, dirtied with the game's <c>SetDirtiness</c> and hung
+    /// on the client's registration while the player is inside, so the game draws, mops and counts it. Never a rented business;
+    /// the registration's own list is put back on leaving, at the end and during a save, so no job dirt is saved.
     /// </summary>
     public sealed class JobDirt
     {
         private const int FewestCells = 8;          // a floor with fewer cells than this is not a floor to clean
         private const int CellsPerUnit = 6;         // dirty cells at most, for each unit of the job
         private const float CoverLeast = 0.25f;     // share of the floor that is dirty, at least...
-        private const float CoverMost = 0.55f;      // ...and at most (before the cap on cells)
+        private const float CoverMost = 0.55f;      // ...and at most, before the cap on cells
         private const float StrengthBase = 55f;     // dirtiness of a cell in an eight-unit job, before its own spread
         private const float StrengthPerUnit = 4f;   // ...more for each unit above eight
-        private const float Spread = 0.25f;         // each cell is this much dirtier or cleaner than that, at random
+        private const float Spread = 0.25f;         // each cell this much dirtier or cleaner than that, at random
         private const float Visible = BuildingCleanliness.DirtinessNeededToShowVisualDirt;
 
         private BuildingRegistration _registration;
@@ -44,13 +30,9 @@ namespace RealLifeOverhaul
         private bool _wanted;                       // the job wants its list on the registration
         private bool _inPlace;                      // ...and it is there now
 
-        /// <summary>True once dirt has been put down.</summary>
-        public bool Laid => _spots != null;
-
-        /// <summary>True while the job's list is on the client's registration.</summary>
         public bool InPlace => _inPlace;
 
-        /// <summary>Cells the floor has, and how many of them were made dirty.</summary>
+        /// <summary>Cells the floor has, and how many of them were dirtied.</summary>
         public int Cells => _spots != null ? _spots.Count : 0;
         public int Dirtied => _order != null ? _order.Length : 0;
 
@@ -60,18 +42,14 @@ namespace RealLifeOverhaul
         /// <summary>The game's own cleanliness of the floor now, 0 to 100. Only while the list is in place.</summary>
         public float Cleanliness => _inPlace ? _registration.Cleanliness.GetCleanliness() : 100f;
 
-        /// <summary>True if the premises are somebody else's and the player is inside them.</summary>
+        // True if the premises are somebody else's and the player is inside them.
         private bool Here()
         {
             return _registration != null && !_registration.RentedByPlayer && BuildingManager.IsInsideBuilding
                    && ReferenceEquals(InstanceBehavior<BuildingManager>.Instance.buildingRegistration, _registration);
         }
 
-        /// <summary>
-        /// Makes the client's floor dirty: <paramref name="units"/> sizes the job (an eight-unit job is the table's), the
-        /// dice give where and how thickly. False, with the reason, if the game's dirt cannot be had here; nothing is
-        /// then changed.
-        /// </summary>
+        /// <summary>Dirties the client's floor, <paramref name="units"/> sizing the job; false with the reason, nothing changed, if the game's dirt cannot be had.</summary>
         public bool Lay(BuildingRegistration registration, int units, System.Random dice, out string why)
         {
             why = null;
@@ -133,8 +111,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Patches rather than single cells, as spills are: some centres at random and the cells nearest to them, so a
-        // click of the mop (which takes the cells round the one clicked) cleans several at once.
+        // Patches rather than cells, as spills are, so one click of the mop (it takes the cells round the one clicked) cleans several.
         private void Spoil(int units, System.Random dice)
         {
             int count = _spots.Count;
@@ -170,14 +147,12 @@ namespace RealLifeOverhaul
             {
                 int cell = index[k];
                 float dirt = Mathf.Clamp(strength * (1f - Spread + 2f * Spread * (float)dice.NextDouble()), Visible + 5f, BuildingCleanliness.MaxDirtiness);
-                game.SetDirtiness(cell, dirt);   // the game's own call
+                game.SetDirtiness(cell, dirt);
                 _order[k] = cell;
                 total += dirt;
             }
             Mean = total / cells;
         }
-
-        // ---------------------------------------------------------------- in and out of the registration
 
         /// <summary>Puts the job's list on the client's registration (the player is inside) and has the floor redrawn.</summary>
         public void Adopt()
@@ -207,7 +182,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The player has left, or the job is over: the registration is as the game had it, the floor is drawn from that.</summary>
+        /// <summary>The player has left or the job is over: the registration is as the game had it, and the floor is drawn from that.</summary>
         public void Release()
         {
             _wanted = false;
@@ -225,7 +200,7 @@ namespace RealLifeOverhaul
             Pull();
         }
 
-        /// <summary>Called on the job's tick: puts the list back after a save. Nothing to do (a flag test) otherwise.</summary>
+        /// <summary>On the job's tick: puts the list back after a save; a flag test otherwise.</summary>
         public void Resume()
         {
             if (_wanted && !_inPlace)
@@ -243,10 +218,7 @@ namespace RealLifeOverhaul
             _registration = null;
         }
 
-        /// <summary>
-        /// The clock cleans a share of the dirt that is left: that many of the dirty cells go to nothing, the patches'
-        /// middles first, through the game's own call.
-        /// </summary>
+        /// <summary>The clock cleans a share of the dirt left: that many dirty cells go to nothing, the patches' middles first.</summary>
         public void Clean(float share)
         {
             if (_order == null)
@@ -283,10 +255,7 @@ namespace RealLifeOverhaul
             Refresh();
         }
 
-        /// <summary>
-        /// Puts dirt back on the last <paramref name="share"/> of the dirtied cells (the edges of the patches), at
-        /// <paramref name="strength"/> of the mean they had, through the game's own call. Returns how many cells.
-        /// </summary>
+        /// <summary>Puts dirt back on the last <paramref name="share"/> of the dirtied cells at <paramref name="strength"/> of their mean; returns how many.</summary>
         public int Redo(float share, float strength)
         {
             if (_order == null || !_inPlace)

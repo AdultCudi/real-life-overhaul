@@ -1,11 +1,8 @@
 namespace RealLifeOverhaul
 {
-    // Game-free: nothing in this file touches the game or the engine, so the sums can be checked on their own
-    // (RealLifeOverhaul.Build/CatalogueCheck compiles it).
-
     /// <summary>
-    /// What a piece of work paid, line by line. Penalties only ever reduce what the job pays:
-    /// the total is never below zero, so a bad shift cannot cost the player money they had.
+    /// What a piece of work paid, line by line; game-free, compiled by CatalogueCheck. The total is never below zero, so a
+    /// bad shift cannot cost the player money they had.
     /// </summary>
     public struct PaySlip
     {
@@ -35,10 +32,7 @@ namespace RealLifeOverhaul
             Penalty += other.Penalty;
         }
 
-        /// <summary>
-        /// The same slip with its penalty cut down to what it could take off: a slip that came to nothing stays at
-        /// nothing when another is added to it (two slips paid apart are each bounded at zero).
-        /// </summary>
+        /// <summary>The same slip with its penalty cut to what it could take off, so a slip of nothing stays nothing when added to another.</summary>
         public PaySlip Bounded()
         {
             PaySlip slip = this;

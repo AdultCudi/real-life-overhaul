@@ -6,11 +6,7 @@ using RealLifeOverhaul.Events;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What a gig's offer (<see cref="GigOffers"/>) says in words, for the Gig Line and the shift's panel: one short list
-    /// ("a generous client, a busy day, a quiet street, rain pay"), so that nothing the dice decided is hidden. Built when a
-    /// job is asked about or started, never per frame.
-    /// </summary>
+    /// <summary>A gig's offer in words for the Gig Line and the card, so nothing the dice decided is hidden: "a generous client, a busy day".</summary>
     public static class GigWords
     {
         private static readonly StringBuilder Text = new StringBuilder(96);
@@ -86,8 +82,10 @@ namespace RealLifeOverhaul
             logger.Info("Jobs: offer for '" + offer.Id + "' (day " + day + ", hour " + hour + ", seed " + offer.Seed + (offer.Flat ? ", flat: the table's figures" : string.Empty) + "): "
                         + offer.Client + " client x" + offer.ClientFactor.ToString("F3", CultureInfo.InvariantCulture) + ", day " + offer.Day + " x"
                         + offer.DayFactor.ToString("F3", CultureInfo.InvariantCulture) + ", weather " + offer.Weather
-                        + " x" + offer.WeatherFactor.ToString("F2", CultureInfo.InvariantCulture) + ", fee x" + offer.Fee.ToString("F3", CultureInfo.InvariantCulture) + ", size " + offer.Units + ", crowd " + offer.Crowd + " x" + offer.CrowdFactor.ToString("F2", CultureInfo.InvariantCulture)
-                        + ", tipper at " + offer.TipperAt + " (" + offer.TipperUnits.ToString("F2", CultureInfo.InvariantCulture) + " units), speed bonus " + offer.SpeedUnits.ToString("F2", CultureInfo.InvariantCulture) + " units, redo at " + offer.RedoAt + ".");
+                        + " x" + offer.WeatherFactor.ToString("F2", CultureInfo.InvariantCulture) + ", fee x" + offer.Fee.ToString("F3", CultureInfo.InvariantCulture)
+                        + ", size " + offer.Units + ", crowd " + offer.Crowd + " x" + offer.CrowdFactor.ToString("F2", CultureInfo.InvariantCulture)
+                        + ", tipper at " + offer.TipperAt + " (" + offer.TipperUnits.ToString("F2", CultureInfo.InvariantCulture) + " units), speed bonus "
+                        + offer.SpeedUnits.ToString("F2", CultureInfo.InvariantCulture) + " units, redo at " + offer.RedoAt + ".");
         }
     }
 }

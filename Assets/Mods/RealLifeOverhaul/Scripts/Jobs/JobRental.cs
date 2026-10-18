@@ -13,31 +13,10 @@ using Vehicles.VehicleTypes;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A hired vehicle, so that the driving jobs can be worked before the player owns a car.
-    ///
-    /// It is the game's own job van, made the game's own way: exactly what its delivery-van job
-    /// does when the player accepts a round (DeliveryJobStartController.OnAcceptJob). A
-    /// <c>DeliveryVehicleInstance</c> of the van type the game's depots use, unsellable and not
-    /// assignable to a warehouse, spawned with <c>VehicleHelper.CreateAndSpawnVehicle</c>. That
-    /// prefab carries the game's <c>DeliveryJobVehicle</c> component, and that component is what
-    /// makes this safe:
-    ///  - when the van object is destroyed it takes its own entry out of the save's vehicle list;
-    ///  - once an hour it destroys any van that belongs to no delivery mission, is not being
-    ///    driven and is not in view.
-    /// So a save made in the middle of a hire holds one vehicle of a type the base game made and
-    /// knows how to remove: loaded without this mod, the van is an orphan job van and the game
-    /// takes it away within the hour, out of the player's sight. Loaded with the mod, the hire
-    /// is remembered by the van's id (one line in modData) and the van is taken back as soon as
-    /// the player is not sitting in it. Nothing else is written, and no mission is ever created
-    /// or touched.
-    ///
-    /// While a hire is on, that hourly check is unhooked for this one van (it would take the van
-    /// from behind a courier's back at the top of the hour) and the van is removed here instead:
-    /// at the end of the shift, once the player has got out. A loaded save builds the van afresh
-    /// with the game's check in place.
-    ///
-    /// If the prefab turns out not to carry the component, the hire is refused and the van is
-    /// deleted on the spot: nothing without the game's own clean-up is ever left standing.
+    /// A hired van: the game's own job van, made as its delivery job makes one. Its <c>DeliveryJobVehicle</c> takes it off the
+    /// save's list when destroyed and destroys an idle van each hour, so a save loaded without the mod loses it. The hire is one
+    /// line in modData; the van goes back once the player is out of it, the hourly check unhooked meanwhile. A prefab without
+    /// the component is refused at once. No mission is created or touched.
     /// </summary>
     public sealed class JobRental
     {
@@ -46,13 +25,13 @@ namespace RealLifeOverhaul
         private const string FallbackType = "ba:vehicletype_umcdesertdeliveryjob";
         private const string FeeTransaction = "reallife_transaction_job_rental";
         private const string FeeCategory = "ba:transactioncategory_licensingfees";
-        private const float HalfWidth = 1.05f;
-        private const float HalfLength = 2.7f;
+        private const float HalfWidth = 1.05f;   // metres: the van's half width, for a free stretch of road
+        private const float HalfLength = 2.7f;   // metres: its half length
 
         private readonly IModLogger _logger;
         private readonly List<Waypoint> _route = new List<Waypoint>(24);
         private CarController _car;
-        private int _tickets;   // parking tickets the game has written on the hired van, as last seen (LentVehicle)
+        private int _tickets;   // parking tickets the game has written on the van, as last seen (LentVehicle)
         private string _id;             // of the hired van, or of one left by a saved hire
         private int _paidDay;           // the day the fee was last paid
         private bool _returning;        // the shift is over: taken back once the player is out of it
@@ -71,7 +50,7 @@ namespace RealLifeOverhaul
         /// <summary>When the van was last put on the road (Time.time): the game resets its destination guider a frame later.</summary>
         public float SpawnedAt { get; private set; } = -100f;
 
-        public bool PaidToday => _paidDay == TimeHelper.CurrentDay && _paidDay > 0;
+        private bool PaidToday => _paidDay == TimeHelper.CurrentDay && _paidDay > 0;
 
         /// <summary>Whether a van could be hired right now. The reason is a key the phone can say.</summary>
         public bool CanHire(bool test, out string reasonKey)
@@ -88,18 +67,13 @@ namespace RealLifeOverhaul
             return reasonKey == null;
         }
 
-        /// <summary>
-        /// Puts a hired van at the roadside near a point and charges the day's fee if it has not
-        /// been paid today. Null (and nothing charged, nothing left behind) if there is no free
-        /// stretch of road near, or the game would not make one.
-        /// </summary>
+        /// <summary>Puts a hired van at the roadside near a point, charging the day's fee if unpaid; null, with nothing charged or left, if it cannot.</summary>
         public CarController Hire(Vector3 near, bool test, out string reasonKey)
         {
             reasonKey = null;
             if (_car != null && (!_returning || JobSpots.Flat(_car.transform.position, near) < 80f))
             {
-                // The van of the shift before is still standing near (or they are sitting in it): it is kept on,
-                // and a new day's fee is due like any other.
+                // The van of the shift before is still near, or they are sitting in it: it is kept on, and a new day's fee is due.
                 if (!CanHire(test, out reasonKey))
                 {
                     return null;
@@ -110,7 +84,7 @@ namespace RealLifeOverhaul
             }
             if (_car != null)
             {
-                reasonKey = "reallife_job_rental_returning";   // still out, somewhere else: it has to come back first
+                reasonKey = "reallife_job_rental_returning";   // still out somewhere else: it has to come back first
                 return null;
             }
             if (!CanHire(test, out reasonKey))
@@ -230,7 +204,7 @@ namespace RealLifeOverhaul
             {
                 if (_car == null)
                 {
-                    // Wrecked and removed by the game, or left over from a save and not found on the street yet.
+                    // Wrecked and removed by the game, or left over from a save and not on the street yet.
                     _car = Find(_id);
                     if (_car == null)
                     {
@@ -254,7 +228,7 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                // Not left standing without its own clean-up: taken back now if it can be, forgotten either way.
+                // Never left without its own clean-up: taken back now if it can be, forgotten either way.
                 _logger?.Error(e);
                 try
                 {
@@ -290,8 +264,6 @@ namespace RealLifeOverhaul
             _car = null;
         }
 
-        // ---------------------------------------------------------------- the save
-
         public void Save(Dictionary<string, string> data)
         {
             if (data == null)
@@ -306,7 +278,7 @@ namespace RealLifeOverhaul
             data[Key] = _paidDay.ToString(CultureInfo.InvariantCulture) + "|" + (_id ?? string.Empty);
         }
 
-        /// <summary>After a load: the fee already paid today, and a van that a saved hire left on the street (taken back by <see cref="Tick"/>).</summary>
+        /// <summary>After a load: the fee already paid today, and a van a saved hire left out (taken back by <see cref="Tick"/>).</summary>
         public void Load(Dictionary<string, string> data)
         {
             _car = null;
@@ -329,8 +301,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- small parts
-
         private void TakeBack()
         {
             CarController car = _car;
@@ -340,9 +310,7 @@ namespace RealLifeOverhaul
             _returning = false;
             if (car != null)
             {
-                // The way the game removes its own job van: the object is destroyed, and the van's own component takes
-                // it off the save's vehicle list as it goes. Taken off the list here as well, so that a save made in the
-                // same frame cannot carry it.
+                // As the game removes its job van; taken off the save's list here too, so a save in the same frame cannot carry it.
                 VehicleInstance instance = car.vehicleInstance;
                 UnityEngine.Object.Destroy(car.gameObject);
                 if (instance != null && SaveGameManager.Current != null)
@@ -353,7 +321,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The van's own hourly "does anyone still need me" check, unhooked for the length of the hire.
+        // The van's own hourly check, unhooked for the length of the hire.
         private void Unhook()
         {
             _hookTries++;
@@ -409,7 +377,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // A stretch of lane near the player with nothing standing in it: the kerb side first, then the lane itself.
+        // A stretch of lane near the player with nothing in it: the kerb side first, then the lane itself.
         private bool FindSpot(Vector3 near, out Vector3 spot, out Quaternion heading)
         {
             spot = default;

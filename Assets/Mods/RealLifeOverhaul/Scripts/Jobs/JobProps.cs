@@ -4,17 +4,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The things jobs put on the street and in hands: flyers, parcels, the taxi's roof sign,
-    /// the help-wanted board, a vendor's cart, a guitar case. One object per prop, made the
-    /// first time it is wanted and kept switched off on a shelf between uses; nothing is built
-    /// or destroyed while a shift runs.
-    ///
-    /// A prop is asked for by its id in the prop bundle (PropAssets/README.md). If the bundle
-    /// does not have it yet, the prop it is listed against in <see cref="Alias"/> is used (the
-    /// living city's leaflet for a flyer, its parcel for a box); failing that a plain shape from
-    /// <see cref="Shapes"/> where one would pass at street distance; failing that Take says no,
-    /// and whoever asked does without or does not start. A stand-in is replaced the next time
-    /// the prop is taken after the modelled one has arrived.
+    /// The things jobs put on the street and in hands, one object a prop, made on first want and shelved between uses. Where the
+    /// prop bundle lacks one, its <see cref="Alias"/> or a plain shape stands in until the modelled one arrives.
     /// </summary>
     public sealed class JobProps
     {
@@ -28,7 +19,6 @@ namespace RealLifeOverhaul
         private static readonly Color Tape = new Color(0.80f, 0.72f, 0.55f);
         private static readonly Color Dark = new Color(0.10f, 0.10f, 0.12f);
         private static readonly Color CabYellow = new Color(0.98f, 0.80f, 0.12f);
-
         private static readonly Color Felt = new Color(0.45f, 0.10f, 0.12f);
 
         private readonly Dictionary<string, Stack<Spare>> _shelf = new Dictionary<string, Stack<Spare>>(16);
@@ -42,7 +32,7 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>The prop already in the bundle that stands in for one that is on its way, or null.</summary>
-        public static string Alias(string id)
+        private static string Alias(string id)
         {
             switch (id)
             {
@@ -143,7 +133,6 @@ namespace RealLifeOverhaul
             spares.Push(new Spare { Prop = prop, Modelled = modelled });
         }
 
-        /// <summary>The city is going: everything made here goes with it.</summary>
         public void Dispose()
         {
             _shelf.Clear();
@@ -163,8 +152,6 @@ namespace RealLifeOverhaul
             string alias = Alias(id);
             return alias != null && PropLibrary.TryGet(alias, out mesh, out material) && mesh != null && material != null;
         }
-
-        // ---------------------------------------------------------------- plain stand-ins
 
         private static bool HasShape(string id)
         {
@@ -200,8 +187,7 @@ namespace RealLifeOverhaul
                     return true;
 
                 case "floor_patch":
-                    // A spill on a shop floor: a flat pale disc, a few millimetres proud of the floor so it does not flicker.
-                    // Pale and a little blue, to be seen on a dark floor as on a light one (a dull brown one was walked past).
+                    // A spill: a flat disc a few millimetres proud of the floor, pale and bluish so it shows on any floor.
                     Shapes.Piece("Spill", prop, Shapes.Drum, Shapes.Paint(new Color(0.55f, 0.66f, 0.74f)), new Vector3(0f, 0.002f, 0f), new Vector3(1.05f, 0.006f, 0.85f));
                     Shapes.Piece("Splash", prop, Shapes.Drum, Shapes.Paint(new Color(0.62f, 0.72f, 0.80f)), new Vector3(0.40f, 0.002f, 0.26f), new Vector3(0.38f, 0.006f, 0.30f));
                     return true;
@@ -224,13 +210,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// One prop in one hand, at the grip of the clip it belongs to. The grip is never made up
-    /// here: it is read from the clip catalogue (<see cref="ClipLibrary"/>), which the animation
-    /// pipeline measured on the game's hand bones, and the prop that goes in the hand is the one
-    /// that clip was made with. Several clips may be named, best first; the first the bundle
-    /// has with a tool decides. If none does, nothing is put in the hand and Give says so.
-    /// </summary>
+    /// <summary>One prop in one hand at the grip measured for its clip (<see cref="ClipLibrary"/>): the first of the clips the bundle has with a tool.</summary>
     public sealed class HeldProp
     {
         private readonly HeldTool _hold = new HeldTool();
@@ -256,11 +236,8 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>Puts the prop of the first usable clip in that person's hand. False, and nothing changed, if it cannot be done.</summary>
-        /// <param name="prop">
-        /// Another prop to hold at that clip's grip, for one made to the same pivot and held the same way (a flyer for
-        /// the leaflet a clip was made with: both lie flat about their centre, head to +Z). Null: the clip's own.
-        /// </param>
+        /// <summary>Puts the prop of the first usable clip in that person's hand. False, with nothing changed, if it cannot be done.</summary>
+        /// <param name="prop">Another prop with the same pivot to hold at that grip (a flyer for the clip's leaflet); null for the clip's own.</param>
         public bool Give(BaseHuman who, JobProps props, string[] clips, string prop = null)
         {
             Take();
@@ -275,7 +252,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             ToolGrip grip = clip.Grip;
-            grip.TwoHanded = false;   // carried, not worked with: the other arm is left to whatever is being played
+            grip.TwoHanded = false;   // carried, not worked with: the other arm is left to whatever is playing
             if (!_hold.Attach(who.animator, held, grip))
             {
                 props.Return(held);
@@ -287,7 +264,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Shown or hidden where it is (the person went out of view, got into a car).</summary>
+        /// <summary>Shown or hidden where it is (the person went out of view, or into a car).</summary>
         public void Show(bool show)
         {
             if (_prop != null && _prop.gameObject.activeSelf != show)
@@ -296,7 +273,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Out of the hand and back on the shelf. Safe at any time, and if the person has gone.</summary>
+        /// <summary>Out of the hand and back on the shelf. Safe at any time, also once the person has gone.</summary>
         public void Take()
         {
             if (_prop == null)
@@ -323,20 +300,18 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The flyer stack when the clip bundle is not there at all: a few plain shapes fitted to
-    /// the left hand from the line of the forearm while the arm hangs at the side (the way the
-    /// paramedic's bag is fitted), not from the bone's own axes. The last resort only: with the
-    /// bundle loaded the stack is a <see cref="HeldProp"/> at a measured grip.
+    /// The flyer stack when there is no clip bundle at all: plain shapes fitted to the left hand from the line of the hanging
+    /// forearm (as the paramedic's bag is), not from the bone's axes. With the bundle the stack is a <see cref="HeldProp"/>.
     /// </summary>
     public sealed class HandProp
     {
-        private const float ArmDown = -0.8f;     // the forearm points at least this much downwards before the prop is fitted
+        private const float ArmDown = -0.8f;     // the forearm points at least this far down before the prop is fitted
         private const float Clearance = 0.035f;  // metres between the hand's middle and the stack, away from the leg
 
         private GameObject _prop;
         private bool _shown;
 
-        /// <summary>True once it hangs in the hand. Until then <see cref="Show"/> keeps trying, a tick at a time.</summary>
+        /// <summary>True once it hangs in the hand; until then <see cref="Show"/> tries again each tick.</summary>
         public bool Fitted => _prop != null;
 
         public void Show(ThirdPersonCharacter who, bool show)
@@ -394,11 +369,11 @@ namespace RealLifeOverhaul
 
             _prop = new GameObject("RealLifeOverhaul Flyers");
             Transform prop = _prop.transform;
-            // Its own axes: X fore and aft, Y up the arm, Z out from the leg. Origin at the grip, on the stack's top edge.
+            // Its own axes: X fore and aft, Y up the arm, Z out from the leg; the origin at the grip, on the stack's top edge.
             prop.SetPositionAndRotation(hand.position + arm * 0.06f + outward * Clearance, Quaternion.LookRotation(outward, -arm));
             prop.SetParent(hand, true);
             int layer = who.gameObject.layer;
-            // A5 flyers: 0.15 wide, 0.21 tall, a stack two centimetres thick with a printed top sheet.
+            // A5 flyers, 0.15 by 0.21 m, a stack 2 cm thick with a printed top sheet.
             Shapes.Piece("Stack", prop, Shapes.Cube, Shapes.Paint(new Color(0.93f, 0.92f, 0.88f)), new Vector3(0f, -0.105f, 0f), new Vector3(0.15f, 0.21f, 0.02f)).gameObject.layer = layer;
             Shapes.Piece("Sheet", prop, Shapes.Cube, Shapes.Paint(new Color(0.96f, 0.76f, 0.10f)), new Vector3(0f, -0.105f, 0.0105f), new Vector3(0.15f, 0.21f, 0.001f)).gameObject.layer = layer;
             Shapes.Piece("Headline", prop, Shapes.Cube, Shapes.Paint(new Color(0.80f, 0.12f, 0.10f)), new Vector3(0f, -0.05f, 0.0112f), new Vector3(0.12f, 0.035f, 0.0006f)).gameObject.layer = layer;

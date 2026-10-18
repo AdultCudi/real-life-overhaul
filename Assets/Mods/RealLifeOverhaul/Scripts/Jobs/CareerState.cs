@@ -22,13 +22,7 @@ namespace RealLifeOverhaul
         Dismissed
     }
 
-    /// <summary>
-    /// What a savegame remembers of the player's career: the employer, rank and rota, the marks
-    /// against them, what has happened since the last review, and the employment history. One
-    /// line of text in the save's modData (which the base game carries along without reading),
-    /// so a save made with a career loads without the mod and one from before it starts with none.
-    /// A shift in progress is not saved. Game-free: whoever calls it says what day it is.
-    /// </summary>
+    /// <summary>The career as a save remembers it, one line in the save's modData; a shift in progress is not saved. Game-free.</summary>
     public static class CareerState
     {
         private const string Key = "reallife:career";
@@ -57,7 +51,7 @@ namespace RealLifeOverhaul
         public static bool ReviewDue { get; private set; }
         public static int NoticeDay { get; private set; }         // the day notice was given; 0 when none
         public static int NoticeShiftsLeft { get; private set; }
-        public static int HandledDay { get; private set; }        // the last rota day already dealt with: worked, missed or excused
+        public static int HandledDay { get; private set; }        // the last rota day dealt with: worked, missed or excused
         public static int RemindedDay { get; set; }
         public static int SpellShifts { get; private set; }       // rota shifts worked for this employer
 
@@ -163,8 +157,6 @@ namespace RealLifeOverhaul
             OnTime = Late = NoShow = Complaints = Crashes = Stops = Tips = Shifts = 0;
         }
 
-        // ---------------------------------------------------------------- what happens
-
         /// <summary>Taken on. <paramref name="credit"/> is experience brought along, in shifts towards the first review.</summary>
         public static void SignOn(int employer, CareerRota rota, int day, int credit)
         {
@@ -195,7 +187,6 @@ namespace RealLifeOverhaul
             return Marks >= CareerCatalogue.MarksToDismiss;
         }
 
-        /// <summary>The shift clocked on to is over.</summary>
         public static void ShiftDone(bool failed, int tips, int earned)
         {
             Shifts++;
@@ -243,8 +234,7 @@ namespace RealLifeOverhaul
             return Marks >= CareerCatalogue.MarksToDismiss;
         }
 
-        /// <summary>A rota day excused (a sick note): no mark, no pay.</summary>
-        /// <summary>Careers were switched off for a while: rota days up to a day are let go by, with nothing held against anybody.</summary>
+        /// <summary>Careers were switched off for a while: rota days up to a day go by with nothing held against anybody.</summary>
         public static void SkipTo(int day)
         {
             if (Employed && HandledDay < day)
@@ -253,20 +243,18 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>A rota day excused (a sick note): no mark, no pay.</summary>
         public static void Excused(int day)
         {
             HandledDay = day;
         }
 
-        public static float Score()
+        private static float Score()
         {
             return CareerCatalogue.ReviewScore(OnTime, Late, NoShow, Complaints, Crashes, Stops, Tips, Shifts);
         }
 
-        /// <summary>
-        /// The review is held: the score decides, the counters start again. <paramref name="mayPromote"/> is
-        /// false when the next rank cannot be given (there is none, or the player is working their notice).
-        /// </summary>
+        /// <summary>Holds the review: the score decides, the counts start again. <paramref name="mayPromote"/> is false with no next rank or on notice.</summary>
         public static ReviewOutcome Review(bool mayPromote, out float score)
         {
             score = Score();
@@ -368,8 +356,6 @@ namespace RealLifeOverhaul
             ClearSpell();
         }
 
-        // ---------------------------------------------------------------- the save
-
         public static void Load(Dictionary<string, string> data)
         {
             Clear();
@@ -383,7 +369,7 @@ namespace RealLifeOverhaul
                 catch (System.Exception)
                 {
                     Clear();   // a damaged line costs the career, never the load
-                    SaveLines.Unreadable(data, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
+                    SaveLines.Unreadable(data, Key, "it could not be read");   // the line is kept as it is (Core/SaveLines)
                 }
             }
         }
@@ -483,14 +469,14 @@ namespace RealLifeOverhaul
             int employer = CareerCatalogue.IndexOf(parts[1]);
             if (employer < 0 || spell[1] == 0)
             {
-                return;   // not employed (or by somebody this build does not have): the history above still stands
+                return;   // not employed, or by somebody this build does not have: the history above stands
             }
             EmployerIndex = employer;
             Rank = Clamp(spell[0], 0, CareerCatalogue.All[employer].Ranks.Length - 1);
             RotaDays = spell[1] & 127;
             RotaHour = Clamp(spell[2], 0, 23);
             HiredDay = spell[3];
-            Marks = Clamp(spell[4], 0, CareerCatalogue.MarksToDismiss);   // at the limit: the dismissal that was pending is made on the next hour
+            Marks = Clamp(spell[4], 0, CareerCatalogue.MarksToDismiss);   // at the limit: the pending dismissal is made on the next hour
             Raises = Clamp(spell[5], 0, CareerCatalogue.MaxRaises);
             ShiftsSinceReview = spell[6];
             ReviewDue = spell[7] != 0;

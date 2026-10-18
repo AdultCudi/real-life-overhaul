@@ -380,7 +380,7 @@ Its driving keys beyond these (throttle, brake, gears, handbrake) are in an NWH 
 | Right mouse | right click | `LookBehind` (driving) | the mod feeds the game's own right-button state, as before |
 | F7, F8 | hide the interface / free camera, in the game's debug builds or with `-console` only | `PerfProbe`, `PerfBench` (Shift), `PhoneDump` | no clash in a normal game |
 | F9, F10 | nothing | `CharacterReport`, `PhotoMode` | free |
-| 1, 2, 3 | tools in the interior designer | a row of three choices (`JobKeys.ChoiceDown`: jobs, leisure, transit, the theory paper, the cell, the courts' panel); photo mode | one at a time: a choice row is on screen only while its owner has the player, and none of them with the designer open |
+| 1, 2, 3 | tools in the interior designer | a row of three choices (jobs, leisure, transit, the theory paper, the cell, the courts' panel); photo mode | one at a time: a choice row is on screen only while its owner has the player, and none of them with the designer open |
 | Space, Enter, Tab, Esc, N, M, T, P, O, I, Q, C, H, [ ], F1, F2, F5, F12, Backspace, Left Shift | the game's | nothing of the mod's outside photo mode (paused) | free of the mod |
 
 Free in both for a future action: F3, F4, F6, F11, the digits 4 to 0, and ; ' / \ - =. The letters L, U, Y, Z, J and X are used only inside photo mode, R only in the game's placement.
