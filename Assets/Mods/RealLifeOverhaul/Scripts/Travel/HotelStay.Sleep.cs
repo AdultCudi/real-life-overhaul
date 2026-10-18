@@ -39,10 +39,11 @@ namespace RealLifeOverhaul
             return Capped(goal);
         }
 
+        // Compared by minutes: the game's Timestamp.CompareTo is positive when the other time is the later one.
         private static Timestamp Capped(Timestamp goal)
         {
             var checkout = new Timestamp(TravelState.CheckoutDay, CheckoutHour, 0f);
-            return goal.CompareTo(checkout) > 0 ? checkout : goal;
+            return goal.GetTotalMinutes() > checkout.GetTotalMinutes() ? checkout : goal;
         }
 
         // True, with the reason said, when no time can be skipped to the goal.
