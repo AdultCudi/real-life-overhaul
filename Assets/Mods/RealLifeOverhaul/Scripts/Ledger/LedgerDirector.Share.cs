@@ -77,10 +77,6 @@ namespace RealLifeOverhaul.Ledger
             for (int i = 0; i < lines.Length && i < LedgerShare.AsksMost; i++)
             {
                 string[] f = lines[i].TrimEnd('\r').Split('|');
-                if (f.Length == 0)
-                {
-                    continue;
-                }
                 if (f[0] == "N")
                 {
                     int kind, amount;
