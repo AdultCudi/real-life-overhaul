@@ -14,7 +14,6 @@ namespace RealLifeOverhaul
     public static class TransitState
     {
         public static float BusFare => Prices.At(2.75f);
-        public const float SubwayFare = 3f;      // the game's own price for a subway ride
         public static float DayPass => Prices.At(7.5f);       // unlimited buses and subway until midnight
 
         private const string Key = "reallife:transit";
@@ -24,11 +23,11 @@ namespace RealLifeOverhaul
         public static int BusRides;
         public static int SubwayRides;
         public static int ToldDelay = -1;     // the three-hour window whose delays were last sent to the phone
-        public static int ToldClosure = -1;   // the night whose closure was last sent (no station closes now: kept, so that the saved line keeps its shape)
-        public static float FareBack;         // read from a save written part of the way through a bus ride (BusRider): given back once the city is up
-        public static double TransferUntil;   // game minutes (the game's total) until which a bus is boarded on the fare already paid: a journey's change of bus
+        public static int ToldClosure = -1;   // no station closes any more; kept so the save line keeps its shape
+        public static float FareBack;         // from a save written during a bus ride (BusRider): given back once the city is up
+        public static double TransferUntil;   // game minutes (the game's total) until which a bus is boarded on the fare paid: a change
 
-        /// <summary>A change of bus on a journey already paid for: the next bus is boarded on that fare (TransitDirector's change).</summary>
+        /// <summary>True during a journey's change of bus: the next bus is boarded on the fare already paid.</summary>
         public static bool HasTransfer => TransferUntil > 0.0 && TimeHelper.NowInMinutes() < TransferUntil;
 
         public static bool HasPass => PassDay > 0 && PassDay == TimeHelper.CurrentDay;
@@ -74,8 +73,7 @@ namespace RealLifeOverhaul
             Loaded = true;
         }
 
-        /// <param name="fareBack">A fare paid for a ride that is part of the way through as the save is written (the save has the
-        /// player back at the stop they boarded at): given back when this save is loaded. 0 for none.</param>
+        /// <summary>Writes the line, with a fare to give back when loaded (<paramref name="fareBack"/>, a ride under way; 0 for none).</summary>
         public static void Save(Dictionary<string, string> data, float fareBack = 0f)
         {
             if (Loaded && data != null)
@@ -84,23 +82,23 @@ namespace RealLifeOverhaul
                             + SubwayRides.ToString(CultureInfo.InvariantCulture) + "|" + ToldDelay.ToString(CultureInfo.InvariantCulture) + "|"
                             + ToldClosure.ToString(CultureInfo.InvariantCulture)
                             + (fareBack > 0f || HasTransfer ? "|" + Math.Max(0f, fareBack).ToString("F2", CultureInfo.InvariantCulture) : string.Empty)
-                            + (HasTransfer ? "|" + TransferUntil.ToString("F1", CultureInfo.InvariantCulture) : string.Empty);   // (a seventh part: older versions read the first six)
+                            + (HasTransfer ? "|" + TransferUntil.ToString("F1", CultureInfo.InvariantCulture) : string.Empty);   // a seventh part: older versions read six
             }
         }
 
-        /// <summary>A bus fare: nothing with a pass or on a journey's change of bus (<paramref name="free"/>), else the fare. False (and a toast) if the player cannot pay.</summary>
+        /// <summary>Pays a bus fare, nothing with a pass or on a change. False, with a toast, if the player cannot pay.</summary>
         public static bool PayBus(out bool free)
         {
             free = HasPass || HasTransfer;
             if (HasTransfer)
             {
-                TransferUntil = 0.0;   // (the change's one boarding)
+                TransferUntil = 0.0;   // the change's one boarding
                 return true;
             }
             return Pay(BusFare, "reallife_transaction_bus_fare");
         }
 
-        /// <summary>Takes a fare, or nothing with a pass. False (and a toast) if the player cannot pay.</summary>
+        /// <summary>Takes a fare, or nothing with a pass. False, with a toast, if the player cannot pay.</summary>
         public static bool Pay(float fare, string transaction)
         {
             if (HasPass)
@@ -133,19 +131,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The time a ride takes, for the bus and the subway alike: the screen fades with a line saying
-    /// what is happening, the player steps out of the world, the game's own time machine runs the
-    /// clock forward by the journey, and the player is put down at the far end, exactly as the
-    /// game's taxi does it (TaxiSystem.TravelCoroutine).
-    ///
-    /// On the bus the player has been seen to get on, sit down and pull away before this begins
-    /// (<see cref="BusRider"/>); the rider's own steps come in at two places: as the screen is
-    /// black, before the player is taken out of the world (<c>atBlack</c>: they are taken off the
-    /// moving bus), and at the far end before the screen clears (<c>arriveAboard</c>: they are put
-    /// in their seat on the bus standing at the stop they get off at; if that cannot be done they
-    /// are put down on the pavement as before).
-    /// Every way out puts the player back: the routine's own end, a fault part of the way
-    /// through, and the city unloading under it (<see cref="Abort"/>).
+    /// The time a ride takes, for the bus and the subway, as the game's taxi does it: the screen fades, the player steps out of
+    /// the world, the time machine runs the clock forward and they are put down at the far end. Every way out puts them back.
     /// </summary>
     public sealed class TransitRide
     {
@@ -162,21 +149,18 @@ namespace RealLifeOverhaul
 
         public bool Riding { get; private set; }
 
-        /// <summary>True when nothing stands in the way of a ride starting now: no menu, dialog, time skip, hospital trip or other journey.</summary>
+        /// <summary>True when no menu, dialog, time skip, hospital trip or other journey stands in the way of a ride.</summary>
         public static bool CanStart()
         {
             return LifeEvents.IsSafeForEvent() && !ThirdPersonCamera.IsUiOpen() && !TaxiSystem.IsTraveling && !PlayerHelper.IsUsingVehicle
                    && !BuildingManager.IsInsideBuilding && !GameManager.IsAnyMiniGameActive() && !UiFader.isFading;
         }
 
-        /// <param name="minutes">Game minutes the journey takes, waiting included.</param>
-        /// <param name="arrive">Where the player is put down: a point on the pavement.</param>
-        /// <param name="fadeKey">The line under the fade, a complete locale key.</param>
-        /// <param name="onFaded">Called once the screen is black (the bus drives off, people are taken in).</param>
-        /// <param name="onArrived">Called with the player standing at the far end, before the screen clears.</param>
-        /// <param name="tap">The card was just tapped on the reader (TransitDirector.TapCard): the fade waits for the tap to land.</param>
-        /// <param name="atBlack">Called once the screen is black, before the player is taken out of the world.</param>
-        /// <param name="arriveAboard">Called at the far end with the player back in the world, before the screen clears: true if it has placed them itself.</param>
+        /// <summary>
+        /// Starts a ride of <paramref name="minutes"/> game minutes to <paramref name="arrive"/>. <paramref name="atBlack"/> then
+        /// <paramref name="onFaded"/> run once the screen is black; <paramref name="arriveAboard"/> (true if it placed the player)
+        /// then <paramref name="onArrived"/> at the far end before it clears.
+        /// </summary>
         public void Begin(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived, bool tap = true, Action atBlack = null, Func<bool> arriveAboard = null)
         {
             if (Riding || _host == null || !_host.isActiveAndEnabled)
@@ -204,7 +188,7 @@ namespace RealLifeOverhaul
                 _player.ResetNavigation();
                 _player.SetNavigationBlocker(NavigationBlocker.Taxi);
                 _blocked = true;
-                // The card on the reader first (TransitDirector.TapCard was just started): the tap lands 0.7 s in.
+                // The card on the reader first: the tap lands 0.7 s in.
                 float tapped = Time.unscaledTime + (tap ? 1f : 0f);
                 while (Time.unscaledTime < tapped)
                 {
@@ -221,7 +205,7 @@ namespace RealLifeOverhaul
                 until.AddMinutes(Mathf.Clamp(minutes, 1f, 240f));
                 if (!GoingPublic.ClockShared)
                 {
-                    // (In a Going Public session the ride takes no time, as Going Public's own taxi ride does: Core/GoingPublic.)
+                    // In a Going Public session the ride takes no time, as Going Public's own taxi ride.
                     uis.timeMachine.StartTimeMachine(until, disableCancel: true, fadeKey);
                 }
                 float waited = 0f;
@@ -243,7 +227,7 @@ namespace RealLifeOverhaul
                 _player.Character.Reset();
                 if (arriveAboard != null && !Aboard(arriveAboard))
                 {
-                    _player.Character.WarpSafely(arrive);   // (in the world again: the agent is there to be warped)
+                    _player.Character.WarpSafely(arrive);   // in the world again, so the agent is there to be warped
                 }
                 Call(onArrived);
                 _faded = false;
@@ -256,7 +240,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The host is going (the city unloads): whatever the ride had changed is put back at once.</summary>
+        /// <summary>The city unloads: whatever the ride changed is put back at once.</summary>
         public void Abort()
         {
             if (Riding)

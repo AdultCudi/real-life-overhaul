@@ -4,17 +4,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Whether the player can see a bus: what decides where a bus may be put on the road and when one may be taken off it.
-    /// The street's own test (CitySpots.InView) is a cone 110 m deep with no walls: a bus 170 m up a straight avenue is
-    /// "out of view" by it, in plain sight, and one just round the corner of a building is "in view". Here a bus is seen
-    /// when any of its nose, middle and tail, at window height and at its roof, is on the screen (with a margin, so that
-    /// a turn of the camera does not show it at once), no further than the game draws a vehicle, and nothing of a building
-    /// stands between the camera and it (one ray each, against the buildings' layers only: the street's furniture and
-    /// the traffic do not hide a bus). Asked when a bus is put on the road or is to be taken off it, and four times a
-    /// second for a bus that is driving away to go: a handful of rays, and nothing at all while no bus is out.
-    ///
-    /// NEAR is the other rule: within <see cref="NearKeep"/> of the player a bus is never taken off the street, seen or
-    /// not (the camera can be swung round in a moment), and none is put on the road.
+    /// Whether the player can see a bus, which decides where one may be put on the road and when one may be taken off.
+    /// The street's own CitySpots.InView is a 110 m cone with no walls, so here a bus is seen when its nose, middle or
+    /// tail, at window or roof height, is on the screen (with a margin), within <see cref="Far"/>, and no building stands
+    /// in the way (one ray each, against the buildings' layers only). A handful of rays when asked, nothing on a timer.
     /// </summary>
     public static class TransitSight
     {
@@ -84,7 +77,6 @@ namespace RealLifeOverhaul
             {
                 return true;
             }
-            // A building in the way hides it: a ray from the camera that stops short of it.
             return !Physics.Raycast(eye, way / distance, distance - 0.5f, WallMask, QueryTriggerInteraction.Ignore);
         }
 

@@ -9,25 +9,13 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Makes a bus stop's pole, its shelter and the bus standing at it things the player can point at, the way the
-    /// game's own objects are (see docs/game-ui.md, sections 7 and 11, and Home/HomeOffers, which this follows).
-    ///
-    /// The game's pointer (MouseController) casts a ray on its interactive layers and asks whatever
-    /// <c>EntityController</c> it hits to react: the object is outlined, its name is shown with a "call to action" in
-    /// the game's blue under it (SimpleOverlay with CtaOverlay), and a left click runs the action. So a pointer is a
-    /// small object of the mod's with a box collider on the game's layer for interactive items and this component on
-    /// it. The collider is a trigger: it is hit by the pointer's ray (the game's physics lets queries hit triggers)
-    /// and by nothing else, since nobody on foot or in a vehicle is moved by physics against it, and that layer does
-    /// not meet the layer of traffic at all. Nothing is added to the bus itself (a vehicle of the traffic pool): its
-    /// pointer is a box of the director's, put where the bus stands and switched off when it leaves.
-    ///
-    /// What is offered, and what a click does, is the director's to say (<see cref="TransitDirector.PointerOffer"/>,
-    /// <see cref="TransitDirector.PointerClicked"/>). The game asks only for what the pointer is on, and only when it
-    /// comes onto it or clicks.
+    /// Makes a bus stop's pole, its shelter and the bus at it things the game's pointer reacts to, as its own objects
+    /// (docs/game-ui.md; Home/HomeOffers works the same way): a trigger box on the interactive layer with this component. What
+    /// is offered and what a click does is the director's. Costs nothing a frame: the game asks only on pointing and clicking.
     /// </summary>
     public sealed class TransitPointer : EntityController
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "TransitPointer", typeof(TransitPointer));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "TransitPointer", typeof(TransitPointer));   // the game's calls of it
 
         public enum Kind { Stop, Bench, Bus }
 
@@ -36,18 +24,13 @@ namespace RealLifeOverhaul
 
         private static readonly List<Renderer> Found = new List<Renderer>(16);
 
-        private int[] _layers;   // the layers the outlined pieces are on when nothing points at them
+        private int[] _layers;   // the outlined pieces' own layers, put back when nothing points at them
 
         public Kind What { get; private set; }
 
-        /// <summary>The dressed stop this is part of (null for the bus's).</summary>
-        public BusStopDressing Dressing { get; private set; }
+        public BusStopDressing Dressing { get; private set; }   // the dressed stop this is part of; null for the bus's
 
-        /// <summary>
-        /// A pointer under <paramref name="parent"/>: a trigger box of the given middle and size (in the parent's
-        /// own axes), which outlines the parent's pieces when it is pointed at. Null if the game no longer has its layer
-        /// for interactive items.
-        /// </summary>
+        /// <summary>A pointer box under <paramref name="parent"/>, outlining its pieces when pointed at; null if the game has no interactive layer.</summary>
         public static TransitPointer Make(Transform parent, Kind what, BusStopDressing dressing, Vector3 centre, Vector3 size, bool outline)
         {
             int layer = LayerMask.NameToLayer("InteractiveItems");
@@ -85,14 +68,13 @@ namespace RealLifeOverhaul
             GlobalReferences references = InstanceBehavior<GlobalReferences>.Instance;
             if (pointer.renderers.Length > 0 && references != null)
             {
-                pointer.SetOutlineColor(references.colors.white);   // as the game gives a place it makes clickable in code (TaxiDestinationController)
+                pointer.SetOutlineColor(references.colors.white);   // as the game outlines a place it makes clickable in code (TaxiDestinationController)
             }
             made.SetActive(true);
             return pointer;
         }
 
-        // The game's own Awake puts the object on the interactive layer (it is there already) and its Start reads places
-        // to walk to that an object placed by the game has; neither is wanted here.
+        // The game's Awake and Start set up objects the game places; neither is wanted here.
         public override void Awake()
         {
         }
@@ -122,8 +104,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // As the game's, and then the outlined pieces go back to the layers they came from (the game's own puts them on
-        // the layer for interactive items, which these pieces were never on).
+        // As the game's, then the outlined pieces go back to their own layers.
         public override void OnIoExit()
         {
             try
@@ -151,7 +132,7 @@ namespace RealLifeOverhaul
 
         public override void OnDestroy()
         {
-            OverlayGuard.Release(this);   // (the game's own lets the card go only while it is on screen)
+            OverlayGuard.Release(this);   // the game's own lets the card go only while it is on screen
             if (!GameManager.isCitySceneBeingUnloaded && MouseController.currentTargetEntity == this)
             {
                 MouseController.ResetCurrentEntitySelected(this);
@@ -159,11 +140,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The one entry the buses add to the game's list of calls to action (CtaManager.CtaBehaviors, private: reached
-    /// by reflection as Home/HomeOffers does). Asked by the game for whatever the pointer is on: a type test,
-    /// unless it is one of the mod's pointers.
-    /// </summary>
+    /// <summary>The one entry the buses add to the game's private list of calls to action, reached by reflection as Home/HomeOffers does.</summary>
     public static class TransitCta
     {
         public const string Choose = "reallife_transit_cta_choose";
@@ -174,7 +151,7 @@ namespace RealLifeOverhaul
 
         private sealed class Behaviour : ICtaBehavior
         {
-            private static readonly FeatureGuard FrameGuard = Guard.For("transport", "TransitCta.Behaviour", typeof(Behaviour));   // the game's calls of it (Core/Guard)
+            private static readonly FeatureGuard FrameGuard = Guard.For("transport", "TransitCta.Behaviour", typeof(Behaviour));   // the game's calls of it
 
             public override bool ShouldShow(EntityController entityController)
             {
@@ -224,7 +201,7 @@ namespace RealLifeOverhaul
 
         public static bool Installed => _behaviour != null;
 
-        /// <summary>Adds the entry, once. False if the game's list could not be reached: the stops then have their panel and its keys only.</summary>
+        /// <summary>Adds the entry, once. False if the game's list could not be reached.</summary>
         public static bool Install()
         {
             if (Installed)
@@ -237,7 +214,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                FieldInfo field = GameContract.CtaBehaviours.Field;   // (resolved once: Core/GameContract)
+                FieldInfo field = GameContract.CtaBehaviours.Field;
                 _list = field != null ? field.GetValue(null) as List<ICtaBehavior> : null;
                 if (_list == null)
                 {
@@ -246,7 +223,7 @@ namespace RealLifeOverhaul
                     return false;
                 }
                 _behaviour = new Behaviour();
-                _list.Insert(0, _behaviour);   // asked first: it answers only for a pointer of the buses
+                _list.Insert(0, _behaviour);   // asked first; it answers only for a pointer of the buses
                 Logger?.Info("Transit check (pointer): the bus stops' click actions are in the game's list (" + _list.Count + " entries): PASS.");
                 return true;
             }
@@ -259,7 +236,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Takes the entry out of the game's list again.</summary>
         public static void Remove()
         {
             try

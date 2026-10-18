@@ -9,16 +9,9 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What stands at one bus stop: the pole with its flag, and where the pavement has room a shelter with a bench and an end
-    /// panel; the modelled props where the prop bundle has them, else plain shapes of the same size. Three exist, for the
-    /// stops nearest the player, each built once and moved from stop to stop. The pole stands where TransitMap put it
-    /// (BusInside.SignPlaces), never on the kerb by a door. Everyone on foot moves on the navigation mesh, so what must not be
-    /// walked through is cut out of it by carving NavMeshObstacles, each its solid thing exactly (a cut is wider by the
-    /// walker's radius), so the place in front of each seat and the pavement past the shelter stay walkable; that way past is
-    /// tested first, else the stop is a pole only. A stop with a bay has its zone painted on the road (RoadPaint) as the
-    /// game paints its markings, or a box of strips where there is no paint to copy, and the bay is looked at once
-    /// (<see cref="TransitBays"/>). The two seats are made for the sit_bench clips: feet 0.30 m in front of the seat's
-    /// middle line, 0.46 m up.
+    /// What stands at one bus stop: the pole and, where there is room, a shelter with a bench; modelled where the prop bundle
+    /// has them, else plain shapes. One per place, built once. Carving NavMeshObstacles cut exactly the solid things out of
+    /// the mesh, so the seats stay walkable; a stop with a bay has its zone painted on the road (RoadPaint) or strips.
     /// </summary>
     public sealed class BusStopDressing
     {
@@ -82,17 +75,12 @@ namespace RealLifeOverhaul
         public TransitStop Stop { get; private set; }
         public Transform Sign => _sign;
 
-        /// <summary>The shelter's own object (switched off where the stop is a pole only): what points at the bench hangs under it.</summary>
+        /// <summary>The shelter's own object, off where the stop is a pole only.</summary>
         public Transform Shelter => _shelter;
 
-        /// <summary>True while the stop's boxes cut the navigation mesh.</summary>
-        public bool IsSolid => _solid;
+        public bool IsSolid => _solid;   // the stop's boxes cut the navigation mesh
 
-        /// <summary>
-        /// Makes the stop solid to people on foot, or lets the mesh close again. A cut is work for the engine each time it
-        /// changes, so the director makes a stop solid only while the player is on foot near it; all its boxes change in one
-        /// frame so the engine cuts their piece of mesh once. While not solid, the game's pedestrians may walk through it.
-        /// </summary>
+        /// <summary>Makes the stop solid to walkers, or not: a cut is work for the engine, so all its boxes in one frame.</summary>
         public void Solid(bool on, float now)
         {
             if (on == _solid || Stop == null)
@@ -110,7 +98,6 @@ namespace RealLifeOverhaul
             _checkAt = now + 1.6f;   // the cut is made once the boxes have stood still for half a second
         }
 
-        /// <summary>True when the shelter stands at this stop: there is room for one and the way past it is there.</summary>
         public bool Sheltered => Stop != null && _shelter.gameObject.activeSelf;
 
         public BusStopDressing(Transform parent, int number)
@@ -131,10 +118,8 @@ namespace RealLifeOverhaul
             _blocks[4] = Block("Bench Block", _shelter);
         }
 
-        /// <summary>
-        /// Stands the dressing at a stop, with its text, for a navigation mesh made for <paramref name="walkerRadius"/>.
-        /// </summary>
-        public void Put(TransitStop stop, string numbers, string mapText, float walkerRadius)
+        /// <summary>Stands the dressing at a stop, for a mesh made for <paramref name="walkerRadius"/>.</summary>
+        public void Put(TransitStop stop, string numbers, float walkerRadius)
         {
             using var piece = SessionWatch.Piece("transit: a bus stop being put out");
             _root.SetActive(false);   // moved while off, so the mesh is cut once, in the right place
@@ -163,7 +148,7 @@ namespace RealLifeOverhaul
                     _labels[i].text = numbers;
                 }
             }
-            // Not solid yet: nothing is cut for a stop that is only driven past (see Solid).
+            // Nothing is cut for a stop only driven past.
             _solid = false;
             for (int i = 0; i < _blocks.Length; i++)
             {
@@ -193,7 +178,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>What was found of the stop's bay when it was dressed, in words for a log line.</summary>
+        /// <summary>What was found of the stop's bay, for a log line.</summary>
         public string BayFound()
         {
             if (Stop == null)
@@ -214,7 +199,6 @@ namespace RealLifeOverhaul
                    + ", " + (_marking ?? "NOT marked") + "; " + BusZones.Describe(Stop.Zone);
         }
 
-        // The marking, where the stop has a bay, and one look at what stands in the bay now.
         private void LayBay(TransitStop stop)
         {
             _bayFree = false;
@@ -270,8 +254,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Painted round where the bus stands (some 24 m; where it comes in and pulls out has no paint): the broken line along
-        // the lane side, a taper in to the kerb at each end, and the words a little ahead of the pole.
+        // Painted round where the bus stands (some 24 m): the broken line, tapers in to the kerb, and the words.
         private void Paint(TransitStop stop)
         {
             Vector3 right = Vector3.Cross(Vector3.up, stop.BayAlong);
@@ -292,8 +275,7 @@ namespace RealLifeOverhaul
             Lie(_paint[PaintPieces - 1], At(stop, right, (line + kerb) * 0.5f, WordsAhead), stop.BayAlong, wide, wide * WordsLong / WordsWide, 1f, 0f);
         }
 
-        // One broken line from (aside a, along s) to (aside b, along t) in the stop's frame, in pieces of at most PaintPiece
-        // metres whose dashes run on from one to the next, beginning and ending with paint. Returns the pieces used so far.
+        // One broken line from (aside a, along s) to (aside b, along t), in pieces of at most PaintPiece metres.
         private int Line(TransitStop stop, Vector3 right, float a, float s, float b, float t, int used)
         {
             Vector3 start = At(stop, right, a, s);
@@ -316,13 +298,12 @@ namespace RealLifeOverhaul
             return used;
         }
 
-        // A place in the stop's frame: aside of the lane's line, along it from the pole.
         private static Vector3 At(TransitStop stop, Vector3 right, float aside, float along)
         {
             return stop.Lane + stop.BayAlong * along + right * aside;
         }
 
-        // One piece of paint laid on the road as the road lies there: its middle on the ground, tipped to the road's fall.
+        // One piece of paint, tipped to the road's fall.
         private static void Lie(DecalProjector decal, Vector3 middle, Vector3 along, float width, float length, float repeats, float shift)
         {
             Vector3 across = Vector3.Cross(Vector3.up, along);
@@ -338,7 +319,7 @@ namespace RealLifeOverhaul
             RoadPaint.Pose(decal, middle, along, up, width, length, repeats, shift);
         }
 
-        // Where the city has no road paint to copy: a yellow box of four strips round where the bus stands, laid to the road's fall.
+        // No road paint to copy: a yellow box of four strips round where the bus stands.
         private void Strips(TransitStop stop)
         {
             if (_bay == null)
@@ -386,7 +367,7 @@ namespace RealLifeOverhaul
             piece.localScale = size;
         }
 
-        // Four strips, as the driving test's bay is marked (Licences/LicenceProps.MakeBay). Z along the bay, X towards the kerb.
+        // Four strips, as the driving test's bay is marked. Z along the bay, X towards the kerb.
         private void BuildStrips()
         {
             if (!Shapes.Available)
@@ -413,15 +394,14 @@ namespace RealLifeOverhaul
             return block;
         }
 
-        // The boxes, for the walker's radius: the cut is that much wider than a box all round.
+        // The boxes, for the walker's radius: the cut is that much wider.
         private void Lay()
         {
             Set(_blocks[0], new Vector3(0.12f, 1f, 0f), new Vector3(0.40f, 2f, 0.08f), true);   // the pole and its timetable plate
             Set(_blocks[1], new Vector3(BackX, 1f, 0f), new Vector3(0.04f, 2f, ShelterLength), true);
             Set(_blocks[2], new Vector3(0f, 1f, EndZ), new Vector3(BackX * 2f + 0.04f, 2f, 0.04f), true);
             Set(_blocks[3], new Vector3(BackX - 0.24f, 1f, -EndZ), new Vector3(0.48f, 2f, 0.04f), true);
-            // The bench's cut ends 4 cm in front of its edge, so the sitter's feet (10 cm further out) are still on the mesh.
-            // Where the back's own cut already reaches that far there is no box for it.
+            // The bench's cut ends 4 cm in front of it, so the sitter's feet (10 cm further out) stay on the mesh.
             float front = BenchFront - 0.04f + _radius;
             float length = BenchTo - BenchFrom - 2f * _radius;
             bool bench = front < BenchBack - 0.02f && BackX - 0.02f - _radius > BenchFront - 0.04f;
@@ -436,8 +416,7 @@ namespace RealLifeOverhaul
             block.gameObject.SetActive(on);
         }
 
-        // The pavement between the kerb and the shelter's open side, a metre beyond each end: one strip a walker can be on
-        // once the end panel is cut. Asked of the mesh before anything is cut.
+        // The pavement between the kerb and the shelter's open side must be one walkable strip, asked before any cut.
         private bool WayPast(TransitStop stop, Quaternion facing)
         {
             _walkRoom = KerbFromMiddle - BackX - _radius;   // metres between the kerb's edge and the end panel's cut
@@ -459,13 +438,9 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>True from a dressing until its self-check has been made (or dropped).</summary>
-        public bool CheckDue => _checkDue;
+        public bool CheckDue => _checkDue;   // from a dressing until its self-check has been made
 
-        /// <summary>
-        /// A second after the stop was dressed: what the navigation mesh says was cut, and whether the seats and the way past are
-        /// still on it, in one line. Called from the director's timer.
-        /// </summary>
+        /// <summary>A second after dressing: what the mesh says was cut, in one line. From the director's timer.</summary>
         public void Check(IModLogger logger, float now, string name)
         {
             if (!_checkDue || Stop == null || now < _checkAt)
@@ -520,13 +495,12 @@ namespace RealLifeOverhaul
             return NavMesh.SamplePosition(place, out NavMeshHit hit, 0.3f, NavMesh.AllAreas) && CitySpots.Flat(hit.position - place) < 0.06f * 0.06f;
         }
 
-        /// <summary>Where a sitter's feet are for a seat, on the pavement.</summary>
         public Vector3 SeatFeetAt(int seat)
         {
             return _shelter.TransformPoint(new Vector3(SeatFeet, 0f, SeatZ[seat]));
         }
 
-        /// <summary>The way a sitter faces: out of the shelter, to the road.</summary>
+        /// <summary>The way a sitter faces, out of the shelter to the road.</summary>
         public Vector3 SeatFacing => -_shelter.right;
 
         public bool SeatFree(int seat)
@@ -534,7 +508,7 @@ namespace RealLifeOverhaul
             return Sheltered && seat >= 0 && seat < Seats && _taken[seat] == 0;
         }
 
-        /// <summary>The free seat nearest a place, within a distance of its feet place; -1 if none.</summary>
+        /// <summary>The free seat with its feet place nearest, within a distance; -1 if none.</summary>
         public int FreeSeat(Vector3 near, float within)
         {
             if (!Sheltered)
@@ -590,8 +564,7 @@ namespace RealLifeOverhaul
                 Shapes.Piece("Band", _sign, Shapes.Cube, white, new Vector3(0.30f, 2.20f, 0f), new Vector3(0.50f, 0.16f, 0.034f));
                 Shapes.Piece("Times", _sign, Shapes.Cube, white, new Vector3(0.20f, 1.45f, 0f), new Vector3(0.26f, 0.36f, 0.025f));
             }
-            // The route numbers in the flag's plain blue field: 2.33 m up to the white line under its top (2.73) on the model;
-            // the stand-in's band ends lower still (2.28).
+            // The route numbers in the flag's plain blue field, 2.33 to 2.73 m up on the model.
             _labels[0] = Label(_sign, new Vector3(0.30f, RoutesAt, -0.019f), false);
             _labels[1] = Label(_sign, new Vector3(0.30f, RoutesAt, 0.019f), true);
         }
@@ -647,16 +620,13 @@ namespace RealLifeOverhaul
                 Shapes.Piece("Post", _shelter, Shapes.Cube, frame, new Vector3(x, 1.2f, z), new Vector3(0.07f, 2.4f, 0.07f));
             }
             Shapes.Piece("Roof", _shelter, Shapes.Cube, roof, new Vector3(-0.08f, 2.44f, 0f), new Vector3(ShelterDepth + 0.30f, 0.08f, ShelterLength + 0.16f));
-            // The back: a rail at the foot and the top, panes between.
             Shapes.Piece("Back", _shelter, Shapes.Cube, pane, new Vector3(halfDepth - 0.04f, 1.30f, 0f), new Vector3(0.02f, 1.90f, ShelterLength - 0.16f));
             Shapes.Piece("Back Rail", _shelter, Shapes.Cube, frame, new Vector3(halfDepth - 0.04f, 0.32f, 0f), new Vector3(0.05f, 0.06f, ShelterLength - 0.10f));
             Shapes.Piece("Back Top", _shelter, Shapes.Cube, frame, new Vector3(halfDepth - 0.04f, 2.28f, 0f), new Vector3(0.05f, 0.06f, ShelterLength - 0.10f));
-            // The end panel downstream: the route map and an advert, lit a little.
+            // The end panel: the route map and an advert, lit a little.
             Shapes.Piece("End Frame", _shelter, Shapes.Cube, frame, new Vector3(0f, 1.30f, halfLength - 0.04f), new Vector3(ShelterDepth - 0.16f, 1.96f, 0.05f));
             Shapes.Piece("Map", _shelter, Shapes.Cube, panel, new Vector3(0f, 1.32f, halfLength - 0.075f), new Vector3(ShelterDepth - 0.36f, 1.70f, 0.02f));
-            // The screen at the back corner of the other end.
             Shapes.Piece("Screen", _shelter, Shapes.Cube, pane, new Vector3(halfDepth - 0.28f, 1.30f, -halfLength + 0.04f), new Vector3(0.48f, 1.90f, 0.02f));
-            // The bench along the back.
             Shapes.Piece("Seat", _shelter, Shapes.Cube, wood, new Vector3(SeatMiddle, BenchSeat - 0.025f, -0.35f), new Vector3(0.40f, 0.05f, 1.90f));
             Shapes.Piece("Leg", _shelter, Shapes.Cube, frame, new Vector3(SeatMiddle, (BenchSeat - 0.05f) * 0.5f, -1.15f), new Vector3(0.34f, BenchSeat - 0.05f, 0.05f));
             Shapes.Piece("Leg", _shelter, Shapes.Cube, frame, new Vector3(SeatMiddle, (BenchSeat - 0.05f) * 0.5f, 0.45f), new Vector3(0.34f, BenchSeat - 0.05f, 0.05f));

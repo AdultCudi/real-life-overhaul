@@ -7,32 +7,16 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The bus ride through the city in real time, on the game's own activity panel (<see cref="BusRidePanel"/>).
-    ///
-    /// - WHEN. The player is seated or holds a strap and the doors close (BusRider.Leave): if their stop is further along the
-    ///   same line and the line's lane points between are all in the road graph and joined (TransitBus.GapWhy), the panel is
-    ///   shown and the ride is driven. Otherwise (a change of bus, a gap in the path, the panel busy, a Going Public session)
-    ///   the ride is as before: the bus is seen pulling away and the time passes under the fade, and the log says why.
-    /// - THE BUS DRIVES ITS LINE. The bus the player is on is the director's own (<see cref="_bus"/>): once out on its lane after
-    ///   a stop it is sent on to the next stop of its line (TransitBus.CarryTo) and that stop is the one served, so people walk
-    ///   up and wait there, somebody may get out, and those waiting get on, exactly as at the stop the player boarded at. It
-    ///   calls at every stop and stands for the usual time, and drives on to the next, until it stands at the player's.
-    /// - THERE, the player gets up and off by the middle door (BusRider.GetOffHere), and the bus closes its doors and leaves.
-    /// - GETTING OFF EARLY. A move, or the panel's button, asks for the next stop (RideRules.GetOffAt): the bus calls there anyway,
-    ///   and the player gets off there. Nothing is given back. The button then offers to stay on.
-    /// - SKIP (the panel's time-skip button), or a bus that gets nowhere for long (RideRules.Stuck), is taken off the street, or
-    ///   can no longer be sent on: the rest of the ride passes under the fade, as before, to a bus standing at the stop.
-    /// - A SAVE on the way has the player at the last stop the bus called at, or the stop they boarded at (with the fare) before
-    ///   it has called at any (BusInside.SaveFareBack). The game's own autosave waits while the panel is up, as for its own actions.
-    ///
-    /// The budget: nothing at all when no ride is on. While one is: on the director's 0.25 s timer a few comparisons and the
-    /// bar's figure; per frame the fast-forward key (BusRidePanel.Keys), with BusRider's own frame.
+    /// The bus director's part for the ride through the city in real time on the game's activity panel
+    /// (<see cref="BusRidePanel"/>): the director's own bus is sent on from stop to stop (TransitBus.CarryTo), each the stop
+    /// served in turn, until it stands at the player's. Otherwise, or on a skip, the time passes under the fade. Costs nothing
+    /// when no ride is on; while one is, a few comparisons a tick and a key a frame.
     /// </summary>
     public sealed partial class TransitDirector
     {
         private const double NoConnection = 180.0;      // game minutes: a second bus further off than this is no connection (the night)
         private const double MinChangeMinutes = 120.0;  // game minutes the fare paid covers the second bus for, at the least
-        private const float CarryPatience = 25f;   // seconds of the game's pace (Time.time: none while paused, six a second in fast forward) a bus that has left a stop may take to be out on its lane and sent on
+        private const float CarryPatience = 25f;        // seconds of the game's pace a bus that has left a stop may take to be out on its lane and sent on
 
         private bool _journey;
         private BusRidePanel _jPanel;
@@ -46,25 +30,17 @@ namespace RealLifeOverhaul
         private bool _jGettingOff;
         private float _jBegan;             // Time.unscaledTime the ride began
         private float _jGameBegan;         // Time.time the ride began: the limits are in the game's pace (RideRules.Stuck)
-        private float _jLeftAt;            // ...the bus last left a stop
-        private float _jStillSince;        // ...it last got a metre further
+        private float _jLeftAt;            // and the bus last left a stop
+        private float _jStillSince;        // and it last got a metre further
         private float _jBest;              // metres along the line it has come
         private float _jShown;             // the bar, 0 to 1
-        private float _jMinutes;           // game minutes the ride takes by the timetable (TransitTrips): for a skip of the rest
+        private float _jMinutes;           // game minutes the ride takes by the timetable: for a skip of the rest
         private float _jClockFrom;         // the game's clock in minutes when the ride began
         private float _jFastSeconds;       // real seconds of it fast-forwarded
         private float _jLastFrame;
         private int _jCalls;               // stops called at on the way
 
-        /// <summary>A ride through the city in real time is under way.</summary>
-        public static bool Journeying => Instance != null && Instance._journey;
-
-        // ---------------------------------------------------------------- BusRider calls these
-
-        /// <summary>
-        /// The doors have shut with the player seated or holding a strap: the ride through the city on the game's panel, if
-        /// it can be had. False, with the reason in the log, for the ride as before (the time passes under the fade).
-        /// </summary>
+        /// <summary>BusRider, the doors shut on them: true for the ride through the city in real time, false (the log says why) for the fade.</summary>
         internal bool JourneyBegins(TransitBus bus, TransitStop from, TransitStop to)
         {
             if (_journey || _failed || bus == null || bus != _bus || from == null || to == null)
@@ -104,21 +80,17 @@ namespace RealLifeOverhaul
             }
             if (why != null)
             {
-                Logger?.Info("Transit check (journey): from " + StopLabel(from) + " to " + StopLabel(to) + " the ride is not driven in real time (" + why + "): the time passes under the fade as before: PASS.");
+                Logger?.Info("Transit check (journey): from " + StopLabel(from) + " to " + StopLabel(to) + " the ride is not driven in real time (" + why
+                             + "): the time passes under the fade as before: PASS.");
                 return false;
             }
             _journey = true;
             TransitBus.FastRide = true;
-            // The bus that was coming on behind is not the player's: it drives on along its line and goes once nobody can see it.
+            // The bus coming on behind is not the player's: it drives on and goes once nobody can see it.
             HandOff(ref _next);
             Unpin(_nextCall);
             _nextCall = -1;
             _nextEta.NoService();
-            _jFrom = from;
-            _jFinal = to;
-            _jOff = to;
-            _jTarget = from;
-            _jPassed = from;
             _jStanding = false;
             _jOffAsked = false;
             _jGettingOff = false;
@@ -137,16 +109,19 @@ namespace RealLifeOverhaul
             TransitState.BusRides++;
             bool first = _hasPlan && _planLeg == 1 && to == _plan.ChangeOff;
             bool second = _hasPlan && _planLeg == 2;
-            Logger?.Info("Transit check (journey): " + (first ? "leg 1 of 2: " : second ? "leg 2 of 2: " : string.Empty) + "the player rides the " + line.Number + " from " + StopLabel(from) + " to " + StopLabel(to)
+            Logger?.Info("Transit check (journey): " + (first ? "leg 1 of 2: " : second ? "leg 2 of 2: " : string.Empty) + "the player rides the " + line.Number + " from "
+                         + StopLabel(from) + " to " + StopLabel(to)
                          + (first ? " to change there for the " + LineNumber(_plan.ChangeOn) + " to " + StopLabel(_plan.To) : string.Empty)
-                         + " in real time on the game's activity panel: " + (to.Order - from.Order) + " stop(s), " + (to.Metres - from.Metres).ToString("F0") + " m of line, " + _jMinutes.ToString("F0")
-                         + " game minutes by the timetable; " + (GoingPublic.ClockShared
-                             ? "in a Going Public session (" + (GoingPublic.IsHost ? "hosted here" : "here") + "): the bus is this machine's own, not the shared traffic; no fast forward (the game's speed is everyone's), the skip is the fade that passes no time"
+                         + " in real time on the game's activity panel: " + (to.Order - from.Order) + " stop(s), " + (to.Metres - from.Metres).ToString("F0") + " m of line, "
+                         + _jMinutes.ToString("F0") + " game minutes by the timetable; "
+                         + (GoingPublic.ClockShared
+                             ? "in a Going Public session (" + (GoingPublic.IsHost ? "hosted here" : "here")
+                               + "): the bus is this machine's own, not the shared traffic; no fast forward (the game's speed is everyone's), the skip is the fade that passes no time"
                              : "the panel offers fast-forward and the time skip") + ": PASS.");
             return true;
         }
 
-        /// <summary>The panel's title: the journey's end, and on the first bus of a journey with a change, the change.</summary>
+        /// <summary>The panel's title: the journey's end, and on a journey's first bus the change.</summary>
         internal (string key, object arguments) JourneyHeadline()
         {
             if (_journey && _hasPlan && _planLeg == 1 && !_jOffAsked && _jFinal == _plan.ChangeOff)
@@ -156,11 +131,7 @@ namespace RealLifeOverhaul
             return ("reallife_bus_ride_title", new { name = JourneyStopName(true) });
         }
 
-        // ---------------------------------------------------------------- the change of bus
-
-        // Off the first bus at the change: the next bus is the second line's, at this place or a short walk away. One fare
-        // covers the journey (TransitState.TransferUntil, kept in the save). Where the second line does not run now, the
-        // rest of the journey passes under the fade, as a change always did.
+        // Off the first bus at the change: the next is the second line's, on the one fare (TransitState.TransferUntil, saved).
         private void BeginChange()
         {
             TransitStop on = _plan.ChangeOn;
@@ -170,8 +141,8 @@ namespace RealLifeOverhaul
             if (next >= double.MaxValue || next - now > NoConnection)
             {
                 Notifications.Show(NotificationType.Info, "reallife_transit_change_none", new Dictionary<string, string>(1) { { "route", second.Number } }, 8f);
-                Logger?.Info("Transit check (journey): leg 1 of 2 done at " + StopLabel(_plan.ChangeOff) + "; the " + second.Number + " does not run now (the night service is the main lines'), so the rest of the journey to "
-                             + StopLabel(_plan.To) + " passes under the fade: PASS.");
+                Logger?.Info("Transit check (journey): leg 1 of 2 done at " + StopLabel(_plan.ChangeOff) + "; the " + second.Number
+                             + " does not run now (the night service is the main lines'), so the rest of the journey to " + StopLabel(_plan.To) + " passes under the fade: PASS.");
                 FadeRest("the connecting bus does not run now");
                 return;
             }
@@ -188,11 +159,12 @@ namespace RealLifeOverhaul
             }
             Notifications.Show(NotificationType.Info, walk ? "reallife_transit_change_walk" : "reallife_transit_change_here",
                 new Dictionary<string, string>(3) { { "route", second.Number }, { "name", StopName(on) }, { "minutes", minutes.ToString() } }, 9f);
-            Logger?.Info("Transit check (journey): leg 1 of 2 done at " + StopLabel(_plan.ChangeOff) + "; the change: " + (walk ? "a walk of " + metres.ToString("F0") + " m to " + StopLabel(on.At) : "at the same stop")
-                         + " for the " + second.Number + " to " + StopLabel(_plan.To) + ", the next in " + minutes + " game minutes by its timetable; no second fare: PASS.");
+            Logger?.Info("Transit check (journey): leg 1 of 2 done at " + StopLabel(_plan.ChangeOff) + "; the change: "
+                         + (walk ? "a walk of " + metres.ToString("F0") + " m to " + StopLabel(on.At) : "at the same stop") + " for the " + second.Number + " to "
+                         + StopLabel(_plan.To) + ", the next in " + minutes + " game minutes by its timetable; no second fare: PASS.");
         }
 
-        // At the change, once the first bus has gone: the place of the second bus is the one served, and the player walks there.
+        // At the change, once the first bus has gone, the second bus's place is the one served and the player walks there.
         private void ChangeStep()
         {
             if (!_changing || !_hasPlan || _offBus != null || _rider.Active)
@@ -231,7 +203,7 @@ namespace RealLifeOverhaul
             Book(on);
         }
 
-        // The second bus of a journey, booked at its stop: boarded by itself when it stands, as a stop picked while waiting is.
+        // The second bus of a journey, boarded by itself when it stands.
         private void Book(TransitStop on)
         {
             _booked = _plan.To;
@@ -240,7 +212,6 @@ namespace RealLifeOverhaul
             _panelKey = int.MinValue;
         }
 
-        // Game minutes to the booked line's next call at the place served, as the panel has it.
         private int BookedMinutes(int otherwise)
         {
             if (_served == null)
@@ -258,7 +229,6 @@ namespace RealLifeOverhaul
             return otherwise;
         }
 
-        // The stop panel's skip at the change: the rest of the journey under the fade.
         private void SkipChangeClicked()
         {
             try
@@ -275,7 +245,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The rest of a journey with a change, from the change, under the fade: the wait for the second bus and its ride.
+        // The rest of a journey from its change under the fade: the wait for the second bus and its ride.
         private void FadeRest(string why)
         {
             TransitStop on = _plan.ChangeOn;
@@ -299,7 +269,7 @@ namespace RealLifeOverhaul
             _ride.Begin(Mathf.Max(1f, minutes), to.Wait, "reallife_transit_ride_fade", RideFaded, RideArrived, arriveAboard: _arriveAboard ?? (_arriveAboard = ArriveAboard));
         }
 
-        /// <summary>A move of the player's own while riding, or the panel's button: off at the next stop. No refund.</summary>
+        /// <summary>A move of the player's own or the panel's button: off at the next stop. No refund.</summary>
         internal void JourneyGetOff(string why)
         {
             if (!_journey || _jGettingOff || _jOffAsked)
@@ -317,15 +287,15 @@ namespace RealLifeOverhaul
             _jOffAsked = true;
             if (_hasPlan && _jOff != _plan.ChangeOff)
             {
-                DropPlan();   // (off before the change: the rest of the journey is let go)
+                DropPlan();   // off before the change: the rest of the journey is let go
             }
             _jPanel?.Refresh();
             Notifications.Show(NotificationType.Info, "reallife_bus_ride_getting_off", new Dictionary<string, string>(1) { { "name", StopName(_jOff) } }, 6f);
-            Logger?.Info("Transit check (journey): " + why + ": they will get off at " + StopLabel(_jOff) + (_jOff == _jFinal ? " (their own stop)" : ", " + (_jFinal.Order - _jOff.Order) + " stop(s) short of theirs, nothing given back")
-                         + ": PASS.");
+            Logger?.Info("Transit check (journey): " + why + ": they will get off at " + StopLabel(_jOff)
+                         + (_jOff == _jFinal ? " (their own stop)" : ", " + (_jFinal.Order - _jOff.Order) + " stop(s) short of theirs, nothing given back") + ": PASS.");
         }
 
-        /// <summary>The panel's "stay on": the stop asked for is let go, and they ride on to their own.</summary>
+        /// <summary>The panel's "stay on": they ride on to their own stop.</summary>
         internal void JourneyStayOn()
         {
             if (!_journey || _jGettingOff || !_jOffAsked)
@@ -338,7 +308,7 @@ namespace RealLifeOverhaul
             Logger?.Info("Transit check (journey): the player stays on to " + StopLabel(_jFinal) + ": PASS.");
         }
 
-        /// <summary>The rest of the ride under the fade, from where the bus is (TransitRide, as the ride always was).</summary>
+        /// <summary>The rest of the ride under the fade, from where the bus is.</summary>
         internal void JourneySkip(string why)
         {
             if (!_journey)
@@ -349,13 +319,13 @@ namespace RealLifeOverhaul
             float minutes = RideRules.MinutesLeft(TransitTrips.Between(_jFrom, to).Minutes, _jShown);
             if (_hasPlan && _planLeg == 1 && !_jOffAsked && to == _plan.ChangeOff)
             {
-                // A journey with a change: the skip is of the whole of it, to its last stop (the change and the second bus passed under the fade).
+                // With a change: the skip is of the whole journey.
                 minutes += TransitTrips.RestMinutes(_plan, null);
                 to = _plan.To;
                 DropPlan();
             }
-            Logger?.Info("Transit check (journey): " + why + ": the rest of the ride, " + minutes.ToString("F0") + " game minutes to " + StopLabel(to) + ", passes under the fade after "
-                         + (Time.unscaledTime - _jBegan).ToString("F0") + " s of it in real time and " + _jCalls + " stop(s) called at: PASS.");
+            Logger?.Info("Transit check (journey): " + why + ": the rest of the ride, " + minutes.ToString("F0") + " game minutes to " + StopLabel(to)
+                         + ", passes under the fade after " + (Time.unscaledTime - _jBegan).ToString("F0") + " s of it in real time and " + _jCalls + " stop(s) called at: PASS.");
             EndJourney(null);
             _rider.SkipRest();
             _rideTo = to;
@@ -363,14 +333,15 @@ namespace RealLifeOverhaul
                 arriveAboard: _arriveAboard ?? (_arriveAboard = ArriveAboard));
         }
 
-        /// <summary>The game closed the panel itself: the ride goes on without it, and the player gets off at their stop as before.</summary>
+        /// <summary>The game closed the panel itself: the ride goes on without it.</summary>
         internal void JourneyPanelGone()
         {
             _jPanel = null;
-            Logger?.Info("Transit check (journey): the game closed its activity panel during the ride: the bus drives on to " + (_jOff != null ? StopLabel(_jOff) : "the stop") + " all the same: PASS.");
+            Logger?.Info("Transit check (journey): the game closed its activity panel during the ride: the bus drives on to " + (_jOff != null ? StopLabel(_jOff) : "the stop")
+                         + " all the same: PASS.");
         }
 
-        /// <summary>The rider is done, whichever way (off, ended early, the city going): the ride is over.</summary>
+        /// <summary>The rider is done, whichever way: the ride is over.</summary>
         internal void RiderCleared()
         {
             if (_journey)
@@ -378,8 +349,6 @@ namespace RealLifeOverhaul
                 EndJourney(_jGettingOff ? null : "the ride ended early");
             }
         }
-
-        // ---------------------------------------------------------------- what the panel shows
 
         internal float JourneyProgress => _journey ? _jShown : 0f;
         internal bool JourneyOffAsked => _journey && _jOffAsked;
@@ -418,9 +387,6 @@ namespace RealLifeOverhaul
             return ("reallife_bus_ride_bar", new { count = left, name = nextName });
         }
 
-        // ---------------------------------------------------------------- the timer and the frame
-
-        // Per frame, only while a ride is on: the fast-forward key.
         private void JourneyFrame()
         {
             float now = Time.unscaledTime;
@@ -432,7 +398,7 @@ namespace RealLifeOverhaul
             _jPanel?.Keys();
         }
 
-        // On the director's timer, before the bus is ticked, only while a ride is on.
+        // On the director's timer, before the bus is ticked, while a ride is on.
         private void RunJourney(float now)
         {
             float real = Time.unscaledTime;
@@ -447,7 +413,7 @@ namespace RealLifeOverhaul
             }
             if (_jGettingOff)
             {
-                return;   // (BusRider has them; the bus stands for them: TransitDirector.RunBus)
+                return;   // BusRider has them, and the bus stands for them (RunBus)
             }
             TransitLine line = TransitMap.Lines[_jFrom.Line];
             switch (bus.State)
@@ -455,7 +421,6 @@ namespace RealLifeOverhaul
                 case TransitBus.Phase.Leaving:
                     if (_jStanding)
                     {
-                        // It has left a stop on the way.
                         _jStanding = false;
                         _jPassed = _jTarget;
                         _jLeftAt = now;
@@ -503,7 +468,7 @@ namespace RealLifeOverhaul
                     }
                     break;
             }
-            // How far along: the bar, and whether it is getting anywhere.
+            // The bar, and whether it is getting anywhere.
             bool approaching = bus.State == TransitBus.Phase.Approaching;
             bool atStop = bus.State == TransitBus.Phase.Standing || bus.AwaitingGap;
             float at = RideRules.AtMetres(_jTarget.Metres, bus.Remaining, approaching, bus.State == TransitBus.Phase.Standing && _jTarget != _jPassed, _jPassed.Metres);
@@ -519,7 +484,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The stop the bus drives to is the one served now: people walk up and wait there, and get on when it stands.
+        // The stop the bus drives to is the one served now: people walk up and wait there.
         private void MoveService(TransitStop stop, float now)
         {
             ReleaseRiders();
@@ -538,7 +503,7 @@ namespace RealLifeOverhaul
             }
             if (_frontCall >= 0)
             {
-                _callAt[_frontCall] = NowMinutes() + Mathf.Max(1f, _bus.Estimate(_pace)) * _minutesPerSecond;   // (the bus carrying the player: when it will be there)
+                _callAt[_frontCall] = NowMinutes() + Mathf.Max(1f, _bus.Estimate(_pace)) * _minutesPerSecond;   // when the bus carrying the player will be there
             }
             _nextCall = -1;
             _wasStanding = false;
@@ -558,11 +523,12 @@ namespace RealLifeOverhaul
             TransitBus.FastRide = false;
             if (_bus.State != TransitBus.Phase.Standing)
             {
-                Unpin(_frontCall);   // (the ride ended before the bus stood at the stop it was driving to: the timetable is the place's again)
+                Unpin(_frontCall);   // the ride ended before the bus stood at its stop: the timetable is the place's again
             }
             if (why != null)
             {
-                Logger?.Info("Transit check (journey): " + why + " after " + (Time.unscaledTime - _jBegan).ToString("F0") + " s, " + _jCalls + " stop(s) called at; the game's panel is closed: PASS.");
+                Logger?.Info("Transit check (journey): " + why + " after " + (Time.unscaledTime - _jBegan).ToString("F0") + " s, " + _jCalls
+                             + " stop(s) called at; the game's panel is closed: PASS.");
             }
             try
             {
