@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
@@ -22,10 +20,7 @@ namespace RealLifeOverhaul
         private static readonly List<Waypoint> EntryParents = new List<Waypoint>(8);
         private static readonly Predicate<Waypoint> Collect = Keep;
 
-        /// <summary>
-        /// Where a unit should stand: in a blocked lane, short of the wrecks in that lane's direction, so it drives up the
-        /// scene's own carriageway and stops in sight of it. False if the scene has no such lane.
-        /// </summary>
+        /// <summary>Where a unit should stand: in a blocked lane, short of the wrecks the lane's way, in sight of them. False if there is no such lane.</summary>
         /// <param name="farEnd">The far end, reached by the lane running the other way (see HasFarEnd).</param>
         /// <param name="back">Metres from the nearest wreck to the middle of the vehicle.</param>
         /// <param name="anchor">The road point at or just before the place: a route there ends at it.</param>
@@ -53,8 +48,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                // The nearest point at or before the place; failing that, the one that falls least short of it.
-                // Never in a junction or on its crossing if a point of plain lane will do.
+                // The nearest point at or before the place, else the one least short of it; plain lane before a junction or crossing.
                 float cost = (gap >= back ? gap - back : 100f + back - gap) + Mathf.Abs(across - middle) * 2f + (IsForked(point) ? 60f : 0f);
                 if (cost < best)
                 {
@@ -79,7 +73,6 @@ namespace RealLifeOverhaul
             return point.neighbors.Count > 1 || point.prev.Count > 1 || point.IsInIntersection();
         }
 
-        // The road's direction at the scene, and how far the wrecks reach along and across it.
         private void Measure(Vector3 scene, Vector3 heading, List<Footprint> footprints)
         {
             _scene = scene;
@@ -196,8 +189,7 @@ namespace RealLifeOverhaul
                 CloseCrossings(traffic, junction);
             }
 
-            // A clear lane gets a gate: the first of its points alongside the scene. At a junction there is no
-            // such lane to work: the blocked ways are shut and traffic takes the others.
+            // A clear lane gets a gate at its first point alongside the scene; at a junction the blocked ways are shut instead.
             for (int i = 0; i < Found.Count && !junction; i++)
             {
                 Waypoint point = Found[i];
@@ -326,8 +318,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The point of an open lane where its traffic is held: back along the lane from where it comes alongside the
-        // scene, as far as the hold line, stopping short of any junction (what waits must not stand in one).
+        // Where an open lane's traffic is held: back along it to the hold line, short of any junction.
         private static Waypoint HoldLine(TrafficManager traffic, Waypoint from)
         {
             Waypoint hold = from;
@@ -365,7 +356,6 @@ namespace RealLifeOverhaul
             withTraffic = Vector3.Dot(LaneDirection(point), _forward) >= 0f;
         }
 
-        // Which way a lane runs at one of its points; zero if it cannot be told.
         private static Vector3 LaneDirection(Waypoint point)
         {
             TrafficManager traffic = TrafficManager.Instance;
@@ -411,8 +401,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Traffic that has stopped in the blocked lanes, on the apron or among the wrecks: taken off the
-        // road if nobody is looking (the game does the same to any car that stands still for long).
+        // Stopped traffic in the blocked lanes or among the wrecks is taken off the road if nobody looks, as the game does.
         private void ClearStranded()
         {
             List<VehicleComponent> cars = Manager.GetVehicleList();

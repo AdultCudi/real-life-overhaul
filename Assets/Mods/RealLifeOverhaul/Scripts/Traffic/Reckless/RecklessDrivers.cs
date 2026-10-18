@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
-using Localizor;
 using Streets.Pedestrians;
 using UI.Notification;
 using UnityEngine;
@@ -12,17 +10,12 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Accidents that happen for a reason, in view. Now and then one ordinary traffic car near the player is driven
-    /// recklessly for a while (<see cref="RecklessCar"/>: a speeder, a red-light runner, a late braker, a drunk at night),
-    /// and now and then somebody steps out in front of a car (<see cref="Jaywalker"/>). What comes of it is whatever happens
-    /// on the road: mostly nothing; a near miss; a collision, handed to TrafficAccidents.BeginAt as it stands; somebody run
-    /// down (PedestrianIncidents), the driver staying or running; or a patrol car that saw it pulls the driver over or gives
-    /// chase (<see cref="RoadChase"/>). Every traffic car that hits somebody ends here (Struck). How often is StreetRules':
-    /// an accident falls due a share at a time, and most reckless drivers get away with it. One car and one person at most,
-    /// never while another scene, the police or the mod's own use of the road is on, and never put on the road or changed
-    /// in view. Everything is given back at once (EndNow) when traffic stops, the option goes off, on a fault or as the city
-    /// unloads. Cost: idle, three flag tests and a time comparison a frame and a roll every 20 seconds; while a car is out,
-    /// RecklessCar's own and a few comparisons a tick, nothing allocated.
+    /// Accidents that happen for a reason, in view: now and then an ordinary traffic car near the player is driven recklessly
+    /// (<see cref="RecklessCar"/>) or somebody steps out in front of one (<see cref="Jaywalker"/>), and whatever happens on
+    /// the road follows: mostly nothing, a near miss, a crash for TrafficAccidents.BeginAt, somebody run down, or a patrol
+    /// car that pulls the driver over or gives chase (<see cref="RoadChase"/>). How often is StreetRules'. One car and one
+    /// person at most, never with another scene on, never changed in view; all given back at once (EndNow). Cost: idle,
+    /// three flag tests and a time comparison a frame and a roll every 20 s; while out, a few comparisons a tick.
     /// </summary>
     public sealed partial class RecklessDrivers : MonoBehaviour
     {
@@ -46,10 +39,7 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static RecklessDrivers Instance { get; private set; }
 
-        /// <summary>
-        /// True while the road is where accidents come from: both options on and this not switched off. TrafficAccidents and
-        /// PedestrianIncidents make their own rolls only while it is false.
-        /// </summary>
+        /// <summary>True while the road is where accidents come from; TrafficAccidents and PedestrianIncidents roll their own only while it is false.</summary>
         public static bool IsSource => Instance != null && Instance._working && Settings.NaturalAccidents && Settings.TrafficAccidents;
 
         private readonly RoadsideStop _stop = new RoadsideStop();
@@ -192,8 +182,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Everything is given back at once, so a fault cannot repeat; after three the road is no longer the source of
-        // accidents this session, and the roll TrafficAccidents has always made takes over (IsSource).
+        // Everything given back at once, so a fault cannot repeat; after three, TrafficAccidents' own roll takes over (IsSource).
         private void Fault(Exception e)
         {
             Logger?.Error(e);
@@ -243,10 +232,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True if somebody on foot is owed to the street and nothing else has the road. Traffic/Solid asks before it lets a car
-        /// that can no longer stop reach them; with this false every ordinary car stops in time.
-        /// </summary>
+        /// <summary>True if somebody on foot is owed and nothing else has the road: Traffic/Solid asks before a car that cannot stop reaches them.</summary>
         public bool PersonOwed => _working && Settings.NaturalAccidents && Settings.TrafficAccidents && _peopleDue >= 1f
                                   && PeopleCanBeHit() && Free() == TestRefusal.None;
 
@@ -344,8 +330,7 @@ namespace RealLifeOverhaul
                     _car.Tick(now);
                     bool unseen = !InSight(_car.Car.transform.position);
                     bool standing = _car.Driver.Holding || !_car.Driver.Active;
-                    // Moving at the traffic's pace in its lane, with clear road and no light holding it: handed back as it
-                    // drives, keeping its speed (TrafficTools.ReturnToTraffic says why), and nothing shows.
+                    // At the traffic's pace in its lane, clear road, no light: handed back as it drives (TrafficTools.ReturnToTraffic).
                     bool rolling = !standing && !_easing && now >= _rollFrom && _car.CanRoll;
                     if (unseen || standing || rolling || (_easing && now >= _until))
                     {
@@ -354,8 +339,7 @@ namespace RealLifeOverhaul
                     }
                     else if (!_easing && now >= _until)
                     {
-                        // Still in view and moving, never once with clear road ahead: it pulls up first, since a car handed back
-                        // behind another must start from rest (the traffic system begins knowing nothing of what is ahead).
+                        // Never with clear road ahead: it pulls up first, as a car handed back behind another must start from rest.
                         _easing = true;
                         _car.Driver.Brake();
                         _until = now + EaseMost;
@@ -414,7 +398,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // What it does to the people and the traffic round it: a red light run, somebody in its way.
         private void Around(float now)
         {
             VehicleComponent car = _car.Car;
@@ -453,7 +436,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The traffic nearest it sounds its horn (the game's own AiCarHorn).
         private void Horns(VehicleComponent car, int most)
         {
             Vector3 at = car.transform.position;
@@ -473,7 +455,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // True if somebody could be looking at a place: in the camera's view, or simply near it.
         private static bool InSight(Vector3 place)
         {
             if (StreetSpots.IsInView(place))

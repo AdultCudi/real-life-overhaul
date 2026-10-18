@@ -4,13 +4,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The foot on the brake of the few traffic cars that have somebody ahead. The traffic system stops for an obstacle only
-    /// once its sensor touches it, within 1.25 m from any speed (DrivingAI StopInDistance); so for up to eight cars named by
-    /// SolidStreets, each physics step, the braking that stops the car a gap short of the person (SolidRules.Brake) is added
-    /// as a change of velocity, as the traffic system applies its own (AddForce, VelocityChange), with that system's
-    /// acceleration step taken back. Nothing on the car is set, so nothing needs putting back; while the traffic system is
-    /// stopping the car itself, nothing is added. Cost: disabled while no car is named; else about half a microsecond a car
-    /// each physics step, nothing allocated.
+    /// The foot on the brake of the few cars with somebody ahead: the traffic system stops for an obstacle only within 1.25 m
+    /// of its sensor touching it. For up to eight cars named by SolidStreets the braking that stops them a gap short
+    /// (SolidRules.Brake) is added each physics step as a change of velocity, the traffic system's own step taken back;
+    /// nothing on the car is set. Cost: disabled while none is named; else about half a microsecond a car a physics step.
     /// </summary>
     internal sealed class SolidBrakes : MonoBehaviour
     {
@@ -165,8 +162,7 @@ namespace RealLifeOverhaul
                 }
                 if (speed <= 0.02f)
                 {
-                    // At rest at the gap with nothing but this holding it (the game's sensor does not have the person):
-                    // the step the traffic system is about to add is taken off, so that it stays at rest and does not creep.
+                    // At rest at the gap with only this holding it: the traffic system's next step is taken off, so it does not creep.
                     if (forward && slot.Braking && speed > -0.02f && distance <= slot.Gap + 0.5f)
                     {
                         float hold = speed + slot.Power;

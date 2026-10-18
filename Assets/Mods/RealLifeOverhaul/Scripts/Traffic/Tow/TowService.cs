@@ -11,14 +11,11 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The tow truck that takes a wreck away once an accident scene has cleared. TrafficAccidents hands over each car it would
-    /// have removed as towed (<see cref="Take"/>); this holds it where it stands, sends the truck (<see cref="TowTruck"/>) up a
-    /// lane beside it from some 170 m back, out of sight (TowRoads), and stands it ahead of the wreck with its lights flashing.
-    /// Its operator lowers the bed, hooks the cable on and winches the wreck back onto its wheels, along the road and up the bed
-    /// (TowRules); the truck drives off and is removed with the wreck once nobody can see it. One truck at a time. Where that
-    /// cannot be done (option off, a Going Public guest, too far, too big, no road, no model, traffic stopped) the wreck goes
-    /// as before; nothing is saved. Cost: disabled when idle; while out, a timer a frame and a few distance tests four times a
-    /// second, and while it works a few transform writes a frame. Nothing allocated after the first truck.
+    /// The tow truck that takes a wreck away once an accident scene has cleared (<see cref="Take"/>): the truck
+    /// (<see cref="TowTruck"/>) comes up a lane beside the wreck out of sight (TowRoads), stands ahead of it, and its operator
+    /// winches it onto the bed (TowRules); it drives off and is removed with the wreck once unseen. One at a time; where it
+    /// cannot be done the wreck goes as before, and nothing is saved. Cost: disabled when idle; out, a timer a frame and a few
+    /// distance tests four times a second, and a few transform writes a frame while it works.
     /// </summary>
     public sealed partial class TowService : MonoBehaviour
     {
@@ -100,21 +97,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Whether a truck would be sent for this car if it were handed over now: the option on, this machine's traffic (never
-        /// a Going Public guest's), the street running, room in the queue. The road is Take's. A few comparisons.
-        /// </summary>
+        /// <summary>Whether a truck would be sent for this car now: the option on, this machine's traffic, the street running, room in the queue.</summary>
         public bool Accepts(VehicleComponent car)
         {
             return Settings.TowTrucks && !_failed && !GoingPublic.TrafficMirrored && TrafficTools.Ready && car != null && car.rb != null
                    && _queue.Count < QueueMost && (_job == null || _job.Car != car) && TowTruck.Available;
         }
 
-        /// <summary>
-        /// Takes a wreck the scene would have removed, with the renderers of the driver its cab shows (hidden again). The car
-        /// must be held out of traffic, unpinned. False if no truck can come: the caller removes it as before. minutes: how long
-        /// the truck will be by the game's clock, for the notice (0 if another wreck goes first).
-        /// </summary>
+        /// <summary>Takes a held wreck the scene would have removed; false if no truck can come. minutes: the game minutes the notice gives (0: queued).</summary>
         public bool Take(VehicleComponent car, List<Renderer> seat, out int minutes, float hold = -1f)
         {
             minutes = 0;
@@ -398,7 +388,6 @@ namespace RealLifeOverhaul
         private float _hookedFrom;
         private float _paperFrom;
 
-        // The next wreck in the queue, or nothing more to do.
         private void Next()
         {
             _job = null;
@@ -471,7 +460,6 @@ namespace RealLifeOverhaul
             Rest();
         }
 
-        // The truck on the road at the start of its route, out of sight, and away.
         private void Dispatch(float now)
         {
             Job job = _job;
@@ -668,7 +656,6 @@ namespace RealLifeOverhaul
             enabled = false;
         }
 
-        // The truck off the road and its operator gone.
         private void PutTruckAway()
         {
             if (_truck != null)
@@ -681,7 +668,6 @@ namespace RealLifeOverhaul
             _awaySaid = false;
         }
 
-        // Where the operator gets out and in: beside the cab's door on their side, on the road.
         private Vector3 Door()
         {
             return _truck.transform.TransformPoint(new Vector3(_side * (TowRules.HalfWidth + DoorOut), 0f, TowTruck.DoorAhead));

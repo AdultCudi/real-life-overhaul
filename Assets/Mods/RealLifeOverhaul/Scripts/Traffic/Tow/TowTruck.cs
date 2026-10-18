@@ -1,19 +1,15 @@
 using System.Collections.Generic;
 using GleyTrafficSystem;
-using Helpers;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city tow truck the mod sends for a wreck: a vehicle of its own, as the city bus is (<see cref="BusVehicle"/>), driven
-    /// by the same driver (<see cref="BusDriver"/>). A cab-over rollback whose body, bed and lamps are modelled (props_tow.py);
-    /// without them there is no truck (<see cref="Make"/>). Solid as the bus is: one kinematic box on the Vehicles layer, and
-    /// the traffic is told when it goes. Its wheels roll and steer, it leans on its springs, its lamps follow the dusk and its
-    /// braking, its light bar flashes at work, and the bed (<see cref="Deck"/>) and cable (<see cref="Cable"/>) move as the
-    /// winch works. One per TowService, made once. Cost: its Update runs only while it is out, a few transform writes a frame;
-    /// a lamp is touched only when it changes.
+    /// The city tow truck: a vehicle of its own, as the city bus is (<see cref="BusVehicle"/>), driven by the bus's driver
+    /// (<see cref="BusDriver"/>), its body, bed and lamps modelled (props_tow.py); without them there is no truck. One solid
+    /// kinematic box; wheels, springs, lamps, light bar, bed (<see cref="Deck"/>) and cable (<see cref="Cable"/>) all shown.
+    /// Cost: its Update runs only while it is out, a few transform writes a frame; a lamp is touched only as it changes.
     /// </summary>
     public sealed class TowTruck : MonoBehaviour, IDrivenVehicle
     {
@@ -179,8 +175,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The city bus's wheels, drawn at the truck's size: each on a pivot that spins it, the front two on one more that
-        // steers them; the left ones turned round so that their hubs face out.
+        // The bus's wheels at the truck's size, each on a spin pivot, the front two on steering ones; the left ones turned to face out.
         private void Wheels()
         {
             PropLibrary.TryGet("city_bus_wheel", out Mesh wheel, out Material paint);
@@ -214,8 +209,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The lamps lit, each group a mesh of the glow material over its lamps in the body; the light bar's two lit halves,
-        // and the two amber lights over it, switched on only while it is at work.
+        // The lamps lit, each group one glow mesh over its lamps; the light bar's halves and amber lights only at work.
         private void Lamps()
         {
             Lamp(Light.Head, "tow_truck_light_head");

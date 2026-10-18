@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Localizor;
 using UI.Notification;
 using UnityEngine;
@@ -25,8 +23,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                // The lane point the car was heading for. A car that came in the mod's hands is long out of the traffic
-                // system's memory, so the lane point ahead of its nose is asked for instead (one walk of the road graph).
+                // The lane point ahead of its nose for a car out of the traffic system's hands a while; else the one it was heading for.
                 Vector3 nose = car.transform.forward;
                 nose.y = 0f;
                 Waypoint anchor = _inPlace && nose.sqrMagnitude > 0.01f

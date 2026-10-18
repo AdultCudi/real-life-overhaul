@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
@@ -14,10 +13,7 @@ namespace RealLifeOverhaul
     {
         private const float ConeSpacing = 1.9f;   // metres between the cones of a taper
 
-        /// <summary>
-        /// Lays the cones: a short diagonal upstream of each end traffic arrives at, beyond any unit standing there, stepping
-        /// across to the side traffic is let past on. Laid again on every call; needs the tape up.
-        /// </summary>
+        /// <summary>Lays the cones: a short diagonal upstream of each end traffic arrives at, beyond any unit standing there. Needs the tape up.</summary>
         /// <param name="near">Metres before the near end taken up by standing vehicles (Reach); negative leaves that end as it is.</param>
         /// <param name="far">The same beyond the far end, which has a taper only if traffic arrives there.</param>
         public void LayTaper(float near, float far)
@@ -161,7 +157,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Once: two patches of glass, two of plastic and the four numbered markers, switched off until wanted.
         private bool BuildScatter()
         {
             if (!PropLibrary.TryGet("debris_glass", out _, out _) || !PropLibrary.TryGet("debris_plastic", out _, out _))
@@ -193,7 +188,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Once: every post, length of tape, cone, barrier and wall there will ever be, switched off until wanted.
         private void Build()
         {
             _modelled = PropLibrary.Ready;
@@ -224,8 +218,7 @@ namespace RealLifeOverhaul
                 _posts[i] = post;
             }
 
-            // The modelled tape if it is to be had (the one that hangs a little, else the straight one), tied on
-            // where the modelled post takes it; else the plain strip at the plain post's height.
+            // The modelled tape if there is one (the sagging one first), at the modelled post's height; else the plain strip.
             string tapeId = "tape_4m_sag";
             if (!PropLibrary.TryGet(tapeId, out Mesh tapeMesh, out Material tapeMaterial) || tapeMesh == null || tapeMaterial == null)
             {

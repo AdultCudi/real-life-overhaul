@@ -1,13 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Localizor;
 using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
@@ -67,8 +64,7 @@ namespace RealLifeOverhaul
                 + "; it is sent up the ambulance's own lane behind it instead, after it: nothing of the mod's stands ahead of the ambulance");
         }
 
-        // Metres from where a patrol car would stand at the far end to the middle line of the ambulance's way out (its own
-        // lane on from where it stands, as the road graph has it), and how far along that way; -1 if either cannot be had.
+        // Metres from a far-end patrol car to the middle of the ambulance's way out, and how far along it; -1 if unknown.
         private float ExitClearance(out float along)
         {
             along = 0f;
@@ -108,8 +104,7 @@ namespace RealLifeOverhaul
             return least == float.MaxValue ? -1f : least;
         }
 
-        // Both units are standing at the scene: where the patrol car really is against the lane the ambulance will leave by,
-        // measured body to body. (If it does stand in that lane after all, it is moved when the ambulance goes: GiveWay.)
+        // Both units stand at the scene: the patrol car against the ambulance's way out, body to body (GiveWay moves it if need be).
         private void ParkedCheck()
         {
             if (_ambulance.Stage != Stage.OnScene || _police.Stage != Stage.OnScene || _ambulance.Unit.Car == null || _police.Unit.Car == null)
@@ -131,8 +126,7 @@ namespace RealLifeOverhaul
                     : $"the patrol car stands {-along:F0} m behind the ambulance: nothing of the mod's is ahead of it");
         }
 
-        // The departure check as a unit sets off: what stands in the lane it leaves by (as far as the far side of the scene),
-        // where the other unit is against that lane, and whether the order is being kept.
+        // The check as a unit sets off: what stands in its lane through the scene, where the other unit is, the order kept.
         private void SetOffCheck(Attendance attendance, Vector3 at, Vector3 facing, float through)
         {
             if (_phase == Phase.None && !attendance.Through)

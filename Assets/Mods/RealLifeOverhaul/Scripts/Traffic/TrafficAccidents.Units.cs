@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Localizor;
 using UI.Notification;
 using UnityEngine;
@@ -77,8 +75,7 @@ namespace RealLifeOverhaul
             public bool Past => Stage == Stage.Idle || Stage == Stage.Done || (Stage == Stage.Leaving && !Through);
         }
 
-        // Once whatever lies in the road will stay: the road is measured and (unless a minor bump) closed, the vehicles in it
-        // made solid for people on foot, and the units given their times and their ends of the scene.
+        // The road measured and (unless a minor bump) closed, the vehicles in it solid for people on foot, the units scheduled.
         private void PlanResponse(float now, bool ambulance, bool police, float ambulanceAt, float policeAt, ICasualty casualty, bool shut)
         {
             _hardLimit = now + HardSceneTime;
@@ -95,8 +92,7 @@ namespace RealLifeOverhaul
 
             Schedule(_ambulance, ambulance, ambulanceAt, AmbulanceStopDistance);
             Schedule(_police, police, policeAt, Random.Range(19f, 25f));
-            // The patrol car takes the far end where a lane runs up to it. Where both units must come up
-            // the same lane, the ambulance is sent first so that it ends up nearest whoever is hurt.
+            // The patrol car takes the far end where a lane runs up to it; on one lane the ambulance goes first, nearest the hurt.
             _police.FarEnd = police && _cordon.HasFarEnd;
             if (police && ambulance && !_police.FarEnd && _chase != Chase.Planned)
             {
@@ -131,8 +127,7 @@ namespace RealLifeOverhaul
         private bool _sweepSaid;
         private const float SweepWithin = 90f;   // metres round a scene in which no ordinary ambulance is left in traffic
         private static readonly int HotSweep = HotSpots.Slot("Traffic: TrafficAccidents.SweepAmbulances");
-        // One ambulance at a scene: an ordinary one from the traffic pool that comes near is taken off the road where nobody
-        // can see it go. Every three seconds while a scene is on; a walk of the traffic list.
+        // One ambulance at a scene: an ordinary one from traffic that comes near is taken off the road unseen. Every 3 s.
         private void SweepAmbulances()
         {
             using var hotSpot = HotSpots.Time(HotSweep);
@@ -165,8 +160,7 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotAttend = HotSpots.Slot("Traffic: TrafficAccidents.TickAttendance");
-        // One unit's visit: wait to be sent, drive there, pull up, stay while its crew works, drive away.
-        // Every stage ends on a clock as well as on what it is waiting for, and says so in the log once.
+        // One unit's visit, from being sent to driving away; every stage also ends on a clock, said once in the log.
         private void TickAttendance(Attendance attendance, float now)
         {
             using var hotSpot = HotSpots.Time(HotAttend);
@@ -230,8 +224,7 @@ namespace RealLifeOverhaul
                     }
                     bool aboard = _people.CrewAboard(attendance.Police);
                     bool finished = !attendance.Police && _people.CrewWorked;   // the ambulance goes as soon as its patient is aboard
-                    // The ambulance never drives off from under its crew: with the stretcher out it waits until they are
-                    // aboard, up to the scene's hard limit.
+                    // The ambulance never leaves from under its crew: with the stretcher out it waits, up to the hard limit.
                     bool waitsForCrew = !attendance.Police && _people.CrewOut && now < _hardLimit - CrewLastCall;
                     if ((aboard && (attendance.Recalled || finished)) || (attendance.Recalled && now >= attendance.At && !waitsForCrew))
                     {
@@ -347,8 +340,7 @@ namespace RealLifeOverhaul
             return attendance.Police ? "patrol car" : "ambulance";
         }
 
-        // Ordinary traffic stopped in a unit's way is taken off the road, as the game does with any car standing long: at
-        // once if nobody looks that way, after a few seconds otherwise.
+        // Ordinary traffic stopped in a unit's way is taken off the road: at once if unseen, after a few seconds otherwise.
         private void ClearTheWay(Attendance attendance, EmergencyDriver driver)
         {
             float held = driver.HeldFor;
@@ -371,8 +363,7 @@ namespace RealLifeOverhaul
             TrafficTools.Remove(car, "standing in a response unit's way");
         }
 
-        // The unit has stopped: where it meant to, behind something close to it, or out of time. It
-        // parks there, becomes solid for people on foot, and its crew gets out and walks whatever is left.
+        // The unit has stopped (where it meant, held up close, or out of time): it parks, solid for walkers, and its crew gets out.
         private void Pulled(Attendance attendance, EmergencyDriver driver, float fromScene, float now)
         {
             ResponseUnit unit = attendance.Unit;
@@ -471,8 +462,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The cones go out once the units are in, upstream of each end and beyond whatever stands there. An end a unit is
-        // still driving to waits until it has parked: it would drive through them.
+        // The cones go out upstream of each end once the units are in; an end a unit still drives to waits for it.
         private void LayTaper()
         {
             if (!_cordon.Up || _conesIn)
@@ -541,8 +531,7 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // The crew says how long its work will take and the unit waits at least that; an ambulance crew with someone on
-            // the ground may take the scene past its planned time (see Tick).
+            // The unit waits at least as long as its crew says its work takes, up to the scene's limit (Tick).
             float limit = !attendance.Police && (_people.PatientDown || (_casualty != null && _casualty.Present)) ? _hardLimit - 20f : _deadline;
             float busyUntil = _people.OnUnitParked(attendance.Police, attendance.Unit.Car, limit - 8f, now);
             attendance.At = Mathf.Min(limit - 6f, Mathf.Max(attendance.At, busyUntil));

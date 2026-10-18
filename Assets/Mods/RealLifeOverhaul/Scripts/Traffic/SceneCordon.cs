@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using UnityEngine;
@@ -21,13 +20,10 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// Scene control at an accident, a fire or a street event. Close shuts the road at once through the traffic system's own
-    /// switch on its road points: the blocked lanes from well before the wrecks (an apron where the units stand), the way in
-    /// at the junction behind (new traffic turns off), and a gate on a lane left clear; Stand says where a unit stands.
-    /// Raise, when the police arrive, puts up posts and tape round the wrecks on the carriageway, barriers at both ends, and
-    /// walls cut out of the navigation mesh (people on foot are moved by it, not by colliders), an entry left at each end
-    /// and a bar over any walkway through an opening; whoever is inside is put outside that frame (People/CordonClear).
-    /// The cones are a taper upstream of each end. Open undoes all of it. The props are built once and reused; nothing runs
-    /// per frame but the gate's timer, and a fault opens the road and leaves the cordon off for the session.
+    /// switch on its road points (the blocked lanes with an apron for the units, the way in, a gate on a clear lane); Stand
+    /// says where a unit stands. Raise, when the police arrive, puts up tape, barriers and walls cut out of the navigation
+    /// mesh, and puts whoever is inside outside (People/CordonClear); the cones are a taper. Open undoes it all. Props are
+    /// built once; nothing runs per frame but the gate's timer, and a fault opens the road and ends it for the session.
     /// </summary>
     public sealed partial class SceneCordon
     {
@@ -142,7 +138,6 @@ namespace RealLifeOverhaul
         private bool _crossing;      // people on foot have a way across the road here (a crossing)
         private float _entry;        // the side the entries are on: -1 left, 1 right
 
-        // Counters for the props being laid out.
         private int _placed, _taped;
         private Vector3 _last;
         private bool _hasLast;
@@ -376,10 +371,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// After Open, opens any road point the last scene switched off that is still closed, and says how many (none unless
-        /// Open was cut short). Not while a scene is on.
-        /// </summary>
+        /// <summary>After Open, opens any road point the last scene left closed and says how many (none unless Open was cut short).</summary>
         public int Recheck()
         {
             int reopened = 0;

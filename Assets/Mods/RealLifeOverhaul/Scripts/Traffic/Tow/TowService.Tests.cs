@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
-using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {

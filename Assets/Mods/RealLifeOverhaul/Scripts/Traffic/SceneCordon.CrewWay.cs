@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
@@ -12,11 +10,7 @@ namespace RealLifeOverhaul
     /// <summary>Scene control: the ambulance crew's way in and out, kept clear of everything of the cordon.</summary>
     public sealed partial class SceneCordon
     {
-        /// <summary>
-        /// The ambulance crew's way out and back, once planned: from then on nothing of the cordon stands within 0.3 m of all the
-        /// crew sweeps over, no tape crosses it, and an opening at least 2.6 m wide is left where it crosses a side. Tape that
-        /// already stands clear stays as it is; otherwise it is run again round the way. Null for both forgets it.
-        /// </summary>
+        /// <summary>The ambulance crew's way out and back: nothing of the cordon stands on it, and the tape is run again round it if it must be.</summary>
         public void SetCorridor(CrewPath there, CrewPath back)
         {
             _wayOut = there != null && there.Built ? there : null;
@@ -81,7 +75,6 @@ namespace RealLifeOverhaul
 
         private bool _redress;   // the tape is being run again round the crew's way: the cones are left as they stand
 
-        // Metres from a point to anything of the crew on its way, out or back.
         private float WayClearance(Vector3 point)
         {
             float clear = float.MaxValue;
@@ -115,8 +108,7 @@ namespace RealLifeOverhaul
             return any;
         }
 
-        // The near end's opening is where the crew's way crosses that end, and at least wide enough for it. If it does
-        // not come in by the near end, the opening stays where it was.
+        // The near end's opening goes where the crew's way crosses that end, wide enough for it; else it stays where it was.
         private void PlaceDoor()
         {
             if (!WayCrossing(Point(_back, _left), Point(_back, _rightEdge), CrewClear, out float low, out float high))
@@ -129,8 +121,7 @@ namespace RealLifeOverhaul
             _doorAcross = Mathf.Clamp(_left + span * (low + high) * 0.5f, _left + wide * 0.5f, _rightEdge - wide * 0.5f);
         }
 
-        // How near the crew's way comes to what stands of the cordon: every post, length of tape, cone and barrier. With
-        // 'takeIn', whatever is nearer than it may be is switched off (and counted). Says which thing was the nearest.
+        // How near the crew's way comes to every post, tape, cone and barrier; with takeIn, what is too near is switched off.
         private float MeasureWay(bool takeIn, out int taken, out string nearest)
         {
             float least = float.MaxValue;

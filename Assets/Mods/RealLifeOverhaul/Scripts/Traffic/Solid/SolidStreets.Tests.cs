@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using GleyTrafficSystem;
-using Helpers;
 using Streets.Pedestrians;
 using UI.Notification;
 using UnityEngine;
@@ -44,8 +43,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Reads a traffic car and a walking pedestrian again, says what was found in Player.log (one line) and which
-        // way the cars are made to see people in a notice.
+        // Reads the cars' senses again: one line in Player.log, and a notice of the mode.
         private void ShowSenses()
         {
             TestRefusal why = TestRefusals.Street();

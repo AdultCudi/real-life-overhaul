@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Localizor;
 using UI.Notification;
 using UnityEngine;
@@ -140,8 +138,7 @@ namespace RealLifeOverhaul
             Logger?.Info($"Accident: the {Name(attendance)} stands nose to nose with the ambulance that is leaving; it backs along its own lane, up to {BackOffMost:F0} m, to give it the road.");
         }
 
-        // Backing: until it has gone far enough, has come up to something behind it, or the ambulance is past. Then it stands
-        // again (waiting for the scene to clear, as before) or, with the ambulance gone, leaves forwards itself.
+        // Backing until far enough, held by something behind, or the ambulance is past; then it stands again or leaves forwards.
         private void TickBacking(Attendance attendance, float now)
         {
             ResponseUnit unit = attendance.Unit;
@@ -206,7 +203,6 @@ namespace RealLifeOverhaul
             TryToGo(attendance, now);
         }
 
-        // Which way a loaded ambulance gets past the scene in front of it, said once in the log.
         private void PlanExit(Attendance attendance)
         {
             VehicleComponent car = attendance.Unit.Car;
@@ -257,7 +253,6 @@ namespace RealLifeOverhaul
             Logger?.Info("Accident: the ambulance is loaded; tape taken in, and it leaves forwards, siren on: " + way + ".");
         }
 
-        // True if a held vehicle lies across the lane ahead of a unit: its real footprint against the strip the unit will drive.
         private static bool InLane(Wreck wreck, Vector3 from, Vector3 forward, Vector3 right, float halfLength, float halfWidth, float reach)
         {
             if (wreck == null || wreck.Car == null)
@@ -274,8 +269,7 @@ namespace RealLifeOverhaul
             return ahead + deep > halfLength && ahead - deep < reach && aside < halfWidth + wide;
         }
 
-        // Standing with its crew aboard: parked (kinematic, so nothing bounces), lit, and watched. With 'waits' it goes
-        // when the scene clears round it; without, it tries to go every second and is never left there (BoxedOut).
+        // Standing with its crew aboard: parked, lit, watched. With waits it goes as the scene clears; without, it tries every second.
         private void Stand(Attendance attendance, float now, bool waits)
         {
             ResponseUnit unit = attendance.Unit;
@@ -295,8 +289,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A unit ready to go: the wrecks in its lane go first (each once nobody looks that way, or when its time is up), then
-        // it leaves. One that still cannot go is not left standing.
+        // A unit ready to go: the wrecks in its lane go first (once unseen, or when its time is up), then it leaves.
         private void TryToGo(Attendance attendance, float now)
         {
             bool pending = false;
@@ -384,8 +377,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // A leaving unit stopped behind something: a vehicle held at the scene is towed out of its way, standing ordinary
-        // traffic is moved on (at once out of view, after a few seconds in view). A person, or anything else, is waited for.
+        // A leaving unit stopped behind something: a held wreck is towed and standing traffic moved on; a person is waited for.
         private void ClearExit(Attendance attendance, EmergencyDriver driver)
         {
             float held = driver.HeldFor;
@@ -442,8 +434,7 @@ namespace RealLifeOverhaul
             bool seen = unit.Car != null && Seen(unit.Car.transform.position);
             if (seen)
             {
-                // Never in front of the player: it stays, lit, and keeps trying to drive off (GiveWay, ClearExit) until nobody
-                // can see it. Said once.
+                // Never in front of the player: it stays, lit, and keeps trying to drive off until nobody can see it. Said once.
                 if (!attendance.SaidHeld)
                 {
                     attendance.SaidHeld = true;

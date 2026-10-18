@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
@@ -45,7 +42,6 @@ namespace RealLifeOverhaul
             Go(Step.Hooking);
         }
 
-        // The winch starts: the wreck's way to the bed worked out once, in the truck's own space.
         private void BeginWinch(float now)
         {
             if (_job == null || _job.Car == null)
@@ -89,8 +85,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The pull along the road, from the pose it has now: what the curve's start leaves over (a car standing a little
-        // askew of the road under it) is eased out over the pull, so that it starts exactly where it stands.
+        // The pull along the road from the pose it has now: any skew of the curve's start is eased out over the pull.
         private void BeginDrag()
         {
             Transform car = _job.Car.transform;
@@ -163,8 +158,7 @@ namespace RealLifeOverhaul
                 case Step.Righting:
                     if (_job != null && _job.Car != null)
                     {
-                        // Turned back on to its wheels about its middle, which lifts a little as it goes over and comes to
-                        // rest as high over the road as it stands on its wheels.
+                        // Turned back onto its wheels about its middle, lifting a little as it goes over.
                         float s = TowRules.Smooth(u);
                         Quaternion turn = Quaternion.Slerp(_rightFrom, _carUp, s);
                         Vector3 middle = Vector3.Lerp(_rightMiddle, _rightTo, s) + Vector3.up * (Mathf.Sin(s * Mathf.PI) * 0.35f);
@@ -194,8 +188,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The wreck on the road behind the bed: its middle at (across, ahead) in the truck's space on the road, turned so; its
-        // tilt as it stood easing out to level over the pull.
+        // The wreck on the road behind the bed, its tilt as it stood easing out to level over the pull.
         private void PoseOnRoad(float x, float z, float yaw, float u)
         {
             Transform truck = _truck.transform;
@@ -207,7 +200,6 @@ namespace RealLifeOverhaul
             _job.Car.transform.SetPositionAndRotation(middle - turn * _localCentre, turn);
         }
 
-        // The wreck going up the bed: share s of the way from the foot to its place on it.
         private void PoseOnBed(float s)
         {
             float along = Mathf.Lerp(TowRules.FootAlong(_job.HalfLength), TowRules.RestAlong(_job.HalfLength), s);
@@ -219,8 +211,7 @@ namespace RealLifeOverhaul
             _job.Car.transform.SetPositionAndRotation(middle - turn * _localCentre, turn);
         }
 
-        // The middle of the car's body over the line its wheels run on: its own origin is on the ground under it, so the
-        // middle stands as high over the origin as it does in the car's own space.
+        // Its origin is on the ground under it, so its middle stands as high over the road as in its own space.
         private float HeightOfMiddle()
         {
             return _localCentre.y;

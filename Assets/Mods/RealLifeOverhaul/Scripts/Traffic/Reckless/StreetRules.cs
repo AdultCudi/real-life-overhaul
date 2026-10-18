@@ -127,11 +127,7 @@ namespace RealLifeOverhaul
             return place != Place.Pavement && (car == Light.Red || (place == Place.Crossing && peopleMayWalk));
         }
 
-        /// <summary>
-        /// What one person does: in the car's way and in the right, they stop and glare; in the wrong, they clear the way
-        /// (onwards, or back if they had only just stepped in); anybody else may look round. Roll 0 to 99; sideSpeed is how
-        /// fast they cross the car's line, towards positive side.
-        /// </summary>
+        /// <summary>What one person does (roll 0 to 99): glare in the right, clear the way in the wrong, perhaps look round off the car's way.</summary>
         public static Reaction React(Place place, bool inPath, Light car, bool peopleMayWalk, float side, float sideSpeed, float halfWidth, int roll)
         {
             if (place == Place.Pavement || !inPath)
@@ -194,8 +190,7 @@ namespace RealLifeOverhaul
             return blastsInWindow >= RagesForWarning ? Penalty.Warning : Penalty.None;
         }
 
-        // How busy the road is at each hour against the day's average (the mean of the 24 is 1): the shape of a large city's
-        // collisions by hour. The higher risk of each car at night is in the drivers instead (NightFactor, the drunk).
+        // How busy the road is each hour against the day's average (mean 1), as a large city's collisions run.
         private static readonly float[] HourFactors =
         {
             0.63f, 0.44f, 0.37f, 0.32f, 0.37f, 0.49f,   // 00:00 to 05:00
@@ -210,11 +205,7 @@ namespace RealLifeOverhaul
             return HourFactors[((hour % 24) + 24) % 24];
         }
 
-        /// <summary>
-        /// Car accidents near the player in a game day of street time at a setting of the frequency option, in fair weather at
-        /// the day's average hour: each point half as many again, 0.5 at 1, 0.75 at the default 2, about 19 at 10, none at 0.
-        /// Far more than a real street sees: an accident is an event the player meets now and then.
-        /// </summary>
+        /// <summary>Car accidents near the player in a game day at a frequency setting: 0.5 at 1, 0.75 at the default 2, about 19 at 10, none at 0.</summary>
         public static float PerDay(int frequency)
         {
             return frequency <= 0 ? 0f : DayAtDefault * (float)Math.Pow(StepFactor, frequency - DefaultFrequency);
@@ -316,10 +307,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The most the driver can slow by, in m/s2: late but hard and in time for one who gets away with it; for one with an
-        /// accident due, by a roll of 0 to 1, as one who was not looking, so what they hit they hit at up to full speed.
-        /// </summary>
+        /// <summary>The most the driver can slow by, m/s2: hard and in time if they get away with it, else as one who was not looking, by the roll.</summary>
         public static float Stopping(bool accidentDue, float roll)
         {
             if (!accidentDue)
@@ -363,10 +351,7 @@ namespace RealLifeOverhaul
             return kind != Kind.RedLight;
         }
 
-        /// <summary>
-        /// The grip the driver plans a bend with, in m/s2: a margin on today's road for one who gets away with it; a speeder or
-        /// a drunk with an accident due plans for a dry road and more, by a roll of 0 to 1.
-        /// </summary>
+        /// <summary>The grip the driver plans a bend with, m/s2: a margin on today's road, or (a speeder or drunk with an accident due) more than a dry road's.</summary>
         public static float PlannedGrip(Kind kind, bool accidentDue, float roll, float grip)
         {
             if (!accidentDue || kind == Kind.RedLight || kind == Kind.Tailgater)

@@ -6,11 +6,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The road the tow truck takes to a wreck, looked up once on the traffic system's lane points when it is sent. A rollback
-    /// loads over its tail, so it stands ahead of the wreck in the wreck's own lane (the one stretch of a busy road nothing
-    /// drives into), reached along a lane beside it that runs the same way: past the wreck, over, and on to its stand
-    /// (TowRules.Stretch). No such lane, a bend, a junction or a closed road: no truck. It starts some 170 m back (70 to 280 m)
-    /// where nobody can see it, away from the player, with nothing standing there. Nothing per frame.
+    /// The road the tow truck takes, looked up once on the lane points when it is sent: it stands ahead of the wreck in the
+    /// wreck's own lane (nothing drives into it), reached by a lane beside running the same way (TowRules.Stretch), starting
+    /// some 170 m back where nobody sees it. No such lane, a bend, a junction or a closed road: no truck.
     /// </summary>
     public static class TowRoads
     {
@@ -182,10 +180,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Picks the start on the lane beside as things are now (the player may have moved): out of sight, away from the player,
-        /// with nothing standing there; then lays the route. False if there is none now.
-        /// </summary>
+        /// <summary>Picks the start on the lane beside as things are now (out of sight, away from the player, clear) and lays the route. False if none.</summary>
         public static bool PickStart(Plan plan)
         {
             int count = plan.Back.Count;
@@ -291,8 +286,7 @@ namespace RealLifeOverhaul
             return point != null && RoadGraph.Drivable(point) && !point.temporaryDisabled;
         }
 
-        // A point of a lane beside this one that runs the same way, a lane's width across: its signed distance across
-        // (positive to the right of the lane's direction).
+        // A point of a lane beside this one that runs the same way, a lane's width across, and its signed distance across.
         private static Waypoint Beside(TrafficManager traffic, Waypoint point, Vector3 origin, Vector3 along, out float across)
         {
             across = 0f;
@@ -323,8 +317,7 @@ namespace RealLifeOverhaul
             return found;
         }
 
-        // Walks a lane forward from a point while it is plain, open and straight along `along`, until it is `upTo` metres
-        // along from the origin; the points walked go into `into`. False if it ends, bends, closes or meets a junction first.
+        // Walks a lane while plain, open and straight, up to upTo metres along, collecting its points; false if it ends, bends or forks first.
         private static bool StraightLane(TrafficManager traffic, Waypoint start, Vector3 origin, Vector3 along, float upTo, List<Waypoint> into)
         {
             into.Clear();
@@ -373,8 +366,7 @@ namespace RealLifeOverhaul
             return Blocking(middle + Vector3.up * 1.25f, half, Quaternion.LookRotation(along), null) == null;
         }
 
-        // What stands in this box (vehicles of every kind and street furniture), leaving out the wreck itself; null if nothing.
-        // stillOnly: leaving out traffic on the move too (a body that is not frozen), which will have gone by the time the truck comes.
+        // What stands in this box, the wreck left out; stillOnly leaves out moving traffic too, gone by the time the truck comes.
         private static Collider Blocking(Vector3 middle, Vector3 half, Quaternion rotation, Rigidbody except, bool stillOnly = false)
         {
             int count = Physics.OverlapBoxNonAlloc(middle, half, Overlaps, rotation, SceneParking.RoadsideMask, QueryTriggerInteraction.Ignore);

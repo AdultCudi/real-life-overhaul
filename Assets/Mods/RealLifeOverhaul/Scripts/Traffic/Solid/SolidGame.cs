@@ -10,14 +10,11 @@ using Object = UnityEngine.Object;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Everything "traffic sees people in the road" asks of the game. Read: what a traffic car's sensor stops for (non-trigger
-    /// colliders on the layers TrafficManager.Initialize hands it, or triggers tagged "AiVehicleHalt") against a real walking
-    /// pedestrian, said in one log line, which sets the Mode: Native (the cars sense walkers themselves), StandIns, or
-    /// BrakesOnly (no stand-in can be made: SolidBrakes alone). The stand-ins are sixteen trigger capsules made once, moved to
-    /// their person, and reported to the traffic system as the game reports a pedestrian put away
-    /// (Manager.TriggerColliderRemovedEvent) when taken off. The fade: the game's HumanHider fades a person near a vehicle;
-    /// for somebody a car brakes for or has hit its mask is cleared, and put back after (24 at once). Cost: nothing per frame;
-    /// each pooled car is measured once a session, then read from arrays.
+    /// Everything "traffic sees people in the road" asks of the game. Read: what a car's sensor stops for, tried against a
+    /// real walking pedestrian, sets the Mode: Native (cars sense walkers), StandIns, or BrakesOnly (SolidBrakes alone). The
+    /// stand-ins are sixteen trigger capsules tagged "AiVehicleHalt", made once and reported gone as the game reports a
+    /// pedestrian put away. The fade: the game's HumanHider is held off for somebody a car brakes for. Cost: nothing per
+    /// frame; each pooled car is measured once a session.
     /// </summary>
     internal sealed class SolidGame
     {

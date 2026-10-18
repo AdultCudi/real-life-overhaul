@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Generic;
-using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Localizor;
 using Streets.Pedestrians;
 using UI.Notification;
@@ -42,8 +39,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Puts a patrol car on the road 140 to 200 m behind it, lights and siren on, and sends it after the car: never where it
-        // can be seen appearing, nor by a way through where somebody lies. True if the chase is on.
+        // A patrol car 140 to 200 m behind it, lights on, sent after it; never seen appearing nor driving through where somebody lies.
         private bool Patrol(float now, bool hitAndRun)
         {
             if (!Settings.Police || _patrol.InUse || !_car.InUse)
@@ -103,7 +99,6 @@ namespace RealLifeOverhaul
 
         private bool _fledFromPeople;
 
-        // A test that asked for a patrol car is told when none could be sent (anything else simply goes unchased).
         private void NoPatrol()
         {
             if (_test)
@@ -134,8 +129,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The patrol car goes back to traffic as it is (lights on for a few seconds, siren off), and is watched: one
-        // that then stands for long is taken off the road by TrafficWatch, as an accident scene's would be.
+        // The patrol car goes back to traffic as it is, watched by TrafficWatch in case it then stands.
         private void SendPatrolOff()
         {
             if (!_patrol.InUse)
@@ -150,7 +144,6 @@ namespace RealLifeOverhaul
             _patrol.Release(resumeTraffic: TrafficTools.Ready, remove: false, quiet: true);
         }
 
-        // Whatever was behind the car is called off: the people at the roadside leave, the patrol car goes its way.
         private void CallOff()
         {
             _stop.Clear();

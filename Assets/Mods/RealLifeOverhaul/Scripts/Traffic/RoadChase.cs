@@ -5,14 +5,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One car running from one patrol car, from the moment it bolts to the moment it is either
-    /// stopped with the patrol car behind it (and its driver dealt with at the roadside) or lost.
-    /// It was part of TrafficAccidents (the hit-and-run) and is here so that a reckless driver a
-    /// patrol car has seen is chased by the same rules: both owners keep the two cars and the
-    /// roadside stop, start this with them and tick it; it drives nothing itself and decides only
-    /// when the suspect brakes, when the two are held, and when it is over.
-    /// The owner does what its own scene needs at the end (Tick says how it ended).
-    /// A few comparisons a tick while a chase is on; nothing while there is none.
+    /// One car running from one patrol car, from the moment it bolts until it is stopped (its driver dealt with at the
+    /// roadside) or lost: the accident's hit-and-run, and a reckless driver the police saw. It drives nothing; it decides when
+    /// the suspect brakes, when the two are held, and when it is over. A few comparisons a tick while on.
     /// </summary>
     public sealed class RoadChase
     {
@@ -39,13 +34,10 @@ namespace RealLifeOverhaul
         /// <summary>Whether this chase ends with the suspect stopped (decided when it began).</summary>
         public bool WillBeCaught => _caught;
 
-        /// <summary>
-        /// Starts it. Both cars are being driven by their owner already: the suspect along its road, the
-        /// patrol car following it.
-        /// </summary>
+        /// <summary>Starts it; both cars are driven by their owner already, the suspect along its road, the patrol car following.</summary>
         /// <param name="caught">Whether the suspect is stopped at the end of its run, or gets away.</param>
         /// <param name="until">When the run ends, unless <see cref="EndRun"/> is called sooner.</param>
-        /// <param name="arrest">Stopped, the driver is arrested (hands up, cuffed, into the patrol car); otherwise an officer walks up to the window and back.</param>
+        /// <param name="arrest">Stopped, the driver is arrested; otherwise an officer walks up to the window and back.</param>
         /// <param name="stoppedNotice">The notice shown when the two are held, or null for none.</param>
         public void Begin(ResponseUnit suspect, ResponseUnit patrol, RoadsideStop stop, bool caught, float until, bool arrest, string stoppedNotice)
         {
@@ -77,10 +69,7 @@ namespace RealLifeOverhaul
             _stop = null;
         }
 
-        /// <summary>
-        /// One look at the chase. True when it is over, with how: the owner then lets the cars go
-        /// (a suspect that was caught is taken off the road, one that got away goes back to traffic).
-        /// </summary>
+        /// <summary>One look at the chase; true when it is over, with how. The owner lets the cars go.</summary>
         public bool Tick(float now, out bool caught)
         {
             caught = false;
@@ -98,7 +87,6 @@ namespace RealLifeOverhaul
             switch (Now)
             {
                 case Step.Fleeing:
-                    // Out of time, or the suspect ran out of road.
                     if (now >= _end || !_suspect.Driver.Active)
                     {
                         if (!_caught)
@@ -116,7 +104,6 @@ namespace RealLifeOverhaul
                     {
                         _suspect.Park();   // stopped: held still from now, not left standing on its springs until the patrol car is up
                     }
-                    // Wait for the suspect to stop and the patrol car to pull up behind it.
                     bool pulledUp = _patrol.Driver.Speed < 0.5f
                                     && (_patrol.Car.transform.position - _suspect.Car.transform.position).sqrMagnitude < PulledUpWithin * PulledUpWithin;
                     if ((!_suspect.Driver.Active && pulledUp) || now >= _end)
@@ -142,9 +129,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The fleeing car has been stopped and the patrol car is parked behind it. This is the one place that
-        // knows it, so the roadside stop starts here: an officer walking up from the patrol car, and (an arrest)
-        // the driver out with their hands up.
+        // Stopped with the patrol car behind: the roadside stop starts, an officer walking up (for an arrest, the driver hands up).
         private void OnStopped(float now)
         {
             if (_stoppedNotice != null)

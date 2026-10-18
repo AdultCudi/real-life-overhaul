@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using GleyTrafficSystem;
 using UnityEngine;
 
@@ -17,8 +16,7 @@ namespace RealLifeOverhaul
         private const float FastGrip = 8.5f;        // m/s2 sideways through a bend
         private static readonly RaycastHit[] Hits = new RaycastHit[32];
 
-        // A fast or careless drive: the fastest it may go now for the bends ahead, each allowing what tyres hold through it and
-        // what it can lose on the way there. Looks only as far as it needs to slow down in, and reads only the route's shape.
+        // The fastest it may go now for the bends ahead: what tyres hold through each, plus what it can lose before it. Reads only the route.
         private float BendLimit(Vector3 position)
         {
             if (_next < 1 || _next >= _path.Count)
@@ -61,9 +59,7 @@ namespace RealLifeOverhaul
 
         private const float HoldShort = 3f;         // metres short of the point it holds at that its nose stops (the point is the stop line's own)
 
-        // The fastest it may go now for the point it has been told to hold at: what an ordinary driver's braking
-        // brings to a stand a little short of it, measured along the route. 0 once it is there; no limit once
-        // the point is behind it (the light changed too late: it is over the line and carries on).
+        // The fastest it may go for the point it holds at: an ordinary stop a little short of it; no limit once the point is behind it.
         private float HoldLimit(Vector3 toPoint)
         {
             if (_holdAt < _next || _holdAt >= _path.Count)
@@ -79,8 +75,7 @@ namespace RealLifeOverhaul
             return room > 0.1f ? Mathf.Sqrt(2f * Mathf.Min(Braking, _stopping) * room) : 0f;
         }
 
-        // Metres to where the vehicle will stop, when that is close: the point it pulls up at, the end
-        // of its route, or its stopping distance from the goal. A large number while it is far off.
+        // Metres to where it will stop when that is close: its pull-up point, its route's end or the goal; a large number while far off.
         private float StopDistance(Vector3 position, Vector3 toPoint, float goalSqr, int last)
         {
             int stopIndex = _stopAt >= 0 ? _stopAt : last;
@@ -100,8 +95,7 @@ namespace RealLifeOverhaul
             return toStop;
         }
 
-        // Looks ahead and picks a lane and a speed: carry on, move over to another lane of the road,
-        // or close up on whatever is ahead and wait behind it.
+        // Looks ahead and picks a lane and a speed: carry on, move over to another lane, or close up and wait behind what is ahead.
         private void Sense(Vector3 position, Vector3 roadRight, float goalSqr)
         {
             Vector3 forward = _body.rotation * (_reverse ? Vector3.back : Vector3.forward);   // the way it is going
@@ -131,8 +125,7 @@ namespace RealLifeOverhaul
             }
 
             _clearSince = Time.time;
-            // Out of its lane and held up there: if its own lane is clear now (or it may not pass at all), it goes back into it
-            // rather than stand nose to tail in the other.
+            // Held up out of its lane: back into its own once that is clear (or it may not pass), not nose to tail in the other.
             if (_targetOffset != 0f && !_pulledOver && !_reverse && Time.time >= _nextPassLook)
             {
                 _nextPassLook = Time.time + PassLookInterval;
@@ -161,7 +154,6 @@ namespace RealLifeOverhaul
                 {
                     _nextPassLook = Time.time + PassLookInterval;
                 }
-                // Close up to a couple of metres behind it, then wait.
                 float room = free - StopGap;
                 // (A careless driver plans with all the braking they have, which is to say late.)
                 float plan = _stopping < Slowing ? _stopping : CruiseSpeed > FastFrom ? FastBraking : Braking;
@@ -186,7 +178,6 @@ namespace RealLifeOverhaul
             _limit = float.MaxValue;
         }
 
-        // Far enough from where the vehicle will stop for a pass to be worth it. Following, always.
         private bool HasRoomToPass(float goalSqr)
         {
             if (_following)
@@ -201,8 +192,7 @@ namespace RealLifeOverhaul
             return goalSqr > near * near;
         }
 
-        // A pass is only ever into a lane of the road: there must be a road point where the vehicle
-        // would run, and nothing and nobody in it.
+        // A pass is only ever into a lane of the road: a road point where it would run, and nothing in it.
         private bool CanPass(Vector3 middle, Vector3 forward, Vector3 roadRight, float offset)
         {
             Vector3 beside = middle + roadRight * offset;
@@ -219,15 +209,13 @@ namespace RealLifeOverhaul
             return TrafficManager.HasInstance && TrafficTools.ClosestWaypoint(lane, LaneSnap) != null;
         }
 
-        // True if a lane beside the vehicle (or its own, seen from out of it) has anything in it, alongside or ahead.
         private bool IsBlocked(Vector3 origin, Vector3 direction)
         {
             return Physics.CheckSphere(origin, _halfWidth + SenseMargin, Mask, QueryTriggerInteraction.Ignore)
                    || FreeAhead(origin, direction, beside: true, out _) < float.MaxValue;
         }
 
-        // Metres of clear road ahead of its nose, or float.MaxValue if nothing is in reach: a ball as wide as the vehicle swept
-        // from its middle, further the faster it goes. A sweep ignores what the ball starts inside: our own vehicle.
+        // Metres clear ahead of its nose (float.MaxValue: nothing in reach), by a ball as wide as it, swept further the faster it goes.
         private float FreeAhead(Vector3 origin, Vector3 direction, bool beside, out Rigidbody blocker)
         {
             blocker = null;
@@ -312,15 +300,13 @@ namespace RealLifeOverhaul
             return free;
         }
 
-        // What its look ahead is made against: everything solid and everybody, or everything but the game's pedestrians for a
-        // driver who does not see them.
+        // Everything solid and everybody, or for a driver who does not see them everything but the game's pedestrians.
         private int Mask => _seesPeople || _blindMask == 0 ? _obstacleMask : _blindMask;
 
         private bool _solids;
         private bool _sliding;
         private float _solidRoom = float.MaxValue;
 
-        // A car that has lost it: straight on the way it points, braking, with the look ahead still made.
         private void SlideOn(Vector3 position)
         {
             if (Time.time >= _nextSense)

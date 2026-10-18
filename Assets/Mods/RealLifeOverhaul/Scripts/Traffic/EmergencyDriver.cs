@@ -5,15 +5,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Drives one vehicle like an emergency vehicle along a list of road points, ignoring traffic lights and never touching
-    /// anyone or anything: it looks ahead for vehicles and people, slows as it closes on them and stops a couple of metres
-    /// short. Past a stopped vehicle it may move into another lane of the road and back; it never leaves the road points (but
-    /// to pull in to the kerb side of its lane, PullOver) and never forces a way through: held up near its goal it stops and
-    /// has arrived; further away it waits and says what is in its way (Blocker, HeldFor). The goal is the route's end
-    /// (BeginRoute), a place (Begin), a point to pull up at, or a vehicle to follow. Above FastFrom it drives like a fast car
-    /// (gentler pickup, a look as far as it needs to stop, bends at what tyres hold); Careless, Sway and HoldAt make it a
-    /// reckless driver instead. The traffic system's own driver is off for the vehicle meanwhile. Cost: disabled when not
-    /// driving; driving, a few multiplications each physics step and one short physics query every 0.15 s.
+    /// Drives one vehicle like an emergency vehicle along a list of road points, through red lights and touching nothing:
+    /// it slows for vehicles and people ahead and stops short, may pass in another lane of the road, and never forces a way
+    /// through (held up near its goal it has arrived; further off it waits, saying what is in its way). Above FastFrom it
+    /// drives like a fast car; Careless, Sway and HoldAt make it a reckless one. The traffic system's driver is off for the
+    /// vehicle meanwhile. Cost: disabled when not driving; driving, a few multiplications a physics step and one short
+    /// physics query every 0.15 s.
     /// </summary>
     public sealed partial class EmergencyDriver : MonoBehaviour
     {
@@ -108,16 +105,10 @@ namespace RealLifeOverhaul
         /// <summary>Speed on a clear, straight road, in m/s. Begin resets it to the default.</summary>
         public float CruiseSpeed { get; set; } = DefaultCruiseSpeed;
 
-        /// <summary>
-        /// False keeps it in its own lane whatever is ahead: it closes up and waits (a unit leaving through a scene, the lane
-        /// beside held by the other unit). Begin sets it back to true.
-        /// </summary>
+        /// <summary>False keeps it in its own lane whatever is ahead: it closes up and waits. Begin sets it back to true.</summary>
         public bool MayPass { get; set; } = true;
 
-        /// <summary>
-        /// Metres within which a route point counts as reached: a route is cut that much at every corner; less keeps to a path
-        /// more closely (in to a kerb and out again). Begin resets it.
-        /// </summary>
+        /// <summary>Metres within which a route point counts as reached (a route is cut that much at each corner). Begin resets it.</summary>
         public float Reach
         {
             get => _reach;
@@ -231,10 +222,7 @@ namespace RealLifeOverhaul
             TrafficTools.Touch(car, "driven by the mod");
         }
 
-        /// <summary>
-        /// Starts a drive whose goal is the end of the route itself, distances measured along the route: it slows into the last
-        /// point and stops on it, in its lane.
-        /// </summary>
+        /// <summary>A drive whose goal is the end of the route itself, distances measured along it: it stops on the last point, in its lane.</summary>
         /// <param name="nearEnough">Above zero: held up with no more than this much route left, it stops and has arrived.</param>
         public void BeginRoute(VehicleComponent car, List<Vector3> path, float nearEnough)
         {
@@ -242,10 +230,7 @@ namespace RealLifeOverhaul
             _routeOnly = true;
         }
 
-        /// <summary>
-        /// Backs the vehicle tail first along a route to its last point, out of a place it drove into nose first: it looks
-        /// behind, closes up and stops as any drive does, and never passes.
-        /// </summary>
+        /// <summary>Backs the vehicle tail first along a route to its last point: it looks behind, stops short of whatever is there, never passes.</summary>
         /// <param name="path">Points behind the vehicle, nearest first.</param>
         public void BeginReverse(VehicleComponent car, List<Vector3> path, float speed)
         {
@@ -269,10 +254,7 @@ namespace RealLifeOverhaul
         /// <summary>The road point the vehicle is heading for; every point before it is behind.</summary>
         public int NextPoint => _next;
 
-        /// <summary>
-        /// Turns the drive into a pursuit: it settles in behind the target at about the gap, never passes it, and stops when it
-        /// stops. Ends with Stop.
-        /// </summary>
+        /// <summary>A pursuit: it settles in behind the target at about the gap, never passes it, and stops when it stops. Ends with Stop.</summary>
         public void Follow(Rigidbody target, float gap)
         {
             _target = target;
@@ -285,10 +267,7 @@ namespace RealLifeOverhaul
             Arrived = false;
         }
 
-        /// <summary>
-        /// Moves it over within the carriageway by so many metres right of its road points (negative: left) and keeps it there,
-        /// to pull in to the kerb; the caller has made sure the road there is free (SceneParking.KerbRoom). Begin undoes it.
-        /// </summary>
+        /// <summary>Pulls it in to the kerb by so many metres right of its road points (negative: left); the caller checked the room. Begin undoes it.</summary>
         public void PullOver(float offset)
         {
             _targetOffset = offset;
@@ -490,7 +469,6 @@ namespace RealLifeOverhaul
             Move(_reverse ? -_speed : _speed);
         }
 
-        // Its body moved at that speed the way it points, its vertical speed damped and its turning stopped.
         private void Move(float speed)
         {
             Vector3 velocity = _body.rotation * Vector3.forward * speed;

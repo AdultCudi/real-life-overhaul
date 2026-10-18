@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
@@ -12,12 +11,11 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Traffic accidents: stages a collision with the game's AI cars, or takes one the reckless drivers caused (BeginAt),
-    /// and runs the scene: a severity, the wrecks, police and for the worse ones an ambulance, sometimes a driver who bolts
-    /// and is chased (<see cref="RoadChase"/>). A scene is planned to clear in three minutes and runs to five only for a
-    /// casualty still being seen to. ResponseUnit drives the vehicles, SceneParking and SceneCordon place them and close
-    /// the road, AccidentCast and RoadsideStop put the people on it. Cost: idle, one comparison a frame; wrecks are frozen,
-    /// so a scene costs a few timers a frame.
+    /// Traffic accidents: stages a collision with the game's AI cars, or takes one the reckless drivers caused (BeginAt), and
+    /// runs the scene: the wrecks, police and for the worse ones an ambulance, sometimes a driver who bolts (<see cref="RoadChase"/>),
+    /// cleared within three minutes (five for a casualty still seen to). ResponseUnit drives the vehicles, SceneParking and
+    /// SceneCordon place them and close the road, AccidentCast and RoadsideStop put the people on it. Cost: idle, one comparison
+    /// a frame; a scene, a few timers a frame (the wrecks are frozen).
     /// </summary>
     public sealed partial class TrafficAccidents : MonoBehaviour
     {
@@ -35,8 +33,7 @@ namespace RealLifeOverhaul
 
         private enum Phase { None, Tumbling, Shunting, Active }
 
-        // Ready: crew aboard, standing lit for seconds before it drives off (the patrol car until the scene clears round it).
-        // Leaving: driven away by the mod; traffic has it back only once it moves along a lane.
+        // Ready: crew aboard, lit, about to drive off (the patrol car waits for the scene to clear). Leaving: driven off by the mod.
         private enum Stage { Idle, Waiting, EnRoute, Chasing, OnScene, Ready, Leaving, Done }
 
         // Planned: one driver will bolt when the patrol car turns up. Running: they have, and RoadChase has the two cars.
@@ -238,8 +235,7 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                // Clear leaves no scene, so a fault cannot repeat every frame. On a game that lacks something the
-                // accidents name, they stop for the session; the watch on the traffic goes on.
+                // Clear leaves no scene, so a fault cannot repeat; a game lacking something named stops the accidents for the session.
                 Logger?.Error(e);
                 Clear(resumeTraffic: true, announce: false, why: "error");
                 _lacking = Guard.StandsDown(e, "traffic accidents");
@@ -335,8 +331,7 @@ namespace RealLifeOverhaul
                 _people.WaveTrafficOn();
             }
 
-            // Never end on someone still in the road while the ambulance comes or its crew works: the deadline moves
-            // on a little at a time, up to the hard limit.
+            // Never end on someone still in the road while the ambulance comes or works: the deadline moves on, up to the hard limit.
             if (now >= _deadline && now < _hardLimit && StillAttending())
             {
                 _deadline = Mathf.Min(now + 12f, _hardLimit);
@@ -377,8 +372,7 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotRecheck = HotSpots.Slot("Traffic: TrafficAccidents.Recheck");
-        // Once after every scene, on the first tick outdoors with traffic running: the cordon's road points must be open
-        // and no car of the scene still held. Whatever is not is put right and logged.
+        // Once after every scene, outdoors with traffic running: any road point still closed, or car still held, is put right.
         private void Recheck()
         {
             using var hotSpot = HotSpots.Time(HotRecheck);
@@ -412,10 +406,7 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotStage = HotSpots.Slot("Traffic: TrafficAccidents.StageCasualty");
-        /// <summary>
-        /// Starts a scene round someone lying in the road: an ambulance and (with police on) a patrol car attend, and the
-        /// casualty is told when the ambulance takes them or the scene ends. False if a scene runs already or traffic does not.
-        /// </summary>
+        /// <summary>Starts a scene round someone lying in the road, with an ambulance and a patrol car. False if a scene runs already or traffic does not.</summary>
         /// <param name="scene">Where the marker points and the vehicles head for.</param>
         /// <param name="car">The traffic car that hit them, held with its hazards on until the scene clears; or null.</param>
         /// <param name="byPlayer">The player did it, so walking up earns no thanks.</param>
@@ -488,7 +479,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The ambulance is going: whoever was lying there goes with it.
         private void CollectCasualty()
         {
             ICasualty casualty = _casualty;
@@ -551,7 +541,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The marker over the scene, or at the screen's edge when it is out of view; none with its option off.
         private void UpdateMarker()
         {
             if (!Settings.AccidentMarker)
@@ -599,8 +588,7 @@ namespace RealLifeOverhaul
 
             if (_phase == Phase.Active && _attended && _ambulance != null)
             {
-                // The departure check's last line: the road is given back only with the ambulance beyond the scene or off the
-                // road, and the patrol car gone or standing in its own lane ready to drive off.
+                // The road is given back only with the ambulance beyond the scene or off the road and the patrol car leaving.
                 bool ambulanceAway = _ambulance.Past || !_ambulance.Unit.InUse;
                 bool patrolAway = _police.Past || !_police.Unit.InUse;
                 DepartureCheck("road reopened", ambulanceAway && !_police.Backing,

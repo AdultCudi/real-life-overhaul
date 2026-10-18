@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Localizor;
 using Streets.Pedestrians;
 using UI.Notification;
@@ -27,8 +25,7 @@ namespace RealLifeOverhaul
             _struck = true;
         }
 
-        // A traffic car has thrown somebody down. If they are hurt the debt is paid and the driver stops or runs: the reckless
-        // car as it is, an ordinary one taken over now, or (a reckless car out already, or no road) remembered for the scene.
+        // Somebody thrown down: if hurt, the debt is paid and the driver stops or runs; a car that cannot be taken is remembered.
         private void OnHurt(float now)
         {
             VehicleComponent car = _struckBy;
@@ -102,10 +99,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// From PedestrianIncidents as a scene starts round somebody a traffic car hit: the car that did it if its driver
-        /// stopped (the scene's from here, passed on as it stands), else null.
-        /// </summary>
+        /// <summary>From PedestrianIncidents as a scene starts: the car that hit them if its driver stopped (the scene's from here), else null.</summary>
         public VehicleComponent GiveUpStriker()
         {
             try
@@ -135,8 +129,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // RecklessCar has met something (its box another vehicle's, a bend too fast, something fixed): the car is passed to
-        // the accident scene as it stands, with the other car if there is one and the speed they met at.
+        // RecklessCar has met something: the car goes to the accident scene as it stands, with the other car and the closing speed.
         private void OnStruck(float now)
         {
             RecklessCar.Hit hit = _car.Struck;
@@ -155,8 +148,7 @@ namespace RealLifeOverhaul
                 return;
             }
             CallOff();
-            // What the cars keep for a moment after they met: what each had, or a little back the way it came for one that met
-            // something that does not give. Read before the car is handed over.
+            // What each car keeps for a moment after they met (a little back for one that met something fixed), read before the hand-over.
             Vector3 own = hit == RecklessCar.Hit.Solid || hit == RecklessCar.Hit.Player ? _car.Velocity * -0.15f : _car.Velocity;
             Vector3 theirs = _car.OtherVelocity;
             VehicleComponent mine = _car.HandOver();

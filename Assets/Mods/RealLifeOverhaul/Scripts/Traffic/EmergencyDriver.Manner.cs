@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using GleyTrafficSystem;
 using UnityEngine;
 
@@ -7,10 +6,7 @@ namespace RealLifeOverhaul
     /// <summary>The emergency driver: how it is told to drive, beside a kerb, careless, seeing solids, sliding, swaying or holding at a light.</summary>
     public sealed partial class EmergencyDriver : MonoBehaviour
     {
-        /// <summary>
-        /// Where the carriageway ends on one side: a point of the kerb and the way across towards it. Whatever is beyond that
-        /// line is on the pavement and not in its way while it turns in beside it. Begin, and <see cref="NoKerb"/>, undo it.
-        /// </summary>
+        /// <summary>Where the carriageway ends on one side (a kerb point, the way towards it): beyond that line nothing is in its way. Begin undoes it.</summary>
         public void Kerb(Vector3 point, Vector3 towards)
         {
             towards.y = 0f;
@@ -27,11 +23,7 @@ namespace RealLifeOverhaul
             _kerbed = false;
         }
 
-        /// <summary>
-        /// Makes this drive a careless one: braking with at most stopping m/s2 (and planning to, so late), taking in only that
-        /// share of the road ahead, perhaps blind to people on foot, and planning bends and hard turns with the grip given; lanes
-        /// to pass in come from RoadMap's grid. The mod's people, bodies and the player on foot are always seen. Call after Begin.
-        /// </summary>
+        /// <summary>A careless drive: braking at most stopping m/s2, seeing that share of the road, perhaps blind to walkers, bends at the grip given.</summary>
         public void Careless(float stopping, float foresight, bool seesPeople, float bendGrip)
         {
             _stopping = Mathf.Clamp(stopping, 1f, Slowing);
@@ -46,11 +38,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The look ahead also takes in buildings and street furniture, with the same query and a wider mask, for a driver who
-        /// may leave the lane. While the car is steered such a thing is only measured (<see cref="SolidRoom"/>), as a car turning
-        /// at a junction always has a wall somewhere ahead; once it slides (Slide) it counts like anything else. Begin undoes it.
-        /// </summary>
+        /// <summary>Its look also takes in buildings and street furniture, only measured (SolidRoom) while it is steered. For a driver who may leave the lane.</summary>
         public void SeeSolids()
         {
             if (_solidMask == 0)
@@ -60,10 +48,7 @@ namespace RealLifeOverhaul
             _solids = true;
         }
 
-        /// <summary>
-        /// A bend taken faster than the road holds: from here it is not steered, carries straight on losing speed, and goes on
-        /// measuring what is ahead (Room, Ahead). It ends by itself when it has all but stopped. Begin undoes it.
-        /// </summary>
+        /// <summary>A bend lost: from here it is not steered, carries straight on losing speed, and stops by itself. Begin undoes it.</summary>
         public void Slide()
         {
             _sliding = true;

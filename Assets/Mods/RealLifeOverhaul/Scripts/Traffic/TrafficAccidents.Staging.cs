@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
-using Localizor;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -38,10 +36,7 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotBegin = HotSpots.Slot("Traffic: TrafficAccidents.BeginAt");
-        /// <summary>
-        /// A collision just happened on the road, in view: the scene starts where the cars came to rest (physics has them for
-        /// at most 1.6 s and 12 m), its severity from their closing speed in m/s. False if none could start: the caller keeps the car.
-        /// </summary>
+        /// <summary>A collision just happened on the road: the scene starts where the cars came to rest. False if none could start: the caller keeps the car.</summary>
         /// <param name="first">The car that caused it: any car still on the road.</param>
         /// <param name="second">The ordinary traffic car it met; null for a crash on its own.</param>
         /// <param name="noticeKey">What is said about it, by its cause; null for the usual sentence of its severity.</param>
@@ -201,7 +196,6 @@ namespace RealLifeOverhaul
             CompleteStaging(tumbled: false);
         }
 
-        // A new scene round the lead car: where it is, which way it faces, which side things fall to.
         private void StartScene(Transform lead)
         {
             _origin = lead.position;
@@ -271,7 +265,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Places the other cars around the lead car's final position, dresses the scene and sets its timetable.
         private void CompleteStaging(bool tumbled)
         {
             Vector3 forward = _heading * Vector3.forward;
@@ -292,8 +285,7 @@ namespace RealLifeOverhaul
             }
             if (_wrecks.Count > 1 && !_inPlace)
             {
-                // Rear-end shunt: the second car is jammed into the back of the first; if the road there is
-                // taken, the first ran into the back of it instead. A car with no room either way was not in it.
+                // Rear-end shunt: the second car into the back of the first, or the other way if there is no room; else it was not in it.
                 VehicleComponent second = _wrecks[1].Car;
                 float reach = first.length * 0.5f + second.length * 0.5f - 0.3f;
                 Vector3 behind = _scene - forward * reach;
@@ -329,8 +321,7 @@ namespace RealLifeOverhaul
                     : "reallife_accident_severe");
             Notice(_severity == Severity.Severe ? NotificationType.Error : NotificationType.Warning, key, 8f);
 
-            // Some are hit-and-runs: the lead driver bolts when the police turn up. Where the cars stand as they met, only if
-            // the other is not ahead of it.
+            // Some are hit-and-runs: the lead driver bolts as the police turn up (in place, only if the other car is not ahead).
             if (Settings.Police && !tumbled && _wrecks.Count > 1 && Random.value < HitAndRunChance
                 && (!_inPlace || Vector3.Dot(_wrecks[1].Car.transform.position - first.transform.position, forward) < 0f))
             {
@@ -377,8 +368,7 @@ namespace RealLifeOverhaul
             _people.Begin(_severity, _scene, worst.Car, otherCar, planned, now);
             if (!planned)
             {
-                // The lead car caused it and took the damage: its driver stayed, so is questioned and ticketed, not arrested.
-                // Only a hit-and-run's runner is arrested (RoadChase).
+                // The lead driver caused it and stayed: questioned and ticketed, not arrested; only a hit-and-run's runner is arrested.
                 _people.AtFault(worst: true);
             }
 
@@ -470,8 +460,7 @@ namespace RealLifeOverhaul
             wreck.Seat.Clear();
         }
 
-        // Measures the road round everything lying in it (the wrecks, anyone knocked down or lying beside their car) and
-        // shuts it: traffic stops short and new traffic turns off. The tape goes up when the police arrive.
+        // Measures the road round everything lying in it and shuts it: traffic stops short and new traffic turns off.
         private void CloseRoad(ICasualty casualty, bool shut)
         {
             _footprints.Clear();
@@ -497,8 +486,7 @@ namespace RealLifeOverhaul
             return SceneParking.IsFree(car, position, rotation, _involved);
         }
 
-        // Taxis, private drivers and anything on a scripted route are left alone, and an ambulance
-        // is never the car that crashed or the one that runs.
+        // Taxis, private drivers and scripted routes are left alone, and an ambulance never crashes or runs.
         private static bool IsUsable(VehicleComponent car)
         {
             return car != null && car.gameObject.activeInHierarchy && car.presetPath == null
@@ -604,7 +592,6 @@ namespace RealLifeOverhaul
             AddEffect(wreck, TrafficEffects.CreateFlasher(wreck.Car, "RealLifeOverhaul Hazard", TrafficEffects.BeaconHeight(wreck.Car), amber, amber, 0.5f));
         }
 
-        // Smoke, fire and debris for the worst-hit car, scaled to the severity.
         private void Dress(Wreck wreck, bool alone)
         {
             VehicleComponent car = wreck.Car;

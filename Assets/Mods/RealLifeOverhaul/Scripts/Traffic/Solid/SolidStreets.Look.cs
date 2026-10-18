@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Streets.Pedestrians;
 using UnityEngine;
 
@@ -64,7 +61,6 @@ namespace RealLifeOverhaul
             return count;
         }
 
-        // Everybody within 90 m of the player into the grid: positions and, for those who walk, how they are moving.
         private void GatherPeople(Vector3 player, List<Pedestrian> walkers)
         {
             _grid.Begin(player.x, player.z);
@@ -171,8 +167,7 @@ namespace RealLifeOverhaul
             _nearestCar[person] = -1;
         }
 
-        // True if somebody is in the road (the carriageway or a marked crossing) and not on a pavement: a grid lookup, asked
-        // once a tick for each person some strip has found.
+        // True if somebody is in the road and not on a pavement: a grid lookup, once a tick for each person found.
         private bool InRoad(int person)
         {
             if (_place[person] == 0)
@@ -183,7 +178,6 @@ namespace RealLifeOverhaul
             return _place[person] == 2;
         }
 
-        // Each car's strip against the grid: whom it reaches first, and for everybody in a strip, which car reaches them first.
         private void Look(int cars, List<Pedestrian> walkers, float now)
         {
             for (int c = 0; c < cars; c++)
@@ -238,8 +232,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Somebody beside a strip, walking into it. If the car could no longer stop for them they wait at the kerb, unless
-        // an accident is owed (then they step out, and what comes of it is decided when they are in the car's way).
+        // Somebody walking into a strip: if the car could no longer stop, they wait at the kerb, unless an accident is owed.
         private void Stepper(int c, int person, float distance, float side, float halfStrip, List<Pedestrian> walkers, float now)
         {
             float speed = _speed[c];
@@ -274,16 +267,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        // True if the car is coming up to a stop line it will stop at: the traffic system is bringing it to rest there, or
-        // its own light is red. Nobody waits at the kerb for such a car, and it is not about to run anybody down.
+        // True if the car will stop at a stop line ahead (held by the traffic system, or its light red): nobody waits for it.
         private bool StopsAtItsLine(int c)
         {
             return _car[c].GetCurrentAction() == SpecialDriveActionTypes.StopInPoint
                    || HornReactions.LightOf(new Vector3(_cx[c], _cy[c], _cz[c]), new Vector3(_fx[c], 0f, _fz[c])) == StreetRules.Light.Red;
         }
 
-        // True if a pedestrian is owed to the street (asked of the reckless drivers' director once a tick at the most, and
-        // only when some car has found somebody it cannot stop for).
+        // True if a pedestrian is owed; the reckless drivers are asked once a tick at most, only when needed.
         private bool Owed()
         {
             if (!_owedAsked)

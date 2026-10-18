@@ -10,13 +10,13 @@ using UnityEngine.Events;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Makes crashing the player's car matter beyond bodywork: liability when hitting another
-    /// car (settled on the spot if the player stops, otherwise a matter for PolicePursuit),
-    /// injuries at speed, and an ambulance to hospital after a severe crash.
+    /// Makes crashing the player's car matter beyond bodywork: liability for hitting another car (settled on the spot if the
+    /// player stops, else PolicePursuit's), injuries at speed, and hospital after a severe crash. Cost: a comparison of the
+    /// selected vehicle a frame; the rest on a collision.
     /// </summary>
     public class CrashConsequences : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "CrashConsequences", typeof(CrashConsequences));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "CrashConsequences", typeof(CrashConsequences));
 
         internal const float LiabilityLeast = 150f, LiabilityMost = 3000f;   // damages to another car, at the start's prices
         // Impact speeds in m/s (relative velocity of the two colliders).
@@ -24,7 +24,7 @@ namespace RealLifeOverhaul
         private const float InjurySpeed = 10f;      // ~36 km/h
         private const float SeriousSpeed = 14f;     // ~50 km/h: may put the player in hospital
         private const float HospitalSpeed = 17f;    // ~61 km/h: always does
-        private const float Cooldown = 4f;
+        private const float Cooldown = 4f;          // seconds before another crash counts
 
         public static IModLogger Logger;
 
@@ -38,7 +38,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -108,8 +108,7 @@ namespace RealLifeOverhaul
 
             VehicleComponent struck = collision.collider != null ? collision.collider.GetComponentInParent<VehicleComponent>() : null;
             bool hitTraffic = struck != null;
-            // The one car that is being driven recklessly (Traffic/Reckless): a collision with it is its driver's fault. The
-            // player owes nothing and nobody comes after them for it; what the impact does to the player is as for any crash.
+            // The reckless car (Traffic/Reckless): a collision with it is its driver's fault, and the player owes nothing for it.
             bool theirFault = hitTraffic && RecklessDrivers.AtFault(struck);
             News.Report(NewsKind.PlayerCrash, Helpers.PlayerHelper.GetPosition());
             Logger?.Info(System.FormattableString.Invariant(
@@ -123,8 +122,7 @@ namespace RealLifeOverhaul
             {
                 int liability = Mathf.RoundToInt(Prices.At(Mathf.Clamp(speed * speed * 2.5f, LiabilityLeast, LiabilityMost)) / 10f) * 10;   // (at today's prices)
 
-                // With police on, the player first gets the chance to stop; the bill comes when
-                // they do, or the police come if they don't.
+                // With police on, the player first gets the chance to stop: the bill comes then, or the police do.
                 PolicePursuit pursuit = PolicePursuit.Instance;
                 bool deferred = pursuit != null && _hookedBody != null
                                 && pursuit.ReportCollision(_hookedBody, liability, _hookedBody.position);
@@ -137,8 +135,7 @@ namespace RealLifeOverhaul
             // Between the serious and hospital speeds it comes down to luck, weighted by how hard the hit was.
             bool hospital = speed >= HospitalSpeed
                             || (speed >= SeriousSpeed && Random.value < Mathf.InverseLerp(SeriousSpeed, HospitalSpeed, speed) * 0.7f + 0.15f);
-            // With Permadeath on, an impact at a very high speed is a near miss the first time and may end the life after
-            // that (Permadeath/PermadeathRules); off, or below that speed, nothing changes here.
+            // With Permadeath on, a very fast impact is a near miss the first time and may end the life after (Permadeath/PermadeathRules).
             Permadeath.Verdict fate = Permadeath.Mortality.Judge(Permadeath.DeathCause.Crash, speed);
             if (fate == Permadeath.Verdict.Death && Permadeath.Mortality.Die(Permadeath.DeathCause.Crash))
             {

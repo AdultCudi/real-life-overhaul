@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
-using Localizor;
 using Streets.Pedestrians;
-using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -16,8 +13,7 @@ namespace RealLifeOverhaul
     {
         private const float PatrolSees = 0.12f;      // of the speeders and light runners: a passing patrol car happens to see it
 
-        // Makes one traffic car the reckless one (car, or null to pick); false if none could be had. struck: an ordinary car
-        // that has just hit somebody, taken over so its driver can stop or run.
+        // Makes one traffic car the reckless one (car, or null to pick); false if none. struck: one that just hit somebody.
         private bool Begin(VehicleComponent car, StreetRules.Kind kind, bool accidentDue, bool blind, bool never, bool test, float now, bool struck = false)
         {
             if (_phase != Phase.Idle)
@@ -71,8 +67,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // An ordinary private car on the move, far enough for the change not to show and near enough to be seen: in view
-        // now, or coming the player's way. A test looks wider and takes any that is moving. Starts at a random car.
+        // An ordinary private car on the move, in view or coming the player's way, far enough for the change not to show.
         private static VehicleComponent Pick(Vector3 player, StreetRules.Kind kind, bool test)
         {
             List<VehicleComponent> pool = Manager.GetVehicleList();
@@ -111,8 +106,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // True if the lane the car is in comes to a traffic light within so many metres: its own lane is followed
-        // (a lane does not fork before its stop line), a few dozen points at the most.
+        // True if the car's own lane reaches a traffic light within so many metres (a lane does not fork before its stop line).
         private static bool LightOnItsLane(VehicleComponent car, float within)
         {
             TrafficManager traffic = TrafficManager.Instance;
@@ -185,7 +179,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Sends up to ten of the people walking beside the road here straight across it, all at once. How many went.
         private int Crowd(float now, out float metres)
         {
             metres = 0f;

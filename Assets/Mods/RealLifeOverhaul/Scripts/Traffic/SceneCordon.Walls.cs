@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using BAModAPI;
 using GleyTrafficSystem;
 using UnityEngine;
 using UnityEngine.AI;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
@@ -91,8 +88,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Where along each line the pedestrians' mesh is: a point every half metre, at the ground height between its ends
-        // (about 120 samples for a usual cordon, once).
+        // Where along each line the pedestrians' mesh is, a point every half metre (about 120 samples, once).
         private void FindWalkways()
         {
             for (int line = 0; line < 4; line++)
@@ -113,7 +109,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // True where the game's own pedestrians have their mesh right at a point of the ground.
         private static bool Walkway(Vector3 point)
         {
             if (!NavMesh.SamplePosition(point, out NavMeshHit hit, WalkwayReach, StreetSpots.Pavement))
@@ -125,8 +120,7 @@ namespace RealLifeOverhaul
             return off.sqrMagnitude < WalkwayReach * WalkwayReach;
         }
 
-        // One wall along a run of tape, from its first post to its last. An end's wall is as deep as its tape and
-        // barriers together, so that nobody walks through a barrier either. False if the run is too short to matter.
+        // One wall along a run of tape; an end's covers its barriers too. False if the run is too short to matter.
         private bool SetWall(int index)
         {
             Vector3 run = _wallTo[index] - _wallFrom[index];
@@ -170,8 +164,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // A moment after the walls went up: is the mesh under each one's middle gone? One not cut is set to cut at once, not
-        // only when still, and looked at once more. Said in the log either way.
+        // A moment after the walls went up: is the mesh under each gone? One not cut is set to cut at once and asked again.
         private void CheckWalls(float now)
         {
             _carveAt = 0f;
@@ -210,7 +203,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // One wall or bar for CheckWalls: is the mesh under its middle gone? One that is not is told to cut at once, the first time.
         private void Probe(NavMeshObstacle wall, string kind, ref int standing, ref int cut)
         {
             if (!wall.gameObject.activeInHierarchy)

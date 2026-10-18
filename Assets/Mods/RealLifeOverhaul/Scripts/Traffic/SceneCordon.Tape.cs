@@ -1,19 +1,16 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using UnityEngine;
 using UnityEngine.AI;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
     /// <summary>Scene control: the taped rectangle surveyed and dressed, its posts, tape and barriers placed on the carriageway.</summary>
     public sealed partial class SceneCordon
     {
-        // The taped rectangle: the wrecks and a working margin, pulled in to a near kerb so it stays on the carriageway; then
-        // its corners, the side the entries are on, and where people stand.
+        // The taped rectangle: the wrecks and a working margin, pulled in to a near kerb; then its corners, the entry side, the posts.
         private void Survey()
         {
             _back = _alongMin - Margin;
@@ -33,8 +30,7 @@ namespace RealLifeOverhaul
                 _crossing = IsPavement(along, Mathf.Lerp(_left, _rightEdge, 0.25f)) || IsPavement(along, Mathf.Lerp(_left, _rightEdge, 0.75f));
             }
 
-            // A parking lane with cars in it is not carriageway: the tape stops short of what is parked there, and that side
-            // counts as a kerb (no cones).
+            // A parking lane with cars in it is not carriageway: the tape stops short of them, and that side counts as a kerb.
             bool pavementLeft = _kerbLeft;
             bool pavementRight = _kerbRight;
             bool parkedLeft = ClampToParked(-1f, ref _left);
@@ -132,8 +128,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Looks outwards from the wrecks for a parked vehicle or street furniture standing on the carriageway
-        // within the rectangle's length. If there is one, the edge on that side stops short of it.
+        // A parked vehicle or street furniture on the carriageway beside the wrecks: the edge on that side stops short of it.
         private bool ClampToParked(float side, ref float edge)
         {
             if (ParkedMask == 0)
@@ -164,8 +159,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Looks outwards from the wrecks for the pavement on one side. If it is close, the edge of the
-        // rectangle on that side is pulled in to just short of it.
+        // A pavement close beside the wrecks: the edge on that side is pulled in to just short of it.
         private bool FindKerb(float side, float along, float middle, ref float edge)
         {
             float reach = Mathf.Abs(edge - middle) + KerbReach;
@@ -182,7 +176,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // True where the game's own pedestrians can walk: a pavement, or a crossing.
         private bool IsPavement(float along, float across)
         {
             Vector3 point = Point(along, across);
@@ -215,7 +208,6 @@ namespace RealLifeOverhaul
             float gap = Mathf.Min(EntryGap, width * 0.5f);
             float gapEnd = entryEdge - _entry * gap;   // where each end's tape stops, short of the entry-side corner
 
-            // The near end's opening, in line with the ambulance: its side towards the entry edge, and its other side.
             float doorNear = _doorAcross + _entry * _doorWidth * 0.5f;
             float doorFar = _doorAcross - _entry * _doorWidth * 0.5f;
 
@@ -258,8 +250,7 @@ namespace RealLifeOverhaul
                 HideFrom(_cones, 0);
             }
 
-            // The tape that went up, as walls for anyone on foot (a crossing through the scene too); the openings are where no
-            // tape runs.
+            // The tape that went up, as walls for anyone on foot; the openings are where no tape runs.
             bool walled = _wallCount > 0;
             _wallsChanged = 0;
             for (int i = 0; i < Walls; i++)
@@ -300,8 +291,7 @@ namespace RealLifeOverhaul
             CordonClear.Out(this, Logger);
         }
 
-        // A side of the rectangle (or its far end), with an opening where the crew's way crosses it: tape up to the
-        // opening and on from it, a post either side. Without a way, or where it does not cross, the side as it is.
+        // A side of the rectangle, with an opening where the crew's way crosses it: tape up to it and on from it.
         private void Run(float fromAlong, float fromAcross, float toAlong, float toAcross, bool fresh, float outward)
         {
             Vector3 from = Point(fromAlong, fromAcross);
@@ -333,8 +323,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Barriers along one stretch of an end: as many as fit end to end, centred on it, each only where it
-        // stands on the street and in no vehicle of any kind.
         private int Barriers(int used, float along, float from, float to, Quaternion facing)
         {
             float run = Mathf.Abs(to - from);
@@ -355,8 +343,7 @@ namespace RealLifeOverhaul
             return used;
         }
 
-        // Posts from one point of the rectangle to another, a tape between each and the one before, and one wall
-        // along each unbroken run of that tape. 'outward' is -1 or 1 for the near or far end, 0 for a side.
+        // Posts from one point of the rectangle to another, tape between, a wall along each unbroken run; outward -1, 1 or 0 (a side).
         private void Line(float fromAlong, float fromAcross, float toAlong, float toAcross, bool fresh, float outward)
         {
             float run = Mathf.Abs(toAlong - fromAlong) + Mathf.Abs(toAcross - fromAcross);   // the lines run along or across, never both
@@ -422,8 +409,7 @@ namespace RealLifeOverhaul
         // Parked vehicles, the player's and street furniture: what the tape and the barriers stop short of.
         private static int ParkedMask => _parkedMask != 0 ? _parkedMask : (_parkedMask = LayerMask.GetMask("ParkedVehicles", "PlayerVehicles", "StreetProps"));
 
-        // Everything a length of tape must not pass through: vehicles of every kind, street furniture, buildings
-        // and their steps and railings, and whatever else stands on the default layer. Not the ground, and not people.
+        // Everything a length of tape must not pass through: vehicles, street furniture, buildings and the default layer.
         private static int SolidMask
         {
             get
@@ -437,8 +423,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A length of tape between two posts, if they are near enough and nothing solid stands between them: looked
-        // for at the height the tape hangs and again low down, where steps and kerbs are. False if it was left out.
+        // Tape between two posts near enough with nothing solid between, looked for at tape height and low down. False if left out.
         private bool Stretch(Vector3 from, Vector3 to)
         {
             Vector3 run = to - from;

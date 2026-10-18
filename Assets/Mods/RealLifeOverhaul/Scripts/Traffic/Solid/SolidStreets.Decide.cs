@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Streets.Pedestrians;
 using UnityEngine;
 
@@ -15,7 +12,6 @@ namespace RealLifeOverhaul
         private const float GlanceFor = 0.6f;        // seconds a car stays watched after it was last within a second of somebody
         private const float StrikerFor = 3f;         // seconds a car that is about to hit somebody stays the one, unless it is named again
 
-        // What each car that has somebody ahead does about them: brake, sound the horn, wait, be watched.
         private void Decide(int cars, List<Pedestrian> walkers, float now)
         {
             _brakes.Begin();
@@ -151,8 +147,7 @@ namespace RealLifeOverhaul
                     else if (walker != null && walker.enabled && walker.isActiveAndEnabled
                              && SolidRules.Remove(heldFor, StreetSpots.IsInView(new Vector3(_grid.X(person), _height[person], _grid.Z(person)))))
                     {
-                        // Out of view and still there: back to the game's pool, which sends them out elsewhere. Done after this
-                        // look, as the pool takes them out of the list the look is reading.
+                        // Out of view and still there: back to the game's pool after this look, which reads the pool's list.
                         _heldSince[index] = 0f;
                         _movedOn[index] = false;
                         _reachedIn[person] = float.MaxValue;
@@ -176,8 +171,7 @@ namespace RealLifeOverhaul
             _brakes.End();
         }
 
-        // True if the person a car stands behind is one to sound a horn at: standing or hardly moving, or walking where
-        // they have no business to (somebody crossing at a walk on a crossing whose light is theirs is simply waited for).
+        // Somebody to hoot at: standing, hardly moving, or walking where they have no right (a walker with the light is waited for).
         private bool Dawdles(int person)
         {
             if (_vx[person] * _vx[person] + _vz[person] * _vz[person] < SolidRules.MovingFrom * SolidRules.MovingFrom)
@@ -188,7 +182,6 @@ namespace RealLifeOverhaul
             return !(HornReactions.PlaceOf(at, out bool theirs) == StreetRules.Place.Crossing && theirs);
         }
 
-        // The car's own horn, and the people's answer to it.
         private void Horn(int c, int index, VehicleComponent car, Pedestrian walker, Vector3 carAt, Vector3 facing, HornReactions reactions, float now, string why)
         {
             _lastHorn[index] = now;
@@ -252,8 +245,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Who somebody in the grid is: the character whose fade is held off, the walker if they are one, and a number that
-        // is theirs from look to look (never 0; a body's is its place among the ragdolls).
+        // Who somebody in the grid is: the character, the walker if one, and an id kept from look to look (never 0).
         private BaseHuman Human(int person, List<Pedestrian> walkers, out Pedestrian walker, out int id)
         {
             walker = null;

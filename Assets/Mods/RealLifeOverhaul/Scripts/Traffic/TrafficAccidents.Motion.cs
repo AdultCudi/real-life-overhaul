@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
-using Helpers;
 using Localizor;
 using UI.Notification;
 using UnityEngine;
@@ -189,8 +187,7 @@ namespace RealLifeOverhaul
             CompleteStaging(tumbled: false);
         }
 
-        // Freezes a rolled car in the nearest resting pose (on its side, roof or wheels, never on an edge), facing the way it
-        // points, its lowest part on the road. Says which.
+        // Freezes a rolled car in the nearest resting pose (side, roof or wheels), its lowest part on the road. Says which.
         private string RestRolled(Wreck wreck)
         {
             VehicleComponent car = wreck.Car;

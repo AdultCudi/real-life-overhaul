@@ -3,12 +3,9 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The tow truck's rules as numbers, game-free so that NavCheck's TowCheck runs the very code the truck is run by: the
-    /// bed's motion, where a wreck is on it and on the way up, the stretch of road to stand ahead of a wreck, how long it is
-    /// said to take, and when it may come and go. Space is the truck's own: ahead from the middle between its axles, up from
-    /// the road, in the model's figures (props_tow.py). The bed (<see cref="DeckPose"/>) turns nose up about its pivot and
-    /// then slides back, each eased and overlapping a little, so nothing jumps. A car is drawn up by its axles along the road
-    /// and the bed's top, the step at the tail rounded (<see cref="CarOnBed"/>). A few multiplications, a few times a frame.
+    /// The tow truck's rules as numbers, game-free so that NavCheck's TowCheck runs the very code the truck runs: the bed's
+    /// motion, a wreck on it and on the way up, the stretch of road to stand ahead of a wreck, the wait, when it may come and
+    /// go. Space is the truck's own (ahead from between its axles, up from the road), in the model's figures (props_tow.py).
     /// </summary>
     public static class TowRules
     {
@@ -98,10 +95,7 @@ namespace RealLifeOverhaul
             return -FootGap - halfLength;
         }
 
-        /// <summary>
-        /// A point of the line a car's wheels run on with the bed down, this far along it from the tail (up the bed positive):
-        /// the road and the bed's top blended over <see cref="RoundOver"/> either side of the tail.
-        /// </summary>
+        /// <summary>A point of the line a car's wheels run on with the bed down, this far from the tail: road and bed blended over RoundOver.</summary>
         public static void Track(float along, out float up, out float ahead)
         {
             TailDown(out _, out float tailAhead);
@@ -112,10 +106,7 @@ namespace RealLifeOverhaul
             ahead = roadAhead + (bedAhead - roadAhead) * w;
         }
 
-        /// <summary>
-        /// A car of this half length going up the bed, its middle this far along the line (<see cref="Track"/>): the point
-        /// midway under its axles (up, ahead) and its pitch, degrees nose up.
-        /// </summary>
+        /// <summary>A car going up the bed, its middle this far along the line: the point midway under its axles (up, ahead) and its pitch in degrees.</summary>
         public static void CarOnBed(float along, float halfLength, out float up, out float ahead, out float pitch)
         {
             float half = halfLength * BaseShare;
@@ -126,10 +117,7 @@ namespace RealLifeOverhaul
             pitch = (float)(Math.Atan2(fu - ru, fa - ra) * 180.0 / Math.PI);
         }
 
-        /// <summary>
-        /// The car drawn along the road to the foot of the bed: its middle (across, ahead) and heading (degrees from the truck's
-        /// forward) at u from 0 to 1, on a curve that leaves towards the foot and arrives along the truck.
-        /// </summary>
+        /// <summary>The car drawn along the road to the foot of the bed at u, 0 to 1: its middle (across, ahead) and heading on a curve.</summary>
         public static void Drag(float u, float x0, float z0, float yaw0, float x1, float z1, float yaw1, out float x, out float z, out float yaw)
         {
             u = Clamp01(u);
@@ -172,10 +160,7 @@ namespace RealLifeOverhaul
         public const float StandAfter = 2f;            // metres in the wreck's lane before it stands
         public const float DragLeast = 0.5f;           // metres at least that the wreck is drawn forward to the foot
 
-        /// <summary>
-        /// The stretch of road it takes, in metres along the wreck's lane: from the lane beside (this far across) it moves over
-        /// once past the wreck's far end, and stands with its front axle at standAt, the foot of its bed ahead of the wreck.
-        /// </summary>
+        /// <summary>The stretch of road it takes along the wreck's lane, in metres: where it moves over, and where its front axle stands.</summary>
         public static void Stretch(float wreckMiddle, float wreckFront, float across, float halfLength,
             out float mergeFrom, out float mergeTo, out float standAt)
         {

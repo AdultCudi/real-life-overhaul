@@ -6,11 +6,8 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Where a vehicle may stand: the free-space test the accident scene uses for its wrecks,
-    /// and the choice of where a response vehicle pulls up. A unit parks on its own route, so
-    /// it is always on the carriageway and in line with its lane: the nearest road point to the
-    /// scene (but no nearer than asked) where it overlaps nothing, further back along the
-    /// route if the first is taken. Asked once per unit as it nears the scene.
+    /// Where a vehicle may stand: the free-space tests for wrecks, units and the roadside, and the point on a unit's own route
+    /// where it pulls up (in line with its lane, the nearest free one to the scene). Physics box tests, on events only.
     /// </summary>
     public static class SceneParking
     {
@@ -19,8 +16,7 @@ namespace RealLifeOverhaul
         private static readonly Collider[] Overlaps = new Collider[16];
         private static int _solidMask;
 
-        // Everything a parked vehicle must not stand in: vehicles of every kind (parked ones are props
-        // on a layer of their own) and street furniture.
+        // Everything a parked vehicle must not stand in: vehicles of every kind and street furniture.
         private static int SolidMask
         {
             get
@@ -68,11 +64,7 @@ namespace RealLifeOverhaul
 
         private static int _everyMask;
 
-        /// <summary>
-        /// Every layer something solid can be on: vehicles of every kind, street furniture (sign posts, hydrants,
-        /// poles, bins), buildings with their steps and railings, and whatever else stands on the default
-        /// layer. Not the ground, and not people.
-        /// </summary>
+        /// <summary>Every layer something solid can be on: vehicles, street furniture, buildings with their steps and railings, the default layer.</summary>
         public static int EveryMask
         {
             get
@@ -86,19 +78,12 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Only what stands on the road and beside it: vehicles of every kind and street furniture. For a crew that has
-        /// no way clear of the buildings' own colliders (some reach out over the pavement): it may still not go through these.
-        /// </summary>
+        /// <summary>Only what stands on the road and beside it (vehicles, street furniture): for a crew with no way clear of buildings' colliders.</summary>
         public static int RoadsideMask => SolidMask;
 
         private static int _streetMask;
 
-        /// <summary>
-        /// What stands in the street for people on foot and whatever they wheel: vehicles of every kind, street
-        /// furniture and buildings. (Without the default layer: where a response vehicle may stand is tested against
-        /// that too, and fails safe; a corridor for a crew is not ruled out by whatever else the game keeps on it.)
-        /// </summary>
+        /// <summary>What stands in the street for people on foot and what they wheel: vehicles, street furniture and buildings, not the default layer.</summary>
         public static int StreetMask
         {
             get
@@ -112,12 +97,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// What a response vehicle would stand in at a place, by its whole body: the box it really fills (its
-        /// colliders' length and width, from just above the kerb to its roof, so a sign that overhangs the road
-        /// counts as much as a post) and a margin all round, against every solid layer. Null if nothing.
-        /// Traffic that is on the move does not count (it will not be there), nor the vehicle itself.
-        /// </summary>
+        /// <summary>What a response vehicle would stand in by its whole body and a margin, against every solid layer (moving traffic and itself excepted).</summary>
         public static Collider Standing(VehicleComponent car, Vector3 position, Vector3 forward, float margin)
         {
             int mask = EveryMask;
@@ -152,10 +132,7 @@ namespace RealLifeOverhaul
 
         private const float BoxFrom = 0.35f;   // metres above the road a whole-body box starts: over the kerb, under every bumper
 
-        /// <summary>
-        /// True if a place in a lane lies on a crossing: the game's own pedestrians can walk on the road there
-        /// (their navigation mesh runs across it) under the vehicle's nose, middle or tail.
-        /// </summary>
+        /// <summary>True if a place in a lane lies on a crossing: the pedestrians' mesh runs under the vehicle's nose, middle or tail.</summary>
         public static bool OnCrossing(Vector3 position, Vector3 forward, float halfLength)
         {
             forward.y = 0f;
@@ -175,11 +152,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// What stands in a strip of road from one point to another, so wide each side of the line, from just
-        /// above the kerb to head height: any vehicle, street furniture or other solid thing. Null if the
-        /// strip is clear. One body (whoever is asking about the road beside itself) may be left out.
-        /// </summary>
+        /// <summary>What stands in a strip of road between two points, so wide each side, kerb to head height; null if clear. One body may be left out.</summary>
         /// <param name="mask">The layers that count; 0 for everything that stands in the street (StreetMask).</param>
         public static Collider InStrip(Vector3 from, Vector3 to, float halfWidth, Rigidbody except = null, int mask = 0)
         {
@@ -219,27 +192,7 @@ namespace RealLifeOverhaul
             return mask == 0 || !Physics.CheckBox(position + Vector3.up * 0.9f, new Vector3(halfWidth + margin, 0.5f, halfLength + margin), rotation, mask, QueryTriggerInteraction.Ignore);
         }
 
-        /// <summary>The same, not counting one body (the vehicle that is asking about the road round itself).</summary>
-        public static bool IsFreeExcept(Vector3 position, Quaternion rotation, float halfWidth, float halfLength, Rigidbody except)
-        {
-            int mask = SolidMask;
-            if (mask == 0)
-            {
-                return true;
-            }
-            int count = Physics.OverlapBoxNonAlloc(position + Vector3.up * 0.9f, new Vector3(halfWidth, 0.5f, halfLength), Overlaps, rotation, mask, QueryTriggerInteraction.Ignore);
-            bool free = true;
-            for (int i = 0; i < count; i++)
-            {
-                free &= except != null && Overlaps[i].attachedRigidbody == except;
-            }
-            return free;
-        }
-
-        /// <summary>
-        /// True if something that will not move stands in a box that size on the ground there: a parked
-        /// vehicle or street furniture. Waiting does not clear such a place; traffic is not looked at.
-        /// </summary>
+        /// <summary>True if something that will not move (a parked vehicle, street furniture) stands in a box that size on the ground there.</summary>
         public static bool HasParked(Vector3 position, Quaternion rotation, float halfWidth, float halfLength)
         {
             if (_parkedMask == 0)
@@ -251,13 +204,7 @@ namespace RealLifeOverhaul
 
         private static int _parkedMask;
 
-        /// <summary>
-        /// How far a car that is about to be stopped at the roadside can pull in to its right: 0 if
-        /// it should stop in its lane as it is. The strip beside it, from a little behind (where
-        /// the patrol car following it will stand) to where it will have stopped, must be
-        /// carriageway (no pavement, no kerb to climb), must not be another lane of the road, and
-        /// must hold no vehicle and no street furniture. Asked once, when the stop begins.
-        /// </summary>
+        /// <summary>How far a car stopped at the roadside can pull in to its right over clear carriageway; 0 to stop in its lane.</summary>
         /// <param name="follower">The vehicle behind it, which does not count as being in the way; or null.</param>
         public static float KerbRoom(VehicleComponent car, Rigidbody follower)
         {
@@ -309,12 +256,7 @@ namespace RealLifeOverhaul
             return 0f;
         }
 
-        /// <summary>
-        /// The road point on a unit's route where it should pull up: about the given distance
-        /// short of the scene, or the first free one further back. -1 if the route has none,
-        /// in which case the unit stops when something is in its way.
-        /// </summary>
-        /// <param name="route">The road points the unit is driving, in order.</param>
+        /// <summary>The point on a unit's route where it pulls up: about back metres short of the scene, or the first free one further back; -1 if none.</summary>
         /// <param name="from">The first point still ahead of it.</param>
         public static int Find(VehicleComponent car, List<Vector3> route, int from, Vector3 scene, float back)
         {

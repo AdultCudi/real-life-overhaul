@@ -9,10 +9,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What the accident scene, the response units and the player pursuit all need from the
-    /// game's traffic system: whether it is running, routes along the road graph, and handing
-    /// cars back. Everything here is called on events (a dispatch, a release), never per frame,
-    /// except the two cheap state checks.
+    /// What the accident scenes, the response units and the pursuits need from the game's traffic system: whether it runs,
+    /// routes along the road graph, the nearest lane point, and cars taken and handed back. Called on events, never per frame,
+    /// but for the cheap state checks.
     /// </summary>
     public static class TrafficTools
     {
@@ -22,29 +21,15 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        /// <summary>
-        /// True while the traffic system is simulating here and its cars are this machine's to take,
-        /// stop and drive. It is switched off (and all ordinary traffic removed) inside buildings and
-        /// while time is fast-forwarded. A guest in a Going Public session never has it: the cars
-        /// there are the host's, placed from the host's figures, and the traffic system does not run
-        /// (Core/GoingPublic.TrafficMirrored). Whatever takes a car or drives one asks this.
-        /// </summary>
+        /// <summary>True while the traffic runs here and its cars are this machine's to take: not indoors, not fast-forwarded, not a Going Public guest.</summary>
         public static bool Ready => Street && !GoingPublic.TrafficMirrored;
 
-        /// <summary>
-        /// True while the player is out on a street the game is running: what <see cref="Ready"/>
-        /// says without the question of whose the cars are. For whatever only needs the street
-        /// (a job, an outing, a place found along a road), never for taking or driving a car.
-        /// </summary>
+        /// <summary>True while the player is out on a street the game is running, whoever's the cars: never for taking or driving one.</summary>
         public static bool Street =>
             TrafficManager.HasInstance && TrafficManager.IsInitialized && !BuildingManager.IsInsideBuilding
             && TrafficManager.Instance.enabled;
 
-        /// <summary>
-        /// True while the player is out on a street whose traffic the game has stopped for its fast forward (the game's
-        /// GameSpeedController takes every ordinary car off and switches the traffic system off while time runs six times
-        /// as fast). The road graph is all there; nothing drives on it. For a bus ride fast-forwarded on the game's panel.
-        /// </summary>
+        /// <summary>True while out on a street whose traffic the game has stopped for its fast forward: the road graph is there, nothing drives.</summary>
         public static bool Paused =>
             TrafficManager.HasInstance && TrafficManager.IsInitialized && !BuildingManager.IsInsideBuilding
             && !TrafficManager.Instance.enabled && !GoingPublic.TrafficMirrored;
@@ -90,20 +75,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True for the game's ambulance. It is only ever a response vehicle: never a car in a
-        /// crash, a hit-and-run driver's car or anyone's suspect.
-        /// </summary>
+        /// <summary>True for the game's ambulance: only ever a response vehicle, never in a crash or anyone's suspect.</summary>
         public static bool IsAmbulance(VehicleComponent car)
         {
             return car != null && car.prefab != null && car.prefab.name.IndexOf("ambulance", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>
-        /// True while a car this mod took from the traffic system is still ours. The pool hands
-        /// cars out again after removing them, and a car that comes back is no longer ignored by
-        /// the traffic AI, so a lost car must not be driven or moved any more.
-        /// </summary>
+        /// <summary>True while a car the mod took from the traffic system is still ours: the pool hands removed cars out again, no longer ignored.</summary>
         public static bool IsHeld(VehicleComponent car)
         {
             return car != null && car.gameObject.activeInHierarchy && TrafficManager.HasInstance
@@ -112,14 +90,7 @@ namespace RealLifeOverhaul
 
         private static readonly List<Collider> BodyScratch = new List<Collider>(16);
 
-        /// <summary>
-        /// The ground a vehicle really covers, from its own colliders: the middle of its body in the
-        /// world, the way it points along the ground, and half its length and width. A car's
-        /// nominal length and its centre of mass are not that (a rear-engined car's middle is well
-        /// ahead of its centre of mass), and a cordon or a cut in the navigation mesh placed by
-        /// them leaves an end of the car sticking out. Falls back on the nominal size if the
-        /// colliders say nothing sensible. For one-off use (a scene being set up), not per frame.
-        /// </summary>
+        /// <summary>The ground a vehicle really covers, from its colliders: its body's middle, the way it points, half its length and width.</summary>
         public static void Footprint(VehicleComponent car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth)
         {
             Transform body = car.transform;
@@ -190,13 +161,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Where a vehicle's axles are along its own forward axis, in its own space, read from its
-        /// wheel meshes (the game's vehicles do not agree on where their origin is: the vans have it
-        /// under the middle of the body, the trucks under the rear axle). For a modelled body that
-        /// stands over a vehicle with wheels of its own: put its axles on these and its wheels turn
-        /// about the points the vehicle really turns about. False if the wheels cannot be told.
-        /// </summary>
+        /// <summary>Where a vehicle's axles are along it, from its wheel meshes (the game's vehicles disagree where their origin is). False if unknown.</summary>
         /// <param name="renderers">The vehicle's renderers, as the caller has gathered them already.</param>
         public static bool Axles(VehicleComponent car, List<Renderer> renderers, out float rear, out float front)
         {
@@ -216,10 +181,7 @@ namespace RealLifeOverhaul
             return front - rear > 1.5f && front - rear < 9f;
         }
 
-        /// <summary>
-        /// Walks the road graph backwards from a waypoint. The result runs from the far end to
-        /// the anchor, so a vehicle put on route[0] can always drive it.
-        /// </summary>
+        /// <summary>Walks the road graph backwards from a waypoint; the route runs from the far end to the anchor, so it can be driven.</summary>
         /// <returns>The length walked, in metres.</returns>
         public static float WalkBack(Waypoint anchor, float length, int maxPoints, List<Waypoint> route)
         {
@@ -277,11 +239,7 @@ namespace RealLifeOverhaul
             return walked;
         }
 
-        /// <summary>
-        /// The waypoint nearest a position whose lane runs roughly the given way, or simply the
-        /// nearest one if no lane does (or no direction is given). Two questions to the lane grid
-        /// (<see cref="ClosestWaypoint"/>).
-        /// </summary>
+        /// <summary>The nearest waypoint whose lane runs roughly the given way, else simply the nearest. Two questions to the lane grid.</summary>
         public static Waypoint ClosestWaypointAlong(Vector3 position, Vector3 direction, float maxDistance)
         {
             direction.y = 0f;
@@ -294,8 +252,6 @@ namespace RealLifeOverhaul
             return found ?? ClosestWaypoint(position, maxDistance);
         }
 
-        // ---------------------------------------------------------------- the nearest lane point
-
         private const float LaneCell = 20f;   // metres a cell of the lane grid is wide: a question within 40 m covers some 25 cells
         private static readonly List<int> NearScratch = new List<int>(512);
         private static Waypoint[] _laneGridOf;   // the lane points the grid was made over (the city's road data), null before
@@ -303,14 +259,11 @@ namespace RealLifeOverhaul
         private static bool _laneAsking;         // a question is under way (a filter asking again is answered by the traffic system itself)
 
         /// <summary>
-        /// The lane point nearest a position, closer than <paramref name="maxDistance"/>, that <paramref name="filter"/>
-        /// accepts: exactly what the traffic system's own GetClosestWaypoint answers, which goes through every lane point of
-        /// the city (some 19,000, a fifth of a millisecond or more each time; a police station's frontage asked it some
-        /// ninety times in one frame). Here only the points in the cells of a grid round the position are gone through
-        /// (<see cref="PointGrid"/>), in the traffic system's own order, with its own test: the same point comes back, and the
-        /// filter is asked of the same points in the same order, so a filter that collects what it is shown collects the
-        /// same. The grid is made once a city behind the loading screen (<see cref="PrewarmLaneGrid"/>); until then, for
-        /// another city's road data, or for a question asked from inside a filter, the traffic system answers itself.
+        /// The lane point nearest a position, within maxDistance, that the filter accepts: exactly what the traffic system's
+        /// GetClosestWaypoint answers, which goes through every lane point of the city (some 19,000) each time. Here only the
+        /// points of a grid's cells round the position are gone through (<see cref="PointGrid"/>), in the traffic system's
+        /// order and with its test, so the same point comes back and the filter sees the same points. Until the grid is made
+        /// (<see cref="PrewarmLaneGrid"/>), for another city, or asked from inside a filter, the traffic system answers.
         /// </summary>
         public static Waypoint ClosestWaypoint(Vector3 position, float maxDistance = 50f, Predicate<Waypoint> filter = null)
         {
@@ -357,8 +310,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The grid's points are the traffic system's: its first and last lane points are the very objects the grid was made
-        // over. (Its list of another length answers out of range: then they are not.)
+        // The grid is over the traffic system's own points: its first and last lane points are the very objects.
         private static bool SameLanes(TrafficManager traffic, Waypoint[] all)
         {
             try
@@ -371,11 +323,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Behind the loading screen (Core/ScenePrewarm): the lane grid made over this city's lane points, about half a
-        /// millisecond. False, to be tried again at the next black screen out of doors, while the city has no road data
-        /// or the traffic system is not set up yet.
-        /// </summary>
+        /// <summary>Behind the loading screen: the lane grid over this city's lane points, about half a millisecond. False until there is road data.</summary>
         public static bool PrewarmLaneGrid()
         {
             Waypoint[] all = RoadData.Points;
@@ -428,21 +376,12 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Hands a held car back to the traffic AI, pointed at the road ahead of where it now is, and says
-        /// in the log (one line) what state it went back in. Whatever its holder left on it is put right
-        /// here first: a car goes back able to move (not kinematic), without an empty scripted route (only
-        /// ever a marker of ours; with one the game never clears a stop or takes the car off the road) and
-        /// standing still, so that the traffic system starts it from rest.
-        /// It can also go back on the move (<paramref name="carry"/>). The traffic system keeps no speed of
-        /// its own for a car: every physics step it reads the body's velocity and builds the next one on it
-        /// (TrafficManager.FixedUpdate fills vehicleVelocity from the rigidbodies; DriveJob.Execute starts from
-        /// its length), and it gives a car it has just put on the road a velocity itself (NewVehicleAdded). So
-        /// a car handed back with a velocity along its lane simply drives on at that pace, and is slowed with
-        /// ordinary braking if that is over its lane's limit. Only a car with clear road ahead may go back
-        /// this way: the action list is emptied below, and with it anything its sensor knew.
+        /// Hands a held car back to the traffic AI, pointed at the road ahead, and logs the state it went back in. What its holder
+        /// left is put right first: not kinematic, no empty scripted route (a marker of ours that stops the game clearing it), and
+        /// standing still; or, with carry, moving along its lane: the traffic system builds each step's velocity on the body's own
+        /// (TrafficManager.FixedUpdate), so it drives on. Only for a car with clear road ahead: its action list is emptied.
         /// </summary>
         /// <param name="by">Who is letting it go, for the log.</param>
-        /// <param name="carry">The velocity it keeps, flat along its lane; zero (the default) to go back standing.</param>
         public static void ReturnToTraffic(VehicleComponent car, string by = "a scene", Vector3 carry = default)
         {
             try
@@ -478,10 +417,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Takes a car off the road and back into the pool (towed, or no longer needed), in a state the
-        /// pool can hand out again, and says so in the log (one line).
-        /// </summary>
+        /// <summary>Takes a car off the road and back into the pool, in a state the pool can hand out again, and logs it.</summary>
         /// <param name="by">Who is taking it off, for the log.</param>
         public static void Remove(VehicleComponent car, string by = "a scene")
         {
@@ -500,14 +436,7 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotLoad = HotSpots.Slot("Traffic: TrafficTools.Load");
-        /// <summary>
-        /// Puts an idle car of the pool, of that very prefab, on the road at a lane point: the game's own
-        /// TrafficManager.LoadVehicle, asked only when it will take an idle car. Given a prefab with no idle car of it, the
-        /// game takes the first car of that name in the pool whatever it is doing (driving in view, held at a scene of the
-        /// mod's, a taxi with a fare, a private driver) and takes it off the road to put it here: a car taken by its model.
-        /// So with none idle nothing is asked (WhoseCar.FreeSlot, checked offline). Null then, or if the lane point is taken.
-        /// One walk over the pool, on a dispatch.
-        /// </summary>
+        /// <summary>An idle car of that prefab put on the road at a lane point (TrafficManager.LoadVehicle); null with none idle, as the game would take one in use.</summary>
         public static VehicleComponent Load(GameObject prefab, Waypoint at)
         {
             using var hotSpot = HotSpots.Time(HotLoad);
@@ -526,12 +455,7 @@ namespace RealLifeOverhaul
         private static readonly Func<VehicleComponent, object> PrefabOf = car => car != null ? car.prefab : null;
         private static readonly Func<VehicleComponent, bool> Active = car => car == null || car.gameObject.activeInHierarchy;
 
-        /// <summary>
-        /// True for a car of the traffic that is spoken for, which the mod's scenes leave alone: a taxi, and a private
-        /// driver's car (it carries the game's PrivateDriverVehicle while it works; the game takes that off as the car leaves
-        /// the road). In a Going Public session a host's private driver can carry another player too (its friend ride), and
-        /// Going Public itself never takes such a car (ServiceCars.TryFreeHostSlot and IsClientKept).
-        /// </summary>
+        /// <summary>True for a traffic car spoken for, which the mod's scenes leave alone: a taxi, or a private driver's car at work.</summary>
         public static bool SpokenFor(VehicleComponent car)
         {
             return car != null && (car.GetComponent<TaxiController>() != null || car.GetComponent<PrivateDriverVehicle>() != null);
@@ -562,14 +486,7 @@ namespace RealLifeOverhaul
             Logger?.Info("Traffic: '" + Name(car) + "' " + what + " (" + by + "): " + State(car) + ".");
         }
 
-        /// <summary>A vehicle's name for the log.</summary>
-        /// <summary>
-        /// Sounds a traffic car's horn through the game's own two short blasts, heard from where the car is. The game's
-        /// routine (AiCarHorn.Hail) is made for a taxi hailing the player and plays half of the sound without a place,
-        /// so a car at the far end of the street sounded as if it stood beside the player while the people answering
-        /// it were over there. The routine sets that in its first step and puts it back itself when it ends, so the
-        /// sound is given its place again here, straight after it starts. On a horn's blast only; nothing per frame.
-        /// </summary>
+        /// <summary>Sounds a car's horn through the game's own AiCarHorn.Hail, given back its place in the world (the game plays it from nowhere).</summary>
         public static void Hoot(AiCarHorn horn)
         {
             if (horn == null)
@@ -584,6 +501,7 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>A vehicle's name for the log.</summary>
         public static string Name(VehicleComponent car)
         {
             return car == null ? "nothing" : car.prefab != null ? car.prefab.name : car.name;
@@ -599,8 +517,7 @@ namespace RealLifeOverhaul
                    + ", scripted route=" + (route == null ? "none" : route.Count == 0 ? "empty (a marker of the mod's)" : route.Count + " point(s)");
         }
 
-        // What the mod last did with each pooled vehicle, by its index in the pool: for TrafficWatch's report.
-        // The labels are constants, so remembering one costs two array writes.
+        // What the mod last did with each pooled vehicle, for TrafficWatch's report: constants, so two array writes.
         private static string[] _touch = new string[0];
         private static float[] _touchAt = new float[0];
 

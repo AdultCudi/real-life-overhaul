@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
-using BigAmbitions.Characters;
 using GleyTrafficSystem;
-using Helpers;
 using Streets.Pedestrians;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -11,13 +9,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Somebody who steps into the road away from a crossing, in front of a car: one of the game's pedestrians, borrowed
-    /// through PedestrianTakeover (scripts off, the road made walkable), walked to the far pavement and given back walking.
-    /// The car is ordinary traffic and untouched: its own sensor sees them and its driver brakes. Only if it really reaches
-    /// them still moving (CarStrikes watches it) are they hit. A Step can also hold them at the kerb until the moment that
-    /// leaves the driver a chosen amount of road, or stand them in the lane until a car hoots. Owned and ticked by
-    /// RecklessDrivers (four times a second; every frame only while one waits at the kerb). Every way out (HandBack, Forget,
-    /// Yield) gives back the one thing changed on the pedestrian, the ground it may walk on.
+    /// Somebody who steps into the road off a crossing in front of a car: one of the game's pedestrians borrowed through
+    /// PedestrianTakeover, walked to the far pavement and given back walking. The car is ordinary traffic and brakes by its
+    /// own sensor; only if it still reaches them (CarStrikes watches) are they hit. A Step can hold them at the kerb for a
+    /// chosen moment or in the lane. Ticked by RecklessDrivers four times a second, every frame while one waits at the kerb.
     /// </summary>
     internal sealed class Jaywalker
     {
@@ -73,7 +68,6 @@ namespace RealLifeOverhaul
             return Having(pedestrian) != null;
         }
 
-        // Whoever of ours has that pedestrian in the road, or null. Twelve places at the most.
         private static Jaywalker Having(Pedestrian pedestrian)
         {
             if (pedestrian == null)
@@ -130,11 +124,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Somebody walking a pavement beside a lane, away from any crossing, with a car coming up it at the distance wanted
-        /// (StreetRules.JaywalkCarDistance) and a pavement across the road. One pass over the pedestrians, and for each who
-        /// stands right one over the traffic: on a 20 s look or a test button only.
-        /// </summary>
+        /// <summary>Somebody on a pavement beside a lane, off any crossing, a car coming up it at the distance wanted and a pavement across. On a look only.</summary>
         /// <param name="late">They are due to be hit: the car is as near as it can be.</param>
         /// <param name="mode">0: as it comes; 1: a test, a car up to twice as far off will do; 2 and up: a test, any car well up the lane.</param>
         /// <param name="across">The pavement over the road they make for.</param>
@@ -204,8 +194,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // True if that pedestrian is walking a pavement beside a lane, away from any crossing and at the distance wanted
-        // from the player: where they are, the way straight across to the lane's middle, how far that is, and the way the lane runs.
+        // A pedestrian on a pavement beside a lane, off any crossing, at the distance wanted: where, the way across to the lane, how far, its run.
         private static bool Kerbside(Pedestrian candidate, Vector3 player, float nearest, float furthest, out Vector3 at, out Vector3 over, out float toLane, out Vector3 runs)
         {
             at = default;
@@ -240,7 +229,6 @@ namespace RealLifeOverhaul
             return !Crossings.At(at + over * toLane, out _);   // a lane that is a crossing's there: stepping out on it is not jaywalking
         }
 
-        // An ordinary car in that lane, coming, at about the distance that leaves the driver the room wanted.
         private static VehicleComponent Coming(List<VehicleComponent> pool, Vector3 lane, Vector3 runs, float toLane, bool late, int mode)
         {
             for (int i = 0; i < pool.Count; i++)
@@ -347,8 +335,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // At the kerb, waiting for their moment: the car's distance up the lane against what it must be for the road
-        // the driver is to be left (SolidRules.StepOutAt, from its speed as it comes). A few subtractions.
+        // At the kerb: the car's distance up the lane against what leaves the driver the road wanted (SolidRules.StepOutAt).
         private void Wait()
         {
             VehicleComponent car = _car;
@@ -471,8 +458,7 @@ namespace RealLifeOverhaul
             Over(why);
         }
 
-        // Back to the game as an ordinary walker heading somewhere along the pavements (or, standing where a pedestrian
-        // cannot walk, put away through the pool, which is PedestrianTakeover's own rule).
+        // Back to the game as an ordinary walker along the pavements (or, where nobody can walk, put away through the pool).
         private void PutBack(Vector3 here)
         {
             try

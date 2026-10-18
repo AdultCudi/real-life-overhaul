@@ -10,16 +10,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Traffic sees people in the road: every traffic car near the player treats somebody in the road as an obstacle. Eight
-    /// times a second, out of doors with the option on and a car near, the people within 90 m go into a grid
-    /// (SolidRules.PeopleGrid); each car the traffic system drives looks along its strip as far as it takes to stop; whoever
-    /// is in a strip and in the road gets one of sixteen stand-ins the cars' own sensors read (<see cref="SolidGame"/>), so the
-    /// game holds and queues the traffic; the car nearest to reaching somebody is braked in good time (<see cref="SolidBrakes"/>);
-    /// drivers hoot and people answer (HornReactions). Nobody is run down unless one is owed (RecklessDrivers.PersonOwed) and
-    /// the car truly cannot stop: then that one car reaches them. Nothing is changed on a car; a car held 12 s has the person
-    /// moved on; everything is given back at once (ReleaseAll) indoors, when traffic stops, the option goes off, on a fault or
-    /// as the mod closes. Cost: idle, one time comparison a frame; active, a look eight times a second of about 70 microseconds
-    /// for 40 cars and 60 people, no physics query and nothing allocated, measured once a minute with developer diagnostics on.
+    /// Traffic sees people in the road. Eight times a second, out of doors with a car near, the people within 90 m go into a
+    /// grid (SolidRules.PeopleGrid) and each car the traffic system drives looks along its strip: whoever is in the road
+    /// ahead gets a stand-in the cars' own sensors read (<see cref="SolidGame"/>), and the nearest car is braked for them in
+    /// good time (<see cref="SolidBrakes"/>); drivers hoot and people answer. Nobody is run down unless one is owed
+    /// (RecklessDrivers.PersonOwed) and the car truly cannot stop. Nothing is changed on a car; all is given back at once
+    /// (ReleaseAll). Cost: idle, one time comparison a frame; active, about 70 microseconds a look for 40 cars and 60 people.
     /// </summary>
     public sealed partial class SolidStreets : MonoBehaviour
     {
@@ -236,8 +232,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The developer diagnostics' own lines are written with the look's clock stopped (Quiet, then Loud), so what a look
-        // costs is what it costs a player, who has them off.
+        // The diagnostics' own lines stop the look's clock (Quiet, Loud), so a look costs what it costs with them off.
         private void Quiet()
         {
             if (_timing)
@@ -265,10 +260,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Behind the loading screen (ScenePrewarm): the road map and the city's marked crossings, whose search takes some 90 ms.
-        /// False while the city has no road data yet, to be tried again behind the next black screen.
-        /// </summary>
+        /// <summary>Behind the loading screen (ScenePrewarm): the road map and the marked crossings (a 90 ms search). False while there is no road data yet.</summary>
         public static bool Prewarm()
         {
             if (RoadData.Scene == null)
@@ -353,10 +345,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Somebody was sent into the road too late for this car (Traffic/Reckless or a test): for 30 s this one car may reach
-        /// this one pedestrian if it can no longer stop. Every other car still stops for them, and this one for everybody else.
-        /// </summary>
+        /// <summary>For the next 30 s this one car may reach this one pedestrian, sent out too late for it, if it can no longer stop.</summary>
         public static void Owe(VehicleComponent car, Pedestrian walker)
         {
             SolidStreets streets = Instance;

@@ -7,17 +7,9 @@ using Object = UnityEngine.Object;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city's marked pedestrian crossings, arranged so that "is this person on a crossing, and
-    /// whose turn is it there?" costs a few subtractions and no physics query. Each crossing is a
-    /// trigger box of the game's with a link to one lamp (CrosswalkToTrafficLightLink.redTrafficLight):
-    /// the RED lamp of the cars that drive over it. The game lets its pedestrians walk exactly while
-    /// that lamp is lit (PedestrianMovementHandler.CanCrossCrosswalk), so lit means the cars have red
-    /// and the people have the crossing.
-    /// It is listed once a city, behind the loading screen (Prewarm), or else the first time somebody
-    /// asks: one search of the scene for that one component (a few hundred objects, but the search
-    /// walks the whole city: some 90 ms), put in a coarse grid. After that a
-    /// question looks at the handful of boxes in one grid square. If the game has no such component
-    /// any more, or none is found, it says so once and every question answers "not on a crossing".
+    /// The city's marked crossings, so that "is this person on one, and is it their turn?" costs a few subtractions: each a
+    /// trigger box of the game's linked to the cars' red lamp, lit while people may walk. Listed once a city behind the loading
+    /// screen (a 90 ms search) into a coarse grid; none found, and nobody is ever on one.
     /// </summary>
     internal static class Crossings
     {
@@ -33,7 +25,7 @@ namespace RealLifeOverhaul
             public GameObject Red;       // the cars' red lamp: lit, people may walk
         }
 
-        private const float CellSize = 40f;
+        private const float CellSize = 40f;       // metres
         private const float Margin = 0.3f;        // metres a foot may be outside the box and still be on the crossing
         private const float RetryAfter = 60f;     // seconds before an empty list is looked for again (the street may not have been there yet)
 
@@ -92,11 +84,7 @@ namespace RealLifeOverhaul
             return All.Count > 0;
         }
 
-        /// <summary>
-        /// Behind the loading screen (Traffic/Solid/SolidStreets.Prewarm): the list made now, not at the first look of the
-        /// traffic in play, where its search of the scene was a frame of some 90 ms. False while the city has none to give
-        /// (it is looked for again behind the next black screen out of doors, not a minute later in play).
-        /// </summary>
+        /// <summary>Behind the loading screen (SolidStreets.Prewarm): the list made now, not in play. False while the city has none to give.</summary>
         public static bool Prewarm()
         {
             if (Ensure() || _failed)
@@ -180,10 +168,7 @@ namespace RealLifeOverhaul
             return ((long)x << 32) ^ (z & 0xffffffffL);
         }
 
-        /// <summary>
-        /// True if the point is on a marked crossing, with whether the people there have the light (the
-        /// cars' red lamp is lit; a crossing with no lamp is always the people's). Call Ensure first.
-        /// </summary>
+        /// <summary>True if the point is on a marked crossing, with whether people have the light there (no lamp: always). Call Ensure first.</summary>
         public static bool At(Vector3 point, out bool peopleMayWalk)
         {
             peopleMayWalk = false;

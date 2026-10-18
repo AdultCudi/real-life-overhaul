@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
-using Localizor;
 using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
@@ -62,10 +59,7 @@ namespace RealLifeOverhaul
             (MinDistance, MaxDistance, MovingSpeed), (30f, 200f, MovingSpeed), (18f, 250f, 4f)
         };
 
-        /// <summary>
-        /// A moving traffic car for the other test buttons, searched as widely as a test accident; null, with how far was
-        /// looked and the pool's census for the log, if there is none.
-        /// </summary>
+        /// <summary>A moving traffic car for the other test buttons, searched widely; null, with how far was looked and the pool's census, if none.</summary>
         public VehicleComponent FindMovingCarWide(Vector3 player, out int within, out string census)
         {
             VehicleComponent car = null;

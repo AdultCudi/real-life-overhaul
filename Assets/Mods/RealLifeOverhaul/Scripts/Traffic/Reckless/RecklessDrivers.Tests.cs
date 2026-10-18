@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
 using Localizor;
-using Streets.Pedestrians;
 using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
@@ -135,7 +132,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's own destination marker over a test's car for a few seconds, so that the tester knows which one it is.
         private void Mark(float now)
         {
             if (now < _markUntil && _car.InUse && _car.Car != null)
