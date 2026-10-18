@@ -9,8 +9,11 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public static class CareersBridges
     {
-        /// <summary>True if a home of the player's has a working internet connection now (Utilities). Default: yes (nothing to ask).</summary>
-        public static Func<bool> HomeInternet;
+        /// <summary>
+        /// The internet of the home the player is in, or the first they have, over a span of minutes of the save (day * 1440
+        /// + minute; a start below 0: now): up, or why it was down (Utilities). Default: up (nothing to ask).
+        /// </summary>
+        public static Func<int, int, HomeNet> HomeInternet;
 
         /// <summary>The council's policy on education: +1 a tuition subsidy, -1 a surcharge, 0 as the city came (Civic). Default: 0.</summary>
         public static Func<int> Council;
@@ -105,15 +108,19 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        public static bool HomeOnline()
+        /// <summary>The home's internet now: up, or why it is down.</summary>
+        public static HomeNet HomeNetNow() => HomeNetBetween(-1, -1);
+
+        /// <summary>The home's internet over a span of minutes of the save (day * 1440 + minute): down at any minute of it, and why; else up.</summary>
+        public static HomeNet HomeNetBetween(int fromMinute, int toMinute)
         {
             try
             {
-                return HomeInternet == null || HomeInternet();
+                return HomeInternet != null ? HomeInternet(fromMinute, toMinute) : HomeNet.Online;
             }
             catch (Exception)
             {
-                return true;
+                return HomeNet.Online;
             }
         }
 

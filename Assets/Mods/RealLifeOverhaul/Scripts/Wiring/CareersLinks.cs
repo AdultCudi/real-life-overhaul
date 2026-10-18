@@ -15,8 +15,9 @@ namespace RealLifeOverhaul
         /// Education and careers with the rest of the mod (Careers/CareersBridges). Careers calls no other feature and none
         /// calls it; what they have to do with each other is here.
         ///
-        ///   HomeInternet  the home the player is in, or the first they have: its internet line up and not in an outage
-        ///                 (Utilities), for live classes online
+        ///   HomeInternet  the home the player is in, or the first they have: its internet over a span of minutes, up or
+        ///                 why it was down (Utilities: an outage, no plan, one being put in, one cut for a bill), for
+        ///                 classes, working days and interviews online, and what an outage excuses
         ///   Refresher     a driving refresher takes penalty points off the licence (Licences: LicenceState.TakeOff)
         ///   Standing      a qualification or a career's turn moves a part of Standing (FameDirector.Moved)
         ///   Reputation    the player's name as a professional: Standing's recognition and integrity
@@ -150,7 +151,10 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static bool HomeInternet()
+            // The connection's state as it is now and its last outage, read when a class, a day or an interview is asked
+            // about or goes by (never per frame): one search of the accounts. The outages are drawn from the save's seed
+            // (on the host in a shared city) and only read here.
+            private static HomeNet HomeInternet(int fromMinute, int toMinute)
             {
                 try
                 {
@@ -159,20 +163,31 @@ namespace RealLifeOverhaul
                     GameInstance save = SaveGameManager.Current;
                     if (!Settings.Utilities || state == null || Utilities.UtilitiesDirector.Failed || save == null)
                     {
-                        return true;   // (no utilities to ask: a home is taken to be connected)
+                        return HomeNet.Online;   // (no utilities to ask: a home is taken to be connected)
                     }
                     BuildingRegistration home = HomeTidy.Home();
                     if (home == null)
                     {
-                        return false;
+                        return HomeNet.NoHome;
+                    }
+                    if (fromMinute < 0)
+                    {
+                        fromMinute = toMinute = save.Day * 24 * 60 + save.Hour * 60 + (int)save.Minute;
                     }
                     Utilities.Account a = state.Find(Utilities.UtilitiesGame.Place(home), Utilities.Service.Internet);
-                    return a != null && a.State == Utilities.SupplyState.Active && !Utilities.InternetRules.InOutage(a, save.Day * 24 + save.Hour);
+                    switch (Utilities.InternetRules.Down(a, fromMinute, toMinute))
+                    {
+                        case Utilities.NetDown.Up: return HomeNet.Online;
+                        case Utilities.NetDown.Outage: return HomeNet.Outage;
+                        case Utilities.NetDown.Installing: return HomeNet.Installing;
+                        case Utilities.NetDown.Cut: return HomeNet.Cut;
+                        default: return HomeNet.NoPlan;
+                    }
                 }
                 catch (Exception e)
                 {
                     Fault("CareersLinks.HomeInternet", e);
-                    return true;
+                    return HomeNet.Online;
                 }
             }
 

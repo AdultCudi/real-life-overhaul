@@ -118,7 +118,7 @@ internal static partial class Program
         }
         Check(told == 2 && f.Courses[0].StartTold == at, "helpers, class: on a day with two courses' classes, two notices, a reload after each included (" + told + ")");
         string line = CareersStore.Write(f);
-        string old = line.Replace("|" + at + ";", ";").Replace("|" + at + "~", "~");
+        string old = line.Replace("|" + at + "|0|-1;", ";").Replace("|" + at + "|0|-1~", "~");   // (the fields after it, the excused classes, are later still)
         StudyFile was = CareersStore.Read(old, out _);
         Check(old != line && was.Courses.Count == 2 && was.Courses[0].StartTold == 0 && was.Courses[0].Seen == 1, "helpers, class: an old save without the field loads with nothing told");
 

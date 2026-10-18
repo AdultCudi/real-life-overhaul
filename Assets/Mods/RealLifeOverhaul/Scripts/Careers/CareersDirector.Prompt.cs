@@ -550,6 +550,14 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             string course = CareersText.Course(c.Id);
+            if (why != null && ClassPlayRules.HeldOnline(c, mode) && CareersBridges.HomeNetNow() == HomeNet.Outage)
+            {
+                // The provider's outage is on as the class begins: if it cannot be joined it is excused (CareersDirector.GoneBy),
+                // which is said now, in place of where to go, and not again when it goes by.
+                _excuseTold = key;
+                Tell(NotificationType.Info, "reallife_study_note_class_outage", Data("course", course), TabStudying, CampusApp.CourseRow + c.Id);
+                return;
+            }
             if (notice == 1)
             {
                 if (InRooms(e))

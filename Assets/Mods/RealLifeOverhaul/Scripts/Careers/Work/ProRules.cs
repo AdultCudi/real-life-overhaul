@@ -34,7 +34,8 @@ namespace RealLifeOverhaul.Careers
         public const int InterviewAfterDays = 2;  // an interview is held this many days after the invitation
         public const int InterviewHourLeast = 10, InterviewHourMost = 15;
         public const int InterviewMinutes = 60;
-        public const int InterviewLateMinutes = 60;   // an interview can be joined until this long after its hour
+        public const int InterviewEarlyMinutes = 30;  // an interview can be joined from this long before its hour...
+        public const int InterviewLateMinutes = 60;   // ...until this long after it
         public const int OfferDays = 3;           // days to answer an offer
         public const int StartDays = 2;           // days after accepting before the first day, out of work
         public const int AskSmallBp = 500, AskLargeBp = 1000;
@@ -307,6 +308,70 @@ namespace RealLifeOverhaul.Careers
                 j.Absent++;
             }
             return worked;
+        }
+
+        /// <summary>A settled day that was not worked, excused (off sick, on leave, an internet outage on a day from home): taken back out of the days due and missed, so it is neither.</summary>
+        public static void Excuse(Job j)
+        {
+            j.Absent = Math.Max(0, j.Absent - 1);
+            j.Due = Math.Max(0, j.Due - 1);
+        }
+
+        /// <summary>The minutes of the save (day * 1440 + minute) a working day can be started in: <see cref="ClockEarlyMinutes"/> before its hour to <see cref="ClockLateMinutes"/> after.</summary>
+        public static void StartWindow(Profession p, int day, out int from, out int to)
+        {
+            int start = day * 24 * 60 + (p != null ? p.Hour : 0) * 60;
+            from = start - ClockEarlyMinutes;
+            to = start + ClockLateMinutes;
+        }
+
+        /// <summary>
+        /// True if a working day not worked is excused for the home's internet: a day worked from home, with the internet
+        /// down over its start window for an outage (StudyRules.Excuses). No pay, no missed day, no warning, like a sick day.
+        /// </summary>
+        public static bool DayExcused(WorkMode mode, int day, HomeNet net)
+        {
+            return FromHome(mode, day) && StudyRules.Excuses(net);
+        }
+
+        // ---------------------------------------------------------------- an interview by video from home
+
+        /// <summary>The minutes of the save an invitation's interview can be joined in: <see cref="InterviewEarlyMinutes"/> before its hour to <see cref="InterviewLateMinutes"/> after.</summary>
+        public static void InterviewWindow(Application a, out int from, out int to)
+        {
+            int at = a.InterviewDay * 24 * 60 + a.InterviewHour * 60;
+            from = at - InterviewEarlyMinutes;
+            to = at + InterviewLateMinutes;
+        }
+
+        /// <summary>True once an invitation's interview can no longer be joined (its day gone, or its window shut today) and it is still waiting.</summary>
+        public static bool InterviewGone(Application a, int today, int minuteOfDay)
+        {
+            return a.Stage == (int)ApplyStep.Interview
+                   && (today > a.InterviewDay || (today == a.InterviewDay && minuteOfDay > a.InterviewHour * 60 + InterviewLateMinutes));
+        }
+
+        /// <summary>True if an interview gone by is moved rather than lost: one by video from home (a remote post), with the home's internet down over its window for an outage.</summary>
+        public static bool InterviewExcused(Application a, HomeNet net)
+        {
+            return a.Post.Work == (int)WorkMode.Remote && StudyRules.Excuses(net);
+        }
+
+        /// <summary>The first weekday on or after a day (day 1 a Monday): interviews are held on weekdays.</summary>
+        public static int Weekday(int day)
+        {
+            while ((day - 1) % 7 >= 5)
+            {
+                day++;
+            }
+            return day;
+        }
+
+        /// <summary>An interview moved, at the same hour, to the first weekday on or after <paramref name="first"/>; the invitation lapses with it then.</summary>
+        public static void Reschedule(Application a, int first)
+        {
+            a.InterviewDay = Weekday(first);
+            a.Lapse = a.InterviewDay;
         }
 
         /// <summary>Minutes worked: counted for the day and the week (a new week each seventh day).</summary>
