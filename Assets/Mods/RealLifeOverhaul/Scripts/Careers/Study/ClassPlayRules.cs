@@ -24,10 +24,17 @@ namespace RealLifeOverhaul.Careers
         Counted = 2      // it had begun: its minutes are counted, once
     }
 
-    /// <summary>The minutes of one class, homework or exam at a desk or computer from the moment the player sits, counted once however it ends. Game-free.</summary>
+    /// <summary>
+    /// The minutes of one class, homework or exam at a desk or computer from the moment the player sits, counted once however
+    /// it ends. Begun with the game's clock (<see cref="Begin(int)"/>), the minutes are the clock's since the player sat down:
+    /// the game's panel performs a skip's minutes as it goes and again at its end, or not at all when its own Update does not
+    /// run under the skip, so the sum of what it performs is neither here nor there. Game-free.
+    /// </summary>
     public sealed class ClassTally
     {
         public readonly int Length;   // game minutes the sitting is for
+        private bool _clocked;        // begun with the game's clock: the minutes are the clock's
+        private int _from;            // ...the clock's minute the player sat down at
         public int Done { get; private set; }
         public bool Begun { get; private set; }
         public bool Over { get; private set; }
@@ -37,12 +44,23 @@ namespace RealLifeOverhaul.Careers
             Length = Math.Max(1, length);
         }
 
-        /// <summary>The player has sat down: from now on the minutes count.</summary>
+        /// <summary>The player has sat down: from now on the minutes the game's panel performs count.</summary>
         public void Begin()
         {
             if (!Over)
             {
                 Begun = true;
+            }
+        }
+
+        /// <summary>The player has sat down at this minute of the game's clock (the save's minutes since day 0): from now on the clock's minutes count.</summary>
+        public void Begin(int clock)
+        {
+            if (!Over)
+            {
+                Begun = true;
+                _clocked = true;
+                _from = clock;
             }
         }
 
@@ -57,8 +75,42 @@ namespace RealLifeOverhaul.Careers
             return Done >= Length;
         }
 
+        /// <summary>The game's panel performs minutes with the clock now at <paramref name="clock"/>: a tally begun with the clock counts the clock's. True once the whole length has passed.</summary>
+        public bool Add(int minutes, int clock)
+        {
+            if (!_clocked)
+            {
+                return Add(minutes);
+            }
+            if (Begun && !Over)
+            {
+                Clock(clock);
+            }
+            return Begun && !Over && Done >= Length;
+        }
+
+        // The minutes sat by the clock, never fewer than counted already and never more than the length.
+        private void Clock(int clock)
+        {
+            long sat = (long)clock - _from;
+            if (sat > Done)
+            {
+                Done = sat >= Length ? Length : (int)sat;
+            }
+        }
+
         /// <summary>The minutes still to go, for the game's panel and its skip time.</summary>
         public int Left => Math.Max(0, Length - Done);
+
+        /// <summary>The end with the clock now at <paramref name="clock"/>, said once: a tally begun with the clock counts every minute the clock passed while sitting.</summary>
+        public TallyEnd Settle(int clock, out int minutes, out bool whole)
+        {
+            if (_clocked && Begun && !Over)
+            {
+                Clock(clock);
+            }
+            return Settle(out minutes, out whole);
+        }
 
         /// <summary>The end, said once: how it ended, the minutes to count and whether the whole was sat.</summary>
         public TallyEnd Settle(out int minutes, out bool whole)
@@ -114,6 +166,52 @@ namespace RealLifeOverhaul.Careers
             bool desks = !SchoolInPlace(inSession);
             classHere = !inRooms && !online && !(classAtSchool && desks);
             examHere = !inRooms && !(examAtSchool && desks);
+        }
+
+        /// <summary>True if a course's class (or, with <paramref name="exam"/>, its exam) is held at the game's school, at its desks.</summary>
+        public static bool AtSchool(Enrolment e, bool exam)
+        {
+            CourseDef c = e != null ? e.Def : null;
+            if (c == null)
+            {
+                return false;
+            }
+            bool home = (StudyMode)e.Mode == StudyMode.Distance || c.Campus == Campus.Online;
+            return exam ? home || c.Campus == Campus.School : !home && c.Campus == Campus.School;
+        }
+
+        /// <summary>True while an enrolment's class at the school is in its join window and not yet settled today, or its exam at the school can be sat this hour.</summary>
+        public static bool DueAtSchool(Enrolment e, int day, int minuteOfDay)
+        {
+            CourseDef c = e != null ? e.Def : null;
+            if (c == null)
+            {
+                return false;
+            }
+            if (AtSchool(e, false) && e.Stage == (int)EnrolStage.Studying && c.Timetabled && e.SettledDay < day && day >= e.Start
+                && StudyRules.Joinable(c, (StudyMode)e.Mode, day, minuteOfDay, out _))
+            {
+                return true;
+            }
+            int hour = minuteOfDay / 60;
+            return AtSchool(e, true) && StudyRules.ExamDay(e, day) && hour >= StudyCatalogue.ExamOpens && hour < StudyCatalogue.ExamCloses;
+        }
+
+        /// <summary>
+        /// The school desk's keys, decided as its panel opens: true while a class or exam of the player's at the school is in its
+        /// window, when the class's button is on the game's Start key and the game's own course on the secondary key, as a
+        /// classroom of the university has it; false otherwise, the class's button on the secondary key beside the game's Start.
+        /// </summary>
+        public static bool ClassOnStart(IList<Enrolment> courses, int day, int minuteOfDay)
+        {
+            for (int i = 0; courses != null && i < courses.Count; i++)
+            {
+                if (DueAtSchool(courses[i], day, minuteOfDay))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>True for a course whose classes are held online, from home: an online course, or one followed at a distance.</summary>

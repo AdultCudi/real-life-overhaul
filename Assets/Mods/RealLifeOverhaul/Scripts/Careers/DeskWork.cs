@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Careers
                 Notifications.ShowInsufficientEnergy();
                 return;
             }
-            string why = _director.DeskBegin(late, out Sitting sitting);
+            string why = _director.DeskBegin(late, this, out Sitting sitting);
             if (why != null)
             {
                 Notifications.Show(NotificationType.Warning, why, null, 8f);

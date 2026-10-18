@@ -26,7 +26,9 @@ namespace RealLifeOverhaul.Careers
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
         private bool _broken;
         private ShiftSkip _skip;
-        private Sitting _sitting;
+        private Sitting _sitting;                            // the sitting handed out last, for the busy checks; what counts is the book
+        private readonly SittingBook _book = new SittingBook();   // every sitting handed out and not yet settled, by its own record
+        private SittingRecord _finishing;                    // the record whose activity the once-a-second look is finishing, for its self-check line
         private TechNews _news;
         private GameInstance _newsOf;
 
@@ -134,10 +136,10 @@ namespace RealLifeOverhaul.Careers
             {
                 WorkDesks();
             }
+            LookAtSittings();
             if (_skip != null && !_skip.Open)
             {
-                _skip = null;
-                _sitting = null;
+                _skip = null;   // its sitting, if any, is the book's: settled, or let go by the look above
             }
             if (!_studyOn)
             {
@@ -279,19 +281,101 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_study_why_game_busy";
             }
             _skip = skip;
-            _sitting = sitting;
+            Hold(sitting, skip);
             return null;
+        }
+
+        /// <summary>A sitting handed to the activity that runs it on the game's panel: in the book until it is settled, and the director's current one.</summary>
+        internal void Hold(Sitting sitting, PlayerActivity.IPlayerActivity holder)
+        {
+            if (sitting == null)
+            {
+                return;
+            }
+            if (sitting.Record.Day < 0 && Save != null)
+            {
+                sitting.Record.Day = Save.Day;
+            }
+            sitting.Record.Holder = holder;
+            _book.Hold(sitting.Record);
+            _sitting = sitting;
+        }
+
+        // A sitting out of the book, and no longer the director's current one or its in-place panel's.
+        private void Release(Sitting sitting)
+        {
+            _book.Release(sitting.Record);
+            if (ReferenceEquals(sitting, _sitting))
+            {
+                _sitting = null;
+            }
+            if (_skip != null && ReferenceEquals(sitting.Record.Holder, _skip))
+            {
+                _skip = null;
+            }
+        }
+
+        /// <summary>
+        /// Once a second: every open sitting by its own record. One whose activity the game's panel has let go is finished (its
+        /// minutes so far counted, once, as its own Finish counts them), and one its activity leaves unsettled is let go with
+        /// nothing counted, so that it never leaves every class and day "under way". A loop over the open sittings, rarely one.
+        /// </summary>
+        private void LookAtSittings()
+        {
+            for (int i = _book.Count - 1; i >= 0; i--)
+            {
+                if (i >= _book.Count)
+                {
+                    continue;   // a finish settled more than one
+                }
+                SittingRecord r = _book[i];
+                PlayerActivity.IPlayerActivity holder = r.Holder as PlayerActivity.IPlayerActivity;
+                SittingLook look = SittingRules.Look(r.Settled, holder != null && DeskGame.Shows(holder));
+                if (look == SittingLook.Keep)
+                {
+                    continue;
+                }
+                if (look == SittingLook.Finish && holder != null)
+                {
+                    _finishing = r;
+                    try
+                    {
+                        holder.Finish();   // the game's panel let it go: its minutes so far counted and the player stood up, by its own Finish
+                    }
+                    catch (Exception e)
+                    {
+                        Logger?.Error(e);
+                    }
+                    _finishing = null;
+                }
+                if (!r.Settled && r.Settle(SittingEnd.LetGo))
+                {
+                    if (r.Begun && r.Tiring)
+                    {
+                        CareersGame.Tiring(false);   // its energy spent no more
+                    }
+                    Logger?.Info("Careers: a " + r.Kind + " sitting of " + r.Of + " was left with no desk, computer or panel of its own and "
+                                 + (r.Begun ? "its activity did not settle it" : "had not begun") + "; let go, nothing counted.");
+                }
+                _book.Release(r);
+                if (_sitting != null && ReferenceEquals(_sitting.Record, r))
+                {
+                    _sitting = null;
+                }
+            }
         }
 
         /// <summary>A sitting is over: the minutes that passed are settled by its kind.</summary>
         internal void Ended(Sitting sitting, int minutes, bool whole)
         {
-            if (!ReferenceEquals(sitting, _sitting))
+            // Settled by its own record (Sitting.SkipEnded lets this run once), whatever the director's current sitting is now.
+            bool current = ReferenceEquals(sitting, _sitting);
+            bool open = _book.Holds(sitting.Record);   // handed out and not let go: the book had it until now
+            Release(sitting);
+            if (_broken || !open)
             {
-                return;
+                return;   // let go by the director before its end (switched off, or the part stopping): nothing counted
             }
-            _skip = null;
-            _sitting = null;
             try
             {
                 switch (sitting.Kind)
@@ -301,7 +385,7 @@ namespace RealLifeOverhaul.Careers
                     case SittingKind.Exam:
                         if (_studyOn)
                         {
-                            StudyEnded(sitting, minutes, whole);
+                            StudyEnded(sitting, minutes, whole, current);   // by its own record, whatever is current now
                         }
                         break;
                     case SittingKind.Work:
@@ -332,7 +416,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Charges a sitting's fee (a retake's, at a desk) as the player sits down for it.</summary>
         internal void ChargeAtStart(Sitting sitting, int fee)
         {
-            Enrolment e = _studyOn && ReferenceEquals(sitting, _sitting) ? _study.Live(sitting.Of) : null;
+            Enrolment e = _studyOn && _book.Holds(sitting.Record) ? _study.Live(sitting.Of) : null;
             if (e == null || fee <= 0)
             {
                 return;
@@ -344,19 +428,26 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A sitting called off before it began (the walk to its desk or computer stopped): let go, with nothing counted.</summary>
         internal void Dropped(Sitting sitting)
         {
-            if (!ReferenceEquals(sitting, _sitting))
+            bool open = _book.Holds(sitting.Record);
+            Release(sitting);
+            if (!open)
             {
                 return;
             }
-            _sitting = null;
             Logger?.Info("Careers: a " + sitting.Kind + " sitting of " + sitting.Of + " was called off on the way to its desk or computer; nothing is counted.");
         }
 
+        // The director lets every sitting go with nothing counted (switched off, a fault, the city going), and closes their activities.
         private void CloseSitting()
         {
             ShiftSkip skip = _skip;
             DeskWork desk = _deskWork;
             ComputerSitting computer = _computer;
+            for (int i = _book.Count - 1; i >= 0; i--)
+            {
+                _book[i].Settle(SittingEnd.LetGo);   // a later end of its activity counts nothing
+                _book.Release(_book[i]);
+            }
             _skip = null;
             _sitting = null;
             _deskWork = null;

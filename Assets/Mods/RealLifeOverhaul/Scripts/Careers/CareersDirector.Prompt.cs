@@ -138,12 +138,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         // True if this course's class (or exam) is held at the game's school, where its desks offer it instead of a panel.
-        private static bool AtTheSchool(Enrolment e, bool exam)
-        {
-            CourseDef c = e.Def;
-            bool home = (StudyMode)e.Mode == StudyMode.Distance || c.Campus == Campus.Online;
-            return exam ? home || c.Campus == Campus.School : !home && c.Campus == Campus.School;
-        }
+        private static bool AtTheSchool(Enrolment e, bool exam) => ClassPlayRules.AtSchool(e, exam);
 
         private object CourseArgs(int course)
         {
@@ -214,9 +209,11 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             _deskWatch = watch && ActivityUi() != null;
-            if (_desk != null && _desk.Open && (_activityUi == null || !ReferenceEquals(_activityUi.GetCurrentActivity, _desk)))
+            // The timer's look at the open sittings (LookAtSittings) has finished every activity the game's panel let go, by each
+            // sitting's own record; a desk or computer of the director's whose sitting was let go before is finished here, read afresh.
+            if (_desk != null && _desk.Open && !DeskGame.Shows(_desk))
             {
-                _desk.Finish();   // the game's panel let it go: count the minutes so far and stand up
+                _desk.Finish();
             }
             if (_desk != null && !_desk.Open)
             {
@@ -224,18 +221,11 @@ namespace RealLifeOverhaul.Careers
             }
             if (_computer != null && _computer.Open && !DeskGame.Shows(_computer))
             {
-                _computer.Finish();   // the same at the computer at home
+                _computer.Finish();
             }
             if (_computer != null && !_computer.Open)
             {
                 _computer = null;
-            }
-            if (_sitting != null && !SittingNow && !(_deskWork != null && _deskWork.Open))
-            {
-                // Nothing on the game's panel holds it any more: let go, so that it never leaves every class and day "under way".
-                Logger?.Info("Careers: a " + _sitting.Kind + " sitting was left with no desk, computer or panel of its own; let go, nothing counted.");
-                _sitting = null;
-                CareersGame.Tiring(false);   // its energy spent no more, if it had begun
             }
         }
 
@@ -357,8 +347,16 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // What a desk offers now: the class that can be joined, else the exam that can be sat, else the next class (greyed).
+        // What a desk offers now: the class that can be joined, else the exam that can be sat, else the next class (greyed); on
+        // the game's Start key while a class or exam of the player's at the school is in its window.
         private SchoolDesk.DeskOffer DeskOfferNow()
+        {
+            SchoolDesk.DeskOffer offer = DeskOfferOf();
+            offer.Due = ClassPlayRules.ClassOnStart(_study.Courses, Save.Day, CareersGame.MinuteOfDay);
+            return offer;
+        }
+
+        private SchoolDesk.DeskOffer DeskOfferOf()
         {
             SchoolDesk.DeskOffer next = null;
             int nextAt = int.MaxValue;
@@ -396,7 +394,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>A sitting begun at a desk of the school or the university: the Campus app's checks, the sitting made for the desk; null with it, or the reason key.</summary>
-        internal string DeskSitting(int course, SittingKind kind, out Sitting sitting)
+        internal string DeskSitting(int course, SittingKind kind, IPlayerActivity holder, out Sitting sitting)
         {
             sitting = null;
             Enrolment e = _studyOn ? _study.Live(course) : null;
@@ -446,7 +444,7 @@ namespace RealLifeOverhaul.Careers
                 sitting = ExamSitting(e);
                 sitting.Fee = fee;   // charged as the player sits down: a walk called off costs nothing
             }
-            _sitting = sitting;
+            Hold(sitting, holder);
             Logger?.Info("Careers: " + Words(kind) + " of " + c.Key + " begun at a desk of the " + (_interior != null && _interior.Floor > 0 ? "university" : "school") + " (the game's study panel).");
             return null;
         }

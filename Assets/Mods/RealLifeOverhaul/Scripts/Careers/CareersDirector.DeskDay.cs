@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>Start working or Work late pressed at the desk: the Career app's checks but the place's, and the clock-in; null with the sitting, or the reason key.</summary>
-        internal string DeskBegin(bool overtime, out Sitting sitting)
+        internal string DeskBegin(bool overtime, PlayerActivity.IPlayerActivity holder, out Sitting sitting)
         {
             sitting = null;
             Job j = Work != null ? Work.Job : null;
@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_work_why_no_job";
             }
-            if (_sitting != null || (_skip != null && _skip.Open))
+            if (_book.Count > 0 || (_skip != null && _skip.Open))
             {
                 return "reallife_study_why_busy";
             }
@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Careers
                 ClockIn(j, day, late);
                 sitting = DaySitting(j, minutes);
             }
-            _sitting = sitting;
+            Hold(sitting, holder);   // at the computer at home its activity is made after: StartAtComputer holds it again with it
             Logger?.Info("Careers: " + (overtime ? "overtime" : "a working day") + " begun at the desk for " + j.Post.Employer + " on day " + day + " at "
                          + CareersText.Hour(CareersGame.MinuteOfDay / 60)
                          + ", " + sitting.SkipMinutes + " minutes.");
@@ -228,7 +228,7 @@ namespace RealLifeOverhaul.Careers
                 return "notification_need_empty_hands_to_interact";   // the game's own words, as its computer says them
             }
             int lateBefore = j.Late;
-            string why = DeskBegin(overtime, out Sitting sitting);
+            string why = DeskBegin(overtime, null, out Sitting sitting);
             if (why != null)
             {
                 return why;
@@ -236,7 +236,8 @@ namespace RealLifeOverhaul.Careers
             why = StartAtComputer(computer, sitting, j.Post.Employer);
             if (why != null)
             {
-                _sitting = null;   // the game's panel was busy: nothing begun; the clock-in stands, as at a desk
+                sitting.LetGo();   // the game's panel was busy: nothing begun; the clock-in stands, as at a desk
+                Release(sitting);
                 return why;
             }
             if (j.Late > lateBefore)
