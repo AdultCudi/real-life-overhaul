@@ -436,7 +436,6 @@ namespace RealLifeOverhaul
             if ((floor > 0f || subsidy > 0f) && save.EmployeeInstances != null)
             {
                 float level = Prices.Level / 1000f;   // the city's cost of living pays every wage at today's prices (Economy/City)
-                Func<string, float> raise = CivicBridges.Raise;
                 for (int i = 0; i < save.EmployeeInstances.Count; i++)
                 {
                     EmployeeInstance employee = save.EmployeeInstances[i];
@@ -445,7 +444,7 @@ namespace RealLifeOverhaul
                         continue;
                     }
                     // What they are paid an hour now: the game's wage at today's prices, and any raise agreed on top (Economy/Company).
-                    float paid = employee.hourlyWage * level + (raise != null ? raise(employee.id) : 0f);
+                    float paid = employee.hourlyWage * level + CivicBridges.RaiseOf(employee.id);
                     if (floor > paid)
                     {
                         account.Wages += (floor - paid) * employee.assignedWeeklyHours;

@@ -194,7 +194,7 @@ namespace RealLifeOverhaul
             }
             if (declaredAside)
             {
-                CivicBridges.StandingMoved?.Invoke(1, 0);
+                CivicBridges.Moved(1, 0);
             }
             if (m.Undeclared && result.Passed && State.Secrets.Count < OfficeState.SecretsMost)
             {

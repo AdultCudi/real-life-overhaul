@@ -168,7 +168,7 @@ namespace RealLifeOverhaul
             State.Tabled = day;
             if (declared && Conflicted(policy))
             {
-                CivicBridges.StandingMoved?.Invoke(1, 0);
+                CivicBridges.Moved(1, 0);
             }
             return "reallife_civic_office_tabled";
         }
@@ -233,7 +233,7 @@ namespace RealLifeOverhaul
                 return "reallife_civic_office_registered_already";
             }
             State.Registered = true;
-            CivicBridges.StandingMoved?.Invoke(1, 0);
+            CivicBridges.Moved(1, 0);
             return "reallife_civic_office_registered";
         }
 

@@ -308,7 +308,14 @@ namespace RealLifeOverhaul
             Approve(day);
             Petition(day);
             Council(day);
-            DayBegins?.Invoke(day);
+            try
+            {
+                DayBegins?.Invoke(day);   // the office's day: a fault there is logged, and the government's day goes on
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
 
             if (State.Phase == ElectionPhase.Counted && day > State.ElectionDay + 1)
             {

@@ -132,7 +132,7 @@ namespace RealLifeOverhaul
                 {
                     kind = PromptKind.Vote;
                 }
-                else if (Elections && _campaign.CanvasserInReach(player) >= 0)
+                else if (Elections && _campaign.CanvasserInReach(player))
                 {
                     kind = PromptKind.Leaflet;
                 }

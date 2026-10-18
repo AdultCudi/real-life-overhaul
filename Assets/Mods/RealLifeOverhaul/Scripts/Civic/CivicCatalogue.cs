@@ -188,6 +188,9 @@ namespace RealLifeOverhaul
 
         public static int DonationCapNow => Prices.At(DonationCap);
 
+        /// <summary>True if one more donation of <paramref name="step"/> keeps a campaign's total within <paramref name="cap"/>.</summary>
+        public static bool DonationFits(int donated, int step, int cap) => donated + step <= cap;
+
         /// <summary>Given to the winner's campaign, for each fast-track building permit (two at most), at the start's prices.</summary>
         public const int FavourPer = 1000;
 

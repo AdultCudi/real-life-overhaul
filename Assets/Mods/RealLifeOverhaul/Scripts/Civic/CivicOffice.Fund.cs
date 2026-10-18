@@ -213,7 +213,7 @@ namespace RealLifeOverhaul
             State.Rallies++;
             State.LastRally = day;
             State.Push += gain.Push;
-            CivicBridges.StandingMoved?.Invoke(0, 3);
+            CivicBridges.Moved(0, 3);
             Post(PostRally, Where());
         }
 
@@ -224,7 +224,7 @@ namespace RealLifeOverhaul
             State.Push += gain;
             if (there)
             {
-                CivicBridges.StandingMoved?.Invoke(0, 8);
+                CivicBridges.Moved(0, 8);
                 Post(PostDebate, Where());
             }
             State.Story(day + 1, there ? (gain >= 0.04f ? "reallife_civic_news_office_debate_good" : gain < 0f ? "reallife_civic_news_office_debate_bad" : "reallife_civic_news_office_debate_even")

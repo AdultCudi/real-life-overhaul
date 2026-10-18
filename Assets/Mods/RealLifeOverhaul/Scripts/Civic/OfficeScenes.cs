@@ -508,11 +508,11 @@ namespace RealLifeOverhaul
             {
                 if (!won)
                 {
-                    CivicBridges.StandingMoved?.Invoke(option == 0 ? 1 : -1, 4);
+                    CivicBridges.Moved(option == 0 ? 1 : -1, 4);
                 }
                 else
                 {
-                    CivicBridges.StandingMoved?.Invoke(0, option == 0 ? 4 : 6);
+                    CivicBridges.Moved(0, option == 0 ? 4 : 6);
                 }
                 Over(true);
             });

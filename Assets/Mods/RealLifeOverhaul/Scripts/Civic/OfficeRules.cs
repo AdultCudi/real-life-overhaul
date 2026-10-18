@@ -70,6 +70,23 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class OfficeRules
     {
+        public const int OwnCampaign = -2;          // a street pick for the player's own council campaign: no slot of the mayoral race
+
+        /// <summary>A mayoral candidate for a poster, a board or a canvasser in the street, by their share of the polls; <paramref name="roll"/> is 0 to 1.</summary>
+        public static int StreetPick(float roll, float[] polls, int count)
+        {
+            float sum = 0f;
+            for (int c = 0; c < count; c++)
+            {
+                sum += polls[c];
+                if (roll < sum)
+                {
+                    return c;
+                }
+            }
+            return count > 1 ? count - 1 : 0;
+        }
+
         public const int NominationsOpen = 14;      // days before election day
         public const int LateFiling = 2;            // ...and still in the first so many days of the campaign
         public const int MeetingEvery = 7;   // days

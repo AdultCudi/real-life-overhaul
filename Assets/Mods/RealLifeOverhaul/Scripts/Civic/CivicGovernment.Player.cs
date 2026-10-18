@@ -19,7 +19,7 @@ namespace RealLifeOverhaul
                 return "reallife_civic_office_own_campaign";
             }
             int step = CivicCatalogue.DonationStepNow;
-            if (State.Donated[candidate] >= CivicCatalogue.DonationCapNow)
+            if (!CivicCatalogue.DonationFits(State.Donated[candidate], step, CivicCatalogue.DonationCapNow))
             {
                 return "reallife_civic_donate_cap";
             }

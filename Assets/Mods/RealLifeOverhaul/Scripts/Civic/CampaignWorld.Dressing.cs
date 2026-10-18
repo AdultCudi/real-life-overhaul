@@ -43,7 +43,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A candidate, more often one who is ahead.
+        // A candidate, more often one who is ahead; in a council race sometimes the player's own (OfficeRules.OwnCampaign).
         private int DrawCandidate()
         {
             GovState state = _government.State;
@@ -58,19 +58,13 @@ namespace RealLifeOverhaul
             }
             if (own > 0f && Random.value < own)
             {
-                return Colour();   // the player's own, in the council race
+                return OfficeRules.OwnCampaign;
             }
-            float roll = Random.value, sum = 0f;
-            for (int c = 0; c < state.CandidateCount; c++)
-            {
-                sum += state.Polls[c];
-                if (roll < sum)
-                {
-                    return c;
-                }
-            }
-            return Mathf.Max(0, state.CandidateCount - 1);
+            return OfficeRules.StreetPick(Random.value, state.Polls, state.CandidateCount);
         }
+
+        // The colour of a pick's posters and boards: a candidate's slot, or the player's own colour.
+        private int Look(int pick) => pick == OfficeRules.OwnCampaign ? Colour() : pick;
 
         private void TryPoster(Vector3 player, bool unseen, float near, float far)
         {
@@ -101,7 +95,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            Transform poster = _props.Stand(PosterIds[DrawCandidate() % PosterIds.Length], at, middle.normal);
+            Transform poster = _props.Stand(PosterIds[Look(DrawCandidate()) % PosterIds.Length], at, middle.normal);
             if (poster != null)
             {
                 _posters.Add(poster);
@@ -128,7 +122,7 @@ namespace RealLifeOverhaul
                     return;
                 }
             }
-            Transform board = _props.Stand(BoardIds[DrawCandidate() % BoardIds.Length], stand, Vector3.Cross(Vector3.up, outward));
+            Transform board = _props.Stand(BoardIds[Look(DrawCandidate()) % BoardIds.Length], stand, Vector3.Cross(Vector3.up, outward));
             if (board != null)
             {
                 _boards.Add(board);

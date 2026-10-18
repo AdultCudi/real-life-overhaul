@@ -218,7 +218,7 @@ namespace RealLifeOverhaul
             State.AttackKind = -1;
             if (answer == OfficeAnswer.Straight && real)
             {
-                CivicBridges.StandingMoved?.Invoke(-1, 0);   // a denial of something true
+                CivicBridges.Moved(-1, 0);   // a denial of something true
             }
             return answer == OfficeAnswer.Straight ? (real ? "reallife_civic_office_answer_denied" : "reallife_civic_office_answer_rebutted")
                 : answer == OfficeAnswer.TurnBack ? "reallife_civic_office_answer_hit_back" : "reallife_civic_office_answer_ignored";

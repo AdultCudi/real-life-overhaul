@@ -81,6 +81,7 @@ namespace RealLifeOverhaul
             _scenes = new OfficeScenes(Office, Government, City);
             _campaign.OwnShare = () => Office.Campaigning && Office.State.Race == OfficeRace.Council ? Mathf.Min(0.5f, 0.15f + Office.State.PostersUp * 0.02f) : 0f;
             _campaign.OwnColour = () => Office.State.Race == OfficeRace.Mayor && Government.State.PlayerSlot >= 0 ? Government.State.PlayerSlot : 3;
+            _campaign.OwnCandidate = () => Office.State.Me;
             _campaign.OwnArrived = (listeners, over) => _scenes.Rally(listeners, over);
             Government.LeversChanged = OnLevers;
             _nextSlow = Time.time + 3f;

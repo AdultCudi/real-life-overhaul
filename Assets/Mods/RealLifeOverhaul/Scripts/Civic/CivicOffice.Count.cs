@@ -67,7 +67,7 @@ namespace RealLifeOverhaul
                 State.Story(day + 1, "reallife_civic_news_office_lost", CivicText.PlayerName(), place);
                 ModState.AddModifier(ModState.MoodDown);
             }
-            CivicBridges.StandingMoved?.Invoke(0, won ? 25 : 8);
+            CivicBridges.Moved(0, won ? 25 : 8);
             if (State.Dirty > 0)
             {
                 State.DirtyDay = Math.Max(State.DirtyDay, day);   // money taken against the law can still come out for a while
@@ -178,7 +178,7 @@ namespace RealLifeOverhaul
                     int dirty = State.Dirty;
                     State.Dirty = 0;
                     State.Fund = Math.Max(0, State.Fund - dirty);
-                    State.Case = CivicBridges.FileCase != null ? CivicBridges.FileCase(0, dirty) : 0;
+                    State.Case = CivicBridges.Summon(0, dirty);
                     Scandal(day, "reallife_civic_news_office_money", 10f, -8, 0.2f);
                     CivicText.Toast(NotificationType.Warning, "reallife_civic_office_money_out", "amount", CivicText.Money(dirty), 16f);
                 }
@@ -195,9 +195,9 @@ namespace RealLifeOverhaul
                 {
                     State.Secrets.RemoveAt(i);
                     PolicyDef policy = CivicCatalogue.At(s.Policy);
-                    if (s.Decisive && CivicBridges.FileCase != null)
+                    if (s.Decisive)
                     {
-                        CivicBridges.FileCase(1, 0);
+                        CivicBridges.Summon(1, 0);
                     }
                     Scandal(day, "reallife_civic_news_office_interest", 8f, -6, 0.1f);
                     CivicText.Toast(NotificationType.Warning, s.Decisive ? "reallife_civic_office_interest_out_case" : "reallife_civic_office_interest_out",
@@ -222,7 +222,7 @@ namespace RealLifeOverhaul
             {
                 State.Approval = Mathf.Max(3f, State.Approval - approval);
             }
-            CivicBridges.StandingMoved?.Invoke(integrity, 15);
+            CivicBridges.Moved(integrity, 15);
             ModState.AddModifier(ModState.MoodDownBig);
             State.Story(day + 1, storyKey, CivicText.PlayerName(), Where());
         }

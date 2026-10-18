@@ -42,7 +42,7 @@ namespace RealLifeOverhaul
         private float _nextPeople;
 
         private bool _canvasser;
-        private int _canvasserFor;
+        private int _canvasserFor;      // a candidate's slot, or OfficeRules.OwnCampaign
         private Vector3 _canvasserAt;
         private Vector3 _stageAt;       // where the things in _stage stand
         private bool _canvasserKitted;
@@ -67,6 +67,7 @@ namespace RealLifeOverhaul
         // The player's own campaign, set by the director.
         public Func<float> OwnShare;                    // the share of posters and boards that are theirs in a council race
         public Func<int> OwnColour;
+        public Func<Candidate> OwnCandidate;            // the player as a candidate, for their own canvasser's leaflet
         public Func<int, Action<bool>, bool> OwnArrived;   // at their rally: the speech is theirs (listeners; what to call after)
 
         private Transform _pollSign;
@@ -96,10 +97,10 @@ namespace RealLifeOverhaul
 
         public int Dressing => _posters.Count + _boards.Count;
 
-        /// <summary>The candidate whose canvasser the player is standing in front of; -1 if none.</summary>
-        public int CanvasserInReach(Vector3 player)
+        /// <summary>True while the player stands in front of a canvasser.</summary>
+        public bool CanvasserInReach(Vector3 player)
         {
-            return _canvasser && _crew.First != null && CivicCity.Flat(_crew.First.Position - player) < CanvasserReach * CanvasserReach ? _canvasserFor : -1;
+            return _canvasser && _crew.First != null && CivicCity.Flat(_crew.First.Position - player) < CanvasserReach * CanvasserReach;
         }
 
         public bool PollingInReach(Vector3 player)
@@ -167,6 +168,19 @@ namespace RealLifeOverhaul
             _nextPeople = 0f;
             _stageTries = 0;
             return true;
+        }
+
+        private Candidate Own()
+        {
+            try
+            {
+                return OwnCandidate != null ? OwnCandidate() : null;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return null;
+            }
         }
 
         private int Colour()
@@ -327,7 +341,7 @@ namespace RealLifeOverhaul
             Vector3 right = Vector3.Cross(Vector3.up, along);
             if (CitySpots.Stand(spot + right * 0.95f - along * 0.2f, 0.4f, out Vector3 beside) || CitySpots.Stand(spot - right * 0.95f - along * 0.2f, 0.4f, out beside))
             {
-                Transform board = _props.Stand(BoardIds[candidate % BoardIds.Length], beside, along);
+                Transform board = _props.Stand(BoardIds[Look(candidate) % BoardIds.Length], beside, along);
                 if (board != null)
                 {
                     _stage.Add(board);
@@ -344,7 +358,12 @@ namespace RealLifeOverhaul
             }
             _crew.Once(0, "leaflet_offer", 2.6f);
             GovState state = _government.State;
-            Candidate candidate = state.Candidates[_canvasserFor];
+            Candidate candidate = _canvasserFor == OfficeRules.OwnCampaign ? Own()
+                : _canvasserFor >= 0 && _canvasserFor < state.CandidateCount ? state.Candidates[_canvasserFor] : null;
+            if (candidate == null)
+            {
+                return;
+            }
             CivicText.Toast(NotificationType.Info, "reallife_civic_leaflet", "name", CivicText.Name(candidate), "party", CivicText.Party(candidate),
                 "slogan", CivicText.T(CivicCatalogue.Slogans[candidate.Slogan]), 12f);
         }

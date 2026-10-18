@@ -103,6 +103,47 @@ namespace RealLifeOverhaul
         /// <summary>A moment of the campaign or the office the player may post about on social media: what (CivicOffice.Post*) and a name. Default: none.</summary>
         public static Action<int, string> CampaignPost;
 
+        /// <summary>Tells Standing what the player did in politics (<see cref="StandingMoved"/>); a fault there is logged.</summary>
+        internal static void Moved(int integrity, int press)
+        {
+            try
+            {
+                StandingMoved?.Invoke(integrity, press);
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
+        }
+
+        /// <summary>Opens a case in court on a summons (<see cref="FileCase"/>): its number, or 0 with no court or after a fault there.</summary>
+        internal static int Summon(int kind, int amount)
+        {
+            try
+            {
+                return FileCase != null ? FileCase(kind, amount) : 0;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return 0;
+            }
+        }
+
+        /// <summary>A raise agreed on top of an employee's wage, an hour (<see cref="Raise"/>): 0 with none, or after a fault there.</summary>
+        internal static float RaiseOf(string employee)
+        {
+            try
+            {
+                return Raise != null ? Raise(employee) : 0f;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return 0f;
+            }
+        }
+
         internal static int Cycle()
         {
             return Ask(Economy, 1, 0, 3);
