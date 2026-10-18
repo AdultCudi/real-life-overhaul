@@ -42,7 +42,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavModel.cs	4
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/People/StreetActor.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	4
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Planner/PlannerModel.cs	3
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialModel.cs	2
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Traffic/ResponseUnit.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Traffic/TrafficEffects.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Transport/CarRoadside.cs	1
@@ -336,9 +335,7 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/LifeStory.cs	3
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/PermadeathRules.cs	8
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Phone/Contacts/ContactPainter.cs	4
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalText.cs	9
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Social/News.cs	6
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialDialogs.cs	15
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialModel.cs	8
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Transport/Taxi/TaxiDirector.cs	18
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/RoommateLinks.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessDirector.cs	1
@@ -562,9 +559,7 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareStore.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareText.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareTextsMap.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/OutingScene.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialCatalogue.cs	9
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialModel.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialScene.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.Talk.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.cs	2

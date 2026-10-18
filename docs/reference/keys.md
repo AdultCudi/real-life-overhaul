@@ -112,13 +112,13 @@ Each feature keeps its state in the save's `modData` under keys that start `real
 | `reallife:seen_events` | `Core/ModState.cs`, `Meta/FeatureList.cs` |
 | `reallife:showroom_bays` | `Economy/Dealer/Floor/ShowroomBays.cs` |
 | `reallife:sick_until` | `Core/ModState.cs`, `Meta/FeatureList.cs` |
-| `reallife:social` | `Meta/FeatureList.cs`, `Social/SocialModel.cs` |
+| `reallife:social` | `Meta/FeatureList.cs`, `Social/SocialState.cs` |
 | `reallife:social_filler` | `Social/News.cs` |
 | `reallife:social_news` | `Social/News.cs` |
-| `reallife:social_offer` | `Social/SocialModel.cs` |
+| `reallife:social_offer` | `Social/SocialState.cs` |
 | `reallife:social_paper` | `Social/News.cs` |
-| `reallife:social_people` | `Social/SocialModel.cs` |
-| `reallife:social_plan` | `Social/SocialModel.cs` |
+| `reallife:social_people` | `Social/SocialState.cs` |
+| `reallife:social_plan` | `Social/SocialState.cs` |
 | `reallife:standing_city` | `Fame/FameStore.cs` |
 | `reallife:standing_file` | `Fame/FameStore.cs` |
 | `reallife:standing_press` | `Fame/FameStore.cs` |
