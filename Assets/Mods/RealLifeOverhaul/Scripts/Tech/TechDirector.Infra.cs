@@ -2,21 +2,12 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The infrastructure part, with the tech sector: data centres in the player's warehouses, the cloud that sells their
-    /// compute, the hyperscaler it can become, and the AI compute the player's AI labs train and run their models on
-    /// (Tech/Infra/InfraRules). Each game day, after the firms' day: every data centre's power, water, connection and
-    /// technicians are read, its outage rolled, its racks let and written down; the cloud sells to the city and to the
-    /// player's own firms, the rival clouds answer, and the AI labs' models get their training and their running compute.
-    /// At the end game's scale (Core/EndScale, its option on) the same day hires each data centre's crews and the cloud's
-    /// operations people towards what they need, charges their wages and the upkeep, and sells the larger compute of the
-    /// racks of the new kind into the larger market; a save that held data centres before is brought to it over four
-    /// game weeks, and what the scale adds is never charged past the player's cash. Cost: nothing per frame; one pass over
-    /// the data centres a game day.
+    /// The infrastructure part: data centres, the cloud and AI compute, one pass a game day. At the end game's scale it also hires
+    /// crews and charges what the scale adds, never past the player's cash.
     /// </summary>
     public sealed partial class TechDirector
     {
@@ -25,8 +16,8 @@ namespace RealLifeOverhaul.Tech
         private readonly List<BuildingRegistration> _warehouses = new List<BuildingRegistration>(8);
         private InfraFile _infra;
         private long _ownHosting;      // what the player's own firms paid their own cloud today, cents
-        private readonly long[] _due = new long[InfraCatalogue.CentresMost * 3];   // each data centre's costs at scale today (the cooling's power, the upkeep, the crews), cents at today's prices
-        private long _opsDue;          // ...and the cloud's operations people's
+        private readonly long[] _due = new long[InfraCatalogue.CentresMost * 3];   // each centre's cooling, upkeep and crews at scale today, cents
+        private long _opsDue;          // the cloud's operations people's wages at scale today, cents
 
         /// <summary>The infrastructure part's file; null while the tech sector is off.</summary>
         public InfraFile Infra => _firmsOn ? _infra : null;
@@ -35,8 +26,7 @@ namespace RealLifeOverhaul.Tech
 
         private void StartInfra()
         {
-            int version;
-            InfraFile file = InfraStore.Load(Save.modData, out version);
+            InfraFile file = InfraStore.Load(Save.modData, out _);
             _infra = file ?? new InfraFile { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = Save.Day };
             ReadInfra();
         }
@@ -49,7 +39,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // Each data centre is tied to its warehouse; one whose warehouse is no longer the player's is gone with its racks.
+        // A data centre whose warehouse is no longer the player's is gone with its racks.
         private void ReadInfra()
         {
             InfraGame.Warehouses(_warehouses);
@@ -76,11 +66,7 @@ namespace RealLifeOverhaul.Tech
 
         internal DataCentre CentreOf(string place) => _infra != null ? _infra.CentreAt(place) : null;
 
-        /// <summary>
-        /// The end game's share for the data centres and the cloud today (Core/EndScale): 0 with its option off; the day it
-        /// began is kept in the file, so a save that already had data centres comes to it over four game weeks, with a
-        /// notice on the first day.
-        /// </summary>
+        /// <summary>The end game's share today, 0 with its option off; an older save comes to it over <see cref="EndScaleRules.PhaseDays"/>.</summary>
         internal int ScaleNow()
         {
             if (_infra == null || Save == null)
@@ -91,13 +77,14 @@ namespace RealLifeOverhaul.Tech
             _infra.ScaleFrom = EndScaleRules.From(Settings.EndScale, before, today, _infra.Centres.Count > 0 || _infra.Cloud.Open);
             if (EndScaleRules.Begins(before, _infra.ScaleFrom, today))
             {
-                Tell2(NotificationType.Info, "reallife_endscale_note_phase", Data("what", TechText.T("reallife_endscale_what_infra"), "days", EndScaleRules.PhaseDays.ToString()), TabInfra, null);
+                TellTech(NotificationType.Info, "reallife_endscale_note_phase", Data("what", TechText.T("reallife_endscale_what_infra"), "days", EndScaleRules.PhaseDays.ToString()),
+                    TabInfra, null);
                 Logger?.Info("Tech: the end game's scale begins to come in for the data centres and the cloud on day " + today + ", over " + EndScaleRules.PhaseDays + " days.");
             }
             return EndScaleRules.Share(Settings.EndScale, _infra.ScaleFrom, today);
         }
 
-        /// <summary>Test (Core/EndScale): the data centres and the cloud start coming to scale today, or are at it at once. False with none.</summary>
+        /// <summary>Test: the data centres and the cloud start coming to scale today, or are at it at once. False with none.</summary>
         internal bool TestScale(bool full)
         {
             if (_infra == null || Save == null || (_infra.Centres.Count == 0 && !_infra.Cloud.Open))
@@ -110,12 +97,7 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        /// <summary>
-        /// What the scale adds to the day, charged once the day's takings are in: first what was owed from before, then
-        /// each data centre's cooling, upkeep and crews, then the cloud's operations people, each as far as the cash goes
-        /// (never below nothing in one step, Core/EndScale). What the cash could not meet is owed to the next day, and the
-        /// crews leave in the share that went unpaid, so that the data centres do less until it is paid.
-        /// </summary>
+        /// <summary>Charges what the scale adds as far as the cash goes; the rest is owed, and crews leave in the share unpaid.</summary>
         private void Settle(int dated)
         {
             long room = VentureGame.Cash, due = _infra.Owed + _opsDue, paid = 0;
@@ -159,13 +141,14 @@ namespace RealLifeOverhaul.Tech
                 _infra.Cloud.Ops = EndScaleRules.Leave(_infra.Cloud.Ops, unpaid);
                 if (!was)
                 {
-                    Tell2(NotificationType.Warning, "reallife_endscale_note_owed", Data("what", TechText.T("reallife_endscale_what_infra"), "owed", TechText.Cents(_infra.Owed)), TabInfra, null);
+                    TellTech(NotificationType.Warning, "reallife_endscale_note_owed", Data("what", TechText.T("reallife_endscale_what_infra"), "owed", TechText.Cents(_infra.Owed)),
+                        TabInfra, null);
                 }
             }
             Array.Clear(_due, 0, _due.Length);
         }
 
-        /// <summary>The share what is bought is priced at: the whole scale while its option is on (Core/EndScale).</summary>
+        /// <summary>The share of the scale what is bought is priced at: all of it while its option is on.</summary>
         internal static int BuyScale => EndScaleRules.Buying(Settings.EndScale);
 
         /// <summary>The cloud is selling to the player's own firms today: open, licensed and with a data centre up.</summary>
@@ -184,8 +167,6 @@ namespace RealLifeOverhaul.Tech
             }
             return false;
         }
-
-        // ---------------------------------------------------------------- the day
 
         private void InfraDay(int day)
         {
@@ -215,9 +196,10 @@ namespace RealLifeOverhaul.Tech
                     d.Outages++;
                     outages++;
                     r.Outage = true;
-                    Tell2(NotificationType.Warning, d.Power && d.Net ? "reallife_infra_note_outage" : "reallife_infra_note_outage_supply", Data("name", d.Name), TabInfra, TechApp.CentreRow + d.Place);
+                    TellTech(NotificationType.Warning, d.Power && d.Net ? "reallife_infra_note_outage" : "reallife_infra_note_outage_supply", Data("name", d.Name),
+                        TabInfra, TechApp.CentreRow + d.Place);
                 }
-                // racks let: towards what the city wants, a rack a day; some leave
+                // racks are let towards what the city wants, a rack a day; some leave
                 int free = Math.Max(0, d.Racks - d.Colo);
                 if (!r.Outage && let < wanted && free > d.Racks / 2)
                 {
@@ -244,8 +226,7 @@ namespace RealLifeOverhaul.Tech
                 FirmsGame.Takings(r.Takings, reg, d.Name, dated);
                 FirmsGame.Cost(r.Power, InfraGame.PowerKey, reg, d.Name, dated);
                 FirmsGame.Cost(r.Water, InfraGame.WaterKey, reg, d.Name, dated);
-                // what the scale adds (the cooling's power, the upkeep, the crews): charged once the day's takings are in (Settle)
-                if (i < InfraCatalogue.CentresMost)
+                if (i < InfraCatalogue.CentresMost)   // charged by Settle once the day's takings are in
                 {
                     _due[i * 3] = Math.Max(0, Utility(0, InfraRules.Power(d, share)) - r.Power);
                     _due[i * 3 + 1] = InfraRules.Upkeep(d, share) * level / 1000;
@@ -277,13 +258,13 @@ namespace RealLifeOverhaul.Tech
             Cloud c = _infra.Cloud;
             int level = Prices.Level;
             bool open = c.Open && day <= c.LicenceUntil;
-            // at the scale the cloud's operations people: short of them it sells less of what it has
+            // short of operations people at the scale, the cloud sells less of what it has
             int ops = open ? InfraRules.OpsNeed((long)capacity + gpu, share) : 0;
             c.Ops = EndScaleRules.Hire(c.Ops, ops, InfraCatalogue.CrewPace);
             int working = EndScaleRules.Working(EndScaleRules.Cover(c.Ops, ops));
             capacity = (int)((long)capacity * working / 1000);
             gpu = (int)((long)gpu * working / 1000);
-            // the AI labs: training and running their models, on the cloud's accelerators while it has them, else rented
+            // the AI labs train and run their models on the cloud's accelerators while it has them, else rented ones
             long rented = 0;
             for (int i = 0; _firmsOn && i < _firmsFile.Products.Count; i++)
             {
@@ -310,7 +291,7 @@ namespace RealLifeOverhaul.Tech
                 c.Sold = c.GpuSold = c.Own = 0;
                 if (c.Open && day == c.LicenceUntil + 1)
                 {
-                    Tell2(NotificationType.Warning, "reallife_infra_note_licence", Data("name", c.Name), TabInfra, TechApp.CloudRow);
+                    TellTech(NotificationType.Warning, "reallife_infra_note_licence", Data("name", c.Name), TabInfra, TechApp.CloudRow);
                 }
                 return;
             }
@@ -336,7 +317,7 @@ namespace RealLifeOverhaul.Tech
             {
                 TechBridges.Stock?.Invoke(107, -30);
                 Story("reallife_tech_news_price_war", "name", c.Name);
-                Tell2(NotificationType.Info, "reallife_infra_note_price_war", Data("name", c.Name, "price", TechText.Mille(c.RivalPrice)), TabInfra, TechApp.CloudRow);
+                TellTech(NotificationType.Info, "reallife_infra_note_price_war", Data("name", c.Name, "price", TechText.Mille(c.RivalPrice)), TabInfra, TechApp.CloudRow);
             }
             if (!c.Hyper && HyperNeeds() == 0)
             {
@@ -345,7 +326,7 @@ namespace RealLifeOverhaul.Tech
                 TechBridges.Stock?.Invoke(107, -60);
                 TechBridges.Stock?.Invoke(106, -30);
                 TechBridges.Stock?.Invoke(112, -30);
-                Tell2(NotificationType.Success, "reallife_infra_note_hyper", Data("name", c.Name), TabInfra, TechApp.CloudRow);
+                TellTech(NotificationType.Success, "reallife_infra_note_hyper", Data("name", c.Name), TabInfra, TechApp.CloudRow);
             }
         }
 
@@ -395,8 +376,6 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        // ---------------------------------------------------------------- what the player does
-
         /// <summary>A warehouse fitted out as a data centre at a tier, paid now. False if the cash does not cover it.</summary>
         internal bool FitOut(string place, int tier)
         {
@@ -412,7 +391,10 @@ namespace RealLifeOverhaul.Tech
                 Notifications.ShowInsufficientMoney();
                 return false;
             }
-            _infra.Centres.Add(new DataCentre { Place = place, District = InfraGame.District(reg), Tier = TalentCatalogue.Clamp(tier, 0, InfraCatalogue.Tiers - 1), Sqm = sqm, Fitted = Save.Day });
+            _infra.Centres.Add(new DataCentre
+            {
+                Place = place, District = InfraGame.District(reg), Tier = TalentCatalogue.Clamp(tier, 0, InfraCatalogue.Tiers - 1), Sqm = sqm, Fitted = Save.Day
+            });
             ReadInfra();
             ChangedTech();
             return true;
@@ -458,10 +440,7 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        /// <summary>
-        /// Racks of the old kind replaced by racks of the new at the scale, paid now at the new price: the servers first,
-        /// then the AI racks. False with none of the old kind left, the scale not on, or the cash short.
-        /// </summary>
+        /// <summary>Racks of the old kind replaced at the new price, servers first. False with none left, no scale or too little cash.</summary>
         internal bool ReplaceRacks(string place)
         {
             DataCentre d = CentreOf(place);
@@ -544,9 +523,8 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- the way up (the Firms tab)
-
-        partial void PathInfra(InfoBox box)
+        /// <summary>The steps of the way up after the firms' own (a data centre, a cloud, a hyperscaler, an AI lab), for the Firms tab.</summary>
+        internal void PathMore(InfoBox box)
         {
             if (_infra == null)
             {
@@ -564,20 +542,30 @@ namespace RealLifeOverhaul.Tech
             TechApp.Step(box, lab, "reallife_tech_path_ai", null);
         }
 
-        // What a step still needs, in words.
+        private static readonly string[] CloudNeedKeys =
+        {
+            "reallife_infra_need_racks", "reallife_infra_need_tier", "reallife_infra_need_engineers", "reallife_infra_need_cash", "reallife_infra_need_net"
+        };
+
+        private static readonly string[] HyperNeedKeys =
+        {
+            "reallife_infra_need_regions", "reallife_infra_need_hyper_racks", "reallife_infra_need_chiefs", "reallife_infra_need_hyper_cash"
+        };
+
+        /// <summary>What a step still needs, in words; <paramref name="bits"/> from <see cref="CloudNeeds"/> or <see cref="HyperNeeds"/>.</summary>
         internal string Needs(int bits, bool cloud)
         {
             var words = new System.Text.StringBuilder(96);
             int share = BuyScale;
-            string[] keys = cloud
-                ? new[] { "reallife_infra_need_racks", "reallife_infra_need_tier", "reallife_infra_need_engineers", "reallife_infra_need_cash", "reallife_infra_need_net" }
-                : new[] { "reallife_infra_need_regions", "reallife_infra_need_hyper_racks", "reallife_infra_need_chiefs", "reallife_infra_need_hyper_cash" };
+            string[] keys = cloud ? CloudNeedKeys : HyperNeedKeys;
             for (int i = 0; i < keys.Length; i++)
             {
                 if ((bits & (1 << i)) != 0)
                 {
-                    words.Append(words.Length > 0 ? ", " : string.Empty).Append(TechText.Fill(keys[i], "racks", (cloud ? InfraRules.CloudRacksLeast(share) : InfraRules.HyperRacks(share)).ToString(),
-                        "engineers", InfraCatalogue.CloudEngineersLeast.ToString(), "cash", TechText.Cents(Level(cloud ? InfraRules.CloudCashLeast(share) : InfraRules.HyperCash(share))),
+                    words.Append(words.Length > 0 ? ", " : string.Empty).Append(TechText.Fill(keys[i],
+                        "racks", (cloud ? InfraRules.CloudRacksLeast(share) : InfraRules.HyperRacks(share)).ToString(),
+                        "engineers", InfraCatalogue.CloudEngineersLeast.ToString(),
+                        "cash", TechText.Cents(Level(cloud ? InfraRules.CloudCashLeast(share) : InfraRules.HyperCash(share))),
                         "regions", InfraCatalogue.HyperRegions.ToString(), "mbps", InfraCatalogue.NetNeeded.ToString()));
                 }
             }

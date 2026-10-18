@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
-using RealLifeOverhaul.GameUi;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -11,16 +10,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The tech sector and the professions: the player's professional staff (roles, levels, skills, reviews; Tech/People).
-    /// Each part has its own option and its own line of the save, and its own partial file of this class.
-    ///
-    /// This class keeps it going and nothing more. It has no Update. A one-second timer on the real clock waits for the
-    /// save, starts and stops each part with its option, puts the apps on the phone and keeps the handlers of the game's
-    /// hour, day and save in place (the game empties its events on every load). The work is done on the game's hour (a
-    /// count of who worked it: one pass over the player's professionals) and on its day (after the game's daily run:
-    /// everything else). With "Developer diagnostics" on each day's pass says what it did and how long it took.
-    ///
-    /// A fault switches the tech sector off for the session with one line; the game's hour and day are left alone.
+    /// The tech sector and the professions, a partial file and an option for each part. No frame cost: a one-second timer
+    /// starts and stops the parts; the work runs on the game's hour and day. A fault switches it off for the session.
     /// </summary>
     public sealed partial class TechDirector : MonoBehaviour
     {
@@ -32,7 +23,7 @@ namespace RealLifeOverhaul.Tech
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
         private bool _broken;
         private TechNews _news;
-        private GameInstance _newsOf;   // the save the stories were read from
+        private GameInstance _newsOf;   // the save _news was read from
 
         private static GameInstance Save => SaveGameManager.Current;
         private static bool Verbose => Meta.Dev.Verbose;
@@ -57,10 +48,7 @@ namespace RealLifeOverhaul.Tech
             GlobalEvents.onNewDay -= _onDay;
             try
             {
-                StopVenture(false);
-                StopFirms(false, true);
-                StopHiring(false);
-                StopPeople(false, true);
+                StopParts(false, true);
                 _interview?.Dispose();
                 _pitch?.Dispose();
             }
@@ -86,7 +74,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 while (StartLine.Holds(StartSeats.Tech))
                 {
-                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                    yield return null;   // the first load after a save waits for a frame of its own
                 }
                 try
                 {
@@ -102,18 +90,17 @@ namespace RealLifeOverhaul.Tech
         private static readonly int HotTick = HotSpots.Slot("Tech: TechDirector.Tick");
         private void Slow()
         {
-            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotTick);
             if (Save == null || LoadScene.isLoading || !ModState.Loaded || Meta.SaveTools.Dormant)
             {
                 return;
             }
             if (!ReferenceEquals(_newsOf, Save))
             {
-                string line = null;
-                _news = TechNews.Read(Save.modData != null && Save.modData.TryGetValue(TechNews.Key, out line) ? line : null);
+                _news = TechNews.Read(Save.modData != null && Save.modData.TryGetValue(TechNews.Key, out string line) ? line : null);
                 _newsOf = Save;
             }
-            StartCards.Keep();   // (BizMan's start screen: the competitors in the city on the mod's own cards; a null test once it stands)
+            StartCards.Keep();   // BizMan's start screen; a null test once it stands
             bool people = Settings.TechPeople;
             if (people && !_peopleOn)
             {
@@ -168,8 +155,6 @@ namespace RealLifeOverhaul.Tech
                 InstallTech();
             }
         }
-
-        // ---------------------------------------------------------------- the game's hour, day and save
 
         private static readonly int HotOnHour = HotSpots.Slot("Tech: TechDirector.OnHour");
         private void OnHour()
@@ -235,7 +220,7 @@ namespace RealLifeOverhaul.Tech
         private static readonly int HotSave = HotSpots.Slot("Tech: TechDirector.OnSave");
         private void OnSave()
         {
-            using var hotSpot = HotSpots.Time(HotSave);   // every part's line written (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSave);
             try
             {
                 if (Save == null)
@@ -278,8 +263,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- the morning paper
-
         /// <summary>A story for tomorrow's paper (the City Ledger prints what happened the day before).</summary>
         internal void Story(string key, string aName, string a, string bName = "", string b = "")
         {
@@ -298,18 +281,13 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // ---------------------------------------------------------------- faults and the player
-
         private void Fault(string where, Exception e)
         {
             _broken = true;
             Logger?.Error(e);
             try
             {
-                StopVenture(false);
-                StopFirms(false, false);
-                StopHiring(false);
-                StopPeople(false, false);
+                StopParts(false, false);
             }
             catch (Exception second)
             {
@@ -324,7 +302,7 @@ namespace RealLifeOverhaul.Tech
             Notifications.Show(type, key, data, 10f, null, Guard.Wrap(() => OpenRoles(tab, pick)), true, false);
         }
 
-        /// <summary>Something changed: the open apps are written again.</summary>
+        /// <summary>The open apps are written again.</summary>
         internal void Changed()
         {
             _rolesView?.Changed();
@@ -332,17 +310,21 @@ namespace RealLifeOverhaul.Tech
             ChangedTech();
         }
 
-        // ---------------------------------------------------------------- for the save tools
+        /// <summary>Stops every part, each before the one it needs; <paramref name="keep"/> saves its state first.</summary>
+        private void StopParts(bool keep, bool unloading)
+        {
+            StopVenture(keep);
+            StopFirms(keep, unloading);
+            StopHiring(keep);
+            StopPeople(keep, unloading);
+        }
 
-        /// <summary>For the save tools: every part stops (its state written to the save first); the timer starts each again if its option is on.</summary>
+        /// <summary>For the save tools: every part stops, its state saved first; the timer starts each again if its option is on.</summary>
         public void StopAll()
         {
             try
             {
-                StopVenture(true);
-                StopFirms(true, false);
-                StopHiring(true);
-                StopPeople(true, false);
+                StopParts(true, false);
             }
             catch (Exception e)
             {
@@ -355,10 +337,7 @@ namespace RealLifeOverhaul.Tech
         {
             try
             {
-                StopVenture(false);
-                StopFirms(false, false);
-                StopHiring(false);
-                StopPeople(false, false);
+                StopParts(false, false);
             }
             catch (Exception e)
             {
