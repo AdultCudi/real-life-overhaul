@@ -14,22 +14,20 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Where jobs happen: door fronts picked from the city's own buildings, and the ground
-    /// beside the player's car where a passenger gets in or out. Every answer is a point on the
-    /// navigation mesh that has been tested for vehicles, or "no". Asked when a job needs a new
-    /// place (a fare, a round), never on a timer.
+    /// Where jobs happen: door fronts of the city's own buildings, and the ground beside the player's car where a passenger
+    /// gets in or out. Every answer is a point on the navigation mesh tested for vehicles, or none. Asked when a job needs
+    /// a new place, never on a timer.
     /// </summary>
     public static class JobSpots
     {
         private const int Picks = 48;               // random buildings looked at before giving up
-        private const float PersonRadius = 0.35f;
+        private const float PersonRadius = 0.35f;   // metres
 
         private static readonly Collider[] Touching = new Collider[8];
 
         /// <summary>
-        /// A random building's door front between two distances from a point. With a lane
-        /// distance given, only doors with a traffic lane that near (a car can pull up by them).
-        /// False if none was found: the caller tries again later or says so.
+        /// A random building's door front between two distances from a point; with <paramref name="laneWithin"/>, only doors
+        /// with a traffic lane that near. False if none was found.
         /// </summary>
         /// <param name="only">Buildings that will do (a shop that is open, say), or null for any. Pass a delegate kept in a field, not a new lambda.</param>
         public static bool RandomDoor(Vector3 around, float minDistance, float maxDistance, CityBuildingController not, float laneWithin, out DoorSpot spot,
@@ -82,10 +80,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// Where someone stands in front of a building's door: the pavement nearest the door,
-        /// a step out from the wall, at street level and not inside a parked vehicle.
-        /// </summary>
+        /// <summary>Where someone stands in front of a building's door: the pavement nearest it, a step out from the wall, clear of parked vehicles.</summary>
         public static bool Front(CityBuildingController building, out Vector3 front)
         {
             front = default;
@@ -120,11 +115,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The player's car as a box on the ground: its middle, the way it points, half its
-        /// length and width, from its own collider. Sensible defaults if the collider says
-        /// nothing useful.
-        /// </summary>
+        /// <summary>The player's car as a box on the ground, from its own collider: middle, heading, half length and half width.</summary>
         public static void CarFrame(VehicleController car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth)
         {
             Transform body = car.transform;
@@ -146,7 +137,7 @@ namespace RealLifeOverhaul
             }
             else if (car.vehicleCollider != null)
             {
-                // Any other shape: its box in the world is right while the car stands square to the axes, and near enough otherwise for a door.
+                // Any other shape: its world box is right while the car is square to the axes, and near enough for a door otherwise.
                 Bounds bounds = car.vehicleCollider.bounds;
                 centre = bounds.center;
                 float across = Mathf.Min(bounds.size.x, bounds.size.z);
@@ -158,10 +149,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The ground beside a rear door of the player's car, on the side nearer a point (the
-        /// kerb the passenger is on, the door they are going to), or on the other side if that
-        /// one is blocked. On the navigation mesh, at street level, with room for a person
-        /// between the car and whatever stands next to it. False if neither side has room.
+        /// The ground beside a rear door of the player's car on the side nearer a point, else the other side, with room for a
+        /// person between the car and whatever stands by it. False if neither side has room.
         /// </summary>
         public static bool BesideCar(VehicleController car, Vector3 towards, out Vector3 spot)
         {
@@ -182,19 +171,17 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        private const float SeatOut = 0.45f;     // of the car's half width: where the middle of a rear seat is taken to be (the game's cars say nothing of their seats)
-        private const float DoorStand = 0.75f;   // metres from the middle of the seat to the feet: what job_car_enter and job_car_exit are made to (CityAssets/README.md)
+        private const float SeatOut = 0.45f;     // of the car's half width: the middle of a rear seat (the game's cars say nothing of seats)
+        private const float DoorStand = 0.75f;   // metres from the middle of the seat to the feet, as job_car_enter and job_car_exit are made
         private const float DoorClear = 0.2f;    // ...and never nearer the car's side than this
 
         /// <summary>
-        /// Where somebody stands to get into (or comes out of) a rear door in the clips made for it, on the side
-        /// of the car a point beside it is on: on the line square to the car through the seat, the feet 0.75 m out
-        /// from the middle of the seat, facing the car. The seat is an estimate (the game's vehicles carry no seat
-        /// or door positions): as far back as the rear door <see cref="BesideCar"/> uses, 0.45 of the half width out.
-        /// Not tested for room: use it only on the side BesideCar found clear, which is the same ground a step nearer.
+        /// Where somebody stands to get in or out of a rear door in the clips made for it, on the side <paramref name="beside"/>
+        /// is on: square to the car through the estimated seat, facing it. Not tested for room: only for the side
+        /// <see cref="BesideCar"/> found clear.
         /// </summary>
         /// <param name="inwards">The way they face: square to the car, towards it.</param>
-        /// <param name="rightSide">True for a door on the car's right-hand side (job_car_enter / job_car_exit), false for its left (the _l clips).</param>
+        /// <param name="rightSide">True for a door on the car's right (job_car_enter, job_car_exit), false for its left (the _l clips).</param>
         public static void AtDoor(VehicleController car, Vector3 beside, out Vector3 stand, out Vector3 inwards, out bool rightSide)
         {
             CarFrame(car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth);

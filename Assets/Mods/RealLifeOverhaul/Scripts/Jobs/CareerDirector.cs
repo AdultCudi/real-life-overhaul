@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using BAModAPI;
-using Entities;
 using Helpers;
 using RealLifeOverhaul.GameUi;
-using UI.Guiders;
 using UI.Notification;
 using Vehicles.VehicleTypes;
 using UnityEngine;
@@ -41,7 +39,6 @@ namespace RealLifeOverhaul
 
         private int _lastHour = -1;
         private bool _dismissAfter;
-        private string[] _prompts;
         private int _line = -1;
 
         public CareerDirector(JobDirector director, IModLogger logger)
@@ -60,9 +57,6 @@ namespace RealLifeOverhaul
 
         /// <summary>The employer at whose depot the player stands (by its board or its boss), or -1.</summary>
         public int Near { get; private set; } = -1;
-
-        /// <summary>The key prompt at a depot: "speak to ...". Null when not at one.</summary>
-        public string Prompt => Near >= 0 && _prompts != null ? _prompts[Near] : null;
 
         public void Dispose()
         {
@@ -206,11 +200,9 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            _prompts = new string[all.Length];
             _text.Length = 0;
             for (int e = 0; e < all.Length; e++)
             {
-                _prompts[e] = JobText.T("reallife_career_prompt_boss", "boss", JobText.T(all[e].BossKey), "employer", JobText.T(all[e].NameKey));
                 _text.Append(all[e].Id).Append(_depot[e] >= 0 ? " at " + boards.Address(_depot[e]) + " (" + boards.Kind(_depot[e]) + ")" : " has no office").Append("; ");
             }
             _logger?.Info("Careers: " + _text);

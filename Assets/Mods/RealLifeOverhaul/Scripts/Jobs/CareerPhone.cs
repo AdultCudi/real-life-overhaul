@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using BAModAPI;
 using Dialogs;
 using Entities;
-using Extensions;
 using Localizor;
 using UI.Smartphone.Apps.Contacts;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {

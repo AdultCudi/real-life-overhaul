@@ -1,30 +1,25 @@
-using System;
 using System.Globalization;
 using System.Text;
 
 namespace RealLifeOverhaul
 {
-    // Game-free: nothing in this file touches the game or the engine, so the round trip and the sums can be checked
-    // on their own (RealLifeOverhaul.Build/CatalogueCheck compiles it and compares it with the live pay rules).
-
     /// <summary>
-    /// A shift that was being worked when the game was saved: which job, what it had been paid, and what it was owed
-    /// at that moment for work done and not yet paid (worked out by the job's own pay rule for a shift that ends
-    /// early through nobody's fault). For an employer's shift also what the basic wage is counted from.
+    /// A shift being worked when the game was saved: the job, what it had been paid, and what it was owed then by the job's
+    /// own rule for ending early through nobody's fault; for a rota shift, what the basic wage counts from.
     /// </summary>
     public sealed class SavedShift
     {
         public string JobId;
         public int Day;                 // the game day of the save
-        public float Minutes;           // game time of the save, total minutes
-        public PaySlip Paid;            // everything the shift had been paid before the save (it is in the save's money already)
+        public float Minutes;           // game minutes at the save
+        public PaySlip Paid;            // paid before the save: already in the save's money
         public PaySlip Owed;            // done by hand or by the clock, with tips and bonuses earned, and not paid yet
 
         public bool Rota;               // an employer's shift
         public string Employer;         // its id
-        public float Hourly;            // the basic wage an hour as it was being paid (raises, the pay option and the owner's factor included)
+        public float Hourly;            // the basic wage an hour as paid: raises, pay option and owner's factor included
         public bool Late;               // clocked on late: an hour is docked
-        public float StartMinutes;      // game time at clock-on
+        public float StartMinutes;      // game minutes at clock-on
     }
 
     /// <summary>What a saved shift comes to when it is settled.</summary>
@@ -46,16 +41,11 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A job in progress across a save. The game can be saved at any moment of a shift, and a shift cannot be taken up
-    /// again where it was: its people, its props and its place are found on the street when it starts. So a save made
-    /// during a shift carries one line (<see cref="Key"/>) saying what the shift was owed, and a load settles it at
-    /// once as a shift that ended early through nobody's fault:
-    ///   - what was done and not paid is paid by the job's own rule for stopping early (no bonus for a whole shift);
-    ///   - an employer's basic wage is paid for the hours clocked up to the save, by the rule a shift ends by;
-    ///   - the units count towards the level and the day's amount, so the day's work cannot be had twice;
-    ///   - no strike, no complaint and no mark; and no strike is taken off either: it is not a good shift, only a paid one.
-    /// What had been paid before the save is in the save's money and is never paid again: only <see cref="SavedShift.Owed"/> is.
-    /// The line is written on every save (empty when no shift is on) and emptied when it has been settled.
+    /// A job in progress across a save; game-free, so CatalogueCheck checks the round trip and the sums. A shift cannot be
+    /// taken up again where it was, so a save carries one line (<see cref="Key"/>) of what it was owed and a load settles it
+    /// at once as ended early through nobody's fault: the work owed by the job's own rule, a rota shift's basic wage for the
+    /// hours clocked, the units towards the level and the day; no strike, complaint or mark, and none taken off. Only
+    /// <see cref="SavedShift.Owed"/> is paid. The line is written on every save, empty with no shift on.
     /// </summary>
     public static class JobSave
     {
@@ -80,7 +70,7 @@ namespace RealLifeOverhaul
             return text.ToString();
         }
 
-        /// <summary>Reads a line back. False, with null, for an empty line or one that does not add up: nothing is then settled.</summary>
+        /// <summary>Reads a line back. False, with null, for an empty line or one that does not add up.</summary>
         public static bool Read(string text, out SavedShift shift)
         {
             shift = null;
@@ -114,9 +104,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// What a saved shift is settled at. The work is the owed slip's own total (never below zero); the wage is the hours
-        /// from clock-on to the save by <see cref="CareerCatalogue.PaidHours"/>, the rule a shift ends by, and only for a
-        /// shift on which some work was done.
+        /// What a saved shift is settled at: the owed slip's total, and for a rota shift with work done the wage for the hours
+        /// from clock-on to the save by <see cref="CareerCatalogue.PaidHours"/>.
         /// </summary>
         public static ShiftSettlement Settle(SavedShift shift)
         {

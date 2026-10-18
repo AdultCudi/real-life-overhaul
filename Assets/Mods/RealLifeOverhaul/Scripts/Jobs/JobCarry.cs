@@ -6,11 +6,9 @@ using Helpers;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A box in the player's arms, carried with the game's own two-handed carry: the sealed
-    /// cardboard box its van job delivers, which cannot be opened, shelved or sold. The game
-    /// animates the carry, stows the box if the player gets into a car, and clears sealed boxes
-    /// away with its own call; nothing here draws or poses anything. One per job that carries;
-    /// <see cref="Take"/> is safe in any state and is what a job calls on every way out.
+    /// A box in the player's arms with the game's own two-handed carry: the sealed box its van job delivers, which cannot be
+    /// opened, shelved or sold. The game animates the carry, stows the box in a car the player gets into and clears sealed
+    /// boxes with its own call. <see cref="Take"/> is safe in any state, for every way out.
     /// </summary>
     public sealed class JobCarry
     {
@@ -24,10 +22,7 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        /// <summary>True while the box given here is still the thing in the player's hands.</summary>
-        public bool Holding => _box != null && PlayerHelper.ItemInstanceInHands == _box;
-
-        /// <summary>True if a box was given and has left the player's hands by some other way than <see cref="Take"/> (the game stowed it).</summary>
+        /// <summary>True if a box was given and has left the player's hands other than by <see cref="Take"/> (the game stowed it).</summary>
         public bool Lost => _box != null && PlayerHelper.ItemInstanceInHands != _box;
 
         /// <summary>Puts a box in the player's empty hands. False if their hands are full or the game refuses.</summary>
@@ -40,7 +35,7 @@ namespace RealLifeOverhaul
             try
             {
                 ItemInstance box = ItemHelper.InitializeItemInHandsWithCargo(new CargoInstance(SealedBox, 1, 0f));
-                _box = box;   // known before it is in the hands, so it is taken back even if putting it there faults half way
+                _box = box;   // known before it is in the hands, so it is taken back even if putting it there faults
                 PlayerHelper.ItemInstanceInHands = box;
                 return true;
             }
@@ -71,10 +66,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A box the game stowed in one of the player's vehicles is taken out again, with the game's own
-        /// clean-up for sealed boxes. Never while one of the game's own deliveries is on: those boxes are its.
-        /// </summary>
+        /// <summary>A box the game stowed in a vehicle is taken out with the game's clean-up for sealed boxes; never during a delivery of the game's own.</summary>
         public void ClearStowed()
         {
             _box = null;

@@ -4,14 +4,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A job's use of the shift card (<see cref="ShiftCard"/>, the copy of the game's job panel at the top right), laid out
-    /// as the drinks cart lays it out: the title and the employer (or "Gig Line") are written once; line 1 is the objective
-    /// in words; line 2 the units done of the shift's total and, after a comma, what can end the shift early; line 3
-    /// what has been earned and the tips; line 4 the time on shift and about how long is left.
-    ///
-    /// Every line is made only when one of its figures changes: each method compares the numbers it is given with the
-    /// ones it wrote last and builds nothing when they are the same, so the job may call them on every tick. One of these
-    /// per shift, made in the job's OnBegin; if the game's panel could not be copied every call does nothing.
+    /// A job's lines on the shift card (<see cref="ShiftCard"/>): the title and employer once, then the objective, the units
+    /// done and what can end the shift early, the earnings, and the time on shift and left. Each line is rebuilt only when
+    /// its figures change, so a job may call every tick. Without a card every call does nothing.
     /// </summary>
     public sealed class ShiftFigures
     {
@@ -27,7 +22,7 @@ namespace RealLifeOverhaul
         private int _money = int.MinValue;
         private int _time = int.MinValue;
 
-        /// <param name="doneKey">The locale key of line 2's first part, with {done} and {count} in it ("Flyers taken {done} of {count}").</param>
+        /// <param name="doneKey">The locale key of line 2's first part, with {done} and {count}.</param>
         public ShiftFigures(JobContext ctx, JobDef def, string doneKey)
         {
             _card = ctx.Card;
@@ -39,13 +34,13 @@ namespace RealLifeOverhaul
                 return;
             }
             _card.Title(JobText.T(ctx.Shift != null ? ctx.Shift.Rank.TitleKey : def.NameKey));
-            string offer = GigWords.List(ctx.Offer);   // the client, the day, the street and the weather, said once
+            string offer = GigWords.List(ctx.Offer);   // the client, the day, the street and the weather, once
             _card.Line(0, ctx.Shift != null
                 ? JobText.T("reallife_job_card_employer", "employer", JobText.T(ctx.Shift.Employer.NameKey), "time", CareerClock.Span(CareerState.RotaHour))
                 : offer != null ? JobText.T("reallife_job_card_gig_offer", "offer", offer) : JobText.T("reallife_job_card_gig"), _white);
             for (int line = 1; line < ShiftCard.Lines; line++)
             {
-                _card.Line(line, string.Empty, _white);   // what the last shift left on the shared card
+                _card.Line(line, string.Empty, _white);   // what the last shift left on the card
             }
         }
 
@@ -56,12 +51,6 @@ namespace RealLifeOverhaul
         public void Objective(string words)
         {
             _card?.Line(1, words, _white);
-        }
-
-        /// <summary>Line 1 in a colour (yellow for something to put right).</summary>
-        public void Objective(string words, Color32 colour)
-        {
-            _card?.Line(1, words, colour);
         }
 
         /// <summary>Line 2, first part: the units done of the shift's total.</summary>
@@ -77,7 +66,7 @@ namespace RealLifeOverhaul
             Compose();
         }
 
-        /// <summary>Line 2, second part: what can end the shift early, as final words (null for nothing). The caller makes the words only when they change.</summary>
+        /// <summary>Line 2, second part: what can end the shift early (null for nothing); the caller builds the words only on a change.</summary>
         public void Limit(string words, Color32 colour)
         {
             if (_card == null)
@@ -112,10 +101,7 @@ namespace RealLifeOverhaul
                 : JobText.T("reallife_job_card_earned", "earned", JobText.Money(earned)), _white);
         }
 
-        /// <summary>
-        /// Line 4: the time on shift in steps of five game minutes, and about how long is left at the clock's pace
-        /// (<paramref name="leftMinutes"/>, or negative for a shift whose length is not known).
-        /// </summary>
+        /// <summary>Line 4: the time on shift in steps of five game minutes, and <paramref name="leftMinutes"/> left (negative: not known).</summary>
         public void Time(int leftMinutes)
         {
             if (_card == null)
@@ -134,7 +120,7 @@ namespace RealLifeOverhaul
                 : JobText.T("reallife_job_card_time", "on", Duration(on), "left", Duration(leftMinutes)), _white);
         }
 
-        /// <summary>"1 h 20 min", from the same text the drinks cart's card uses.</summary>
+        /// <summary>"1 h 20 min".</summary>
         public static string Duration(int minutes)
         {
             return JobText.T("reallife_job_duration", "hours", (minutes / 60).ToString(), "minutes", (minutes % 60).ToString());

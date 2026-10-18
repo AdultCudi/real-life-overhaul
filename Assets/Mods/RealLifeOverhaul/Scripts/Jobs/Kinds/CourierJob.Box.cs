@@ -1,11 +1,8 @@
 using System;
 using BigAmbitions.Items;
-using Characters.EmojiSystem;
 using Helpers;
-using RealLifeOverhaul.GameUi;
 using UnityEngine;
 using Vehicles.DeliveryDriverJob;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {

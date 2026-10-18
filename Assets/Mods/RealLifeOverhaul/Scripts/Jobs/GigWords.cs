@@ -7,9 +7,8 @@ using RealLifeOverhaul.Events;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What a gig's offer (<see cref="GigOffers"/>) says in words, for the Gig Line and the shift's panel: one short list
-    /// ("a generous client, a busy day, a quiet street, rain pay"), so that nothing the dice decided is hidden. Built when a
-    /// job is asked about or started, never per frame.
+    /// A gig's offer (<see cref="GigOffers"/>) in words for the Gig Line and the shift's panel, so nothing the dice decided
+    /// is hidden: "a generous client, a busy day, a quiet street, rain pay". Built when a job is asked about or started.
     /// </summary>
     public static class GigWords
     {

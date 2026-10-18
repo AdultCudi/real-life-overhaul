@@ -1,10 +1,8 @@
 using System.Globalization;
-using BigAmbitions.Characters;
 using Characters.EmojiSystem;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {

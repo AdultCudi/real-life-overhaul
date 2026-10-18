@@ -1,14 +1,11 @@
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Characters.EmojiSystem;
 using Helpers;
 using RealLifeOverhaul.GameUi;
-using Streets.Pedestrians;
 using UI.Elements;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
@@ -137,13 +134,8 @@ namespace RealLifeOverhaul
             if (time != _cardTime)
             {
                 _cardTime = time;
-                card.Line(4, JobText.T("reallife_job_card_time", "on", Duration(on), "left", Duration(left)), WorldPanel.White());
+                card.Line(4, JobText.T("reallife_job_card_time", "on", ShiftFigures.Duration(on), "left", ShiftFigures.Duration(left)), WorldPanel.White());
             }
-        }
-
-        private static string Duration(int minutes)
-        {
-            return JobText.T("reallife_job_duration", "hours", (minutes / 60).ToString(), "minutes", (minutes % 60).ToString());
         }
     }
 }

@@ -6,10 +6,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public interface ICareerAcquaintances
     {
-        /// <summary>
-        /// The player worked a shift alongside this person (or reports to them). Called at most once a shift per
-        /// person, never per frame.
-        /// </summary>
+        /// <summary>The player worked a shift alongside this person, or reports to them; at most once a shift per person.</summary>
         /// <param name="personId">Stable across games and saves: "career:courier:mate_1", "career:courier:boss".</param>
         /// <param name="nameKey">A locale key for their name.</param>
         /// <param name="employerNameKey">A locale key for where they work.</param>
@@ -18,9 +15,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The player's record with the law, as an employer would read it on a CV. A law feature sets
-    /// <see cref="CareerLinks.Law"/>; with nothing set, the CV shows only what the jobs themselves know
-    /// (police stops while on a job).
+    /// The player's record with the law as an employer reads it on a CV, set by a law feature through
+    /// <see cref="CareerLinks.Law"/>; without one the CV shows only police stops on the job.
     /// </summary>
     public interface ICareerRecord
     {
@@ -30,10 +26,7 @@ namespace RealLifeOverhaul
         string Summary { get; }
     }
 
-    /// <summary>
-    /// Whether the player is signed off sick. A health feature sets <see cref="CareerLinks.Health"/>; with
-    /// nothing set, the mod's own sickness (ModState.IsSick) is what counts.
-    /// </summary>
+    /// <summary>Whether the player is signed off sick, set by a health feature through <see cref="CareerLinks.Health"/>; else ModState.IsSick counts.</summary>
     public interface ICareerSickNote
     {
         /// <summary>True if the player has a sick note that covers this day.</summary>
@@ -41,9 +34,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The career ladder's three optional doors to other features. Each is a plain static that is null
-    /// until somebody sets it; every use is null-safe and wrapped, so a feature that is absent, switched
-    /// off or faulty costs the career nothing.
+    /// The career ladder's three optional doors to other features, each null until somebody sets it. Every use is null-safe
+    /// and wrapped, so an absent or faulty feature costs the career nothing.
     /// </summary>
     public static class CareerLinks
     {
@@ -98,7 +90,7 @@ namespace RealLifeOverhaul
                     JobDirector.Logger?.Error(e);
                 }
             }
-            // The mod's own sickness: sick now, or (for a day gone by) still sick when that day began.
+            // The mod's own sickness: sick now, or for a day gone by, still sick when that day began.
             int today = TimeHelper.CurrentDay;
             return day >= today ? ModState.IsSick : ModState.SickUntil > 0f && ModState.SickUntil >= TimeHelper.NowInMinutes() - (today - day) * 1440f;
         }

@@ -1,4 +1,3 @@
-using System.Globalization;
 using BigAmbitions.Characters;
 using Characters.EmojiSystem;
 using RealLifeOverhaul.GameUi;

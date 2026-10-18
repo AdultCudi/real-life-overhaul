@@ -1,30 +1,23 @@
 using System;
-using Streets;
 using System.Collections.Generic;
 using BAModAPI;
+using Streets;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Help-wanted boards: the modelled <c>job_board</c> stood against the wall beside the door
-    /// of a few of the city's own service buildings (the first building of each kind of special
-    /// service, so the same places in every game). Standing in front of one and pressing the
-    /// interaction key opens the list the Gig Line reads out on the phone.
-    ///
-    /// The places are looked for once per city load, a few buildings a second while no job is
-    /// on, and only once the prop bundle has the board: with no board to stand there, there are
-    /// none and the phone is the way to find work. A place is a stretch of real wall with
-    /// pavement in front of it and nothing standing in it (CitySpots.Shopfront), a step aside
-    /// from the door. A board is one object with a shared mesh and material, no collider and no
-    /// script; nothing here runs unless the director calls it, once a second.
+    /// Help-wanted boards: the <c>job_board</c> prop against the wall a step aside from the door of the first building of
+    /// each kind of special service, so the same places in every game; at one, the interact key opens the Gig Line's list.
+    /// The places are looked for once a city load, a few buildings a second while no job is on, and only when the prop
+    /// bundle has the board. A board has no collider and no script; the director calls this once a second.
     /// </summary>
     public sealed class JobBoards
     {
-        private const int Most = 6;
-        private const int PerTick = 30;          // buildings looked at per second while searching
+        private const int Most = 6;              // boards at most
+        private const int PerTick = 30;          // buildings looked at a second while searching
         private const float FromWall = 0.30f;    // metres from the wall the board's middle stands
-        private const float Reach = 1.5f;        // how near its front the player must be to read it (the door beside it keeps its own key)
+        private const float Reach = 1.5f;        // metres from its front to read it (the door beside it keeps its own key)
         private const float Aside = 2.4f;        // metres along the wall from the door
         private const string PropId = "job_board";
 
@@ -40,7 +33,6 @@ namespace RealLifeOverhaul
         private int _next;                   // the next building to look at
         private bool _searched;
         private bool _failed;
-        private string _prompt;
 
         public JobBoards(JobProps props, IModLogger logger)
         {
@@ -51,11 +43,9 @@ namespace RealLifeOverhaul
         /// <summary>True while the player stands in front of a board.</summary>
         public bool InReach { get; private set; }
 
-        public string Prompt => _prompt ?? (_prompt = JobText.T("reallife_job_board_prompt"));
-
         public int Count => _boards.Count;
 
-        /// <summary>True once every building has been looked at: the boards there are, are all there will be.</summary>
+        /// <summary>True once every building has been looked at: no more boards will be put up.</summary>
         public bool Searched => _searched || _failed;
 
         /// <summary>Where the reader of a board stands.</summary>
@@ -92,7 +82,7 @@ namespace RealLifeOverhaul
             if (_failed)
             {
                 InReach = false;
-            Near = -1;
+                Near = -1;
                 return;
             }
             try
@@ -118,7 +108,7 @@ namespace RealLifeOverhaul
             {
                 _failed = true;
                 InReach = false;
-            Near = -1;
+                Near = -1;
                 _logger?.Error(e);
                 _logger?.Warn("Jobs: the help-wanted boards are off for this session after the error above; the Gig Line still has every job.");
             }
@@ -144,7 +134,7 @@ namespace RealLifeOverhaul
         {
             if (!PropLibrary.Ready)
             {
-                return;   // still loading (or never will be: then there are no boards)
+                return;   // still loading, or never will be: then there are no boards
             }
             if (!PropLibrary.TryGet(PropId, out _, out _))
             {
@@ -189,7 +179,7 @@ namespace RealLifeOverhaul
             }
             for (int side = -1; side <= 1; side += 2)
             {
-                // Measured 0.75 m out from the wall with 0.6 m of room: the strip the board stands in is inside what was found clear.
+                // Measured 0.75 m out from the wall with 0.6 m of room, so the board's strip is inside what was found clear.
                 if (!CitySpots.Shopfront(front + along * (side * Aside), FromWall + 0.45f, 0.6f, out Vector3 stand, out Vector3 outward))
                 {
                     continue;

@@ -1,11 +1,9 @@
 using System.Collections.Generic;
-using System.Globalization;
 using Characters.EmojiSystem;
 using Helpers;
 using RealLifeOverhaul.GameUi;
 using Streets.Pedestrians;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul

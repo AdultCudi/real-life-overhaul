@@ -8,27 +8,23 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Where the jobs that go indoors are worked: a client's premises. A client is one of the
-    /// city's own businesses that is not the player's and is open right now, so the player
-    /// walks in through its door the way any customer does; inside, the floor is the game's own
-    /// interior and its navigation mesh, which the furniture is already cut out of. Every place
-    /// handed out here is a point on that mesh with room round it that the player can walk to
-    /// from where they stand, or "no". Asked when a shift is set up or a new task is wanted,
-    /// never on a timer.
+    /// Where the jobs that go indoors are worked: a client, one of the city's open businesses that is not the player's,
+    /// entered through its door like any customer. Every place handed out is a point on the interior's navigation mesh,
+    /// with room round it, that the player can walk to, or none. Asked when a shift is set up or a task wanted.
     /// </summary>
     public static class JobSites
     {
-        private const float Room = 0.6f;         // clear floor wanted round a place somebody works at
+        private const float Room = 0.6f;         // metres of clear floor wanted round a place somebody works at
         private const int Attempts = 24;
 
-        /// <summary>Any business that is somebody else's and open: kept as fields so that asking allocates nothing.</summary>
+        /// <summary>Any business that is somebody else's and open; kept as a field so asking allocates nothing.</summary>
         public static readonly Predicate<CityBuildingController> AnyClient = IsClient;
         /// <summary>The same, and a shop with shelves and customers.</summary>
         public static readonly Predicate<CityBuildingController> ShopClient = IsShop;
 
         private static NavMeshPath _path;
 
-        public static bool IsClient(CityBuildingController building)
+        private static bool IsClient(CityBuildingController building)
         {
             try
             {
@@ -47,7 +43,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        public static bool IsShop(CityBuildingController building)
+        private static bool IsShop(CityBuildingController building)
         {
             if (!IsClient(building))
             {
@@ -79,9 +75,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A place on the floor of the building the player is in: clear all round, on their
-        /// storey, walkable to from where they stand, and at least so far from each of the
-        /// places already taken. False if the floor has no such place left.
+        /// A place on the floor of the building the player is in: clear all round, on their storey, walkable to, and at least
+        /// <paramref name="apart"/> from the places taken. False if the floor has none left.
         /// </summary>
         public static bool FloorSpot(Vector3 from, Vector3[] taken, int count, float apart, out Vector3 spot)
         {
@@ -102,7 +97,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>The standing place at one of the shop's shelves, with the shelf to face. The same tests as <see cref="FloorSpot"/>, less the room (a shelf is at one's elbow).</summary>
+        /// <summary>A standing place at one of the shop's shelves, and the shelf to face: as <see cref="FloorSpot"/>, less the room round it.</summary>
         public static bool ShelfSpot(Vector3 from, Vector3[] taken, int count, float apart, out Vector3 spot, out Vector3 shelf)
         {
             spot = default;
@@ -150,12 +145,12 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>True if someone on foot indoors can walk the whole way from one point to the other.</summary>
-        public static bool Reachable(Vector3 from, Vector3 to)
+        // True if someone on foot indoors can walk the whole way from one point to the other.
+        private static bool Reachable(Vector3 from, Vector3 to)
         {
             if (_path == null)
             {
-                _path = new NavMeshPath();   // one, reused: asking allocates nothing after the first time
+                _path = new NavMeshPath();   // one, reused
             }
             return NavMesh.SamplePosition(from, out NavMeshHit start, 2f, NavMeshHelper.NpcNavMeshFilter)
                    && NavMesh.CalculatePath(start.position, to, NavMeshHelper.NpcNavMeshFilter, _path)
