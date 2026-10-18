@@ -214,7 +214,8 @@ namespace RealLifeOverhaul
                 why = TestRefusal.NothingFits;
                 return false;
             }
-            if (!_director.CanSeclude(out why))
+            // Going up to the room opens a list, not a scene, so a paused game may.
+            if (!_director.CanSeclude(out why, pausedIsFine: true))
             {
                 return false;
             }
