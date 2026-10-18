@@ -23,6 +23,7 @@ internal static partial class Program
         HoldEdges();
         HoldCost();
         Marks();
+        MarksCostliest();
         Counts();
         HotSpotChecks();
         Prewarms();
@@ -299,6 +300,53 @@ internal static partial class Program
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         ms = watch.ElapsedMilliseconds;
         return allocated;
+    }
+
+    // The long-frame line names the costliest piece closed in that frame, not merely the newest (a 7 ms face named for
+    // an 84 ms search of the scene in the same frame), and falls back to the newest when none closed in it.
+    private static void MarksCostliest()
+    {
+        Check(new MarkRing().Costliest(5) == -1, "marks: an empty ring names nothing for a long frame");
+
+        var ring = new MarkRing();
+        int search = ring.Add("search", 20, 1f, 1000);
+        ring.Close(search, 1000 + 84000);
+        int face = ring.Add("face", 20, 1f, 90000);
+        ring.Close(face, 90000 + 7200);
+        Check(ring.Costliest(20) == 1 && ring.Get(ring.Costliest(20), out string text, out _, out _, out _) && text == "search",
+            "marks: of a search of 84 ms and a face of 7.2 ms in one frame, the long frame is put down to the search, not to the newer face");
+
+        var open = new MarkRing();
+        open.Add("unclosed", 30, 1f, 100);
+        int other = open.Add("earlier frame", 29, 1f, 50);
+        open.Close(other, 5000);
+        Check(open.Costliest(30) == 0 && open.Costliest(31) == 0, "marks: with nothing closed in that frame the newest piece is named, as before");
+
+        var ties = new MarkRing();
+        int one = ties.Add("older", 40, 1f, 0);
+        ties.Close(one, 300);
+        int two = ties.Add("newer", 40, 1f, 300);
+        ties.Close(two, 600);
+        int busy = ties.Add("costly, a frame before", 39, 1f, 0);
+        ties.Close(busy, 99999);
+        Check(ties.Costliest(40) == 1 && ties.Get(1, out text, out _, out _, out _) && text == "newer",
+            "marks: of equal pieces in the frame the newest is named; a costlier piece of another frame is not");
+
+        CostliestMany(ring, 1000);
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        int pick = CostliestMany(ring, 100000);
+        Check(GC.GetAllocatedBytesForCurrentThread() - before == 0 && pick >= 0, "marks: choosing the piece to name allocates nothing");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static int CostliestMany(MarkRing ring, int n)
+    {
+        int pick = 0;
+        for (int i = 0; i < n; i++)
+        {
+            pick += ring.Costliest(20 + (i & 1));
+        }
+        return pick;
     }
 
     private static void Marks()
