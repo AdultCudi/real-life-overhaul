@@ -10,38 +10,13 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Attending in place, at every campus.
-    ///
-    ///   the school      Manhattan Business School's own study desks: press Study at a desk, as for the game's courses,
-    ///                   and the game's panel for that desk has one more button, "Attend {course}" or "Sit the {course}
-    ///                   exam" (Careers/SchoolDesk). The game's own courses at the desk are as they were.
-    ///   the university the classrooms of its floors, at their doors, with the same panel (Careers/CampusInterior)
-    ///   at home         an online or distance class, and homework, at the player's own computer: its buttons beside the
-    ///                   game's Pass the time (Careers/ComputerButtons, Careers/ComputerSitting)
-    ///   elsewhere       at the university's sign or door while its floors are not there, on a ward of a hospital or clinic:
-    ///                   the game's own panel (<see cref="DoorPanel"/>) over the place with one button, "Attend {course}"
-    ///                   or "Sit the {course} exam", on the game's interact key. While it is up the key is the class's
-    ///                   (<see cref="TakesInteractKey"/>, read by World/NearbyInteraction and the utilities desk), so it
-    ///                   neither enters the building nor opens another desk.
-    ///   the Campus app  its Attend, Sit and Homework buttons go the same way from the phone, in one press: to the desk of
-    ///                   the school or the classroom, or to the computer at home, and sat down there (CareersDirector.ClassPlay).
-    ///   in a session    Going Public takes the game's study panel for its own training window of the game's course, so a
-    ///                   click on a school's desk is Going Public's: inside the school the class or exam is offered by the
-    ///                   panel where the player stands (ClassPlayRules.SchoolInPlace), whose button walks them to the nearest
-    ///                   desk and sits them there on the desk's own panel; a classroom door of the university opens the
-    ///                   room's own panel (CareersDirector.OpenDesk).
-    ///
-    /// When a class's hour comes, a notice: where the player is right, how to join it (press the key; at the school,
-    /// press Study at a desk); where not, why, where it is held and how long it runs. One line goes to the log with how far
-    /// the player is from the university's door, so that "no prompt" can be read from Player.log. Looked at once a
-    /// second; per frame, while the university's floors are there, the game's building card's target read and compared
-    /// with the last (CampusInterior.Card, the card kept), then one flag test, and one reference comparison while the
-    /// player is inside the school on a course there: well under a microsecond, nothing allocated (the director is never
-    /// disabled: the game's activity panel needs it running for the mod's sittings, Jobs/ShiftSkip).
+    /// Attending in place: the game's panel over a place with one button on the interact key where nothing in the world holds a
+    /// class (<see cref="DoorPanel"/>), the watch on the game's study panel, and the notice as a class's hour comes. The cost: per
+    /// frame, while the university's floors are there or the player is in the school on a course, a comparison and a flag test.
     /// </summary>
     public sealed partial class CareersDirector
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "CareersDirector", typeof(CareersDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("careers_study", "CareersDirector", typeof(CareersDirector));   // its LateUpdate's guard (Core/Guard)
 
         private DoorPanel _classDoor;
         private Action _onClassDoor;
@@ -56,7 +31,7 @@ namespace RealLifeOverhaul.Careers
         private SchoolDesk _desk;          // a class at the school's desk, from its button until it is over
         private bool _deskWatch;           // inside the school, on a course there: the game's study panel is looked at each frame
         private IPlayerActivity _deskSeen; // the game's activity last looked at
-        private PlayerActivityUI _activityUi;
+        private PlayerActivityUI _activityUi;   // the game's activity panel: ActivityUi()
         private bool _roomDesksOff;        // a classroom door's panel could not be taken: the university's classes are attended in place
 
         /// <summary>True while the class panel is up, and in the frame its button ran.</summary>
@@ -64,7 +39,15 @@ namespace RealLifeOverhaul.Careers
 
         private bool DeskBusy => (_desk != null && _desk.Open) || (_computer != null && _computer.Open);
 
-        // ---------------------------------------------------------------- the panel in place (not the school)
+        private PlayerActivityUI ActivityUi()
+        {
+            if (_activityUi == null)
+            {
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                _activityUi = uis != null ? uis.playerActivityUI : null;
+            }
+            return _activityUi;
+        }
 
         // Once a second, from the timer.
         private void ClassPrompt()
@@ -91,7 +74,7 @@ namespace RealLifeOverhaul.Careers
                 ClassPlayRules.InPlace(AtTheSchool(e, false), online, AtTheSchool(e, true), InRooms(e), session, out bool classHere, out bool examHere);
                 if (!classHere && !examHere)
                 {
-                    continue;   // (at the school's desks, at the computer at home, or in the university's classrooms: no panel in place)
+                    continue;   // at the school's desks, the home computer or the university's classrooms: no panel in place
                 }
                 string classWhy = classHere ? CanAttend(e, out _) : online ? "reallife_study_why_no_computer" : "reallife_study_why_not_school";
                 string examWhy = examHere ? CanSit(e) : "reallife_study_why_exam_school";
@@ -166,7 +149,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (!_courseArgs.TryGetValue(course, out object args))
             {
-                args = new { course = CareersText.Course(course) };   // (the game's button fills {course} from it)
+                args = new { course = CareersText.Course(course) };   // the game's button fills {course} from it
                 _courseArgs[course] = args;
             }
             return args;
@@ -213,17 +196,14 @@ namespace RealLifeOverhaul.Careers
             _computer = null;
         }
 
-        // ---------------------------------------------------------------- the school's desks
-
-        // Once a second: the game's study panel is watched while the player is inside the school on a course there; in a
-        // Going Public session, with the university's floors there, the click on its classroom doors is the mod's (DeskGame).
+        // Once a second: the game's study panel watched while the player is in the school on a course there; in a session the classroom doors' click.
         private void DeskTick()
         {
             if (_studyOn && _interior != null && GoingPublic.InSession)
             {
-                DeskGame.Install();   // (once: then a null check; it answers only over a classroom door of the floor the player is on)
+                DeskGame.Install();   // once, then a null check; it answers only over a classroom door of the player's floor
             }
-            bool watch = _studyOn && _interior != null && _interior.Floor > 0;   // (the university's classrooms: always, so no course of the game's opens there)
+            bool watch = _studyOn && _interior != null && _interior.Floor > 0;   // the university's classrooms: always, so no course of the game's opens there
             if (!watch && _studyOn && CareersGame.InSchool())
             {
                 for (int i = 0; i < _study.Courses.Count && !watch; i++)
@@ -233,15 +213,10 @@ namespace RealLifeOverhaul.Careers
                                                            || AtTheSchool(e, true) && (e.Stage == (int)EnrolStage.Exam || e.Stage == (int)EnrolStage.Retake));
                 }
             }
-            if (watch && _activityUi == null)
-            {
-                UIs uis = InstanceBehavior<UIs>.Instance;
-                _activityUi = uis != null ? uis.playerActivityUI : null;
-            }
-            _deskWatch = watch && _activityUi != null;
+            _deskWatch = watch && ActivityUi() != null;
             if (_desk != null && _desk.Open && (_activityUi == null || !ReferenceEquals(_activityUi.GetCurrentActivity, _desk)))
             {
-                _desk.Finish();   // the game's panel let it go without a word: the minutes so far are counted, and the player stands up
+                _desk.Finish();   // the game's panel let it go: count the minutes so far and stand up
             }
             if (_desk != null && !_desk.Open)
             {
@@ -260,21 +235,20 @@ namespace RealLifeOverhaul.Careers
                 // Nothing on the game's panel holds it any more: let go, so that it never leaves every class and day "under way".
                 Logger?.Info("Careers: a " + _sitting.Kind + " sitting was left with no desk, computer or panel of its own; let go, nothing counted.");
                 _sitting = null;
-                CareersGame.Tiring(false);   // (its energy spent no more, if it had begun)
+                CareersGame.Tiring(false);   // its energy spent no more, if it had begun
             }
         }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Careers: CareersDirector.LateUpdate");
         private bool _watchOff;   // the card and the desk watch below stood down: this game lacks something they name (Core/GameMembers)
 
-        // The frame's work is a method of its own, so that a game lacking something it names fails inside the try:
-        // said once, and only the card over the university and the watch on the school's desks stop. The director runs on.
+        // The frame's work is a method of its own, so a game lacking something it names fails inside the try and only the card and the watch stop.
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults (Core/Guard)
                 return;
             }
             if (_watchOff)
@@ -289,7 +263,7 @@ namespace RealLifeOverhaul.Careers
             {
                 _watchOff = true;
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -297,20 +271,15 @@ namespace RealLifeOverhaul.Careers
 
         private void OnLateUpdate()
         {
-            _interior?.Card(false);   // (one reference comparison: the game's card over the university)
-            bool rooms = _interior != null && _interior.Floor > 0;   // (from the frame the player is on a floor: no course of the game's opens there)
+            _interior?.Card(false);   // one reference comparison: the game's card over the university
+            bool rooms = _interior != null && _interior.Floor > 0;   // from the frame the player is on a floor: no course of the game's opens there
             if (!_deskWatch && !rooms)
             {
                 return;
             }
-            if (_activityUi == null)
+            if (ActivityUi() == null)
             {
-                UIs uis = InstanceBehavior<UIs>.Instance;
-                _activityUi = uis != null ? uis.playerActivityUI : null;
-                if (_activityUi == null)
-                {
-                    return;
-                }
+                return;
             }
             IPlayerActivity now = _activityUi.GetCurrentActivity;
             if (ReferenceEquals(now, _deskSeen))
@@ -367,14 +336,13 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // A classroom door of the university whose panel could not be the room's course's: the game's own course is never
-        // offered there. Its panel is closed at once, and from now on the university's classes are attended with the Attend
-        // button where the player stands (InRooms is false), as they are when the floors are not there.
+        // A classroom door whose panel could not be the room's course's: it is closed at once, and from now on the university's classes are attended
+        // with the Attend button where the player stands (InRooms is false), as without the floors.
         private void RoomPanelOff(StudyActivity game, int room)
         {
             try
             {
-                game.ChangeState(PlayerActivityState.Finished);   // (the game's panel closes on its next frame, nothing studied)
+                game.ChangeState(PlayerActivityState.Finished);   // the game's panel closes on its next frame, nothing studied
             }
             catch (Exception e)
             {
@@ -427,11 +395,7 @@ namespace RealLifeOverhaul.Careers
             return next ?? new SchoolDesk.DeskOffer { Course = -1, Can = false, Key = "reallife_study_why_no_class", Arguments = null };
         }
 
-        /// <summary>
-        /// A class, an exam or a piece of homework begun at one of the school's or the university's desks
-        /// (Careers/SchoolDesk): the same checks as the Campus app's buttons, the sitting made for the desk's own activity.
-        /// Null and the sitting, or the reason key.
-        /// </summary>
+        /// <summary>A sitting begun at a desk of the school or the university: the Campus app's checks, the sitting made for the desk; null with it, or the reason key.</summary>
         internal string DeskSitting(int course, SittingKind kind, out Sitting sitting)
         {
             sitting = null;
@@ -480,7 +444,7 @@ namespace RealLifeOverhaul.Careers
                     return "reallife_study_why_money";
                 }
                 sitting = ExamSitting(e);
-                sitting.Fee = fee;   // (charged as the player sits down: a walk called off costs nothing)
+                sitting.Fee = fee;   // charged as the player sits down: a walk called off costs nothing
             }
             _sitting = sitting;
             Logger?.Info("Careers: " + Words(kind) + " of " + c.Key + " begun at a desk of the " + (_interior != null && _interior.Floor > 0 ? "university" : "school") + " (the game's study panel).");
@@ -499,11 +463,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- the hour a class begins
-
-        // Where the player is, in the log; and a notice: how to join it here, or why not and where to go. Once a class.
-        // "Your class starts now": the player is not inside the place that holds it. Once a class (StudyRules.StartsNow), the
-        // class kept in the save, with how long the door stays open (StudyCatalogue.LateMinutes).
+        // "Your class starts now", once a class (StudyRules.StartsNow, kept in the save), when the player is not inside the place that holds it.
         private void ClassStarts(Enrolment e, CourseDef c, StudyMode mode, int day, int hour)
         {
             if (!StudyRules.StartsNow(e, day, hour * 60, SittingClass, e.StartTold))
@@ -568,8 +528,7 @@ namespace RealLifeOverhaul.Careers
             string course = CareersText.Course(c.Id);
             if (why != null && ClassPlayRules.HeldOnline(c, mode) && CareersBridges.HomeNetNow() == HomeNet.Outage)
             {
-                // The provider's outage is on as the class begins: if it cannot be joined it is excused (CareersDirector.GoneBy),
-                // which is said now, in place of where to go, and not again when it goes by.
+                // the provider's outage is on as the class begins: it will be excused (GoneBy), said now and not again as it goes by
                 _excuseTold = key;
                 Tell(NotificationType.Info, "reallife_study_note_class_outage", Data("course", course), TabStudying, CampusApp.CourseRow + c.Id);
                 return;
@@ -594,7 +553,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (minutes <= 0)
             {
-                StudyRules.Joinable(c, mode, day, hour * 60, out minutes);   // (how long it runs, though it cannot be joined from here)
+                StudyRules.Joinable(c, mode, day, hour * 60, out minutes);   // how long it runs, though it cannot be joined from here
             }
             var data = Data("course", course, "why", CareersText.T(why), "place", PlaceOf(c, mode));
             data["time"] = CareersText.Minutes(Math.Max(0, minutes));

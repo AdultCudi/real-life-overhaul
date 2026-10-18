@@ -66,11 +66,7 @@ namespace RealLifeOverhaul.Careers
         public ChildStep At => (ChildStep)Stage;
     }
 
-    /// <summary>
-    /// The player's learning and skills: the courses under way and done, the skills (thousandths of a point, with the best
-    /// ever reached and the day each was last used), the student loan and the week's hours of study; and their working life
-    /// (<see cref="Work"/>), which is judged on them. Game-free.
-    /// </summary>
+    /// <summary>The player's learning, skills (thousandths, with the best and the day last used), the student loan and their working life (<see cref="Work"/>). Game-free.</summary>
     public sealed class StudyFile
     {
         public int Seed = 1, FirstDay, LastDay = -1;

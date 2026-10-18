@@ -40,12 +40,7 @@ namespace RealLifeOverhaul.Careers
         public bool Open => Prof >= 0;
     }
 
-    /// <summary>
-    /// The rules of working for oneself, in plain numbers: leaving to found a startup or open a practice, what a founder's
-    /// record is worth to the venture firms, bringing former colleagues along, a restraint clause and the claim a former
-    /// employer files over it, freelance contracts, side work and an exclusive contract, and a practice's name. Game-free:
-    /// EconomyCheck runs every one.
-    /// </summary>
+    /// <summary>The rules of working for oneself in plain numbers: founding, a practice, colleagues, a restraint clause, contracts and side work. Game-free.</summary>
     public static class OwnRules
     {
         public const int FoundLeastRank = 1;        // the second rung up may leave to found a company
@@ -73,9 +68,8 @@ namespace RealLifeOverhaul.Careers
 
         public const int PracticeStart = 20;
         public const int PracticeOnTime = 3, PracticeLate = -6;
-        public static int RegisterFee(Profession p) => p.Id == ProCatalogue.Lawyer ? 1500 : p.Id == ProCatalogue.Accountant ? 900 : p.Id == ProCatalogue.Architect || p.Id == ProCatalogue.CivilEngineer ? 700 : 300;
-
-        // ---------------------------------------------------------------- leaving to found
+        public static int RegisterFee(Profession p) =>
+            p.Id == ProCatalogue.Lawyer ? 1500 : p.Id == ProCatalogue.Accountant ? 900 : p.Id == ProCatalogue.Architect || p.Id == ProCatalogue.CivilEngineer ? 700 : 300;
 
         /// <summary>True for a profession whose people can leave to found a tech company.</summary>
         public static bool CanFound(Profession p)
@@ -84,10 +78,7 @@ namespace RealLifeOverhaul.Careers
                    || p.Family == (int)Tech.Family.Product || p.Family == (int)Tech.Family.Support;
         }
 
-        /// <summary>
-        /// True for a profession that can be practised on one's own (a practice and its clients): law, accountancy,
-        /// architecture, engineering, design, marketing, HR, the trades. The regulated ones need their certificate.
-        /// </summary>
+        /// <summary>True for a profession that can be practised on one's own (law, accounts, architecture, design, the trades...); the regulated need their certificate.</summary>
         public static bool CanPractise(Profession p, StudyFile f)
         {
             switch (p.Id)
@@ -110,10 +101,7 @@ namespace RealLifeOverhaul.Careers
 
         private static bool HasCert(StudyFile f, int cert) => (StudyRules.Certs(f) & (1 << cert)) != 0;
 
-        /// <summary>
-        /// What a founder's record adds to a pitch, thousandths (VentureMeeting starts a pitch at 500): twenty for each rung
-        /// reached in a tech profession, ten a year of it, three a point of the player's name; at most <see cref="FounderMost"/>.
-        /// </summary>
+        /// <summary>What a founder's record adds to a pitch, thousandths: 20 a rung of a tech profession, 10 a year of it, 3 a point of name; at most <see cref="FounderMost"/>.</summary>
         public static int FounderScore(int topRank, int yearsDays, int reputation)
         {
             int s = Math.Max(0, topRank) * 20 + Math.Max(0, yearsDays) / 365 * 10 + reputation * 3;
@@ -128,8 +116,6 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>The chance (per mille) a former employer files a claim: for colleagues taken, or for work in the same field.</summary>
         public static int ClaimChance(bool colleagues) => colleagues ? ClaimColleagues : ClaimSameField;
-
-        // ---------------------------------------------------------------- freelance contracts
 
         /// <summary>A contract's fee, whole money at the start's prices: the hours at the rank's rate, by the freelance premium, a practice's and an office's.</summary>
         public static long Fee(int rateCents, int hours, bool practice, bool office)

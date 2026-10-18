@@ -6,11 +6,7 @@ using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The words of education and careers: every figure they show is written here, the same way in the apps, the
-    /// notifications, the Planner and the Guide. Every text is a key of en.json; money as the game writes it. Called when
-    /// something is shown, never otherwise.
-    /// </summary>
+    /// <summary>The words of education and careers, the same in the apps, notifications, Planner and Guide; called only when something is shown.</summary>
     public static class CareersText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -44,8 +40,6 @@ namespace RealLifeOverhaul.Careers
         public static string Whole(long n) => n.ToString("N0", Inv);
 
         public static string Day(int day) => FinanceText.Day(day);
-
-        // ---------------------------------------------------------------- studying
 
         public static string Course(int id)
         {
@@ -109,8 +103,6 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>Points of a skill kept in thousandths, whole: "42".</summary>
         public static string Points(int thousandths) => (thousandths / 1000).ToString(Inv);
-
-        // ---------------------------------------------------------------- working
 
         /// <summary>An employer's name as kept: a name of the city's, or "@" and a locale key for one of the mod's (the public sector), which follows the language.</summary>
         public static string Employer(string kept)

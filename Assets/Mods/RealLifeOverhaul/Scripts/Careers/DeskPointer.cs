@@ -6,13 +6,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The player's desk on a fitted-out floor (FitOut/FitDesks) as a thing to point at, the way the game's own items are
-    /// (as Ledger/LedgerPointer and Transport/TransitPointer do it): a trigger box over the desk on the game's layer for
-    /// interactive items, with this component on it. The game's pointer outlines the desk, its computer and its chair,
-    /// shows "Your desk" with the game's own "Click to work" under it (Careers/DeskGame's entry in the game's calls to
-    /// action), and a left click walks the player to the chair and opens the work panel. The box is a trigger, so it is
-    /// hit by the pointer's ray and by nothing else. It has no Update: the game asks it only when the pointer comes onto
-    /// it, leaves it or clicks. It goes with the desk.
+    /// The player's desk on a fitted-out floor as a thing to point at: a trigger box on the game's interactive layer, outlined
+    /// with the game's "Click to work". No Update, nothing per frame: the game asks it as the pointer comes, goes or clicks.
     /// </summary>
     public sealed class DeskPointer : EntityController
     {
@@ -69,8 +64,7 @@ namespace RealLifeOverhaul.Careers
             return pointer;
         }
 
-        // The game's own Awake puts the object on the interactive layer (it is there already) and its Start reads places to
-        // walk to that an object placed by the game has; neither is wanted here.
+        // The game's own Awake and Start set up a layer and walk-to places this object does not need.
         public override void Awake()
         {
         }
@@ -135,7 +129,7 @@ namespace RealLifeOverhaul.Careers
 
         public override void OnDestroy()
         {
-            OverlayGuard.Release(this);   // (the game's own lets the card go only while it is on screen)
+            OverlayGuard.Release(this);   // the game's own lets the card go only while it is on screen
             if (!GameManager.isCitySceneBeingUnloaded && MouseController.currentTargetEntity == this)
             {
                 MouseController.ResetCurrentEntitySelected(this);

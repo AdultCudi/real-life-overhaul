@@ -5,13 +5,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// Working life (Careers/Work/LifeRules): reviews twice a year with a rating, rises, bonuses and promotions; asking for a
-    /// rise; overtime and burnout; office matters with a boss of a certain manner; search firms that come for good people;
-    /// redundancy in a downturn with severance and unemployment benefit; share options at a tech company; the pension and
-    /// retirement; a seat at the top of a rival's company and its share of the takings; and a conflict of interest with
-    /// the player's own businesses, declared or found out. All of it on the game's day and at the end of a working stint.
-    /// </summary>
+    /// <summary>Working life (Careers/Work/LifeRules): reviews, promotion, burnout, office matters, search firms, redundancy, options, the pension and conflicts.</summary>
     public sealed partial class CareersDirector
     {
         private const string BonusKey = "reallife_transaction_work_bonus";
@@ -27,9 +21,18 @@ namespace RealLifeOverhaul.Careers
 
         private static int Year => GameCalendar.DaysPerYear;
 
-        // ---------------------------------------------------------------- the hooks of the working life (CareersDirector.Work.cs)
+        // The player's own businesses, read once a day.
+        private void ReadMine()
+        {
+            int day = Save != null ? Save.Day : 0;
+            if (_mineDay != day)
+            {
+                _mineDay = day;
+                TalentGame.Businesses(_mine);
+            }
+        }
 
-        partial void Hired(Job j, int day)
+        private void Hired(Job j, int day)
         {
             if (!Settings.CareersLife)
             {
@@ -48,7 +51,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        partial void Ended(Job j, LeaveReason why, int day)
+        private void Ended(Job j, LeaveReason why, int day)
         {
             if (!Settings.CareersLife)
             {
@@ -72,7 +75,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        partial void WorkedMore(Job j, Sitting s, int minutes, bool whole, int day)
+        private void WorkedMore(Job j, Sitting s, int minutes, int day)
         {
             if (!Settings.CareersLife)
             {
@@ -98,7 +101,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        partial void PaidMore(Job j, long cents, bool overtime)
+        private void PaidMore(Job j, long cents)
         {
             if (!Settings.CareersLife)
             {
@@ -113,7 +116,7 @@ namespace RealLifeOverhaul.Careers
             _study.Work.Pension += own + employer;
         }
 
-        partial void WorkDayMore(int day)
+        private void WorkDayMore(int day)
         {
             if (!Settings.CareersLife)
             {
@@ -123,7 +126,7 @@ namespace RealLifeOverhaul.Careers
             w.Pension += LifeRules.PensionGrowth(w.Pension, Year);
             if (w.Retired > 0 && w.Pension > 0)
             {
-                long paid = Math.Min(w.Pension, LifeRules.PensionDay(w.Pension, Year, w.RetiredEarly));   // (the pot is kept in the money it was paid in)
+                long paid = Math.Min(w.Pension, LifeRules.PensionDay(w.Pension, Year, w.RetiredEarly));   // the pot is kept in the money it was paid in
                 w.Pension -= paid;
                 CareersGame.Pay(paid / 100f, PensionPaidKey, null, CareersText.T("reallife_life_pension_name"));
             }
@@ -169,8 +172,6 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- reviews
-
         private void Review(Job j, int day)
         {
             Profession p = j.Def;
@@ -189,7 +190,7 @@ namespace RealLifeOverhaul.Careers
             int bonus = weeks > 0 ? Prices.At((int)(LifeRules.WeekPay(j) * weeks / 100)) : 0;
             if (bonus > 0)
             {
-                CareersGame.Pay(bonus, BonusKey, SalaryCategoryName, employer);
+                CareersGame.Pay(bonus, BonusKey, SalaryCategory, employer);
             }
             bool promoted = LifeRules.CanPromote(_study, j, rating, day, Year);
             j.Due = j.Worked = j.Late = j.Absent = 0;
@@ -220,8 +221,6 @@ namespace RealLifeOverhaul.Careers
                 Promote(j, day);
             }
         }
-
-        private const string SalaryCategoryName = "ba:transactioncategory_salaryincome";
 
         private static string Bp(int bp) => (bp / 100f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%";
 
@@ -290,8 +289,6 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        // ---------------------------------------------------------------- overtime
-
         public string CanWorkLate()
         {
             Job j = Work != null ? Work.Job : null;
@@ -325,8 +322,6 @@ namespace RealLifeOverhaul.Careers
             }
             return Offer(LateSitting(Work.Job));
         }
-
-        // ---------------------------------------------------------------- office matters
 
         private void Matters(Job j, int day)
         {
@@ -373,8 +368,6 @@ namespace RealLifeOverhaul.Careers
             j.Politics = -1;
             j.PoliticsDay = day + TechRandom.Range(StudySeed, 8604, day, j.Hired, LifeRules.MatterGapLeast, LifeRules.MatterGapMost);
         }
-
-        // ---------------------------------------------------------------- options, search firms, downturns, conflicts, the top seats
 
         private void Vesting(Job j, int day)
         {
@@ -461,12 +454,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
-            int day = Save != null ? Save.Day : 0;
-            if (_mineDay != day)
-            {
-                _mineDay = day;
-                TalentGame.Businesses(_mine);
-            }
+            ReadMine();
             BuildingRegistration at = null;
             try
             {
@@ -533,8 +521,6 @@ namespace RealLifeOverhaul.Careers
                 Tell2(NotificationType.Success, "reallife_life_note_profit_share", Data("amount", CareersText.Money(whole), "share", Bp(bp)), TabJob, null);
             }
         }
-
-        // ---------------------------------------------------------------- retiring
 
         public string CanRetire()
         {

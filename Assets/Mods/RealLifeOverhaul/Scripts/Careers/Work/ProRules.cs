@@ -18,11 +18,7 @@ namespace RealLifeOverhaul.Careers
         public int Rank;
     }
 
-    /// <summary>
-    /// The rules of working in a profession, in plain numbers (Careers/Work/ProCatalogue): what a rank asks of the player,
-    /// how an employer scores an application, the interview, the offer and haggling over it, the working day and what it
-    /// pays, notice, references and experience. Game-free: EconomyCheck runs every one.
-    /// </summary>
+    /// <summary>The rules of working in a profession in plain numbers: what a rank asks, the application, interview and offer, the working day, notice and references. Game-free.</summary>
     public static class ProRules
     {
         public const int SelfTaughtExtra = 20;    // points more a rank asks of someone without its qualification, where a profession takes people self-taught
@@ -68,8 +64,6 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- what a rank asks
-
         /// <summary>The points of a rank's two skills, the first counting three fifths.</summary>
         public static int Points(StudyFile f, Profession p, int rank)
         {
@@ -108,10 +102,7 @@ namespace RealLifeOverhaul.Careers
             return false;
         }
 
-        /// <summary>
-        /// True if the player holds what a rank needs: one of its courses (or comes to it self-taught where the profession
-        /// allows), its certificate, and what each rank below it needs, for one who comes in at the rank from outside.
-        /// </summary>
+        /// <summary>True if the player holds what a rank needs: one of its courses (or self-taught where allowed), its certificate, and each rank's below it.</summary>
         public static bool Qualified(StudyFile f, Profession p, int rank)
         {
             int certs = StudyRules.Certs(f);
@@ -165,13 +156,7 @@ namespace RealLifeOverhaul.Careers
             return days / 2;   // (half the time of rising inside: a move is how people climb faster)
         }
 
-        // ---------------------------------------------------------------- an application
-
-        /// <summary>
-        /// How an employer scores an application, 0 to 100: half for turning up qualified, then the skills against the rank
-        /// (up to 20 for being over it, three a point off for being under), experience, references, the player's name,
-        /// a friend's word or the recruitment office, honours and a master's, a record, and the city's economy.
-        /// </summary>
+        /// <summary>How an employer scores an application, 0 to 100: half for turning up qualified, then skills, experience, references, name and the economy.</summary>
         public static int HireScore(Candidate c)
         {
             if (!c.Qualified)
@@ -196,11 +181,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True if the interview brings an offer.</summary>
         public static bool Offered(int score, int luck) => score > 0 && score + TalentCatalogue.Clamp(luck, -InterviewLuck, InterviewLuck) >= OfferPass;
 
-        /// <summary>
-        /// The points of score an application was short of what the employer wanted at the step that turned it down
-        /// (<see cref="ScreenPass"/> at the screening, <see cref="OfferPass"/> after the interview), before luck: 0 when the
-        /// score was enough on average and the day's luck turned it down (it was close).
-        /// </summary>
+        /// <summary>The points of score short of the step that turned an application down, before luck; 0 when it was enough on average (close).</summary>
         public static int ScoreShort(int score, bool interview)
         {
             return Math.Max(0, (interview ? OfferPass : ScreenPass) - Math.Max(0, score));
@@ -212,12 +193,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The first day the player may apply again for a post an employer turned them down for on <paramref name="refused"/>.</summary>
         public static int ReapplyFrom(int refused) => refused + ReapplyDays;
 
-        /// <summary>
-        /// The day an application of a save from before the day was kept was turned down, from what the save holds; -1 if it
-        /// cannot be told, and then it bars nothing. Turned down at the first answer: the answer's day (no interview, no offer).
-        /// Turned down after the interview: the interview's day (it is sat on that day). An offer withdrawn after asking for
-        /// more: not kept anywhere, so -1.
-        /// </summary>
+        /// <summary>The day an application was turned down, for a save from before that day was kept, or -1 (it then bars nothing).</summary>
         public static int RefusedDay(Application a)
         {
             if (a.Stage != (int)ApplyStep.Rejected || a.Offer > 0)
@@ -249,8 +225,6 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>An ask turned down: true if the employer takes the offer back (a large ask, or a second one, now and then).</summary>
         public static bool Withdraws(int askBp, int asks, int roll) => (askBp >= AskLargeBp || asks >= 1) && roll < 150;
-
-        // ---------------------------------------------------------------- the working day
 
         /// <summary>True on a working day of a profession's week (day 1 a Monday).</summary>
         public static bool WorkDay(Profession p, int day) => StudyRules.On(p.Days, day);
@@ -325,16 +299,11 @@ namespace RealLifeOverhaul.Careers
             to = start + ClockLateMinutes;
         }
 
-        /// <summary>
-        /// True if a working day not worked is excused for the home's internet: a day worked from home, with the internet
-        /// down over its start window for an outage (StudyRules.Excuses). No pay, no missed day, no warning, like a sick day.
-        /// </summary>
+        /// <summary>True if a day not worked from home is excused: the internet was down for an outage over its start window; like a sick day.</summary>
         public static bool DayExcused(WorkMode mode, int day, HomeNet net)
         {
             return FromHome(mode, day) && StudyRules.Excuses(net);
         }
-
-        // ---------------------------------------------------------------- an interview by video from home
 
         /// <summary>The minutes of the save an invitation's interview can be joined in: <see cref="InterviewEarlyMinutes"/> before its hour to <see cref="InterviewLateMinutes"/> after.</summary>
         public static void InterviewWindow(Application a, out int from, out int to)
@@ -398,8 +367,6 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The share of a job's working days worked since its last review, thousandths (all of them before any was due).</summary>
         public static int Attendance(Job j) => j.Due <= 0 ? 1000 : j.Worked * 1000 / j.Due;
 
-        // ---------------------------------------------------------------- leaving
-
         /// <summary>Days of notice a rank gives: a week, two from the third rung, four at the top.</summary>
         public static int NoticeDays(ProRank r, int rank) => r.Exec ? 28 : rank >= 2 ? 14 : 7;
 
@@ -456,17 +423,11 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// True if the reminder that the registration with the recruitment office ends today is due: on its last day
-        /// (<paramref name="until"/>), from <see cref="AgencyNoteHour"/>, and not yet sent for that registration
-        /// (<paramref name="told"/>: the last day it was sent for, kept in the save, so a reload does not send it again).
-        /// </summary>
+        /// <summary>True if the reminder that the agency registration ends today is due: its last day, from <see cref="AgencyNoteHour"/>, not yet sent (<paramref name="told"/>, saved).</summary>
         public static bool AgencyEnds(int until, int told, int day, int hour)
         {
             return until > 0 && until == day && told != until && hour >= AgencyNoteHour;
         }
-
-        // ---------------------------------------------------------------- the city's vacancies
 
         /// <summary>How many vacancies the city has open at once.</summary>
         public static int OpeningsWanted(int cycle, bool agency)

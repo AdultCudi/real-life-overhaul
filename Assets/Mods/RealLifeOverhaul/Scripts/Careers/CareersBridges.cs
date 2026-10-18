@@ -3,16 +3,10 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// What education and careers ask of the rest of the mod. Each is optional and has a default, so Scripts/Careers works
-    /// on its own; Scripts/Wiring/CareersLinks.cs fills them in. Careers never calls another feature directly.
-    /// </summary>
+    /// <summary>What careers ask of the rest of the mod; each optional with a default, filled in by Wiring/CareersLinks.cs.</summary>
     public static class CareersBridges
     {
-        /// <summary>
-        /// The internet of the home the player is in, or the first they have, over a span of minutes of the save (day * 1440
-        /// + minute; a start below 0: now): up, or why it was down (Utilities). Default: up (nothing to ask).
-        /// </summary>
+        /// <summary>The home's internet over a span of minutes of the save (a start below 0: now): up, or why it was down (Utilities). Default: up.</summary>
         public static Func<int, int, HomeNet> HomeInternet;
 
         /// <summary>The council's policy on education: +1 a tuition subsidy, -1 a surcharge, 0 as the city came (Civic). Default: 0.</summary>
@@ -60,28 +54,19 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Former colleagues join a firm of the player's: the place, the role, the level and how many; returns how many joined (Tech/People). Default: none.</summary>
         public static Func<string, int, int, int, int> JoinFirm;
 
-        /// <summary>
-        /// True once the features that take one of the city's buildings before the university have chosen theirs (the utilities
-        /// office, the courthouse: Wiring/CareersLinks), so that the university never takes one of them. Default: true.
-        /// </summary>
+        /// <summary>True once the utilities office and the courthouse have chosen their buildings, so the university never takes one. Default: true.</summary>
         public static Func<bool> OthersPicked;
 
         /// <summary>Where a building is, by the name the city knows it by.</summary>
         public delegate bool PlaceOf(string name, out string street, out int number);
 
-        /// <summary>
-        /// A tech company's headquarters (Tech/Sites: one of the city's office buildings, the same on every machine), by the
-        /// company's name: where its jobs are. Default: none, and a tech company's job is at an office building given by its name.
-        /// </summary>
+        /// <summary>A tech company's headquarters by its name (Tech/Sites), where its jobs are. Default: none (an office building given by its name).</summary>
         public static PlaceOf Headquarters;
 
         /// <summary>Changes whenever the tech companies' headquarters do (a tower chosen, moved, or its floors shared out again). Default: never.</summary>
         public static Func<long> HeadquartersStamp;
 
-        /// <summary>
-        /// The tech company whose floor of a tower the player is on now (Tech/Sites: several companies share a building, a
-        /// floor each), or null when the player is not on such a floor. Default: none.
-        /// </summary>
+        /// <summary>The tech company whose floor of a shared tower the player is on now (Tech/Sites), or null. Default: none.</summary>
         public static Func<string> FloorHere;
 
         public static long HeadquartersStampNow()

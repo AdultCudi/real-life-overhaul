@@ -5,7 +5,6 @@
 RLO-ARC-011	Assets/Mods/RealLifeOverhaul/Scripts/Core/GoingPublicLink.cs	2
 RLO-ARC-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/EmpireMotors.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessDesk.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Study/StudyRules.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Character/CharacterCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Character/ModAssets.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityActivity.cs	1
@@ -31,7 +30,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	4
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Planner/PlannerModel.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Utilities/BroadbandRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessGame.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusBuilding.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Character/HairRules.cs	2
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Character/PlayerDouble.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityPeople.cs	1
@@ -48,7 +46,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Photos/PhotosGame.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/Ragdoll.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYield.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusInterior.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
@@ -94,7 +91,6 @@ RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Performance/Tweaks/FarDistrict
 RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Performance/Tweaks/RefractionOff.cs	1
 RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneUiDump.cs	1
 RLO-PERF-006	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Character/CharacterQuality.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/ClaimedOffers.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/MapPicker.cs	2
@@ -259,25 +255,9 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessIssues.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYield.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYieldRules.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusApp.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusBuilding.cs	8
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CampusInterior.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareerApp.Life.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareerApp.Own.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareerApp.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Desk.cs	7
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Floors.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Own.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Study.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.Work.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersStore.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/PersonaEducation.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/SchoolDesk.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Study/CampusRules.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Study/StudyCatalogue.cs	19
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/OwnRules.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/ProCatalogue.cs	5
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/ProPath.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/WorkStore.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Character/GridLooks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Character/ModLooks.cs	1

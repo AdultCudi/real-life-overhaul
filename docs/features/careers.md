@@ -14,13 +14,13 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 | File | What it is |
 | --- | --- |
 | `Study/StudyCatalogue` | every course (short, diploma, degree, after a degree, certificate), the timetable, exams, grades, fees, grants, the student loan, learning and fading (game-free: EconomyCheck runs it) |
-| `Study/StudyRules` | the rules of studying: classes joined and missed, homework, the exam's mark, retakes, fees, the loan, skills, a child's degree, tutoring, an academy's students (game-free) |
+| `Study/StudyRules` (and .Learning, .Fees) | the rules of studying: classes joined and missed, homework, the exam's mark, retakes, fees, the loan, skills, a child's degree, tutoring, an academy's students (game-free) |
 | `Work/ProCatalogue` | twenty-five professions, each a ladder of ranks on the professions' roles and the player's skills (game-free) |
 | `Work/ProRules` | what a rank asks, an employer's score, the interview, the offer and haggling, the working day, notice, references, the city's vacancies (game-free) |
 | `Work/LifeRules` | reviews, rises, bonuses, promotion, burnout, office matters, search firms, redundancy, benefit, options, the pension, the top seats of a rival's company, a conflict of interest (game-free) |
 | `Work/OwnRules` | founding a company or a practice, a founder's record, restraint clauses and claims, freelance contracts (game-free) |
 | `CareersModel, Work/WorkModel, CareersStore, Work/WorkStore` | the save's records and its one line (game-free) |
-| `CareersDirector` | the one component (no Update): a one-second timer, the game's hour and day, the parts in partial files (.Study, .Work, .Life, .Own, .Degrees, .Family, .Tests) |
+| `CareersDirector` | the one component (no Update): a one-second timer, the game's hour and day, the parts in partial files (.Study and .Coursework; .Work, .Vacancies and .Applying; .Desk and .DeskDay; .ClassPlay, .Prompt and .Floors; .Life, .Own, .Degrees, .Family, .Tests) |
 | `Sitting` | a class, homework, an exam, a working day, a contract, tutoring or a ceremony left to the game's own activity panel and clock (Jobs/ShiftSkip) |
 | `CampusApp, CareerApp` | the Campus and Career apps in the game's own frame (GameUi.AppShell) |
 | `CampusBuilding` | Hudson City University: the largest office building of the city, with its sign |

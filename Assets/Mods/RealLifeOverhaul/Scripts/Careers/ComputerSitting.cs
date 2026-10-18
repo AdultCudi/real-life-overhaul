@@ -12,23 +12,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// An online class, a piece of homework or a working day at the player's computer at home, done the way the game's own
-    /// computer passes the time (PlayerActivity.EntertainActivity, opened by ComputerController.PerformActivity): the
-    /// player walks to the computer's chair, sits at it with their hands on it, its screen shows the game's work video,
-    /// they type now and then; the game's panel shows the progress, the time left, fast forward, "skip time" and Stop.
-    /// Pressed once (the computer's own buttons, Careers/ComputerButtons, or the Campus app's Attend at home), it goes the
-    /// whole way without a second press: the panel sees it for one frame not started, then on its way, as the game's own
-    /// activities are after their Start, and the walk order is given in that frame (docs/features/careers.md, "Setting
-    /// off").
-    ///
-    /// Whichever way it ends (the end of the time, Stop, fast forward or skip time to the end, energy running out in a class
-    /// or homework, the game's panel letting it go, the walk called off by a click elsewhere) the minutes are counted once
-    /// (<see cref="ClassTally"/>, then CareersDirector.Ended: to the enrolment, or as the day's work), as from anywhere
-    /// else; a walk called off counts nothing and says nothing. The player stands up as the game's computer stands them
-    /// up, and its study blocker goes whatever else fails, so that nothing leaves them held at the computer.
-    ///
-    /// One object per press. Its cost: a few integer sums when the game's clock moves a minute while it runs; the
-    /// director looks once a second whether the game's panel still has it. Nothing per frame of its own.
+    /// An online class, homework or a working day at the computer at home, as the game's computer passes the time: one press
+    /// walks the player there and sits them; the minutes count once (<see cref="ClassTally"/>). Nothing per frame of its own.
     /// </summary>
     internal sealed class ComputerSitting : IPlayerActivity
     {
@@ -103,7 +88,7 @@ namespace RealLifeOverhaul.Careers
             EntityController to = _chair != null ? _chair : (EntityController)_computer;
             if (player == null || _computer == null || !player.ExistsRoute(to, showErrorNotification: true))
             {
-                End(true, false);   // (the game has said it cannot be reached)
+                End(true, false);   // the game has said it cannot be reached
                 yield break;
             }
             Vector3 target = to.GetClosestNavMeshTargetPosition(PlayerHelper.GetPosition());
@@ -159,7 +144,7 @@ namespace RealLifeOverhaul.Careers
                 UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
                 if (_state == PlayerActivityState.Running && uis != null && uis.timeMachine != null && uis.timeMachine.isRunning)
                 {
-                    uis.timeMachine.CancelTimeMachine();   // (the game's panel then finishes the activity itself)
+                    uis.timeMachine.CancelTimeMachine();   // the game's panel then finishes the activity itself
                 }
             }
             catch (Exception e)
@@ -169,8 +154,7 @@ namespace RealLifeOverhaul.Careers
             End(false, true);
         }
 
-        // Every way out. settle: the minutes are told to the director (else it has let the sitting go itself); walking:
-        // the walk is called off here (else the game has given the player another walk order already).
+        // Every way out. settle: the minutes go to the director (else it has let the sitting go); walking: the walk is called off here.
         private void End(bool settle, bool walking)
         {
             if (_state == PlayerActivityState.Finished)
@@ -179,7 +163,7 @@ namespace RealLifeOverhaul.Careers
             }
             PlayerActivityState was = _state;
             _before = was;
-            _state = PlayerActivityState.Finished;   // (first: whatever the game's calls below do, nothing here runs twice)
+            _state = PlayerActivityState.Finished;   // first: whatever the game's calls below do, nothing here runs twice
             PlayerController player = InstanceBehavior<GameManager>.Instance != null ? InstanceBehavior<GameManager>.Instance.playerController : null;
             try
             {
@@ -213,8 +197,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // Up from the chair as the game's computer stands its user up. The study blocker goes whatever the game's calls
-        // before it do, so that nothing can leave the player held at the computer.
+        // Up from the chair as the game's computer stands its user up; the study blocker goes in a finally, whatever fails before it.
         private void StandUp(PlayerController player)
         {
             try
@@ -240,10 +223,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- the game's contract
-
-        // A class or homework ends when the player's energy runs out, as the game's studying does; a working day does not, as
-        // it does not at the desk (Careers/DeskWork) or on the Career app's panel (Jobs/ShiftSkip), so that it counts the same.
+        // A class or homework ends when the energy runs out, as the game's studying does; a working day does not, as at the desk.
         public bool RequiresEnergy() => !_work;
 
         public bool BlocksAutoSave() => true;
@@ -252,7 +232,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (FrameGuard.Off)
             {
-                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+                return Guard.Ended(this);   // its feature is off: ended as its Finish ends it, and the panel closes
             }
             try
             {
@@ -359,7 +339,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (_labels == null && _sitting != null)
                 {
-                    _labels = _sitting.SkipLabels();   // (made once)
+                    _labels = _sitting.SkipLabels();   // made once
                 }
                 return _labels;
             }

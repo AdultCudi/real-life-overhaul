@@ -1,20 +1,14 @@
 using Localizor;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
-using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The working life on the My job tab: the last review and the next, the boss's manner and the player's standing with
-    /// colleagues, burnout, an office matter to answer, share options, the pension, the clauses of the contract and a
-    /// conflict of interest; the buttons for asking for a rise, answering a matter, declaring a conflict and retiring
-    /// (overtime is worked at the desk, here only where no desk could be had).
-    /// </summary>
+    /// <summary>The working life on the My job tab: reviews, burnout, office matters, options, the pension, the clauses and a conflict of interest.</summary>
     public sealed partial class CareerApp
     {
-        partial void JobMore(InfoBox box, WorkFile w, StudyFile f, Job j, int day)
+        private void JobMore(InfoBox box, WorkFile w, Job j)
         {
             box.Section("reallife_meta_title_careers_life");
             int next = j.ReviewDay + LifeRules.ReviewEvery(GameCalendar.DaysPerYear);
@@ -53,10 +47,10 @@ namespace RealLifeOverhaul.Careers
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
         }
 
-        partial void JobButtons(Transform buttons, Job j, int day)
+        private void JobButtons(Transform buttons, Job j, int day)
         {
             string late = _director.CanWorkLate();
-            if (late == null && _director.DeskFallback(j))   // (overtime is worked at the desk, as the day is)
+            if (late == null && _director.DeskFallback(j))   // overtime is worked at the desk, as the day is
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_life_button_late", () => Do(_director.WorkLate));
             }
@@ -78,7 +72,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        partial void NoJobMore(InfoBox box, WorkFile w, int day)
+        private void NoJobMore(InfoBox box, WorkFile w, int day)
         {
             box.Section("reallife_ibox_sec_money");
             if (w.BenefitUntil >= day && w.BenefitWeek > 0)
@@ -88,11 +82,11 @@ namespace RealLifeOverhaul.Careers
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
             if (w.Retired <= 0)
             {
-                RetireButton(box, w);
+                RetireButton(box);
             }
         }
 
-        partial void CvMore(InfoBox box, WorkFile w, StudyFile f, int day)
+        private void CvMore(InfoBox box, WorkFile w)
         {
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
             if (w.Retired > 0)
@@ -101,11 +95,11 @@ namespace RealLifeOverhaul.Careers
             }
             else if (w.Job != null)
             {
-                RetireButton(box, w);
+                RetireButton(box);
             }
         }
 
-        private void RetireButton(InfoBox box, WorkFile w)
+        private void RetireButton(InfoBox box)
         {
             if (_director.CanRetire() != null)
             {
@@ -114,7 +108,8 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_life_button_retire", () => GameConfirm.Show(
-                "reallife_life_confirm_retire_title".Localize(), "reallife_life_confirm_retire_body".Localize(new { age = LifeRules.RetireAge.ToString(), cut = (LifeRules.EarlyCutBp / 100).ToString() + "%" }),
+                "reallife_life_confirm_retire_title".Localize(),
+                "reallife_life_confirm_retire_body".Localize(new { age = LifeRules.RetireAge.ToString(), cut = (LifeRules.EarlyCutBp / 100).ToString() + "%" }),
                 () => UiClone.Safe(() => Do(_director.Retire)), null, null, null, true, true));
         }
     }

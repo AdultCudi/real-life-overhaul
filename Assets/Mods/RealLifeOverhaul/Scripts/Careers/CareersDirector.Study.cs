@@ -1,25 +1,15 @@
 using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.GameUi;
-using RealLifeOverhaul.Tech;
 using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>
-    /// The study part: the courses the player is on and has done, and their skills (Careers/Study/StudyRules). On the hour
-    /// a class that has gone by unattended is counted as missed, and a class about to start is reminded of; on the day,
-    /// classes missed while the game was elsewhere are counted, a lapsed exam is a fail, a fee instalment falls due, the
-    /// student loan's interest is added and unused skills fade a little. A class, homework or an exam is one of the game's
-    /// activities, done where it is done (CareersDirector.ClassPlay): at a desk of the school or a classroom of the
-    /// university, at the computer at home, or, where nothing in the world fits (a hospital's ward, the university while
-    /// its floors are not there), on the game's panel where the player stands.
-    /// </summary>
+    /// <summary>The study part: the courses under way and done and the skills; classes missed and reminded of on the hour, fees, exams and fading on the day.</summary>
     public sealed partial class CareersDirector
     {
         public const int TabCourses = 0, TabStudying = 1, TabResults = 2, TabSkills = 3;
-
 
         private StudyFile _study;
         private bool _studyOn;
@@ -27,7 +17,7 @@ namespace RealLifeOverhaul.Careers
         private CampusApp _campusView;
         private bool _campusGaveUp;
         private int _reminded = -1;
-        private int _excuseTold = -1;   // the class (day * 100 + course) whose excuse for an outage has been told, so it is told once
+        private int _excuseTold = -1;   // day * 100 + course of the outage excuse told, so it is told once
 
         public bool StudyRunning => _studyOn;
 
@@ -35,8 +25,6 @@ namespace RealLifeOverhaul.Careers
         public StudyFile Study => _studyOn ? _study : null;
 
         private int StudySeed => _study != null ? _study.Seed : 1;
-
-        // ---------------------------------------------------------------- starting and stopping
 
         private void StartStudy()
         {
@@ -90,7 +78,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (!unloading)
             {
-                ComputerButtons.Remove();   // (switched off: the game's computer as it was)
+                ComputerButtons.Remove();   // switched off: the game's computer as it was
             }
         }
 
@@ -101,8 +89,6 @@ namespace RealLifeOverhaul.Careers
                 data[CareersStore.Key] = CareersStore.Write(_study);
             }
         }
-
-        // ---------------------------------------------------------------- what is on offer
 
         /// <summary>True if a course is offered with the options as they are: the school's courses with studying, the rest with the university.</summary>
         public static bool Offered(CourseDef c)
@@ -116,8 +102,6 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>The part of the council's policy that falls on fees now: -1, 0 or 1.</summary>
         public static int Council => CareersBridges.CouncilNow();
-
-        // ---------------------------------------------------------------- the hour and the day
 
         private void StudyHour(int day, int hour)
         {
@@ -137,8 +121,8 @@ namespace RealLifeOverhaul.Careers
                     changed |= GoneBy(e, day);
                     changed |= AfterClass(e, day, false);
                 }
-                ClassDue(e, day, hour);   // a class beginning now: the log line, and a notice if it cannot be joined where the player is
-                // A class about to start: the reminder an hour before (once a class).
+                ClassDue(e, day, hour);   // a class beginning now: the log line, and a notice if it cannot be joined here
+                // the reminder an hour before a class, once
                 if (StudyRules.On(StudyRules.Days(c, mode), day) && StudyRules.Hour(c, mode) == hour + 1 && e.SettledDay < day && day >= e.Start)
                 {
                     int key = day * 100 + c.Id;
@@ -156,12 +140,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>
-        /// A day's class gone by without the player: excused if it is held online from home and the home's internet was
-        /// down for an outage at any minute it could be joined in (StudyRules.ClassExcused), else missed. Decided once, when
-        /// its window has shut, from the connection's state then; the Campus app and a notice say it was excused. True if
-        /// the class was counted either way. One question to Utilities for an online class, nothing for the rest.
-        /// </summary>
+        /// <summary>A class gone by without the player: excused if held online through an outage over its join window, else missed; true if counted.</summary>
         private bool GoneBy(Enrolment e, int day)
         {
             CourseDef c = e.Def;
@@ -238,7 +217,7 @@ namespace RealLifeOverhaul.Careers
                     Results(e, day, false);
                     continue;
                 }
-                Instalment(e, day);
+                Instalment(e);
             }
             long interest = StudyRules.LoanInterest(_study.LoanCents, GameCalendar.DaysPerYear);
             _study.LoanCents += interest;
@@ -252,7 +231,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>An instalment that has fallen due is charged, or lent; one that cannot be paid stands as owed and the classes wait for it.</summary>
-        private void Instalment(Enrolment e, int day)
+        private void Instalment(Enrolment e)
         {
             CourseDef c = e.Def;
             int due = Prices.At(StudyRules.InstalmentDue(e));
@@ -308,8 +287,6 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        // ---------------------------------------------------------------- enrolling
-
         /// <summary>The share of a course's fee the player would have off now, thousandths.</summary>
         public int GrantFor(CourseDef c)
         {
@@ -331,7 +308,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (refusal != EnrolRefusal.None)
             {
-                return "reallife" + "_study_why_" + Refusal(refusal);   // (put together, so the text check reads only whole keys)
+                return "reallife" + "_study_why_" + Refusal(refusal);   // put together, so the text check reads only whole keys
             }
             int day = Save.Day;
             var e = new Enrolment { Course = c.Id, Mode = (int)mode, Start = day, Grant = GrantFor(c), OnLoan = loan && c.Loanable && LoanOn };
@@ -362,7 +339,7 @@ namespace RealLifeOverhaul.Careers
             _study.Courses.Add(e);
             if (!c.Timetabled)
             {
-                StudyRules.Advance(e, day);   // (a certificate with nothing to study: never)
+                StudyRules.Advance(e, day);   // a certificate with no homework set goes straight to its exam
             }
             int next = StudyRules.NextClass(e, day, CareersGame.MinuteOfDay, -1) / (24 * 60);
             Tell(NotificationType.Success, c.Timetabled ? "reallife_study_note_enrolled" : "reallife_study_note_enrolled_home",
@@ -401,359 +378,6 @@ namespace RealLifeOverhaul.Careers
             Changed();
         }
 
-        // ---------------------------------------------------------------- where it can be done
-
-        /// <summary>The words for where a course's classes are.</summary>
-        public string PlaceOf(CourseDef c, StudyMode mode)
-        {
-            if (mode == StudyMode.Distance || c.Campus == Campus.Online)
-            {
-                return CareersText.Campus(Campus.Online);
-            }
-            if (c.Campus == Campus.University && CampusRules.FloorOf(c.Id) > 0 && _interior != null && _interior.Available)
-            {
-                return CareersText.Fill("reallife_campus_place_room", "campus", CampusWhere(c.Campus), "floor", CampusRules.FloorOf(c.Id).ToString(), "room", CampusRules.RoomOf(c.Id).ToString());
-            }
-            return CampusWhere(c.Campus);
-        }
-
-        /// <summary>Where the player is now, as study reads it.</summary>
-        private StudyHere Here()
-        {
-            bool home = CareersGame.AtHome();
-            HomeNet net = home ? CareersBridges.HomeNetNow() : HomeNet.Online;
-            return new StudyHere
-            {
-                School = CareersGame.InSchool(),
-                Hospital = CareersGame.InHospital(),
-                University = AtUniversity(),
-                Home = home,
-                Online = home && net == HomeNet.Online,
-                Net = net
-            };
-        }
-
-        /// <summary>True if the player is where a course's classes are held now; else the reason key.</summary>
-        private string AtClass(CourseDef c, StudyMode mode)
-        {
-            return StudyRules.AtClass(c, mode, Here());
-        }
-
-        /// <summary>Homework is done at home or where the classes are.</summary>
-        private string AtDesk(CourseDef c, StudyMode mode)
-        {
-            if (CareersGame.AtHome())
-            {
-                return c.Campus == Campus.Online ? StudyRules.NoNetWhy(CareersBridges.HomeNetNow()) : null;   // (homework has no hour: nothing to excuse)
-            }
-            return c.Timetabled && mode != StudyMode.Distance && AtClass(c, mode) == null ? null : "reallife_study_why_not_desk";
-        }
-
-        /// <summary>Exams are sat where the classes are; online courses and certificates are examined at the school.</summary>
-        private string AtExam(CourseDef c, StudyMode mode)
-        {
-            return StudyRules.AtExam(c, mode, Here());
-        }
-
-        // ---------------------------------------------------------------- a class, homework, an exam
-
-        /// <summary>Whether the class of a course can be joined now, and how long it still runs; else the reason key.</summary>
-        public string CanAttend(Enrolment e, out int minutes)
-        {
-            minutes = 0;
-            CourseDef c = e != null ? e.Def : null;
-            if (c == null || e.Stage != (int)EnrolStage.Studying || !c.Timetabled)
-            {
-                return "reallife_study_why_no_class";
-            }
-            if (e.FeeLate)
-            {
-                return "reallife_study_why_fee_owed";
-            }
-            StudyMode mode = (StudyMode)e.Mode;
-            if (e.SettledDay >= Save.Day || !StudyRules.Joinable(c, mode, Save.Day, CareersGame.MinuteOfDay, out minutes))
-            {
-                return "reallife_study_why_no_class";
-            }
-            return AtClass(c, mode);
-        }
-
-        public string Attend(int course)
-        {
-            Enrolment e = _studyOn ? _study.Live(course) : null;
-            int minutes;
-            string why = CanAttend(e, out minutes);
-            if (InRooms(e))
-            {
-                return ToRoom(e, why, SittingKind.Class);   // (attended in its classroom: there, and sat down at its desk)
-            }
-            if (why != null)
-            {
-                return why;
-            }
-            if (ClassPlayRules.HeldOnline(e.Def, (StudyMode)e.Mode))
-            {
-                return AtComputer(course, SittingKind.Class, null);   // (online, from home: at the computer)
-            }
-            if (AtTheSchool(e, false) && SchoolDesk.Works)
-            {
-                return ToSchoolDesk(e, SittingKind.Class);   // (at the school: at one of its desks)
-            }
-            return Offer(ClassSitting(e, minutes));   // (a ward, or the university without its floors: where the player stands)
-        }
-
-        /// <summary>A class as one of the game's activities: its course, which class of how many, and until when.</summary>
-        private Sitting ClassSitting(Enrolment e, int minutes)
-        {
-            CourseDef c = e.Def;
-            return new Sitting(this, SittingKind.Class, c.Id, minutes, CareersText.Course(c.Id), true,
-                CareersText.T("reallife_study_skip_class", "number", (e.Seen + 1).ToString(), "of", c.Sessions.ToString()),
-                CareersText.T("reallife_study_skip_until", "time", CareersText.Minutes(minutes)));
-        }
-
-        /// <summary>A piece of homework (or revision, once the set homework is done) as one of the game's activities.</summary>
-        private Sitting HomeworkSitting(Enrolment e)
-        {
-            CourseDef c = e.Def;
-            bool revision = e.Homework >= StudyRules.HomeworkSet(e) || e.Homework >= c.Homework;
-            return new Sitting(this, SittingKind.Homework, c.Id, StudyCatalogue.HomeworkHours * 60, CareersText.Course(c.Id), true,
-                CareersText.T(revision ? "reallife_study_skip_revision" : "reallife_study_skip_homework", "number", (e.Homework + 1).ToString(), "of", c.Homework.ToString()));
-        }
-
-        /// <summary>An exam (or its retake) as one of the game's activities; its fee is the caller's to charge.</summary>
-        private Sitting ExamSitting(Enrolment e)
-        {
-            CourseDef c = e.Def;
-            return new Sitting(this, SittingKind.Exam, c.Id, StudyCatalogue.ExamHours * 60, CareersText.Course(c.Id), true,
-                CareersText.T(e.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString()));
-        }
-
-        public string CanHomework(Enrolment e)
-        {
-            CourseDef c = e != null ? e.Def : null;
-            if (c == null || !StudyRules.HomeworkOpen(e))
-            {
-                return "reallife_study_why_no_homework";
-            }
-            return AtDesk(c, (StudyMode)e.Mode);
-        }
-
-        public string Homework(int course)
-        {
-            Enrolment e = _studyOn ? _study.Live(course) : null;
-            string why = CanHomework(e);
-            if (why != null)
-            {
-                return why;
-            }
-            if (CareersGame.AtHome())
-            {
-                return AtComputer(course, SittingKind.Homework, null);   // (at home: at the computer)
-            }
-            if (InRooms(e))
-            {
-                return ToRoom(e, null, SittingKind.Homework);   // (at the university: at its classroom's desk)
-            }
-            if (e.Def.Campus == Campus.School && CareersGame.InSchool() && SchoolDesk.Works)
-            {
-                return ToSchoolDesk(e, SittingKind.Homework);   // (at the school: at one of its desks)
-            }
-            return Offer(HomeworkSitting(e));   // (on a ward, or at the university without its floors: where the player stands)
-        }
-
-        public string CanSit(Enrolment e)
-        {
-            CourseDef c = e != null ? e.Def : null;
-            if (c == null || !StudyRules.ExamDay(e, Save.Day))
-            {
-                return "reallife_study_why_no_exam";
-            }
-            int hour = Save.Hour;
-            if (hour < StudyCatalogue.ExamOpens || hour >= StudyCatalogue.ExamCloses)
-            {
-                return "reallife_study_why_exam_hours";
-            }
-            if (e.Stage == (int)EnrolStage.Retake && e.FeeLate)
-            {
-                return "reallife_study_why_fee_owed";
-            }
-            return AtExam(c, (StudyMode)e.Mode);
-        }
-
-        public string Sit(int course)
-        {
-            Enrolment e = _studyOn ? _study.Live(course) : null;
-            string why = CanSit(e);
-            if (InRooms(e))
-            {
-                return ToRoom(e, why, SittingKind.Exam);   // (sat in its classroom: there, and sat down at its desk)
-            }
-            if (why != null)
-            {
-                return why;
-            }
-            if (CareersGame.InSchool() && SchoolDesk.Works)
-            {
-                return ToSchoolDesk(e, SittingKind.Exam);   // (at the school: at one of its desks; the retake's fee is charged as it is begun)
-            }
-            CourseDef c = e.Def;
-            if (e.Stage == (int)EnrolStage.Retake)
-            {
-                int fee = Prices.At(StudyRules.RetakeFee(c));
-                if (!CareersGame.Charge(fee, CareersGame.FeeKey, CareersText.Course(c.Id)))
-                {
-                    return "reallife_study_why_money";
-                }
-                e.Fee += fee;
-            }
-            return Offer(ExamSitting(e));
-        }
-
-        private void StudyEnded(Sitting s, int minutes, bool whole)
-        {
-            Enrolment e = _study.Live(s.Of);
-            CourseDef c = e != null ? e.Def : null;
-            int day = Save.Day;
-            if (c == null)
-            {
-                return;
-            }
-            bool stressed = StudyRules.Studied(_study, day, minutes);
-            if (stressed)
-            {
-                CareersGame.Mood(ModState.Stressed);
-                Tell(NotificationType.Warning, "reallife_study_note_stressed", Data("hours", StudyCatalogue.StressedWeekHours.ToString()), TabStudying, null);
-            }
-            int learning = StudyRules.Learning(StudyRules.School(_study));
-            switch (s.Kind)
-            {
-                case SittingKind.Class:
-                    if (minutes * 1000 < s.Length * StudyCatalogue.CountedShare)
-                    {
-                        Tell(NotificationType.Warning, "reallife_study_note_left_early", Data("course", CareersText.Course(c.Id)), TabStudying, CampusApp.CourseRow + c.Id);
-                        return;
-                    }
-                    if (StudyRules.Attend(e, day))
-                    {
-                        Teach(c.SkillA, StudyRules.ClassGain(c.GainA, c.Sessions, StudyRules.Points(_study, c.SkillA), learning), day);
-                        Teach(c.SkillB, StudyRules.ClassGain(c.GainB, c.Sessions, StudyRules.Points(_study, c.SkillB), learning), day);
-                        AfterClass(e, day, true);
-                    }
-                    break;
-                case SittingKind.Homework:
-                    if (!whole)
-                    {
-                        return;
-                    }
-                    e.Homework++;
-                    Teach(c.SkillA, StudyRules.HomeworkGain(c, true, StudyRules.Points(_study, c.SkillA), learning), day);
-                    Teach(c.SkillB, StudyRules.HomeworkGain(c, false, StudyRules.Points(_study, c.SkillB), learning), day);
-                    if (!c.Timetabled && StudyRules.Advance(e, day))
-                    {
-                        Tell(NotificationType.Success, "reallife_study_note_exam_open", Data("course", CareersText.Course(c.Id), "day", CareersText.Day(e.ExamTo)), TabStudying, CampusApp.CourseRow + c.Id);
-                    }
-                    break;
-                case SittingKind.Exam:
-                    if (!whole)
-                    {
-                        Tell(NotificationType.Warning, "reallife_study_note_exam_left", Data("course", CareersText.Course(c.Id)), TabStudying, CampusApp.CourseRow + c.Id);
-                        return;
-                    }
-                    Examine(e, day);
-                    break;
-            }
-        }
-
-        private void Teach(int skill, int thousandths, int day)
-        {
-            StudyRules.Learn(_study, skill, thousandths, day);
-        }
-
-        /// <summary>After a class is counted or missed: the course moves on to its exam (a short course's is sat at once, at its last class), or the student is barred. True if anything changed.</summary>
-        private bool AfterClass(Enrolment e, int day, bool attended)
-        {
-            CourseDef c = e.Def;
-            if (!StudyRules.Advance(e, day))
-            {
-                return attended;
-            }
-            string name = CareersText.Course(c.Id);
-            if (e.Stage == (int)EnrolStage.Barred)
-            {
-                _study.Finish(e);
-                CareersGame.Mood(ModState.MoodDown);
-                Tell(NotificationType.Warning, "reallife_study_note_barred", Data("course", name, "share", CareersText.Mille(StudyCatalogue.Barred)), TabResults, null);
-                return true;
-            }
-            if (c.Kind == CourseKind.Short && attended)
-            {
-                Examine(e, day);   // a short course's assessment is its last class
-                return true;
-            }
-            Tell(NotificationType.Info, "reallife_study_note_exam_open", Data("course", name, "day", CareersText.Day(e.ExamTo)), TabStudying, CampusApp.CourseRow + c.Id);
-            return true;
-        }
-
-        private void Examine(Enrolment e, int day)
-        {
-            CourseDef c = e.Def;
-            int score = StudyRules.ExamScore(e, StudyRules.Points(_study, c.SkillA), CareersGame.Energy < 30f, StudyRules.Luck(StudySeed, e));
-            bool passed = StudyRules.Sit(e, score, day);
-            StudyRules.Use(_study, c.SkillA, day);
-            StudyRules.Use(_study, c.SkillB, day);
-            Results(e, day, passed);
-        }
-
-        /// <summary>A result: a pass and its grade, a fail with a retake to come, or a fail for good.</summary>
-        private void Results(Enrolment e, int day, bool passed)
-        {
-            CourseDef c = e.Def;
-            string name = CareersText.Course(c.Id);
-            if (passed)
-            {
-                _study.Finish(e);
-                bool top = e.Grade >= StudyRules.TopGrade(c);
-                CareersGame.Mood(top ? ModState.MoodUpBig : ModState.MoodUp);
-                Tell(NotificationType.Success, "reallife_study_note_passed", Data("course", name, "grade", CareersText.Grade(c, e.Grade), "score", e.Score.ToString()), TabResults, null);
-                Passed(e, day);
-                return;
-            }
-            CareersGame.Mood(ModState.MoodDown);
-            if (e.Stage == (int)EnrolStage.Retake)
-            {
-                Tell(NotificationType.Warning, "reallife_study_note_failed_retake", Data("course", name, "score", e.Score.ToString(), "day", CareersText.Day(e.ExamFrom)), TabStudying,
-                    CampusApp.CourseRow + c.Id);
-                return;
-            }
-            _study.Finish(e);
-            Tell(NotificationType.Warning, "reallife_study_note_failed", Data("course", name, "score", e.Score.ToString()), TabResults, null);
-        }
-
-        /// <summary>What a pass brings beyond the qualification itself.</summary>
-        private void Passed(Enrolment e, int day)
-        {
-            CourseDef c = e.Def;
-            if (c.Id == StudyCatalogue.DrivingRefresher)
-            {
-                int off = 0;
-                try
-                {
-                    off = CareersBridges.Refresher != null ? CareersBridges.Refresher(StudyCatalogue.RefresherPoints) : 0;
-                }
-                catch (Exception ex)
-                {
-                    Logger?.Error(ex);
-                }
-                if (off > 0)
-                {
-                    Tell(NotificationType.Success, "reallife_study_note_points_off", Data("points", off.ToString()), TabResults, null);
-                }
-            }
-            PassedMore(e, day);
-        }
-
-        // ---------------------------------------------------------------- the phone
-
         private void InstallCampus()
         {
             var view = new CampusApp(this);
@@ -773,7 +397,8 @@ namespace RealLifeOverhaul.Careers
                 _campusGaveUp = !tryAgain;
                 if (_campusGaveUp)
                 {
-                    Logger?.Warn("Careers: the game's phone is not built as this version expects, so the Campus app is left off. Courses under way still run and the notifications still say what is due.");
+                    Logger?.Warn("Careers: the game's phone is not built as this version expects, so the Campus app is left off."
+                                 + " Courses under way still run and the notifications still say what is due.");
                 }
                 return;
             }
@@ -823,11 +448,8 @@ namespace RealLifeOverhaul.Careers
             _campusApp.SetBadge(count);
         }
 
-        // ---------------------------------------------------------------- what the later parts add (each in its own file)
-
         /// <summary>True while the student loan can be used (the university's part).</summary>
         private static bool LoanOn => UniversityOpen;
-
 
         private void Lend(Enrolment e, int whole)
         {
@@ -836,9 +458,5 @@ namespace RealLifeOverhaul.Careers
             _study.LoanTaken += whole * 100L;
             Borrowed(whole);
         }
-
-        partial void Borrowed(int whole);
-
-        partial void PassedMore(Enrolment e, int day);
     }
 }
