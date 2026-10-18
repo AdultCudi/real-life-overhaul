@@ -9,18 +9,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What a car of the player's needs, as one more reading in the game's own vehicle panel.
-    ///
-    /// While something is driven the game shows its panel at the bottom of the screen (UI.ItemPanel.ItemPanelUI); in
-    /// its headline the object VehicleInfo (UI.ItemPanel.VehicleInfoPanel, a horizontal layout) holds the steering
-    /// assist switch and four readings, each a picture of 32 x 32 and a value in the headline's dark type: the
-    /// parking zone, the cargo, the fuel as a percentage (orange from 50, red from 30) and the condition. The fuel is
-    /// therefore the game's to show, and the mod draws no gauge of its own.
-    ///
-    /// The mod adds what the game does not know: a fifth reading, a copy of "Condition" made once per city and put
-    /// after it, which says SERVICE DUE, TYRES WORN, BRAKES WORN or BREAKDOWN in the game's orange or red and is
-    /// switched off while nothing needs attention. It is a child of the game's panel, so it comes and goes with it.
-    /// Car ownership calls <see cref="Show"/> from its timer; the text is written only when the word changes.
+    /// What a car of the player's needs (SERVICE DUE, TYRES WORN, BRAKES WORN, BREAKDOWN), as a fifth reading in the game's
+    /// own vehicle panel: a copy of its "Condition" reading made once a city, a child of the panel so it comes and goes with
+    /// it. The game already shows the fuel there. Car ownership calls <see cref="Show"/> from its timer; the text is written
+    /// only when the word changes.
     /// </summary>
     public static class CarDash
     {
@@ -34,8 +26,10 @@ namespace RealLifeOverhaul
         private static bool _on;
         private static bool _failed;
 
-        /// <param name="word">Final words in capitals ("SERVICE DUE"). Pass the same string object while nothing changes.</param>
-        /// <param name="urgent">The game's red (a breakdown); otherwise its orange.</param>
+        /// <summary>
+        /// Shows <paramref name="word"/> (capitals; the same string object while nothing changes) in the game's red when
+        /// <paramref name="urgent"/>, else its orange.
+        /// </summary>
         public static void Show(string word, bool urgent)
         {
             if (_failed)
@@ -102,7 +96,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The reading out of the game's panel; with <paramref name="forget"/>, a refusal of this session is forgotten too (the city unloads).</summary>
+        /// <summary>Takes the reading out of the panel; <paramref name="forget"/> also forgets this session's refusal (the city unloads).</summary>
         public static void Remove(bool forget = true)
         {
             try
@@ -158,11 +152,11 @@ namespace RealLifeOverhaul
             if (_picture != null)
             {
                 _picture.raycastTarget = false;
-                GameSprites.Want("Icon-ExclamationMark", "Icon-Info-32");   // (one look through the game's pictures for both)
+                GameSprites.Want("Icon-ExclamationMark", "Icon-Info-32");
                 Sprite sprite = GameSprites.Get("Icon-ExclamationMark") ?? GameSprites.Get("Icon-Info-32");
                 if (sprite != null)
                 {
-                    _picture.sprite = sprite;   // (failing both, the game's own picture for condition stays: the reading is about the car's state either way)
+                    _picture.sprite = sprite;
                 }
             }
             copy.SetActive(false);

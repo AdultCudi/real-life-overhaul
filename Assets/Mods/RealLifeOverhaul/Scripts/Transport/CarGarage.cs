@@ -5,14 +5,14 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>What the mod remembers about one car the player owns. Everything the game itself keeps (fuel, damage, dirt, tickets) stays the game's.</summary>
+    /// <summary>What the mod remembers about one car the player owns; what the game keeps (fuel, damage, dirt) stays the game's.</summary>
     public sealed class CarRecord
     {
         public string Id;             // the game's vehicle instance id
-        public float Km;              // driven since the mod first saw it
+        public float Km;              // kilometres driven since the mod first saw it
         public float ServicedKm;      // the reading at its last service
         public float Tyres = 1f;      // 1 new, 0 bald
-        public float Brakes = 1f;
+        public float Brakes = 1f;     // 1 new, 0 worn out
         public int InsuredUntil;      // the last day of the paid period; 0 for no policy
         public int Claims;            // claims that still count against the premium
         public int LastClaimDay;
@@ -25,17 +25,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The rules of car ownership: what things cost, how long they last, what the odds are.
-    /// Game-free apart from Mathf, and every figure is here.
-    ///
-    /// The game already has fuel (a tank per vehicle type, 1.30 a litre at a station, a 10-litre
-    /// can for 30), bodywork damage (repaired at a station's garage for damage x half the car's
-    /// price), dirt (washed there for 50), parking tickets and towing. Those are left alone.
-    /// What is added, per car: distance driven, a service interval, tyres and brakes that wear,
-    /// breakdowns when the service is neglected, insurance that pays most of a repair bill, and
-    /// a yearly registration and inspection. Prices are shares of the car's own list price
-    /// (VehicleType.price) between a floor and a ceiling, so a hatchback is cheap to run and a
-    /// supercar is not.
+    /// The rules of car ownership: prices, wear, odds. The game's own fuel, bodywork damage, dirt, tickets and towing are
+    /// left alone; this adds service intervals, tyres and brakes that wear, breakdowns, insurance and a yearly registration.
+    /// Prices are shares of the car's list price between a floor and a ceiling, so a supercar costs more to run.
     /// </summary>
     public static class CarRules
     {
@@ -43,34 +35,34 @@ namespace RealLifeOverhaul
         public const float TyresShare = 0.016f, TyresLeast = 180f, TyresMost = 1400f;
         public const float BrakesShare = 0.008f, BrakesLeast = 90f, BrakesMost = 700f;
         public const float RegistrationBase = 60f, RegistrationShare = 0.002f, RegistrationMost = 300f;
-        public const float RegistrationLate = 75f;
+        public const float RegistrationLate = 75f;    // the fee for a late renewal, at the start's prices
         public const int RegistrationEarly = 30;      // days before it runs out that it can be renewed
         public const float PremiumShare = 0.006f, PremiumLeast = 40f, PremiumMost = 2500f;   // for four weeks of cover: a policy's is in proportion
         public const float PremiumPerClaim = 0.25f;   // each claim that still counts adds a quarter
-        /// <summary>A policy runs a month of the calendar the player chose (GameCalendar.MonthDays).</summary>
+        /// <summary>A policy runs a month of the player's calendar.</summary>
         public static int PolicyDays => GameCalendar.MonthDays;
         private const float PremiumDays = 28f;        // the days the premium's figures are written for
         public const int ClaimForgottenAfter = 56;    // days without a claim after which one stops counting
         public static float Excess => Prices.At(100f);             // of a repair bill the owner always pays
         public const float Cover = 0.8f;              // of the rest that the insurer pays
         public static float RoadsideCallOut => Prices.At(95f);     // a mechanic to a breakdown (half for an insured car)
-        public static float FuelCallOut => Prices.At(34f);         // a can brought to the roadside...
+        public static float FuelCallOut => Prices.At(34f);         // a can brought to the roadside
         public const float FuelLitres = 10f;
-        public static float FuelPerLitre => Prices.At(2.6f);       // ...at twice the pump price
-        public static float TowFee => VehicleTow.Fee;   // the one tow of the mod's (Driving/VehicleTow)
+        public static float FuelPerLitre => Prices.At(2.6f);       // twice the pump price
+        public static float TowFee => VehicleTow.Fee;
         public const float ReplaceBelow = 0.35f;      // tyres and brakes are changed at a service when this worn
-        public const float WarnBelow = 0.2f;
+        public const float WarnBelow = 0.2f;          // and the player is told at this
         public const float WearFrom = 0.3f;           // below this they begin to tell
         public const float GripAtBald = 0.88f;        // of the tyre's grip left at 0
         public const float BrakeAtWorn = 0.80f;       // of the brake torque left at 0
-        public const float GraceKm = 8f;              // a roadside repair holds this long
+        public const float GraceKm = 8f;              // kilometres a roadside repair holds
 
         public static float Clamp(float price, float share, float least, float most)
         {
             return Mathf.Round(Mathf.Clamp(price * share, least, most) / 5f) * 5f;
         }
 
-        // (The car's list price is the game's, at the start's prices: what it comes to is at today's, Core/Prices.)
+        // The car's list price is at the start's prices; Prices.At brings it to today's.
         public static float Service(float price) => Prices.At(Clamp(price, ServiceShare, ServiceLeast, ServiceMost));
         public static float TyreSet(float price) => Prices.At(Clamp(price, TyresShare, TyresLeast, TyresMost));
         public static float BrakeSet(float price) => Prices.At(Clamp(price, BrakesShare, BrakesLeast, BrakesMost));
@@ -128,8 +120,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The chance of breaking down in the next kilometre: none until the service is overdue,
-        /// 0.4 % just after, 3 % a whole interval late; one percent more with bodywork damage of 70 % or worse.
+        /// The chance of breaking down in the next kilometre: none until the service is overdue, 0.4% just after, 3% a whole
+        /// interval late; one per cent more with bodywork damage of 70% or worse.
         /// </summary>
         public static float BreakdownPerKm(float sinceService, float interval, float damage)
         {
@@ -153,9 +145,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The records of the player's cars, kept in the save's modData under one key and keyed by
-    /// the game's vehicle instance id. A record whose car is no longer in the save (sold, taken
-    /// away) is dropped when the save is read and again whenever it is written.
+    /// The records of the player's cars, in the save's modData under one key, by the game's vehicle instance id. A record
+    /// whose car the save no longer has is dropped when the save is read and whenever it is written.
     /// </summary>
     public static class CarGarage
     {
@@ -257,7 +248,7 @@ namespace RealLifeOverhaul
             return gone;
         }
 
-        public static bool Contains(List<VehicleInstance> cars, string id)
+        private static bool Contains(List<VehicleInstance> cars, string id)
         {
             for (int i = 0; cars != null && i < cars.Count; i++)
             {
