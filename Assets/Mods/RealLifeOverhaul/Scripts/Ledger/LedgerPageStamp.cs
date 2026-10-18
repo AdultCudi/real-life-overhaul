@@ -3,14 +3,10 @@ using System;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// What a page of the City Ledger was last laid out for (LedgerPage.Turn): the paper (the edition, or a special front
-    /// page), the language, the sheet's size and one screen pixel in its units, the face it is set in, and the two prices it
-    /// prints (a copy's, a week's). The page's texts, rules and chart are objects that stay as they were written, so a page
-    /// turned to again (a tab, the paper opened again) for the same of all of these is the page as it was laid out: it is
-    /// not laid out again. Laying out the front page measures its type up to forty times, an estimated 20 to 150 ms a turn;
-    /// the paper changes once a morning.
-    ///
-    /// Game-free: the offline checks run it as it is (EconomyCheck, AppsChecks.cs).
+    /// What a page of the City Ledger was last laid out for (LedgerPage.Turn): the paper, the language, the sheet's
+    /// size and pixel, the face and the two prices it prints. A page turned to again for the same is left as it was
+    /// laid out: laying out the front page measures its type up to forty times, some 20 to 150 ms. Game-free
+    /// (EconomyCheck runs it).
     /// </summary>
     public struct LedgerPageStamp
     {

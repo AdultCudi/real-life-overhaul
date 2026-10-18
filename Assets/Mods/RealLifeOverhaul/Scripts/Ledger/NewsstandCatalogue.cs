@@ -1,32 +1,28 @@
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// Newsstand's fixed figures: the papers that can be read on the phone, what each of them prints, what a week of
-    /// each costs, and how many mornings are kept to read again. Four titles, all written from the same morning's
-    /// news as the printed City Ledger, each with its own focus; and the pass, one subscription for all four at less
-    /// than the four together. Every amount of money is at the start's prices and goes through Prices.At when it is
-    /// charged or shown. Game-free.
+    /// Newsstand's fixed figures: the four titles read on the phone, each written from the same morning's news with its
+    /// own focus, and the pass for all four at less than the four together; what each prints and costs a week, and how
+    /// many mornings are kept. Money is at the start's prices. Game-free.
     /// </summary>
     public static class NewsstandCatalogue
     {
-        private const string P = "reallife";   // (apart, so that a key made from parts is not taken for a whole one)
+        private const string P = "reallife";   // in parts: a key's beginning, not a key
 
-        // ---- the titles, and the pass (a subscription that is no paper of its own)
+        // The titles, and the pass: a subscription that is no paper of its own.
         public const int Ledger = 0, Exchange = 1, Street = 2, Review = 3;
         public const int Titles = 4;
         public const int Pass = 4;
         public const int Subscriptions = 5;
 
-        // ---- what a week costs: the City Ledger online for less than the printed one delivered (LedgerCatalogue.WeekAtStart)
+        // A week of each at the start's prices; the City Ledger online costs less than delivered.
         public static readonly int[] WeekAtStart = { 6, 5, 3, 3, 12 };
 
-        // ---- when
-        public const int WeekDays = LedgerCatalogue.WeekDays;
+        public const int WeekDays = LedgerCatalogue.WeekDays;   // days
         public const int KeepDays = 4;          // today's edition and the three mornings before can be read
         public const int CloseDays = 20;        // the index's last closes kept with an earlier edition
 
-        // ---- the markets a title prints: the figures in full (the index, the rates, the movers, the sectors), the
-        //      index and its movers in short, or one line
+        // The markets a title prints: the figures in full, the index and its movers in short, or one line.
         public const int MarketsLine = 0, MarketsShort = 1, MarketsFull = 2;
 
         public static readonly int[] Markets = { MarketsFull, MarketsFull, MarketsLine, MarketsLine };

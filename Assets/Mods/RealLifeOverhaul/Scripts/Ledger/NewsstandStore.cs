@@ -13,9 +13,8 @@ namespace RealLifeOverhaul.Ledger
     ///   L|title|day,day,...                                                      the mornings a title's edition came
     ///   E|... P|... S|... Q|... C|...                                            an earlier edition, as LedgerStore writes one
     ///
-    /// Every number is written in the invariant culture; what is not understood is left out, a line at a time, so an entry
-    /// from a later version or a damaged one never stops a load: at worst an earlier edition cannot be read again. An
-    /// entry that is not this version's is not read at all (a new state, no subscriptions). Game-free.
+    /// Numbers are invariant; a line that does not read is left out, and an entry of another version is not read at all
+    /// (a new state, no subscriptions). Game-free.
     /// </summary>
     public static class NewsstandStore
     {
@@ -69,20 +68,13 @@ namespace RealLifeOverhaul.Ledger
             {
                 return new NewsstandState();
             }
-            if (!string.IsNullOrEmpty(text) && !HeadOk(text, 3))
+            if (!string.IsNullOrEmpty(text) && !LedgerStore.HeadOk(text, Version, 3))
             {
-                SaveLines.Unreadable(data, Key, "it could not be read");   // (damaged, or of a later version: kept as it is, Core/SaveLines)
+                SaveLines.Unreadable(data, Key, "it could not be read");   // damaged, or a later version's: kept as it is (Core/SaveLines)
             }
             return Read(text);
         }
 
-        // The line's first row is this version's (what Read needs before it reads anything).
-        private static bool HeadOk(string text, int fields)
-        {
-            int end = text.IndexOf('\n');
-            string[] head = (end >= 0 ? text.Substring(0, end) : text).TrimEnd('\r').Split('|');
-            return head.Length >= fields && head[0] == Version;
-        }
 
         public static NewsstandState Read(string text)
         {

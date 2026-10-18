@@ -5,21 +5,18 @@ namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
     /// Newsstand's rules: what a week of a title costs, which titles a player's subscriptions cover, taking one out and
-    /// cancelling it, the morning's edition coming to the phone over the home's connection (a week paid at a time, never
-    /// a morning charged that did not come), the editions that can still be read, and what each title prints of the
-    /// day's paper. Game-free: the checks run it as it ships.
+    /// cancelling it, the morning's edition coming to the phone over the home's connection (a week paid at a time,
+    /// never a morning charged that did not come), the editions that can still be read, and what each title prints of
+    /// the day's paper. Game-free: the checks run it as it ships.
     /// </summary>
     public static class NewsstandRules
     {
-        // ---------------------------------------------------------------- what it costs
 
         /// <summary>A week of a subscription at a price level (tenths of a point, 1000 at the start's prices).</summary>
         public static int WeekPrice(int sub, int level)
         {
             return PriceRules.At(NewsstandCatalogue.WeekAtStart[sub], level);
         }
-
-        // ---------------------------------------------------------------- the connection
 
         /// <summary>The better of two homes' connections (the one nearer to working).</summary>
         public static NetState Best(NetState a, NetState b)
@@ -32,8 +29,6 @@ namespace RealLifeOverhaul.Ledger
         {
             return net == NetState.Online;
         }
-
-        // ---------------------------------------------------------------- the subscriptions
 
         /// <summary>True while a title is read by subscription: its own, or the pass (a cancelled one runs until its last day paid for).</summary>
         public static bool Covered(NewsstandState s, int title)
@@ -64,9 +59,9 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// Whether a subscription can be taken out now, over the connection the player's homes have: it needs a working
-        /// one. A title the pass already covers is not taken out again; a cancelled one is taken up again with nothing to
-        /// pay now (payNow false); otherwise the first week is paid for by the caller and then <see cref="Start"/>.
+        /// Whether a subscription can be taken out over the homes' connection (it needs a working one). A title the
+        /// pass covers is refused; a cancelled one is taken up again with nothing to pay (payNow false); otherwise the
+        /// caller pays the first week, then <see cref="Start"/>.
         /// </summary>
         public static OnlineRefusal Subscribe(NewsstandState s, int sub, NetState net, out bool payNow)
         {
@@ -99,9 +94,9 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// After the first week has been paid for: the subscription runs from today, seven mornings, today's edition the
-        /// first (it comes at once if it is out). The pass cancels the titles' own subscriptions, which still run to their
-        /// last day paid for: returns how many it cancelled.
+        /// After the first week has been paid for: the subscription runs from today, seven mornings, today's edition
+        /// the first (it comes at once if it is out). The pass cancels the titles' own subscriptions, which still run
+        /// to their last day paid for: returns how many it cancelled.
         /// </summary>
         public static int Start(NewsstandState s, int sub, int day)
         {
@@ -123,7 +118,10 @@ namespace RealLifeOverhaul.Ledger
             return cancelled;
         }
 
-        /// <summary>A subscription cancelled: its editions still come until the last day paid for. False if there is none, or it is cancelled already.</summary>
+        /// <summary>
+        /// A subscription cancelled: its editions still come until the last day paid for. False if there is none, or it
+        /// is cancelled already.
+        /// </summary>
         public static bool Cancel(NewsstandState s, int sub)
         {
             OnlineSub x = s.Subs[sub];
@@ -141,14 +139,11 @@ namespace RealLifeOverhaul.Ledger
             return x.Subscribed && !x.Cancelled ? x.PaidUntil + 1 : 0;
         }
 
-        // ---------------------------------------------------------------- the morning
-
         /// <summary>
-        /// One subscription's morning, looked at while today's edition is out. Paid-for mornings whose edition never came
-        /// (no connection all day, the paper switched off) are never charged: the days paid for move on by as many. With
-        /// no connection now nothing comes and nothing is charged (Waiting), and it is looked at again until there is one.
-        /// When the days paid for are over a cancelled subscription ends; any other pays a week (<paramref name="pay"/>,
-        /// told which subscription: it charges the player and says whether it could) or lapses.
+        /// One subscription's morning, while today's edition is out. Paid-for mornings whose edition never came are
+        /// never charged: the days paid for move on by as many. With no connection nothing comes and nothing is charged
+        /// (Waiting) until there is one. When the days paid for are over a cancelled subscription ends; any other pays
+        /// a week (<paramref name="pay"/>, told which subscription) or lapses.
         /// </summary>
         public static OnlineMorning Morning(NewsstandState s, int sub, int day, bool online, Func<int, bool> pay)
         {
@@ -263,11 +258,9 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // ---------------------------------------------------------------- the editions kept
-
         /// <summary>
-        /// The edition that has just been replaced as the latest, kept to be read again: one per day (a day written again
-        /// replaces its own), the index's chart cut to its last closes, and those older than the days kept let go.
+        /// The edition just replaced as the latest, kept to be read again: one per day (a day written again replaces
+        /// its own), its index chart cut to the last closes; those older than the days kept are let go.
         /// </summary>
         public static void Keep(NewsstandState s, LedgerEdition old, int today)
         {
@@ -312,8 +305,6 @@ namespace RealLifeOverhaul.Ledger
             }
             return null;
         }
-
-        // ---------------------------------------------------------------- what a title prints
 
         /// <summary>True if a title prints a section of the paper (every title has the weather).</summary>
         public static bool Prints(int title, LedgerSection section)

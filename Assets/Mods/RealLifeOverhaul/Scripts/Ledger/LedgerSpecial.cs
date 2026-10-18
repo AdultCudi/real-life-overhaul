@@ -3,10 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// A front page of its own, outside the morning's editions: the paper's masthead and rules over words another feature
-    /// has written, in the language of the moment, as plain text (a name from the game printed as it is). Permadeath's
-    /// obituary is one. The page prints what is here and nothing of the day's news, the market or the weather; its inside
-    /// pages are not shown. Game-free.
+    /// A front page of its own outside the morning's editions (Permadeath's obituary): the paper's masthead and rules
+    /// over another feature's words, as plain text, with no news, market or weather and no inside pages. Game-free.
     /// </summary>
     public sealed class LedgerSpecial
     {

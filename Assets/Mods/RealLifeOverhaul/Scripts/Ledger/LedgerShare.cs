@@ -6,20 +6,14 @@ using System.Text;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger in a Going Public session (Core/SharedCity, part L): ONE paper for the city. The host prints the
-    /// morning's edition as alone; every guest reads that same edition, and prints none of its own while it follows.
-    /// Game-free (EconomyCheck, FlareLiveChecks.cs).
+    /// The City Ledger's lines in a Going Public session (Core/SharedCity, part L): one paper for the city. Game-free.
     ///
-    ///   the whole part   "LS1|day", then the edition as the store writes it (E, P, S, Q and C lines: LedgerStore.Edition)
-    ///   a guest's asks   N|kind|x|z|detail|amount     something the paper would print happened on the guest's street (a
-    ///                                                crash, an arrest, a crime): the host reports it to its own paper
-    ///                    P|section|weight|key|head|name|value...   a piece about the guest themselves for today's paper
-    ///                                                (their arrest in court, a graduation, their business, a post that
-    ///                                                went viral): the host prints it in today's edition, a few a day
+    ///   the whole part   "LS1|day", then the edition as the store writes it (LedgerStore.Edition)
+    ///   a guest's asks   N|kind|x|z|detail|amount                 news on the guest's street, for the host's own paper
+    ///                    P|section|weight|key|head|name|value...  a piece about the guest, for today's edition
     ///
-    /// So the paper has stories about any player in that city. A piece is taken only with a key of the mod's own pieces
-    /// about a player (<see cref="PersonalPrefixes"/>), a few names and short values; a report only of a kind the paper
-    /// prints. A guest's own edition, if it had one, is kept to be read again (LedgerDirector's earlier editions).
+    /// A piece is taken only with a key of the mod's pieces about a player (<see cref="PersonalPrefixes"/>), a few
+    /// names and short values; a report only of a kind the paper prints.
     /// </summary>
     public static class LedgerShare
     {
@@ -27,9 +21,9 @@ namespace RealLifeOverhaul.Ledger
         public const string Version = "LS1";
         public const int PiecesPerGuestDay = 4;      // a guest's own pieces in one edition at most
         public const int ValueMost = 120;            // characters of a name's value in a guest's piece
-        public const int PairsMost = 8;
+        public const int PairsMost = 8;              // names in a guest's piece
         public const int AsksMost = 24;              // lines of one request the host reads
-        public const int CityKinds = 7;              // Social/News.NewsKind: Accident, PedestrianHit, HitAndRun, Crime, Arrest, BreakIn, CarBreakIn (the city's); after them the player's own and Story
+        public const int CityKinds = 7;              // Social/News.NewsKind's first seven (Accident to CarBreakIn), before the player's own and Story
         public const int GuestPiecesMost = 32;       // the guests' pieces the host keeps for a day, all guests together
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -39,7 +33,7 @@ namespace RealLifeOverhaul.Ledger
             P + "_news_player", P + "_study_news", P + "_life_news", P + "_own_news", P + "_flare_news", P + "_co_news", P + "_ob_news", P + "_news_shop", P + "_news_story"
         };
 
-        private const string P = "reallife";   // (the beginnings of keys, not keys: written so that the locale check does not read them as keys)
+        private const string P = "reallife";   // in parts: keys' beginnings, not keys
 
         /// <summary>The host's edition as the part's text; null for none.</summary>
         public static string Write(LedgerEdition e)
@@ -83,9 +77,8 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// Whether a report of the paper's is the city's (a crash, a knockdown, a hit and run, a crime, an arrest, a break-in),
-        /// to go to the host's paper from a guest. The player's own crash, arrest and knockdown and a finished story are not:
-        /// in the host's paper they would be the host player's.
+        /// True for a report of the city's (a crash, a knockdown, a crime, an arrest, a break-in), which a guest sends
+        /// to the host's paper; the player's own would be the host player's there.
         /// </summary>
         public static bool CityKind(int kind)
         {
@@ -176,9 +169,9 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// The host takes a guest's piece for today's edition: each guest's first few (<see cref="PiecesPerGuestDay"/>), each
-        /// once, and a few in all; its values (names, words) through the filter given (what another player's game wrote, as the
-        /// host's players will read it). True when it was taken.
+        /// The host takes a guest's piece for today's edition: each guest's first few
+        /// (<see cref="PiecesPerGuestDay"/>), each once, a few in all, its values through the filter given. True when
+        /// it was taken.
         /// </summary>
         public static bool Admit(List<KeyValuePair<string, LedgerPiece>> pieces, string who, LedgerPiece p, Func<string, string> filter)
         {
@@ -211,11 +204,14 @@ namespace RealLifeOverhaul.Ledger
                     p.Data[i] = filter(p.Data[i]) ?? string.Empty;
                 }
             }
-            pieces.Add(new KeyValuePair<string, LedgerPiece>(who, p));   // (its head is a locale key of the paper's own, not words)
+            pieces.Add(new KeyValuePair<string, LedgerPiece>(who, p));   // its head is the paper's own locale key, not words
             return true;
         }
 
-        /// <summary>When today's edition is printed again with the guests' pieces: a while after the first of them came, not put off by each that follows.</summary>
+        /// <summary>
+        /// When today's edition is printed again with the guests' pieces: a while after the first of them came, not put
+        /// off by each that follows.
+        /// </summary>
         public static float ReprintAt(float set, float now, float wait)
         {
             return set >= 0f ? set : now + wait;
@@ -227,8 +223,8 @@ namespace RealLifeOverhaul.Ledger
         }
 
         /// <summary>
-        /// The guests' pieces for an edition: a few of each guest's, the heaviest first, each once (the same key and names
-        /// twice is one piece). Into the list given (the edition's own pieces follow them in the page's order by weight).
+        /// The guests' pieces for an edition, into <paramref name="into"/>: a few of each guest's, each once (the same
+        /// key and names twice is one piece).
         /// </summary>
         public static void Take(List<KeyValuePair<string, LedgerPiece>> asked, List<LedgerPiece> into)
         {

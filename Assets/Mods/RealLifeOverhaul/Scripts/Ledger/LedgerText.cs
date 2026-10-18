@@ -6,8 +6,8 @@ using Localizor;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The City Ledger's words: every text is a key of en.json, written out when the page is opened (so the paper is in
-    /// the language of the moment), never per frame. Money is written as the game writes it.
+    /// The City Ledger's words: locale keys written out when the page is written, in the language of the moment; money
+    /// as the game writes it.
     /// </summary>
     public static class LedgerText
     {
@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Ledger
         {
             string text = Fill(p.Key, p.Data);
             LedgerRules.Split(text, out kicker, out headline, out body);
-            string model = LedgerBridges.TextsBody != null ? LedgerBridges.TextsBody(p) : null;   // (RLO Texts: the model's brief for the story, when it was written in time)
+            string model = LedgerBridges.TextsBody != null ? LedgerBridges.TextsBody(p) : null;   // RLO Texts' brief for the story, when it was written in time
             if (model != null)
             {
                 body = model;

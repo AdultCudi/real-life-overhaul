@@ -3,10 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// How the internet stands at the best of the player's homes, the best first: a working connection, one that is
-    /// down for a few hours (a provider's outage), one being put in, one cut for a bill not paid, none at all, no home.
-    /// NotKept: the utilities are off (or have stopped), so the mod keeps no connections and a home counts as connected.
-    /// Saved nowhere.
+    /// How the internet stands at the best of the player's homes, the best first (<see cref="NewsstandRules.Best"/>
+    /// takes the lower). NotKept: the utilities are off, so a home counts as connected. Saved nowhere.
     /// </summary>
     public enum NetState { Online = 0, Outage, Installing, Cut, NoLine, NoHome, NotKept }
 
@@ -36,9 +34,8 @@ namespace RealLifeOverhaul.Ledger
     }
 
     /// <summary>
-    /// What Newsstand keeps of a save (<see cref="NewsstandStore"/>): the subscriptions, the mornings each title's
-    /// edition came to the phone, the earlier editions that can still be read (today's is the City Ledger's own,
-    /// LedgerState.Edition) and the last morning the player was told the new editions were in. Game-free.
+    /// What Newsstand keeps of a save (<see cref="NewsstandStore"/>), game-free: the subscriptions, the mornings each
+    /// title's edition came, the earlier editions still to be read (today's is LedgerState.Edition) and the last notices.
     /// </summary>
     public sealed class NewsstandState
     {

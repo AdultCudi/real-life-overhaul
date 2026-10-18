@@ -16,9 +16,8 @@ namespace RealLifeOverhaul.Ledger
     }
 
     /// <summary>
-    /// One piece of an edition: a story or a brief. Its words are a locale key and the names that fill it, kept as the
-    /// paper's other pieces are (written out in the language of the moment when the page is opened), with the key of the
-    /// paper's own headline for it where it has one for that kind of piece. Game-free.
+    /// One piece of an edition, a story or a brief: a locale key and the names that fill it, written out in the
+    /// language of the moment, with the key of the paper's own headline where it has one. Game-free.
     /// </summary>
     public sealed class LedgerPiece
     {
@@ -80,9 +79,8 @@ namespace RealLifeOverhaul.Ledger
     }
 
     /// <summary>
-    /// The paper of one morning, written once when the city's paper is out (06:00) and read as often as the player likes
-    /// until the next: the pieces, the market's figures at the close before (the index and its last weeks, the sectors,
-    /// every company's price) and the economy's (the bank rate, inflation, the state of the cycle). Game-free.
+    /// The paper of one morning, written once when the city's paper is out and read as often as the player likes until
+    /// the next: its pieces, the market's figures at the close before, and the economy's. Game-free.
     /// </summary>
     public sealed class LedgerEdition
     {
@@ -108,13 +106,11 @@ namespace RealLifeOverhaul.Ledger
     }
 
     /// <summary>
-    /// What the City Ledger keeps of a save (<see cref="LedgerStore"/>): the subscription, the copy the player has, where
-    /// the kiosks near their home stand, how the council's policies stood at the last edition and the latest edition.
-    /// Game-free.
+    /// What the City Ledger keeps of a save (<see cref="LedgerStore"/>): the subscription, the copy, the kiosks'
+    /// places, the council's policies at the last edition and the latest edition. Game-free.
     /// </summary>
     public sealed class LedgerState
     {
-        // the subscription
         public bool Subscribed;
         public bool Cancelled;           // it ends after the last day paid for
         public int PaidUntil;            // the last morning paid for
@@ -122,17 +118,14 @@ namespace RealLifeOverhaul.Ledger
         public int Weeks;                // weeks paid, ever
         public int LastMorning;          // the last morning the round has been done for (a delivery, a payment)
 
-        // the copy the player has
         public int CopyDay;              // the edition's day; 0 none
         public bool Delivered;           // left inside the door of the home
         public bool Bought;              // bought at a kiosk
         public int Copies;               // copies bought, ever
 
-        // the kiosks
         public string KiosksFor;         // the address of the home they were found near; null none
         public readonly List<KioskSpot> Kiosks = new List<KioskSpot>(LedgerCatalogue.KiosksWanted);
 
-        // the paper
         public string Council;           // the council's policies as they stood at the last edition (the wiring's words); null none yet
         public LedgerEdition Edition;
     }
