@@ -58,7 +58,7 @@ In each save you want to keep, press "Prepare this save for removing the mod" un
 Some journeys, hotels, indoor outings, court and prison pass under a fade or as text, and children are never seen. The Guide's "Known limits" page has the full list.
 
 [h1]Reporting a problem[/h1]
-Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.33.0) and your other mods.
+Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.33.1) and your other mods.
 
 [h1]Source and contributions[/h1]
 The mod is open source under the MIT licence. Report problems and send changes here: https://github.com/AdultCudi/real-life-overhaul
