@@ -6,36 +6,30 @@ using UnityEngine;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// A large investor's parts of the Stocks app (InvestRules, MarketEngine.Invest.cs): on a company's page, an order at
-    /// the market for more than one order may be is offered as a worked order (what it would take, its days, the button
-    /// that places it), and a holding chooses the share of each dividend it puts back; on the Orders tab a worked order
-    /// shows what is done, what is left and today's part, and a dividend put back its money; the History tab marks a
-    /// worked order's day of slices and a purchase made with a dividend. Written when the app opens and when the player
-    /// does something in it, never per frame.
+    /// Part of the Stocks app: a large investor's parts. An order too large for one is offered as a worked order, a holding
+    /// chooses the share of each dividend it puts back, and the Orders and History tabs show worked orders and put-backs.
     /// </summary>
     public sealed partial class MarketApp
     {
-        // ---------------------------------------------------------------- a worked order on the ticket
-
-        // An order at the market too large for one order, with worked orders on: it is worked instead of refused.
+        // An order at the market too large for one order, with worked orders on, is worked instead of refused.
         private static bool Worked(in Estimate e, bool closing)
         {
             return e.Why == OrderWhy.TooLarge && !closing && Settings.MarketsLarge;
         }
 
-        // What working it would take: its slices, its days, and what it comes to at today's price (or why it cannot be placed).
+        // What working it would take: its slices, its days and what it comes to at today's price, or why it cannot be placed.
         private void WorkedLines(InfoBox box, MarketState s, Stock k, in Quote q)
         {
             if (_type != OrderType.Market)
             {
-                box.Line(MarketText.Why(OrderWhy.TooLarge), CellTone.Red);   // (only an order at the market is worked: a limit or a stop is one order)
+                box.Line(MarketText.Why(OrderWhy.TooLarge), CellTone.Red);   // only an order at the market is worked: a limit or a stop is one order
                 return;
             }
             long most = MarketTrading.MostPerOrder(k);
             box.Line(MarketText.Fill("reallife_mkt_inv_ticket_worked", "most", Count(most), "days", InvestRules.MarketDays(_qty, k.Adv).ToString()), CellTone.Yellow);
             if (!s.Account.Margin)
             {
-                box.Line(MarketText.T(MoneyKey(_side)));   // (its money, settled once a day: MarketEngine.Invest.cs)
+                box.Line(MarketText.T(MoneyKey(_side)));   // its money, settled once a day
             }
             OrderWhy why = _director.WorkedWhy(k.Id, _side, _qty);
             if (why != OrderWhy.None)
@@ -48,7 +42,6 @@ namespace RealLifeOverhaul.Markets
             box.Line(MarketText.Fill("reallife_mkt_inv_ticket_about", "price", MarketText.Price(cents), "total", MarketText.Money(MarketTrading.Value(_qty, cents, buying))));
         }
 
-        // The worked order, as it will be placed, put to the player before it is.
         private void ConfirmWorked(Stock k)
         {
             OrderSide side = _side;
@@ -79,14 +72,13 @@ namespace RealLifeOverhaul.Markets
             }
             else
             {
-                Notifications.Show(NotificationType.Info, "reallife_mkt_inv_note_placed", new Dictionary<string, string> { { "name", k.Name }, { "count", Count(qty) } }, 6f, null, null, true, false);
+                Notifications.Show(NotificationType.Info, "reallife_mkt_inv_note_placed", new Dictionary<string, string> { { "name", k.Name }, { "count", Count(qty) } }, 6f, null, null,
+                    true, false);
             }
             Refresh();
         }
 
-        // ---------------------------------------------------------------- a holding's dividends put back
-
-        // On a company's page, with shares of it held: the share of each dividend put back into it at the next open.
+        // On a company's page with shares held: the share of each dividend put back into it at the next open.
         private void PutBackChoice(InfoBox box, Stock k, Position p)
         {
             if (!Settings.MarketsReinvest || p == null || p.Shares <= 0)
@@ -94,7 +86,8 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             int[] choices = InvestRules.ReinvestChoices;
-            box.Selector(choices.Length, Mathf.Max(0, System.Array.IndexOf(choices, InvestRules.ReinvestOf(p.Reinvest))), i => InvestText.Reinvest(choices[i]), i => UiClone.Safe(() =>
+            box.Selector(choices.Length, Mathf.Max(0, System.Array.IndexOf(choices, InvestRules.ReinvestOf(p.Reinvest))), i => InvestText.Reinvest(choices[i]),
+                i => UiClone.Safe(() =>
             {
                 if (!_director.SetReinvest(k.Id, choices[i], out OrderWhy why))
                 {
@@ -104,16 +97,13 @@ namespace RealLifeOverhaul.Markets
             }));
         }
 
-        // How a worked order's money goes on a cash account: a purchase's day of money held and what is left given back at
-        // the close; a sale's takings paid at each close.
+        // How a worked order's money goes on a cash account.
         private static string MoneyKey(OrderSide side)
         {
             return side == OrderSide.Buy ? "reallife_mkt_inv_ticket_hold" : "reallife_mkt_inv_ticket_due";
         }
 
-        // ---------------------------------------------------------------- the Orders tab
-
-        // A worked order's shares: what is done of them; a dividend put back's before the open: none yet.
+        // A worked order's shares as done of all; a dividend put back's before the open: none yet.
         private static string SharesWords(Order o)
         {
             if (o.Back && o.Qty <= 0)
@@ -132,7 +122,7 @@ namespace RealLifeOverhaul.Markets
             return o.Life == OrderLife.Day ? MarketText.T(LifeKeys[0]) : MarketText.Fill("reallife_mkt_until_day", "day", o.ExpireDay.ToString());
         }
 
-        // An order's state: a worked order open is working, and one stopped before it was done (not by the player) is stopped.
+        // An order's state: a worked order open is working, and one stopped before done, not by the player, is stopped.
         private static string StateWords(Order o)
         {
             if (o.Worked && o.IsOpen)
@@ -147,10 +137,10 @@ namespace RealLifeOverhaul.Markets
             return o.Worked && !o.IsOpen && o.State != OrderState.Filled && o.Why != OrderWhy.Cancelled;
         }
 
-        // A worked order's progress (done, today, its day's money with the broker, left) or a dividend put back's money, in the order's box.
         private void WriteInvestOrder(InfoBox box, MarketState s, Stock k, Order o)
         {
-            box.Note(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", o.Back && o.Qty <= 0 ? "-" : Count(o.Qty), "kind", KindWords(o)));
+            box.Note(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", o.Back && o.Qty <= 0 ? "-" : Count(o.Qty), "kind",
+                KindWords(o)));
             if (o.Back)
             {
                 box.Row("reallife_mkt_inv_row_money", MarketText.Money(o.Budget));
@@ -172,22 +162,20 @@ namespace RealLifeOverhaul.Markets
             }
             if (o.Parked > 0)
             {
-                box.Row("reallife_mkt_inv_row_held", MarketText.Money(o.Parked));   // (today's money not spent yet: back at the close)
+                box.Row("reallife_mkt_inv_row_held", MarketText.Money(o.Parked));   // today's money not spent yet, back at the close
             }
             if (o.Due > 0)
             {
-                box.Row("reallife_mkt_inv_row_due", MarketText.Money(o.Due));     // (today's takings: paid at the close)
+                box.Row("reallife_mkt_inv_row_due", MarketText.Money(o.Due));     // today's takings, paid at the close
             }
             if (o.IsOpen)
             {
-                box.Row("reallife_mkt_inv_row_left", MarketText.Fill("reallife_mkt_inv_left_value", "count", Count(o.Left), "days", InvestRules.MarketDays(o.Left, k != null ? k.Adv : 1.0).ToString()));
+                box.Row("reallife_mkt_inv_row_left", MarketText.Fill("reallife_mkt_inv_left_value", "count", Count(o.Left), "days",
+                    InvestRules.MarketDays(o.Left, k != null ? k.Adv : 1.0).ToString()));
                 box.Note(MarketText.Fill("reallife_mkt_inv_order_help", "share", MarketCatalogue.OrderShareOfVolumePct + "%"));
             }
         }
 
-        // ---------------------------------------------------------------- the History tab
-
-        // A line's mark: a worked order's day of slices, or a purchase made with a dividend put back.
         private static string InvestMark(Trade t)
         {
             if (t.Order > 0)

@@ -4,14 +4,10 @@ using Localizor;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>
-    /// The stock market's words: every text is a key of en.json, prices are written as the game writes money with its
-    /// cents (ToCurrencyFormat), sums of money in whole units (ToShortCurrencyFormat). Texts are built when a page is
-    /// written or a notification goes out, never per frame.
-    /// </summary>
+    /// <summary>The stock market's words: prices with their cents, sums in whole units. Built when a page is written, never per frame.</summary>
     public static class MarketText
     {
-        private const string P = "reallife";   // (apart, so that a key made from parts is not taken for a whole one)
+        private const string P = "reallife";   // apart, so a key made of parts is not taken for a whole key
 
         private static readonly string[] WhyKeys = Keys(P + "_mkt_why_", "none", "closed", "held", "behind", "no_shares", "no_money", "too_large", "holding_limit", "not_listed",
             "no_borrow", "no_margin", "below_margin", "bad_price", "too_many", "halted", "expired", "cancelled", "company_gone", "forced", "nothing_held", "stop_side", "profit_side",
@@ -32,7 +28,7 @@ namespace RealLifeOverhaul.Markets
             return key.GetLocalization();
         }
 
-        /// <summary>A text with any number of its names filled in: name, value, name, value.</summary>
+        /// <summary>A text with its names filled in: name, value, name, value.</summary>
         public static string Fill(string key, params string[] pairs)
         {
             string text = key.GetLocalization();
@@ -43,32 +39,29 @@ namespace RealLifeOverhaul.Markets
             return text;
         }
 
-        /// <summary>Why an order cannot be placed or was stopped, as a sentence.</summary>
         public static string Why(OrderWhy why)
         {
             int i = (int)why;
             return T(i >= 0 && i < WhyKeys.Length ? WhyKeys[i] : WhyKeys[0]);
         }
 
-        /// <summary>A share price in cents, with its cents.</summary>
         public static string Price(int cents)
         {
             return (cents / 100f).ToCurrencyFormat();
         }
 
-        /// <summary>Money a share in hundredths of a cent (earnings, a dividend's history), with its cents.</summary>
+        /// <summary>Money a share in hundredths of a cent, written with its cents.</summary>
         public static string PerShare(int tenThousandths)
         {
             return (tenThousandths / 10000f).ToCurrencyFormat();
         }
 
-        /// <summary>A sum of money in whole units.</summary>
         public static string Money(long amount)
         {
             return ((double)amount).ToShortCurrencyFormat();
         }
 
-        /// <summary>A large sum (a company's worth, its turnover) shortened: "1.2M".</summary>
+        /// <summary>A large sum shortened: "1.2M".</summary>
         public static string Large(double amount)
         {
             return amount.ToShortCurrencyFormat(true);
@@ -86,17 +79,13 @@ namespace RealLifeOverhaul.Markets
             return (bp / 100f).ToString("0.0") + "%";
         }
 
-        /// <summary>A piece of market news as a sentence (the app's box).</summary>
         public static string News(in MarketNews n, MarketState s)
         {
             string key = NewsKey(n, s, out string[] data);
             return key.Length > 0 ? Fill(key, data) : string.Empty;
         }
 
-        /// <summary>
-        /// A piece of market news as the key of its sentence and the names that fill it (name, value, name, value): what
-        /// the City Ledger keeps of it, to write it out in the language of the moment. An empty key for a kind it does not know.
-        /// </summary>
+        /// <summary>A piece of news as its sentence's key and names, which the City Ledger keeps; an empty key for a kind it does not know.</summary>
         public static string NewsKey(in MarketNews n, MarketState s, out string[] data)
         {
             Stock k = n.Stock > 0 && s != null ? s.Stock(n.Stock) : null;
@@ -107,7 +96,7 @@ namespace RealLifeOverhaul.Markets
                     data = new[] { "level", (n.A / 100.0).ToString("N2"), "change", Change(n.B) };
                     return "reallife_mkt_news_close";
                 case MarketNewsKind.Mover:
-                    data = new[] { "name", name, "change", Percent(Math.Abs(n.A)) };   // "rose 3.2%", "fell 2.5%": the verb carries the sign
+                    data = new[] { "name", name, "change", Percent(Math.Abs(n.A)) };   // the verb carries the sign
                     return n.A >= 0 ? "reallife_mkt_news_up" : "reallife_mkt_news_down";
                 case MarketNewsKind.Results:
                     data = new[] { "name", name, "eps", PerShare(n.A), "consensus", PerShare(n.B), "move", Change(n.C) };
@@ -159,8 +148,8 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Delisted:
                     data = new[] { "name", name, "price", Price(n.A) };
                     return "reallife_mkt_news_delisted";
-                // A player's own company (Markets/Listing): what the city hears of it. Its founder's refusals and another
-                // city's company leaving this one are no news.
+                // A player's own company: what the city hears of it; its founder's refusals and another city's company leaving
+                // are no news.
                 case MarketNewsKind.OwnPriced:
                     data = new[] { "name", s != null && k == null ? s.Listing.Name : name, "price", Price(n.A), "day", n.B.ToString() };
                     return "reallife_mkt_news_own_priced";
@@ -200,7 +189,7 @@ namespace RealLifeOverhaul.Markets
                     return "reallife_mkt_news_own_audit";
                 case MarketNewsKind.Paid:
                 {
-                    // A dividend paid to the player of this machine, on their shares or a bot's (never in the city's line nor the Ledger).
+                    // A dividend paid to this machine's player, never in the city's line nor the Ledger.
                     BotFirm f = n.B > 0 ? MarketBots.Firm(n.B) : null;
                     data = new[] { "name", name, "amount", Money(n.A), "firm", f != null ? f.Name : string.Empty };
                     return f != null ? "reallife_mkt_news_paid_bot" : "reallife_mkt_news_paid";
@@ -211,21 +200,19 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // A company that is not in the market yet (a listing announced): its name from the catalogue.
+        // A company not in the market yet, a listing announced: its name from the catalogue.
         private static string NameOf(int id)
         {
             CompanyDef d = MarketCatalogue.Find(id);
             return d != null ? d.Name : string.Empty;
         }
 
-        /// <summary>A sector's name.</summary>
         public static string Sector(MarketSector sector)
         {
             int i = (int)sector;
             return T(i >= 0 && i < MarketCatalogue.SectorKeys.Length ? MarketCatalogue.SectorKeys[i] : MarketCatalogue.SectorKeys[0]);
         }
 
-        /// <summary>A company's size.</summary>
         public static string Size(MarketSize size)
         {
             int i = (int)size;

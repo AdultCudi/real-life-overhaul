@@ -9,32 +9,14 @@ using UnityEngine;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The Stocks app, in the game's frame (GameUi.AppShell, copied from MyEmployees) as the mod's other apps are. Six
-    /// tabs over the table on the right, and on the left the white box:
-    ///
-    ///   Market      the city's index and every sector's, with their moves over a day, a week, a month and longer; the
-    ///               box has the market's state, the bank rate and the news (pick the index for its chart, a sector for
-    ///               its companies)
-    ///   Companies   every listed company: price, the day's move, volume, worth, P/E, yield and what you hold, by sector
-    ///               and size (the screener: every column sorts)
-    ///   Watchlist   the companies you watch
-    ///   Orders      orders open and lately done, worked orders with what is done and left; pick one to see it or cancel it
-    ///   Portfolio   everything held, each with what it is (a stock, a property trust, a bond, a deposit), what it cost and
-    ///               is worth, its income and next payment; the box has the spread across kinds, what it pays over a year
-    ///               and the account (and a margin account) (MarketApp.Portfolio.cs)
-    ///   History     the account's history: trades, dividends, payouts, interest and fees
-    ///   Bots        the trading bots for hire and those hired: their record, their settings (MarketApp.Bots.cs)
-    ///   Bonds       the bonds and bank deposits on offer and those held, with their next payment (MarketApp.Bonds.cs)
-    ///
-    /// Picking a company opens its page in place of the table (MarketApp.Page.cs): its candle chart with the analysis
-    /// tools, or its figures and results; the box then has its quote and the order ticket (MarketApp.Box.cs). Nothing
-    /// runs while the app is closed: rows and figures are made when it opens and when the player does something in it
-    /// (the game stands still while the phone is open).
+    /// The Stocks app in the game's frame (GameUi.AppShell): eight tabs over the table on the right and the white box on the
+    /// left; a company's page takes the table's place (<see cref="MarketPage"/>). Nothing runs while the app is closed: it is
+    /// written when it opens and when the player does something in it.
     /// </summary>
     public sealed partial class MarketApp
     {
         public const int TabMarket = 0, TabCompanies = 1, TabWatch = 2, TabOrders = 3, TabPortfolio = 4, TabHistory = 5;
-        public const int IndexPage = -1;   // the page of the city's index (a company's page is its id)
+        public const int IndexPage = -1;   // the index's page; a company's page is its id
         private const string GuideTitle = "reallife_meta_title_markets";   // the Guide's page every page of the app points to at its foot
 
         private static readonly string[] TabKeys =
@@ -55,7 +37,7 @@ namespace RealLifeOverhaul.Markets
         private MarketPage _page;
         private int _tab, _wanted = -1, _wantCompany;
         private string _picked;     // the row picked on the tab that shows
-        private int _company;       // the page shown in place of the table: a company's id, IndexPage, or 0 for the table
+        private int _company;       // in place of the table: a company's id, IndexPage, or 0 for the table
 
         public MarketApp(MarketDirector director)
         {
@@ -71,9 +53,7 @@ namespace RealLifeOverhaul.Markets
 
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        // ---------------------------------------------------------------- building it from the game's parts
-
-        /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
+        /// <summary>The app's panel, asleep; null if the game's parts are not as expected, each said in Player.log.</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             using var piece = SessionWatch.Piece("stocks: the app being built from the game's MyEmployees");   // once per city
@@ -100,9 +80,6 @@ namespace RealLifeOverhaul.Markets
             return _shell.Root;
         }
 
-        // ---------------------------------------------------------------- opening and the tabs
-
-        /// <summary>The company whose page to show the next time the app opens (a notification was clicked).</summary>
         public void WantCompany(int stockId)
         {
             _wantCompany = stockId;
@@ -112,7 +89,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>The tab to show the next time the app opens.</summary>
         public void Want(int tab)
         {
             _wanted = Mathf.Clamp(tab, 0, TabKeys.Length - 1);
@@ -159,7 +135,6 @@ namespace RealLifeOverhaul.Markets
             Refresh();
         }
 
-        /// <summary>A company's page (or the index's, with IndexPage) in place of the table.</summary>
         internal void OpenPage(int company)
         {
             if (company != _company)
@@ -176,7 +151,7 @@ namespace RealLifeOverhaul.Markets
             Refresh();
         }
 
-        // Everything the app shows, made again: asked for when it opens, a tab is picked or something has changed.
+        // Everything the app shows, written again: when it opens, a tab is picked or something has changed.
         internal void Refresh()
         {
             if (_shell == null || _table == null)
@@ -206,7 +181,7 @@ namespace RealLifeOverhaul.Markets
             {
                 _page.Hide();
                 UiClone.Words(_shell.Header, MarketText.T("reallife_mkt_app"));
-                table = WriteListing(box, s);   // the player's own company (MarketApp.Own.cs)
+                table = WriteListing(box, s);   // MarketApp.Own.cs
             }
             else if (_company != 0 && (_company == IndexPage || s.Stock(_company) != null))
             {
@@ -279,11 +254,10 @@ namespace RealLifeOverhaul.Markets
             row.A = words;
         }
 
-        // The number at the end of a row's id ("co:12"), if the id is of that kind; int.MinValue otherwise.
+        // The number at the end of a row's id ("co:12") if the id is of that kind; int.MinValue otherwise.
         private static int Picked(string id, string kind)
         {
-            int number;
-            return id != null && id.StartsWith(kind, StringComparison.Ordinal) && int.TryParse(id.Substring(kind.Length), out number) ? number : int.MinValue;
+            return id != null && id.StartsWith(kind, StringComparison.Ordinal) && int.TryParse(id.Substring(kind.Length), out int number) ? number : int.MinValue;
         }
 
         private void RowClicked(TableRow row)
@@ -300,7 +274,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (company == int.MinValue)
             {
-                company = BotHoldingCompany(row.Id);   // a bot's holding (MarketApp.Bots.cs)
+                company = BotHoldingCompany(row.Id);   // MarketApp.Bots.cs
             }
             if (company != int.MinValue)
             {
@@ -311,7 +285,7 @@ namespace RealLifeOverhaul.Markets
             int bond = Picked(row.Id, PortfolioBondRow);
             if (bond != int.MinValue)
             {
-                // A bond of the Portfolio tab: it, on the Bonds tab (where bonds are bought, sold and managed).
+                // A bond of the Portfolio tab: it, on the Bonds tab where bonds are bought, sold and managed.
                 _tab = TabBonds;
                 _picked = BondHeldRow + bond;
                 Refresh();
@@ -345,20 +319,18 @@ namespace RealLifeOverhaul.Markets
             Refresh();
         }
 
-        // ---------------------------------------------------------------- figures every page uses
-
-        /// <summary>A move from one price to another in basis points; 0 if there is no price before.</summary>
+        /// <summary>0 with no price before.</summary>
         internal static int Bp(long now, long before)
         {
             return MarketHistory.MoveBp(now, before);
         }
 
-        internal static GameUi.CellTone Tone(int bp)
+        internal static CellTone Tone(int bp)
         {
             return bp > 0 ? TableRow.Green : bp < 0 ? TableRow.Red : TableRow.Plain;
         }
 
-        /// <summary>Earnings a share over the last four quarters given out, in money; NaN with fewer than four.</summary>
+        /// <summary>Earnings a share over the last four quarters, in money; NaN with fewer than four.</summary>
         internal static double TrailingEps(Stock s)
         {
             if (s.Results.Count < 4)
@@ -373,14 +345,14 @@ namespace RealLifeOverhaul.Markets
             return eps;
         }
 
-        /// <summary>The price on earnings over the last four quarters; NaN for a company that lost money or has fewer.</summary>
+        /// <summary>The price on the last four quarters' earnings; NaN for a loss or fewer quarters.</summary>
         internal static double Pe(Stock s)
         {
             double eps = TrailingEps(s);
             return !double.IsNaN(eps) && eps > 0.0 ? s.Last / 100.0 / eps : double.NaN;
         }
 
-        /// <summary>What the last quarter's dividend comes to over a year, on today's price, in basis points.</summary>
+        /// <summary>The last quarter's dividend over a year on today's price, in bp.</summary>
         internal static int YieldBp(Stock s)
         {
             return s.Last > 0 ? (int)Math.Round(s.DpsCents * 4.0 * 10000.0 / s.Last) : 0;

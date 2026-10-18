@@ -1,5 +1,3 @@
-using System;
-
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>The bonds' words: names, terms, how often one pays, why something cannot be done. Built on demand.</summary>
