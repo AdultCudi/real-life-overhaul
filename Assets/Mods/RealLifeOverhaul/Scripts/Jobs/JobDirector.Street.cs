@@ -4,7 +4,6 @@ using System.Text;
 using BAModAPI;
 using Entities;
 using Helpers;
-using NWH.VehiclePhysics2.Damage;
 using UI;
 using UI.Guiders;
 using UI.Notification;
@@ -17,7 +16,7 @@ namespace RealLifeOverhaul
     /// <summary>Jobs' director: the car a job is worked with, crashes on the job, and the game's guider.</summary>
     public partial class JobDirector
     {
-        private const float CrashSpeed = 3f;         // m/s of closing speed that counts as a crash on the job
+        private const float CrashSpeed = 3f;         // m/s of closing speed along the contact's normal that counts as a crash on the job
         private const float CrashGap = 2.5f;         // seconds between two crashes that both count
         private static readonly Color GuideColour = new Color(0.20f, 0.62f, 0.95f, 1f);
         private CarController _hookedCar;
@@ -53,19 +52,19 @@ namespace RealLifeOverhaul
 
         private void OnCollision(Collision collision)
         {
-            if (_job == null || _broken || Time.time - _lastCrash < CrashGap)
+            if (_job == null || _broken || Time.time - _lastCrash < CrashGap || _hookedCar == null)
             {
                 return;
             }
             try
             {
-                float speed = collision.relativeVelocity.magnitude;
-                if (speed < CrashSpeed || !DamageHandler.IsCollisionValid(collision))
+                CarContact contact = CarContacts.Judge(collision, _hookedCar.transform);   // the car hitting something, never the road or a kerb
+                if (!contact.Counts(CrashSpeed))
                 {
                     return;
                 }
                 _lastCrash = Time.time;
-                _job.OnCrash(speed);
+                _job.OnCrash(contact.Impact);
                 if (_context.Shift != null && _context.Shift.Counts)
                 {
                     CareerState.Crash();   // what the boss reads out at the next review

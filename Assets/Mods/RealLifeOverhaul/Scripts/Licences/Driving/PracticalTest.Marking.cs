@@ -25,9 +25,7 @@ namespace RealLifeOverhaul
         private const float HarshHeld = 0.9f;          // ...with the brake held this many seconds: all but a full stop
         private const float OverHeld = 4f;             // seconds over the limit before it is a fault
         private const float FarOverHeld = 2.5f;        // ...and far over it
-        private const float TouchFrom = 1f;            // m/s of impact that is a touch
-        private const float CollisionFrom = 3.5f;      // ...and a collision
-        private const float OwnMove = 1.5f;            // m/s: slower than this, what hit the car hit it
+        private const float ContactLineGap = 1f;       // seconds between log lines of contacts that did not count (a bottomed spring meets the road every step)
         private const float StopHalfWidth = 1.7f;      // metres: the stop box in the lane, half its width...
         private const float StopHalfLength = 4f;       // ...and half its length: a car and a good metre each end
         private const float BoxAllow = 0.6f;           // metres a car may stand over the box's edge and still be in it
@@ -63,6 +61,8 @@ namespace RealLifeOverhaul
         private float _brakeSince = -1f;
         private float _lastBrake = -100f;
         private float _lastTouch = -100f;
+        private float _contactLineAt = -100f;   // when a contact that did not count was last written to the log
+        private int _contactsQuiet;             // ...and how many like it have not been written since
         private float _reversed;            // metres backed near the bay
         private Vector3 _lastPosition;
 
@@ -330,32 +330,62 @@ namespace RealLifeOverhaul
             _hooked = null;
         }
 
+        // Only the car hitting something is marked (CarContactRules): never the road under it as its nose dips, a kerb
+        // under the wheels, its own load or a trigger. Standing or crawling, the car was run into: not marked, nor a
+        // line crossed just after.
         private void OnCollision(Collision collision)
         {
             try
             {
                 float now = Time.time;
-                if ((_step != Step.Drive && _step != Step.Park) || collision == null || now - _lastTouch < 2.5f || now - _lender.SpawnedAt < 3f)
+                if ((_step != Step.Drive && _step != Step.Park) || collision == null || _hooked == null || now - _lender.SpawnedAt < 3f)
                 {
                     return;
                 }
-                // Standing or crawling, the car was run into: not marked, nor a line crossed just after.
-                float speed = collision.relativeVelocity.magnitude;
-                if (speed >= TouchFrom && _lastSpeed < OwnMove)
+                CarContact contact = CarContacts.Judge(collision, _hooked.transform);
+                ContactMark mark = TestContactRules.Mark(contact, _lastSpeed, now - _lastTouch);
+                if (mark == ContactMark.RunInto)
                 {
                     _lastShunt = now;
                 }
-                if (speed < TouchFrom || _lastSpeed < OwnMove)
+                else if (mark == ContactMark.Touched || mark == ContactMark.Collision)
                 {
-                    return;
+                    _lastTouch = now;
+                    Fault(mark == ContactMark.Collision ? TestFault.Collision : TestFault.Touched);
                 }
-                _lastTouch = now;
-                Fault(speed >= CollisionFrom ? TestFault.Collision : TestFault.Touched);
+                if (Meta.Dev.Verbose)
+                {
+                    NoteContact(collision, contact, mark, now);
+                }
             }
             catch (Exception e)
             {
                 _logger?.Error(e);
             }
+        }
+
+        // One line a contact considered; those that did not count at most one a second, with how many were passed over.
+        private void NoteContact(Collision collision, in CarContact contact, ContactMark mark, float now)
+        {
+            bool marked = mark == ContactMark.Touched || mark == ContactMark.Collision;
+            if (!marked && now - _contactLineAt < ContactLineGap)
+            {
+                _contactsQuiet++;
+                return;
+            }
+            string outcome = marked ? "counted, marked as " + (mark == ContactMark.Collision ? "a collision (serious)" : "a touch (minor)") + ": PASS"
+                : mark == ContactMark.RunInto ? "counted, but the car was standing or crawling: run into, not marked"
+                : mark == ContactMark.Same ? "counted, but the same knock as the fault just marked"
+                : contact.IsHit ? "not counted: under " + TestContactRules.TouchFrom.ToString("0.0", CultureInfo.InvariantCulture) + " m/s along the normal, too soft for a touch"
+                : "not counted: " + CarContactRules.Why(contact.Verdict);
+            string quiet = _contactsQuiet > 0 ? " (" + _contactsQuiet + " more not counted since the last line)" : string.Empty;
+            if (!marked)
+            {
+                _contactLineAt = now;
+                _contactsQuiet = 0;
+            }
+            _logger?.Info("Licences check (contact): " + CarContacts.Describe(collision, contact) + ", the car at "
+                          + _lastSpeed.ToString("0.0", CultureInfo.InvariantCulture) + " m/s: " + outcome + quiet + ".");
         }
 
         private void Fault(TestFault fault)
