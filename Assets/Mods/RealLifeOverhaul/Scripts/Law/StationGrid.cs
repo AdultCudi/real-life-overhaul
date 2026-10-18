@@ -40,6 +40,9 @@ namespace RealLifeOverhaul.Law
         private readonly bool[] _blocked;
         private readonly int[] _from;
         private readonly int[] _queue;
+        private int _spread = NoSpread;   // the cell the last spread began from, over the cells as last closed
+
+        private const int NoSpread = -3;  // the cells were closed again since the last spread
 
         public StationGrid(float minA, float minD, float maxA, float maxD, float cell)
         {
@@ -91,6 +94,7 @@ namespace RealLifeOverhaul.Law
         // The cells the pieces stand on, each piece grown by the margin (a body's half width), are closed.
         private void Close(IList<FloorRect> pieces, IList<bool> keep, float margin)
         {
+            _spread = NoSpread;
             Array.Clear(_blocked, 0, _blocked.Length);
             if (pieces == null)
             {
@@ -152,6 +156,7 @@ namespace RealLifeOverhaul.Law
         // Breadth first over the open cells from one cell; each cell reached keeps the one it was reached from. The count reached.
         private int Spread(int start)
         {
+            _spread = start;
             for (int i = 0; i < _from.Length; i++)
             {
                 _from[i] = -2;
@@ -203,14 +208,25 @@ namespace RealLifeOverhaul.Law
             return _from[goal] != -2;
         }
 
-        /// <summary>Where somebody stands to sit down: the open cell nearest a point, within a reach, reachable from the door.</summary>
+        /// <summary>
+        /// Where somebody stands to sit down: the open cell nearest a point, within a reach, reachable from the door.
+        /// <paramref name="sameBlocks"/>: the pieces and what is kept are as at the last call, so the walk from the door made
+        /// then stands, and only the cells round the point are looked at.
+        /// </summary>
         public bool NearestOpen(float doorA, float doorD, float a, float d, float reach, IList<FloorRect> pieces, IList<bool> keep, float margin,
-            out float openA, out float openD)
+            out float openA, out float openD, bool sameBlocks = false)
         {
             openA = a;
             openD = d;
-            Close(pieces, keep, margin);
-            Spread(Nearest(doorA, doorD, Math.Max(reach, 1f)));
+            if (!sameBlocks)
+            {
+                Close(pieces, keep, margin);
+            }
+            int door = Nearest(doorA, doorD, Math.Max(reach, 1f));
+            if (door != _spread)
+            {
+                Spread(door);
+            }
             int best = -1;
             float bestSqr = reach * reach;
             int span = (int)Math.Ceiling(reach / Cell) + 1;
@@ -249,14 +265,25 @@ namespace RealLifeOverhaul.Law
             IList<bool> isFixed, float margin, float reach)
         {
             int removed = 0;
+            int door = -1;
+            bool walked = false;   // the walk from the door over the kept pieces as they stand is made: every target reads it
             for (int t = 0; t < targetsA.Count; t++)
             {
                 for (int round = 0; round < 6; round++)
                 {
-                    if (Reachable(doorA, doorD, targetsA[t], targetsD[t], pieces, keep, margin, reach))
+                    if (!walked)
                     {
-                        break;
+                        Close(pieces, keep, margin);
+                        door = Nearest(doorA, doorD, reach);
+                        Spread(door);
+                        walked = true;
                     }
+                    int end = Nearest(targetsA[t], targetsD[t], reach);
+                    if (door >= 0 && end >= 0 && _from[end] != -2)
+                    {
+                        break;   // reachable, as Reachable would say
+                    }
+                    walked = false;
                     // The way in a room with only the fixed pieces in it.
                     Close(pieces, Only(isFixed, keep, pieces.Count), margin);
                     int start = Nearest(doorA, doorD, reach);

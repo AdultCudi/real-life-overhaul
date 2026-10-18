@@ -54,6 +54,7 @@ internal static partial class Program
         Crew(Array.IndexOf(args, "--crew") >= 0);
         CarExit();
         Station();
+        StationFurnish();   // a station's walkway rule walked once with the same answers, timed, and where the furnishing runs (StationFurnishCheck.cs)
         Tow();
         TechSites();
         OfficeConversions();

@@ -18,12 +18,7 @@ namespace RealLifeOverhaul.Law
                 _fill.Built += v => _logger?.Info("Law: " + v.Said + ".");
             }
             _fill.End();
-            if (!Settings.LawStationFurniture || !_cast || FitOutDirector.Instance == null || _building == null || Precinct == null)
-            {
-                return;
-            }
-            RoomGrid grid = RoomMeasure.Measure(_building, _origin, false, out float floor);
-            if (grid == null)
+            if (!Settings.LawStationFurniture || !_cast || FitOutDirector.Instance == null || _building == null || Precinct == null || _room == null)
             {
                 return;
             }
@@ -33,8 +28,8 @@ namespace RealLifeOverhaul.Law
             r.Kind = FitKind.CivicOffice;
             r.Seed = Precinct.Index * 7919 + 17;
             r.Building = _building;
-            r.Grid = grid;
-            r.Floor = floor;
+            r.Grid = _room;   // the station's own measurement of the room, taken before its pieces were switched on
+            r.Floor = _roomFloor;
             r.Door = _origin;
             r.Inward = _in;
             r.Look = false;   // the station has put its own design's walls and floors on

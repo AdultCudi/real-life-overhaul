@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using BigAmbitions.SaveSystem;
 using Blueprints;
 using BusinessLayoutSets;
@@ -27,14 +28,99 @@ namespace RealLifeOverhaul.Law
             "shoppingbasket", "spawner", "showcase", "cardboardcutout", "christmas", "halloween", "jackolantern", "seasonal", "neon", "candycane"
         };
 
+        // What the search for a precinct's design found: the design, whether it furnishes (an office's), and its name.
+        private sealed class DesignPick
+        {
+            public BusinessLayoutSet Set;
+            public bool Furnishes;
+            public string Name;
+        }
+
+        // The game's design files are listed and read on a worker thread, one search at a time (the lock), once a session.
+        private static readonly object DesignLock = new object();
         private static readonly Dictionary<string, BusinessLayoutSet> Designs = new Dictionary<string, BusinessLayoutSet>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, List<string>> DesignFiles = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        private static readonly Dictionary<string, Task<DesignPick>> Picks = new Dictionary<string, Task<DesignPick>>(StringComparer.Ordinal);
 
         private string _designName;
         private InteriorElement[] _elements;
         private Buildings.Building _lookOn;
 
-        private static List<string> FilesFor(string kind, string size)
+        /// <summary>
+        /// Begins the search for every precinct's design on a worker thread, once a session for each unit, so that the walk in
+        /// never waits for the game's files. Called when the precincts are chosen; a few string reads a precinct here.
+        /// </summary>
+        public static void SearchDesigns(Precincts precincts)
+        {
+            for (int i = 0; precincts != null && i < precincts.Count; i++)
+            {
+                Precinct precinct = precincts.At(i);
+                Search(precinct != null && precinct.Building != null ? precinct.Building.building : null, precinct != null ? precinct.Index : 0);
+            }
+        }
+
+        // The search for one unit's design, begun on a worker the first time it is asked for; null for a unit with no size.
+        private static Task<DesignPick> Search(Buildings.Building building, int index)
+        {
+            if (building == null || string.IsNullOrEmpty(building.BuildingSize))
+            {
+                return null;
+            }
+            string size = new BuildingSizeInfo(building).ToString();
+            string buildingSize = building.BuildingSize;
+            int version = building.BuildingVersion;
+            string key = size + "|" + buildingSize + "|" + version + "|" + index;
+            if (!Picks.TryGetValue(key, out Task<DesignPick> search))
+            {
+                string root = Application.streamingAssetsPath;   // (read here: the engine answers it on the main thread only)
+                search = Task.Run(() =>
+                {
+                    try
+                    {
+                        lock (DesignLock)
+                        {
+                            return Pick(root, size, buildingSize, version, index);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        return new DesignPick();
+                    }
+                });
+                Picks[key] = search;
+            }
+            return search;
+        }
+
+        // On the worker: an office design if the size has one (each precinct its own pick, so two stations of one size differ),
+        // otherwise a shop one for the look alone; an empty pick if the game has none for this room.
+        private static DesignPick Pick(string root, string size, string buildingSize, int version, int index)
+        {
+            for (int pass = 0; pass < 2; pass++)
+            {
+                string[] kinds = pass == 0 ? OfficeKinds : LookOnlyKinds;
+                for (int k = 0; k < kinds.Length; k++)
+                {
+                    List<string> files = FilesFor(root, kinds[k], size);
+                    for (int tried = 0; tried < files.Count; tried++)
+                    {
+                        string path = files[(index + tried) % files.Count];
+                        BusinessLayoutSet set = Read(path);
+                        if (set == null || set.BuildingSize != buildingSize || set.BuildingVersion != version)
+                        {
+                            continue;   // a design for another version of the size: another room
+                        }
+                        return new DesignPick
+                        {
+                            Set = set, Furnishes = pass == 0, Name = kinds[k] + "/" + Path.GetFileNameWithoutExtension(path) + " (" + size + ")"
+                        };
+                    }
+                }
+            }
+            return new DesignPick();
+        }
+
+        private static List<string> FilesFor(string root, string kind, string size)
         {
             string key = kind + "|" + size;
             if (DesignFiles.TryGetValue(key, out List<string> files))
@@ -44,7 +130,6 @@ namespace RealLifeOverhaul.Law
             files = new List<string>(4);
             try
             {
-                string root = Application.streamingAssetsPath;
                 string designs = Path.Combine(root, "InteriorDesigns");
                 if (Directory.Exists(designs))
                 {
@@ -90,38 +175,20 @@ namespace RealLifeOverhaul.Law
             return set;
         }
 
-        // The design for this unit: an office one if the size has one (each precinct its own pick, so two stations of one
-        // size differ), otherwise a shop one for the look alone. Null if the game has none for this size.
+        // The design for this unit, from the search begun when the precincts were chosen (long done by the first visit; if
+        // not, waited for here, behind the black screen). Null if the game has none for this size.
         private BusinessLayoutSet FindDesign(out bool furnish)
         {
             furnish = false;
-            Buildings.Building building = _building != null ? _building.building : null;
-            if (building == null || string.IsNullOrEmpty(building.BuildingSize))
+            Task<DesignPick> search = Search(_building != null ? _building.building : null, Precinct.Index);
+            DesignPick pick = search != null ? search.Result : null;
+            if (pick == null || pick.Set == null)
             {
                 return null;
             }
-            string size = new BuildingSizeInfo(building).ToString();
-            for (int pass = 0; pass < 2; pass++)
-            {
-                string[] kinds = pass == 0 ? OfficeKinds : LookOnlyKinds;
-                for (int k = 0; k < kinds.Length; k++)
-                {
-                    List<string> files = FilesFor(kinds[k], size);
-                    for (int tried = 0; tried < files.Count; tried++)
-                    {
-                        string path = files[(Precinct.Index + tried) % files.Count];
-                        BusinessLayoutSet set = Read(path);
-                        if (set == null || set.BuildingSize != building.BuildingSize || set.BuildingVersion != building.BuildingVersion)
-                        {
-                            continue;   // a design for another version of the size: another room
-                        }
-                        furnish = pass == 0;
-                        _designName = kinds[k] + "/" + Path.GetFileNameWithoutExtension(path) + " (" + size + ")";
-                        return set;
-                    }
-                }
-            }
-            return null;
+            furnish = pick.Furnishes;
+            _designName = pick.Name;
+            return pick.Set;
         }
 
         private BusinessLayoutSet _design;

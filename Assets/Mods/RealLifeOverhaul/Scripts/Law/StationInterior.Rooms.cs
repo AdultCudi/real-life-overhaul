@@ -1,6 +1,6 @@
 using System.Collections.Generic;
+using RealLifeOverhaul.Tech;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Law
 {
@@ -49,6 +49,8 @@ namespace RealLifeOverhaul.Law
         private readonly List<float> _targetD = new List<float>(32);
 
         private StationGrid _grid;
+        private RoomGrid _room;           // the room's one measurement: the station's grid is read from it, the back office fitted on it
+        private float _roomFloor;
         private int _benchSide;
         private bool _cast;               // the furnished station's people are in charge (Cast)
         private bool _designLamps;
@@ -69,6 +71,7 @@ namespace RealLifeOverhaul.Law
             _hung.Clear();
             _seats.Clear();
             _grid = null;
+            _room = null;
             _cast = false;
             _designLamps = false;
             _designCarpet = false;
@@ -114,9 +117,15 @@ namespace RealLifeOverhaul.Law
 
         private float DepthOf(Vector3 world) => Vector3.Dot(world - _origin, _in);
 
-        // The room's floor as a grid of cells, walkable or not, sampled before anything is cut out of the mesh.
+        // The room's floor measured once, before anything is cut out of the mesh (Tech/Sites RoomMeasure, a sample a cell),
+        // and the station's grid of cells in the room's own frame read from it: walkable where the room's cell there is open.
         private void MeasureGrid()
         {
+            _room = RoomMeasure.Measure(_building, _origin, false, out _roomFloor);
+            if (_room == null)
+            {
+                return;   // no floor to measure: nothing is checked for ways, and the back office is not fitted
+            }
             float left = 0.5f, right = 0.5f;
             for (float depth = 0.4f; depth < _length; depth += 0.8f)
             {
@@ -130,10 +139,7 @@ namespace RealLifeOverhaul.Law
                 {
                     _grid.Centre(col, row, out float a, out float d);
                     Vector3 point = At(d, a);
-                    point.y = _floor;
-                    bool walkable = NavMesh.SamplePosition(point, out NavMeshHit hit, 0.22f, _filter) && Mathf.Abs(hit.position.y - _floor) < 0.25f
-                                    && CitySpots.Flat(hit.position - point) < 0.15f * 0.15f;
-                    _grid.SetWalkable(col, row, walkable);
+                    _grid.SetWalkable(col, row, _room.CellOf(point.x, point.z, out int c, out int r) && _room.IsOpen(c, r));
                 }
             }
         }
@@ -518,6 +524,7 @@ namespace RealLifeOverhaul.Law
             }
             Blocks();
             float margin = _radius * 0.8f;
+            bool walked = false;   // the pieces stand as they are for every seat: the walk from the door is made once
             for (int i = 0; i < _staged.Count; i++)
             {
                 Staged s = _staged[i];
@@ -531,8 +538,9 @@ namespace RealLifeOverhaul.Law
                     Transform seat = _seatScratch[k];
                     // Where they stand to sit down: a step in front of the seat if the floor is open there, or the nearest open floor.
                     Vector3 front = seat.position + seat.forward * 0.55f;
-                    if (!_grid.NearestOpen(0f, 0.4f, AsideOf(front), DepthOf(front), 1.0f, _blocks, _blockKeep, margin, out float a, out float d)
-                        && !_grid.NearestOpen(0f, 0.4f, AsideOf(seat.position), DepthOf(seat.position), 1.6f, _blocks, _blockKeep, margin, out a, out d))
+                    bool open = _grid.NearestOpen(0f, 0.4f, AsideOf(front), DepthOf(front), 1.0f, _blocks, _blockKeep, margin, out float a, out float d, walked);
+                    walked = true;
+                    if (!open && !_grid.NearestOpen(0f, 0.4f, AsideOf(seat.position), DepthOf(seat.position), 1.6f, _blocks, _blockKeep, margin, out a, out d, true))
                     {
                         continue;
                     }

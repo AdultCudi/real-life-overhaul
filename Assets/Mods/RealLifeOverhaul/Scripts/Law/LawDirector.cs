@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using BAModAPI;
 using Helpers;
@@ -15,13 +16,14 @@ namespace RealLifeOverhaul.Law
     /// <summary>
     /// The law's one component: the save, the precincts, the station's door, room and desk, the reputation's daily step and
     /// the watch over a stay in the cell. Cost: a tick a second on the real clock and a look four times a second at the door
-    /// or desk; between them two time comparisons and three flags a frame.
+    /// or desk; between them two time comparisons, three flags and a reference a frame.
     /// </summary>
     public sealed partial class LawDirector : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("law", "LawDirector", typeof(LawDirector));
 
         private const float TickInterval = 1f;       // seconds, real time
+        private const float OwedEvery = 0.25f;        // seconds between looks for a dark screen while the station is owed its furniture
         private const float ThanksChance = 1f / 75f;   // chance a second on foot near people, for somebody well liked; once a day at most
         private const float ThanksWithin = 6f;       // metres
 
@@ -56,6 +58,8 @@ namespace RealLifeOverhaul.Law
         private Precinct _asked;             // the precinct whose door the game was asked to take the player through
         private float _askedAt;
         private float _nextTick;
+        private Precinct _roomOwed;          // the precinct the player is in, its station not furnished: done behind the next dark screen
+        private float _nextOwed;
         private int _faults;
         private int _streetFaults;
         private int _day = -1;
@@ -157,6 +161,11 @@ namespace RealLifeOverhaul.Law
                 {
                     Moved();
                 }
+                if (_roomOwed != null && Time.unscaledTime >= _nextOwed)
+                {
+                    _nextOwed = Time.unscaledTime + OwedEvery;
+                    FurnishOwed();
+                }
                 if (Time.unscaledTime >= _nextLook)
                 {
                     _nextLook = Time.unscaledTime + 0.25f;
@@ -236,8 +245,7 @@ namespace RealLifeOverhaul.Law
                     {
                         _asked = null;
                     }
-                    _precincts.PeopleIn();
-                    _interior.Begin(precinct);
+                    Furnish(precinct);
                 }
                 else if (_interior.Dressed && precinct != _interior.Precinct)
                 {
@@ -252,6 +260,40 @@ namespace RealLifeOverhaul.Law
                 _precincts.DressNow(left);   // the screen is still dark: the frontage is up when it clears
             }
             _desk.OnStreet();
+        }
+
+        // The station furnished, in one pass (StationInterior.Begin): a long frame, so only where it is not seen. With
+        // Developer diagnostics on, its time and where it was paid.
+        private void Furnish(Precinct precinct)
+        {
+            long began = Stopwatch.GetTimestamp();
+            bool hidden = SceneFinds.Hidden;
+            _roomOwed = null;
+            _precincts.PeopleIn();
+            _interior.Begin(precinct);
+            if (Meta.Dev.Verbose && _interior.Dressed)
+            {
+                double ms = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
+                Logger?.Info("Law check (furnish): " + precinct.Name + " furnished in " + ms.ToString("F0", CultureInfo.InvariantCulture) + " ms "
+                             + (hidden ? "behind a dark screen or a pause: PASS" : "with the game in view: FAIL, a long frame the player sees"));
+            }
+        }
+
+        // The door's event was missed (a save loaded inside) or the floor was not there yet: the station is furnished once a
+        // long frame is not seen, behind the loading screen, the game's black screen or a pause; never in play.
+        private void FurnishOwed()
+        {
+            Precinct owed = _roomOwed;
+            if (!SceneFinds.Hidden)
+            {
+                return;
+            }
+            if (_interior.Dressed || !BuildingManager.IsInsideBuilding)
+            {
+                _roomOwed = null;
+                return;
+            }
+            Furnish(owed);
         }
 
         private void Look()
@@ -516,7 +558,7 @@ namespace RealLifeOverhaul.Law
 
             bool outdoors = !BuildingManager.IsInsideBuilding;
 
-            // The room: furnished here too if the door's event was missed (a save loaded inside), cleared once the player has left.
+            // The room: owed its furniture if the door's event was missed (a save loaded inside), cleared once the player has left.
             if (_precincts.Chosen)
             {
                 BuildingManager buildings = InstanceBehavior<BuildingManager>.Instance;
@@ -525,11 +567,7 @@ namespace RealLifeOverhaul.Law
                 {
                     _interior.End();
                 }
-                if (within != null && !_interior.Dressed && !buildings.enteringBuilding && !buildings.exitingBuilding)
-                {
-                    _precincts.PeopleIn();
-                    _interior.Begin(within);
-                }
+                _roomOwed = within != null && !_interior.Dressed && !buildings.enteringBuilding && !buildings.exitingBuilding ? within : null;
                 _interior.Tick(Time.time);
                 _precincts.Keep(within);
                 if (_asked != null && Time.unscaledTime - _askedAt > 7f)
@@ -543,9 +581,13 @@ namespace RealLifeOverhaul.Law
                     MapPlaces.Refresh();
                 }
             }
-            if (!_precincts.Chosen && outdoors && !_precincts.Choose())
+            if (!_precincts.Chosen && outdoors)
             {
-                return;
+                if (!_precincts.Choose())
+                {
+                    return;
+                }
+                StationInterior.SearchDesigns(_precincts);
             }
 
             // A stay in the cell: resumed after a load; ended if it stalls or the save and the routine disagree.
