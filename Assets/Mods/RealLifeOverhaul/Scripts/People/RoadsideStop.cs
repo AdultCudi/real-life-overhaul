@@ -6,20 +6,13 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The crew of a parked patrol car dealing with the car it has stopped. One officer gets
-    /// out at the driver's door and walks up; a second, if the pool has one and there is a
-    /// pavement beside the patrol car, gets out on the kerb side and stands by it, watching.
-    /// With an arrest, the driver is standing beside their car with their hands up and the
-    /// arrest is the same one every crime scene plays (Crime/ArrestSequence): cuffed, walked to
-    /// the patrol car, into the back, the officer in after them; whoever owns the patrol car
-    /// then drives it away. Without (the player pulled over), the officer stands at the driver's
-    /// door for a few seconds and walks back alone.
-    /// Owned and ticked by whoever owns the patrol car. Three people at most, and it works with one.
+    /// The crew of a parked patrol car dealing with the car it stopped: an officer walks to the driver's door and back, or
+    /// arrests the driver (Crime/ArrestSequence). Ticked by the patrol car's owner.
     /// </summary>
     public sealed class RoadsideStop
     {
-        private const float TickInterval = 0.25f;
-        private const float ArrestMost = 60f;   // seconds an arrest may take before everyone is simply taken off the street
+        private const float TickInterval = 0.25f;   // seconds
+        private const float ArrestMost = 60f;   // seconds an arrest may take before everyone is taken off the street
 
         private enum Step { None, Approach, Talk, Return, Arrest }
 
@@ -37,11 +30,11 @@ namespace RealLifeOverhaul
         /// <summary>True when nobody is out of the cars: the stop is over, or never started.</summary>
         public bool Finished => _step == Step.None;
 
-        /// <summary>True from the moment a driver being arrested is in handcuffs.</summary>
-        public bool Cuffed => _step == Step.Arrest && _arrest.Cuffed;
 
-        /// <summary>Starts the stop. Returns false (and does nothing) if no officer could be put on the road.</summary>
-        /// <param name="stoppedDoor">A point on the road beside the stopped car's driver's door.</param>
+        /// <summary>
+        /// Starts the stop; false, with nothing done, if no officer could be put out. <paramref name="stoppedDoor"/> is a
+        /// point on the road beside the stopped car's driver's door.
+        /// </summary>
         public bool Begin(VehicleComponent patrol, Vector3 stoppedDoor, bool arrest, float now)
         {
             Clear();
@@ -79,7 +72,6 @@ namespace RealLifeOverhaul
 
             if (arrest && _suspect.Enter(stoppedDoor, ActorLook.Civilian, 2f, onRoad: true))
             {
-                // Hands up, cuffed, into the back of this patrol car: the arrest every scene uses.
                 ActorPool.PlayDoorSound(stoppedDoor);
                 _arrest.BeginAtCar(_suspect, _officer, patrol, now);
                 _step = Step.Arrest;
@@ -135,7 +127,7 @@ namespace RealLifeOverhaul
                     if (_officer.Settled || !_officer.Present || now >= _stepEnd)
                     {
                         _officer.Stand(_stoppedDoor);
-                        _officer.Work(SceneClips.Clipboard);   // writing it out at the window (they simply stand if the clip cannot be had)
+                        _officer.Work(SceneClips.Clipboard);   // writing it out at the window; they stand if the clip is missing
                         _step = Step.Talk;
                         _stepEnd = now + Random.Range(3.5f, 6f);
                     }

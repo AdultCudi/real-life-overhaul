@@ -5,18 +5,14 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Someone on their feet at an accident who is not hurt: the other driver, or the driver
-    /// who knocked a person down. What they do makes sense with nobody else there: crouch to
-    /// check whoever is lying in the road, step back and phone for help, walk a few paces and
-    /// look down the road for the ambulance, come back and watch. They talk with their hands
-    /// only to an officer who is standing with them. Once the tape is up or the paramedics are out
-    /// with their stretcher they go out of the scene to the kerb at once, and wait (and tell it) there.
-    /// Owned and ticked by AccidentCast, a few times a second; nothing here runs by itself.
+    /// Someone unhurt on their feet at an accident (the other driver, or the one who knocked a person down): checks on
+    /// whoever lies in the road, phones for help, looks down the road for the ambulance, watches, and tells an officer
+    /// who stands with them. Once the tape is up or the crew is out they wait at the kerb. Ticked by AccidentCast.
     /// </summary>
     internal sealed class SceneWitness
     {
         private const float WalkAllowance = 16f;   // seconds a step may take to be reached before it is done from wherever they are
-        private const float ListenRange = 3.5f;    // an officer this close is one they are talking to
+        private const float ListenRange = 3.5f;    // metres: an officer this close is one they are talking to
 
         private const PermanentAnimationType PhonePose = PermanentAnimationType.TalkingPhone;
         private const string PhoneProp = "PhoneOff";
@@ -31,13 +27,8 @@ namespace RealLifeOverhaul
         private bool _called;       // they have made their call: once is enough
         private bool _telling;      // at the kerb, an officer is with them and they are telling it
 
-        /// <summary>True while the witness has a part to play.</summary>
         public bool Active => _act != Act.None && _role != null && _role.Present;
 
-        /// <summary>True once they have been sent out of the scene.</summary>
-        public bool SentAside => _act == Act.Aside;
-
-        /// <summary>True if this is the role the witness is played by.</summary>
         public bool Is(ActorRole role) => role != null && ReferenceEquals(_role, role);
 
         public void Begin(ActorRole role, SceneBrief brief, float now)
@@ -54,7 +45,7 @@ namespace RealLifeOverhaul
             _role = null;
         }
 
-        /// <summary>Sent to the kerb now, whoever sends them (the ambulance is about to drive through): there until it is over.</summary>
+        /// <summary>Sent to the kerb now (the ambulance is about to drive through), there until it is over.</summary>
         public void Aside(SceneBrief brief, float now)
         {
             if (Active && _act != Act.Aside)
@@ -63,8 +54,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <param name="officerHere">An officer is standing with them, taking their account.</param>
-        /// <param name="officer">Where that officer is.</param>
+        /// <summary><paramref name="officerHere"/>: an officer standing at <paramref name="officer"/> is taking their account.</summary>
         public void Tick(SceneBrief brief, bool officerHere, Vector3 officer, float now)
         {
             if (!Active)
@@ -79,7 +69,7 @@ namespace RealLifeOverhaul
             bool listening = officerHere && (officer - _role.Position).sqrMagnitude < ListenRange * ListenRange;
             if (_act == Act.Aside)
             {
-                // Waiting at the kerb until the scene is over; an officer who comes over to them there gets their account there.
+                // At the kerb until the scene is over; an officer who comes over gets their account there.
                 if (_reached && listening != _telling)
                 {
                     _telling = listening;
@@ -95,9 +85,7 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
-            // The tape is up, or the paramedics are out with their stretcher: nobody but the crews has any business
-            // beside the casualty from then on. Out to the kerb at once, whatever they were doing (an account half
-            // told is finished there).
+            // Once the tape is up or the crew is out, nobody but the crews belongs by the casualty: to the kerb at once.
             if (Outside(brief))
             {
                 _role.Quiet();
@@ -105,7 +93,6 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // An officer has come over: whatever they were doing stops and they tell it, facing the officer.
             if (listening && _act != Act.Tell)
             {
                 _act = Act.Tell;
@@ -127,7 +114,6 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // Paramedics have reached the casualty: out of their way.
             bool crowded = _act == Act.Check && brief.BodyAttended;
             if (now < _until && !crowded)
             {
@@ -136,7 +122,6 @@ namespace RealLifeOverhaul
             Start(Next(brief, now), brief, now);
         }
 
-        // True once there is a taped area (or a crew at work) for them to be outside of.
         private static bool Outside(SceneBrief brief)
         {
             return brief.HasCordon || brief.CrewOut;
@@ -176,7 +161,6 @@ namespace RealLifeOverhaul
                     break;
 
                 case Act.Call:
-                    // A couple of steps back from them, phone to the ear.
                     _called = true;
                     _role.Go(Short(focus, here, 2.4f), Pace.Walk, focus, WalkAllowance);
                     _role.Hold(PhonePose, PhoneProp);
@@ -192,7 +176,6 @@ namespace RealLifeOverhaul
                     break;
 
                 case Act.Aside:
-                    // Out through the entry to the kerb, and there until it is over.
                     _role.Go(brief.Kerbside, Pace.Walk, focus, 40f);
                     break;
             }
@@ -210,7 +193,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The point a given distance from a target, on the line from it towards somewhere.
         private static Vector3 Short(Vector3 target, Vector3 towards, float by)
         {
             Vector3 back = towards - target;

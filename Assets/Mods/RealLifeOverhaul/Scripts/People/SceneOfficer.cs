@@ -28,36 +28,23 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// One police officer at an accident, each doing the job that place calls for. With two
-    /// officers, one is on traffic for the whole scene: at the barrier where traffic arrives, in
-    /// hi-vis, facing what is coming, holding it back and waving it on. The other works the
-    /// scene: looks the casualty over (down on one knee, until the paramedics take over), sets
-    /// numbered markers out by what lies at the point of impact, takes the account of whoever
-    /// saw it while writing it down, and between those stands at the cordon's opening keeping
-    /// people out, or calls it in from there. Nobody walks round the tape or strolls through
-    /// the crew. An officer on their own does the scene's jobs and the traffic post by turns.
-    /// Directing traffic, writing an account down and kneeling are clips of the mod's own (SceneClips);
-    /// where one cannot be had, the pose or gesture that stood in for it is used: one the street
-    /// characters have, or it is skipped.
-    /// Owned and ticked by AccidentCast, a few times a second; nothing here runs by itself.
+    /// One police officer at an accident: with two, one keeps the traffic post and the other works the scene (the casualty,
+    /// markers, the witness, the cordon's opening); alone, both by turns. Ticked by AccidentCast.
     /// </summary>
     internal sealed class SceneOfficer
     {
         private const float WalkAllowance = 22f;   // seconds a job may take to be reached before it is done from wherever they are
 
-        // The game has no note-taking, radio or traffic-duty animations. These are the stand-ins, used whenever the
-        // mod's own clip (take_notes or clipboard_write, radio_talk, direct_traffic, point_direct) cannot be played.
+        // The game has no note-taking, radio or traffic-duty animations: stand-ins for when the mod's clip cannot be played.
         private const PermanentAnimationType RadioPose = PermanentAnimationType.TalkingPhone;
         private const PermanentAnimationType NotesPose = PermanentAnimationType.TextingPhone;
         private const string HandProp = "PhoneOff";
         private const AnimationType HoldGesture = AnimationType.IDontThinkSo;
         private const AnimationType WaveGesture = AnimationType.DJEncouraging;
 
-        private const float PointClear = 0.5f;     // metres the lane must be to their left for the pointing clip to be the one that lets a unit past
-        private const float PointEvery = 3f;       // seconds between two of those (the clip is 2.6 s long)
         private const float PointInFront = 0.3f;   // cosine: whoever is pointed along must be within about 70 degrees of straight ahead
 
-        private enum Duty { None, Inspect, Interview, Radio, Perimeter, Traffic, Gate, Evidence, Pass, Dismiss }
+        private enum Duty { None, Inspect, Interview, Radio, Perimeter, Traffic, Gate, Evidence, Dismiss }
 
         private Duty _duty = Duty.None;
         private float _until;
@@ -67,17 +54,14 @@ namespace RealLifeOverhaul
 
         public readonly ActorRole Role = new ActorRole();
 
-        /// <summary>This officer's job is the traffic post: with a colleague on the scene they stay on it; alone, they come back to it.</summary>
+        /// <summary>On the traffic post: kept with a colleague on the scene, come back to when alone.</summary>
         public bool OnTraffic { get; set; }
 
-        /// <summary>The only officer at the scene: every job is theirs.</summary>
         public bool Alone { get; set; }
 
         /// <summary>True while standing with a witness, taking their account.</summary>
         public bool Interviewing => _duty == Duty.Interview && _reached && Role.Present;
 
-        /// <summary>True while a job is in hand.</summary>
-        public bool Working => _duty != Duty.None && Role.Present;
 
         /// <summary>Starts work, with whichever job the scene most needs done.</summary>
         public void Begin(SceneBrief brief, float now)
@@ -96,7 +80,6 @@ namespace RealLifeOverhaul
             Role.Drop();
         }
 
-        /// <summary>Waiting traffic is being let through: the officer on the post waves it on.</summary>
         public void WaveOn()
         {
             if (_duty == Duty.Traffic && _reached)
@@ -105,53 +88,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A response unit is about to leave past the scene by the lane traffic is let through in. Whoever is on
-        /// the traffic post steps out of that lane to a place beside it, turns to the unit and waves it through
-        /// (the traffic clip, or the wave these characters have where that cannot be had), for so many seconds at
-        /// most. False, and nothing changed, for an officer who is not on the post.
-        /// </summary>
-        public bool LetPass(Vector3 aside, Vector3 from, float now, float seconds)
-        {
-            if (_duty != Duty.Traffic || !Role.Present)
-            {
-                return false;
-            }
-            Role.Quiet();
-            Role.Drop();
-            _duty = Duty.Pass;
-            _reached = false;
-            _kneeling = false;
-            _until = now + seconds;
-            // The pointing clip sends whatever passes in front of them along to their own right. That fits where the lane
-            // they step out of is on their left as the unit goes: stood facing that lane, the unit comes by from left to
-            // right and the arm points the way it is going. On the other side of the lane it would point back up the road,
-            // so there (and where the clip cannot be had) they face the unit and work it through as they work traffic.
-            Vector3 way = aside - from;
-            way.y = 0f;
-            Vector3 lane = Role.Position - aside;
-            lane.y = 0f;
-            bool points = ClipLibrary.Has(SceneClips.PointDirect) && way.sqrMagnitude > 1f
-                          && Vector3.Dot(lane, Vector3.Cross(Vector3.up, way.normalized)) < -PointClear;
-            if (points)
-            {
-                Role.Go(aside, Pace.Walk, aside + lane, 6f);
-                Role.Repeat(SceneClips.PointDirect, WaveGesture, AnimationType.VictoryStanding, PointEvery, PointEvery + 0.6f);
-            }
-            else
-            {
-                Role.Go(aside, Pace.Walk, from, 6f);
-                Role.Work(SceneClips.DirectTraffic);
-                Role.Repeat(WaveGesture, AnimationType.VictoryStanding, 1.5f, 2.5f);
-            }
-            ActorPool.Logger?.Info(points ? "People: the officer faces the open lane and points the unit through (point_direct)."
-                : "People: the officer faces the unit and waves it through (the traffic clip, or the wave these characters have).");
-            return true;
-        }
-
-        // Their account is taken: the officer points whoever gave it out to the kerb, where the kerb is to the right of
-        // the way they stand to that person (the clip points to its own right at someone in front). True if they do;
-        // otherwise the witness goes without being shown the way, as before there was such a clip.
+        // With the account taken, the officer points the witness to the kerb when it lies to their right as they face the
+        // witness (the clip points right). False when that does not fit: the witness then goes unshown.
         private bool Dismiss(SceneBrief brief, float now)
         {
             if (!brief.HasCordon || !brief.HasWitness || !ClipLibrary.TryGet(SceneClips.PointDirect, out CityClip clip))
@@ -187,15 +125,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The unit is past (or is not going after all): back to the post at the next tick.</summary>
-        public void PassDone(float now)
-        {
-            if (_duty == Duty.Pass)
-            {
-                _until = now;
-            }
-        }
-
         public void Tick(SceneBrief brief, float now)
         {
             Role.Tick(now);
@@ -206,10 +135,7 @@ namespace RealLifeOverhaul
             if (!_reached && Role.Settled)
             {
                 _reached = true;
-                if (_duty != Duty.Pass)
-                {
-                    _until = now + Lasts(_duty);   // (letting a unit past lasts until that unit is past, however long the step aside took)
-                }
+                _until = now + Lasts(_duty);
                 if (_duty == Duty.Evidence)
                 {
                     brief.MarkerDue = true;   // down beside it: the marker is set
@@ -234,9 +160,7 @@ namespace RealLifeOverhaul
             Start(next, brief, now);
         }
 
-        // What needs doing now. The officer on traffic stays on traffic. The other (or the only one) takes the
-        // first of these that applies and that they have not just done: the casualty nobody is with, the
-        // markers, the witness; then, alone, the traffic post; otherwise the opening, and the radio from there.
+        // The officer on traffic stays there; otherwise the first job due that they have not just done.
         private Duty Next(SceneBrief brief)
         {
             if (OnTraffic && !Alone && brief.HasCordon)
@@ -279,17 +203,15 @@ namespace RealLifeOverhaul
             switch (duty)
             {
                 case Duty.Inspect:
-                    // Beside the casualty, on whichever side they come from, down on one knee.
                     _kneeling = true;
                     Role.Go(brief.BodyKneel, Pace.Walk, brief.Body);
                     Role.Kneel();
                     break;
 
                 case Duty.Interview:
-                    // Beside whoever saw it, wherever they are (at the kerb, once they have been sent aside), writing it down.
                     _interviews++;
                     Role.Go(Short(brief.Witness, here, 1.6f), Pace.Walk, brief.Witness);
-                    Role.Work(SceneClips.Notes, NotesPose, HandProp);   // the notebook clip (the clipboard one in a bundle without it); texting on a phone where neither can be had
+                    Role.Work(SceneClips.Notes, NotesPose, HandProp);   // the notebook or clipboard clip; texting on a phone without either
                     break;
 
                 case Duty.Gate:
@@ -298,15 +220,14 @@ namespace RealLifeOverhaul
                     break;
 
                 case Duty.Evidence:
-                    // Down beside what lies at the point of impact, to set a numbered marker by it.
                     Role.Go(Short(brief.Evidence, here, 0.8f), Pace.Walk, brief.Evidence);
                     Role.Kneel();
                     break;
 
                 case Duty.Radio:
-                    // Where they stand, turned to the scene, on the radio: no wandering off into the road for it.
+                    // Where they stand, turned to the scene: no wandering into the road for it.
                     Role.Stand(brief.Scene);
-                    Role.Work(SceneClips.RadioTalk, RadioPose, HandProp);   // a hand to the radio on the collar; a phone to the ear where that clip cannot be had
+                    Role.Work(SceneClips.RadioTalk, RadioPose, HandProp);   // a hand to the collar radio; a phone to the ear without the clip
                     break;
 
                 case Duty.Perimeter:
@@ -321,8 +242,8 @@ namespace RealLifeOverhaul
                 case Duty.Traffic:
                     Role.HiVis(true);   // for the rest of the scene; the pool puts the shirt back when they leave the street
                     Role.Go(brief.TrafficPost, Pace.Walk, brief.Oncoming);
-                    Role.Work(SceneClips.DirectTraffic);   // one hand holding what is coming, the other waving on; and where that clip cannot be had...
-                    Role.Repeat(HoldGesture, 3.5f, 6f);   // the flat of the hand to what is coming, again and again
+                    Role.Work(SceneClips.DirectTraffic);   // one hand holding traffic, the other waving it on; without the clip...
+                    Role.Repeat(HoldGesture, 3.5f, 6f);   // ...the flat of the hand, again and again
                     break;
             }
         }
@@ -341,7 +262,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The point a given distance short of a target, on the line from somewhere to it.
         private static Vector3 Short(Vector3 target, Vector3 from, float by)
         {
             Vector3 back = from - target;

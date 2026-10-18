@@ -6,17 +6,12 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One person's part in a scene: a driver, a paramedic, a suspect. It holds a character
-    /// from the pool for as long as the part lasts and carries out one order at a time (go
-    /// there and stand, get into that vehicle, walk off), so that scenes read as a timetable
-    /// instead of a pile of arrival checks.
-    /// Every call is safe when there is nobody behind the role: the pool was full, the person
-    /// has already left, or the street was unloaded. Scenes never need to check first.
-    /// The owning scene calls Tick a few times a second; nothing here runs by itself.
+    /// One person's part in a scene: holds a character from the pool and carries out one order at a time. Every call is
+    /// safe with nobody behind the role. Ticked by its scene a few times a second.
     /// </summary>
-    public sealed class ActorRole
+    public sealed partial class ActorRole
     {
-        private const float SettleDelay = 0.3f;   // a route asked for this recently has not been worked out yet
+        private const float SettleDelay = 0.3f;   // seconds: a route asked for this recently has not been worked out yet
         private const float Exact = 0.05f;        // metres from the end of the route at which someone who must be at a measured distance has arrived
         private const float ExactWait = 1f;       // ...and the seconds they are given to close that last step before they are taken as there
 
@@ -60,7 +55,6 @@ namespace RealLifeOverhaul
         /// <summary>True once the person is standing where they were last sent (or were placed).</summary>
         public bool Settled => _order == Order.Standing && Present;
 
-        /// <summary>Where the person is, or was when last seen.</summary>
         public Vector3 Position
         {
             get
@@ -79,11 +73,7 @@ namespace RealLifeOverhaul
             return Enter(near, look, radius, onRoad, presence: false);
         }
 
-        /// <summary>
-        /// The same for someone who is only there to be seen (an officer on the beat or by a parked
-        /// patrol car). The pool hands out few of these, and takes one back at once, without
-        /// warning, when a scene needs a person: this role then simply finds nobody behind it.
-        /// </summary>
+        /// <summary>The same for someone only there to be seen, whom the pool may take back at any moment.</summary>
         public bool EnterPresence(Vector3 near, ActorLook look, float radius, bool onRoad)
         {
             return Enter(near, look, radius, onRoad, presence: true);
@@ -108,11 +98,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Takes over someone who is already on the street, whatever part they were playing: the
-        /// role that had them finds them gone, as if they had left. Used when a person in one
-        /// scene becomes the casualty of another. They are given no order.
-        /// </summary>
+        /// <summary>Takes over someone already on the street from whatever role had them (it finds them gone); no order is given.</summary>
         public bool Adopt(StreetActor actor)
         {
             Exit();
@@ -165,11 +151,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// For someone lying down who is about to be picked up: every order is forgotten and
-        /// nothing turns them any more, but they keep the pose they are in. Whoever carries
-        /// them moves the character from here on. Null if there is nobody.
-        /// </summary>
+        /// <summary>For someone lying down about to be carried: orders forgotten, pose kept; the carrier moves them. Null if nobody.</summary>
         public ThirdPersonCharacter Lifted()
         {
             if (!Present || _actor.Limp)
@@ -184,7 +166,6 @@ namespace RealLifeOverhaul
             return _actor.Character;
         }
 
-        /// <summary>Plays a gesture once, now.</summary>
         public void Gesture(AnimationType gesture)
         {
             if (Present && !_actor.Limp)
@@ -193,7 +174,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Plays the first of two gestures these characters have; the second is one they are known to.</summary>
         public void Gesture(AnimationType preferred, AnimationType otherwise)
         {
             if (Present && !_actor.Limp)
@@ -202,7 +182,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A paramedic takes the medic bag along: in the hand while walking, on the ground beside them while kneeling.</summary>
         public void CarryBag(bool carry)
         {
             if (Present)
@@ -211,7 +190,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>An officer's shirt turned hi-vis yellow for traffic duty, or back. It goes back by itself when they leave the street.</summary>
         public void HiVis(bool on)
         {
             if (Present)
@@ -220,7 +198,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True if the person can be seen (the pool switches off whoever is far away or behind the camera). False if nobody.</summary>
+        /// <summary>False while the pool has them switched off (far away or behind the camera), or with nobody there.</summary>
         public bool Visible => Present && _actor.Visible;
 
         /// <summary>Takes the person off the street at once and forgets every order.</summary>
@@ -243,12 +221,7 @@ namespace RealLifeOverhaul
             _repeats = false;
         }
 
-        /// <summary>
-        /// Sits them down on a place to sit (a chair at a desk, a seat in a waiting row: GameFurniture.Seats) from where they
-        /// stand, as the game seats its own employees; any pose is dropped. A gesture asked for with <see cref="Repeat(AnimationType, float, float)"/>
-        /// goes on being played while they sit (the game's own typing at a desk computer is such a gesture). Any later order stands
-        /// them up first, where they stood. False, and nothing changed, if they cannot be seated.
-        /// </summary>
+        /// <summary>Sits them on a seat as the game seats its employees; a repeated gesture goes on. False if they cannot sit.</summary>
         public bool Sit(Transform seat)
         {
             if (!Present || _actor.Limp || seat == null)
@@ -270,13 +243,9 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>True if there is somebody and their characters have this gesture of the game's (asked once, then remembered).</summary>
         public bool Knows(AnimationType gesture) => Present && _actor.Knows(gesture);
 
-        /// <summary>True while they sit where <see cref="Sit"/> put them.</summary>
-        public bool Seated => Present && _order == Order.Seated && _actor.Seated;
 
-        /// <summary>Stops where they are and turns to face a point.</summary>
         public void Stand(Vector3 lookAt)
         {
             if (!Present)
@@ -318,10 +287,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The same by way of another place first: round the head or the feet of someone lying there, say, where the
-        /// straight line would go over them. The time allowed is for both stretches together.
-        /// </summary>
+        /// <summary>The same by way of another place first (round someone lying there); the time allowed covers both stretches.</summary>
         public void GoVia(Vector3 via, Vector3 destination, Pace pace, Vector3 thenFace, float allow = 30f)
         {
             if (!Present)
@@ -342,21 +308,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Goes to a point that a clip for two is measured from (0.9 m behind whoever is cuffed; the place a getting-in
-        /// clip is made for) and stands there facing another: not taken as arrived a step short of it, but let come to
-        /// rest (for a moment at most), as someone sent to kneel a measured distance from a chest is.
-        /// </summary>
+        /// <summary>Goes to a point a clip for two is measured from, and is not taken as arrived a step short of it.</summary>
         public void GoExactly(Vector3 destination, Pace pace, Vector3 thenFace, float allow = 10f)
         {
             Go(destination, pace, thenFace, allow);
             _exact = _order == Order.Going;
         }
 
-        /// <summary>
-        /// Stood exactly at a place, facing a point, there and then: only for the last few centimetres a route left
-        /// (the caller measures them), never as a way of getting anywhere. False if they are not standing.
-        /// </summary>
+        /// <summary>Stood exactly at a place now: only for the last centimetres a route left. False unless they are standing.</summary>
         public bool PlaceAt(Vector3 at, Vector3 lookAt)
         {
             if (!Present || _order != Order.Standing || _actor.Limp)
@@ -377,9 +336,8 @@ namespace RealLifeOverhaul
         private static NavMeshPath _route;
 
         /// <summary>
-        /// How long the way to a place is as this person's own navigation agent would walk it now, in metres, and
-        /// whether it gets there at all. For a check and its log line when a crew sets off (it works the route out
-        /// there and then): never on a timer. -1 if it cannot be asked.
+        /// The length in metres of the way to a place as their agent would walk it now, and whether it gets there; -1 if it
+        /// cannot be asked. Plans a route: for a check when a crew sets off, never on a timer.
         /// </summary>
         public float RouteLength(Vector3 to, out bool complete)
         {
@@ -434,7 +392,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Walks off in the direction away from a point (the other party, the player).</summary>
         public void WalkAwayFrom(Vector3 avoid, Pace pace, float distance = 30f, float allow = 25f)
         {
             if (!Present)
@@ -451,205 +408,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A looping pose (with an optional prop in the hand) worn whenever the person is standing.</summary>
-        public void Hold(PermanentAnimationType pose, string prop = null)
-        {
-            if (!Present)
-            {
-                return;
-            }
-            Drop();
-            _hasPose = true;
-            _kneels = false;
-            _stance = null;
-            _fallback = true;
-            _pose = pose;
-            _prop = prop;
-            if (_order == Order.Standing)
-            {
-                Wear();
-            }
-        }
 
-        /// <summary>
-        /// One of the mod's clips, played whenever the person is standing (directing traffic, say).
-        /// If it cannot be had they simply stand.
-        /// </summary>
-        public void Work(string clip)
-        {
-            if (!Present)
-            {
-                return;
-            }
-            Drop();
-            _hasPose = true;
-            _kneels = false;
-            _stance = clip;
-            _fallback = false;
-            if (_order == Order.Standing)
-            {
-                Wear();
-            }
-        }
-
-        /// <summary>The same, with the pose of the game's (and its prop) that stood in for it as the fallback.</summary>
-        public void Work(string clip, PermanentAnimationType otherwise, string prop = null)
-        {
-            if (!Present)
-            {
-                return;
-            }
-            Drop();
-            _hasPose = true;
-            _kneels = false;
-            _stance = clip;
-            _fallback = true;
-            _pose = otherwise;
-            _prop = prop;
-            if (_order == Order.Standing)
-            {
-                Wear();
-            }
-        }
-
-        /// <summary>
-        /// Down beside someone on the ground whenever the person is standing: in a kneeling clip of
-        /// the mod's own, or on one knee in the pose set by hand if that cannot be had.
-        /// </summary>
-        /// <param name="reach">
-        /// For a clip whose hands work on something a measured distance in front (CPR): they walk
-        /// right up to where they were sent, and the clip is worn only if what they face is then
-        /// that far away; otherwise they kneel at work beside it.
-        /// </param>
-        public void Kneel(string clip = SceneClips.Kneel, float reach = 0f)
-        {
-            if (!Present)
-            {
-                return;
-            }
-            Drop();
-            _hasPose = true;
-            _kneels = true;
-            _stance = clip;
-            _reach = reach;
-            if (_order == Order.Standing)
-            {
-                Wear();
-            }
-        }
-
-        /// <summary>
-        /// Hands up, whenever the person is standing, until Quiet (or the next pose): raised in one clip of the mod's
-        /// own and kept up in another. Where those cannot be had it is the gesture that stood in for it, again and
-        /// again (the game has no hands-up animation); under a clip of ours that gesture is never played.
-        /// </summary>
-        public void Surrender()
-        {
-            if (!Present)
-            {
-                return;
-            }
-            if (!_surrenders || !_hasPose)
-            {
-                Drop();
-                _hasPose = true;
-                _surrenders = true;
-                _kneels = false;
-                _stance = SceneClips.HandsUp;
-                _fallback = false;
-            }
-            Repeat(SurrenderGesture, 2.4f, 3.2f);
-            if (_order == Order.Standing && !_posed)
-            {
-                Wear();
-            }
-        }
-
-        /// <summary>True while their hands are up in the clips made for it (not in the gesture that stands in for them).</summary>
-        public bool HandsRaised => _surrenders && _posed && _clipWorn && Present;
-
-        private const AnimationType SurrenderGesture = AnimationType.VictoryStanding;
-
-        /// <summary>Plays one of the mod's clips once, now, where they stand. False if it cannot be had.</summary>
-        public bool Act(string clip)
-        {
-            return Present && !_actor.Limp && _actor.Work(clip);
-        }
-
-        /// <summary>
-        /// The same, saying how it ends: ClipEnd.Hold keeps the last pose (officer_cuff ends stepped in with a hand on
-        /// a shoulder; a getting-in clip ends in the seat) until EndAct, the next order to go somewhere, or Exit.
-        /// </summary>
-        public bool Act(string clip, ClipEnd end)
-        {
-            return Present && !_actor.Limp && _actor.Work(clip, end);
-        }
-
-        /// <summary>Lets go of a clip held on its last pose. Nothing if none is.</summary>
-        public void EndAct()
-        {
-            if (Present && !_actor.Limp)
-            {
-                _actor.ReleaseClip();
-            }
-        }
-
-        /// <summary>The tool of the clip being played out of the hand while the clip goes on (the officer's handcuffs, from the click).</summary>
-        public void StowTool()
-        {
-            if (Present)
-            {
-                _actor.StowTool();
-            }
-        }
-
-        /// <summary>
-        /// The stance they stand in changes through a clip that plays once into a loop (arrest_cuffed, then
-        /// cuffed_stand), straight from the clip they are in: the loop is what they then wear whenever they stand,
-        /// until Drop or the next pose. False, with nothing changed, if either cannot be had or they are not standing.
-        /// </summary>
-        public bool LeadInto(string once, string then)
-        {
-            if (!Present || _order != Order.Standing || _actor.Limp || !_actor.Work(once, ClipEnd.Hold, then))
-            {
-                return false;
-            }
-            _repeats = false;
-            _surrenders = false;
-            _kneels = false;
-            _fallback = false;
-            _reach = 0f;
-            _stance = then;
-            _hasPose = true;
-            _posed = true;
-            _clipWorn = true;
-            return true;
-        }
-
-        /// <summary>
-        /// How they carry themselves from now on: a clip while walking, at the pace it was made for,
-        /// and optionally another while standing still (handcuffed; pushing the stretcher). Null:
-        /// as the game has them. False if the walking clip cannot be had: they walk as before.
-        /// </summary>
-        public bool Gait(string walk, float pace = SceneClips.WalkPace, string idle = null)
-        {
-            return Present && _actor.Carriage(walk, pace, idle);
-        }
-
-        /// <summary>For an owner that runs every frame (the stretcher): takes someone who is held up out of their walking clip without waiting for the next tick.</summary>
-        public void Sync(float now)
-        {
-            if (Present)
-            {
-                _actor.SyncGait(now);
-            }
-        }
-
-        /// <summary>
-        /// Every order forgotten: whoever asked puts them where they are to be from here on, frame by frame
-        /// (ConveyTo), until the next order. Their navigation agent finds no way and moves nothing meanwhile.
-        /// False if they cannot be (nobody there, or a ragdoll).
-        /// </summary>
+        /// <summary>Every order forgotten: whoever asked moves them frame by frame (ConveyTo). False with nobody or a ragdoll.</summary>
         public bool Convey()
         {
             if (!Present)
@@ -668,7 +428,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Where someone conveyed is this frame, the way they face and how fast they are going (their walk follows it).</summary>
         public void ConveyTo(Vector3 position, Quaternion rotation, Vector3 velocity)
         {
             if (Present)
@@ -677,94 +436,16 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True if the game's own walk plays for them while they are conveyed (their agent is on the navigation mesh).</summary>
         public bool WalksUnaided => Present && _actor.WalksUnaided;
 
         /// <summary>True while somebody else is moving them (Convey) and they have been given no order since.</summary>
         public bool Conveyed => _order == Order.Led && Present;
 
-        /// <summary>The medic bag rides on something (the stretcher, at a place in its own frame) instead of in the hand; null puts it back in the hand.</summary>
         public void StowBag(Transform onto, Vector3 position, Quaternion rotation)
         {
             if (Present)
             {
                 _actor.StowBag(onto, position, rotation);
-            }
-        }
-
-        public void Drop()
-        {
-            _hasPose = false;
-            _surrenders = false;
-            _clipWorn = false;
-            _reach = 0f;
-            if (_posed && Present)
-            {
-                _actor.ClearPose();
-            }
-            _posed = false;
-        }
-
-        /// <summary>While standing, plays a gesture every so often.</summary>
-        public void Repeat(AnimationType gesture, float minGap, float maxGap)
-        {
-            if (!Present)
-            {
-                return;
-            }
-            _repeats = true;
-            _hasEmoji = false;
-            _repeatClip = null;
-            _gesture = gesture;
-            _gestureMin = minGap;
-            _gestureMax = maxGap;
-            _nextGesture = Time.time + Random.Range(0.3f, maxGap);
-        }
-
-        /// <summary>The same with the first of two gestures these characters have; the second is one they are known to.</summary>
-        public void Repeat(AnimationType preferred, AnimationType otherwise, float minGap, float maxGap)
-        {
-            if (Present)
-            {
-                Repeat(_actor.Knows(preferred) ? preferred : otherwise, minGap, maxGap);
-            }
-        }
-
-        /// <summary>
-        /// While standing, plays one of the mod's clips that plays once (pointing someone along) every so often;
-        /// each time it cannot be had, the first of the two gestures these characters have instead.
-        /// </summary>
-        public void Repeat(string clip, AnimationType preferred, AnimationType otherwise, float minGap, float maxGap)
-        {
-            Repeat(preferred, otherwise, minGap, maxGap);
-            _repeatClip = _repeats ? clip : null;
-        }
-
-        /// <summary>The same, with an emoji bubble over the head on some of the gestures.</summary>
-        public void Repeat(AnimationType gesture, float minGap, float maxGap, CharacterEmojiName emoji, float emojiChance)
-        {
-            Repeat(gesture, minGap, maxGap);
-            _hasEmoji = _repeats;
-            _emoji = emoji;
-            _emojiChance = emojiChance;
-        }
-
-        /// <summary>Stops the repeated gesture, and puts the hands of someone who had them up down again.</summary>
-        public void Quiet()
-        {
-            _repeats = false;
-            if (_surrenders)
-            {
-                Drop();
-            }
-        }
-
-        public void Emote(CharacterEmojiName emoji, float seconds = 2.5f)
-        {
-            ActorPool pool = ActorPool.Instance;
-            if (Present && pool != null)
-            {
-                pool.ShowEmoji(_actor, emoji, seconds);
             }
         }
 
@@ -817,7 +498,7 @@ namespace RealLifeOverhaul
                 case Order.Seated:
                     if (!_actor.Seated)
                     {
-                        Settle(now);   // (stood up by something else: standing where they got up)
+                        Settle(now);   // stood up by something else: standing where they got up
                     }
                     else if (_repeats && now >= _nextGesture)
                     {
@@ -858,7 +539,7 @@ namespace RealLifeOverhaul
                 _posed = false;
             }
             float now = Time.time;
-            _hasThen = false;   // (GoVia sets it again after its first stretch has been asked for)
+            _hasThen = false;   // GoVia sets it again after its first stretch is asked for
             // A chaser is given a new destination a few times a second: only a fresh order restarts the arrival delay.
             if (_order != order)
             {
@@ -867,7 +548,7 @@ namespace RealLifeOverhaul
             _order = order;
             _orderUntil = now + allow;
             _closeSince = -1f;
-            _exact = false;   // (GoExactly sets it again once the route has been asked for)
+            _exact = false;   // GoExactly sets it again once the route is asked for
 
             // Scenes aim beside people and cars; the route wants the nearest point that can be walked on.
             bool onMesh = _onRoad ? StreetSpots.OnRoad(destination, 2.5f, out Vector3 spot) : StreetSpots.OnPavement(destination, 2.5f, out spot);
@@ -894,8 +575,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // At the end of the route. Someone who is to kneel a measured distance from what they face is not
-        // stopped a step short of it: they are let come to rest, for a moment at most.
+        // At the end of the route; someone kneeling a measured distance from what they face is let come to rest first.
         private bool Arrived(float now)
         {
             if (!_actor.HasArrived)
@@ -912,34 +592,6 @@ namespace RealLifeOverhaul
                 _closeSince = now;
             }
             return now - _closeSince >= ExactWait;
-        }
-
-        private void Wear()
-        {
-            if (_kneels)
-            {
-                _actor.Kneel(_reach > 0f && !InReach() ? SceneClips.Kneel : _stance);
-            }
-            else if (_stance == null || !(_clipWorn = _actor.Work(_stance, ClipEnd.Return, _surrenders ? SceneClips.HandsUpHold : null)))
-            {
-                if (_fallback)
-                {
-                    _actor.Pose(_pose, _prop);
-                }
-            }
-            _posed = true;
-        }
-
-        // Whether what they face is as far in front of them as the clip's hands will work, said in the log each time it is asked.
-        private bool InReach()
-        {
-            Vector3 gap = _face - _actor.Position;
-            gap.y = 0f;
-            float off = _hasFace ? gap.magnitude : 0f;
-            bool reached = _hasFace && Mathf.Abs(off - _reach) <= SceneClips.CprSlack;
-            ActorPool.Logger?.Info(System.FormattableString.Invariant($"People: kneeling {off:F2} m from the chest of whoever is down; '{_stance}' is made for {_reach:F2} m: ")
-                                   + (reached ? "played." : "not played, they kneel at work beside them instead."));
-            return reached;
         }
     }
 }

@@ -5,15 +5,15 @@ using System.Text;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>One part of a look as the game keeps it (AppearanceElementData): its kind (AppearanceElementType as a number), the game's variant and colour ids.</summary>
+    /// <summary>One part of a look as the game keeps it (AppearanceElementData), by the game's own ids.</summary>
     public struct LookPart
     {
-        public int Type;
+        public int Type;             // AppearanceElementType as a number
         public string Variant;
         public string Colour;        // null when the game gave none
     }
 
-    /// <summary>One of a face's shapes as the game keeps it (FacialBlendshape): the game sets them from the head it rolls (eyes, mouth, nose, brows).</summary>
+    /// <summary>One of a face's shapes as the game keeps it (FacialBlendshape), set from the head it rolls.</summary>
     public struct LookShape
     {
         public string Name;
@@ -23,26 +23,10 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A look the game made, kept as it was: somebody of the crowd the player swapped numbers with in the street (Street,
-    /// Wiring/StreetLinks) is that same person ever after, in the street, on their contact's picture and on Flare. The
-    /// game's pedestrians are dressed by a roll of its own that no seed gives again (BaseHumanPool: SetRandomAppearance with
-    /// no seed), so the look itself is kept: the sex, build, skin and eye colour, every part's variant and colour (face,
-    /// hair, beard, clothes, the game's own ids) and the face's shapes. The age is not part of it: it is the person's own,
-    /// and grows with them.
-    ///
-    /// THE SEED. Everything of the mod that draws a person asks by sex, age and seed (Social/SocialCast, the contacts'
-    /// pictures, Flare's faces, Family, the roommates). A kept look has a seed of its own, worked out from its text
-    /// (<see cref="SeedOf"/>, the same on every machine and every run), and <see cref="PersonLooks"/> knows which seeds are
-    /// kept looks: those draw the look kept, every other seed the game's roll as before. The portrait caches name a kept
-    /// look's face apart (<see cref="PersonLooks.Mark"/>), so it never meets a rolled face of the same number.
-    ///
-    /// THE TEXT (<see cref="Encode"/>): "1;f;strength;fatness;skin;eyes;parts;shapes", parts "type:variant:colour" and
-    /// shapes "name:value:category:kind" joined by '+', every id with its reserved characters as %XX. It holds no '|' and
-    /// no line break, so it is one field of the social life's record (Social/SocialState), at its end: a save without it
-    /// loads, and an older RLO reads the record and leaves the field (the person then has the look of their seed).
-    ///
-    /// Game-free (EconomyCheck, StreetLookChecks.cs). COST: a few hundred characters made or read when somebody is met and
-    /// when a save is read or written; nothing per frame.
+    /// A look the game made, kept as it was, so somebody the player swapped numbers with is that person ever after (the game
+    /// rolls its pedestrians with no seed); its seed comes from its text (<see cref="SeedOf"/>). The text (<see cref="Encode"/>):
+    /// "1;f;strength;fatness;skin;eyes;parts;shapes", parts "type:variant:colour" and shapes "name:value:category:kind" joined
+    /// by '+', reserved characters as %XX; no '|' or line break, as it is the last field of the social life's record.
     /// </summary>
     public sealed class PersonLook
     {
@@ -58,7 +42,6 @@ namespace RealLifeOverhaul
         public readonly List<LookPart> Parts = new List<LookPart>(20);
         public readonly List<LookShape> Shapes = new List<LookShape>(16);
 
-        /// <summary>The look as one line of text (see the class's summary).</summary>
         public string Encode()
         {
             CultureInfo inv = CultureInfo.InvariantCulture;
@@ -81,7 +64,7 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    b.Append('-');   // (no colour: an id is never a lone '-', which is escaped)
+                    b.Append('-');   // no colour; an id that is a lone '-' is escaped
                 }
             }
             b.Append(Field);
@@ -97,7 +80,7 @@ namespace RealLifeOverhaul
             return b.ToString();
         }
 
-        /// <summary>A look read back from its text; null for anything that is not a whole look of this version (it is then the seed's).</summary>
+        /// <summary>A look read back from its text; null for anything but a whole look of this version (the seed's look is used then).</summary>
         public static PersonLook Decode(string text)
         {
             if (string.IsNullOrEmpty(text) || text.Length > TextMost)
@@ -165,8 +148,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // An id's reserved characters (the look's own separators, the record's '|' and line breaks, '%' itself, any control
-        // character) as %XX; an id that is a lone '-' is escaped too, as '-' stands for no colour.
+        // Reserved characters (the separators, '|', '%', control characters) as %XX; a lone '-' too, as it means no colour.
         private static void Escape(StringBuilder b, string id)
         {
             if (id == null)
@@ -223,19 +205,16 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The kept looks of this save, by their seed (<see cref="PersonLook"/>): told by the social life as it reads its save
-    /// and when somebody is met in the street, asked by everything that draws a person from a seed. Forgotten when the
-    /// social life's state is reset (a load, the option off). Game-free. COST: one dictionary look-up per look built or
-    /// face drawn; a handful of entries (the cast is twenty-odd people).
+    /// The kept looks of this save by seed (<see cref="PersonLook"/>): told by the social life, asked by everything that
+    /// draws a person from a seed, forgotten when the social life's state is reset. Game-free; one lookup per look built.
     /// </summary>
     public static class PersonLooks
     {
         private static readonly Dictionary<int, PersonLook> Known = new Dictionary<int, PersonLook>(8);
 
-        /// <summary>The kept looks known now.</summary>
         public static int Count => Known.Count;
 
-        /// <summary>A kept look's text made known: its seed, or 0 if the text is not a look (nothing is kept then).</summary>
+        /// <summary>Makes a kept look's text known: its seed, or 0 if the text is not a look.</summary>
         public static int Remember(string text)
         {
             PersonLook look = PersonLook.Decode(text);
@@ -256,7 +235,7 @@ namespace RealLifeOverhaul
 
         public static bool Has(int seed) => Known.ContainsKey(seed);
 
-        /// <summary>What the portrait caches add to a face's file name: "s" for a kept look, nothing for a rolled one (no allocation).</summary>
+        /// <summary>What the portrait caches add to a face's file name: "s" for a kept look, nothing for a rolled one.</summary>
         public static string Mark(int seed) => Known.ContainsKey(seed) ? "s" : string.Empty;
 
         public static void Forget()
