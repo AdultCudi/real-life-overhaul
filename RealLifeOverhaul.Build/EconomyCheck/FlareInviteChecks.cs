@@ -474,7 +474,7 @@ internal static partial class Program
         string links = TextsSource(@"Wiring\FlareInviteLinks.cs");
         string live = TextsSource(@"Social\Flare\FlareDirector.Live.cs");
         string director = TextsSource(@"Social\Flare\FlareDirector.cs");
-        string phone = TextsSource(@"Social\SocialDialogs.cs");
+        string phone = TextsSource(@"Social\PersonDialog.cs");
         string flareLinks = TextsSource(@"Wiring\FlareLinks.cs");
         Check(links.Contains("p.Origin = SocialOrigin.Online;") && links.Contains("SocialLife.Meet(p, true);") && flareLinks.Contains("stranger.Origin = SocialOrigin.Online;")
               && flareLinks.Contains("SocialLife.Meet(stranger, true);") && links.Contains("ContactPictures.Person(SocialPhone.IdOf(p)"),

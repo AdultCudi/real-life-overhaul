@@ -216,7 +216,7 @@ internal static partial class Program
             }
         }
         Check(rolls == 0, "street look: no look of a person of the social life is rolled from their seed without asking for a kept look");
-        Check(Read("Social", "SocialModel.cs").Contains("PersonLooks.Forget();") && Read("People", "PersonLookGame.cs").Contains("Dressed.Remove(id);"),
+        Check(Read("Social", "SocialState.cs").Contains("PersonLooks.Forget();") && Read("People", "PersonLookGame.cs").Contains("Dressed.Remove(id);"),
             "street look: the kept looks are forgotten with the social life's state, and a character dressed in one is put back for the next rolled look");
     }
 

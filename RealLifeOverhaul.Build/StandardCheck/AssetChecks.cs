@@ -58,7 +58,6 @@ internal static partial class Program
         ("Social/Flare/FlareCityCamera.cs", "target", "RenderTexture.ReleaseTemporary(_pending)", "a city photo's render target, released when its pixels are back, or by Clear if the photo is stopped"),
         ("Social/Flare/FlareIcons.cs", "s", "Made[glyph] = s", "a Flare glyph, drawn once a session for each"),
         ("Social/Flare/FlareKit.cs", "return", "_round = Make(false)", "Flare's two rounded shapes, drawn once a session"),
-        ("Social/SocialPhone.cs", "_badge", "private static Sprite _badge", "the social contacts' badge, drawn once a session"),
         ("Tech/Sites/SiteProps.cs", "made", "Tech/Sites/ServerRoomView.cs|UnityEngine.Object.Destroy(_setA)", "the server room's status lights, destroyed when the room's view ends"),
         ("Traffic/TrafficEffects.cs", "clip", "Object.Destroy(_wailClip)", "the sirens' two sounds, made once a session and destroyed in Dispose"),
     };

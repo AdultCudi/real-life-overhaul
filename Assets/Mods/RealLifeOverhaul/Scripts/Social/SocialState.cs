@@ -1,0 +1,411 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+
+namespace RealLifeOverhaul
+{
+    /// <summary>The social part of a save, kept as plain strings in its modData: a save made with it loads without the mod.</summary>
+    public static class SocialState
+    {
+        private const string KeyMain = "reallife:social";
+        private const string KeyPeople = "reallife:social_people";
+        private const string KeyPlan = "reallife:social_plan";
+        private const string KeyOffer = "reallife:social_offer";
+        private const int Version = 1;
+        private const char Field = '|';
+        private const char Record = '\n';
+
+        public static readonly SocialPerson[] People = new SocialPerson[SocialRules.CastSize];
+        public static readonly SocialPlan Plan = new SocialPlan();
+        public static readonly SocialOffer Offer = new SocialOffer();
+
+        public static bool Loaded { get; private set; }
+        public static int CastSeed;
+        public static int Day;               // the day the daily round was last done for
+        public static int TextsDay, TextsToday;
+        public static int LastMeetDay;       // a new face at most every other day
+        public static int LastDropByDay;
+        public static int LastCallInDay;     // the day one of them last rang
+        public static int CoffeeBuys;        // coffees bought at a cart: a regular is noticed by another
+        public static int WealthTier;        // the last wealth milestone they reacted to
+        public static int LastArrestDay;
+        public static int TestPerson;        // whom the test buttons act on
+
+        public static void Reset()
+        {
+            Loaded = false;
+            for (int i = 0; i < People.Length; i++)
+            {
+                People[i] = null;
+            }
+            Plan.Clear();
+            Offer.Clear();
+            CastSeed = 0;
+            PersonLooks.Forget();
+            Day = 0;
+            TextsDay = 0;
+            TextsToday = 0;
+            LastMeetDay = 0;
+            LastDropByDay = 0;
+            LastCallInDay = 0;
+            CoffeeBuys = 0;
+            WealthTier = 0;
+            LastArrestDay = 0;
+            TestPerson = 0;
+        }
+
+        /// <summary>Null while nothing is loaded, or outside the cast.</summary>
+        public static SocialPerson Get(int index)
+        {
+            return Loaded && index >= 0 && index < People.Length ? People[index] : null;
+        }
+
+        public static SocialPerson ByOrigin(SocialOrigin origin)
+        {
+            for (int i = 0; Loaded && i < People.Length; i++)
+            {
+                if (People[i] != null && People[i].Origin == origin)
+                {
+                    return People[i];
+                }
+            }
+            return null;
+        }
+
+        public static int MetCount
+        {
+            get
+            {
+                int count = 0;
+                for (int i = 0; Loaded && i < People.Length; i++)
+                {
+                    if (People[i] != null && People[i].Met)
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
+        }
+
+        /// <summary>Whoever the player is dating or with, or null.</summary>
+        public static SocialPerson Partner
+        {
+            get
+            {
+                for (int i = 0; Loaded && i < People.Length; i++)
+                {
+                    if (People[i] != null && People[i].Together)
+                    {
+                        return People[i];
+                    }
+                }
+                return null;
+            }
+        }
+
+        /// <summary>The cast is made from <paramref name="seed"/> if the save has none this version can read.</summary>
+        public static void Load(Dictionary<string, string> data, int day, int daysPerYear, int districts, int seed)
+        {
+            Reset();
+            bool read = false;
+            try
+            {
+                read = Read(data);
+            }
+            catch (Exception)
+            {
+                read = false;   // a record this version cannot read: a new cast rather than a broken one
+            }
+            if (!read && data != null)
+            {
+                // Kept as it is for a version that can read it (Core/SaveLines).
+                SaveLines.Unreadable(data, KeyMain, "it could not be read");
+                if (SaveLines.IsKept(data, KeyMain))
+                {
+                    SaveLines.Unreadable(data, KeyPeople, "its record could not be read");
+                    SaveLines.Unreadable(data, KeyPlan, "its record could not be read");
+                    SaveLines.Unreadable(data, KeyOffer, "its record could not be read");
+                }
+            }
+            if (!read)
+            {
+                Reset();
+                CastSeed = seed;
+                SocialCatalogue.MakeCast(People, seed, day, daysPerYear, districts);
+                Day = day;
+            }
+            Loaded = true;
+        }
+
+        public static void Save(Dictionary<string, string> data)
+        {
+            if (!Loaded)
+            {
+                return;
+            }
+            CultureInfo inv = CultureInfo.InvariantCulture;
+            var text = new StringBuilder(2048);
+            text.Append(Version).Append(Field).Append(CastSeed).Append(Field).Append(Day).Append(Field).Append(TextsDay).Append(Field).Append(TextsToday)
+                .Append(Field).Append(LastMeetDay).Append(Field).Append(LastDropByDay).Append(Field).Append(LastCallInDay).Append(Field).Append(CoffeeBuys)
+                .Append(Field).Append(WealthTier).Append(Field).Append(LastArrestDay).Append(Field).Append(TestPerson);
+            data[KeyMain] = text.ToString();
+
+            text.Length = 0;
+            for (int i = 0; i < People.Length; i++)
+            {
+                SocialPerson p = People[i];
+                if (p == null)
+                {
+                    continue;
+                }
+                if (text.Length > 0)
+                {
+                    text.Append(Record);
+                }
+                text.Append(p.Index).Append(Field).Append(Clean(p.Name)).Append(Field).Append(p.Female ? 1 : 0).Append(Field).Append(p.Age).Append(Field).Append(p.Seed)
+                    .Append(Field).Append((int)p.Origin).Append(Field).Append((int)p.Traits).Append(Field).Append(p.Job).Append(Field).Append(p.District)
+                    .Append(Field).Append(p.FreeFrom).Append(Field).Append(p.FreeTo).Append(Field).Append(p.Birthday).Append(Field).Append(p.Compatible ? 1 : 0)
+                    .Append(Field).Append(p.Met ? 1 : 0).Append(Field).Append(p.MetDay)
+                    .Append(Field).Append(p.Familiarity.ToString("F1", inv)).Append(Field).Append(p.Affection.ToString("F1", inv)).Append(Field).Append(p.Trust.ToString("F1", inv))
+                    .Append(Field).Append((int)p.Stage).Append(Field).Append(p.StageDay).Append(Field).Append(p.MovedIn ? 1 : 0).Append(Field).Append(p.Drifted ? 1 : 0)
+                    .Append(Field).Append(p.Mood).Append(Field).Append(p.LastContactDay).Append(Field).Append(p.LastCallDay).Append(Field).Append(p.LastTextDay)
+                    .Append(Field).Append(p.LastOutingDay).Append(Field).Append(p.Shared).Append(Field).Append(p.Dates).Append(Field).Append((int)p.Wants)
+                    .Append(Field).Append(p.WantsDay).Append(Field).Append(Clean(p.LastSaid)).Append(Field).Append(p.LastTopic).Append(Field).Append(p.AsksInWindow)
+                    .Append(Field).Append(p.AskDay).Append(Field).Append(p.Debt).Append(Field).Append(p.DebtDay).Append(Field).Append(p.Loan).Append(Field).Append(p.LoanDue)
+                    .Append(Field).Append(p.BirthdayYear).Append(Field);
+                for (int m = 0; m < p.Memories.Count; m++)
+                {
+                    if (m > 0)
+                    {
+                        text.Append(',');
+                    }
+                    text.Append((int)p.Memories[m].Code).Append(':').Append(p.Memories[m].Day);
+                }
+                // The look last: a version that reads 41 fields leaves it; its text holds no '|' or line break.
+                text.Append(Field).Append(p.Look ?? string.Empty);
+            }
+            data[KeyPeople] = text.ToString();
+
+            SocialPlan plan = Plan;
+            data[KeyPlan] = !plan.Active
+                ? string.Empty
+                : string.Join(Field.ToString(), plan.Person.ToString(inv), ((int)plan.Kind).ToString(inv), plan.Time.ToString("F0", inv), Clean(plan.Street),
+                    plan.Number.ToString(inv), Clean(plan.Place), plan.X.ToString("F2", inv), plan.Y.ToString("F2", inv), plan.Z.ToString("F2", inv),
+                    plan.TheirIdea ? "1" : "0", plan.Reminded ? "1" : "0", plan.Checked ? "1" : "0", plan.Arrives.ToString("F0", inv), Clean(plan.ToStreet),
+                    plan.ToNumber.ToString(inv));
+            SocialOffer offer = Offer;
+            data[KeyOffer] = !offer.Active
+                ? string.Empty
+                : string.Join(Field.ToString(), offer.Person.ToString(inv), offer.Kind.ToString(inv), offer.Amount.ToString(inv), offer.Expires.ToString("F0", inv));
+        }
+
+        /// <summary>The people met as the save holds them, the loaded state untouched: for Flare's faces drawn behind the loading screen.</summary>
+        public static void PeekMet(Dictionary<string, string> data, List<SocialPerson> into)
+        {
+            into.Clear();
+            if (data == null || !data.TryGetValue(KeyMain, out string main) || string.IsNullOrEmpty(main)
+                || !data.TryGetValue(KeyPeople, out string people) || string.IsNullOrEmpty(people))
+            {
+                return;
+            }
+            string[] m = main.Split(Field);
+            if (m.Length < 12 || Int(m[0]) != Version)
+            {
+                return;
+            }
+            var found = new bool[People.Length];
+            int count = 0;
+            foreach (string record in people.Split(Record))
+            {
+                string[] f = record.Split(Field);
+                if (f.Length < 41)
+                {
+                    continue;
+                }
+                int index = Int(f[0]);
+                if (index < 0 || index >= People.Length || found[index] || string.IsNullOrEmpty(f[1]))
+                {
+                    continue;
+                }
+                var p = new SocialPerson
+                {
+                    Index = index, Name = f[1], Female = f[2] == "1", Age = Int(f[3]), Seed = Int(f[4]), Origin = (SocialOrigin)Int(f[5]), Met = f[13] == "1",
+                    Stage = (SocialStage)Int(f[18]), Wants = (PlanKind)Int(f[29])
+                };
+                if (!Readable(p))
+                {
+                    continue;
+                }
+                ReadLook(p, f);
+                SocialCatalogue.FixLook(p);
+                found[index] = true;
+                count++;
+                if (p.Met)
+                {
+                    into.Add(p);
+                }
+            }
+            if (count != People.Length)
+            {
+                into.Clear();
+            }
+        }
+
+        private static bool Readable(SocialPerson p)
+        {
+            return p.Stage >= SocialStage.Stranger && p.Stage <= SocialStage.Partner && p.Wants >= PlanKind.Coffee && p.Wants <= PlanKind.Business;
+        }
+
+        // Field 41, the look kept from the street, gives them its seed; one that cannot be read is let go.
+        private static void ReadLook(SocialPerson p, string[] f)
+        {
+            if (f.Length < 42 || f[41].Length == 0 || p.Origin == SocialOrigin.Family || p.Origin == SocialOrigin.OldFriend)
+            {
+                return;
+            }
+            int seed = PersonLooks.Remember(f[41]);
+            if (seed != 0)
+            {
+                p.Look = f[41];
+                p.Seed = seed;
+            }
+        }
+
+        private static bool Read(Dictionary<string, string> data)
+        {
+            if (data == null || !data.TryGetValue(KeyMain, out string main) || string.IsNullOrEmpty(main)
+                || !data.TryGetValue(KeyPeople, out string people) || string.IsNullOrEmpty(people))
+            {
+                return false;
+            }
+            string[] m = main.Split(Field);
+            if (m.Length < 12 || Int(m[0]) != Version)
+            {
+                return false;
+            }
+            CastSeed = Int(m[1]);
+            Day = Int(m[2]);
+            TextsDay = Int(m[3]);
+            TextsToday = Int(m[4]);
+            LastMeetDay = Int(m[5]);
+            LastDropByDay = Int(m[6]);
+            LastCallInDay = Int(m[7]);
+            CoffeeBuys = Int(m[8]);
+            WealthTier = Int(m[9]);
+            LastArrestDay = Int(m[10]);
+            TestPerson = Int(m[11]);
+
+            int found = 0;
+            foreach (string record in people.Split(Record))
+            {
+                string[] f = record.Split(Field);
+                if (f.Length < 41)
+                {
+                    continue;
+                }
+                int index = Int(f[0]);
+                if (index < 0 || index >= People.Length || People[index] != null || string.IsNullOrEmpty(f[1]))
+                {
+                    continue;
+                }
+                var p = new SocialPerson
+                {
+                    Index = index, Name = f[1], Female = f[2] == "1", Age = Int(f[3]), Seed = Int(f[4]), Origin = (SocialOrigin)Int(f[5]),
+                    Traits = (SocialTrait)Int(f[6]), Job = Int(f[7]), District = Int(f[8]), FreeFrom = Int(f[9]), FreeTo = Int(f[10]), Birthday = Int(f[11]),
+                    Compatible = f[12] == "1", Met = f[13] == "1", MetDay = Int(f[14]), Familiarity = Float(f[15]), Affection = Float(f[16]), Trust = Float(f[17]),
+                    Stage = (SocialStage)Int(f[18]), StageDay = Int(f[19]), MovedIn = f[20] == "1", Drifted = f[21] == "1", Mood = Int(f[22]),
+                    LastContactDay = Int(f[23]), LastCallDay = Int(f[24]), LastTextDay = Int(f[25]), LastOutingDay = Int(f[26]), Shared = Int(f[27]),
+                    Dates = Int(f[28]), Wants = (PlanKind)Int(f[29]), WantsDay = Int(f[30]), LastSaid = f[31], LastTopic = Int(f[32]), AsksInWindow = Int(f[33]),
+                    AskDay = Int(f[34]), Debt = Int(f[35]), DebtDay = Int(f[36]), Loan = Int(f[37]), LoanDue = Int(f[38]), BirthdayYear = Int(f[39])
+                };
+                if (!Readable(p))
+                {
+                    continue;
+                }
+                ReadLook(p, f);
+                SocialCatalogue.FixLook(p);   // before a later version's origin is read as an old friend below
+                if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
+                {
+                    p.Origin = SocialOrigin.OldFriend;   // a later version's place of meeting: never a number past the tables
+                }
+                foreach (string memory in f[40].Split(','))
+                {
+                    string[] parts = memory.Split(':');
+                    if (parts.Length == 2 && p.Memories.Count < SocialPerson.MaxMemories)
+                    {
+                        p.Memories.Add(new SocialMemory { Code = (MemoryCode)Int(parts[0]), Day = Int(parts[1]) });
+                    }
+                }
+                People[index] = p;
+                found++;
+            }
+            if (found != People.Length)
+            {
+                return false;
+            }
+
+            if (data.TryGetValue(KeyPlan, out string planText) && !string.IsNullOrEmpty(planText))
+            {
+                string[] f = planText.Split(Field);
+                if (f.Length >= 15 && Int(f[0]) >= 0 && Int(f[0]) < People.Length)
+                {
+                    Plan.Person = Int(f[0]);
+                    Plan.Kind = (PlanKind)Int(f[1]);
+                    Plan.Time = Float(f[2]);
+                    Plan.Street = f[3].Length > 0 ? f[3] : null;
+                    Plan.Number = Int(f[4]);
+                    Plan.Place = f[5];
+                    Plan.X = Float(f[6]);
+                    Plan.Y = Float(f[7]);
+                    Plan.Z = Float(f[8]);
+                    Plan.TheirIdea = f[9] == "1";
+                    Plan.Reminded = f[10] == "1";
+                    Plan.Checked = f[11] == "1";
+                    Plan.Arrives = Float(f[12]);
+                    Plan.ToStreet = f[13].Length > 0 ? f[13] : null;
+                    Plan.ToNumber = Int(f[14]);
+                }
+            }
+            if (data.TryGetValue(KeyOffer, out string offerText) && !string.IsNullOrEmpty(offerText))
+            {
+                string[] f = offerText.Split(Field);
+                if (f.Length >= 4 && Int(f[0]) >= 0 && Int(f[0]) < People.Length)
+                {
+                    Offer.Person = Int(f[0]);
+                    Offer.Kind = Int(f[1]);
+                    Offer.Amount = Int(f[2]);
+                    Offer.Expires = Float(f[3]);
+                }
+            }
+            return true;
+        }
+
+        // Nothing a record is split on may be inside a field.
+        private static string Clean(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+            if (text.Length > 160)
+            {
+                text = text.Substring(0, 160);
+            }
+            return text.IndexOf(Field) < 0 && text.IndexOf(Record) < 0 && text.IndexOf('\r') < 0
+                ? text
+                : text.Replace(Field, '/').Replace(Record, ' ').Replace('\r', ' ');
+        }
+
+        private static int Int(string text)
+        {
+            return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : 0;
+        }
+
+        private static float Float(string text)
+        {
+            return float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : 0f;
+        }
+    }
+}
