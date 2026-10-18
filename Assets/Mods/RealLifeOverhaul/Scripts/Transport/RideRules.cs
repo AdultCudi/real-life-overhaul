@@ -3,36 +3,31 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The rules of a bus ride played in real time (TransitDirector.Journey, BusRidePanel): how far along it the rider is,
-    /// which stop a rider who asks to get off is let off at, when a bus that gets nowhere is given up and the rest of the
-    /// ride skipped, what a save written on the way gives back, and how long a ride takes as the bus drives it. And when a
-    /// bus held up short of its place counts as standing at the stop, when a hold on the road is written to the log, and
-    /// when a car of the traffic that waits for the bus while the bus waits for it is told to go on (TransitBus).
-    ///
-    /// Game-free: nothing here knows of Unity. EconomyCheck (BusJourneyChecks.cs) checks it.
+    /// The rules of a bus ride played in real time: how far along the rider is, where a rider who asks to get off is let off,
+    /// when a bus getting nowhere is given up, how long a ride takes, and when a bus held up short of its place counts as at
+    /// the stop. Nothing of Unity in it; EconomyCheck (BusJourneyChecks) checks it.
     /// </summary>
     public static class RideRules
     {
         /// <summary>
-        /// Seconds a bus on the road may go without getting a metre further before the rest of the ride is skipped. Seconds of
-        /// the game's own pace, as everything on the street runs: none pass while the game is paused, six a second in fast forward.
+        /// Seconds a bus may go without getting a metre further before the rest of the ride is skipped. Seconds of the game's
+        /// pace, as everything on the street runs: none while paused, six a second in fast forward.
         /// </summary>
         public const float StuckDriving = 60f;
 
-        /// <summary>...and whatever it is doing, standing at a stop included (a stand is 34 s at the most, a wait to pull out 45).</summary>
+        /// <summary>The same whatever it is doing, standing at a stop included (a stand is 34 s at most, a wait to pull out 45).</summary>
         public const float StuckAny = 120f;
 
         /// <summary>Seconds (the game's pace) a whole ride may take before the rest is skipped, however it is getting on.</summary>
         public const float LongestRide = 900f;
 
-        /// <summary>The stop a bus has just left is behind it once it has driven this far from it.</summary>
+        /// <summary>Metres from the stop a bus has just left after which it is behind it.</summary>
         public const float PastStop = 1f;
 
-        // What a ride is made of, for the estimate of how long one takes (TransitBus, TransitDirector, TransitTrips).
+        // What a ride is made of, for the estimate of how long one takes.
         public const float Cruise = 11f;            // m/s, TransitBus's 40 km/h
         public const float StopApart = 330f;        // metres between two stops of a line, on average (TransitTrips.StopEvery)
-        public const float StandEmpty = 4f;         // seconds at a stop where nobody gets on or off (TransitDirector.DwellEmpty)
-        public const float StandUsual = 9f;         // ...and otherwise, at the least (TransitDirector.DwellLeast)
+        public const float StandUsual = 9f;         // seconds at a stop, at the least (TransitDirector.DwellLeast)
         public const float FastForward = 6f;        // the game's fast forward: its clock and everything on the street six times as fast
 
         /// <summary>The part of the ride done, 0 to 1, by metres along the line: from the stop boarded at to the one got off at.</summary>
@@ -58,16 +53,15 @@ namespace RealLifeOverhaul
             return standing ? targetMetres : passedMetres;
         }
 
-        /// <summary>The bar never goes back (a bus re-routed round a corner reckons its metres afresh).</summary>
+        /// <summary>The bar never goes back, though a bus re-routed round a corner reckons its metres afresh.</summary>
         public static float Advance(float shown, float now)
         {
             return Math.Max(shown, Math.Max(0f, Math.Min(1f, now)));
         }
 
         /// <summary>
-        /// The stop a rider who asks to get off is let off at (as orders along the line): the stop the bus stands at while its
-        /// doors are open, else the next one it will call at (the one it is driving to, or after the one it has just left).
-        /// Never past the stop the ticket was for.
+        /// The order of the stop a rider who asks to get off is let off at: the one the bus stands at with its doors open,
+        /// else the next it will call at. Never past the stop the ticket was for.
         /// </summary>
         public static int GetOffAt(int passedOrder, int targetOrder, bool standingAtTarget, bool doorsOpen, int finalOrder)
         {
@@ -89,21 +83,21 @@ namespace RealLifeOverhaul
             return Math.Max(0, finalOrder - nextOrder + 1);
         }
 
-        /// <summary>Whether a bus that has got nowhere for this many seconds (the game's pace) is given up and the rest of the ride skipped.</summary>
+        /// <summary>Whether a bus that has got nowhere for so many seconds (the game's pace) is given up.</summary>
         public static bool Stuck(float stillSeconds, bool standingAtStop, float rideSeconds)
         {
             return rideSeconds >= LongestRide || stillSeconds >= (standingAtStop ? StuckAny : StuckDriving);
         }
 
-        /// <summary>Game minutes left of a ride when the rest of it is skipped: the part not yet ridden of the ride's own time, a minute at the least.</summary>
+        /// <summary>Game minutes left of a ride when the rest is skipped: the share not yet ridden, a minute at the least.</summary>
         public static float MinutesLeft(float rideMinutes, float progress)
         {
             return Math.Max(1f, rideMinutes * (1f - Math.Max(0f, Math.Min(1f, progress))));
         }
 
         /// <summary>
-        /// Seconds the bus takes from rest at one stop to rest at the next this many metres along a straight road, at its own
-        /// pace (BusPath: it eases away, cruises, and brakes to stand exactly where it should), in steps of the physics.
+        /// Seconds the bus takes from rest at one stop to rest at the next so many metres along a straight road, driven at
+        /// BusPath's pace in physics steps.
         /// </summary>
         public static float DriveSeconds(float metres, float cruise = Cruise, float dt = 0.02f)
         {
@@ -124,8 +118,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Real seconds a ride of so many stops takes at the game's normal speed: the drive between each two and the stand at each
-        /// stop on the way (not the one got off at). Red lights and traffic not counted.
+        /// Real seconds a ride of so many stops takes at the game's normal speed: each drive and each stand on the way. Red
+        /// lights and traffic not counted.
         /// </summary>
         public static float RideSeconds(int stops, float apart = StopApart, float stand = StandUsual)
         {
@@ -136,44 +130,40 @@ namespace RealLifeOverhaul
             return stops * DriveSeconds(apart) + (stops - 1) * stand;
         }
 
-        // ---------------------------------------------------------------- standing short of its place, and holds on the way
-
         /// <summary>
-        /// Seconds a bus on its way to a stop has stood still, held by something, before it counts as standing at the stop
-        /// where it is (<see cref="StandsWhereItIs"/>). Its driver brings it to rest exactly at its place when nothing holds it.
+        /// Seconds a bus held by something on its way to a stop stands still before it counts as standing at the stop where it
+        /// is (<see cref="StandsWhereItIs"/>).
         /// </summary>
         public const float StandShortAfter = 2f;
 
-        /// <summary>Seconds a bus has stood still on the road before what holds it is written to the log, once a hold.</summary>
+        /// <summary>Seconds a bus stands still on the road before what holds it is written to the log, once a hold.</summary>
         public const float HoldLogAfter = 5f;
 
-        /// <summary>Metres a bus must move for a hold to be over: creeping up behind a queue is the one hold.</summary>
+        /// <summary>Metres a bus must move for a hold to be over, so creeping up behind a queue is one hold.</summary>
         public const float HoldMoved = 1f;
 
         /// <summary>
-        /// Seconds a bus has stood behind a car of the traffic before that car, when it stands for the bus itself (the bus is in
-        /// its sensor), is told the bus is not in its way. Two drivers each waiting for the other never move otherwise.
+        /// Seconds a bus stands behind a car of the traffic that stands for the bus itself (the bus is in its sensor) before the
+        /// car is told the bus is not in its way: two drivers each waiting for the other never move otherwise.
         /// </summary>
         public const float YieldAfter = 4f;
 
         /// <summary>Degrees off the lane's direction a bus may stand at for its doors to be by the kerb.</summary>
         public const float KerbAngleMost = 15f;
 
-        /// <summary>Metres onto the pavement a door's side may reach and still be on the road by the kerb (the bus never mounts it).</summary>
+        /// <summary>Metres onto the pavement a door's side may reach and still count as by the kerb.</summary>
         public const float KerbOver = 0.3f;
 
         /// <summary>
-        /// Metres of its route a bus held up by the player may still have to drive and stand there for them: the player in the
-        /// road at the stop (up to 3 m short of the pole) holds its nose up to 6 m short of them.
+        /// Metres of route a bus held up by the player may still have and stand there for them: the player in the road at the
+        /// stop holds its nose up to 6 m short of them.
         /// </summary>
         public const float PlayerHoldsWithin = 16f;
 
         /// <summary>
-        /// Whether a door of the bus stands by the stop's kerb: its front or its middle door (their middles, metres along the
-        /// lane from the stop's lane point, the way the bus goes) within the stop's kerb strip (BusInside.BoardingStrips: from
-        /// beyond the middle door to beyond the front door of a bus at its place, <paramref name="stand"/> on from the pole),
-        /// on the kerb's side of the lane's line and not over the kerb (<paramref name="doorAside"/>: metres from the lane's
-        /// line to the side the doors are in, the kerb at <paramref name="kerbAside"/>), the bus near enough parallel to it.
+        /// Whether the front or middle door (metres along the lane from the stop's lane point) is within the stop's kerb strip,
+        /// <paramref name="stand"/> on from the pole, on the kerb's side of the lane's line and not over the kerb, with the bus
+        /// near enough parallel to it. <paramref name="doorAside"/> is metres from the lane's line to the door side.
         /// </summary>
         public static bool DoorOnKerb(float frontAlong, float middleAlong, float doorAside, float angle, float stand, float kerbAside)
         {
@@ -187,10 +177,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether a bus on its way to a stop that has stood still for <paramref name="stillFor"/> seconds stands at the stop
-        /// where it is: with a door by the stop's kerb, or held up by the player near its place (the player waits for it to
-        /// stand, and it waits for them to move: neither ever would). Whatever holds it, then, it is at the stop: its doors
-        /// open, and whoever waits gets on there.
+        /// Whether a bus held still for <paramref name="stillFor"/> seconds on its way to a stop is at the stop where it is: a
+        /// door by the kerb, or held by the player near its place (each would wait for the other for ever). Its doors then open.
         /// </summary>
         public static bool StandsWhereItIs(float stillFor, bool doorOnKerb, bool heldByPlayer, float routeLeft)
         {
@@ -198,9 +186,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether a car of the traffic that a bus stands behind is told the bus is not in its way: the traffic is this machine's
-        /// own (not a Going Public guest's mirror of the host's), the car stands and stands for the bus (the bus is in its
-        /// sensor), the bus is not on the car's own way ahead (it would drive into it), and once a hold.
+        /// Whether a car of the traffic a bus stands behind is told the bus is not in its way: the traffic is this machine's own,
+        /// the car stands for the bus, the bus is not on the car's way ahead, and once a hold.
         /// </summary>
         public static bool Yield(float heldFor, bool trafficOurs, bool carStanding, bool waitsForBus, bool busOnItsWay, bool yielded)
         {
@@ -208,9 +195,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// How long a bus has stood still on the road, by where it is each time it is looked at (four times a second): a hold
-        /// is over once it has moved <see cref="HoldMoved"/> from where the hold began. What is done once a hold (the line in the
-        /// log, a car told to go on) is kept here too, and forgotten with the hold.
+        /// How long a bus has stood still on the road, looked at four times a second: a hold is over once the bus has moved
+        /// <see cref="HoldMoved"/> from where it began. What is done once a hold is kept here and forgotten with it.
         /// </summary>
         public sealed class HoldClock
         {
@@ -226,7 +212,7 @@ namespace RealLifeOverhaul
             /// <summary>Seconds of the hold so far, as of the last look.</summary>
             public float For { get; private set; }
 
-            /// <summary>Where the bus is now (metres, on the ground) and when: the seconds it has stood within a metre of where it stopped.</summary>
+            /// <summary>Takes where the bus is now (metres, on the ground); returns the seconds it has stood within a metre of where it stopped.</summary>
             public float At(float x, float z, float now)
             {
                 float dx = x - _x, dz = z - _z;
@@ -253,14 +239,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- a Going Public session
-
         /// <summary>
-        /// Whether a ride is driven in real time: alone, or in a Going Public session on a machine whose street is its own
-        /// (the host's). Riding in real time takes nothing of the shared clock: the bus is this machine's own object, not
-        /// the traffic, and the other players see the rider's figure where Going Public sends it, seated, along the road.
-        /// A guest's street is the host's (its traffic mirrored, its parked cars the host's), so a guest has no buses at all,
-        /// as before: nothing of the host's may be taken, stopped or steered.
+        /// Whether a ride is driven in real time: alone, or as the host of a Going Public session. The bus is this machine's own
+        /// object, so nothing of the shared clock is taken. A guest's street is the host's (its traffic mirrored), so a guest
+        /// has no buses: nothing of the host's may be taken, stopped or steered.
         /// </summary>
         public static bool RealTime(bool trafficMirrored)
         {

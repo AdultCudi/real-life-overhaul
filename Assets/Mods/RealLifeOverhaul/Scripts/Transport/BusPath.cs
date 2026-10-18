@@ -4,26 +4,12 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The path a bus's front axle drives through a route's points, and the bus's pace along it:
-    /// numbers in, numbers out, no engine types, so that the build's NavCheck drives a model of the
-    /// bus through a bay with the very code the game's bus is driven by (<see cref="BusDriver"/>).
-    /// Places are x and z on the ground (y is carried along for the height).
-    ///
-    /// THE PATH. A centripetal Catmull-Rom spline through the points (it never loops or overshoots
-    /// between points unevenly spaced), begun the way the bus already faces, a point every
-    /// <see cref="Spacing"/>. The bus comes to rest <see cref="FinalShort"/> before the last point:
-    /// that is where TransitBus lays it.
-    ///
-    /// THE PACE. Each point of the path has the most the bus may be doing there: what its bend allows
-    /// with <see cref="BendGrip"/> sideways (never under <see cref="Crawl"/>), planned back from each
-    /// bend at <see cref="Braking"/>, so that it has slowed by the time it is there. Every stop is
-    /// planned at Braking (<see cref="StopIn"/>). It gathers speed with a pull that eases in to
-    /// <see cref="Pickup"/>, and brakes down the line it planned on, or up to
-    /// <see cref="BrakingMost"/> for what has come into its way (<see cref="Pace"/>).
-    ///
-    /// THE AXLES. The rear axle follows the front at the wheelbase: each step it is drawn straight
-    /// towards the front's new place (<see cref="Trail"/>), so its wheels never slide sideways, its
-    /// rear wheels cut inside a bend and its body lags the road coming out of one, as a bus's do.
+    /// The path a bus's front axle drives through a route's points, and its pace along it: numbers only, so NavCheck drives a
+    /// model bus through a bay with the code <see cref="BusDriver"/> drives the game's bus by. Places are x and z on the
+    /// ground, y carried along. The path is a centripetal Catmull-Rom spline (no loops or overshoot between unevenly spaced
+    /// points) begun the way the bus faces, a point every <see cref="Spacing"/>. Each point holds the most the bus may be
+    /// doing there, from its bend at <see cref="BendGrip"/>, planned back at <see cref="Braking"/>. The rear axle is drawn
+    /// straight towards the front's new place (<see cref="Trail"/>), so its wheels cut inside a bend as a bus's do.
     /// </summary>
     public sealed class BusPath
     {
@@ -32,7 +18,7 @@ namespace RealLifeOverhaul
         public const float Pickup = 1.1f;           // m/s2 it gathers speed with
         public const float PickupJerk = 1.4f;       // m/s3 it comes up to that with: it does not lurch away
         public const float Braking = 1.5f;          // m/s2 every stop is planned with
-        public const float BrakingMost = 3.5f;      // ...and the most it brakes with, for what comes into its way
+        public const float BrakingMost = 3.5f;      // m/s2 at the most, for what comes into its way
         public const float BendGrip = 1.3f;         // m/s2 sideways through a bend
         public const float Crawl = 1.5f;            // m/s no bend holds it under
         public const float CapReach = 8f;           // metres either side of a route point that point's own limit holds over
@@ -41,7 +27,7 @@ namespace RealLifeOverhaul
         public readonly List<float> Y = new List<float>(512);
         public readonly List<float> Z = new List<float>(512);
         public readonly List<float> Arc = new List<float>(512);       // metres along the path to each point
-        public readonly List<float> Limit = new List<float>(512);     // the most it may be doing at each point
+        public readonly List<float> Limit = new List<float>(512);     // m/s, the most it may be doing at each point
         public readonly List<float> PointArc = new List<float>(128);  // metres along the path to each point of the route as given
 
         private readonly List<float> _cx = new List<float>(130);
@@ -61,10 +47,9 @@ namespace RealLifeOverhaul
         public float Total => Arc.Count > 0 ? Arc[Arc.Count - 1] : 0f;
 
         /// <summary>
-        /// The path from the front axle's place (fx, fy, fz), facing (hx, hz), through the route's points in order (the first
-        /// is the next one ahead). A point less than 0.3 m on from the last one kept is the same place. <paramref name="caps"/>,
-        /// where given, is the most the bus may be doing at each of the route's points (a junction), held over CapReach
-        /// either side of it and planned back from like a bend: null for none.
+        /// Builds the path from the front axle's place, facing (hx, hz), through the route's points in order; a point under
+        /// 0.3 m from the last one kept is the same place. <paramref name="caps"/> (or null) is the most the bus may be doing
+        /// at each route point (a junction), held over CapReach either side and planned back from like a bend.
         /// </summary>
         public void Build(IList<float> rx, IList<float> ry, IList<float> rz, int count, float fx, float fy, float fz, float hx, float hz, IList<float> caps = null)
         {
@@ -209,8 +194,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Where along the path a distance falls: the place, and the way the path runs there (flat, unit). Quickest asked in
-        /// order of distance (a cursor is kept); <see cref="Seek"/> puts it back where the caller had it.
+        /// The place a distance along the path falls at, and the path's flat unit direction there. Quickest asked in order of
+        /// distance (a cursor is kept); <see cref="Seek"/> puts the cursor back.
         /// </summary>
         public void At(float metres, out float x, out float y, out float z, out float dx, out float dz)
         {
@@ -274,11 +259,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Seconds the bus will take from <paramref name="from"/> metres along the path to where it is to stand, driven as it
-        /// is driven: from the speed it has, gathering speed at Pickup, never faster than <paramref name="cruise"/>, its bends
-        /// or its stop allow, and from <paramref name="slowAt"/> metres on no faster than <paramref name="slowSpeed"/> (a bay's
-        /// pace), slowed to it at Braking. What it may wait for on the way (a light, the traffic) is not in it. A walk over the
-        /// path's points from where it is: a few hundred sums.
+        /// Seconds the bus takes from <paramref name="from"/> metres along to where it is to stand, driven as it is driven: from
+        /// its speed, at Pickup, within <paramref name="cruise"/>, its bends and its stop, and no faster than
+        /// <paramref name="slowSpeed"/> from <paramref name="slowAt"/> (a bay). Lights and traffic not counted. A few hundred sums.
         /// </summary>
         public float SecondsLeft(float from, float speed, float cruise, float slowAt, float slowSpeed)
         {
@@ -307,9 +290,9 @@ namespace RealLifeOverhaul
                         most = Math.Min(most, next >= slowAt ? slowSpeed : (float)Math.Sqrt(slowSpeed * slowSpeed + 2f * Braking * (slowAt - next)));
                     }
                     float gathered = (float)Math.Sqrt(v * v + 2f * Pickup * step);
-                    float braked = (float)Math.Sqrt(Math.Max(0f, v * v - 2f * BrakingMost * step));   // (it cannot lose speed faster than it brakes)
+                    float braked = (float)Math.Sqrt(Math.Max(0f, v * v - 2f * BrakingMost * step));   // it cannot lose speed faster than it brakes
                     float end = Math.Min(gathered, Math.Max(most, braked));
-                    seconds += step / Math.Max(0.3f, (v + end) * 0.5f);   // (the last metres of a stop come to a mean, not to nothing)
+                    seconds += step / Math.Max(0.3f, (v + end) * 0.5f);   // the last metres of a stop come to a mean, not to nothing
                     v = end;
                     at = next;
                 }
@@ -324,10 +307,7 @@ namespace RealLifeOverhaul
             return (float)Math.Sqrt(2f * Braking * Math.Max(0f, metres));
         }
 
-        /// <summary>
-        /// One step of its speed towards what it may be doing: up with a pull that eases in, or down the line its stops are
-        /// planned on (or harder, for what has come into its way).
-        /// </summary>
+        /// <summary>One step of its speed towards <paramref name="wanted"/>: up with a pull that eases in, or down as its stops are planned.</summary>
         public static float Pace(float speed, ref float pull, float wanted, float dt)
         {
             if (wanted >= speed)

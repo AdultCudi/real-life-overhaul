@@ -7,47 +7,21 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city bus the mod runs on its lines: a vehicle of its own, not one of the traffic pool's.
-    /// A low-floor bus 10.9 m long and 2.40 m wide (a midi city bus: a full 2.55 m would not stand
-    /// clear of the lane in the city's parking strips, most of which are some 2.6 m), on two axles
-    /// 5.8 m apart, with two doors on its kerb side, a lit sign over the windscreen and lights that
-    /// do what a bus's do. The body is the modelled one where the prop bundle has it
-    /// (<c>city_bus</c> and its parts: PropAssets, props_service.py); without it, plain shapes of
-    /// the same size and in the same places.
-    ///
-    /// IT IS SOLID, TO EVERYONE. One box from 0.3 m over the road to its roof, with a kinematic
-    /// body, on the layer 'Vehicles': the game's traffic cars stop for whatever enters their sensor
-    /// on that layer (VehicleComponent.OnTriggerEnter: one of the obstacle layers, read in the
-    /// physics settings to meet the sensor's), the player's car and the player on foot meet it, and
-    /// the game's own look for a free parking spot or a place to put a vehicle counts it. Not the
-    /// traffic cars' own layer: a car that stops reversing looks up whatever is first in its way on
-    /// that layer as one of its own and fails on anything else (VehicleComponent
-    /// .VehicleStoppedReversing). Not 'Player': the game asks that layer which neighbourhood the
-    /// player is in. When the bus goes, traffic is told first (Manager.TriggerColliderRemovedEvent,
-    /// as the game does for a pedestrian put back in its pool), so no car waits for a bus that is
-    /// no longer there.
-    ///
-    /// IT SHOWS WHAT IT DOES. <see cref="BusDriver"/> moves it: its front axle along the road, its
-    /// rear axle trailing (so its rear wheels cut inside a bend, as a bus's do). Here the wheels roll
-    /// by the distance driven, the front ones steer by the angle between the body and the road
-    /// ahead, the body leans out of a bend and dips as it brakes; the doors slide open and shut,
-    /// the brake lights come on as it slows and while it stands, an indicator blinks as it pulls in
-    /// and out, and from dusk the headlights, the tail lights and the sign are lit.
-    ///
-    /// IT HAS AN INSIDE. The modelled body is the bus with its inside (the floor, the seats, the poles and straps, the
-    /// validator by the driver: <see cref="BusInside"/>) and without its roof, which is a prop of its own
-    /// (<c>city_bus_roof</c>, the ceiling under it). While the player rides, <see cref="ShowRoof"/> stops drawing the roof
-    /// whenever the camera is over it, as the game takes a building's roof away for a view into it; it still casts its
-    /// shadow, so the inside stays in the bus's shade.
-    ///
-    /// One per <see cref="TransitBus"/>, made the first time it is sent out and switched off in between.
+    /// The city bus the mod runs on its lines, a vehicle of its own: a low-floor midi bus 10.9 m by 2.40 m (a full 2.55 m
+    /// would not stand clear of the lane in the city's 2.6 m parking strips), with two doors on its kerb side, a lit sign and
+    /// working lights; the modelled body where the prop bundle has it (city_bus, props_service.py), else plain shapes of the
+    /// same size. It is solid to everyone: one kinematic box on the 'Vehicles' layer, which the traffic's sensors stop for and
+    /// the game's free-spot searches count (not the traffic cars' own layer, which VehicleStoppedReversing would take for one
+    /// of its own, nor 'Player'); traffic is told before it goes (Manager.TriggerColliderRemovedEvent). <see cref="BusDriver"/>
+    /// moves it; here the wheels roll and steer, the body leans and dips, the doors slide and the lamps light. The modelled
+    /// body has an inside (<see cref="BusInside"/>) and its roof apart, which <see cref="ShowRoof"/> stops drawing while the
+    /// camera is over a rider. Cost a frame while out: the doors, wheels, body and lamps posed; switched off in between.
     /// </summary>
     public sealed class BusVehicle : MonoBehaviour, IDrivenVehicle
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "BusVehicle", typeof(BusVehicle));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "BusVehicle", typeof(BusVehicle));
 
-        // Its measurements: the bays are laid out for them (BusBay), and the modelled body is built to them
-        // (PropAssets/scripts/props_service.py, city_bus).
+        // Its measurements in metres: the bays are laid out for them (BusBay), the modelled body is built to them.
         public const float Length = BusBay.BusLength;
         public const float HalfWidth = BusBay.BusSideHalf;
         public const float Height = 3.05f;
@@ -58,25 +32,25 @@ namespace RealLifeOverhaul
         public const float TailBehind = BusBay.BusTailBehind;         // the tail, behind the front axle
         public const float WheelRadius = 0.48f;
         public const float FrontDoorAhead = 4.45f;    // the front door's middle, ahead of the middle
-        public const float MiddleDoorAhead = -0.55f;  // ...and the middle door's
+        public const float MiddleDoorAhead = -0.55f;  // and the middle door's
         public const float DoorOut = 0.30f;           // where somebody stands to step in, out from the side (board_step)
         public const float Floor = 0.33f;             // the floor at the doors, over the road
 
         private const float SolidFrom = 0.30f;        // the box starts this far over the road: kerbs and humps pass under it
         private const float TrackFront = 1.02f;       // half the track, to the middle of each wheel
-        private const float TrackRear = 0.92f;        // (twin tyres: to the middle of the pair)
+        private const float TrackRear = 0.92f;        // to the middle of the twin tyres
         private const float TyreFront = 0.30f;
         private const float TyreRear = 0.56f;
         private const float DoorLeaf = 0.60f;         // each door is two leaves of this
         private const float DoorTall = 2.30f;
         private const float DoorSlide = 0.56f;        // a leaf opens out by DoorOutward and along by this
         private const float DoorOutward = 0.07f;
-        private const float DoorSeconds = 1.3f;       // to open or to shut
+        private const float DoorSeconds = 1.3f;       // seconds to open or to shut
         private const float BlinkEvery = 0.68f;       // an indicator's cycle, seconds
 
         private enum Light { Head, Tail, Brake, Left, Right, Sign, Count }
 
-        private static readonly Color Livery = new Color(0.86f, 0.10f, 0.12f);    // the city's buses: the modelled body is the same red (paint_service.py, BUS_RED)
+        private static readonly Color Livery = new Color(0.86f, 0.10f, 0.12f);    // the modelled body's red (paint_service.py, BUS_RED)
         private static readonly Color Skirt = new Color(0.18f, 0.18f, 0.20f);
         private static readonly Color Glass = new Color(0.07f, 0.09f, 0.11f);
         private static readonly Color Tyre = new Color(0.05f, 0.05f, 0.05f);
@@ -112,10 +86,10 @@ namespace RealLifeOverhaul
         /// <summary>True when the body is the modelled bus (a step at its doors: <c>board_step</c>), false for plain shapes.</summary>
         public bool Modelled { get; private set; }
 
-        /// <summary>True when the modelled body has its inside and its roof apart (city_bus_roof): somebody can be seen riding in it.</summary>
+        /// <summary>True when the modelled body has its inside and its roof apart, so somebody can be seen riding in it.</summary>
         public bool HasInside { get; private set; }
 
-        /// <summary>What leans and dips on the springs: the inside is on it, so whoever rides is placed by it.</summary>
+        /// <summary>What leans and dips on the springs; the inside is on it, so whoever rides is placed by it.</summary>
         public Transform Shell => _shell;
 
         /// <summary>True while it is on the street.</summary>
@@ -123,7 +97,6 @@ namespace RealLifeOverhaul
 
         public Rigidbody Body => _body;
 
-        // What its driver measures it by (IDrivenVehicle): the constants above.
         public Transform Frame => transform;
         float IDrivenVehicle.FrontAxleAhead => AxleFront;
         float IDrivenVehicle.RearAxleAhead => AxleRear;
@@ -131,8 +104,6 @@ namespace RealLifeOverhaul
         float IDrivenVehicle.NoseBeyondAxle => NoseAhead;
         float IDrivenVehicle.HalfBreadth => HalfWidth;
         public Collider Solid => _solid;
-
-        // ---------------------------------------------------------------- making it
 
         /// <summary>A bus, switched off, under <paramref name="parent"/>. Null if the game has no shader to draw it with.</summary>
         public static BusVehicle Make(Transform parent, string name)
@@ -172,7 +143,7 @@ namespace RealLifeOverhaul
             _shell = new GameObject("Shell").transform;
             _shell.SetParent(transform, false);
             Modelled = Shapes.Prop("city_bus", _shell);
-            // The body with its inside comes with its roof apart: the two are made together, and one without the other is never used.
+            // The body with its inside comes with its roof apart; one is never used without the other.
             HasInside = Modelled && PropLibrary.Has("city_bus_roof") && Shapes.Prop("city_bus_roof", _shell);
             if (!Modelled)
             {
@@ -200,8 +171,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The body in plain shapes, to the model's measurements: a red box with a dark band of windows, a grey skirt, the
-        // windscreen, and the sign box over it. The wheel arches are left to the wheels.
+        // The body in plain shapes, to the model's measurements; the wheel arches are left to the wheels.
         private void PlainBody()
         {
             Material red = Shapes.Paint(Livery);
@@ -217,9 +187,9 @@ namespace RealLifeOverhaul
             Shapes.Piece("Rear Bumper", _shell, Shapes.Cube, skirt, new Vector3(0f, 0.45f, -Length * 0.5f - 0.02f), new Vector3(HalfWidth * 2f - 0.05f, 0.30f, 0.10f));
         }
 
-        // Four wheels, each on a pivot that spins it, the front two on one more that steers them. The modelled wheels stand on
-        // their own middle with the hub to +X: the rear pair is a mesh of its own where the bundle has it, else the front
-        // wheel drawn out to the pair's width. The left ones are turned round so their hubs face out.
+        // Four wheels, each on a pivot that spins it, the front two on one more that steers them. The modelled wheels have the
+        // hub to +X; the rear pair is its own mesh where the bundle has it, else the front wheel drawn out to the pair's width.
+        // The left ones are turned round so their hubs face out.
         private void Wheels()
         {
             bool modelled = PropLibrary.TryGet("city_bus_wheel", out Mesh wheel, out Material paint) && wheel != null;
@@ -255,7 +225,7 @@ namespace RealLifeOverhaul
                     piece.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.On;
                     continue;
                 }
-                // A drum stands on its origin along its own Y: laid on its side across the bus, its middle on the wheel's.
+                // A drum stands on its origin along its own Y: laid on its side across the bus.
                 float wide = front ? TyreFront : TyreRear;
                 Transform tyre = Shapes.Piece("Tyre", face, Shapes.Drum, Shapes.Paint(Tyre), new Vector3(wide * 0.5f, 0f, 0f), new Vector3(WheelRadius * 2f, wide, WheelRadius * 2f));
                 tyre.localRotation = Quaternion.Euler(0f, 0f, 90f);
@@ -274,12 +244,12 @@ namespace RealLifeOverhaul
             {
                 float middle = i < 2 ? FrontDoorAhead : MiddleDoorAhead;
                 float side = (i & 1) == 0 ? 1f : -1f;   // the leaf ahead of the door's middle, then the one behind it
-                var shut = new Vector3(HalfWidth + 0.03f, Floor, middle + side * DoorLeaf * 0.5f);   // (proud of the side: it slides over it)
+                var shut = new Vector3(HalfWidth + 0.03f, Floor, middle + side * DoorLeaf * 0.5f);   // proud of the side: it slides over it
                 _leaves[i] = new GameObject("Door Leaf").transform;
                 _leaves[i].SetParent(_shell, false);
                 _leaves[i].localPosition = shut;
                 _leafShut[i] = shut;
-                // The front door's forward leaf has only the metre to the nose to go into: it stops just short of the nose.
+                // The front door's forward leaf has only the metre to the nose: it stops just short of it.
                 float room = i == 0 ? Length * 0.5f - 0.02f - (middle + DoorLeaf) : DoorSlide;
                 _leafSlide[i] = side * Mathf.Clamp01(room / DoorSlide);
                 if (modelled)
@@ -293,11 +263,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The lamps: the modelled ones where the bundle has them (each a mesh of the glow material over its lamps in the
-        // modelled body), else small shapes that glow, in the same places and of the same sizes (PropAssets,
-        // props_service.py bus_lamps): the headlamps low at the front corners with the indicators outside them, indicator,
-        // brake and tail lamp one over another at each back corner, a brake lamp high on the back over the number (whose
-        // lettering is 2.52 to 2.72 m up), a repeater on each side between the front wheel and the front door.
+        // The lamps: the modelled ones where the bundle has them, else small glowing shapes in the same places and sizes
+        // (props_service.py bus_lamps).
         private void Lights()
         {
             float nose = Length * 0.5f + 0.03f;           // the shapes stand proud of the plain body's ends
@@ -307,7 +274,8 @@ namespace RealLifeOverhaul
             var frontTurn = new Vector3(0.08f, 0.15f, 0.03f);
             var backTurn = new Vector3(0.11f, 0.12f, 0.03f);
             var sideTurn = new Vector3(0.02f, 0.034f, 0.10f);
-            Lamp(Light.Head, "city_bus_light_head", new Color(1f, 0.95f, 0.85f), 3f, new[] { new Vector3(-0.61f, 0.74f, nose), new Vector3(0.61f, 0.74f, nose) }, new[] { new Vector3(0.21f, 0.12f, 0.03f) });
+            Lamp(Light.Head, "city_bus_light_head", new Color(1f, 0.95f, 0.85f), 3f, new[] { new Vector3(-0.61f, 0.74f, nose), new Vector3(0.61f, 0.74f, nose) },
+                new[] { new Vector3(0.21f, 0.12f, 0.03f) });
             Lamp(Light.Tail, "city_bus_light_tail", new Color(0.7f, 0.04f, 0.03f), 1.2f, new[] { new Vector3(-0.90f, 1.00f, tail), new Vector3(0.90f, 1.00f, tail) }, new[] { cornerLamp });
             Lamp(Light.Brake, "city_bus_light_brake", new Color(1f, 0.05f, 0.04f), 4f, new[] { new Vector3(-0.90f, 1.16f, tail), new Vector3(0.90f, 1.16f, tail), new Vector3(0f, 2.81f, tail) },
                 new[] { cornerLamp, cornerLamp, new Vector3(0.36f, 0.035f, 0.03f) });
@@ -333,8 +301,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The sign over the windscreen (the line and where it goes), the number over the front door and at the back: amber
-        // lettering, which shows by day and by night alike (the lettering's own shader is not lit by the scene).
+        // The line and where it goes over the windscreen, the number over the front door and at the back: amber lettering,
+        // whose shader is not lit by the scene, so it shows by day and night alike.
         private void Signs()
         {
             _signFront = Letter("Sign", new Vector3(0f, 2.78f, Length * 0.5f + 0.015f), Quaternion.Euler(0f, 180f, 0f), 1.62f, 0.24f);
@@ -372,8 +340,6 @@ namespace RealLifeOverhaul
             return text;
         }
 
-        // ---------------------------------------------------------------- on the street
-
         /// <summary>Puts it on the street with its front axle at <paramref name="frontAxle"/> facing along <paramref name="heading"/>, signed for a line.</summary>
         public void Place(Vector3 frontAxle, Vector3 heading, TransitLine line)
         {
@@ -401,10 +367,7 @@ namespace RealLifeOverhaul
             Lamps();
         }
 
-        /// <summary>
-        /// Draws its roof, or not (it still casts its shadow then): the view into the bus from above while the player rides
-        /// in it. Only a change of it touches the renderer.
-        /// </summary>
+        /// <summary>Draws its roof, or only its shadow, for the view into the bus while the player rides. Only a change touches the renderer.</summary>
         public void ShowRoof(bool shown)
         {
             if (_roof == null || shown == _roofShown)
@@ -443,9 +406,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Where it stands now, as the driver has moved it: its axles' middles on the road, how far it has rolled since it
-        /// was last posed, the front wheels' angle to the body (degrees, to the right positive), and what it is doing with
-        /// its speed (m/s2, slowing negative) and its heading (degrees a second). Call from the physics step.
+        /// Places it as the driver has moved it (<see cref="IDrivenVehicle.Pose"/>); acceleration is negative while slowing.
+        /// Called from the physics step.
         /// </summary>
         public void Pose(Vector3 frontAxle, Vector3 rearAxle, float rolled, float steer, float acceleration, float turning, float speed, float dt)
         {
@@ -459,15 +421,15 @@ namespace RealLifeOverhaul
             _body.MoveRotation(facing);
             _spun = Mathf.Repeat(_spun + rolled / WheelRadius * Mathf.Rad2Deg, 360f);
             _steered = Mathf.MoveTowards(_steered, Mathf.Clamp(steer, -38f, 38f), 90f * dt);
-            // The body on its springs: out of a bend by the pull sideways (speed times the rate of turn; turning right, it rolls to
-            // its left, which is a turn about its own forward the positive way), nose down as it brakes.
+            // The body on its springs: out of a bend by the pull sideways (turning right it rolls to its left, a positive turn
+            // about its own forward), nose down as it brakes.
             float sideways = speed * turning * Mathf.Deg2Rad;
             Spring(ref _lean, ref _leanSpeed, Mathf.Clamp(sideways * 0.9f, -3f, 3f), dt);
             Spring(ref _dip, ref _dipSpeed, Mathf.Clamp(-acceleration * 0.8f, -2f, 2f), dt);
             _braking = acceleration < -0.3f || speed < 0.1f;
         }
 
-        // A spring that settles without swinging past (critically damped), about a third of a second.
+        // A spring that settles without swinging past (critically damped) in about a third of a second.
         private static void Spring(ref float value, ref float rate, float target, float dt)
         {
             const float stiffness = 140f;
@@ -500,7 +462,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try

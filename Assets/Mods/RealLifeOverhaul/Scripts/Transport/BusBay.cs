@@ -3,50 +3,33 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The geometry of a bus bay, and nothing else: numbers in, numbers out, no engine types, so
-    /// that the build's NavCheck drives a model of the bus through it outside the game.
-    ///
-    /// A BAY is a length of the strip between a driving lane and the kerb (where the game parks
-    /// cars) that a bus pulls into, so that it stands beside the lane and not in it. Everything is
-    /// said in the stop's own frame: metres ALONG the lane from the pole (ahead is positive) and
-    /// metres ASIDE from the lane's line towards the kerb.
-    ///
-    /// WHY THE CURVES ARE WHAT THEY ARE. The bus is turned about one point of its length (the
-    /// origin of the vehicle that carries it: under the middle of a van, under the rear axle of a
-    /// truck), so whatever of it lies ahead of that point swings towards the kerb as it comes in at
-    /// an angle, and whatever lies behind swings towards the kerb as it turns out. A body that
-    /// stands 0.2 m from the kerb has no room for either, unless the angle falls away as fast as
-    /// the gap closes: the last metres in, and the first metres out, are an exponential whose
-    /// length constant is about the lever that swings (<see cref="In"/>, <see cref="Out"/>).
-    /// That is what made a bay some thirty metres long for a 6.7 m bus on a van.
-    ///
-    /// THE BUS NOW (BusVehicle, BusDriver). The mod's own bus is driven by its front axle, its rear
-    /// axle trailing (BusPath.Trail), so the body turns no faster than its rear can follow: coming
-    /// in on a curve as short as its nose, it would still face the kerb when its front axle reached
-    /// the bay's line, and its nose would swing over the kerb. Its curve in is as long as its
-    /// wheelbase (<see cref="Approach"/>), and its front axle then runs <see cref="Settle"/> metres
-    /// along the bay's line before it stands, while its rear comes in behind it: it stands square to
-    /// within a degree or so. <see cref="Lay"/> is the bay for it, for the stop and the bus alike.
+    /// The geometry of a bus bay, numbers only, so NavCheck drives a model bus through it. A bay is a length of the strip
+    /// between a driving lane and the kerb (where the game parks) that a bus pulls into, said in the stop's frame: metres
+    /// along the lane from the pole (ahead positive) and aside from the lane's line towards the kerb. A body turned about
+    /// one point swings towards the kerb with whatever lies ahead of it coming in and behind it turning out, so the last
+    /// metres in and the first out are an exponential whose length constant is about that lever (<see cref="In"/>,
+    /// <see cref="Out"/>). The mod's bus is driven by its front axle with its rear trailing, so its curve in is as long as
+    /// its wheelbase (<see cref="Approach"/>) and it then runs <see cref="Settle"/> metres along the bay's line to stand
+    /// square. <see cref="Lay"/> is the bay for it.
     /// </summary>
     public static class BusBay
     {
-        /// <summary>Half the width of a driving lane: the lane's edge is this far from its line (a lane is 3.3 m: EmergencyDriver.PassOffset).</summary>
+        /// <summary>Metres from a lane's line to its edge (a lane is 3.3 m: EmergencyDriver.PassOffset).</summary>
         public const float LaneHalf = 1.65f;
 
         /// <summary>
-        /// Metres between the side of a bus standing true in its bay and the lane's edge, at the least: what a bay is laid out
-        /// for. None: a 2.40 m bus in a 2.55 m strip (most of the city's) stands with its side on the lane's edge line, as a
-        /// bus does at a kerbside stop where the parking lane is narrow.
+        /// Metres between the side of a bus standing true in its bay and the lane's edge, at the least. None: a 2.40 m bus in
+        /// the city's usual 2.55 m strip stands with its side on the lane's edge line.
         /// </summary>
         public const float Clear = 0f;
 
         /// <summary>Metres between the door side of a bus standing in its bay and the kerb: a low floor's level step.</summary>
         public const float KerbGap = 0.15f;
 
-        /// <summary>The widest thing the game's traffic drives (a lorry), halved: what passes on the lane's line reaches this far.</summary>
+        /// <summary>Half the widest thing the game's traffic drives (a lorry): what passes on the lane's line reaches this far.</summary>
         public const float WidestHalf = 1.30f;
 
-        /// <summary>The driver takes a point of a bay's path as reached this near it (4.5 m on the open lane): it keeps to the curve.</summary>
+        /// <summary>Metres within which the driver takes a point of a bay's path as reached (4.5 m on the open lane), so it keeps to the curve.</summary>
         public const float Reach = 2f;
 
         /// <summary>Metres between the points of a bay's path.</summary>
@@ -55,10 +38,10 @@ namespace RealLifeOverhaul
         /// <summary>m/s in and out of a bay.</summary>
         public const float Speed = 4.5f;
 
-        /// <summary>Metres of lane a bay's curve may take up: a stop has plain lane for 26 m either side (TransitMap.JunctionClear).</summary>
+        /// <summary>Metres of lane a bay's curve may take up; a stop has plain lane for 26 m either side (TransitMap.JunctionClear).</summary>
         public const float RunMost = 25f;
 
-        // The bus a bay is laid out for: the mod's own (BusVehicle is built to these).
+        // The bus a bay is laid out for, in metres: the mod's own (BusVehicle is built to these).
         public const float BusLength = 10.90f;
         public const float BusSideHalf = 1.20f;
         public const float BusWheelbase = 5.80f;
@@ -74,38 +57,37 @@ namespace RealLifeOverhaul
         private const float SweepSlack = 0.2f;   // metres more of the strip than the sweep finds, each end
 
         /// <summary>
-        /// The lever its curve out is laid with (Out). Its rear axle trails, so what swings towards the kerb as its body turns
-        /// out is only the overhang behind that axle, not the whole of it behind the front: a little more than that overhang
-        /// keeps the swing inside its gap to the kerb (NavCheck drives it).
+        /// Metres of lever its curve out is laid with. Its rear axle trails, so only the overhang behind that axle swings
+        /// towards the kerb as it turns out; a little more than that keeps the swing inside its gap (NavCheck drives it).
         /// </summary>
         public const float BusLeave = 3.5f;
 
-        // A van's levers (the bus body on the van it is modelled on: 3.33 m of it either side of the point it turns about).
+        // A van's levers (the bus body on the van it is modelled on turns about a point 3.33 m from either end).
         private const float NoseSlack = 0.45f;   // the path's length constant in is the lever ahead less this: the driver lags a path by about as much
-        private const float TailFactor = 1.2f;   // ...and out, the lever behind times this
+        private const float TailFactor = 1.2f;   // and out, the lever behind times this
         private const float InShort = 0.03f;     // metres from the bay's line at which the curve in is taken to have arrived
         private const float OutShortPer = 0.03f; // the same out, per metre of lever
         private const float Blend = 3f;          // metres over which the path leaves (or rejoins) the lane's line
         private const float SlopeLeast = 0.28f;  // the steepest the path runs across the strip (16 degrees) at the narrowest bay
-        private const float SlopeMore = 0.08f;   // ...and this much steeper per metre the bay lies further over
-        private const float SlopeMost = 0.40f;
-        private const float StripIn = 1.8f;      // metres of a curve in, and out, that are over before anything of the bus is beyond the lane's edge
-        private const float StripOut = 2.1f;
+        private const float SlopeMore = 0.08f;   // and this much steeper per metre the bay lies further over
+        private const float SlopeMost = 0.40f;   // and never steeper than this
+        private const float StripIn = 1.8f;      // metres of a curve in that are over before anything of the bus is beyond the lane's edge
+        private const float StripOut = 2.1f;     // the same for a curve out
 
         /// <summary>
-        /// One curve of a bay's path: how far aside of the bay's line the path still is, by the metres to go to the
-        /// standing place (in), or how far it has come away from the bay's line, by the metres gone (out).
+        /// One curve of a bay's path: how far aside of the bay's line the path still is by the metres to the standing place
+        /// (in), or how far it has come away from it by the metres gone (out).
         /// </summary>
         public struct Curve
         {
             public float Offset;    // from the lane's line to the bay's
-            public float Lambda;    // the exponential's length constant
+            public float Lambda;    // metres, the exponential's length constant
             public float Short;     // its amplitude
             public float Slope;     // of the straight middle part
             public float EndTail;   // metres at which the exponential ends
-            public float EndRamp;   // ...and the straight part
-            public float Length;    // ...and the whole curve: beyond, the path is on the lane's line
-            public bool Cut;        // there was not the room for it: its exponential is shorter than the lever asks, and the bus would swing wide
+            public float EndRamp;   // and the straight part
+            public float Length;    // and the whole curve: beyond, the path is on the lane's line
+            public bool Cut;        // no room for it: its exponential is shorter than the lever asks, and the bus would swing wide
 
             public float Aside(float metres)
             {
@@ -138,7 +120,7 @@ namespace RealLifeOverhaul
             float slope = Math.Min(SlopeMost, SlopeLeast + SlopeMore * Math.Max(0f, offset - 2.85f));
             Curve curve = Shape(offset, lambda, amplitude, slope);
             bool cut = false;
-            // No room for it: steeper across the strip first, then a shorter exponential (the lever then swings further).
+            // No room: steeper across the strip first, then a shorter exponential (the lever then swings further).
             for (int i = 0; i < 12 && curve.Length > most; i++)
             {
                 if (slope < SlopeMost - 0.001f)
@@ -172,8 +154,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The length constant of the bus's curve in, near its wheelbase: its body then turns no faster than its rear can
-        /// follow, and its nose does not swing over the kerb (NavCheck drives it). Longer is gentler and takes more of the strip.
+        /// Metres, the length constant of the bus's curve in, near its wheelbase so its body turns no faster than its rear can
+        /// follow and its nose stays off the kerb (NavCheck drives it).
         /// </summary>
         public const float BusApproach = 4.5f;
 
@@ -187,10 +169,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The bay laid out for the bus beside a kerb so far from the lane's line: where its middle stands (metres aside of
-        /// the line), its curves in and out for its front axle, and the strip they take behind and ahead of the pole (from
-        /// where its body first reaches beyond the lane's edge). False if there is no room: the kerb too near, or a curve cut
-        /// short.
+        /// The bay laid out for the bus beside a kerb so far from the lane's line: its middle's offset, its front axle's curves
+        /// in and out, and the strip they take behind and ahead of the pole. False if there is no room.
         /// </summary>
         public static bool Lay(float kerbAside, out float offset, out Curve curveIn, out Curve curveOut, out float behind, out float ahead)
         {
@@ -211,9 +191,8 @@ namespace RealLifeOverhaul
             return !curveIn.Cut && !curveOut.Cut;
         }
 
-        // The bus driven along a curve by its front axle, its rear drawn after it (BusPath.Trail), a pose every SweepStep: in,
-        // the furthest back from the pole any of its kerb side is beyond the lane's edge (negative); out, the furthest on.
-        // Metres along the lane from the pole. Along the curve's points as TransitBus lays them, a straight line between each.
+        // The bus driven along the curve's points by its front axle, its rear trailing, a pose every SweepStep: in, the furthest
+        // back from the pole any of its kerb side is beyond the lane's edge (negative); out, the furthest on.
         private static float Sweep(Curve curve, float offset, bool coming)
         {
             float rest = -BusMiddleAhead;   // where its front axle stands, along from the pole
@@ -228,7 +207,7 @@ namespace RealLifeOverhaul
             else
             {
                 start = rest;
-                end = rest + curve.Length + 3f * BusWheelbase;   // on along the lane's line until its trailing rear is back in the lane too
+                end = rest + curve.Length + 3f * BusWheelbase;   // until its trailing rear is back in the lane too
                 fx = start;
                 fz = offset;
             }
@@ -274,15 +253,15 @@ namespace RealLifeOverhaul
             return Make(offset, Math.Max(2f, tailBehind * TailFactor), Math.Max(0.04f, tailBehind * OutShortPer), most);
         }
 
-        /// <summary>How far from the lane's line the kerb must be for a bay: the lane's half, the clearance, the body and the gap to the kerb.</summary>
+        /// <summary>Metres from the lane's line the kerb must be for a bay: the lane's half, the clearance, the body and the kerb gap.</summary>
         public static float KerbNeeded(float sideHalf)
         {
             return LaneHalf + Clear + sideHalf * 2f + KerbGap;
         }
 
         /// <summary>
-        /// Where the middle of a bus that wide stands in a bay, in metres aside of the lane's line: its door side
-        /// <see cref="KerbGap"/> from the kerb. 0 if the kerb is too near the lane for a bay.
+        /// Metres aside of the lane's line where the middle of a bus that wide stands in a bay, its door side
+        /// <see cref="KerbGap"/> from the kerb; 0 if the kerb is too near the lane for a bay.
         /// </summary>
         public static float Offset(float kerbAside, float sideHalf)
         {
@@ -290,16 +269,15 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Metres of the strip that must be free behind the pole for a bus to come in along a curve: from where its nose
-        /// first reaches beyond the lane's edge. <paramref name="middleAhead"/> is how far the middle of the bus is ahead of
-        /// the point it is turned about (the curve is that point's path, and the middle comes to rest at the pole).
+        /// Metres of the strip that must be free behind the pole for a bus to come in, from where its nose first passes the
+        /// lane's edge. <paramref name="middleAhead"/> is how far the bus's middle is ahead of the point it turns about.
         /// </summary>
         public static float Behind(Curve curveIn, float middleAhead)
         {
             return curveIn.Length + middleAhead - StripIn;
         }
 
-        /// <summary>...and ahead of the pole for it to pull out: to where its nose is back inside the lane's edge.</summary>
+        /// <summary>The same ahead of the pole to pull out, to where its nose is back inside the lane's edge.</summary>
         public static float Ahead(Curve curveOut, float middleAhead)
         {
             return curveOut.Length - middleAhead - StripOut;
@@ -322,14 +300,10 @@ namespace RealLifeOverhaul
             return kerbAside - aside - halfLength * (float)Math.Sin(angle) - sideHalf * (float)Math.Cos(angle);
         }
 
-        // ---------------------------------------------------------------- a bay's zone (BusZones, BusStopDressing)
-
         /// <summary>
-        /// What is left of a run of the game's kerbside parking beside a bus zone, in metres along the lane: the part
-        /// before the zone or the part after it, whichever the zone leaves whole. Where the zone lies in the middle of
-        /// the run the longer part is kept, and the other is <paramref name="lost"/> (parking given up beyond the zone).
-        /// A run wholly in the zone keeps nothing: both ends are then the zone's end. False if the run does not reach
-        /// into the zone at all, and nothing is to be done to it.
+        /// What is left of a run of kerbside parking beside a bus zone, in metres along the lane: the part before or after the
+        /// zone, the longer if the zone is in the middle, the other <paramref name="lost"/>. A run wholly in the zone keeps
+        /// nothing (both ends at the zone's end). False if the run does not reach into the zone.
         /// </summary>
         public static bool Keep(float start, float end, float from, float to, out float keepStart, out float keepEnd, out float lost)
         {
@@ -375,10 +349,8 @@ namespace RealLifeOverhaul
         public const float CarMargin = 1f;
 
         /// <summary>
-        /// Whether a parked car stands in a bus zone, or too near it: its body runs from <paramref name="carStart"/> to
-        /// <paramref name="carEnd"/> metres along the stop's lane and the zone from <paramref name="from"/> to
-        /// <paramref name="to"/>, and the body must keep <paramref name="margin"/> clear of both ends. A car that only
-        /// touches the margin is in it.
+        /// Whether a parked car's body, <paramref name="carStart"/> to <paramref name="carEnd"/> metres along the stop's lane,
+        /// is in the zone or within <paramref name="margin"/> of either end of it (touching the margin counts).
         /// </summary>
         public static bool CarInZone(float carStart, float carEnd, float from, float to, float margin = CarMargin)
         {
@@ -392,9 +364,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The game's parking spots given up when a run of kerbside parking <paramref name="was"/> metres long is cut to
-        /// <paramref name="now"/> metres, at one spot each <paramref name="spot"/> metres (ParkingLaneGenerator lays its cars
-        /// a spot at a time from one end, and a spot that no longer fits whole is never laid).
+        /// The game's parking spots given up when a run of kerbside parking is cut from <paramref name="was"/> to
+        /// <paramref name="now"/> metres, a spot each <paramref name="spot"/> metres (the game lays them from one end, whole).
         /// </summary>
         public static int SpotsLost(float was, float now, float spot)
         {
@@ -406,10 +377,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// How many times a broken line's pattern (a dash and its gap, of which <paramref name="paint"/> is the dash's
-        /// share) is laid along a line <paramref name="length"/> metres long, for a pattern <paramref name="repeat"/>
-        /// metres long, so that the line begins and ends with paint: a whole number of patterns and one dash more,
-        /// stretched or squeezed a little to fit. A line shorter than a dash is one dash.
+        /// How many times a broken line's pattern (<paramref name="repeat"/> metres, the dash a <paramref name="paint"/> share
+        /// of it) is laid along <paramref name="length"/> metres so that the line begins and ends with paint: whole patterns and
+        /// one dash more, stretched a little to fit. A line shorter than a dash is one dash.
         /// </summary>
         public static float Dashes(float length, float repeat, float paint)
         {

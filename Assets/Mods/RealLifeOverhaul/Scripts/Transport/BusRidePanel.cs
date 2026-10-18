@@ -12,27 +12,18 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A bus ride through the city on the game's own activity panel (<c>PlayerActivity.PlayerActivityUI</c>), as the game shows
-    /// its own actions (studying, working, sleeping): one of the game's activities (<c>PlayerActivity.IPlayerActivity</c>) with
-    /// the panel's headline, progress bar, fast-forward toggle and time-skip button, on their keys.
-    ///
-    /// - LEFT TO RUN, the bus drives its line to the rider's stop in real time (TransitDirector.Journey) and the bar fills with
-    ///   the metres of line ridden; its label says how many stops are to come and the next one.
-    /// - FAST-FORWARD is the game's own toggle (<c>GameSpeedController</c> at <c>TimeSpeed.FastForward</c>): everything six times as
-    ///   fast, the bus too. The game shows its toggle only inside a building; here it is shown on the street as well, and its key
-    ///   (the game's secondary interact) is read for it while the ride is on, since the game's panel reads it only indoors.
-    /// - SKIP is the game's time-skip button: rather than the game's time machine at once, the panel is closed and the rest of the
-    ///   ride passes under the ride's own fade (TransitRide, as before), to the bus standing at the stop.
-    /// - GET OFF (the panel's cancel key, or a move) asks for the next stop; the button then offers to stay on.
-    ///
-    /// The game's panel must see the activity "on its way" for a frame before it is started (that is the step in which it lets
-    /// the clock run again: Jobs/ShiftSkip says why); no walk order is given. Nothing here runs unless the ride is on.
+    /// A bus ride through the city on the game's own activity panel, as the game shows studying or working: headline, bar,
+    /// fast-forward toggle and time-skip button. The bar fills with the metres of line ridden (TransitDirector.Journey).
+    /// Fast forward is the game's own toggle, shown here on the street too (the game shows it only indoors) and its key read
+    /// while the ride is on. Skip closes the panel and passes the rest under the ride's fade (TransitRide). Get off asks for
+    /// the next stop. The panel must see the activity "on its way" for a frame before it starts, the step in which it lets
+    /// the clock run again (Jobs/ShiftSkip). Costs nothing a frame unless a ride is on.
     /// </summary>
     public sealed class BusRidePanel : IPlayerActivity
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "BusRidePanel", typeof(BusRidePanel));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "BusRidePanel", typeof(BusRidePanel));   // the game's calls of it
 
-        private static readonly FieldInfo ToggleField = GameContract.FastForward.Field;   // (resolved once: Core/GameContract)
+        private static readonly FieldInfo ToggleField = GameContract.FastForward.Field;
         private static bool _toggleTold;
 
         private readonly TransitDirector _host;
@@ -97,7 +88,7 @@ namespace RealLifeOverhaul
             ShowToggle();
         }
 
-        /// <summary>The ride is over for a reason of the director's own (they get off, it is skipped, or it ends early): the panel goes. Safe at any time.</summary>
+        /// <summary>The ride is over for the director's own reason (got off, skipped, ended early): the panel goes. Safe at any time.</summary>
         public void Close()
         {
             if (_state == PlayerActivityState.Finished)
@@ -108,7 +99,7 @@ namespace RealLifeOverhaul
             Finish();
         }
 
-        /// <summary>What the director has to show has changed (a stop to get off at asked for, or taken back): the buttons again.</summary>
+        /// <summary>Shows the buttons again after what the director offers has changed (a stop to get off at asked for, or taken back).</summary>
         public void Refresh()
         {
             try
@@ -120,7 +111,7 @@ namespace RealLifeOverhaul
                 }
                 Toggle toggle = FastToggle();
                 bool fast = toggle != null && toggle.isOn;
-                uis.playerActivityUI.UpdateActivityDisplay();   // (it puts the toggle off: put back as it was)
+                uis.playerActivityUI.UpdateActivityDisplay();   // it puts the toggle off: put back as it was
                 ShowToggle();
                 if (toggle != null && fast)
                 {
@@ -133,7 +124,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The fast-forward key while the ride is on (the game's panel reads it only indoors). Called per frame only while a ride runs.</summary>
+        /// <summary>The fast-forward key, which the game's panel reads only indoors. Per frame only while a ride runs.</summary>
         public void Keys()
         {
             if (!Running || !HasFastForward() || ThirdPersonCamera.IsUiOpen() || GameManager.ShouldBlockKeyboardShortcuts() || !PlayerAction.SecondaryInteract.Pressed())
@@ -172,7 +163,7 @@ namespace RealLifeOverhaul
             return ToggleField.GetValue(uis.playerActivityUI) as Toggle;
         }
 
-        // The game shows its toggle only inside a building (PlayerActivityUI.SetUpSpeedOptions): shown on the street for the ride.
+        // The game shows its toggle only inside a building (PlayerActivityUI.SetUpSpeedOptions).
         private void ShowToggle()
         {
             try
@@ -193,36 +184,15 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the game's contract
-
         public bool RequiresEnergy() => false;
         public PlayerActivityState GetState()
         {
-            if (FrameGuard.Off)
-            {
-                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
-            }
-            try
-            {
-                return _state;
-            }
-            catch (Exception fault)
-            {
-                Guard.Fail(FrameGuard, fault);
-                return Guard.Ended(this);
-            }
+            return FrameGuard.Off ? Guard.Ended(this) : _state;   // off: the activity ends as its own Finish ends it
         }
         public PlayerActivityState GetStateBeforeFinishing() => _before;
         public void ChangeState(PlayerActivityState state)
         {
-            try
-            {
-                _state = state;
-            }
-            catch (Exception fault)
-            {
-                Guard.Fail(FrameGuard, fault);
-            }
+            _state = state;
         }
         public void Perform(int minutes) { }
 
@@ -250,7 +220,7 @@ namespace RealLifeOverhaul
                     }
                     else if (began)
                     {
-                        _host.JourneyPanelGone();   // (the game closed it: out of energy, say; the ride goes on, without the panel)
+                        _host.JourneyPanelGone();   // the game closed it (out of energy, say): the ride goes on without the panel
                     }
                 }
                 catch (Exception e)
@@ -264,7 +234,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Closed by the director: the game's fast forward goes off at once, as the game's panel puts it off when an activity ends.
+        // Closed by the director: fast forward off at once, as the game's panel puts it off when an activity ends.
         private static void StopFastForward()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -374,8 +344,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's time-skip button: not its time machine at once, but the ride's own fade (the panel finishes this at once
-        // for a goal already past, and the director takes the rest from there: Finish).
+        // The time-skip button: not the game's time machine but the ride's own fade. A goal already past makes the panel finish
+        // this at once, and Finish hands the rest to the director.
         public Timestamp GetTimeMachineGoal()
         {
             if (FrameGuard.Off)
