@@ -46,10 +46,12 @@ internal static partial class Program
         int told = missed.IndexOf("\"reallife_family_appointment_missed_me\"", StringComparison.Ordinal);
         Check(own > 0 && added > own && told > added, "family fix: the player's own missed scan or class is booked again for tomorrow before the notice says it was");
         Check(FixLineEverywhere("the clinic now books it again for the next day", "a clínica agora remarca", "改约到第二天", "bucht die Klinik ihn jetzt",
-                                "la clinique le reprogramme", "la clínica ahora la vuelve a reservar", "клиника теперь переносит"),
+                                "la clinique le reprogramme", "la clínica ahora la vuelve a reservar", "клиника теперь переносит",
+                                "plant de kliniek dit nu opnieuw in voor de volgende dag", "klinik artık mesajında belirttiği gibi bunu ertesi gün için tekrar planlıyor"),
             "family fix: What's new has the rebooking's line, with its fix mark, in some row of every language");
         Check(FixLineEverywhere("is no longer lost when another scene is under way", "não se perde mais", "不会再白白丢失", "geht nicht mehr verloren",
-                                "n'est plus perdue", "ya no se pierde", "больше не пропадает"),
+                                "n'est plus perdue", "ya no se pierde", "больше не пропадает",
+                                "gaat niet meer verloren als er een andere scène bezig is", "başka bir sahne devam ederken artık kaybolmuyor"),
             "family fix: What's new has the passages' line, with its fix mark, in some row of every language");
     }
 

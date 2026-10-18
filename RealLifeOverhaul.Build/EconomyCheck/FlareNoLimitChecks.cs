@@ -462,7 +462,7 @@ internal static partial class Program
     private static void NoLimitWords()
     {
         string folder = LocalesFolder();
-        string[] codes = { "en", "pt", "zh-cn", "de", "fr", "es", "ru" };
+        string[] codes = { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr" };
         var words = codes.Select(c => LoadWords(System.IO.Path.Combine(folder, c + ".json"))).ToArray();
         if (words.Take(3).Any(w => w == null))
         {
@@ -498,7 +498,7 @@ internal static partial class Program
         }
         string all = string.Join("\n", System.IO.Directory.GetFiles(System.IO.Path.GetFullPath(System.IO.Path.Combine(folder, "..", "Scripts")), "*.cs", System.IO.SearchOption.AllDirectories).Select(System.IO.File.ReadAllText));
         string read = NoLimitGoneKeys.FirstOrDefault(k => all.Contains("\"" + k + "\""));
-        Check(still.Count == 0 && read == null, "Flare no limit words: the limit's texts are gone from all seven languages and nothing reads them" + (still.Count > 0 ? " (" + string.Join(", ", still) + ")" : read != null ? " (" + read + " read)" : string.Empty));
+        Check(still.Count == 0 && read == null, "Flare no limit words: the limit's texts are gone from every language and nothing reads them" + (still.Count > 0 ? " (" + string.Join(", ", still) + ")" : read != null ? " (" + read + " read)" : string.Empty));
         bool guide = true;
         for (int l = 0; l < codes.Length; l++)
         {

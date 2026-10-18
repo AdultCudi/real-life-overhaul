@@ -201,7 +201,9 @@ internal static partial class Program
             ["de"] = "Behoben: In einer Sitzung von Going Public bleiben Stunden, Prüfungen und Hausaufgaben",
             ["fr"] = "Corrigé : dans une session de Going Public, les séances, examens et devoirs",
             ["es"] = "Corregido: en una sesión de Going Public, las clases, los exámenes y los deberes",
-            ["ru"] = "Исправлено: в сессии Going Public занятия, экзамены и домашние задания"
+            ["ru"] = "Исправлено: в сессии Going Public занятия, экзамены и домашние задания",
+            ["nl"] = "Opgelost: in een Going Public-sessie stoppen lessen, examens en huiswerk",
+            ["tr"] = "Düzeltildi: Bir Going Public oturumunda, Manhattan İşletme Okulu ve üniversitedeki dersler"
         };
         var lacking = new List<string>();
         for (int l = 0; l < codes.Length; l++)

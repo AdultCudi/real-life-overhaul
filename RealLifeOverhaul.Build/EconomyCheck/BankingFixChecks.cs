@@ -275,7 +275,7 @@ internal static partial class Program
     {
         string folder = LocalesFolder();
         var languages = new List<(string code, Dictionary<string, string> words)>();
-        foreach (string code in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru" })
+        foreach (string code in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr" })
         {
             languages.Add((code, LoadWords(System.IO.Path.Combine(folder, code + ".json"))));
         }
@@ -297,7 +297,7 @@ internal static partial class Program
         }
         Check(missing.Count == 0, "banking fixes: the private lender's question is in en, pt and zh-cn with its names" + (missing.Count > 0 ? ": " + string.Join(", ", missing) : string.Empty));
         // The Guide's car finance line names the approval's interest in every language.
-        string[] interest = { "costs interest", "juros", "利息", "Zinsen", "intérêts", "intereses", "процент" };
+        string[] interest = { "costs interest", "juros", "利息", "Zinsen", "intérêts", "intereses", "процент", "kost rente", "faiz" };
         var silent = new List<string>();
         for (int l = 0; l < languages.Count; l++)
         {

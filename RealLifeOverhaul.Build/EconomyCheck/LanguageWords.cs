@@ -4,12 +4,25 @@ using System.Text.RegularExpressions;
 using RealLifeOverhaul;
 
 // The texts of every language the mod has, for the checks that hold a feature's keys to each language: en first, then pt
-// and zh-cn, then German, French, Spanish and Russian when their file is there (ModLanguages). A language the checks read
-// is held to the same keys and the same names in curly brackets as the English; a key German, French, Spanish or Russian
-// lacks is read as the English, as the game reads it.
+// and zh-cn, then German, French, Spanish, Russian, Dutch and Turkish when their file is there (ModLanguages). A language the
+// checks read is held to the same keys and the same names in curly brackets as the English; a key a later language lacks is
+// read as the English, as the game reads it.
 internal static partial class Program
 {
     private static readonly Regex Names = new Regex(@"\{[a-z_]+\}");
+
+    // What's new in each of ModLanguages.All: the mark each fix begins with and the empty next row, as Workshop/locales.py's
+    // FIXED and NOTHING have them (LaterLanguageChecks holds the two to each other).
+    private static readonly Dictionary<string, string> FixMarks = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        { "en", "Fixed: " }, { "pt", "Corrigido: " }, { "zh-cn", "已修复：" }, { "de", "Behoben: " }, { "fr", "Corrigé : " },
+        { "es", "Corregido: " }, { "ru", "Исправлено: " }, { "nl", "Opgelost: " }, { "tr", "Düzeltildi: " }
+    };
+    private static readonly Dictionary<string, string> NothingYet = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        { "en", "Nothing yet." }, { "pt", "Nada ainda." }, { "zh-cn", "还没有。" }, { "de", "Noch nichts." }, { "fr", "Rien pour l'instant." },
+        { "es", "Nada todavía." }, { "ru", "Пока ничего." }, { "nl", "Nog niets." }, { "tr", "Henüz yok." }
+    };
 
     private static string LocalesFolder()
     {
@@ -82,7 +95,7 @@ internal static partial class Program
         return string.Join(",", found);
     }
 
-    // A text's {names}, sorted (the checks of features written before the seven languages compare them by this).
+    // A text's {names}, sorted (the checks of features written before the later languages compare them by this).
     private static string Holes(Regex holes, string text)
     {
         var found = new List<string>();

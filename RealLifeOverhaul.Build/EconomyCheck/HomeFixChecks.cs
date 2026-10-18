@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using IoPath = System.IO.Path;
+using RealLifeOverhaul;
 
 // Faults found in Scripts/Home: the roommate's talk test read the player's character without testing it, inside the tick
 // whose fault switches roommates off; and a door to social life (RoommateBridges.Friend) was filled but never read.
@@ -30,16 +31,16 @@ internal static partial class Program
         }
         Check(reader == null, "home fix: nothing calls a RoommateBridges.Friend door" + (reader != null ? " (" + reader + ")" : string.Empty));
         Check(FixLineEverywhere("roommate no longer goes quiet", "colega de casa não fica mais calado", "室友不会再因此", "Mitbewohner verstummt nicht mehr",
-                                "colocataire ne se tait plus", "compañero de piso ya no se queda callado", "сосед по квартире больше не замолкает"),
+                                "colocataire ne se tait plus", "compañero de piso ya no se queda callado", "сосед по квартире больше не замолкает",
+                                "een huisgenoot wordt niet meer stil", "ev arkadaşı artık oturumun geri kalanında sessiz kalmıyor"),
             "home fix: What's new has the roommate's line, with its fix mark, in some row of every language");
     }
 
-    // A fix's line, by a piece of it in each language (en, pt, zh-cn, de, fr, es, ru), in some What's new row of each with the
-    // language's fix mark: the next row until a release numbers it into its own.
+    // A fix's line, by a piece of it in each language (in the order of ModLanguages.All: en, pt, zh-cn, de, fr, es, ru, nl, tr),
+    // in some What's new row of each with the language's fix mark: the next row until a release numbers it into its own.
     private static bool FixLineEverywhere(params string[] pieces)
     {
-        string[] marks = { "Fixed: ", "Corrigido: ", "已修复：", "Behoben: ", "Corrigé : ", "Corregido: ", "Исправлено: " };
-        string[] order = { "en", "pt", "zh-cn", "de", "fr", "es", "ru" };
+        string[] order = ModLanguages.All;
         Dictionary<string, string>[] langs = LanguageWords(out string[] codes);
         bool all = codes.Length == order.Length && pieces.Length == order.Length;
         for (int l = 0; all && l < codes.Length; l++)
@@ -50,7 +51,7 @@ internal static partial class Program
             {
                 int piece = row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal)
                     ? row.Value.IndexOf(pieces[at], StringComparison.Ordinal) : -1;
-                found |= piece > 0 && row.Value.LastIndexOf(marks[at], piece, StringComparison.Ordinal) >= 0;
+                found |= piece > 0 && row.Value.LastIndexOf(FixMarks[codes[l]], piece, StringComparison.Ordinal) >= 0;
             }
             all &= at >= 0 && found;
         }
