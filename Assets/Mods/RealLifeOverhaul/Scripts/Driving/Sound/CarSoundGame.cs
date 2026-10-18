@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using NWH.Common.Input;
 using NWH.VehiclePhysics2.GroundDetection;
 using NWH.VehiclePhysics2.Input;
@@ -59,8 +59,6 @@ namespace RealLifeOverhaul
         private const int Note = 0, Pop = 1, Whistle = 2, Flutter = 3, Skid = 4;
         private const float DefaultSkid = 0.3f;   // a surface's skid level as the sound system's presets come: the recording's full level there
 
-        private static readonly Func<VehicleInputProviderBase, float> ThrottleOf = provider => provider.Throttle();   // made once: read every frame in the shop
-
         /// <summary>The car's NWH vehicle with its sound system ready, or null (not an NWH car, no sound manager, no source holders).</summary>
         public static NwhVehicle Physics(CarController car)
         {
@@ -103,10 +101,22 @@ namespace RealLifeOverhaul
             reading.Throttle = engine.ThrottlePosition;
         }
 
-        /// <summary>The player's own throttle key (or pedal), as the car's input reads it: the shop's turntable revs on it.</summary>
+        /// <summary>
+        /// The player's own throttle key (or pedal), added up over the game's input providers as the car's own input adds
+        /// them (InputProvider.CombinedInput): the shop's turntable revs on it.
+        /// </summary>
         public static float ThrottleKey()
         {
-            return InputProvider.Instances != null && InputProvider.Instances.Count > 0 ? InputProvider.CombinedInput(ThrottleOf) : 0f;
+            List<InputProvider> providers = InputProvider.Instances;
+            float sum = 0f;
+            for (int i = 0; providers != null && i < providers.Count; i++)
+            {
+                if (providers[i] is VehicleInputProviderBase vehicleInput)
+                {
+                    sum += vehicleInput.Throttle();
+                }
+            }
+            return sum;
         }
 
         /// <summary>An audio source of the mod's on one of the car's source holders, set up as the game's sound system sets up its own.</summary>
