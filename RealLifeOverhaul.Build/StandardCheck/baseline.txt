@@ -303,7 +303,6 @@ RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobBoards.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Jobs/JobSites.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Transport/CarOwnership.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Transport/SubwayJourney.cs	1
@@ -557,7 +556,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareStore.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareText.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareTextsMap.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/OutingScene.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialDirector.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Social/SocialScene.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.Talk.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.cs	2
