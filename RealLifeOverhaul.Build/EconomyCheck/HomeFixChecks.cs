@@ -46,7 +46,8 @@ internal static partial class Program
             "home fix: up in a hotel room counts as sheltered, and the wiring takes that back on disconnect");
         Check(FixLineEverywhere("hotel room no longer gives you a cold", "quarto de hotel não faz mais você pegar um resfriado", "酒店房间里休息或睡觉不会再让你感冒",
                                 "Hotelzimmer ruht oder schläft, erkältet sich nicht mehr", "chambre d'hôtel ne donne plus de rhume",
-                                "habitación de hotel ya no te resfría", "номере отеля больше не вызывает простуду"),
+                                "habitación de hotel ya no te resfría", "номере отеля больше не вызывает простуду",
+                                "hotelkamer geeft je geen verkoudheid meer", "artık soğuk algınlığına yol açmıyor"),
             "home fix: What's new has the hotel room's rain line, with its fix mark, in some row of every language");
 
         // A night in a hotel room is the room's own time skip, never the game's sleep, so it counted as hours awake.
@@ -62,7 +63,8 @@ internal static partial class Program
             "home fix: a hotel room names its bed through the sleep's time skip and takes it back on every way out");
         Check(FixLineEverywhere("hotel room now counts as sleep", "quarto de hotel agora conta como sono", "在酒店房间过夜或小睡现在算作睡眠",
                                 "Hotelzimmer zählt jetzt als Schlaf", "chambre d'hôtel compte maintenant comme du sommeil",
-                                "habitación de hotel ahora cuenta como sueño", "номере отеля теперь считаются сном"),
+                                "habitación de hotel ahora cuenta como sueño", "номере отеля теперь считаются сном",
+                                "hotelkamer telt nu als slaap", "otel odasında bir gece kalmak veya kestirmek artık uyku sayılıyor"),
             "home fix: What's new has the hotel night's sleep line, with its fix mark, in some row of every language");
     }
 
