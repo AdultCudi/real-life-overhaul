@@ -18,35 +18,13 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The mod's people: a small, fixed pool of street characters shared by every scene
-    /// (accident drivers, paramedics, officers, suspects, casualties).
-    /// Building a character's look is the expensive part (the game merges its meshes), so
-    /// characters are created once, kept, and handed back out in the same outfit whenever
-    /// possible.
-    /// Twelve at most. One of these costs what one of the game's own pedestrians costs while it
-    /// is drawn (one merged skinned mesh, one animator, one navigation agent, of which the game
-    /// keeps about a hundred on the street) and nothing while it is not: out of view its animator
-    /// and renderer are off, standing still its agent is off, and on the shelf the whole object
-    /// is. Twelve is the worst scene (two drivers, two paramedics, two officers, a suspect and
-    /// the officer arresting them: eight) plus four who are only there to be seen: about a tenth
-    /// more people on the street at the very most. Those four (officers on the beat, by a parked
-    /// patrol car, at a junction) always give way: when a scene asks for somebody and nobody is
-    /// free, one of them is taken off the street that instant and handed over. The pool also switches off the animation and rendering of people who are
-    /// far away or behind the camera: a handful of comparisons per frame, and only while
-    /// somebody is out on the street. With nobody out, nothing here runs.
-    ///
-    /// When looks are built (People/Looks has the rule): six civilians while the city loads, behind
-    /// the loading screen; four officers and two paramedics as soon as the modelled props have loaded
-    /// (their kit is made of them), one at a time. So all twelve exist before the first scene, each
-    /// dressed for a part, and a scene is handed people who are ready. A civilian keeps a look for
-    /// three outings or ten minutes and is then given a new one on the shelf, one at a time with
-    /// seconds between; whoever came back longest ago goes out first, so the same face is not seen
-    /// twice running. Only when a scene needs a part nobody on the shelf is dressed for is a look
-    /// built on the spot (whoever there are most of on the shelf is the one re-dressed).
+    /// The mod's people: twelve street characters shared by every scene, made once and handed out again in the same outfit,
+    /// as building a look is the costly part (Looks). Four may be out only to be seen; they give way the instant a scene
+    /// needs somebody. Cost: a handful of comparisons a frame while somebody is out, hiding whoever cannot be seen.
     /// </summary>
-    public class ActorPool : MonoBehaviour
+    public partial class ActorPool : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("people", "ActorPool", typeof(ActorPool));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "ActorPool", typeof(ActorPool));
 
         /// <summary>Hard cap on mod characters alive at once, across all scenes.</summary>
         public const int MaxActors = 12;
@@ -76,11 +54,9 @@ namespace RealLifeOverhaul
         private bool _uniformsDue;    // the officers and paramedics of the ready pool are still to be made
         private float _uniformsSince;
 
-        /// <summary>How many more people a scene could put on the street right now. Whoever is only there to be seen counts as free: they give way.</summary>
+        /// <summary>How many more people a scene could put out now; whoever is only there to be seen counts as free.</summary>
         public int Free => MaxActors - Count(yielding: false);
 
-        /// <summary>How many people are out only to be seen.</summary>
-        public int Presence => Count(yielding: true);
 
         private int Count(bool yielding)
         {
@@ -133,14 +109,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -203,21 +179,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Puts a person on the ground near a point. Returns null if there is nowhere to stand
-        /// within the radius or all characters are in use; callers must cope with that.
-        /// </summary>
-        /// <param name="onRoad">Allow the road surface, not just pavements (for people at a crash).</param>
+        /// <summary>Puts a person on the ground near a point (the road too, with <paramref name="onRoad"/>); null if nowhere or nobody.</summary>
         public StreetActor Spawn(Vector3 near, ActorLook look, float radius = 6f, bool onRoad = false)
         {
             return Put(near, look, radius, onRoad, yields: false);
         }
 
-        /// <summary>
-        /// Puts out someone who is only there to be seen. Null unless fewer than
-        /// <see cref="MaxPresence"/> such people are out and characters are to spare. Whoever is
-        /// returned may be taken back at any moment, without warning, for a scene that needs them.
-        /// </summary>
+        /// <summary>Puts out someone only there to be seen, whom a scene may take back at any moment; null if none may be spared.</summary>
         public StreetActor SpawnPresence(Vector3 near, ActorLook look, float radius = 6f, bool onRoad = false)
         {
             int yielding = Count(yielding: true);
@@ -286,18 +254,13 @@ namespace RealLifeOverhaul
             actor.ReleasedAt = Time.unscaledTime;
             if (actor.Look == ActorLook.Civilian)
             {
-                // A look is kept for a few outings (whoever came back longest ago goes out first, so it is not the
-                // same face twice running), then changed on the shelf, quietly: People/Looks.
                 actor.Uses++;
                 actor.Stale = Looks.Worn(actor.Uses, actor.DressedAt);
             }
             Tend();
         }
 
-        /// <summary>
-        /// Called once while the city loads (the loading screen is up): the civilians of the ready pool are made
-        /// now, and the uniformed are left to the shelf's own timer, which waits for the modelled props.
-        /// </summary>
+        /// <summary>Called once behind the loading screen: the civilians are made now; the uniformed wait on the shelf for the modelled props.</summary>
         public void Prewarm()
         {
             if (!Settings.People)
@@ -313,7 +276,7 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                Logger?.Error(e);   // they are made on first need instead, as before
+                Logger?.Error(e);   // they are made on first need instead
             }
             _uniformsDue = true;
             _uniformsSince = Time.unscaledTime;
@@ -340,7 +303,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Runs only while the shelf has something to see to: one look at a time, when People/Looks says one may be built.
+        // Runs only while the shelf has something to see to: one look at a time, when Looks says one may be built.
         private IEnumerator Tending()
         {
             while (_uniformsDue || AnyStale())
@@ -415,7 +378,6 @@ namespace RealLifeOverhaul
             return have;
         }
 
-        // One more character, dressed and put on the shelf.
         private void Make(ActorLook look)
         {
             Vector3 near = Vector3.down * 40f;   // under the street, out of sight
@@ -458,7 +420,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Back on the shelf: reset and switched off, so it costs nothing until it is wanted again.
         private void Shelve(StreetActor actor)
         {
             try
@@ -475,10 +436,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A small emoji bubble over someone's head for a few seconds. Skipped for people who
-        /// are not being drawn: the game places the bubble by projecting the head onto the screen.
-        /// </summary>
+        /// <summary>An emoji bubble over someone's head for a few seconds; skipped for anybody not drawn.</summary>
         public void ShowEmoji(StreetActor actor, CharacterEmojiName emoji, float seconds)
         {
             if (actor != null && actor.InUse && actor.IsValid)
@@ -522,7 +480,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>How many characters exist, in use or not. With <see cref="ActorAt"/>, for looking at who is on the street.</summary>
         public int ActorCount => _actors.Count;
 
         public StreetActor ActorAt(int index)
@@ -594,8 +551,7 @@ namespace RealLifeOverhaul
             {
                 if (ready.Kit != null && !ready.Kit.Modelled && PropLibrary.Ready)
                 {
-                    // Fitted out before the modelled props had loaded: once, fitted again with them
-                    // (an officer from scratch, since the cap replaces the game's hat).
+                    // Fitted out before the modelled props loaded: fitted again once, an officer from scratch as the cap replaces the hat.
                     ready.Character.gameObject.SetActive(true);
                     if (look == ActorLook.Officer)
                     {
@@ -636,7 +592,6 @@ namespace RealLifeOverhaul
             }
             if (spare == null && mayReclaim && yielding != null)
             {
-                // Everyone is out, and a scene needs somebody: whoever was only there to be seen gives way.
                 Logger?.Info($"People: {(yielding.Visible ? "an officer in view" : "an officer out of view")} who was only on patrol was taken off the street; a scene needs the character.");
                 Release(yielding);
                 if (yielding.Look == look)
@@ -647,17 +602,14 @@ namespace RealLifeOverhaul
             }
             if (spare != null)
             {
-                // Awake while it is dressed, the same as a newly created one.
                 spare.Character.gameObject.SetActive(true);
                 Dress(spare, look);
             }
             return spare;
         }
 
-        // A new character, not yet dressed. Born on the pavement where it can be: the prefab's navigation agent is the
-        // pavement kind and switches itself on as it is created, and off its own mesh (the place asked for is often on the
-        // road) the engine warns that it "is not close enough to the NavMesh". Place moves the character to where it is
-        // wanted, in the same frame.
+        // A new character, not yet dressed, born on the pavement where it can be: the prefab's pavement agent switches on as it
+        // is created, and off its mesh the engine warns. Place moves it to where it is wanted in the same frame.
         private StreetActor Create(Vector3 birth)
         {
             using var piece = SessionWatch.Piece("people: a character being made");
@@ -669,8 +621,7 @@ namespace RealLifeOverhaul
             {
                 fidgets.pauseBoredAnimations = true;
             }
-            // These people go where their route takes them. Left to physics, the body is shoved up
-            // and over whatever it brushes against between two cars, and stays there.
+            // Left to physics, the body is shoved up and over whatever it brushes against between two cars, and stays there.
             if (character.characterRigidbody != null)
             {
                 character.characterRigidbody.isKinematic = true;
@@ -679,279 +630,5 @@ namespace RealLifeOverhaul
             _actors.Add(created);
             return created;
         }
-
-        // Who they are (age, build, face, hair) is rolled for everyone. Civilians wear whatever casual
-        // clothes come up; officers and paramedics then get their uniform, the same one every time,
-        // and the equipment that goes with it.
-        private static void Dress(StreetActor actor, ActorLook look)
-        {
-            Looks.Count("people: a street character's look being built (a mesh merge)");   // counted, and named for the long-frame line of the session record
-            actor.Look = look;
-            actor.Stale = false;
-            actor.Uses = 0;
-            actor.DressedAt = Time.unscaledTime;
-            actor.Resize(1f);   // every look is put on, and measured, at the size the game builds it
-            AppearanceSetter appearance = actor.Character.appearanceSetter;
-            Uniforms.Restore(actor.Dyes);   // the colours of whatever uniform this character wore before
-            actor.Shirt = default;
-            if (look == ActorLook.Officer || look == ActorLook.Paramedic)
-            {
-                ServiceLook(appearance);
-            }
-            else
-            {
-                appearance.SetRandomAge();
-                Gender gender = Random.value < 0.5f ? Gender.Male : Gender.Female;
-                appearance.RandomizeElements(gender, SkinColorHelper.GetRandom(), CasualWear);
-            }
-            bool cap = look == ActorLook.Officer && ServiceKit.CapToBeHad;
-            if (Uniforms.Has(look))
-            {
-                Uniforms.Wear(appearance, look, actor.Dyes, cap, ref actor.Shirt);
-            }
-            appearance.UpdateVisuals();   // the one mesh merge for this outfit
-            Looks.Done();
-            if (Equip(actor, look, cap) && actor.Kit.CapRefused)
-            {
-                // Too much hair for the modelled cap, which hides none: the game's own hat after all (it
-                // flattens the hair under it). A second merge, for this one officer, this once.
-                Uniforms.Restore(actor.Dyes);
-                Uniforms.Wear(appearance, look, actor.Dyes, false, ref actor.Shirt);
-                Looks.Count("people: an officer's look being built again (the cap did not fit)");
-                appearance.UpdateVisuals();
-                Looks.Done();
-                Equip(actor, look, false);
-            }
-            if (Uniforms.Has(look))
-            {
-                Heighten(actor, look, appearance.data.gender == Gender.Male);
-            }
-        }
-
-        // An officer stands as tall as the service wants (or as the player, if taller), a paramedic no shorter than
-        // an adult: the whole character is scaled, equipment and all (Stature). Said once for each of the four.
-        private static void Heighten(StreetActor actor, ActorLook look, bool man)
-        {
-            float crown = actor.Kit != null ? actor.Kit.Crown : 0f;
-            float size = Stature.For(actor.Character.animator, look, man, crown, out float height, out float player);
-            actor.Resize(size);
-            int bit = (look == ActorLook.Officer ? 1 : 4) << (man ? 0 : 1);
-            if ((_heightLogged & bit) == 0)
-            {
-                _heightLogged |= bit;
-                string who = (man ? "male " : "female ") + (look == ActorLook.Officer ? "officer" : "paramedic");
-                Logger?.Info(height <= 0f
-                    ? $"People: a {who} could not be measured (head {(crown > 0f ? "measured" : "not measured")}); they keep the height the game gave them. (Logged once.)"
-                    : FormattableString.Invariant($"People: a {who} is {height:F2} m as the game builds them (crown {crown:F3} m above the head joint; the player is ")
-                      + FormattableString.Invariant(
-                          $"{(player > 0f ? player.ToString("F2", CultureInfo.InvariantCulture) + " m" : "not measured")}); scaled by {size:F3} to {height * size:F2} m. (Logged once.)"));
-            }
-        }
-
-        private static int _heightLogged;
-
-        // Officers and paramedics are not rolled like the public: one man and one woman (four men in five), each the same
-        // every time (the game's own roll with a fixed seed gives the same face), in the lightest or the darkest of the
-        // game's skin tones, a fixed build, a short tidy haircut that sits under the cap, dark hair, no beard.
-        // At most four appearances exist. The haircut is the first the game has of the names below, in their order
-        // (a whole name, such as the women's bun, or a word in one). The game's men's styles are only numbered
-        // (MaleHair01 to 08), which says nothing of their length, so where no name matches the style with the least
-        // hair is taken: the smallest mesh. What was picked, and how, is logged once for each sex with every style's
-        // size, so that a style can be put first in the list by its name.
-        private const int ManSeed = 1207;
-        private const int WomanSeed = 2311;
-        private const float Lean = 0.38f;       // CharacterData.fatness: 0.5 is neither fat nor thin, 0 the thinnest the game draws
-        private const float Strong = 0.7f;
-        private static readonly string[] ManHair = { "buzz", "crew", "short", "fade", "crop" };
-        private static readonly string[] WomanHair = { "FemHair06Bun", "bun", "pony", "tied", "bob", "pixie", "short" };
-        private static readonly string[] NoBeard = { "none" };
-        private static readonly System.Text.StringBuilder Sizes = new System.Text.StringBuilder(256);
-        private static SkinColor _lightSkin;
-        private static SkinColor _darkSkin;
-        private static int _serviceLogged;
-
-        private static void ServiceLook(AppearanceSetter appearance)
-        {
-            if (_lightSkin == null)
-            {
-                float low = float.MaxValue, high = float.MinValue;
-                for (int seed = 0; seed < 64; seed++)   // the helper only hands tones out by seed: once per session
-                {
-                    SkinColor tone = SkinColorHelper.GetRandom(seed);
-                    float light = tone.color.r * 0.30f + tone.color.g * 0.59f + tone.color.b * 0.11f;
-                    if (light > high)
-                    {
-                        high = light;
-                        _lightSkin = tone;
-                    }
-                    if (light < low)
-                    {
-                        low = light;
-                        _darkSkin = tone;
-                    }
-                }
-            }
-            bool man = Random.value < 0.8f;
-            appearance.data.ageInDays = 33 * 365;
-            appearance.RandomizeElements(man ? Gender.Male : Gender.Female, Random.value < 0.5f ? _lightSkin : _darkSkin, CasualWear, man ? ManSeed : WomanSeed);
-            appearance.data.strength = Strong;   // fit: the game rolls both of these 0..1
-            appearance.data.fatness = Lean;
-            int bit = man ? 1 : 2;
-            bool log = (_serviceLogged & bit) == 0;
-            Sizes.Clear();
-            string hair = Choose(appearance, AppearanceElementType.Hair, man ? ManHair : WomanHair, darkest: true, bare: false, out bool hairNamed, log ? Sizes : null);
-            string beard = man ? Choose(appearance, AppearanceElementType.Beard, NoBeard, darkest: false, bare: true, out _, null) : null;
-            if (log)
-            {
-                _serviceLogged |= bit;
-                Logger?.Info("People: every " + (man ? "male" : "female") + " officer and paramedic has the same look (seed " + (man ? ManSeed : WomanSeed)
-                             + ", lightest or darkest skin tone, build: fatness " + Lean.ToString("F2", CultureInfo.InvariantCulture) + " (lean), strength "
-                             + Strong.ToString("F1", CultureInfo.InvariantCulture) + "), haircut "
-                             + (hair == null ? "as rolled (the game's styles could not be read)"
-                                 : "'" + hair + "' (" + (hairNamed ? "by name" : "the one with the least hair: no style has a name that says it is short") + "), its darkest colour")
-                             + "; the game's styles and their sizes in litres: " + Sizes
-                             + (man ? "; beard " + (beard != null ? "'" + beard + "'" : "as rolled (no empty choice found)") : string.Empty) + ".");
-            }
-            Sizes.Clear();
-        }
-
-        // Puts on the first variant of a slot whose name contains one of the words, in the order of the words;
-        // failing that, the variant with the least to it (the smallest mesh; with "bare", one with no mesh at
-        // all counts as the least). Null if the slot has nothing to choose from.
-        private static string Choose(AppearanceSetter appearance, AppearanceElementType slot, string[] words, bool darkest, bool bare, out bool named, System.Text.StringBuilder sizes)
-        {
-            named = false;
-            List<AppearanceElementVariant> variants = appearance.GetElementVariants(slot);
-            AppearanceElementVariant picked = null;
-            for (int w = 0; variants != null && w < words.Length && picked == null; w++)
-            {
-                for (int i = 0; i < variants.Count && picked == null; i++)
-                {
-                    if (variants[i] != null && variants[i].name != null && variants[i].name.IndexOf(words[w], StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        picked = variants[i];
-                        named = true;
-                    }
-                }
-            }
-            if (picked == null || sizes != null)
-            {
-                AppearanceElementVariant least = Least(variants, bare, sizes);
-                if (picked == null)
-                {
-                    picked = least;
-                }
-            }
-            if (picked == null)
-            {
-                return null;
-            }
-            AppearanceElementData element = null;
-            List<AppearanceElementData> elements = appearance.data.elements;
-            for (int i = 0; i < elements.Count; i++)
-            {
-                if (elements[i].type == slot)
-                {
-                    element = elements[i];
-                }
-            }
-            if (element == null)
-            {
-                element = new AppearanceElementData { type = slot };
-                elements.Add(element);
-            }
-            element.variantId = picked.id;
-            AppearanceElementColor colour = null;
-            float lightest = float.MaxValue;
-            for (int i = 0; picked.colors != null && i < picked.colors.Length; i++)
-            {
-                AppearanceElementColor entry = picked.colors[i];
-                Color shade = entry.hasBaseColor ? entry.baseColor : entry.r;
-                float light = darkest ? shade.r + shade.g + shade.b : i;
-                if (light < lightest)
-                {
-                    lightest = light;
-                    colour = entry;
-                }
-            }
-            element.colorId = colour != null ? colour.id : null;
-            return picked.name;
-        }
-
-        // The variant whose mesh takes up the least room (the box round it, which the engine keeps for every mesh):
-        // of haircuts, the shortest. One without a mesh is nothing at all, and is only taken if that is wanted.
-        private static AppearanceElementVariant Least(List<AppearanceElementVariant> variants, bool bare, System.Text.StringBuilder sizes)
-        {
-            AppearanceElementVariant least = null;
-            float room = float.MaxValue;
-            for (int i = 0; variants != null && i < variants.Count; i++)
-            {
-                AppearanceElementVariant variant = variants[i];
-                if (variant == null)
-                {
-                    continue;
-                }
-                var skin = variant.GetComponent<SkinnedMeshRenderer>();
-                Mesh mesh = skin != null ? skin.sharedMesh : null;
-                bool drawn = mesh != null && mesh.vertexCount > 0;
-                Vector3 box = drawn ? Vector3.Scale(mesh.bounds.size, variant.transform.lossyScale) : Vector3.zero;
-                float volume = Mathf.Abs(box.x * box.y * box.z);
-                if (sizes != null)
-                {
-                    sizes.Append(sizes.Length > 0 ? ", " : string.Empty).Append(variant.name).Append(' ').Append(drawn ? (volume * 1000f).ToString("F1", CultureInfo.InvariantCulture) : "(no mesh)");
-                }
-                if ((drawn || bare) && volume < room)
-                {
-                    room = volume;
-                    least = variant;
-                }
-            }
-            return least;
-        }
-
-        // The equipment worn with the look (none for a civilian). An extra: if it cannot be fitted the
-        // character goes without, and it is said once. False if there is none.
-        private static bool Equip(StreetActor actor, ActorLook look, bool cap)
-        {
-            if (actor.Kit == null && !Uniforms.Has(look))
-            {
-                return false;
-            }
-            // Fitted at the size the game built the body, whatever size it stands at: the pieces hang on the bones
-            // and grow with them, and every measure the kit knows is of a body that size.
-            float size = actor.Size;
-            actor.Resize(1f);
-            try
-            {
-                if (actor.Kit == null)
-                {
-                    actor.Kit = new ServiceKit();
-                }
-                actor.Kit.Fit(actor.Character, look, cap);
-                actor.Resize(size);
-                return true;
-            }
-            catch (Exception e)
-            {
-                if (!_kitFailed)
-                {
-                    _kitFailed = true;
-                    Logger?.Error(e);
-                    Logger?.Warn("People: uniform equipment could not be fitted (see the error above); that character goes without. (Logged once.)");
-                }
-                actor.Resize(size);
-                try
-                {
-                    actor.Kit.Remove();
-                }
-                catch (Exception)
-                {
-                    // nothing more to be done for it
-                }
-                return false;
-            }
-        }
-
-        private static bool _kitFailed;
     }
 }
