@@ -356,6 +356,28 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Every closure on a business the player no longer holds (<paramref name="held"/> says which they do) dropped at
+        /// once, whoever made it and whenever it was to end: nothing of the mod keeps closed, or reopens as the player's, a
+        /// building that is somebody else's or nobody's now. Each place dropped is added once to <paramref name="dropped"/>.
+        /// </summary>
+        public static void DropWhere(Predicate<string> held, List<string> dropped)
+        {
+            for (int i = Closures.Count - 1; i >= 0; i--)
+            {
+                string place = Closures[i].Place;
+                if (held(place))
+                {
+                    continue;
+                }
+                Closures.RemoveAt(i);
+                if (!dropped.Contains(place))
+                {
+                    dropped.Add(place);
+                }
+            }
+        }
+
         private static void End(int at, List<string> open)
         {
             string place = Closures[at].Place;
