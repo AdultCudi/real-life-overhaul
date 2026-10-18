@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using Entities;
 using Helpers;
@@ -11,10 +10,7 @@ using Localizor;
 using PlayerActivity;
 using UI;
 using UI.Load;
-using UI.Notification;
-using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
-using UnityEngine.AI;
 using Vehicles.DeliveryDriverJob;
 
 namespace RealLifeOverhaul.Meta
@@ -49,7 +45,7 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>True for an id or key the mod made: "reallife" followed by a separator.</summary>
-        public static bool IsOurs(string text)
+        private static bool IsOurs(string text)
         {
             if (text == null || text.Length < 9 || !text.StartsWith("reallife", StringComparison.Ordinal))
             {

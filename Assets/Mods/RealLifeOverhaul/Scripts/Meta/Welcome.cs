@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Meta
         private const string DevelopmentSeenId = "meta_seen_version";   // written by the development builds: deleted, never read
 
         /// <summary>The version whose welcome the player has seen, or null.</summary>
-        public static string SeenVersion
+        private static string SeenVersion
         {
             get
             {

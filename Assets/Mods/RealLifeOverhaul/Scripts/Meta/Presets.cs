@@ -119,16 +119,7 @@ namespace RealLifeOverhaul.Meta
             {
                 return "reallife_meta_not_ready".GetLocalization();
             }
-            string saved = null;
-            try
-            {
-                saved = Export(BeforePresetFile);
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-            }
-
+            string saved = SaveBefore();
             int changed = 0;
             var reload = new List<string>();
             foreach (OptionInfo info in SettingsTable.All)
@@ -168,15 +159,7 @@ namespace RealLifeOverhaul.Meta
             {
                 return "reallife_meta_not_ready".GetLocalization();
             }
-            string saved = null;
-            try
-            {
-                saved = Export(BeforePresetFile);
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-            }
+            string saved = SaveBefore();
             int changed = 0;
             var reload = new List<string>();
             foreach (OptionInfo info in SettingsTable.All)
@@ -212,6 +195,20 @@ namespace RealLifeOverhaul.Meta
                 text.Append("\n\n").Append("reallife_meta_preset_undo".GetLocalization().Replace("{file}", saved));
             }
             return text.ToString();
+        }
+
+        // The settings as they were, for Import to undo a preset or a reset with; null if they could not be written.
+        private static string SaveBefore()
+        {
+            try
+            {
+                return Export(BeforePresetFile);
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+                return null;
+            }
         }
 
         private static void AppendReload(StringBuilder text, List<string> reload)

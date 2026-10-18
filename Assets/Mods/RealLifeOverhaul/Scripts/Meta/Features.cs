@@ -4,15 +4,6 @@ using BigAmbitions.Mods;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>Where a feature's section goes on the options page.</summary>
-    public enum FeatureKind
-    {
-        Gameplay,      // alphabetical, under "Features"
-        Controls,
-        Performance,
-        Tools          // save tools, diagnostics: last
-    }
-
     /// <summary>The four presets. An option says what it is at Relaxed, Realistic and Hardcore; Standard is always its default.</summary>
     public enum Intensity
     {
@@ -61,12 +52,10 @@ namespace RealLifeOverhaul.Meta
         public readonly string Id;
         public readonly string TitleKey;
 
-        public FeatureKind Kind = FeatureKind.Gameplay;
         public string AboutKey;                 // one sentence: what it is
         public string HelpKey;                  // its page in the guide
         public int CleanupOrder;                // lower first; whoever lends people to the others goes last
         public bool Auto;                       // made from an options header nobody registered
-        public bool StartsOpen;                 // its section is open the first time the page is shown
 
         public readonly List<string> Groups = new List<string>();        // options headers whose rows are its
         public readonly List<string> Options = new List<string>();       // option ids it owns
@@ -98,12 +87,6 @@ namespace RealLifeOverhaul.Meta
         public Feature Group(string headerKey)
         {
             Groups.Add(headerKey);
-            return this;
-        }
-
-        public Feature As(FeatureKind kind)
-        {
-            Kind = kind;
             return this;
         }
 
@@ -266,12 +249,6 @@ namespace RealLifeOverhaul.Meta
         {
             AsideWhy = why;
             AsideOptions.AddRange(optionIds);
-            return this;
-        }
-
-        public Feature OpenAtFirst()
-        {
-            StartsOpen = true;
             return this;
         }
     }

@@ -313,11 +313,11 @@ namespace RealLifeOverhaul.Meta
 
         private static void RegisterTools()
         {
-            Features.Add("keys", "reallife_meta_title_keys").As(FeatureKind.Controls)
+            Features.Add("keys", "reallife_meta_title_keys")
                 .Group("reallife_keys_header")
                 .About("reallife_guide_keys_about").Help("reallife_guide_keys");
 
-            Features.Add("performance", "reallife_meta_title_performance").As(FeatureKind.Performance)
+            Features.Add("performance", "reallife_meta_title_performance")
                 .Group("reallife_perf_header")
                 .About("reallife_guide_performance_about").Help("reallife_guide_performance")
                 .Test("reallife_perf_test_session", SessionWatch.TestSay);
@@ -330,7 +330,7 @@ namespace RealLifeOverhaul.Meta
             }
             SettingsTable.Declare("perf_step_timing", OptionType.Toggle, 1);
 
-            Features.Add("savetools", "reallife_meta_title_savetools").As(FeatureKind.Tools)
+            Features.Add("savetools", "reallife_meta_title_savetools")
                 .About("reallife_guide_savetools_about").Help("reallife_guide_savetools")
                 .Row(new ButtonOption("reallife_meta_remove_button", SaveTools.AskPrepare))
                 .Row(new ButtonOption("reallife_meta_resetdata_button", SaveTools.AskReset))
@@ -339,7 +339,7 @@ namespace RealLifeOverhaul.Meta
                 .Contact(GuideContact.ContactId)
                 .Repair(() => GuideContact.Setup());
 
-            Features.Add("diagnostics", "reallife_meta_title_diagnostics").As(FeatureKind.Tools)
+            Features.Add("diagnostics", "reallife_meta_title_diagnostics")
                 .About("reallife_guide_diagnostics_about").Help("reallife_guide_diagnostics")
                 .Row(new ToggleOption(Settings.DevDiagnosticsId, "reallife_meta_dev_diagnostics", false, on =>
                 {
@@ -358,7 +358,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_build_box", GameConfirm.TestOwnBox)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
 
-            Features.Add("multiplayer", "reallife_meta_title_multiplayer").As(FeatureKind.Tools)
+            Features.Add("multiplayer", "reallife_meta_title_multiplayer")
                 .About("reallife_guide_multiplayer_about").Help("reallife_guide_multiplayer")
                 .Fact("session", GoingPublic.Words)
                 .Fact("city", SharedCity.Words)
@@ -368,7 +368,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_gp_record", SharedCity.TestRecord)
                 .Test("reallife_test_gp_apply", SharedCity.TestApply);
 
-            Features.Add("tests", "reallife_meta_title_tests").As(FeatureKind.Tools).OpenAtFirst();
+            Features.Add("tests", "reallife_meta_title_tests");
         }
 
         // Game hours of street time between two accidents near the player at a setting of the option, at the day's average hour in fair weather.

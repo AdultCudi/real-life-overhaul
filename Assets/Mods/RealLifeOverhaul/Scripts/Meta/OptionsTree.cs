@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
-        /// <summary>The main switch: it is the first row, and every other row is greyed while it is off (unless <see cref="Free"/>).</summary>
+        /// <summary>The main switch: it is the first row, and every other row is greyed while it is off (unless <see cref="TreeRow.Free"/>).</summary>
         public TreeSection Main(string optionId)
         {
             Master = optionId;
@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Meta
     ///         .Main("fuel")                     // its main switch: first row, the others greyed while it is off
     ///         .Opts("fuel_price", "fuel_gauge") // more options by saved id, in the page's order
     ///         .Opt("fuel_cans", "car_ownership")// an option that needs another one on
-    ///         .Buttons("<reallife_fuel_page>")  // a button of the player's (not a test), by label key
+    ///         .Buttons("&lt;reallife_fuel_page&gt;")  // a button of the player's (not a test), by label key
     ///
     /// Every option row needs its sentence in en.json under <see cref="TipPrefix"/> and its id (the example's key is in
     /// angle brackets so that the locale check does not take it for a real one). A row no line claims goes to "Other" and is

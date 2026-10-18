@@ -1,10 +1,8 @@
 using System;
 using System.Collections;
 using RealLifeOverhaul.GameUi;
-using UI;
 using UI.MiniMenu;
 using UI.Notification;
-using UI.Smartphone;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Meta

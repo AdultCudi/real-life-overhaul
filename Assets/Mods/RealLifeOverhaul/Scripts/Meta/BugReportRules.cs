@@ -501,7 +501,7 @@ namespace RealLifeOverhaul.Meta
         /// 8.3 name), the folder after /home/ (Proton), every 17-digit Steam id, and the Steam name on the lines that carry one.
         /// Each is looked for only when a cheap search finds its sign.
         /// </summary>
-        public static string MaskForms(string text)
+        private static string MaskForms(string text)
         {
             if (string.IsNullOrEmpty(text))
             {

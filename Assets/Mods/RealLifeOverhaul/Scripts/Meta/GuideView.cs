@@ -7,7 +7,6 @@ using EnhancedUI.EnhancedScroller;
 using Localizor;
 using RealLifeOverhaul.GameUi;
 using TMPro;
-using UI;
 using UI.Smartphone;
 using UnityEngine;
 using UnityEngine.UI;

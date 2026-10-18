@@ -7,10 +7,8 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Localizor;
-using TMPro;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Meta
 {
@@ -256,29 +254,6 @@ namespace RealLifeOverhaul.Meta
                 at = close + 1;
             }
             return result.ToString();
-        }
-
-        /// <summary>A page as TextMeshPro draws it: facts filled in, headings and bullets marked up.</summary>
-        public static string Render(GuideTopic topic)
-        {
-            string filled = Fill(topic.Body()) ?? string.Empty;
-            var text = new StringBuilder(filled.Length + 512);
-            foreach (string raw in filled.Replace("\r", string.Empty).Split('\n'))
-            {
-                if (raw.StartsWith("# ", StringComparison.Ordinal))
-                {
-                    text.Append("\n<size=118%><b><color=#FF9414>").Append(raw, 2, raw.Length - 2).Append("</color></b></size>\n");
-                }
-                else if (raw.StartsWith("- ", StringComparison.Ordinal))
-                {
-                    text.Append("    -  ").Append(raw, 2, raw.Length - 2).Append('\n');
-                }
-                else
-                {
-                    text.Append(raw).Append('\n');
-                }
-            }
-            return text.ToString();
         }
 
         /// <summary>For the set-up check: every {name} in every page that nothing fills, and every text that is missing.</summary>

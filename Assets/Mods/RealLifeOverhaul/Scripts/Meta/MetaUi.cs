@@ -14,22 +14,6 @@ namespace RealLifeOverhaul.Meta
     {
         public GameObject Root;
         public ScrollRect KeyScroll;       // what the arrow and page keys scroll
-        public bool EscCloses = true;
-
-        /// <summary>Once a frame while this is the panel in front.</summary>
-        public virtual void Tick()
-        {
-        }
-
-        public virtual void Closed()
-        {
-        }
-
-        /// <summary>Esc was pressed: true if the panel used it for something of its own and stays open.</summary>
-        public virtual bool Escape()
-        {
-            return false;
-        }
     }
 
     /// <summary>
@@ -48,7 +32,6 @@ namespace RealLifeOverhaul.Meta
         public static readonly Color Accent = new Color(1f, 0.58f, 0.08f, 1f);
         public static readonly Color Ink = new Color(0.93f, 0.95f, 0.97f, 1f);
         public static readonly Color Soft = new Color(0.72f, 0.78f, 0.86f, 1f);
-        public static readonly Color Dark = new Color(0.07f, 0.05f, 0.03f, 1f);
 
         private const NavigationBlocker Blocker = (NavigationBlocker)7302;   // the mod's own, like PlayerKnockdown's 7301
         private const float LinePixels = 14f;                                // pixels the arrow keys scroll a line
@@ -142,14 +125,6 @@ namespace RealLifeOverhaul.Meta
             }
             try
             {
-                panel.Closed();
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-            }
-            try
-            {
                 EventSystem events = EventSystem.current;
                 if (events != null && panel.Root != null && events.currentSelectedGameObject == panel.Root)
                 {
@@ -166,11 +141,6 @@ namespace RealLifeOverhaul.Meta
                 enabled = false;
                 Hold(false);
             }
-        }
-
-        public bool IsOpen(MetaPanel panel)
-        {
-            return panel != null && _open.Contains(panel);
         }
 
         public void CloseAll()
@@ -213,12 +183,9 @@ namespace RealLifeOverhaul.Meta
                 Fit(top.Root);
                 if (Keys.PanelClose())
                 {
-                    if (!top.Escape() && top.EscCloses)
-                    {
-                        // On the next frame: until then the panel is still selected, so in the city the game takes this Esc as used
-                        // (CancelButtonHandler) and does not act on it. In the main menu the options page closes on it too.
-                        NextFrame(() => Close(top));
-                    }
+                    // On the next frame: until then the panel is still selected, so in the city the game takes this Esc as used
+                    // (CancelButtonHandler) and does not act on it. In the main menu the options page closes on it too.
+                    NextFrame(() => Close(top));
                     return;
                 }
                 int lines = Keys.PanelScroll();
@@ -237,7 +204,6 @@ namespace RealLifeOverhaul.Meta
                 {
                     Hold(true);   // opened in the menu, and the city has come since
                 }
-                top.Tick();
             }
             catch (Exception e)
             {
@@ -556,7 +522,7 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>A bar along the top of a window with a title in it; returns the bar for anything else that goes on it.</summary>
-        public RectTransform TitleBar(RectTransform window, string title, out TextMeshProUGUI text)
+        private RectTransform TitleBar(RectTransform window, string title, out TextMeshProUGUI text)
         {
             RectTransform bar = Box("Title Bar", window, Bar, false);
             bar.anchorMin = new Vector2(0f, 1f);

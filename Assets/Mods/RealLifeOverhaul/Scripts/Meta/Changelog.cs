@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Meta
 
         public sealed class Entry
         {
-            public readonly int Order;          // OrderOf its version: 0.1.0 is 1000, 0.1.1 is 1010, 0.5.12 is 5120, 0.12.0 is 12000, 1.0.0 is 100000
+            public readonly int Order;          // (major * 100 + minor) * 1000 + patch * 10: 0.1.1 is 1010, 0.5.12 is 5120, 1.0.0 is 100000
             public readonly string TitleKey;
             public readonly string TextKey;
 
@@ -201,27 +201,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>"0.1.0" is 1000, "0.1.1" is 1010, "0.5.12" is 5120, "0.12.3" is 12030, "1.0.0" is 100000 (a third number above 99 counts as 99); anything that is not a version is 0.</summary>
-        public static int OrderOf(string version)
-        {
-            if (string.IsNullOrEmpty(version))
-            {
-                return 0;
-            }
-            string[] parts = version.Split('.');
-            if (parts.Length < 2 || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int major)
-                || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int minor))
-            {
-                return 0;
-            }
-            int patch = 0;
-            if (parts.Length > 2)
-            {
-                int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out patch);
-            }
-            return (major * 100 + minor) * 1000 + Math.Min(99, Math.Max(0, patch)) * 10;
-        }
-
         /// <summary>Compares two versions number by number; a missing part counts as 0.</summary>
         public static int Compare(string a, string b)
         {
@@ -246,22 +225,6 @@ namespace RealLifeOverhaul.Meta
             foreach (Entry entry in All)
             {
                 text.Append("# ").Append(entry.TitleKey.GetLocalization()).Append('\n').Append(entry.TextKey.GetLocalization()).Append("\n\n");
-            }
-            return text.ToString();
-        }
-
-        /// <summary>What came after the version the player last saw, newest first; empty if nothing did.</summary>
-        public static string Since(string seenVersion)
-        {
-            int seen = OrderOf(seenVersion);
-            int now = OrderOf(Version);
-            var text = new StringBuilder();
-            foreach (Entry entry in All)
-            {
-                if (entry.Order > seen && entry.Order <= Math.Max(now, seen))
-                {
-                    text.Append("<b>").Append(entry.TitleKey.GetLocalization()).Append("</b>: ").Append(entry.TextKey.GetLocalization()).Append('\n');
-                }
             }
             return text.ToString();
         }

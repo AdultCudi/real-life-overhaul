@@ -2,20 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Reflection;
-using System.Text;
 using Entities;
 using Helpers;
 using Localizor;
-using PlayerActivity;
-using UI;
-using UI.Load;
-using UI.Notification;
-using UI.Smartphone.Apps.Contacts;
-using UnityEngine;
-using UnityEngine.AI;
-using Vehicles.DeliveryDriverJob;
 
 namespace RealLifeOverhaul.Meta
 {

@@ -1,21 +1,14 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using Entities;
 using Helpers;
 using Localizor;
-using PlayerActivity;
-using UI;
-using UI.Load;
 using UI.Notification;
 using UI.Smartphone.Apps.Contacts;
-using UnityEngine;
 using UnityEngine.AI;
-using Vehicles.DeliveryDriverJob;
 
 namespace RealLifeOverhaul.Meta
 {
@@ -28,7 +21,7 @@ namespace RealLifeOverhaul.Meta
         /// deletes a character folder whole with its last save). Returns both folders, one per line, or null with
         /// <paramref name="error"/> set; <paramref name="neverSaved"/>: there is no save file at all. Nothing is overwritten.
         /// </summary>
-        public static string Backup(out string error, out bool neverSaved)
+        private static string Backup(out string error, out bool neverSaved)
         {
             error = null;
             neverSaved = false;

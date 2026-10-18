@@ -22,8 +22,6 @@ namespace RealLifeOverhaul.Meta
     /// </summary>
     public static class BugReport
     {
-        public const string ButtonKey = "reallife_meta_bug_button";
-
         private const string TitleKey = "reallife_bug_title";
         private const float WaitStep = 0.1f;       // real seconds between looks at the worker
         private const float MenuStep = 0.25f;      // real seconds between looks at a menu of the game's that is in the way

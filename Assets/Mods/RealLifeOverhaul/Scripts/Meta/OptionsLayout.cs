@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using BAModAPI;
 using BigAmbitions.Mods;
 using Localizor;
@@ -514,10 +513,7 @@ namespace RealLifeOverhaul.Meta
                                 into = new Section { Id = "ts:" + section.Id, TitleKey = section.TitleKey, InTests = true, Parent = top };
                                 top.Children.Add(into);
                             }
-                            Action run = InCity(test);
-                            AddRow(into, new ButtonOption(test.LabelKey, run), null);
-                            TestPlaces.Add(new TestPlace(g, section.Id, test.LabelKey));
-                            TestRuns.Add(run);
+                            PlaceTest(into, test, new TestPlace(g, section.Id, test.LabelKey));
                             count++;
                         }
                     }
@@ -553,10 +549,7 @@ namespace RealLifeOverhaul.Meta
                         rest.Children.Add(into);
                         MetaLog.Warn("options page: the feature " + feature.Id + " is in no section of Meta/OptionsTree.cs; its test tools are under Test tools, Other.");
                     }
-                    Action run = InCity(test);
-                    AddRow(into, new ButtonOption(test.LabelKey, run), null);
-                    TestPlaces.Add(new TestPlace(-1, null, test.LabelKey));
-                    TestRuns.Add(run);
+                    PlaceTest(into, test, new TestPlace(-1, null, test.LabelKey));
                     count++;
                 }
             }
@@ -565,6 +558,14 @@ namespace RealLifeOverhaul.Meta
                 trouble.Children.Add(tests);
             }
             return count;
+        }
+
+        private static void PlaceTest(Section into, TestAction test, TestPlace place)
+        {
+            Action run = InCity(test);
+            AddRow(into, new ButtonOption(test.LabelKey, run), null);
+            TestPlaces.Add(place);
+            TestRuns.Add(run);
         }
 
         // A test stages something in the city. Without one (the main menu) its button says so, where it would do nothing.

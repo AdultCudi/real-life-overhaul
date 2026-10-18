@@ -1,12 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
-using BAModAPI;
-using BigAmbitions.Mods;
 using Localizor;
-using Localizor.LanguageChangeEvent;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {

@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>A tab's label: a short word for its group (reallife_set_tab_you).</summary>
-        public static string TabKey(TreeGroup group)
+        private static string TabKey(TreeGroup group)
         {
             return TabPrefix + group.Id;
         }
