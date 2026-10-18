@@ -114,6 +114,7 @@ namespace RealLifeOverhaul
             }
             var bus = root.AddComponent<BusVehicle>();
             bus.Build();
+            TrafficTools.OwnVehicle(bus);   // the city's cars see it coming (Traffic/Drivers)
             return bus;
         }
 

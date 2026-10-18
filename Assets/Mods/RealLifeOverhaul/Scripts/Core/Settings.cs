@@ -59,6 +59,7 @@ namespace RealLifeOverhaul
         public const string HornReactionsId = "horn_reactions";
         public const string NaturalAccidentsId = "natural_accidents";
         public const string SolidStreetsId = "solid_streets";
+        public const string CityDriversId = "city_drivers";
         public const string PhoneContactsId = "phone_contacts";
         public const string PhoneSkinId = "phone_skin";
         public const string NoticeLookId = "notice_look";
@@ -341,6 +342,7 @@ namespace RealLifeOverhaul
         public static bool HornReactions = true;         // people hurry, glare or look round when the player sounds the horn (People/HornReactions)
         public static bool NaturalAccidents = true;      // accidents come from reckless drivers on the road, in view (Traffic/Reckless); off: the old roll that stages them out of view
         public static bool SolidStreets = true;          // traffic brakes for people in the road, sounds its horn and waits (Traffic/Solid); off: the game's cars drive through people
+        public static bool CityDrivers = true;           // the city's cars slow in good time, leave room to park and let the player out (Traffic/Drivers)
         public static bool PhoneContacts = true;
         public static bool CarTuning = true;         // each car gets the acceleration and top speed of its kind (Driving/CarCatalogue)
         public static int CarTopSpeed = 100;         // percent of the car's own target top speed
@@ -661,6 +663,7 @@ namespace RealLifeOverhaul
             HornReactions = Bool(modId, HornReactionsId, HornReactions);
             NaturalAccidents = Bool(modId, NaturalAccidentsId, NaturalAccidents);
             SolidStreets = Bool(modId, SolidStreetsId, SolidStreets);
+            CityDrivers = Bool(modId, CityDriversId, CityDrivers);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
             NoticeLook = Bool(modId, NoticeLookId, NoticeLook);

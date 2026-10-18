@@ -31,6 +31,9 @@ namespace RealLifeOverhaul
         /// <summary>True while traffic is being made to see people: the option is on and this has not switched itself off.</summary>
         public static bool Working => Instance != null && Instance._working && Settings.SolidStreets;
 
+        /// <summary>True if that car is being braked for somebody in the road now: the city's drivers leave it to this (a search of eight).</summary>
+        public static bool Braking(VehicleComponent car) => Instance != null && Instance._brakes != null && Instance._brakes.Has(car);
+
         private readonly SolidGame _game = new SolidGame();
         private readonly SolidRules.PeopleGrid _grid = new SolidRules.PeopleGrid(SolidRules.MostPeople);
         private readonly SolidRules.ProxyPool _pool = new SolidRules.ProxyPool(SolidRules.Proxies);

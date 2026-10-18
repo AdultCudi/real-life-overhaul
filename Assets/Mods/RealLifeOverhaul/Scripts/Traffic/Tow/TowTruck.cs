@@ -115,6 +115,7 @@ namespace RealLifeOverhaul
                 UnityEngine.Object.Destroy(root);   // a truck half built is not left under the service for the next tow to build another beside
                 throw;
             }
+            TrafficTools.OwnVehicle(truck);   // the city's cars see it coming (Traffic/Drivers)
             return truck;
         }
 

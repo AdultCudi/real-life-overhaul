@@ -62,6 +62,19 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        /// <summary>True if that car is braked for somebody now (a search of eight).</summary>
+        public bool Has(VehicleComponent car)
+        {
+            for (int i = 0; i < _count; i++)
+            {
+                if ((object)_slots[i].Car == car)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>Names a car and the person ahead of it. False if eight are named already.</summary>
         public bool Add(VehicleComponent car, float personX, float personZ, float nose, float gap, bool owed)
         {

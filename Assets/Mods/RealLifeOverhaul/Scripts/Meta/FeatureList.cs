@@ -282,12 +282,16 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("streets", "reallife_meta_title_streets")
                 .About("reallife_guide_streets_about").Help("reallife_guide_streets")
-                .Owns(Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId)
-                .StandsAside(GoingPublic.TrafficSentence, Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId)
+                .Owns(Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId, Settings.CityDriversId)
+                .StandsAside(GoingPublic.TrafficSentence, Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId, Settings.CityDriversId)
                 .Test("reallife_test_streets_speeder", "reallife_test_streets_redlight", "reallife_test_streets_drunk", "reallife_test_streets_jaywalker",
                     "reallife_test_streets_hit", "reallife_test_streets_crash", "reallife_test_streets_patrol",
                     "reallife_test_solid_room", "reallife_test_solid_close", "reallife_test_solid_dawdle", "reallife_test_solid_late",
-                    "reallife_test_solid_crowd", "reallife_test_solid_senses")
+                    "reallife_test_solid_crowd", "reallife_test_solid_senses", "reallife_test_drivers_park", "reallife_test_drivers_letout")
+                .Fact("drivers_gap", () => Guide.Number(DriverRules.PlayerTime))
+                .Fact("drivers_room", () => Guide.Number(DriverRules.ParkRoom))
+                .Fact("drivers_letout", () => Guide.Number(DriverRules.LetOutBack))
+                .Fact("drivers_hold", () => Guide.Number(DriverRules.HoldMost))
                 .Fact("horn_reach", () => Guide.Number(StreetRules.HornReach))
                 .Fact("horn_most", () => Guide.Number(StreetRules.HornMost))
                 .Fact("horn_officer", () => Guide.Number(StreetRules.OfficerWithin))
@@ -302,6 +306,7 @@ namespace RealLifeOverhaul.Meta
                 {
                     // Before the accident scene's own cleanup: the car, the patrol car and whoever was in the road are given back first.
                     SolidStreets.Instance?.ReleaseAll("the options page's cleanup");
+                    CityDrivers.Instance?.ReleaseAll("the options page's cleanup");
                     RecklessDrivers.Instance?.EndNow("the options page's cleanup");
                     HornReactions.Instance?.ReleaseAll("the options page's cleanup");
                 }, 5);

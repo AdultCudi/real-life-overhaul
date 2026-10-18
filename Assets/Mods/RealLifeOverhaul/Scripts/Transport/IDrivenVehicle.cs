@@ -17,6 +17,9 @@ namespace RealLifeOverhaul
         /// <summary>Its kinematic body.</summary>
         Rigidbody Body { get; }
 
+        /// <summary>The box it is solid as, which traffic stops for (the city's cars read its size and place from it).</summary>
+        Collider Solid { get; }
+
         /// <summary>Metres from its middle forward to its front axle (the point its routes are laid for).</summary>
         float FrontAxleAhead { get; }
 

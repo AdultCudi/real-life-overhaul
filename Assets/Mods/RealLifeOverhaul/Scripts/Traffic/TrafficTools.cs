@@ -552,6 +552,46 @@ namespace RealLifeOverhaul
             return _touch[index];
         }
 
+        private static readonly IDrivenVehicle[] Driven = new IDrivenVehicle[8];
+
+        /// <summary>
+        /// Says that one of the mod's own vehicles (the bus, the tow truck) may be on the road, so the city's cars can see it
+        /// coming (Traffic/Drivers). Called once, as it is made; a full list forgets one that is gone.
+        /// </summary>
+        public static void OwnVehicle(IDrivenVehicle vehicle)
+        {
+            if (vehicle == null)
+            {
+                return;
+            }
+            int free = -1;
+            for (int i = 0; i < Driven.Length; i++)
+            {
+                if (ReferenceEquals(Driven[i], vehicle))
+                {
+                    return;
+                }
+                if (free < 0 && (Driven[i] == null || Driven[i].Body == null))
+                {
+                    free = i;
+                }
+            }
+            if (free >= 0)
+            {
+                Driven[free] = vehicle;
+            }
+        }
+
+        /// <summary>The mod's own vehicle in that place of the list, if it is out on the street now; null otherwise. Field reads.</summary>
+        public static IDrivenVehicle OwnVehicleOut(int place)
+        {
+            IDrivenVehicle vehicle = place >= 0 && place < Driven.Length ? Driven[place] : null;
+            return vehicle != null && vehicle.Body != null && vehicle.Out ? vehicle : null;
+        }
+
+        /// <summary>Places in the list of the mod's own vehicles.</summary>
+        public static int OwnVehicles => Driven.Length;
+
         /// <summary>Stops the game deleting a car for standing still. Returns the check to switch back on, or null.</summary>
         public static AiCarRescueCheck SuspendRescue(VehicleComponent car)
         {
