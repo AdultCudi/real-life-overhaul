@@ -8,19 +8,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// "Cook a meal" as a button in the game's own panel of a fridge.
-    ///
-    /// A click on a fridge opens the game's detailed panel over it (Player.HUD.ItemInfoOverlays.DetailedOverlay); its
-    /// part for a fridge is the object FridgeDetailedOverlay with the script DecorativeItemHolderOverlay, a vertical
-    /// list of buttons: one per kind of item to eat or take (copies of ConsumeButtonTemplate), EmptyFridgeButton,
-    /// ChangeClothesButton (a wardrobe's) and AddItemButton. That script switches its own buttons on and off each
-    /// time the panel is filled (UpdateOverlay) and leaves any other child alone.
-    ///
-    /// So the mod's button is a copy of ChangeClothesButton (the blue one), made once per city, put in that list
-    /// under the items, with its words set through the game's own text component and its click replaced. This
-    /// component sits on the list's object: the game switches the whole panel on after it has filled it, which
-    /// enables this component, and it then shows the button if the panel is for a fridge of the player's home (the
-    /// script's linkedController, public) and hides it otherwise. Nothing runs between two openings of the panel.
+    /// "Cook a meal" as a button in the game's own fridge panel: a copy of its ChangeClothesButton, made once per city. This
+    /// component sits on the panel, which leaves children it does not know alone, and shows the button at each opening for
+    /// a fridge of the player's home. Nothing runs per frame.
     /// </summary>
     public sealed class HomeFridgeButton : MonoBehaviour
     {
@@ -34,12 +24,7 @@ namespace RealLifeOverhaul
         private DecorativeItemHolderOverlay _panel;
         private GameObject _button;
 
-        public static bool Installed => _instance != null;
-
-        /// <summary>
-        /// Puts the button in the game's fridge panel, once per city. False if the panel is not built as expected
-        /// (said once in Player.log): cooking is then offered on the cookers only.
-        /// </summary>
+        /// <summary>Puts the button in the game's fridge panel, once per city. False if the panel is not built as expected (said once in Player.log).</summary>
         public static bool Install()
         {
             if (_instance != null)
@@ -96,7 +81,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The button and this component out of the game's panel.</summary>
         public static void Remove()
         {
             try

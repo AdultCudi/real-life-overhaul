@@ -1,171 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using BigAmbitions.Items;
-using Buildings.BuildingTypes.Shared.Dirtiness;
-using Entities;
-using Helpers;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// How tidy the player's home is. Where the home has the game's own floor dirt (the cells a
-    /// business gets dirty and a mop cleans), that is what this reads and writes: living in the
-    /// flat puts a little dirt on its floor, the game's own mop takes it off, tidying up takes it
-    /// off everywhere at once, and nothing but the game's own numbers is in the save. A home
-    /// without such cells keeps the figure in the mod's own state instead.
-    /// </summary>
-    public static class HomeTidy
-    {
-        private const string Residential = "ba:buildingtype_residential";
-
-        private static BuildingRegistration _home;
-        private static float _nextLook;
-        private static float _owed;          // tidiness lost that is still too little to put on the floor
-
-        public static bool HasHome => Home() != null;
-
-        public static void Reset()
-        {
-            _home = null;
-            _nextLook = 0f;
-            _owed = 0f;
-        }
-
-        /// <summary>True while the player stands in a home of their own.</summary>
-        /// <summary>Whether a home has power, and water, now (Utilities, through Wiring/UtilityLinks); null: always.</summary>
-        public static Func<BuildingRegistration, bool> HasPower, HasWater;
-
-        /// <summary>True if this home's power is cut.</summary>
-        public static bool Dark(BuildingRegistration home)
-        {
-            Func<BuildingRegistration, bool> has = HasPower;
-            return home != null && has != null && !has(home);
-        }
-
-        /// <summary>True if this home's water is cut.</summary>
-        public static bool Dry(BuildingRegistration home)
-        {
-            Func<BuildingRegistration, bool> has = HasWater;
-            return home != null && has != null && !has(home);
-        }
-
-        public static bool AtHome()
-        {
-            if (!BuildingManager.IsInsideBuilding)
-            {
-                return false;
-            }
-            var manager = InstanceBehavior<BuildingManager>.Instance;
-            return manager != null && manager.building != null && GoingPublic.Mine(manager.buildingRegistration) && manager.building.BuildingType == Residential;
-        }
-
-        /// <summary>The home whose tidiness counts: the one the player is in, else the first they rent. Looked up at most every few seconds.</summary>
-        public static BuildingRegistration Home()
-        {
-            if (AtHome())
-            {
-                _home = InstanceBehavior<BuildingManager>.Instance.buildingRegistration;
-                return _home;
-            }
-            if (Time.unscaledTime < _nextLook)
-            {
-                return _home != null && GoingPublic.Mine(_home) ? _home : null;
-            }
-            _nextLook = Time.unscaledTime + 5f;
-            if (_home != null && GoingPublic.Mine(_home))
-            {
-                return _home;
-            }
-            _home = null;
-            try
-            {
-                List<BuildingRegistration> all = SaveGameManager.Current.BuildingRegistrations;
-                for (int i = 0; all != null && i < all.Count; i++)
-                {
-                    if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == Residential)
-                    {
-                        _home = all[i];
-                        break;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                _home = null;
-            }
-            return _home;
-        }
-
-        private static bool UsesFloor(BuildingRegistration home)
-        {
-            return home != null && home.dirtSpots != null && home.dirtSpots.Count > 0;
-        }
-
-        /// <summary>Reads the home's tidiness into the mod's state (where the game keeps it) and returns it.</summary>
-        public static float Read()
-        {
-            BuildingRegistration home = Home();
-            if (UsesFloor(home))
-            {
-                HomeState.Tidy = Mathf.Clamp(home.GetCleanliness(), 0f, 100f);
-            }
-            return HomeState.Tidy;
-        }
-
-        /// <summary>Tidier (positive) or messier (negative) by so many points of a hundred.</summary>
-        public static void Change(float points)
-        {
-            BuildingRegistration home = Home();
-            if (!UsesFloor(home))
-            {
-                HomeState.Tidy = HomeState.Clamp(HomeState.Tidy + points, 0f, 100f);
-                return;
-            }
-            // The game's cleanliness is 100 less about twice the average dirt of the cells; small losses are saved up
-            // so that a cell gets dirt it can show (the game draws it from 5 up) rather than a film over everything.
-            _owed += points;
-            if (_owed > -2f && _owed < 2f)
-            {
-                return;
-            }
-            float perCell = -_owed * 0.5f;
-            _owed = 0f;
-            List<DirtSpot> cells = home.dirtSpots;
-            if (perCell < 0f)
-            {
-                for (int i = 0; i < cells.Count; i++)
-                {
-                    cells[i].dirtiness = Mathf.Max(0f, cells[i].dirtiness + perCell);
-                }
-            }
-            else
-            {
-                // On a third of the cells, three times as much: patches, not an even grey.
-                for (int i = 0; i < cells.Count; i++)
-                {
-                    if (UnityEngine.Random.value < 0.34f && cells[i].dirtiness < HomeBalance.DirtMost)
-                    {
-                        cells[i].dirtiness = Mathf.Min(HomeBalance.DirtMost, cells[i].dirtiness + perCell * 3f);
-                    }
-                }
-            }
-            var manager = InstanceBehavior<BuildingManager>.Instance;
-            if (BuildingManager.IsInsideBuilding && manager != null && ReferenceEquals(manager.buildingRegistration, home))
-            {
-                manager.UpdateDirtinessInCurrentBuilding();
-            }
-            Read();
-        }
-    }
-
-    /// <summary>
-    /// The furniture the mod's routines use in the building the player is in: cookers, coffee
-    /// machines and fridges, found by what the game calls them, once when the player comes in
-    /// and again every quarter of a minute. Also the food in the fridges, which is the game's
-    /// own cargo, read by kind of food for the cooking panel, and a clear piece of floor to tidy or exercise on.
-    /// </summary>
+    /// <summary>The cookers, coffee machines and fridges of the building the player is in, the food in the fridges, and clear floor.</summary>
     public static class HomePlace
     {
         public static readonly List<ItemController> Cookers = new List<ItemController>(4);
@@ -232,7 +73,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The nearest of a list to a point, within a distance; null if none.</summary>
         public static ItemController Nearest(List<ItemController> items, Vector3 from, float within)
         {
             ItemController best = null;
@@ -254,12 +94,6 @@ namespace RealLifeOverhaul
             return best;
         }
 
-        // ---------------------------------------------------------------- food
-
-        /// <summary>
-        /// What the fridges of this home hold that can be cooked with or eaten, all fridges together, one entry
-        /// per kind of item. The game's own cargo is read, nothing is copied out of it but names and counts.
-        /// </summary>
         public static void ReadPantry(List<PantryItem> into)
         {
             into.Clear();
@@ -297,7 +131,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True if the fridges still hold everything the plan takes.</summary>
         public static bool Holds(CookPlan plan)
         {
             for (int u = 0; u < plan.Uses.Count; u++)
@@ -310,10 +143,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Takes what the plan uses out of the fridges, the way the game takes a unit when it is eaten. All of
-        /// it or nothing: false, and nothing taken, if something is no longer there.
-        /// </summary>
+        /// <summary>Takes what the plan uses out of the fridges, as the game takes a unit that is eaten. All or nothing: false if something has gone.</summary>
         public static bool Take(CookPlan plan)
         {
             if (!Holds(plan))
@@ -364,7 +194,6 @@ namespace RealLifeOverhaul
             return fridge != null && fridge.ItemInstance != null ? fridge.ItemInstance.cargoInstances : null;
         }
 
-        /// <summary>The nearest fridge to a point, within a distance; null if none.</summary>
         public static FridgeController NearestFridge(Vector3 from, float within)
         {
             FridgeController best = null;
@@ -386,12 +215,7 @@ namespace RealLifeOverhaul
             return best;
         }
 
-        // ---------------------------------------------------------------- floor
-
-        /// <summary>
-        /// A piece of floor (or pavement) with room all round that the player can walk to: where they stand
-        /// if that will do, else the nearest of a few places around them. False if there is none within four metres.
-        /// </summary>
+        /// <summary>Clear floor the player can walk to, with room all round: where they stand if it will do, else the nearest of a few places within four metres.</summary>
         public static bool ClearFloor(PlayerController player, float room, out Vector3 spot)
         {
             spot = default;
@@ -446,11 +270,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// The desk of the game's own doctor in the building the player is in (a SpecialEmployeeController; the
-        /// doctor's if there are several desks), for the panel that offers a consultation. False if the building has
-        /// no such desk. One pass over the building's furniture, when the player comes in.
-        /// </summary>
+        /// <summary>The game's own doctor's desk in this building (the longevity doctor's, if there are several); false if there is none.</summary>
         public static bool DoctorDesk(out Vector3 at)
         {
             at = default;
@@ -477,7 +297,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>True in a hospital or a clinic.</summary>
         public static bool InHospital()
         {
             if (!BuildingManager.IsInsideBuilding)

@@ -19,10 +19,7 @@ namespace RealLifeOverhaul
         public int Saturation;
     }
 
-    /// <summary>
-    /// A dish as it would be made right now: which items leave the fridges, how many portions come of it, how
-    /// long it takes and what a portion fills. Reheating leftovers is a plan too (no dish, nothing taken).
-    /// </summary>
+    /// <summary>A dish as it would be made now: what leaves the fridges, the portions, the time, a portion's fill; no dish for leftovers.</summary>
     public sealed class CookPlan
     {
         public Dish Dish;            // null: leftovers reheated
@@ -37,12 +34,7 @@ namespace RealLifeOverhaul
         public bool Cooker => Dish == null || Dish.Cooker;
     }
 
-    /// <summary>
-    /// What can be made from what is in the fridges. Game-free: it is given the fridges' contents as a list
-    /// and answers with plans. An item is of one kind only, so a dish can be made when, kind by kind, the
-    /// fridges hold as many units as it needs; the most filling items of a kind are used first, and what the
-    /// dish fills is worked out from the items actually used.
-    /// </summary>
+    /// <summary>What can be made from the fridges' contents, game-free: a dish takes the most filling items of each kind first and fills by what it used.</summary>
     public static class Cooking
     {
         public static FoodKind KindOf(string itemId)
@@ -63,7 +55,6 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>How many units of a kind the fridges hold.</summary>
         public static int Count(List<PantryItem> pantry, FoodKind kind)
         {
             int count = 0;
@@ -90,10 +81,7 @@ namespace RealLifeOverhaul
             return count;
         }
 
-        /// <summary>
-        /// How many units one batch of the dish is short of, all kinds together (0: it can be made). When it is
-        /// short of one kind only, that kind is given, for "one ingredient short".
-        /// </summary>
+        /// <summary>How many units one batch is short of, all kinds together (0: it can be made), and the last kind it is short of.</summary>
         public static int Short(Dish dish, List<PantryItem> pantry, out FoodKind missing)
         {
             missing = FoodKind.None;
@@ -143,7 +131,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 int need = Needed(dish, kind) * batches;
-                // The most filling first; a fridge holds a handful of kinds of item, so this is a short loop.
+                // The most filling first: a short loop, as a fridge holds a handful of kinds.
                 while (need > 0)
                 {
                     PantryItem best = null;
@@ -191,7 +179,6 @@ namespace RealLifeOverhaul
             };
         }
 
-        /// <summary>The chance that this plan burns, before "easy needs".</summary>
         public static float BurnChance(CookPlan plan, bool worn)
         {
             if (plan.Reheat || !plan.Dish.Cooker)

@@ -8,26 +8,18 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Going for a run: a loop of six checkpoints on the pavement (or on the paths of a park,
-    /// when the player starts in one), run by the player themselves with the game's own
-    /// running. The checkpoint ahead has the game's own destination marker on it (GameUi.GuideMark:
-    /// the guider the game marks a job's destination with, named with how far round the loop the
-    /// runner is) and a ring on the ground; reaching it moves both on. Fitness, a calmer head and a sweaty shirt come from the game minutes spent
-    /// actually moving (the director counts them while <see cref="Moving"/>); a park is worth a
-    /// quarter more, rain a fifth less, and soaks the runner as rain does.
-    ///
-    /// Ends on the last checkpoint, on going indoors or getting into a vehicle, when the player
-    /// is out of puff, after twenty-five minutes, and from the phone. Everything it put on
-    /// screen and on the ground goes on every one of those.
+    /// Going for a run: a loop of six checkpoints on the pavement or a park's paths, the one ahead marked with the game's
+    /// destination marker and a ring on the ground. Fitness and calm come from the game minutes spent moving
+    /// (<see cref="Moving"/>). Ends at the last checkpoint, indoors, in a vehicle, out of puff, after 25 minutes or from the phone.
     /// </summary>
     public sealed class JogRun
     {
         private const int Checkpoints = 6;
-        private const float Reach = 4.5f;
-        private const float StreetRadius = 55f;
-        private const float ParkRadius = 34f;
-        private const float MostSeconds = 25f * 60f;
-        private const float MovingSpeed = 2.2f;      // metres a second: faster than the game's walk
+        private const float Reach = 4.5f;              // metres from a checkpoint that count as reaching it
+        private const float StreetRadius = 55f;        // metres
+        private const float ParkRadius = 34f;          // metres
+        private const float MostSeconds = 25f * 60f;   // real seconds
+        private const float MovingSpeed = 2.2f;        // metres a second: faster than the game's walk
 
         private readonly IModLogger _logger;
         private readonly Vector3[] _route = new Vector3[Checkpoints];
@@ -56,7 +48,7 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
-        /// <summary>The director whose life keeps this one's marker: destroyed or stopped by the guard, the marker goes (Core/GameUi/GuideMark.Keep).</summary>
+        /// <summary>The director that keeps this run's marker: when it is destroyed or stopped, the marker goes.</summary>
         internal void KeptBy(Behaviour host)
         {
             _mark.Keep(host);
@@ -67,11 +59,7 @@ namespace RealLifeOverhaul
             _parks = null;
         }
 
-        /// <summary>
-        /// The parks are found where the search is not seen (behind the loading screen, or the game's black screen at a
-        /// door), not in the frame the first run starts. They are only there to be found while the city is shown:
-        /// false, to be asked again, while the player is inside a building.
-        /// </summary>
+        /// <summary>Finds the parks behind a loading or a black screen; false, to be asked again, while the player is indoors.</summary>
         public static bool Prewarm()
         {
             if (!Settings.HomeLife || _parks != null)
@@ -148,12 +136,11 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Four times a second while a run is on. Returns false when the run has ended.</summary>
-        public bool Tick(PlayerController player)
+        public void Tick(PlayerController player)
         {
             if (!Active)
             {
-                return false;
+                return;
             }
             Vector3 at = player.transform.position;
             float elapsed = Time.time - _lastTime;
@@ -166,17 +153,17 @@ namespace RealLifeOverhaul
             if (BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle || JobDirector.OnShift)
             {
                 End("reallife_home_run_ended_left");
-                return false;
+                return;
             }
             if (SaveGameManager.Current.Energy <= HomeBalance.EnergyFloor)
             {
                 End("reallife_home_run_ended_tired");
-                return false;
+                return;
             }
             if (Time.unscaledTime >= _endsAt)
             {
                 End("reallife_home_run_ended_time");
-                return false;
+                return;
             }
             if (CitySpots.Flat(at - _route[_next]) < Reach * Reach)
             {
@@ -184,17 +171,13 @@ namespace RealLifeOverhaul
                 if (_next >= Checkpoints)
                 {
                     End(null);
-                    return false;
+                    return;
                 }
                 PlaceRing();
             }
-            return true;
         }
 
-        /// <summary>
-        /// Four times a second while a run is on: the game's marker on the checkpoint ahead. One compare unless the
-        /// checkpoint has changed; a marker a job or an outing has taken meanwhile is left to it and asked for again.
-        /// </summary>
+        /// <summary>Four times a second: the game's marker on the checkpoint ahead, asked for again if a job has taken it.</summary>
         public void Mark()
         {
             if (!Active || (_marked == _next && _mark.Showing))
@@ -204,7 +187,8 @@ namespace RealLifeOverhaul
             bool shown = _mark.Show(_route[_next] + Vector3.up * 1.5f, _lines[_next]);
             if (_marked != _next && Meta.Dev.Verbose)
             {
-                _logger?.Info("Home check (run): checkpoint " + (_next + 1) + " of " + Checkpoints + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked (the game's marker is on a job or an outing; the ring on the ground still shows it): FAIL") + ".");
+                _logger?.Info("Home check (run): checkpoint " + (_next + 1) + " of " + Checkpoints + " is " + (shown ? "on the game's destination marker: PASS"
+                              : "NOT marked (the game's marker is on a job or an outing; the ring on the ground still shows it): FAIL") + ".");
             }
             _marked = _next;
         }

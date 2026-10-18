@@ -9,21 +9,9 @@ using Player.HUD.ItemInfoOverlays;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// "Click to cook" on the cookers at home and "Click to make a coffee" on the coffee machines, offered the way the
-    /// game offers every action on an object.
-    ///
-    /// How the game does it (Player.HUD.ItemInfoOverlays): pointing at an object asks CtaManager for its "call to
-    /// action". CtaManager goes through its list of ICtaBehavior and takes the first whose ShouldShow is true; that
-    /// one gives a text key and what a click does. The object is outlined, the key is shown in the game's blue under
-    /// the object's name (CtaOverlay), and a left click runs the action (EntityController.OnIoLeftClick). An object
-    /// reacts to the pointer at all only if its simpleOverlayType has a flag set (EntityController.ShouldReactToIoEnter);
-    /// the game itself switches ClickToAction on in code for a vehicle that gets an action (PrivateDriverVehicle).
-    ///
-    /// So this class adds one behaviour to the front of CtaManager's list and sets ClickToAction on the home's
-    /// cookers and coffee machines; nothing is drawn by the mod. Both are taken back when the home director goes.
-    ///
-    /// The fridge is left as the game has it: its click opens the game's own panel of what is in it ("Click to use"),
-    /// and cooking is a button in that panel (<see cref="HomeFridgeButton"/>).
+    /// "Click to cook" and "Click to make a coffee" on the home's cookers and coffee machines, the way the game offers any
+    /// object's action: a behaviour at the front of CtaManager's list, and ClickToAction on the furniture's overlay type.
+    /// The fridge keeps the game's own click (<see cref="HomeFridgeButton"/>).
     /// </summary>
     public static class HomeOffers
     {
@@ -85,13 +73,9 @@ namespace RealLifeOverhaul
         private static ItemController _pointed;   // what the game last asked about: the one a click is on
         private static bool _failed;
 
-        public static bool Installed => _behaviour != null;
+        private static bool Installed => _behaviour != null;
 
-        /// <summary>
-        /// Makes sure the game offers a click on these cookers and coffee machines. False if the game's list could
-        /// not be reached (said once in Player.log): cooking is then a button in the fridge's panel only, and there
-        /// is no coffee.
-        /// </summary>
+        /// <summary>Makes sure the game offers a click on these cookers and coffee machines. False if its list could not be reached.</summary>
         public static bool Mark(List<ItemController> cookers, List<ItemController> coffeeMachines)
         {
             if (!Installed && !Install())
@@ -183,7 +167,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Takes the behaviour out of the game's list and gives every piece of furniture back what it had.</summary>
         public static void Remove()
         {
             try

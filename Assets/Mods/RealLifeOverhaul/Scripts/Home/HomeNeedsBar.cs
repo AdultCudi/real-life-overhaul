@@ -9,31 +9,15 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Hygiene, stress and home as three more of the game's own bars, under the three it has.
-    ///
-    /// How the game draws its needs (UI.Topbar.Topbar, scene path Canvases/Topbar/Container/Left Bar/PlayerStats):
-    /// Energy, Hunger and Happiness are three objects of 412 x 56 side by side, each an Image with the sprite
-    /// StatBarBackground at 30 % black, a child "...Filler" (the same sprite as a filled Image, whose fillAmount is
-    /// the need) and a child "...Icon" of 32 x 32. Under the same bar hangs the accessories tab (AccessoriesPanel:
-    /// 100 high, with the bar's grey and rounded bottom corners), which the game shows and hides from the backpack
-    /// button.
-    ///
-    /// So this is a second tab of that kind, hanging under the game's three bars: a copy of AccessoriesPanel with its
-    /// content taken out, and in it a copy of PlayerStats, whose three bars are given their own colour, picture and a
-    /// word (the game's bars have no word; three new ones without one would have to be guessed). Nothing here is
-    /// drawn by the mod. The copy is a child of the game's top bar, so it goes with it: into the full menu, under the
-    /// time skip, with "hide the interface".
-    ///
-    /// Placed by measuring the game's own objects once, and again only when the accessories tab opens or closes (the
-    /// tab stands beside it then, not over it). The director calls <see cref="Show"/> once a second; a bar is touched
-    /// only when the whole number it shows has changed. A fault removes the tab and leaves the feature without it for
-    /// the session, with one line in Player.log.
+    /// Hygiene, stress and home as three more of the game's needs bars, in a copy of its accessories tab under the top bar,
+    /// so it goes wherever the top bar goes. The director calls <see cref="Show"/> once a second; a bar is touched only when
+    /// its whole number changes. A fault removes the tab for the session.
     /// </summary>
     public static class HomeNeedsBar
     {
         private const float Pad = 24f;          // from the tab's edge to the first bar, as the game's own tab keeps its content
-        private const float NoteWidth = 640f;
-        private const float Gap = 12f;
+        private const float NoteWidth = 640f;   // the illness line beside the bars
+        private const float Gap = 12f;          // from the open accessories tab
 
         private static readonly string[] Names = { "Hygiene", "Stress", "Home" };
         private static readonly string[] Words = { "reallife_home_strip_hygiene", "reallife_home_strip_stress", "reallife_home_strip_home" };
@@ -59,9 +43,6 @@ namespace RealLifeOverhaul
         private static bool _noteOn;
         private static bool _beside;
         private static bool _failed;
-
-        /// <summary>True while the tab is on screen.</summary>
-        public static bool Showing => _on && _tab != null;
 
         /// <param name="note">A line beside the bars (an illness and how long it has to run), or null. Pass the same string object while nothing changes.</param>
         public static void Show(float hygiene, float stress, float home, bool hasHome, string note)
@@ -186,7 +167,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The tab's place and width: under the game's bars, or beside the accessories tab while that is open.
         private static void Place()
         {
             float x = _alignedX;

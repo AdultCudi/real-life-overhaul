@@ -1,6 +1,6 @@
 namespace RealLifeOverhaul
 {
-    /// <summary>What the player is doing, as far as home life and health care: read off the game's own activities once a second.</summary>
+    /// <summary>What the player is doing, read off the game's own activities once a second.</summary>
     public enum Doing
     {
         Nothing,
@@ -20,7 +20,7 @@ namespace RealLifeOverhaul
         Jogging
     }
 
-    /// <summary>What kind of food one of the game's items is, as far as cooking goes. None: not something to cook with.</summary>
+    /// <summary>What one of the game's items is for cooking; None: not cooked with.</summary>
     public enum FoodKind
     {
         None,
@@ -36,10 +36,7 @@ namespace RealLifeOverhaul
         Drink          // drunk as they are
     }
 
-    /// <summary>
-    /// One thing that can be made at home: what it takes out of the fridges and what it gives. The order is
-    /// the order on the cooking panel. A dish's number is what the save keeps for leftovers: never change one.
-    /// </summary>
+    /// <summary>One thing that can be made at home, in the cooking list's order. The save keeps <see cref="Number"/> for leftovers: never change one.</summary>
     public sealed class Dish
     {
         public int Number;
@@ -55,13 +52,10 @@ namespace RealLifeOverhaul
         public int Tile;             // the colour of its tile on the panel, 0xRRGGBB
     }
 
-    /// <summary>
-    /// Every number of home life and health in one place. Rates are per game hour unless they
-    /// say otherwise; needs run 0..100. Game-free.
-    /// </summary>
+    /// <summary>Every number of home life and health. Rates are per game hour unless they say otherwise; needs run 0..100. Game-free.</summary>
     public static class HomeBalance
     {
-        // ---- hygiene (100 fresh)
+        // Hygiene: 100 is fresh.
         public const float HygieneAwake = -3.3f;        // a day and a quarter from fresh to unwashed
         public const float HygieneAsleep = -1.2f;
         public const float HygieneWorkout = -30f;
@@ -69,11 +63,11 @@ namespace RealLifeOverhaul
         public const float HygieneRain = -4f;           // on top, out in the rain without cover
         public const float HygieneShower = 600f;        // ten minutes from nothing to fresh
         public const float HygieneSink = 150f;          // a wash at the sink, and only as far as SinkMost
-        public const float SinkMost = 70f;
+        public const float SinkMost = 70f;              // the sink washes up to this and no further
         public const float HygieneLow = 25f;            // "Unwashed" below this
         public const float HygieneNotice = 12f;         // other people notice below this
 
-        // ---- stress (0 calm)
+        // Stress: 0 is calm.
         public const float StressAwake = 0.5f;
         public const float StressJobShift = 3.0f;       // on one of the mod's jobs
         public const float StressWorking = 2.5f;        // the game's employer jobs
@@ -97,30 +91,29 @@ namespace RealLifeOverhaul
         public const float BurnoutAt = 90f;             // this high...
         public const float BurnoutHours = 30f;          // ...for this long is a burnout
 
-        // ---- the flat (100 spotless)
+        // The flat: 100 is spotless.
         public const float TidyAtHome = -1.6f;          // per waking hour spent in it
         public const float TidyAway = -0.15f;
         public const float TidyPerMinute = 1.1f;        // tidying up: an hour and a half from a tip to spotless
-        public const float MessLow = 25f;
-        public const float TidyCosy = 80f;
+        public const float MessLow = 25f;               // "Messy home" below this
+        public const float TidyCosy = 80f;              // "Cosy home" from this
         public const float DirtMost = 60f;              // the most the mod ever puts on one of the game's floor cells
 
-        // ---- sleep
         public const float SleepNeed = 7.5f;            // hours a day
         public const float DebtPerWakingHour = SleepNeed / (24f - SleepNeed);
         public const float DebtHigh = 8f;               // "Short of sleep" above this
-        public const float DebtMost = 24f;
+        public const float DebtMost = 24f;              // hours
         public const int LateFrom = 1;                  // going to bed between these hours is "too late"
         public const int LateTo = 6;
 
-        // ---- fitness (0..100)
+        // Fitness, 0..100.
         public const float FitWorkout = 9f;             // per hour on a machine, before the day's diminishing returns
         public const float FitSport = 6f;
         public const float FitExercise = 6f;
         public const float FitJog = 11f;
         public const float FitIdlePerDay = -0.7f;       // from the third day without any exercise
         public const float FitHigh = 70f;               // "In good shape"
-        public const float FitLow = 20f;
+        public const float FitLow = 20f;                // exercise risks the back below this
         public const float FitDrainBest = -0.010f;      // energy per game minute at fitness 100 (the game's own "living" drain is 0.04)
         public const float FitDrainWorst = 0.006f;      // at fitness 0
         public const float StrengthPerHour = 0.012f;    // of weights or floor exercises, shown on the body on waking
@@ -130,26 +123,24 @@ namespace RealLifeOverhaul
         public const float ShapePerNight = 0.02f;       // the most the body changes in one night
         public const float ShapeMost = 0.35f;           // and in all, either way, from the body the player made
 
-        // ---- diet
+        // Diet: DietScore, 0..100.
         public const float DietGood = 72f;
         public const float DietPoor = 32f;
         public const float MealAtLeast = 8f;            // a rise in the game's hunger bar of this much is a meal
 
-        // ---- energy
         public const float JogDrain = 0.10f;            // per game minute, on top of walking
-        public const float ExerciseDrain = 0.12f;
-        public const float RoutineDrain = 0.02f;
-        public const float CoffeeEnergy = 8f;
+        public const float ExerciseDrain = 0.12f;       // per game minute
+        public const float RoutineDrain = 0.02f;        // per game minute
+        public const float CoffeeEnergy = 8f;           // energy a cup
         public const int CoffeesADay = 3;
         public const float EnergyFloor = 12f;           // nothing here takes energy below this
 
-        // ---- money
         public static int ConsultationFee => Prices.At(80);
         public static int PrescriptionFee => Prices.At(45);
         public static int SickNoteFee => Prices.At(20);
         public const int SickNoteHours = 48;
 
-        // ---- illness: hours
+        // Illness: how long, from a roll of 0..1.
         public static int Hours(Illness ill, float roll)
         {
             switch (ill)
@@ -182,7 +173,7 @@ namespace RealLifeOverhaul
         }
 
         public const float ColdFromRain = 0.30f;        // once, after WetLimit minutes in the rain in one day
-        public const float WetLimit = 60f;
+        public const float WetLimit = 60f;              // game minutes
         public const float ColdWhenRunDown = 0.06f;     // a day, with sleep debt over DebtHigh
         public const float ColdWhenUnwashed = 0.05f;    // a day, with hygiene under HygieneNotice
         public const float FluADay = 0.015f;            // doubled by a poor diet, and again by sleep debt
@@ -193,13 +184,7 @@ namespace RealLifeOverhaul
         public const int ImmuneDays = 3;                // nothing new for this long after anything
         public const int RestCure = 6;                  // hours a good night's sleep takes off an illness
 
-        // ---- cooking
-
-        /// <summary>
-        /// The game's own food items by kind (read from its item catalogue: every item with a saturation that is
-        /// food). Anything not listed is not cooked with, whatever the fridge will hold: the game gives every
-        /// goods item a saturation, batteries included.
-        /// </summary>
+        /// <summary>The game's food items by kind. Anything else is not cooked with: the game gives every item a saturation, batteries included.</summary>
         public static readonly System.Collections.Generic.Dictionary<string, FoodKind> Foods =
             new System.Collections.Generic.Dictionary<string, FoodKind>(System.StringComparer.Ordinal)
         {
@@ -251,24 +236,20 @@ namespace RealLifeOverhaul
                 Cooker = true, Portions = 3, Minutes = 80, Yield = 1.6f, Burn = 0.12f, Calm = 8f, Mess = 5f, Tile = 0x6B3F2A }
         };
 
-        /// <summary>How many batches at once: the panel's "Normal", "Double" and "Family size".</summary>
+        /// <summary>Batches at once: the list's normal, double and family size.</summary>
         public static readonly int[] Batches = { 1, 2, 4 };
-        /// <summary>A bigger pot takes longer, though not as long as cooking it twice.</summary>
         public static readonly float[] BatchMinutes = { 1f, 1.25f, 1.6f };
-        /// <summary>It is a little easier to burn.</summary>
         public static readonly float[] BatchBurn = { 0f, 0.01f, 0.03f };
-        /// <summary>And it makes more of a mess.</summary>
         public static readonly float[] BatchMess = { 1f, 1.2f, 1.5f };
 
         public const float BurnWhenWorn = 0.08f;        // added to a dish's chance when stressed (over StressHigh) or exhausted
         public const float WornEnergy = 20f;            // "exhausted": energy under this
         public const int ReheatMinutes = 8;
-        public const int LeftoverSaturation = 35;       // a portion put by before the mod knew what dish it was
-        public const int LeftoversMost = 8;
-        public const float BurntYield = 0.6f;
-        public const float CookReach = 2.4f;            // how near a cooker or a fridge the "cook" prompt is offered, metres
+        public const int LeftoverSaturation = 35;       // what a portion put by fills when its own fill is not known
+        public const int LeftoversMost = 8;             // portions
+        public const float BurntYield = 0.6f;           // of the fill, for a burnt dish
 
-        /// <summary>How much of a need or a risk is left on "easy needs".</summary>
+        /// <summary>What is left of a need or a risk with "easy needs" on.</summary>
         public const float Easy = 0.5f;
     }
 }
