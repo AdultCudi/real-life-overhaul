@@ -5,15 +5,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// A few tech fittings in an office of the player's that a tech firm runs in, while the player is in it, where there
-    /// is room (<see cref="OfficeFitPlan"/>): a server closet rack, a developer's desk with two screens, a whiteboard on a
-    /// wall. The game furnishes an office only with what the player buys and places (its desks, workstations, chairs on
-    /// the building's grid), so these go only against a stretch of bare wall, 0.9 m or more from any of it, with a metre
-    /// clear in front, never by the door, and only if every piece of the player's furniture can still be walked to.
-    /// They are never cut out of the floor and never touched by the game: only to be seen, gone when the player leaves,
-    /// hidden in the game's placement mode and placed again round whatever the player has placed.
-    /// </summary>
+    /// <summary>A few tech fittings in the player's tech office while they are in it, placed by <see cref="OfficeFitPlan"/>. Only to be seen.</summary>
     internal sealed class OfficeView
     {
         public const int Most = 3;
@@ -64,7 +56,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (spec.Wall)
                 {
-                    // Hung by its back on the wall's real surface, its middle 0.6 m over the plan's height.
+                    // hung by its back on the wall's real surface, its middle 0.6 m over the plan's height
                     Vector3 face = RoomMeasure.Facing(p);
                     var at = new Vector3(p.X, floor + p.Y + spec.Size.y * 0.5f, p.Z);
                     if (!RoomMeasure.Wall(at, -face, 1.0f, out Vector3 surface, out Vector3 normal))
@@ -85,7 +77,7 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        /// <summary>Once a second: true if the fittings have to be placed again (the furniture changed, placement mode is over).</summary>
+        /// <summary>Once a second: true if the fittings must be placed again, the furniture having changed or placement mode ended.</summary>
         public bool Tick(BuildingManager building)
         {
             if (_root == null)

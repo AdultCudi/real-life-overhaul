@@ -6,27 +6,14 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The Open Roles app, in the game's frame (GameUi.AppShell, copied from MyEmployees) as the Web shop and Ventures
-    /// apps are. Its tabs over the table on the right, and on the left the white box with the one thing picked:
-    ///
-    ///   Team         every professional of the player's with their role, level, skills, morale and burnout; pick one for
-    ///                their file, their career (role, promotion, a rise, a course, an exam) and their contract (where they
-    ///                work, a restraint clause, notice and severance) (RolesApp.Team.cs)
-    ///   Jobs         the player's ads on the jobs board, and the page that posts one (RolesApp.Hiring.cs)
-    ///   Applicants   everyone who has applied, with what is known of them; pick one to check them, interview them and
-    ///                make an offer
-    ///   Market       the city's labour market by family: seekers by level, the rivals' openings, the shortage, the
-    ///                going rate; pick a family for its rivals and districts
-    ///   Search       the search firms briefed for senior roles, and the page that briefs one
-    ///
-    /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it
-    /// opens, when a tab is picked and when the player changes something in it.
-    /// </summary>
+    /// <summary>The Open Roles app in the game's frame (GameUi.AppShell), a table and the picked row's page on each tab. Nothing runs while it is closed.</summary>
     public sealed partial class RolesApp
     {
-        private static readonly string[] TabKeys = { "reallife_roles_tab_team", "reallife_roles_tab_jobs", "reallife_roles_tab_applicants", "reallife_roles_tab_market", "reallife_roles_tab_search" };
-        // The Guide's pages the tabs point to at their foot: professionals (the Team tab) and the jobs board (the rest).
+        private static readonly string[] TabKeys =
+        {
+            "reallife_roles_tab_team", "reallife_roles_tab_jobs", "reallife_roles_tab_applicants", "reallife_roles_tab_market", "reallife_roles_tab_search"
+        };
+        // the Guide's pages the tabs point to: professionals for the Team tab, the jobs board for the rest
         private const string PeopleGuide = "reallife_meta_title_tech_people", JobsGuide = "reallife_meta_title_tech_jobs";
 
         public static IModLogger Logger;

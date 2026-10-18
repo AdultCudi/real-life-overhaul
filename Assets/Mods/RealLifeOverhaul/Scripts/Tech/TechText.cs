@@ -4,15 +4,11 @@ using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// The tech sector's words: every figure it shows is written here, the same way in its apps, the notifications and
-    /// the Guide. Every text is a key of en.json; money as the game writes it. Called when something is shown, never
-    /// otherwise.
-    /// </summary>
+    /// <summary>The tech sector's words: every figure it shows, written the same way in its apps, notifications and the Guide.</summary>
     public static class TechText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-        private const string Mod = "reallife";   // (keys made of parts are put together from this, so the text check reads only whole keys)
+        private const string Mod = "reallife";   // keys built from parts start with this, so the text check reads only whole keys
 
         public static string T(string key) => FinanceText.T(key);
 
@@ -24,10 +20,7 @@ namespace RealLifeOverhaul.Tech
 
         public static string Pair(string labelKey, string value) => FinanceText.Pair(labelKey, value);
 
-        /// <summary>
-        /// Why nobody at a firm can work (or worked yesterday) and what puts it right, in one line: for the firm's page, a
-        /// contract's page and the notifications (short enough to go inside one).
-        /// </summary>
+        /// <summary>Why nobody at a firm can work (or worked yesterday) and what puts it right, in one line short enough for a notification.</summary>
         public static string IdleLine(Idle why, in FirmFacts f, bool yesterday)
         {
             switch (why)
@@ -120,9 +113,10 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A data centre's tier of redundancy, 0 to 3: "Tier I" to "Tier IV".</summary>
         public static string InfraTier(int tier) => T(Mod + "_infra_tier_" + TalentCatalogue.Clamp(tier, 0, InfraCatalogue.Tiers - 1).ToString(Inv));
 
-        public static string Work(int work) => T(work == (int)Arrangement.Remote ? "reallife_talent_work_remote" : work == (int)Arrangement.Hybrid ? "reallife_talent_work_hybrid" : "reallife_talent_work_onsite");
+        public static string Work(int work) =>
+            T(work == (int)Arrangement.Remote ? "reallife_talent_work_remote" : work == (int)Arrangement.Hybrid ? "reallife_talent_work_hybrid" : "reallife_talent_work_onsite");
 
-        /// <summary>Years and days of a 365-day year as whole years: "7 years", "1 year", "under a year".</summary>
+        /// <summary>Days as whole 365-day years: "7 years", "1 year", "under a year".</summary>
         public static string Years(int days)
         {
             int years = days / 365;

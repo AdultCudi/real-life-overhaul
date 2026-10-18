@@ -3,11 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>
-    /// What the venture part does to the game: money only, as dated transactions of the mod's own (investments and their
-    /// returns with no address, a firm's raise and its bridge at the firm), none of it deductible; and a founder's name, the
-    /// game's own way. Nothing here runs by itself.
-    /// </summary>
+    /// <summary>What the venture part does to the game: money as dated transactions, none deductible, and a founder's name.</summary>
     internal static class VentureGame
     {
         public const string InvestKey = "reallife_transaction_tech_venture_investment";

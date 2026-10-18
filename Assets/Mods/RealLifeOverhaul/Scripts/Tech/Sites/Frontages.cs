@@ -6,19 +6,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// The street side of the player's data centres: the first time the player comes within 160 m of one, its frontage is
-    /// dressed, and again whenever its cloud's name changes. Each piece only where it was measured to fit, the way the
-    /// university's and the courthouse's signs are (CityLife/CitySpots: a flat wall, clear pavement, away from the door):
-    ///
-    ///   the sign       a monument sign against the wall a few steps from the door, lettered with the cloud's name (the
-    ///                  data centre's own name until there is a cloud) in the game's font; under it "Data centre", or for
-    ///                  a hyperscaler the region it serves (its district)
-    ///   the booth      a security booth on the other side of the door, where the pavement is deep enough
-    ///   the barrier    by the vehicle door, its arm raised, where there is pavement beside it
-    ///   the fence      two panels of security fence beyond the barrier along the wall, where the wall and pavement allow
-    ///
-    /// Local to this machine: plain objects with no collider and no script, nothing saved. Only the player's own data
-    /// centres (Going Public: never another player's building). One frontage a second at most; nothing per frame.
+    /// The street side of the player's own data centres: a sign, a booth, a barrier and fence where they fit. Local, nothing saved;
+    /// one frontage a second at most.
     /// </summary>
     internal sealed class Frontages
     {
@@ -46,10 +35,10 @@ namespace RealLifeOverhaul.Tech
             _logger = logger;
         }
 
-        /// <summary>Changes when the data centres or their names do (for the map).</summary>
+        /// <summary>Changes when the data centres or their names do, for the map.</summary>
         public int Stamp { get; private set; }
 
-        /// <summary>Once a second, out of doors: the frontages near the player dressed; those of data centres no longer the player's taken away.</summary>
+        /// <summary>Once a second outdoors: dresses the frontages near the player and takes away those no longer the player's.</summary>
         public void Tick(Vector3 player, InfraFile infra)
         {
             _seen.Clear();
@@ -81,7 +70,7 @@ namespace RealLifeOverhaul.Tech
                 Dress(site, infra.Cloud, d);
                 site.Stamp = stamp;
                 site.Done = true;
-                dressed = true;   // (one a second)
+                dressed = true;   // one a second
             }
             _gone.Clear();
             foreach (KeyValuePair<string, Site> pair in _sites)
@@ -146,7 +135,7 @@ namespace RealLifeOverhaul.Tech
                     signAt = at;
                 }
             }
-            // The booth on the other side of the door, deeper from the wall.
+            // the booth on the other side of the door, deeper from the wall
             for (int k = 0; k < 3; k++)
             {
                 float aside = -(signSide == 0 ? 1 : signSide) * (4.2f + k * 1.6f);
@@ -161,7 +150,7 @@ namespace RealLifeOverhaul.Tech
             Gate(site, root.transform);
         }
 
-        // A piece with its back a distance off the wall, a stretch along from the door: false where the wall, the pavement or the room is not there.
+        // A piece with its back a distance off the wall and along from the door; false where the wall or pavement is not there.
         private static bool Against(Vector3 door, Vector3 offset, float fromWall, float standOff, float room, float awayFromDoor, out Vector3 at, out Vector3 outward)
         {
             at = default;
@@ -179,7 +168,7 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        // The vehicle door: a barrier beside it with its arm raised, and fence along the wall beyond it.
+        // a barrier beside the vehicle door with its arm raised, and fence along the wall beyond it
         private static void Gate(Site site, Transform root)
         {
             DriveInEntrance[] gates = site.Building.driveInEntrances;
@@ -227,7 +216,7 @@ namespace RealLifeOverhaul.Tech
             site.Done = false;
         }
 
-        /// <summary>Every frontage taken away (the option is off, the city is going).</summary>
+        /// <summary>Takes every frontage away, when the option is off or the city goes.</summary>
         public void Clear()
         {
             foreach (Site site in _sites.Values)

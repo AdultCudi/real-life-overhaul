@@ -7,10 +7,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// What the infrastructure part reads from or does to the game: the player's warehouses (what a data centre is fitted
-    /// into), their floor and district; money as dated transactions of the mod's own at the data centre (takings among its
-    /// takings in the game's statement, power and water as its utilities, racks and fitting out as capital), and the racks'
-    /// writing down given to the game's tax as a deductible expense with no money moving.
+    /// What the infrastructure part reads from or does to the game: the player's warehouses, money as dated transactions at the
+    /// data centre, and the racks' writing down as a deductible expense with no money moving.
     /// </summary>
     internal static class InfraGame
     {

@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Tech
     {
         public static readonly TableSpec Off = new TableSpec("Tech", "Off").Column("reallife_tech_col_firm", 600f, TableSort.None, flexible: true);
 
-        /// <summary>Firms: 0 firm, 1 kind, 2 people, 3 engineering points a day, 4 products, 5 contracts, 6 takings over 30 days, 7 recurring a month, 8 reputation.</summary>
+        /// <summary>Firms: 0 firm, 1 kind, 2 people, 3 points a day, 4 products, 5 contracts, 6 takings over 30 days, 7 recurring a month, 8 reputation.</summary>
         public static readonly TableSpec Firms = new TableSpec("Tech", "Firms")
             .Column("reallife_tech_col_firm", 330f, TableSort.Text, flexible: true)
             .Column("reallife_tech_col_kind", 280f, TableSort.Text)
@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Tech
             .Column("reallife_tech_col_reputation", 190f, TableSort.Number, right: true)
             .Empty("reallife_tech_empty_firms");
 
-        // ---- where a product stands
+        // row kinds: where a product stands
         public const int Building = 0, OnSale = 1, Withdrawn = 2;
         private static readonly string[] ProductKinds = { "reallife_tech_kind_building", "reallife_tech_kind_on_sale", "reallife_tech_kind_withdrawn" };
 
@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Tech
             .Filter("reallife_tech_all_stages", ProductKinds)
             .Empty("reallife_tech_empty_products");
 
-        // ---- where a contract stands
+        // row kinds: where a contract stands
         public const int Waiting = 0, UnderWay = 1, Finished = 2;
         private static readonly string[] WorkKinds = { "reallife_tech_kind_waiting", "reallife_tech_kind_under_way", "reallife_tech_kind_finished" };
 
@@ -55,11 +55,11 @@ namespace RealLifeOverhaul.Tech
             .Filter("reallife_tech_all_contracts", WorkKinds)
             .Empty("reallife_tech_empty_contracts");
 
-        // ---- a startup and the player
+        // row kinds: a startup and the player
         public const int Yours = 0, AsksYou = 1, Others = 2, Closed = 3;
         private static readonly string[] StartupKinds = { "reallife_vc_kind_yours", "reallife_vc_kind_asks", "reallife_vc_kind_others", "reallife_vc_kind_closed" };
 
-        /// <summary>Startups: 0 name, 1 sector, 2 stage, 3 revenue a month (as the deck says until it is looked into), 4 value, 5 your share, 6 your value, 7 state.</summary>
+        /// <summary>Startups: 0 name, 1 sector, 2 stage, 3 revenue a month (the deck's until looked into), 4 value, 5 your share, 6 your value, 7 state.</summary>
         public static readonly TableSpec Startups = new TableSpec("Tech", "Startups")
             .Column("reallife_vc_col_startup", 280f, TableSort.Text, flexible: true)
             .Column("reallife_vc_col_sector", 240f, TableSort.Text)
@@ -72,11 +72,11 @@ namespace RealLifeOverhaul.Tech
             .Filter("reallife_vc_all_startups", StartupKinds)
             .Empty("reallife_vc_empty_startups");
 
-        // ---- what a competitor is
+        // row kinds: what a competitor is
         public const int RivalCompanies = 0, RivalStartups = 1, RivalFirms = 2;
         private static readonly string[] RivalKinds = { "reallife_tech_kind_companies", "reallife_tech_kind_startups", "reallife_tech_kind_firms" };
 
-        /// <summary>Competitors, a page of the Firms tab for one firm: 0 competitor, 1 what it is, 2 where you meet, 3 your products against it, 4 tenders you both bid for, 5 where it is.</summary>
+        /// <summary>Competitors of one firm: 0 competitor, 1 what it is, 2 where you meet, 3 your products against it, 4 tenders you both bid for, 5 where.</summary>
         public static readonly TableSpec Rivals = new TableSpec("Tech", "Competitors")
             .Column("reallife_tech_col_rival", 320f, TableSort.Text, flexible: true)
             .Column("reallife_tech_col_kind", 260f, TableSort.Text)
