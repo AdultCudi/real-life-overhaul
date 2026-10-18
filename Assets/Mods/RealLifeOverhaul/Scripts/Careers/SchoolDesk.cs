@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Careers
             public string Key;
             public object Arguments;
             public bool Only;          // the class's panel alone (a classroom of the university): no course of the game's
+            public bool Due;           // a class or exam of the player's at the school is in its window: the class's button on the Start key (ClassPlayRules.ClassOnStart)
             public string Title;       // ...its headline
             public string[] Lines;     // ...and its lines
         }
@@ -541,13 +542,19 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (_buttons == null)
                 {
+                    // While a class or exam is due, the class on the game's Start key and the game's own course on the secondary key,
+                    // as a classroom of the university; else the class's button on the secondary key beside the game's Start.
+                    bool first = _offer.Due;
                     int n = game != null ? game.Length : 0;
                     _buttons = new ButtonInfo[n + 1];
                     for (int i = 0; i < n; i++)
                     {
-                        _buttons[i] = game[i];
+                        ButtonInfo b = game[i];
+                        _buttons[i] = first && b != null && b.playerAction == PlayerAction.Confirm
+                            ? new ButtonInfo(b.name, b.key, b.arguments, b.color, b.onClick, PlayerAction.SecondaryInteract, b.interactable)
+                            : b;
                     }
-                    _buttons[n] = new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Guard.Wrap(Press), PlayerAction.SecondaryInteract, _offer.Can);
+                    _buttons[n] = new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Guard.Wrap(Press), first ? PlayerAction.Confirm : PlayerAction.SecondaryInteract, _offer.Can);
                 }
                 return _buttons;
             }

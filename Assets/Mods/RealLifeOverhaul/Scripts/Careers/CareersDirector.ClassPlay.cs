@@ -67,6 +67,7 @@ namespace RealLifeOverhaul.Careers
             offer.Course = wanted;
             offer.Kind = kind;
             offer.Can = true;
+            offer.Due = true;   // begun for the player: the class's on the Start key
             offer.Key = kind == SittingKind.Exam ? "reallife_study_prompt_exam" : kind == SittingKind.Homework ? "reallife_study_prompt_homework" : "reallife_study_prompt_attend";
             offer.Arguments = CourseArgs(wanted);
             return true;

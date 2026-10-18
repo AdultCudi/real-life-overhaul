@@ -168,6 +168,52 @@ namespace RealLifeOverhaul.Careers
             examHere = !inRooms && !(examAtSchool && desks);
         }
 
+        /// <summary>True if a course's class (or, with <paramref name="exam"/>, its exam) is held at the game's school, at its desks.</summary>
+        public static bool AtSchool(Enrolment e, bool exam)
+        {
+            CourseDef c = e != null ? e.Def : null;
+            if (c == null)
+            {
+                return false;
+            }
+            bool home = (StudyMode)e.Mode == StudyMode.Distance || c.Campus == Campus.Online;
+            return exam ? home || c.Campus == Campus.School : !home && c.Campus == Campus.School;
+        }
+
+        /// <summary>True while an enrolment's class at the school is in its join window and not yet settled today, or its exam at the school can be sat this hour.</summary>
+        public static bool DueAtSchool(Enrolment e, int day, int minuteOfDay)
+        {
+            CourseDef c = e != null ? e.Def : null;
+            if (c == null)
+            {
+                return false;
+            }
+            if (AtSchool(e, false) && e.Stage == (int)EnrolStage.Studying && c.Timetabled && e.SettledDay < day && day >= e.Start
+                && StudyRules.Joinable(c, (StudyMode)e.Mode, day, minuteOfDay, out _))
+            {
+                return true;
+            }
+            int hour = minuteOfDay / 60;
+            return AtSchool(e, true) && StudyRules.ExamDay(e, day) && hour >= StudyCatalogue.ExamOpens && hour < StudyCatalogue.ExamCloses;
+        }
+
+        /// <summary>
+        /// The school desk's keys, decided as its panel opens: true while a class or exam of the player's at the school is in its
+        /// window, when the class's button is on the game's Start key and the game's own course on the secondary key, as a
+        /// classroom of the university has it; false otherwise, the class's button on the secondary key beside the game's Start.
+        /// </summary>
+        public static bool ClassOnStart(IList<Enrolment> courses, int day, int minuteOfDay)
+        {
+            for (int i = 0; courses != null && i < courses.Count; i++)
+            {
+                if (DueAtSchool(courses[i], day, minuteOfDay))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>True for a course whose classes are held online, from home: an online course, or one followed at a distance.</summary>
         public static bool HeldOnline(CourseDef c, StudyMode mode)
         {

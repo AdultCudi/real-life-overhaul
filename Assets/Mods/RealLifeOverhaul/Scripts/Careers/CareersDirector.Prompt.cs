@@ -138,12 +138,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         // True if this course's class (or exam) is held at the game's school, where its desks offer it instead of a panel.
-        private static bool AtTheSchool(Enrolment e, bool exam)
-        {
-            CourseDef c = e.Def;
-            bool home = (StudyMode)e.Mode == StudyMode.Distance || c.Campus == Campus.Online;
-            return exam ? home || c.Campus == Campus.School : !home && c.Campus == Campus.School;
-        }
+        private static bool AtTheSchool(Enrolment e, bool exam) => ClassPlayRules.AtSchool(e, exam);
 
         private object CourseArgs(int course)
         {
@@ -352,8 +347,16 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // What a desk offers now: the class that can be joined, else the exam that can be sat, else the next class (greyed).
+        // What a desk offers now: the class that can be joined, else the exam that can be sat, else the next class (greyed); on
+        // the game's Start key while a class or exam of the player's at the school is in its window.
         private SchoolDesk.DeskOffer DeskOfferNow()
+        {
+            SchoolDesk.DeskOffer offer = DeskOfferOf();
+            offer.Due = ClassPlayRules.ClassOnStart(_study.Courses, Save.Day, CareersGame.MinuteOfDay);
+            return offer;
+        }
+
+        private SchoolDesk.DeskOffer DeskOfferOf()
         {
             SchoolDesk.DeskOffer next = null;
             int nextAt = int.MaxValue;

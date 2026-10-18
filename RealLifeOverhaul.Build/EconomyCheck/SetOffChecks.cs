@@ -73,8 +73,9 @@ internal static partial class Program
         int rest = keys.IndexOf("ButtonInfo[] game = _inner.GetButtons();", StringComparison.Ordinal);
         string room = only >= 0 && rest > only ? keys.Substring(only, rest - only) : string.Empty;
         string schoolDesk = rest >= 0 ? keys.Substring(rest) : string.Empty;
-        Check(room.Contains("PlayerAction.Confirm, _offer.Can") && !room.Contains("PlayerAction.SecondaryInteract") && schoolDesk.Contains("PlayerAction.SecondaryInteract, _offer.Can"),
-            "set off: a classroom of the university has its class on the game's Start key, apart from the panel's fast forward; the school's desks on the secondary key");
+        Check(room.Contains("PlayerAction.Confirm, _offer.Can") && !room.Contains("PlayerAction.SecondaryInteract") && schoolDesk.Contains("first ? PlayerAction.Confirm : PlayerAction.SecondaryInteract, _offer.Can"),
+            "set off: a classroom of the university has its class on the game's Start key, apart from the panel's fast forward; the school's desks on the secondary key,"
+            + " and on the Start key while a class or exam is due (ClassCountChecks)");
         Check(!game.Contains("HomeDesk") && !director.Contains("HomeDesk") && buttons.Contains("director.WorkAtComputer(computer, late)")
               && buttons.Contains("director.ComputerWork(out canWork, out _workLate)") && buttons.Contains("public static bool Failed => _failed || FrameGuard.Off;")
               && MethodText(director, "internal string DeskFallbackWhy(Job j)").Contains("ComputerButtons.Failed"),
