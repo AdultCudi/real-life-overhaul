@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using BigAmbitions.DayNightCycle;
+using Extensions;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -13,7 +14,7 @@ namespace RealLifeOverhaul.Texts
     /// the day and time as a card writes them, how fast game time runs, whether the game is quiet enough for background
     /// work, and the game's own notices. Each read is a property or two; nothing here runs per frame.
     /// </summary>
-    public static class TextsGame
+    public static partial class TextsGame
     {
         public const string AppId = "1331550";   // the game's Steam app (its Workshop folder)
         public const float SlowFrameMs = 40f;    // a frame slower than this on average between two looks: not quiet
@@ -45,6 +46,9 @@ namespace RealLifeOverhaul.Texts
                 return string.IsNullOrEmpty(locale) || locale.StartsWith("en", StringComparison.OrdinalIgnoreCase);
             }
         }
+
+        /// <summary>The game's language as it loaded it (its own code, "pt", "zh-cn"): a field read, compared by the director twice a second.</summary>
+        public static string Locale => Localizor.LocalizorManager.LoadedLocale;
 
         /// <summary>The player's name, as a card's player line says it.</summary>
         public static string PlayerName
@@ -122,6 +126,12 @@ namespace RealLifeOverhaul.Texts
         {
             Notifications.Show(NotificationType.Info, key, data, seconds);
         }
+
+        /// <summary>A sum as the game writes money ("$25,000", by the player's own number format): a card and its written line carry the same figure.</summary>
+        public static string Money(long whole) => ((double)whole).ToShortCurrencyFormat();
+
+        /// <summary>An hourly pay kept in hundredths, with its cents, as the game writes a wage ("$15.50").</summary>
+        public static string Wage(int hundredths) => (hundredths / 100f).ToCurrencyFormat();
 
         private static string FirstWord(string name)
         {

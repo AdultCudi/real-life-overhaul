@@ -132,7 +132,7 @@ internal static partial class Program
         {
             voices.Add(i.Voice);
             channels.Add(i.Channel);
-            if (!covered.Contains(i.Key + "#" + i.Branch + "@" + i.Data))
+            if (i.Data <= TextIntents.DataV5 && !covered.Contains(i.Key + "#" + i.Branch + "@" + i.Data))   // (data v6's are the contract's own fixtures: TextsSixChecks.cs)
             {
                 missing.Add(i.Key + (i.Branch != null ? "#" + i.Branch : "") + " (data " + i.Data + ")");
             }
@@ -812,9 +812,10 @@ internal static partial class Program
               && TextPacks.WorkshopPacks(@"C:\ws", new[] { "111", "222" })[1] == System.IO.Path.Combine(@"C:\ws", "222") && TextPacks.WorkshopPacks(null, new[] { "1" }).Count == 0,
             "texts, safety: on the Workshop only RLO's own pack items by id are looked in (none while their ids are empty, never a path)");
         string game = TextsSource("Texts/TextsGame.cs");
-        Check(TextPacks.WorkshopItems.Length == 3 && TextPacks.WorkshopItems[0] == "3820711613" && TextPacks.WorkshopItems[1] == "3820712020" && TextPacks.WorkshopItems[2] == "3820776564"
+        Check(TextPacks.WorkshopItems.Length == 4 && TextPacks.WorkshopItems[0] == "3820711613" && TextPacks.WorkshopItems[1] == "3820712020" && TextPacks.WorkshopItems[2] == "3820776564"
+              && TextPacks.WorkshopItems[3] == "" && !TextPacks.LargePublished
               && TextPacks.WorkshopPacks(@"C:\ws", TextPacks.WorkshopItems).Count == 3 && TextPacks.WorkshopPacks(@"C:\ws", new[] { "3820711613", "" }).Count == 1,
-            "texts, packs: the mod looks only in the three published pack items, RLO Texts (3820711613), RLO Texts Lite (3820712020) and RLO Texts Medium (3820776564), and an empty id is never looked in");
+            "texts, packs: the mod looks only in the three published pack items, RLO Texts (3820711613), RLO Texts Lite (3820712020) and RLO Texts Medium (3820776564); RLO Texts Large's id is empty until it is published, and an empty id is never looked in");
         Check(game.Contains("TextPacks.WorkshopPacks(TextPacks.WorkshopOf(Application.dataPath, AppId), TextPacks.WorkshopItems)") && !game.Contains("places.Add(workshop)"),
             "texts, safety: the game's whole Workshop folder is never a place packs are looked for in");
         Check(TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLO\runtime\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLOX\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\a.exe"),
@@ -865,7 +866,8 @@ internal static partial class Program
         Check(TextRuntime.Files.Length == 46 && TextRuntime.Files[0] == "llama-server.exe" && TextRuntime.Files[1].Length == 64, "texts, safety: llama.cpp " + TextRuntime.Release + "'s 23 runtime files are pinned by SHA-256");
         string director = TextsSource("Texts/TextsDirector.cs");
         int verify = director.IndexOf("TextPacks.Verify(_packs[i], TextRuntime.Files)", StringComparison.Ordinal), devices = director.IndexOf("TextPacks.ListDevices(", StringComparison.Ordinal);
-        Check(verify > 0 && devices > verify && director.Contains("_pack = _verified;") && director.Contains("\"pack files changed: \""),
+        Check(verify > 0 && devices > verify && director.Contains("_pack = TextPacks.Pick(verified, ") && System.Text.RegularExpressions.Regex.IsMatch(director, @"if \(why == null\)\s*\{\s*verified\.Add\(_packs\[i\]\);")
+              && director.Contains("\"pack files changed: \""),
             "texts, safety: nothing of a pack is started before its files are checked (off the game's thread, once a session); a changed pack shows as failed");
 
         // 2, 3. Going Public: a guest's received words are the host's alone, for this session; changes go as lines.

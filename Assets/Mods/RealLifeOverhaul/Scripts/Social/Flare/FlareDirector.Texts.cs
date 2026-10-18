@@ -29,6 +29,12 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>The player's listed company's name, or null (a rival's stake or bid names it).</summary>
         public static Func<string> TextListed;
+
+        /// <summary>
+        /// Data v6: a review of the player's own business (its place, the stars the game decided) gets the business's real
+        /// figures on its card (the slots); false for any other business, or one with no figures yet (the plain card).
+        /// </summary>
+        public static Func<string, int, TextSlots, bool> TextReview;
     }
 
     /// <summary>Fills a card's speaker from a person of the social life by their number; false if there is none.</summary>
@@ -307,6 +313,10 @@ namespace RealLifeOverhaul.Flare
                     r.Use = TextUse.Posts;
                     r.Intent = "citizen.review";
                     r.Slots.Set("shop", p.Name).Set("stars", FlareRules.Clamp(p.Arg, 1, 5).ToString());
+                    if (TextData >= TextIntents.DataV6 && FlareBridges.TextReview != null && FlareBridges.TextReview(p.Place, FlareRules.Clamp(p.Arg, 1, 5), r.Slots))
+                    {
+                        r.Branch = "mine";   // (the player's own business: its real figures on the card, data v6)
+                    }
                     return Use(r, shared);
                 case FlareSource.Official:
                     if (p.Author != FlareAuthor.Official)

@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Street
         public string NewsDistrict;      // where the day's latest crime or accident was, in the player's language, or null
         public string Player;            // the player's name
         public readonly List<string> Shops = new List<string>(4);   // the player's own businesses, by name
+        public string EventWords;        // RLO Texts' card (data v6): the street event in the card's English words, whatever the game's language
 
         public void Clear()
         {
@@ -150,7 +151,7 @@ namespace RealLifeOverhaul.Street
             Weekend = Raining = Record = Wanted = Unwashed = PoliceNear = SocialOn = Election = false;
             Standing = 55;
             Recognition = PriceTrend = RateMove = 0;
-            EventToday = NewsDistrict = Player = null;
+            EventToday = NewsDistrict = Player = EventWords = null;
             Candidates.Clear();
             Shops.Clear();
         }

@@ -39,6 +39,11 @@ namespace RealLifeOverhaul.Texts
     /// a notice suggesting the Lite pack when the full one is too slow; a slow machine writes only what is asked ahead.
     /// GOING PUBLIC (TextsShare): personal text on each player's own machine, shared text written once by the host and sent
     /// as text in part T; a guest never writes shared text and checks the host's again.
+    /// DATA V6 (a pack of data 6; one of data 5 or lower keeps its exact cards and ways): the game's language if the pack
+    /// writes it, what people remember of the player (TextsDirector.Memory.cs), requests bound by a grammar (TextDecoding),
+    /// the city's new talk (TextsDirector.City.cs). WHAT WAS SHOWN (TextShown): counted by pack and intent, in Player.log
+    /// hourly with Developer diagnostics on, and under Options > Test tools. RLO TEXTS LARGE: only on a graphics card with
+    /// the memory for it, the next pack where it is too slow (TextPacks.Pick, TextSpeed).
     ///
     /// COST: nothing per frame but one time comparison. A look twice a second while idle (a few comparisons), ten times a
     /// second while requests wait (a pass over a handful); a request is a card of a few hundred characters; the model runs
@@ -71,7 +76,11 @@ namespace RealLifeOverhaul.Texts
         private static Action _onQuit;
         private static List<TextPack> _packs;
         private static TextPack _verified, _refused;       // the best pack whose runtime is llama.cpp's own; the first that was not
-        private static string _refusedWhy;
+        private static readonly List<TextPack> Verified = new List<TextPack>(4);   // every pack whose runtime is llama.cpp's own, the best first
+        private static string _refusedWhy, _largeSlow, _locale;   // the graphics card RLO Texts Large was too slow on (the state file); the game's language last seen
+        private static bool _largeTold, _largeRead;
+        private static string _passedWhy;                  // why RLO Texts Large was passed over (the status says it when no other pack runs)
+        private static int _pickedFor = int.MinValue;      // the device option a pick found no pack for
         private static int _runDevice = -1, _runThreads = -1;   // the options the server was started with
         private static List<TextDevice> _devices;
         private static readonly System.Text.StringBuilder Changes = new System.Text.StringBuilder(1024);
@@ -94,6 +103,7 @@ namespace RealLifeOverhaul.Texts
             Instance = this;
             _onSave = OnSaveGame;
             Hub.Allowed = Allowed;
+            Hub.Barred = Barred;
             Hub.SharedKept = SharedKept;
             if (!_quitHooked)
             {
@@ -180,6 +190,12 @@ namespace RealLifeOverhaul.Texts
             int frames = Time.frameCount - _frameCount;
             _frameCount = Time.frameCount;
             _frameTime = frames > 0 && since > 0f ? since * 1000f / frames : 0f;   // (frames counted between two looks: the mean frame since the last)
+            string locale = TextsGame.Locale;
+            if (!ReferenceEquals(locale, _locale))
+            {
+                _locale = locale;
+                Hub.Language = TextLanguages.Of(locale);   // (the game's language: a data 6 pack writes it if it can)
+            }
             if (!Settings.Texts)
             {
                 if (_server != null)
@@ -191,6 +207,7 @@ namespace RealLifeOverhaul.Texts
                 return;
             }
             Keep(now);
+            Hour();
             if (!_found)
             {
                 Find();
@@ -225,6 +242,7 @@ namespace RealLifeOverhaul.Texts
             {
                 Hub.Clear();
                 Hub.Store.Clear();
+                Forget();
                 _loaded = false;
                 _save = null;
             }
@@ -249,6 +267,7 @@ namespace RealLifeOverhaul.Texts
                 {
                     Logger?.Info("RLO Texts: " + gone + " kept text(s) let go: what they belonged to is gone from the game.");
                 }
+                PruneMemory(save.Day);
             }
         }
 
@@ -263,6 +282,7 @@ namespace RealLifeOverhaul.Texts
                 Logger?.Warn("RLO Texts: the save's line of kept words could not be read (" + TextsStore.SaveKey + "); the written lines are shown for what it held, and the line is kept as it is.");
             }
             Logger?.Info("RLO Texts: " + Hub.Store.Count + " kept text(s) read from the save.");
+            ReadMemory(save);
         }
 
         private void OnSaveGame()
@@ -277,6 +297,7 @@ namespace RealLifeOverhaul.Texts
                 if (_loaded && _save != null && _save.modData != null)
                 {
                     _save.modData[TextsStore.SaveKey] = Hub.Store.Write();
+                    WriteMemory(_save);
                 }
             }
             catch (Exception e)
@@ -303,17 +324,31 @@ namespace RealLifeOverhaul.Texts
                     _packs = TextPacks.Find(places);
                     _cores = TextCores.Real();
                     _devices = new List<TextDevice>();
+                    var verified = new List<TextPack>(4);
                     for (int i = 0; i < _packs.Count; i++)
                     {
                         string why = TextPacks.Verify(_packs[i], TextRuntime.Files);   // (before anything of the pack is started: llama.cpp's pinned files, byte for byte)
                         if (why == null)
                         {
-                            _verified = _packs[i];
-                            _devices = TextPacks.Devices(TextPacks.ListDevices(_verified.Exe, DevicesWaitMs));
-                            break;
+                            verified.Add(_packs[i]);
+                            if (_verified == null)
+                            {
+                                _verified = _packs[i];
+                                _devices = TextPacks.Devices(TextPacks.ListDevices(_verified.Exe, DevicesWaitMs));
+                            }
+                            if (_packs[i].Rank != TextPacks.LargeTier)
+                            {
+                                break;   // (the best that is not Large: none below it is ever run; Large may still give way to it)
+                            }
+                            continue;
                         }
                         _refused = _refused ?? _packs[i];
                         _refusedWhy = _refusedWhy ?? why;
+                    }
+                    lock (Verified)
+                    {
+                        Verified.Clear();
+                        Verified.AddRange(verified);
                     }
                 }
                 catch (Exception)
@@ -335,8 +370,36 @@ namespace RealLifeOverhaul.Texts
             }
             if (_pack == null && _verified != null)
             {
-                _pack = _verified;
-                Logger?.Info("RLO Texts: the pack " + _pack.Name + " (version " + _pack.Version + ", data v" + _pack.Data + ", " + (_pack.ModelBytes / (1024 * 1024)) + " MB) in " + _pack.Folder
+                if (_pickedFor == Settings.TextsDevice)
+                {
+                    return;   // (no pack may run with this option: picked again only when it changes)
+                }
+                _pickedFor = Settings.TextsDevice;
+                if (!_largeRead)
+                {
+                    _largeRead = true;
+                    _largeSlow = StateLine("large_slow=");   // (once a session: the file is not read again)
+                }
+                List<TextPack> verified;
+                lock (Verified)
+                {
+                    verified = new List<TextPack>(Verified);
+                }
+                _pack = TextPacks.Pick(verified, _devices, Mathf.Clamp(Settings.TextsDevice, 0, 2), _largeSlow, out _passedWhy);
+                if (_passedWhy != null && !_largeTold)
+                {
+                    _largeTold = true;
+                    Logger?.Info("RLO Texts: " + _passedWhy + (_pack != null ? "; the next pack is run." : "; no other pack is installed, so the written lines are used."));
+                }
+                if (_pack == null)
+                {
+                    return;
+                }
+                _pickedFor = int.MinValue;
+                Hub.Pack = _pack.Name + " " + _pack.Version + " (data v" + _pack.Data + ")";
+                Hub.Languages = _pack.Languages;
+                Logger?.Info("RLO Texts: the pack " + _pack.Name + " (version " + _pack.Version + ", data v" + _pack.Data + ", " + (_pack.ModelBytes / (1024 * 1024)) + " MB, "
+                             + (_pack.Data >= TextIntents.DataV6 ? "writes " + string.Join(", ", _pack.Languages) : "writes English") + ") in " + _pack.Folder
                              + ", llama.cpp's files checked" + (_packs.Count > 1 ? "; " + (_packs.Count - 1) + " other pack(s) found and not used" : "") + ".");
             }
             if (_refused != null && !_refusedTold)
@@ -377,7 +440,7 @@ namespace RealLifeOverhaul.Texts
             _server = new TextServer(Queue, new TextServerStart
             {
                 Exe = _pack.Exe, Model = _pack.Model, Threads = threads, Device = device, Log = Path.Combine(TextsGame.Home, "server.log"),
-                Cache = Path.Combine(TextsGame.Home, "cache"), SpeedFor = wanted, Known = KnownSpeed(wanted)
+                Cache = Path.Combine(TextsGame.Home, "cache"), SpeedFor = wanted, Known = KnownSpeed(wanted), System = TextCard.SystemOf(_pack.Data)
             }, Log);
             Hub.Runner = _server;
             Hub.Data = _pack.Data;   // (the intents its model learnt: a v2 pack is never asked v3's)
@@ -435,13 +498,43 @@ namespace RealLifeOverhaul.Texts
                 TextsGame.Notice("reallife_texts_note_lite", new Dictionary<string, string>(1) { { "seconds", estimate.ToString("0") } }, 16f);
                 Remember("lite");
             }
+            string card = _deviceLabel ?? _device;
+            if (_pack.Rank == TextPacks.LargeTier && TextSpeed.LargeTooSlow(estimate))
+            {
+                _largeSlow = card ?? "the processor";
+                Rewrite("large_slow=", "large_slow=" + _largeSlow);   // (not tried on this card again: the next session runs the next pack at once)
+                Logger?.Info("RLO Texts: RLO Texts Large takes about " + estimate.ToString("0.0", CultureInfo.InvariantCulture) + " s a reply on " + _largeSlow + ", more than "
+                             + TextSpeed.LargeSlow.ToString("0.0", CultureInfo.InvariantCulture) + " s: the next pack is run instead.");
+                StopServer("RLO Texts Large is too slow here");
+                _pack = null;   // (Run picks again, passing over Large on this card)
+                return;
+            }
+            if (_device != null && _largeSlow == null && !LargeFound() && TextPacks.Card(_devices, out TextDevice gpu)
+                && TextSpeed.OfferLarge(_pack.Rank, estimate, TextSpeed.LargeFits(gpu, TextSpeed.LargeBytes), TextPacks.LargePublished) && !Told("large"))
+            {
+                TextsGame.Notice("reallife_texts_note_large", new Dictionary<string, string>(1) { { "card", gpu.Label } }, 16f);
+                Remember("large");
+            }
         }
 
         // ---------------------------------------------------------------- what may be asked
 
+        // The game's language as the running pack writes it: a pack of data 6 writes the languages it says it was trained
+        // and passed in (the game's, of the seven; any other reads the mod in English); an older pack only English.
+        private static bool LanguageOk()
+        {
+            return Hub.Data >= TextIntents.DataV6 ? TextLanguages.Has(Hub.Languages, Hub.Language) : TextsGame.English;
+        }
+
+        // Why a use may not ask now: the language, or switched off (RLO Texts, the use's own option, a guest's shared text).
+        private static TextShownWhy Barred(TextUse use, bool shared)
+        {
+            return Settings.Texts && !LanguageOk() ? TextShownWhy.Language : TextShownWhy.Off;
+        }
+
         private static bool Allowed(TextUse use, bool shared)
         {
-            if (!Settings.Texts || !TextsGame.English)
+            if (!Settings.Texts || !LanguageOk())
             {
                 return false;
             }
@@ -471,7 +564,7 @@ namespace RealLifeOverhaul.Texts
             {
                 return;
             }
-            TextsShare.Line(Changes, TextsShare.NetKey(k.Key), k.Intent, k.Words);
+            TextsShare.Line(Changes, TextsShare.NetKey(k.Key), k.Intent, k.Words, k.Lang);
         }
 
         private static string TakeChanges()
@@ -489,7 +582,7 @@ namespace RealLifeOverhaul.Texts
         private static bool FromHost(string text, bool whole)
         {
             var refused = new List<string>(2);
-            int kept = TextsShare.Apply(text, Hub.Store, TextsGame.Day, refused, whole);
+            int kept = TextsShare.Apply(text, Hub.Store, TextsGame.Day, refused, whole, Hub.Language);   // (words in another language than this game's: its own written lines)
             if (kept > 0 || refused.Count > 0)
             {
                 Logger?.Info("RLO Texts: the host's words for " + kept + " shared item(s)" + (refused.Count > 0 ? "; refused on arrival: " + string.Join(", ", refused) : "") + ".");
@@ -531,6 +624,43 @@ namespace RealLifeOverhaul.Texts
         private static void KeepSpeed(TextSpeedResult speed)
         {
             Rewrite("speed=", "speed=" + speed.Line());
+        }
+
+        // Whether RLO Texts Large is among the packs found (installed, run or not): it is then never offered.
+        private static bool LargeFound()
+        {
+            for (int i = 0; _packs != null && i < _packs.Count; i++)
+            {
+                if (_packs[i].Rank == TextPacks.LargeTier)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // The value of the state file's line starting so ("large_slow=Vulkan0's card"); null without one.
+        private static string StateLine(string start)
+        {
+            try
+            {
+                if (!File.Exists(StateFile))
+                {
+                    return null;
+                }
+                foreach (string line in File.ReadAllLines(StateFile))
+                {
+                    if (line.StartsWith(start, StringComparison.Ordinal))
+                    {
+                        return line.Substring(start.Length);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // (unreadable: as if not there)
+            }
+            return null;
         }
 
         private static bool Told(string what)
@@ -588,6 +718,13 @@ namespace RealLifeOverhaul.Texts
                 key = "reallife_texts_status_failed";
                 data["pack"] = _refused.Name;
                 data["why"] = Cap("pack files changed: " + _refusedWhy);
+                return data;
+            }
+            if (_pack == null && _passedWhy != null && _verified != null)
+            {
+                key = "reallife_texts_status_failed";
+                data["pack"] = _verified.Name;
+                data["why"] = Cap(_passedWhy);
                 return data;
             }
             if (_pack == null)

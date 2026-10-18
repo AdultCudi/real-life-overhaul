@@ -141,6 +141,7 @@ namespace RealLifeOverhaul.Texts
         public string Cache;         // a folder for the cached head's state (the server's slot file); null: no prompt cache
         public string SpeedFor;      // what a speed test is for (pack, device, threads)
         public TextSpeedResult Known; // a speed measured before for the same: no test this time
+        public string System = TextCard.System;   // the system turn of the pack's training data (TextCard.SystemOf): the cached head starts with it
     }
 
     /// <summary>
@@ -182,7 +183,11 @@ namespace RealLifeOverhaul.Texts
     ///   speed      on first load, or when the pack, device or threads change: one reply from a fixed card, within
     ///              <see cref="TextSpeed.TestSeconds"/> s, measures reading and writing (<see cref="Speed"/>)
     ///   requests   one at a time, each with a time-out of the request's own deadline and at most <see cref="TimeOut"/>
-    ///              (<see cref="TimeOutGpu"/> on a GPU); nothing on the game's thread but handing words over
+    ///              (<see cref="TimeOutGpu"/> on a GPU); nothing on the game's thread but handing words over. A request
+    ///              of data v6 carries its grammar and most tokens, and a name it may never write: the name's first tokens
+    ///              come from the server's own /tokenize, asked once a name and kept while this server runs
+    ///              (<see cref="NamesMost"/> names), and are banned through logit_bias (TextDecoding); a reply that stopped
+    ///              at its most tokens is marked cut
     ///   stop       the server is killed, the worker ends; the game closing, the option off, the pack switched
     ///
     /// Game-free (no Unity types): the integration check runs it with the Lite model (EconomyCheck, TextsChecks.cs).
@@ -197,6 +202,8 @@ namespace RealLifeOverhaul.Texts
         public const double SaveSeconds = 10.0;     // seconds the head's state may take to be saved, after its read
         public const double RestoreSeconds = 2.0;   // seconds the head's state may take to be put back before the speed test
         public const int DogMs = 500;               // milliseconds between two looks of the start's watchdog
+        public const int NamesMost = 32;            // names whose tokens are kept (the player's, once a session; past this they start again)
+        public const int TokenizeMs = 500;          // the most a /tokenize may take before the request goes without its ban
 
         private readonly TextQueue _queue;
         private readonly TextServerStart _start;
@@ -220,9 +227,17 @@ namespace RealLifeOverhaul.Texts
         private readonly object _failing = new object();
         private Timer _dog;
         private TcpClient _socket;   // the request under way (the worker's), closed by the watchdog or a stop to end its wait
+        private readonly Dictionary<string, List<int>> _names = new Dictionary<string, List<int>>(4, StringComparer.Ordinal);   // the worker's: a name's banned tokens
+        private string _head;
 
-        /// <summary>The fixed head of every prompt: the system turn and the opening of the user's.</summary>
-        public static string Head => "<|im_start|>system\n" + TextCard.System + "<|im_end|>\n<|im_start|>user\n";
+        /// <summary>The fixed head of every prompt of the first packs' system turn: the system turn and the opening of the user's.</summary>
+        public static string Head => HeadOf(TextCard.System);
+
+        /// <summary>The fixed head of every prompt of a system turn.</summary>
+        public static string HeadOf(string system) => "<|im_start|>system\n" + system + "<|im_end|>\n<|im_start|>user\n";
+
+        // This server's head: its pack's system turn's.
+        private string OwnHead => _head ?? (_head = HeadOf(_start.System ?? TextCard.System));
 
         /// <summary>The speed measured (or known from before); null until it is.</summary>
         public TextSpeedResult Speed { get; private set; }
@@ -403,9 +418,12 @@ namespace RealLifeOverhaul.Texts
                 try
                 {
                     Restore(job.Prompt);
+                    string bias = job.BanName != null ? TextDecoding.Bias(NameTokens(job.BanName)) : null;
                     double left = job.Deadline - TextClock.Now;
-                    string answer = Post("/completion", TextJson.Request(job.Prompt, _seeds.Next(1, int.MaxValue)), (int)(Math.Max(0.05, Math.Min(left, limit)) * 1000.0));
+                    string body = TextJson.Request(job.Prompt, _seeds.Next(1, int.MaxValue), job.Tokens > 0 ? job.Tokens : TextJson.Tokens, job.Grammar, bias);
+                    string answer = Post("/completion", body, (int)(Math.Max(0.05, Math.Min(left, limit)) * 1000.0));
                     words = TextJson.Field(answer, "content");
+                    job.Cut = words != null && TextJson.Cut(answer);
                     if (words == null)
                     {
                         why = "no words in the server's answer";
@@ -638,7 +656,7 @@ namespace RealLifeOverhaul.Texts
             try
             {
                 double begun = TextClock.Now, cpu = Cpu();
-                string answer = Post("/completion", TextJson.Request(TextCard.ChatMl(TestCard()), 1, 1), Ms(WarmLimit(_start)));
+                string answer = Post("/completion", TextJson.Request(TextCard.ChatMl(TestCard(), _start.System ?? TextCard.System), 1, 1), Ms(WarmLimit(_start)));
                 double took = TextClock.Now - begun, used = Cpu() - cpu;
                 LoadedIn += took;
                 _detail = "sent the test card, 1 token to write: " + Timings(answer, took, used) + ShaderCacheName(KeepShaderMark(used));
@@ -659,7 +677,7 @@ namespace RealLifeOverhaul.Texts
             }
             try
             {
-                string head = Post("/completion", TextJson.Request(Head, 1, 0), Ms(_start.WarmSeconds));
+                string head = Post("/completion", TextJson.Request(OwnHead, 1, 0), Ms(_start.WarmSeconds));
                 _headFile = "rlo-head-" + _port + ".bin";
                 string saved = Post("/slots/0?action=save", "{\"filename\":\"" + _headFile + "\"}", Ms(SaveSeconds));
                 _headSaved = saved != null && saved.IndexOf("n_saved", StringComparison.Ordinal) >= 0;
@@ -677,10 +695,48 @@ namespace RealLifeOverhaul.Texts
 
         private static int Ms(double seconds) => (int)(seconds * 1000.0);
 
+        // A name's first tokens as this server's model writes them in a line (" Sam", "Sam": TextDecoding.NameForms), asked of
+        // its own /tokenize once a name and kept (an answer that does not come leaves the request without its ban, and is
+        // asked again next time). The worker's alone.
+        private List<int> NameTokens(string name)
+        {
+            if (_names.TryGetValue(name, out List<int> known))
+            {
+                return known;
+            }
+            string[] forms = TextDecoding.NameForms(name);
+            var tokens = new List<int>(2);
+            bool answered = true;
+            for (int i = 0; forms != null && i < forms.Length; i++)
+            {
+                try
+                {
+                    int token = TextJson.FirstToken(Post("/tokenize", TextJson.Tokenize(forms[i]), TokenizeMs));
+                    if (token >= 0)
+                    {
+                        tokens.Add(token);
+                    }
+                }
+                catch (Exception)
+                {
+                    answered = false;   // (too slow this time: no ban on this request)
+                }
+            }
+            if (answered)
+            {
+                if (_names.Count >= NamesMost)
+                {
+                    _names.Clear();
+                }
+                _names[name] = tokens;
+            }
+            return tokens;
+        }
+
         // The head's state put back, so the server reads only the card (its own cache does this by itself for a model it can reuse in part).
         private void Restore(string prompt)
         {
-            if (!_headSaved || !prompt.StartsWith(Head, StringComparison.Ordinal))
+            if (!_headSaved || !prompt.StartsWith(OwnHead, StringComparison.Ordinal))
             {
                 return;
             }
@@ -707,7 +763,7 @@ namespace RealLifeOverhaul.Texts
             string detail;
             try
             {
-                string prompt = TextCard.ChatMl(TestCard());
+                string prompt = TextCard.ChatMl(TestCard(), _start.System ?? TextCard.System);
                 Restore(prompt);
                 restored = TextClock.Now - begun;
                 double asked = TextClock.Now;

@@ -234,7 +234,7 @@ internal static partial class Program
             "Flare comment asks sources: a request back frees the next ask on the director's second, and words that come show at once in an open thread");
         Check(director.Contains("_commentAsks.Ended(asked, words != null);") && !director.Contains("_commentsAsked.Add("),
             "Flare comment asks sources: a request back without words is asked again (no longer once a session)");
-        Check(!director.Contains("void Update") && !director.Contains("LateUpdate") && hub.Contains("Over(i, BudgetMiss(w.Job));"),
+        Check(!director.Contains("void Update") && !director.Contains("LateUpdate") && hub.Contains("Over(i, BudgetMiss(w.Job), TextShownWhy.Slow);"),
             "Flare comment asks sources: nothing per frame; the hub counts a miss through BudgetMiss");
     }
 }

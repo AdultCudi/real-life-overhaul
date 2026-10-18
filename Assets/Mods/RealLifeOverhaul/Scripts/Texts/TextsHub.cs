@@ -30,6 +30,9 @@ namespace RealLifeOverhaul.Texts
         public Action<string> Done;         // on the game's thread: the words, or null for the written line
         public string Why;                  // filled by the hub: why there are no words (not asked, refused by the checker, the time ran out), for the asker's log; null with words
         public double Took;                 // filled by the hub: seconds the model took over it (0 when it never ran)
+        public string Person;               // data v6: whose memory the card carries (TextMemoryRules.KeyOk); null: none
+        public readonly List<TextFact> Memory = new List<TextFact>(8);   // data v6: what that person remembers, filled by the asker (TextsDirector.Recall); the hub picks the card's lines
+        public string Lang;                 // filled by the hub: the language the card asks for (data v6), or null below
     }
 
     /// <summary>The runner as the hub sees it (TextServer; the checks put a pretend one in).</summary>
@@ -49,12 +52,19 @@ namespace RealLifeOverhaul.Texts
     /// hears every end but a background request the queue held back itself (<see cref="BudgetMiss"/>). Words that pass
     /// are remembered by speaker for the repeat check, and kept in the store (TextsStore) when the asker wants them kept.
     /// Only the intents of the running pack's data version or older are asked (<see cref="Data"/>).
+    ///
+    /// A pack of data v6 is asked in the game's language when the pack writes it (<see cref="Language"/>,
+    /// <see cref="Languages"/>): the card carries its lang and the speaker's memory (<see cref="TextRequest.Memory"/>,
+    /// TextMemoryRules.Select; none on a shared card), its request the grammar, the most tokens and the name to keep out
+    /// (TextDecoding), its words the checker of the language (TextCheck.JudgeSix). Every line, asked or not, is counted
+    /// by pack and intent with what was shown and why (<see cref="Tally"/>, TextShown).
     /// COST: a request is a card of a few hundred characters; a look is a pass over the waiting requests (a few).
     /// </summary>
     public sealed class TextsHub
     {
         public const int RecentMost = 4;         // things a speaker said that a new reply must not repeat
         public const int SpeakersMost = 256;     // speakers remembered for it: past this (a long session of street talk) they start again
+        public const string NoPack = "no pack";  // the pack name lines are counted under while none runs
 
         private sealed class Waiting
         {
@@ -63,6 +73,9 @@ namespace RealLifeOverhaul.Texts
             public TextSheet Sheet;
             public string Card;
             public TextJob Job;
+            public string Lang;           // data v6: the card's language
+            public string Untold;         // ...the player's name, when the speaker does not know it
+            public bool Lowercase;        // ...the speaker writes in lower case
         }
 
         private readonly TextQueue _queue;
@@ -71,8 +84,13 @@ namespace RealLifeOverhaul.Texts
         private readonly List<TextJob> _missed = new List<TextJob>(8);
         private readonly Dictionary<string, List<string>> _recent = new Dictionary<string, List<string>>(32, StringComparer.Ordinal);
         private readonly int[] _verdicts = new int[Enum.GetValues(typeof(TextVerdict)).Length];
+        private TextShownWhy _whyNot;
+        private TextVerdict _verdict;
 
         public readonly TextsStore Store = new TextsStore();
+
+        /// <summary>Every line counted by pack and intent: the model's words or the written line, and why (TextShown).</summary>
+        public readonly TextShown Tally = new TextShown();
 
         public TextsHub(TextQueue queue)
         {
@@ -86,11 +104,23 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Which uses may ask now (the options, the game's language, Going Public's rule); set by the director.</summary>
         public Func<TextUse, bool, bool> Allowed;
 
+        /// <summary>Why a use may not ask now, when <see cref="Allowed"/> says no (switched off, the language); null: Off.</summary>
+        public Func<TextUse, bool, TextShownWhy> Barred;
+
         /// <summary>
         /// The data version of the running pack's model (TextPack.Data): an intent of a later data version is never asked of
         /// it (the written line). Set by the director when it starts a pack.
         /// </summary>
         public int Data { get; set; } = TextIntents.DataV2;
+
+        /// <summary>The game's language as a card of data v6 writes it (TextLanguages.Of); set by the director.</summary>
+        public string Language { get; set; } = TextLanguages.English;
+
+        /// <summary>The languages the running pack was trained and passed in (TextPack.Languages); English alone by default.</summary>
+        public string[] Languages { get; set; } = { TextLanguages.English };
+
+        /// <summary>The running pack's name as lines are counted under it; <see cref="NoPack"/> while none runs.</summary>
+        public string Pack { get; set; } = NoPack;
 
         /// <summary>This machine writes only what is asked ahead (TextSpeed.AheadOnly).</summary>
         public bool AheadOnly { get; set; }
@@ -109,6 +139,9 @@ namespace RealLifeOverhaul.Texts
 
         public int Verdicts(TextVerdict v) => _verdicts[(int)v];
 
+        /// <summary>True when the running pack writes the game's language now (a pack below data v6 writes English alone).</summary>
+        public bool WritesLanguage => TextLanguages.Has(Languages, Data >= TextIntents.DataV6 ? Language : TextLanguages.English);
+
         /// <summary>True when a request of this use could go to the model now (asked before the card is built, so that nothing is built for nothing).</summary>
         public bool Wants(TextUse use, bool shared)
         {
@@ -116,9 +149,32 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
+        /// A line the asker shows with its written words without asking (it asked <see cref="Wants"/> first and was told no):
+        /// counted with why (no pack, off, the language, a pack that could not run).
+        /// </summary>
+        public void NotAsked(TextUse use, bool shared, string intent)
+        {
+            Tally.Count(Pack, intent, Unwanted(use, shared));
+        }
+
+        // Why Wants says no.
+        private TextShownWhy Unwanted(TextUse use, bool shared)
+        {
+            if (Runner == null)
+            {
+                return Pack == NoPack ? TextShownWhy.NoPack : TextShownWhy.Failed;
+            }
+            if (Runner.State == TextServerState.Failed || Runner.State == TextServerState.Off)
+            {
+                return TextShownWhy.Failed;
+            }
+            return Barred != null ? Barred(use, shared) : TextShownWhy.Off;
+        }
+
+        /// <summary>
         /// Asks for words. True: they come through the request's Done, on a later look, words or null. False: not asked
         /// (switched off, no pack, no such intent or a value missing, too slow for it, no time): the asker uses the written
-        /// line now, and Done is not called.
+        /// line now, and Done is not called. Either way the line is counted (<see cref="Tally"/>).
         /// </summary>
         public bool Ask(TextRequest r, double now)
         {
@@ -127,9 +183,11 @@ namespace RealLifeOverhaul.Texts
                 return false;
             }
             r.Took = 0;
-            r.Why = WhyNot(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds);
+            r.Lang = null;
+            r.Why = WhyNot(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds, out _whyNot);
             if (r.Why != null)
             {
+                Tally.Count(Pack, r.Intent, _whyNot);
                 return false;
             }
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch, Data);   // (the card of the pack's own data: v4's for a data 4 pack, v5's for a data 5 one)
@@ -137,25 +195,63 @@ namespace RealLifeOverhaul.Texts
             if (!TextIntents.Build(intent, r.Who, r.Slots, r.History, sheet))
             {
                 r.Why = "not asked: a value the card " + r.Intent + " needs is missing";
+                Tally.Count(Pack, r.Intent, TextShownWhy.NoCard);
                 return false;
             }
-            var job = new TextJob { Key = r.Key ?? r.Intent, Prompt = TextCard.ChatMl(sheet), Priority = r.Priority, Deadline = now + r.Seconds, Guess = r.Guess };
+            bool six = intent.Data >= TextIntents.DataV6;
+            var job = new TextJob { Key = r.Key ?? r.Intent, Priority = r.Priority, Deadline = now + r.Seconds, Guess = r.Guess };
+            var w = new Waiting { Request = r, Intent = intent, Sheet = sheet, Job = job };
+            if (six)
+            {
+                Six(r, intent, sheet, w);
+            }
+            job.Prompt = TextCard.ChatMl(sheet, six ? TextCard.SystemSix : TextCard.System);
+            w.Card = TextCard.Card(sheet);
             for (int i = _waiting.Count - 1; i >= 0; i--)
             {
                 if (_waiting[i].Request.Key != null && _waiting[i].Request.Key == r.Key)
                 {
-                    End(i, null, false);   // (asked again: the older one gives way)
+                    End(i, null, false, TextShownWhy.Unwanted);   // (asked again: the older one gives way)
                 }
             }
             if (!_queue.Add(job, now))
             {
                 r.Why = "not asked: " + job.Why + " (a reply is expected to take " + _queue.Expect.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " s, the line waits "
                         + r.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s)";
+                Tally.Count(Pack, r.Intent, job.Why == "the queue was full" ? TextShownWhy.Busy : TextShownWhy.Slow);
                 return false;
             }
-            _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = TextCard.Card(sheet), Job = job });
+            _waiting.Add(w);
             Runner.Nudge();
             return true;
+        }
+
+        // A card of data v6: its language, the speaker's memory (never on a shared card), and the request's grammar, length and the name kept out.
+        private void Six(TextRequest r, TextIntent intent, TextSheet sheet, Waiting w)
+        {
+            string lang = TextLanguages.Known(Language) ? Language : TextLanguages.English;
+            r.Lang = lang;
+            w.Lang = lang;
+            Finish(intent, sheet, lang, r.Memory, r.Day, r.Shared);
+            w.Lowercase = TextDecoding.Lowercase(sheet.Style);
+            w.Untold = intent.UntoldName && r.Slots.Get("known") != "yes" ? r.Who.Player : null;
+            w.Job.Grammar = TextDecoding.Grammar(TextDecoding.GrammarName(lang, w.Lowercase));
+            w.Job.Tokens = TextDecoding.Tokens(intent, lang);
+            w.Job.BanName = w.Untold != null && TextDecoding.NameForms(w.Untold) != null ? w.Untold : null;
+        }
+
+        /// <summary>
+        /// A built card of data v6 finished as it is sent: its lang line, and the memory lines of what its speaker remembers
+        /// (none on a shared card). The contract's fixtures are finished by the same (EconomyCheck: --texts-spec).
+        /// </summary>
+        public static void Finish(TextIntent intent, TextSheet sheet, string lang, List<TextFact> memory, int today, bool shared)
+        {
+            sheet.Lang = lang;
+            sheet.Memory.Clear();
+            if (!shared && memory != null && memory.Count > 0)
+            {
+                TextMemoryRules.Select(memory, intent, today, TextIntents.Subject(intent.Key, intent.Branch), sheet.Memory);
+            }
         }
 
         /// <summary>
@@ -166,22 +262,34 @@ namespace RealLifeOverhaul.Texts
         /// </summary>
         public string WhyNot(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds)
         {
+            return WhyNot(use, shared, intent, branch, priority, guess, seconds, out _);
+        }
+
+        /// <summary>The same, with what the written line shown for it is counted as.</summary>
+        public string WhyNot(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds, out TextShownWhy why)
+        {
             if (!Wants(use, shared))
             {
-                return "not asked: RLO Texts is off, has no pack or is not running";
+                why = Unwanted(use, shared);
+                return why == TextShownWhy.Language ? "not asked: the pack does not write the game's language (" + Language + ")"
+                    : "not asked: RLO Texts is off, has no pack or is not running";
             }
             if (!TextSpeed.Allows(AheadOnly, priority, guess, seconds))
             {
+                why = TextShownWhy.Slow;
                 return "not asked: this machine's model writes only what is asked well ahead";
             }
             if (Runner.State == TextServerState.Loading && seconds < TextSpeed.AheadSeconds)
             {
+                why = TextShownWhy.Loading;
                 return "not asked: the model is still loading";   // (what is due soon takes its written line now rather than wait for nothing)
             }
             if (TextIntents.Find(intent, branch, Data) == null)
             {
+                why = TextShownWhy.NoCard;
                 return "not asked: the pack (data v" + Data + ") has no card " + intent + (branch != null ? " " + branch : string.Empty);   // (a v2 pack is never asked a v3 intent)
             }
+            why = TextShownWhy.Model;
             return null;
         }
 
@@ -204,7 +312,7 @@ namespace RealLifeOverhaul.Texts
                     {
                         if (now > w.Job.Deadline)
                         {
-                            End(i, null, false);   // (never taken: the player went another way)
+                            End(i, null, false, TextShownWhy.Unwanted, true);   // (never taken: the player went another way; nothing was shown for it)
                             handed++;
                         }
                         continue;   // (its asker takes it, or its time runs out)
@@ -212,7 +320,7 @@ namespace RealLifeOverhaul.Texts
                     if (now > w.Job.Deadline + 0.25)
                     {
                         w.Request.Why = "the words came after the hold";
-                        Over(i, true);
+                        Over(i, true, TextShownWhy.Slow);
                     }
                     else
                     {
@@ -223,7 +331,7 @@ namespace RealLifeOverhaul.Texts
                 else if (state == TextJobState.Missed || state == TextJobState.Dropped)
                 {
                     w.Request.Why = state == TextJobState.Missed ? "missed: " + (w.Job.Why ?? "the model gave nothing") : "asked again or dropped";
-                    Over(i, state == TextJobState.Missed && BudgetMiss(w.Job));
+                    Over(i, state == TextJobState.Missed && BudgetMiss(w.Job), state == TextJobState.Dropped ? TextShownWhy.Unwanted : Missed(w.Job));
                     handed++;
                 }
                 else if (now > w.Job.Deadline)
@@ -231,11 +339,23 @@ namespace RealLifeOverhaul.Texts
                     w.Request.Why = "the hold of " + w.Request.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s ran out while it was "
                                     + (state == TextJobState.Running ? "being written" : "waiting in the queue");
                     _queue.Drop(w.Job);   // (a running one comes back later and is let go)
-                    Over(i, BudgetMiss(w.Job));
+                    Over(i, BudgetMiss(w.Job), TextShownWhy.Slow);
                     handed++;
                 }
             }
             return handed;
+        }
+
+        // A missed request's reason: the model's own failure (it gave nothing, an error), the queue full, or the time.
+        private static TextShownWhy Missed(TextJob job)
+        {
+            string why = job.Why ?? string.Empty;
+            if (why == "the queue was full")
+            {
+                return TextShownWhy.Busy;
+            }
+            return why.StartsWith("its time", StringComparison.Ordinal) || why.StartsWith("it took", StringComparison.Ordinal) || why == "no time"
+                ? TextShownWhy.Slow : TextShownWhy.Failed;
         }
 
         /// <summary>
@@ -257,13 +377,13 @@ namespace RealLifeOverhaul.Texts
                     _waiting.RemoveAt(i);
                     _budget.Ended(false);
                     _budget.Apply(_queue);
-                    Count(words != null);
+                    Count(w, words, TextShownWhy.Refused);
                     return words;
                 }
                 w.Request.Why = "the guess was not written yet";
                 _queue.Drop(w.Job);
                 _waiting.RemoveAt(i);
-                Count(false);
+                Count(w, null, TextShownWhy.Slow);
                 return null;
             }
             return null;
@@ -281,7 +401,7 @@ namespace RealLifeOverhaul.Texts
                 if (_waiting[i].Request.Flush)
                 {
                     _queue.Drop(_waiting[i].Job);
-                    End(i, null, false);
+                    End(i, null, false, TextShownWhy.Busy);
                     n++;
                 }
             }
@@ -294,7 +414,7 @@ namespace RealLifeOverhaul.Texts
             for (int i = _waiting.Count - 1; i >= 0; i--)
             {
                 _queue.Drop(_waiting[i].Job);
-                End(i, null, false);
+                End(i, null, false, TextShownWhy.Off);
             }
             _queue.Clear();
         }
@@ -339,7 +459,7 @@ namespace RealLifeOverhaul.Texts
             string words = Checked(w);
             _budget.Ended(false);
             _budget.Apply(_queue);
-            End(i, words, true);
+            End(i, words, true, TextShownWhy.Refused);
         }
 
         /// <summary>
@@ -354,22 +474,25 @@ namespace RealLifeOverhaul.Texts
             return job.Ran || (job.Priority != TextPriority.Background && job.Priority <= _queue.Floor);
         }
 
-        private void Over(int i, bool missed)
+        private void Over(int i, bool missed, TextShownWhy why)
         {
             if (missed)
             {
                 _budget.Ended(true);
                 _budget.Apply(_queue);
             }
-            End(i, null, false);
+            End(i, null, false, why);
         }
 
-        // The words checked: null if they fail (counted by verdict).
+        // The words checked: null if they fail (counted by verdict; _verdict says which).
         private string Checked(Waiting w)
         {
-            string words = TextCheck.Tidy(w.Job.Raw);
-            TextVerdict verdict = TextCheck.Judge(words, w.Intent, w.Sheet, w.Card, Recent(w.Request.Speaker));
+            string words = TextCheck.Tidy(w.Job.Raw, w.Lang);
+            TextVerdict verdict = w.Lang != null
+                ? TextCheck.JudgeSix(words, w.Intent, w.Sheet, w.Card, Recent(w.Request.Speaker), w.Lang, w.Job.Cut, w.Untold, w.Lowercase)
+                : TextCheck.Judge(words, w.Intent, w.Sheet, w.Card, Recent(w.Request.Speaker));
             _verdicts[(int)verdict]++;
+            _verdict = verdict;
             w.Request.Took = w.Job.Took;
             if (verdict != TextVerdict.Ok)
             {
@@ -380,7 +503,9 @@ namespace RealLifeOverhaul.Texts
             return words;
         }
 
-        private void End(int i, string words, bool counted)
+        // A request handed over: the words or null, counted (a null after the checker's verdict as Refused with its rule,
+        // else as the reason given), kept and remembered when there are words. Done is called last.
+        private void End(int i, string words, bool counted, TextShownWhy why, bool unseen = false)
         {
             Waiting w = _waiting[i];
             _waiting.RemoveAt(i);
@@ -388,12 +513,17 @@ namespace RealLifeOverhaul.Texts
             {
                 words = null;   // (too late for where it was going: the written line stays)
                 counted = true;
+                why = TextShownWhy.Unwanted;
                 w.Request.Why = "no longer wanted when the words came";
             }
             w.Request.Took = w.Job.Took;
-            if (counted || words == null)
+            if (unseen)
             {
-                Count(words != null);
+                Fallbacks++;   // (the session's figure as ever; the tally counts only lines shown)
+            }
+            else if (counted || words == null)
+            {
+                Count(w, words, why);
             }
             TextRequest r = w.Request;
             if (words != null)
@@ -401,7 +531,7 @@ namespace RealLifeOverhaul.Texts
                 Said(r.Speaker, words);
                 if ((r.Keep || r.Shared) && r.Key != null)
                 {
-                    TextKept k = Store.Keep(r.Key, r.Day, w.Intent.Key, words, r.Shared);
+                    TextKept k = Store.Keep(r.Key, r.Day, w.Intent.Key, words, r.Shared, false, w.Lang);
                     if (r.Shared)
                     {
                         SharedKept?.Invoke(k);
@@ -411,16 +541,19 @@ namespace RealLifeOverhaul.Texts
             r.Done(words);
         }
 
-        private void Count(bool shown)
+        // One line handed over, counted: the session's figures and the tally (a refusal under the checker's rule).
+        private void Count(Waiting w, string words, TextShownWhy why)
         {
-            if (shown)
+            if (words != null)
             {
                 Shown++;
+                Tally.Count(Pack, w.Request.Intent, TextShownWhy.Model);
+                return;
             }
-            else
-            {
-                Fallbacks++;
-            }
+            Fallbacks++;
+            bool refused = why == TextShownWhy.Refused && _verdict != TextVerdict.Ok;
+            Tally.Count(Pack, w.Request.Intent, refused ? TextShownWhy.Refused : why == TextShownWhy.Refused ? TextShownWhy.Slow : why, refused ? _verdict : TextVerdict.Ok);
+            _verdict = TextVerdict.Ok;
         }
     }
 }

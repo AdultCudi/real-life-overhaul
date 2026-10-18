@@ -239,6 +239,7 @@ namespace RealLifeOverhaul.Street
                 string said = words ?? StreetText.T(key, data);
                 _chat.Said(false, said);
                 _chat.Last = kind;
+                Spoken?.Invoke(_chat, kind, data);   // (RLO Texts: what the stranger will remember of it)
                 if (words == null)
                 {
                     _chat.Memo.Said(key);
@@ -403,11 +404,11 @@ namespace RealLifeOverhaul.Street
         }
 
         // The values every line may name, and the card's words of the moment (RLO Texts: thanks taken warmly or coolly, decided
-        // before the turn as the rules decide it; the rain).
+        // before the turn as the rules decide it; the rain; today's event in the card's English words).
         private Dictionary<string, string> Data(StreetChat c)
         {
             StreetStranger s = c.Who;
-            return new Dictionary<string, string>(10)
+            return new Dictionary<string, string>(11)
             {
                 { "t_thanks", StreetRules.WarmThanks(c) ? "warm" : "cool" },
                 { "t_weather", _facts.Raining ? "raining" : string.Empty },
@@ -416,7 +417,8 @@ namespace RealLifeOverhaul.Street
                 { "job", SocialCatalogue.Jobs[Mathf.Clamp(s.Job, 0, SocialCatalogue.Jobs.Length - 1)].GetLocalization() },
                 { "district", SocialPlaces.District(s.District) },
                 { "shop", _facts.Shops.Count > 0 ? _facts.Shops[0] : string.Empty },
-                { "event", _facts.EventToday ?? string.Empty }
+                { "event", _facts.EventToday ?? string.Empty },
+                { "t_event", _facts.EventWords ?? string.Empty }
             };
         }
 
@@ -732,14 +734,18 @@ namespace RealLifeOverhaul.Street
             bool found = named != null ? StreetGame.Named(named, from, out venue, out metres) : kind < StreetPlace.Count && StreetGame.Nearest(kind, from, out venue, out metres);
             StreetLine line = StreetRules.Directions(found, metres);
             data["what"] = named ?? (kind < StreetPlace.Count ? StreetText.T(StreetLines.Whats[(int)kind]) : StreetText.T("reallife_street_what_coffee"));
+            data["t_what"] = named ?? Texts.TextWords.StreetWhats[kind < StreetPlace.Count ? (int)kind : 0];   // (RLO Texts' card: English in every language)
             if (found)
             {
                 data["place"] = venue.Name;
                 data["street"] = new Address(venue.Street, venue.Number).GetStreetNameLocalized();
-                data["way"] = StreetText.T(StreetLines.Ways[StreetGame.Way(from, p != null ? p.transform.forward : Vector3.forward, venue.Door)]);
+                int way = StreetGame.Way(from, p != null ? p.transform.forward : Vector3.forward, venue.Door);
+                data["way"] = StreetText.T(StreetLines.Ways[way]);
+                data["t_way"] = Texts.TextWords.StreetWays[way];
                 int minutes = StreetRules.Minutes(metres);
                 data["walk"] = minutes == 1 ? StreetText.T("reallife_street_walk_one")
                     : StreetText.T("reallife_street_walk_many", new Dictionary<string, string>(1) { { "n", minutes.ToString(System.Globalization.CultureInfo.InvariantCulture) } });
+                data["t_walk"] = Texts.TextWords.Walk(minutes);
                 StreetGame.Destination(venue);
                 _chat.Gain(StreetRules.Score(_chat) >= 0 ? 1 : 0);
             }
