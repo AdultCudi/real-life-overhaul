@@ -6,12 +6,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Roommates
 {
-    /// <summary>
-    /// The roommate's one option ("Roommates", on unless switched off), read from PlayerPrefs at game start like every
-    /// other option of the mod, and its test buttons. Off, nobody answers, pays or is shown and nothing of the home is
-    /// touched; a roommate who lives in is put away with the arrangement kept in the save, and comes back when it is
-    /// switched on again.
-    /// </summary>
+    /// <summary>The roommate's one option ("Roommates", on by default), read from PlayerPrefs at game start like every option of the mod.</summary>
     public static class RoommateSettings
     {
         public const string EnabledId = "home_roommates";
@@ -24,14 +19,9 @@ namespace RealLifeOverhaul.Roommates
         }
     }
 
-    /// <summary>
-    /// The doors between the roommate and the features it leans on. Each is null until Wiring/RoommateLinks fills it
-    /// in; with a door left null the roommate does without (no friends to ask, no partner to make room for, nobody
-    /// introduced). The roommate never reaches into those features itself.
-    /// </summary>
+    /// <summary>The doors to the features the roommate leans on, filled by Wiring/RoommateLinks; with a door left null it does without.</summary>
     public static class RoommateBridges
     {
-        /// <summary>True while the player's partner lives in their home (family life).</summary>
         public static Func<bool> PartnerLivesIn;
         public static Func<string> PartnerName;
 
@@ -45,7 +35,6 @@ namespace RealLifeOverhaul.Roommates
         public static Func<Flatmate, int> MakeFriend;
         /// <summary>They introduce somebody the player has not met; returns that person's name, or null if nobody could be.</summary>
         public static Func<int, string> Introduce;
-        /// <summary>True while the person at a place in the social cast is the player's partner.</summary>
         public static Func<int, bool> IsPartner;
 
         /// <summary>The partner's body while they are shown in the home, or null: the roommate keeps off where they are.</summary>
@@ -65,12 +54,7 @@ namespace RealLifeOverhaul.Roommates
         }
     }
 
-    /// <summary>
-    /// The feature's entry in the mod's feature list, and the figures the Guide's page "Roommates" prints: every
-    /// {name} in its text is filled from <see cref="RoommateRules"/> here, so the page can never say anything the
-    /// rules do not do. Called once, when the feature list is built (Meta/FeatureList); each figure is worked out
-    /// when the page is opened.
-    /// </summary>
+    /// <summary>The feature's entry in the feature list, with the Guide's figures read from <see cref="RoommateRules"/> when the page opens.</summary>
     public static class RoommateGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -122,7 +106,6 @@ namespace RealLifeOverhaul
             Roommates.RoommateSettings.Load(modId);
         }
 
-        /// <summary>The "Roommates" block of the options page: the option and the test buttons.</summary>
         public static ModOptions AddRoommates(this ModOptions options)
         {
             return options

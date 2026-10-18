@@ -4,10 +4,8 @@ using UI.Notification;
 namespace RealLifeOverhaul.Roommates
 {
     /// <summary>
-    /// The roommate's test tools (Options, Tests): each makes now what the player would otherwise wait days for. The
-    /// first one pressed keeps the state as it was (under <see cref="TestKey"/>, in the save too), and "put roommates
-    /// back" restores exactly that. A tool that cannot do what it says tells why in a notice and in the log
-    /// (Core/TestRefusal). Money a test moves is real and is not taken back: the notice of each says what it paid.
+    /// The roommate's test tools (Options, Tests). The first one pressed keeps the state as it was (under <see cref="TestKey"/>,
+    /// in the save too) and "put roommates back" restores it; money a test moves is real and is not taken back.
     /// </summary>
     public sealed partial class RoommateDirector
     {
@@ -95,7 +93,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        /// <summary>"Test: three people answer a notice": a notice is up, free, with three answers already in.</summary>
         public void TestCandidates()
         {
             Test("candidates", () =>
@@ -118,7 +115,6 @@ namespace RealLifeOverhaul.Roommates
             });
         }
 
-        /// <summary>"Test: a roommate moves in": the first of a notice's applicants moves in today.</summary>
         public void TestMoveIn()
         {
             Test("move in", () =>
@@ -148,7 +144,6 @@ namespace RealLifeOverhaul.Roommates
             });
         }
 
-        /// <summary>"Test: rent day, and they are short": today is a rent day; they pay three fifths and owe the rest.</summary>
         public void TestRentShort()
         {
             Test("rent short", () =>
@@ -160,12 +155,12 @@ namespace RealLifeOverhaul.Roommates
                 BeforeTest();
                 int had = _state.Owed;
                 RentDue(RoommateGame.Day, true);
-                TestDone(_state.Mate.Person.Name + " paid " + (_state.Weekly - (_state.Owed - had)) + " of " + _state.Weekly + " and owes " + _state.Owed + " by day " + _state.OwedDue + " (the payment is real)",
+                TestDone(_state.Mate.Person.Name + " paid " + (_state.Weekly - (_state.Owed - had)) + " of " + _state.Weekly + " and owes " + _state.Owed + " by day " + _state.OwedDue
+                         + " (the payment is real)",
                     "reallife_roommate_test_rent_done", Fill.For(_state.Mate.Person.Name).Cost(_state.Owed));
             });
         }
 
-        /// <summary>"Test: a noisy night": last night was loud, whatever they are like.</summary>
         public void TestNoise()
         {
             Test("noise", () =>
@@ -180,7 +175,6 @@ namespace RealLifeOverhaul.Roommates
             });
         }
 
-        /// <summary>"Test: they cooked": a portion is left in the fridge now.</summary>
         public void TestCooked()
         {
             Test("cooked", () =>
@@ -201,7 +195,6 @@ namespace RealLifeOverhaul.Roommates
             });
         }
 
-        /// <summary>"Test: they give notice": they have found a new job and leave in three days.</summary>
         public void TestNotice()
         {
             Test("notice", () =>
@@ -221,7 +214,6 @@ namespace RealLifeOverhaul.Roommates
             });
         }
 
-        /// <summary>"Test: put roommates back": everything is as it was before the first test tool was used.</summary>
         public void TestBack()
         {
             Test("back", () =>

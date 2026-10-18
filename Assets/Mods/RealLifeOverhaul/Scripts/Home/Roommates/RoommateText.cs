@@ -27,11 +27,7 @@ namespace RealLifeOverhaul.Roommates
         public Fill And(string other) { Other = other; return this; }
     }
 
-    /// <summary>
-    /// Text for the roommate: a key and what fills it become a line for a notice, a phone message or a conversation.
-    /// Everything here builds strings and is called when something happens or a page is opened, never on a timer.
-    /// Money, weekdays and the hours of a day are written as the game writes them.
-    /// </summary>
+    /// <summary>Text for the roommate: a key and its fill as a notice, a text message or a line of a conversation; never built on a timer.</summary>
     public static class RoommateText
     {
         private static readonly RoomTrait[] TraitOrder =
@@ -70,7 +66,6 @@ namespace RealLifeOverhaul.Roommates
                 .Replace("{text}", f.Text ?? string.Empty).Replace("{n}", f.N ?? string.Empty).Replace("{other}", f.Other ?? string.Empty);
         }
 
-        /// <summary>The same as the text of a conversation entry.</summary>
         public static LanguageChangeEventDataHolder Say(string key, in Fill f)
         {
             return key.Localize(new
@@ -99,14 +94,13 @@ namespace RealLifeOverhaul.Roommates
             Notifications.Show(type, key, Data(f), seconds);
         }
 
-        /// <summary>A text message from the Roommate contact; with no contact (the phone's contacts are off) it is said on screen instead, so nothing is lost.</summary>
         /// <summary>
-        /// RLO Texts (Wiring/TextsPhone): a text about to go out (who it is from, the written line's key, its values, how to
-        /// send a line): true when it is held a moment for the model's words and sent through the last argument then (the
-        /// words, or the written line). Null or false: sent now, as written.
+        /// RLO Texts (Wiring/TextsPhone): a text about to go out (from, key, values, a sender); true when it is held for the
+        /// model's words and sent later through the sender. Null or false: sent now, as written.
         /// </summary>
         public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
 
+        /// <summary>A text message from the Roommate contact; with the phone's contacts off it is said on screen instead.</summary>
         public static void Message(string key, in Fill f)
         {
             Contact contact = RoommatePhone.Contact;
@@ -122,7 +116,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        // A text held for its words (RLO Texts), sent now.
         private static void Send(Contact contact, string key, Dictionary<string, string> data)
         {
             try
@@ -163,7 +156,6 @@ namespace RealLifeOverhaul.Roommates
             return text ?? T("reallife_roommate_trait_none");
         }
 
-        /// <summary>The one word for a single trait.</summary>
         public static string Trait(RoomTrait trait)
         {
             for (int i = 0; i < TraitOrder.Length; i++)
@@ -176,11 +168,10 @@ namespace RealLifeOverhaul.Roommates
             return string.Empty;
         }
 
-        /// <summary>The hours their work keeps them out, in a few words.</summary>
         public static string Hours(SocialPerson person)
         {
             int job = person.Job;
-            // Tried on a Tuesday and a Saturday at three hours: enough to tell the patterns apart without a table of words per job.
+            // Tried at three hours of a Tuesday: enough to tell the patterns apart without a table of words per job.
             bool shifts = job == 1 || job == 7;
             bool evenings = RoommateRules.AtWork(job, 2, 1, 20) && !RoommateRules.AtWork(job, 2, 1, 10);
             bool early = RoommateRules.AtWork(job, 2, 1, 7);

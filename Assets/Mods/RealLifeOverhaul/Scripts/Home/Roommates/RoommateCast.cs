@@ -12,22 +12,14 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Roommates
 {
     /// <summary>
-    /// The roommate as a character: ONE, ever, made the first time they are seen at home, kept on the shelf switched
-    /// off, and brought out again in the same look, so the expensive part (the game merges a character's meshes when
-    /// its look is built) is paid once per roommate. The look is built from the seed in the save: the same face in
-    /// every session. Made exactly as family life makes the partner (Family/FamilyCast): the living city's kind of
-    /// person (<see cref="CityPerson"/>: they only move by their navigation agent, clips never slide them), on
-    /// whichever navigation mesh the home has.
-    ///
-    /// Nothing here runs by itself. While the roommate is out, the director calls <see cref="Tick"/> each frame: one
-    /// turn towards a point while they are turning, one comparison of distance and side for hiding them. Nothing is
-    /// allocated then.
+    /// The roommate as one character, ever, kept on the shelf switched off so the mesh merge of a look is paid once; dressed
+    /// from the seed in the save. While they are out the director calls <see cref="Tick"/> each frame, which allocates nothing.
     /// </summary>
     public sealed class RoommateCast
     {
         private const string CharacterPrefab = "Characters/HumanDefinitionLow";
-        private const float HideDistance = 150f;
-        private const float HideBehind = 6f;
+        private const float HideDistance = 150f;   // metres from the camera
+        private const float HideBehind = 6f;       // metres behind the camera
         private const float TurnRate = 240f;       // degrees a second
         private const float MaxBuild = 0.55f;      // the mod's clips are made for slim to average
 
@@ -47,19 +39,14 @@ namespace RealLifeOverhaul.Roommates
             Props = new CityProps(parent);
         }
 
-        /// <summary>The props they hold (a cup, the newspaper).</summary>
         public CityProps Props { get; }
 
-        /// <summary>True while they are out.</summary>
         public bool Out { get; private set; }
 
         /// <summary>Characters could not be made this session: the roommate is not shown, everything else goes on.</summary>
         public bool Failed { get; private set; }
 
-        /// <summary>
-        /// Puts them at a spot that was found on a navigation mesh, facing a point, standing. Null if they are out
-        /// already, the spot will not take them, or a character cannot be made (said once in the log).
-        /// </summary>
+        /// <summary>Puts them, standing, at a spot on a navigation mesh. Null if they are out already, the spot will not take them, or no character can be made.</summary>
         public CityPerson Put(SocialPerson who, Vector3 spot, Vector3 face, int agentType)
         {
             if (Failed || Out || who == null)
@@ -130,7 +117,6 @@ namespace RealLifeOverhaul.Roommates
             person.Actor.InUse = false;
         }
 
-        /// <summary>They turn to face a point over a moment.</summary>
         public void Face(Vector3 point)
         {
             if (!Out || _person == null || _person.Lost)
@@ -146,7 +132,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        /// <summary>Called by the director each frame while they are out: a few comparisons.</summary>
         public void Tick(float delta)
         {
             CityPerson person = _person;
@@ -178,7 +163,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        /// <summary>The city is going: destroy what was made.</summary>
         public void Dispose()
         {
             CityPerson person = _person;
@@ -219,7 +203,6 @@ namespace RealLifeOverhaul.Roommates
             return new CityPerson(character);
         }
 
-        // On the mesh of the given agent type at a spot, standing, facing a point.
         private static bool Place(CityPerson person, Vector3 spot, Vector3 face, int agentType)
         {
             ThirdPersonCharacter character = person.Character;

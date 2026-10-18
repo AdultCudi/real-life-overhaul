@@ -145,7 +145,7 @@ Every phone contact the mod adds has an id that starts `reallife-`. The save too
 | `reallife-business` | `Business/BusinessDesk.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-career` | `Jobs/CareerPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-cityhall` | `Civic/CityHallPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
-| `reallife-clinic` | `Home/HomePhone.cs` |
+| `reallife-clinic` | `Home/DoctorVisit.cs` |
 | `reallife-collections` | `Economy/Banking/Debt/DebtPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-debt-advice` | `Economy/Banking/Debt/DebtPhone.cs`, `Phone/Contacts/ContactCatalogue.cs` |
 | `reallife-dmv` | `Licences/Driving/DrivingSchool.cs`, `Phone/Contacts/ContactCatalogue.cs` |

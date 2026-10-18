@@ -5,18 +5,10 @@ using Dialogs;
 using Entities;
 using Localizor;
 using UI.Smartphone.Apps.Contacts;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Roommates
 {
-    /// <summary>
-    /// The "Roommate" contact in the game's own Contacts app: where a notice is put up or a friend is asked, where the
-    /// people who answered are read through and one of them is offered the room, and, once somebody lives in, how
-    /// things stand, a call to them, and notice. The game's own call panel throughout; text messages from the contact
-    /// say what happened while the player was out.
-    ///
-    /// Everything here is built when the player rings the contact or presses a button of the call. Nothing runs otherwise.
-    /// </summary>
+    /// <summary>The "Roommate" contact in the game's Contacts app: notices, applicants and friends, and once somebody lives in, how things stand and notice.</summary>
     public static class RoommatePhone
     {
         public const string ContactId = "reallife-roommate";
@@ -31,15 +23,11 @@ namespace RealLifeOverhaul.Roommates
             Contact = null;
         }
 
-        /// <summary>
-        /// The contact's picture from the game's own assets (Phone/Contacts): the roommate's own face, from the look they are
-        /// dressed in at home (RoommateCast.Dress), while somebody lives in; the catalogue's logo of a room to let while nobody does.
-        /// Asked when the contact is set up and when somebody moves in or out.
-        /// </summary>
+        /// <summary>The contact's picture: the roommate's own face while somebody lives in, else the catalogue's room to let. Asked at set-up and as somebody moves in or out.</summary>
         public static void Picture()
         {
             RoommateDirector d = RoommateDirector.Instance;
-            Flatmate mate = d != null && d.State != null ? d.State.Mate : null;
+            Flatmate mate = d != null ? d.State.Mate : null;
             if (mate != null && mate.Person != null)
             {
                 ContactPictures.Person(ContactId, mate.Person.Female, Math.Max(18, Math.Min(80, mate.Person.Age)), mate.Person.Seed != 0 ? mate.Person.Seed : 1);
@@ -76,9 +64,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        // ---------------------------------------------------------------- the call
-
-        /// <summary>The first page of a call, by how things stand.</summary>
         internal static DialogEntry Menu()
         {
             RoommateDirector d = RoommateDirector.Instance;
@@ -103,7 +88,6 @@ namespace RealLifeOverhaul.Roommates
             };
         }
 
-        // Nobody lives in and no notice is up: what the home offers, a notice, a friend.
         private static DialogEntry Empty(RoommateDirector d)
         {
             RoomKind room = d.RoomNow(out int weekly, out bool lodger);
@@ -123,7 +107,6 @@ namespace RealLifeOverhaul.Roommates
                 "reallife_roommate_do_ask_friend", () => Friend(d, 0, true));
         }
 
-        // The friends who could be asked, one at a time.
         private static DialogEntry Friend(RoommateDirector d, int index, bool first)
         {
             if (first)
@@ -152,7 +135,6 @@ namespace RealLifeOverhaul.Roommates
                 "reallife_roommate_do_someone_else", Friends.Count > 1 ? () => Friend(d, index + 1, false) : (Func<DialogEntry>)null);
         }
 
-        // A notice is up: how long for, who has answered.
         private static DialogEntry Notice(RoommateDirector d, RoommateState s)
         {
             int answered = 0;
@@ -188,7 +170,6 @@ namespace RealLifeOverhaul.Roommates
             return -1;
         }
 
-        // One applicant: who they are, what they offer, what shows of them.
         private static DialogEntry Applicant(RoommateDirector d, int index)
         {
             RoommateState s = d.State;
@@ -219,7 +200,6 @@ namespace RealLifeOverhaul.Roommates
                 "reallife_roommate_do_next", next >= 0 && next != index ? () => Applicant(d, next) : (Func<DialogEntry>)null);
         }
 
-        // Somebody lives in: how things stand, a call to them, notice.
         private static DialogEntry Living(RoommateDirector d, RoommateState s)
         {
             Flatmate m = s.Mate;
@@ -274,7 +254,7 @@ namespace RealLifeOverhaul.Roommates
     }
 
     /// <summary>A call to the Roommate contact.</summary>
-    public class RoommateCallDialog : Dialog
+    public sealed class RoommateCallDialog : Dialog
     {
         public RoommateCallDialog()
         {

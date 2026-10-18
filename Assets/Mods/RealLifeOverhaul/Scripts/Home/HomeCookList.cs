@@ -10,19 +10,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What can be cooked right now, in the window the game lists its subway stations in (<see cref="TravelList"/>,
-    /// a copy of Canvases/CityMap/SubwayStations): the game's own form for "pick one of these", with a name and a
-    /// blue button per entry and the yellow Cancel button on the game's cancel key. Nothing is drawn by the mod.
-    ///
-    /// The entries: the size (normal, double, family size; its button changes it), the leftovers put by, every dish
-    /// this home's fridges allow in the largest size up to the one chosen (how many portions, how long, what a
-    /// portion fills, exactly which items it takes), then the dishes one unit of food short, with their button off
-    /// and what is missing. The lines under the headline say what the fridges hold and, where nothing or little can
-    /// be made, why. Picking a dish closes the list and hands the plan to the director, which walks the player to
-    /// the cooker.
-    ///
-    /// The window is made the first time it is wanted and its entries are used again; it is filled when it opens
-    /// and when the size is changed, never per frame. Closed, it costs nothing.
+    /// The cooking list in the game's own list window (<see cref="TravelList"/>): the size, the leftovers, the dishes the
+    /// fridges allow and those one unit short. Filled when it opens or the size changes; closed, it costs nothing.
     /// </summary>
     public static class HomeCookList
     {
@@ -50,14 +39,9 @@ namespace RealLifeOverhaul
         private static int _fridges;
         private static int _size;
 
-        /// <summary>True while the list is on screen.</summary>
         public static bool IsOpen => _list != null && _list.IsOpen;
 
-        /// <summary>
-        /// Opens the list for the home the player is in (HomePlace has just looked it over). Returns what it found,
-        /// for the log: fridges, units by kind, dishes possible. Null if the game's window could not be copied (one
-        /// "Game UI:" line says why): the caller then cooks without asking.
-        /// </summary>
+        /// <summary>Opens the list. Returns a line for the log, or null if the game's window could not be copied (the caller then cooks the first dish).</summary>
         public static string Open(HomeDirector host)
         {
             if (_failed)
@@ -101,7 +85,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Closes the list if it is open, saying why in the log.</summary>
         public static void Close(string why)
         {
             if (IsOpen)
@@ -111,7 +94,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The window gone with the home director (the game's interface is rebuilt with the city).</summary>
+        /// <summary>Drops the window with the director: the game's interface is rebuilt with each city.</summary>
         public static void Remove()
         {
             try
@@ -145,7 +128,6 @@ namespace RealLifeOverhaul
             _list = null;
         }
 
-        // Runs once per closing, whoever closed it (a pick, the Cancel button, the game's cancel key, or the director).
         private static void Closed()
         {
             if (Meta.Dev.Verbose)
@@ -164,7 +146,7 @@ namespace RealLifeOverhaul
                 {
                     _size = (_size + 1) % HomeBalance.Batches.Length;
                     string found = Fill();
-                    _list.Open(OnPick, OnClosed);   // (the entries that are no longer used are switched off)
+                    _list.Open(OnPick, OnClosed);   // switches off the entries no longer used
                     if (Meta.Dev.Verbose)
                     {
                         Logger?.Info("Home check (choice): the size is now " + HomeBalance.Batches[_size] + " batch(es): " + found);
@@ -190,7 +172,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Writes the entries from the fridges as they were read when the list opened. Returns a line for the log.
+        // The entries, from the fridges as read when the list opened. Returns a line for the log.
         private static string Fill()
         {
             Plans.Clear();
@@ -200,7 +182,7 @@ namespace RealLifeOverhaul
                 units += Pantry[i].Amount;
             }
 
-            // First pass: what there is, so that the lines under the headline can say why little or nothing is listed.
+            // What there is, so that the headline can say why little or nothing is listed.
             Dish[] dishes = HomeBalance.Dishes;
             int possible = 0;
             int needCooker = 0;

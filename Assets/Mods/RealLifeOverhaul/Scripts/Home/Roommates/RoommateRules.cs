@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Roommates
     /// <summary>What a home offers somebody who moves in.</summary>
     public enum RoomKind { None, Sofa, Bed }
 
+    /// <summary>How a rent day went.</summary>
     public enum RentOutcome { Paid, Late, Short }
 
     /// <summary>Why an arrangement ended, or is ending.</summary>
@@ -64,6 +65,7 @@ namespace RealLifeOverhaul.Roommates
         public int Level;
     }
 
+    /// <summary>What <see cref="RoommateRules.Rent"/> decided for a rent day.</summary>
     public struct RentResult
     {
         public RentOutcome Outcome;
@@ -73,15 +75,12 @@ namespace RealLifeOverhaul.Roommates
     }
 
     /// <summary>
-    /// Every rule and figure of living with a roommate, free of the game: who answers a notice, when they are in,
-    /// what they pay and when it is late, what a day brings, what each thing does to the relationship, how much
-    /// food they may take, what room a home has, and every way it ends. Deterministic: the same seed and day give
-    /// the same answer, so a save loaded twice plays the same day twice. Checked offline (EconomyCheck, RoommateChecks.cs).
-    /// Nothing here runs by itself; the director asks on a day, an hour or a button.
+    /// Every rule and figure of living with a roommate, game-free and deterministic: the same seed and day give the same
+    /// answer, so a save loaded twice plays the same day twice. Checked by EconomyCheck's RoommateChecks.
     /// </summary>
     public static class RoommateRules
     {
-        // ---- finding one
+        // Finding one.
         public const int CandidatesLeast = 2, CandidatesMost = 4;
         public const int AnswerHours = 36;          // game hours over which the answers to a notice come in ("a day or two")
         public const int AdDays = 5;                // days a notice stays up
@@ -92,7 +91,7 @@ namespace RealLifeOverhaul.Roommates
         public const int FriendSharePct = 45;       // what a friend pays: this, five more if generous, five less if careful
         public const int JobCount = 15;             // the jobs of SocialCatalogue.Jobs a roommate can have (all but "retired", the last)
 
-        // ---- money
+        // Money.
         public const int RentEveryDays = 7;         // a rent day every so many days from the day they moved in
         public const int RentHour = 9;              // from this hour of a rent day
         public const int LateOddsLate = 3000;       // of 10000, somebody late with rent: nothing on the day
@@ -102,12 +101,12 @@ namespace RealLifeOverhaul.Roommates
         public const int SlipsMost = 2;             // times a promised day may pass before they pay whatever happens
         public const int SlipOdds = 3500;
         public const int SlipDays = 2;
-        public const int ChaseOdds = 5500;          // somebody late by nature pays at once when chased, this often (plus the level, a point a point)
+        public const int ChaseOdds = 5500;          // of 10000: somebody late by nature pays at once when chased; 50 more for each point of the level
         public const int BorrowOdds = 400, BorrowOddsLate = 800;
         public const int BorrowDays = 5;            // a loan is promised back in so many days
         public static int FoodPrice => Prices.At(8);             // dollars: what they put down for something they took, when asked
 
-        // ---- the home
+        // The home.
         public const float TidyPerDay = 6f, MessPerDay = -5f, OneMorePerDay = -1f;   // points of a hundred of the home's tidiness
         public const int RaidsPerWeek = 2;
         public const int RaidLeaves = 2;            // units of food they never go below
@@ -116,13 +115,13 @@ namespace RealLifeOverhaul.Roommates
         public const float NoiseSleepHours = 0.5f;  // sleep owed after a noisy night
         public const int MealFill = 45;             // what a portion they leave fills, of the game's hundred
 
-        // ---- the relationship (the person model's own three figures, 0 to 100; the level is their average)
+        // The relationship: the person model's own three figures, 0 to 100; the level is their average.
         public const float StartFamiliarity = 15f, StartAffection = 25f, StartTrust = 25f;
         public const float FamiliarityByLiving = 60f;   // living together alone makes people this familiar and no more
         public const int LowLevel = 30, GoodLevel = 45, FriendLevel = 60;
         public const float RowAffection = 10f, RowTrust = 8f;   // under either, it ends in a row
 
-        // ---- ending it
+        // Ending it.
         public const int NoticeDays = 3;
         public const int MinStayDays = 10;          // nobody leaves of their own accord before this
         public const int LeaveOdds = 120, LeaveOddsLow = 800;   // of 10000 a day
@@ -134,6 +133,15 @@ namespace RealLifeOverhaul.Roommates
             new[] { RoomTrait.Tidy, RoomTrait.Messy }, new[] { RoomTrait.Quiet, RoomTrait.Noisy }, new[] { RoomTrait.EarlyBird, RoomTrait.NightOwl },
             new[] { RoomTrait.Generous, RoomTrait.Tight }, new[] { RoomTrait.Reliable, RoomTrait.LateWithRent }, new[] { RoomTrait.Cooks, RoomTrait.RaidsFridge },
             new[] { RoomTrait.Sociable, RoomTrait.Private }
+        };
+
+        // What a friend's social traits say about living with them.
+        private static readonly (SocialTrait From, RoomTrait To)[] FriendTraits =
+        {
+            (SocialTrait.NightOwl, RoomTrait.NightOwl), (SocialTrait.Punctual, RoomTrait.EarlyBird), (SocialTrait.Generous, RoomTrait.Generous),
+            (SocialTrait.Careful, RoomTrait.Tight), (SocialTrait.Reliable, RoomTrait.Reliable), (SocialTrait.Flaky, RoomTrait.LateWithRent),
+            (SocialTrait.Foodie, RoomTrait.Cooks), (SocialTrait.Homebody, RoomTrait.Private), (SocialTrait.Late, RoomTrait.Messy),
+            (SocialTrait.Sporty, RoomTrait.Tidy)
         };
 
         // Invented first names and surnames, dealt without replacement so that no two applicants to one notice share either.
@@ -150,8 +158,6 @@ namespace RealLifeOverhaul.Roommates
         private static readonly byte[] WorkTo = { 13, 0, 16, 17, 23, 17, 26, 0, 17, 16, 17, 15, 20, 16, 19 };
         private static readonly byte[] WorkDays = { 0x3F, 0, 0x1F, 0x1F, 0x3E, 0x1F, 0x7C, 0, 0x1F, 0x1F, 0x1F, 0x3F, 0x3F, 0x3E, 0x1F };
         private static readonly int[] JobPay = { 110, 210, 180, 190, 170, 260, 150, 160, 230, 220, 140, 130, 170, 120, 200 };   // dollars a day: what they can afford
-
-        // ---------------------------------------------------------------- chance
 
         /// <summary>A figure from 0 to 9999 that is always the same for the same three numbers.</summary>
         public static int Roll(int seed, int day, int salt)
@@ -170,7 +176,6 @@ namespace RealLifeOverhaul.Roommates
 
         public static bool Has(RoomTrait traits, RoomTrait trait) => (traits & trait) != 0;
 
-        /// <summary>How many traits a set holds.</summary>
         public static int Count(RoomTrait traits)
         {
             int count = 0;
@@ -181,7 +186,6 @@ namespace RealLifeOverhaul.Roommates
             return count;
         }
 
-        /// <summary>True if no pair has both of its sides in the set.</summary>
         public static bool Consistent(RoomTrait traits)
         {
             for (int i = 0; i < Pairs.Length; i++)
@@ -194,12 +198,9 @@ namespace RealLifeOverhaul.Roommates
             return true;
         }
 
-        // ---------------------------------------------------------------- who answers a notice
-
         /// <summary>
-        /// The people who answer a notice: two to four, each with a name, a look, a job, two or three traits of which
-        /// one shows at once, the share of the rent they offer and the hour their answer comes. The same for the same
-        /// seed and notice number. <paramref name="stamp"/> is the day times 24 plus the hour the notice went up.
+        /// The two to four people who answer a notice, the same for the same seed and notice: a name, a look, a job, two or three
+        /// traits (one shown at once), the share they offer and when they answer. <paramref name="stamp"/>: day * 24 + hour it went up.
         /// </summary>
         public static void Candidates(int seed, int notice, int stamp, RoomKind room, List<Flatmate> into)
         {
@@ -246,16 +247,13 @@ namespace RealLifeOverhaul.Roommates
         public static Flatmate Friend(SocialPerson friend, RoomKind room)
         {
             RoomTrait set = RoomTrait.None;
-            if (friend.Has(SocialTrait.NightOwl)) set |= RoomTrait.NightOwl;
-            if (friend.Has(SocialTrait.Punctual)) set |= RoomTrait.EarlyBird;
-            if (friend.Has(SocialTrait.Generous)) set |= RoomTrait.Generous;
-            if (friend.Has(SocialTrait.Careful)) set |= RoomTrait.Tight;
-            if (friend.Has(SocialTrait.Reliable)) set |= RoomTrait.Reliable;
-            if (friend.Has(SocialTrait.Flaky)) set |= RoomTrait.LateWithRent;
-            if (friend.Has(SocialTrait.Foodie)) set |= RoomTrait.Cooks;
-            if (friend.Has(SocialTrait.Homebody)) set |= RoomTrait.Private;
-            if (friend.Has(SocialTrait.Late)) set |= RoomTrait.Messy;
-            if (friend.Has(SocialTrait.Sporty)) set |= RoomTrait.Tidy;
+            for (int i = 0; i < FriendTraits.Length; i++)
+            {
+                if (friend.Has(FriendTraits[i].From))
+                {
+                    set |= FriendTraits[i].To;
+                }
+            }
             if ((set & RoomTrait.NightOwl) != 0)
             {
                 set &= ~RoomTrait.EarlyBird;
@@ -356,8 +354,6 @@ namespace RealLifeOverhaul.Roommates
             return order;
         }
 
-        // ---------------------------------------------------------------- the hours they are in
-
         /// <summary>True if their job has them at work at this hour. <paramref name="weekday"/> is 0 for Monday.</summary>
         public static bool AtWork(int job, int day, int weekday, int hour)
         {
@@ -379,7 +375,6 @@ namespace RealLifeOverhaul.Roommates
             return to > 24 && hour < to - 24 && ((WorkDays[job] >> ((weekday + 6) % 7)) & 1) != 0;
         }
 
-        /// <summary>The hour they go to bed and the hour they get up, by what they are like and what their job asks.</summary>
         public static void Sleep(int job, RoomTrait traits, out int bed, out int rise)
         {
             bed = Has(traits, RoomTrait.EarlyBird) ? 22 : Has(traits, RoomTrait.NightOwl) ? 2 : 23;
@@ -406,7 +401,6 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        /// <summary>Where they are at an hour of a day: at work, asleep, out for the evening, in their room, or in the flat.</summary>
         public static RoomWhere Where(int job, RoomTrait traits, int seed, int day, int weekday, int hour)
         {
             if (AtWork(job, day, weekday, hour))
@@ -434,12 +428,8 @@ namespace RealLifeOverhaul.Roommates
             return RoomWhere.In;
         }
 
-        /// <summary>True for the two answers that mean "in the flat but not to be seen".</summary>
         public static bool Hidden(RoomWhere where) => where == RoomWhere.Asleep || where == RoomWhere.InRoom;
 
-        // ---------------------------------------------------------------- rent
-
-        /// <summary>What a week of their share comes to. Never negative.</summary>
         public static int Weekly(float rentPerDay, int sharePct)
         {
             if (rentPerDay <= 0f || sharePct <= 0)
@@ -449,7 +439,6 @@ namespace RealLifeOverhaul.Roommates
             return (int)Math.Round(rentPerDay * RentEveryDays * sharePct / 100.0);
         }
 
-        /// <summary>The first rent day on or after a day, counted in weeks from the day they moved in.</summary>
         public static int NextRentDay(int movedIn, int day)
         {
             if (day <= movedIn)
@@ -489,7 +478,7 @@ namespace RealLifeOverhaul.Roommates
             return result;
         }
 
-        /// <summary>The promised day has come. True if they pay what they owe; false if it slips by <see cref="SlipDays"/> (never more than <see cref="SlipsMost"/> times).</summary>
+        /// <summary>The promised day has come: true if they pay, false if it slips by <see cref="SlipDays"/> (at most <see cref="SlipsMost"/> times).</summary>
         public static bool PaysArrears(int seed, int day, RoomTrait traits, int slips)
         {
             if (!Has(traits, RoomTrait.LateWithRent) || slips >= SlipsMost)
@@ -499,7 +488,6 @@ namespace RealLifeOverhaul.Roommates
             return Roll(seed, day, 14) >= SlipOdds;
         }
 
-        /// <summary>The player asks for the money now. True if they pay on the spot.</summary>
         public static bool PaysWhenChased(int seed, int day, RoomTrait traits, int level)
         {
             if (!Has(traits, RoomTrait.LateWithRent))
@@ -532,16 +520,12 @@ namespace RealLifeOverhaul.Roommates
             return Has(traits, RoomTrait.Reliable) || Has(traits, RoomTrait.Generous) ? owed : owed / 2;
         }
 
-        /// <summary>The part of a week's share for the days since the last rent day, on the day they leave.</summary>
         public static int FinalRent(int weekly, int daysSinceRentDay)
         {
             int days = daysSinceRentDay < 0 ? 0 : daysSinceRentDay > RentEveryDays ? RentEveryDays : daysSinceRentDay;
             return weekly <= 0 ? 0 : weekly * days / RentEveryDays;
         }
 
-        // ---------------------------------------------------------------- the relationship
-
-        /// <summary>The level of the relationship, 0 to 100: the person model's own one figure.</summary>
         public static int Level(SocialPerson person) => person != null ? person.Closeness : 0;
 
         /// <summary>What a moment is worth: familiarity, affection, trust, in points of a hundred.</summary>
@@ -578,7 +562,7 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
-        /// <summary>Moves the person's figures by a moment, inside 0 to 100. Living together alone stops making people more familiar at <see cref="FamiliarityByLiving"/>.</summary>
+        /// <summary>Moves the person's figures by a moment; living together alone makes them no more familiar than <see cref="FamiliarityByLiving"/>.</summary>
         public static void Apply(SocialPerson person, RoomMoment moment)
         {
             Effect(moment, out float familiarity, out float affection, out float trust);
@@ -591,10 +575,7 @@ namespace RealLifeOverhaul.Roommates
             person.Trust = SocialRules.Clamp(person.Trust + trust);
         }
 
-        /// <summary>True when things have got so bad that it ends in a row.</summary>
         public static bool Broken(float affection, float trust) => affection < RowAffection || trust < RowTrust;
-
-        // ---------------------------------------------------------------- what a day brings
 
         /// <summary>What happens at home on a day, by what they are like and how things stand. Decided once, in the morning.</summary>
         public static DayEvents Day(int seed, int day, RoomTrait traits, in DayContext c)
@@ -629,19 +610,16 @@ namespace RealLifeOverhaul.Roommates
             return events;
         }
 
-        /// <summary>How much tidier (positive) or messier the home is for a day with them in it.</summary>
         public static float TidyChange(RoomTrait traits)
         {
             return Has(traits, RoomTrait.Tidy) ? TidyPerDay : Has(traits, RoomTrait.Messy) ? MessPerDay : OneMorePerDay;
         }
 
-        /// <summary>How many units of food they take: one, while the fridges hold more than <see cref="RaidLeaves"/> and the week's limit is not reached; else none.</summary>
+        /// <summary>One unit of food, while the fridges hold more than <see cref="RaidLeaves"/> and the week's limit is not reached; else none.</summary>
         public static int RaidTake(int unitsInFridges, int raidsThisWeek, bool stopped)
         {
             return !stopped && raidsThisWeek < RaidsPerWeek && unitsInFridges > RaidLeaves ? 1 : 0;
         }
-
-        // ---------------------------------------------------------------- room
 
         /// <summary>True if the game's name for a piece of furniture is a bed (not a bedside table, not a flatbed trolley).</summary>
         public static bool IsBed(string itemName)
@@ -655,10 +633,7 @@ namespace RealLifeOverhaul.Roommates
             return itemName != null && (itemName.IndexOf("sofa", StringComparison.Ordinal) >= 0 || itemName.IndexOf("couch", StringComparison.Ordinal) >= 0);
         }
 
-        /// <summary>
-        /// The room a home has for a roommate: a second bed is a room of their own; with one bed or none, a sofa will
-        /// do, at less rent, unless a partner lives in (the living room is then the couple's); otherwise none.
-        /// </summary>
+        /// <summary>The room a home has: a second bed is a room of their own; else a sofa, at less rent, unless a partner lives in.</summary>
         public static RoomKind Room(int beds, int sofas, bool partnerLivesIn)
         {
             if (beds >= 2)
@@ -668,9 +643,7 @@ namespace RealLifeOverhaul.Roommates
             return sofas >= 1 && !partnerLivesIn ? RoomKind.Sofa : RoomKind.None;
         }
 
-        // ---------------------------------------------------------------- endings
-
-        /// <summary>Whether they give notice today of their own accord, and why. A row whenever things are broken; otherwise only after <see cref="MinStayDays"/>.</summary>
+        /// <summary>Whether, and why, they give notice today: a row whenever things are broken, otherwise only after <see cref="MinStayDays"/>.</summary>
         public static EndWhy Leaving(int seed, int day, int daysIn, int level, float affection, float trust)
         {
             if (Broken(affection, trust))
@@ -715,7 +688,6 @@ namespace RealLifeOverhaul.Roommates
             return why != EndWhy.Row && why != EndWhy.PlayerNotice && level >= FriendLevel && Roll(seed, day, 6) < StayOdds;
         }
 
-        /// <summary>True on and after the day a notice runs out.</summary>
         public static bool Gone(int leaveDay, int day) => leaveDay > 0 && day >= leaveDay;
     }
 }

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>What the player is ill with. One at a time; the order is the order of en.json's names.</summary>
+    /// <summary>What the player is ill with, one at a time. Saved by number: never reorder.</summary>
     public enum Illness
     {
         None,
@@ -24,13 +24,7 @@ namespace RealLifeOverhaul
         Home       // cooked at home
     }
 
-    /// <summary>
-    /// Home life and health for one savegame: the three light needs (hygiene, stress, how tidy
-    /// the flat is), fitness, sleep debt, what was eaten over the last five days, the illness
-    /// the player has, and the few dates the routines need. Game-free, and kept as one line of
-    /// text in the save's modData (<see cref="Key"/>), so a save made with the mod loads without
-    /// it and a save from before it starts from the defaults below.
-    /// </summary>
+    /// <summary>Home life and health for one save, game-free: one line of modData (<see cref="Key"/>); a save without it starts from the defaults.</summary>
     public static class HomeState
     {
         public const string Key = "reallife:home";
@@ -39,12 +33,10 @@ namespace RealLifeOverhaul
 
         public static bool Loaded { get; private set; }
 
-        // ---- needs
         public static float Hygiene;        // 0 unwashed .. 100 fresh
         public static float Stress;         // 0 calm .. 100 at the end of the rope
         public static float Tidy;           // 0 a tip .. 100 spotless (the player's own home)
 
-        // ---- health
         public static float Fitness;        // 0 .. 100
         public static float SleepDebt;      // hours owed, 0 .. 24
         public static float Strength;       // what the mod has added to the body's strength so far, -0.5 .. 0.5
@@ -58,7 +50,6 @@ namespace RealLifeOverhaul
         public static float SickNoteUntil;  // game minutes: job penalties are paused until then
         public static int ImmuneUntilDay;   // nothing new is caught before this day
 
-        // ---- dates and counters
         public static int Day;              // the day the counters below belong to
         public static int Leftovers;        // cooked portions put by
         public static int LeftoverDish;     // which dish they are (Dish.Number); 0: not known
@@ -122,8 +113,6 @@ namespace RealLifeOverhaul
             System.Array.Clear(Diet, 0, Diet.Length);
         }
 
-        // ---------------------------------------------------------------- diet
-
         public static void Ate(Meal meal)
         {
             Diet[(int)meal]++;
@@ -160,10 +149,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Moves the counters on to a new day: today's meals become yesterday's, the daily counts
-        /// start again. Returns how many days went by (0 if it is still the same day).
-        /// </summary>
+        /// <summary>Moves the counters on to a new day. Returns how many days went by (0: still the same day).</summary>
         public static int NewDay(int day)
         {
             if (Day == 0)
@@ -201,8 +187,6 @@ namespace RealLifeOverhaul
             }
             return passed;
         }
-
-        // ---------------------------------------------------------------- the save
 
         public static void Load(Dictionary<string, string> data)
         {
@@ -355,10 +339,7 @@ namespace RealLifeOverhaul
             text.Append(';').Append(name).Append('=').Append(value.ToString("0.###", CultureInfo.InvariantCulture));
         }
 
-        /// <summary>
-        /// Puts cooked portions by, as far as there is room for them. Returns how many were kept. The leftovers are
-        /// one lot: they take the name of the dish that came last, and a portion fills the average of what is there.
-        /// </summary>
+        /// <summary>Puts cooked portions by, as far as there is room; returns how many. The leftovers are one lot: the last dish, the average fill.</summary>
         public static int PutBy(int portions, int dish, int fill)
         {
             int had = Leftovers < 0 ? 0 : Leftovers;
