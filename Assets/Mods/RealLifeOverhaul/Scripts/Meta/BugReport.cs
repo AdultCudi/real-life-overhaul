@@ -23,15 +23,20 @@ namespace RealLifeOverhaul.Meta
         private const float MenuStep = 0.25f;      // real seconds between looks at a menu of the game's that is in the way
         private const float GiveUpAfter = 600f;    // real seconds a report waits for a menu to close before it is forgotten
 
-        private static bool _busy;                 // a report is being made: a second press says so
-        private static bool _waiting;              // the text box waits for a menu of the game's to close
+        // The object whose coroutine makes the report, or waits for a menu of the game's to close before the text box: set
+        // while it runs. Destroyed, it stops its coroutines with it, and Unity's null then says the report is over.
+        private static MetaUi _making;
+        private static MetaUi _waiting;
+
+        private static bool Busy => _making != null;            // a report is being made: a second press says so
+        private static bool Waiting => _waiting != null;
 
         /// <summary>The button: asks for the words where the game can, or asks first where it cannot.</summary>
         public static void Press()
         {
             try
             {
-                if (_busy)
+                if (Busy)
                 {
                     OptionsNotice.Tell(TitleKey, "reallife_bug_busy".GetLocalization());
                     return;
@@ -44,10 +49,10 @@ namespace RealLifeOverhaul.Meta
                 if (GuideApp.Blocked)
                 {
                     Notifications.Show(NotificationType.Info, "reallife_bug_waits", null, 6f);
-                    if (!_waiting)
+                    if (!Waiting)
                     {
-                        _waiting = true;
-                        MetaUi.Instance.Run(WaitForMenus());
+                        _waiting = MetaUi.Instance;
+                        _waiting.Run(WaitForMenus());
                     }
                     return;
                 }
@@ -67,8 +72,8 @@ namespace RealLifeOverhaul.Meta
             {
                 yield return wait;
             }
-            _waiting = false;
-            if (!GuideApp.Blocked && BugReportGame.CanAsk && !_busy)
+            _waiting = null;
+            if (!GuideApp.Blocked && BugReportGame.CanAsk && !Busy)
             {
                 Ask();
             }
@@ -107,18 +112,18 @@ namespace RealLifeOverhaul.Meta
 
         private static void Make(string words)
         {
-            if (_busy)
+            if (Busy)
             {
                 return;
             }
-            _busy = true;
             try
             {
-                MetaUi.Instance.Run(Making(words));
+                _making = MetaUi.Instance;
+                _making.Run(Making(words));
             }
             catch (Exception e)
             {
-                _busy = false;
+                _making = null;
                 MetaLog.Error(e);
             }
         }
@@ -178,7 +183,7 @@ namespace RealLifeOverhaul.Meta
                 Fail(e);
                 yield break;
             }
-            _busy = false;
+            _making = null;
         }
 
         // On the worker: older reports cleared, each file on its own (a failure is said in report.txt), report.txt last, then the zip.
@@ -299,7 +304,7 @@ namespace RealLifeOverhaul.Meta
 
         private static void Fail(Exception e)
         {
-            _busy = false;
+            _making = null;
             MetaLog.Error(e);
             try
             {

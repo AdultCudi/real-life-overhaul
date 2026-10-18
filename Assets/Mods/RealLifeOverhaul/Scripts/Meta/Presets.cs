@@ -276,13 +276,13 @@ namespace RealLifeOverhaul.Meta
             try
             {
                 lines = File.ReadAllLines(path);
-                Export(BeforePresetFile);
             }
             catch (Exception e)
             {
                 MetaLog.Error(e);
                 return "reallife_meta_import_failed".GetLocalization().Replace("{file}", path).Replace("{error}", e.Message);
             }
+            SaveBefore();   // as Apply and ResetAll: a backup that cannot be written is logged, and the file read is imported all the same
 
             int applied = 0, skipped = 0;
             var reload = new List<string>();

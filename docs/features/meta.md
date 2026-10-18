@@ -80,7 +80,7 @@ The row under the page's first header is a text field (`OptionsLayout.Search.cs`
 The page has no text field of the game's to copy, so it is a `TMP_InputField` built in code that takes its width from the header above it and its height, font, letter size and button shape from the "Open the Guide" button below it.
 
 - **Matching.** From two letters on.
-  Not case-sensitive; the words typed may be in any order and each must be somewhere in the row's label, or in its section's text: the section's name, the feature's `About` sentence, and the other words for it in the `SearchWords` table.
+  Not case-sensitive; the words typed may be in any order and each must be somewhere in the row's label, its tip or its own other words, or in its section's text: the section's name and the other words given for it, and those of the sections above it.
 
   So a word that names a feature shows all of its rows, and a word only in a label shows that row ("bus" shows the whole of the transport section and its tests; "timetable" shows the rows that say timetable).
 
@@ -104,13 +104,13 @@ The page has no text field of the game's to copy, so it is a `TMP_InputField` bu
 - **Failing.** Anything thrown hides the box for the session, logs once ("Meta: the search box ... is hidden") and shows the page as the sections have it.
 - **Not kept.** The box starts empty every time the page is drawn.
 
-Other words for a feature are one line of `SearchWords` at the top of `OptionsLayout.Search.cs`: who (the feature's id, or the header key of its group while it is not registered; both may be given) and the words, lower case:
+Other words are given where the page is laid out, in `OptionsTree.cs`, lower case: `.Also(words)` on a section for every row of it, `.Also(rowId, words)` for one row:
 
 ```csharp
-new[] { "fuel reallife_fuel_header", "petrol gas station tank litre" },
+S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
 ```
 
-Only words that mean the whole feature: each one shows every row of it.
+A section's words are only those that mean the whole of it: each one shows every row of it.
 
 The game's own help (F1) draws any page whose text is the locale key `help_<slug>_content` (`HelpPageRenderer.RenderPage(slug)`), but lists only the pages of its `helpstructure.json`, and that key cannot carry the mod's prefix; the guide is therefore a panel of the mod's own.
 
