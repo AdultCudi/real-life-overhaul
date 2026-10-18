@@ -11759,7 +11759,7 @@
   "reallife_law_station_furniture": "Delegacias mobiliadas",
   "reallife_opt_tip_law_station_furniture": "Mesas, armários, sala de reunião, sala de descanso, paredes e piso do jogo, policiais trabalhando e escritórios no piso vazio de uma delegacia grande. Desligado, fica vazia como antes.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Corrigido: quando o seu provedor de internet fica fora do ar, uma aula online, um dia de trabalho em casa ou uma entrevista por vídeo que a queda impede já não contam contra você. A aula é justificada e fica fora da sua presença, o dia é justificado como uma licença médica, e a entrevista passa para o próximo dia útil.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada banco da cidade tem seu próprio app no celular, com o nome que o jogo dá a ele: sua conta corrente e o extrato, os empréstimos que você deve àquele banco, podendo pagar parte ou tudo, seu cartão, o que ele oferece a você hoje e como ele vê sua pontuação. As condições dos bancos diferem um pouco, então escolher um faz diferença, e abaixo de uma pontuação de 580 nenhum deles empresta. Os contatos do mod têm fotos de verdade do jogo: as pessoas mostram o rosto e os serviços mostram um logotipo. Contatos tem uma caixa de busca no alto. As delegacias são mobiliadas com os móveis do próprio jogo: mesas com computadores, armários, um bebedouro, plantas, um relógio, luminárias e um vaso sanitário na cela. Corrigido: com todos os apps do mod, a fileira de apps no alto do menu de tela cheia passava por baixo do dinheiro e da data e saía da tela; agora ela tem páginas, centralizadas entre o nome do app e o dinheiro, viradas com a roda do mouse ou com os pontos. Corrigido: no mapa da cidade, uma linha do mod (Tribunal, Oficinas de personalização e as outras) podia ficar desmarcada enquanto os seus lugares continuavam no mapa; agora os lugares seguem a marcação que você vê.",
   "reallife_rota_box_stock_ok": "As mercadorias dão conta do plano recomendado.",
@@ -19783,5 +19783,7 @@
   "reallife_work_note_interview_moved": "{employer} passou a sua entrevista por vídeo para {day} às {hour}, porque o seu provedor de internet estava fora do ar.",
   "reallife_study_test_outage": "Aula online e dia em casa: passar numa queda da internet agora",
   "reallife_study_test_outage_none": "A internet da casa não está fora do ar agora. Aperte primeiro Internet: uma queda agora (precisa de um plano ligado), depois este.",
-  "reallife_study_test_outage_no_day": "Hoje não há dia de trabalho em casa para deixar passar: só a aula online passou."
+  "reallife_study_test_outage_no_day": "Hoje não há dia de trabalho em casa para deixar passar: só a aula online passou.",
+  "reallife_changes_032_5_title": "0.32.5",
+  "reallife_changes_032_5": "Corrigido: quando o seu provedor de internet fica fora do ar, uma aula online, um dia de trabalho em casa ou uma entrevista por vídeo que a queda impede já não contam contra você. A aula é justificada e fica fora da sua presença, o dia é justificado como uma licença médica, e a entrevista passa para o próximo dia útil."
 }
