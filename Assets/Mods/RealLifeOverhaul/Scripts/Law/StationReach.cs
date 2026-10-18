@@ -3,13 +3,9 @@ using System;
 namespace RealLifeOverhaul.Law
 {
     /// <summary>
-    /// How near a police station's door or front desk the player must stand for its panel to take the interaction
-    /// key. At the door it is the game's own reach: the game lets the player through an always-open entrance door
-    /// (a precinct's are) from under 2 m of the door's point (CityBuildingController.IsPlayerNearEntranceDoor, a
-    /// squared distance under 4). It is measured here on the flat, with the height apart, so that a door point set a
-    /// little above the pavement does not shorten it. Every reach is in metres and is compared with a distance in
-    /// metres (JobSpots.Flat is one, not its square). Game-free, so NavCheck runs it (StationReachCheck.cs). A few
-    /// multiplications a call.
+    /// How near a station's door or front desk the player must stand for its panel to take the interaction key, in metres on
+    /// the flat, compared with a distance in metres (JobSpots.Flat), never a square. At the door it is the game's own reach:
+    /// under 2 m of the door's point (CityBuildingController.IsPlayerNearEntranceDoor), with the height apart. Game-free.
     /// </summary>
     public static class StationReach
     {

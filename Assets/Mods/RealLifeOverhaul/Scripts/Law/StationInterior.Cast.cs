@@ -5,20 +5,10 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Law
 {
-    // The people of a furnished station, a handful at most (StationCrew): the desk sergeant behind the counter; one or two
-    // officers seated at the desks, typing as the game's own employees type at a desk computer (its UsingDesktopComputer,
-    // played on the game's sitting pose every few seconds, as DesktopWorkstationController does); an officer on a break at
-    // the break table; one walking the rooms (to the coffee machine, the briefing screen, the cell, a word with somebody at a
-    // desk, the notice board); and now and then somebody of the public, who comes in, sits on the waiting chairs, goes up to
-    // the side of the counter and leaves. The officers come on and go off shift through the door: whoever leaves is followed
-    // a while later by somebody else coming in.
-    //
-    // Everybody is put out only while the player is in the room (Begin, under the fade, seats those already at work at
-    // once); End takes them all away. They are looked after once a second, from the law's own tick, and nothing runs per
-    // frame. All of them are the mod's pool's own people (People/ActorPool), most of them ones the pool may take back for a
-    // scene at any moment: whoever goes is replaced later, through the door.
+    /// <summary>The station's people, a handful at most (<see cref="StationCrew"/>), coming and going through the door.</summary>
     internal sealed partial class StationInterior
     {
+        // Seconds of game time.
         private const float DeskStayMin = 140f, DeskStayMax = 280f;
         private const float BreakStayMin = 50f, BreakStayMax = 120f;
         private const float WaitStayMin = 25f, WaitStayMax = 70f;
@@ -36,7 +26,6 @@ namespace RealLifeOverhaul.Law
             public int Seat = -1;
             public Doing Doing;
             public float Until;
-            public Vector3 ErrandAt, ErrandFace;
             public string ErrandClip;
             public bool ErrandStarted;
             public bool ThenLeave;
@@ -57,9 +46,7 @@ namespace RealLifeOverhaul.Law
         private bool _hasWalker;
         private StationCrew _crew;
 
-        // ---------------------------------------------------------------- coming in
-
-        private void BeginCast(bool desk)
+        private void BeginCast()
         {
             EndCast();
             if (!_cast)
@@ -95,7 +82,7 @@ namespace RealLifeOverhaul.Law
             {
                 return;
             }
-            // Those already at work when the player comes in are there at once (the screen is still dark).
+            // Those already at work when the player comes in are there at once, under the fade.
             PostSergeant();
             for (int i = 0; i < _members.Count; i++)
             {
@@ -109,7 +96,7 @@ namespace RealLifeOverhaul.Law
             }
             if (_hasWalker)
             {
-                int stop = Random.Range(0, _stops.Count - 1);   // (the last stop is the door)
+                int stop = Random.Range(0, _stops.Count - 1);   // the last stop is the door
                 if (Spawn(_walker, _stops[stop].At, ActorLook.Officer, true))
                 {
                     ArriveAtStop(stop, now);
@@ -141,7 +128,7 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // The places the walking officer goes to, each with what they face there and do; the door last.
+        // Where the walking officer goes, each with what they face there and do; the door last.
         private void BuildStops()
         {
             _stops.Clear();
@@ -169,7 +156,7 @@ namespace RealLifeOverhaul.Law
             {
                 AddStop(_board.position + _board.forward * 1.0f, _board.position, null);
             }
-            AddStop(_origin + _in * 0.8f, _origin - _in * 3f, null);   // the door: going off shift
+            AddStop(_origin + _in * 0.8f, _origin - _in * 3f, null);   // the door: off shift
         }
 
         private void AddStop(Vector3 at, Vector3 face, string clip)
@@ -179,8 +166,6 @@ namespace RealLifeOverhaul.Law
                 _stops.Add(new Stop { At = spot, Face = face, Clip = clip });
             }
         }
-
-        // ---------------------------------------------------------------- once a second
 
         private void CastTick(float now)
         {
@@ -208,7 +193,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // The sergeant behind the counter, the one who is talked to: a person the pool gives up for nobody.
         private void PostSergeant()
         {
             if (_sergeant.Present || !Standable(_sergeantAt, out Vector3 post))
@@ -261,7 +245,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // Put out where they sit and seated there and then (on the way in, under the fade).
         private bool SitDownAtOnce(Member m, float now)
         {
             int seat = FreeSeat(m.Use);
@@ -280,7 +263,6 @@ namespace RealLifeOverhaul.Law
             return true;
         }
 
-        // At their seat: sat down on it (typing, at a desk), or for somebody waiting with no chair, standing by the bench.
         private void Settle(Member m, float now)
         {
             ActorRole role = m.Role;
@@ -289,7 +271,7 @@ namespace RealLifeOverhaul.Law
                 Transform seat = _seats[m.Seat].Seat;
                 if (m.Use == SeatUse.Desk && role.Knows(AnimationType.UsingDesktopComputer))
                 {
-                    role.Repeat(AnimationType.UsingDesktopComputer, 5f, 15f);   // typing, as the game's employees at a desk computer
+                    role.Repeat(AnimationType.UsingDesktopComputer, 5f, 15f);   // as the game's employees type at a desk computer
                 }
                 if (!role.Sit(seat))
                 {
@@ -373,7 +355,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // In through the door and over to a free seat of theirs.
         private void ComeIn(Member m, float now)
         {
             int seat = FreeSeat(m.Use);
@@ -396,8 +377,6 @@ namespace RealLifeOverhaul.Law
             m.Until = now + 30f;
         }
 
-        // Up from the seat: an officer at a desk goes off shift; one on a break fetches a coffee (and now and then goes);
-        // somebody waiting goes up to the side of the counter, has a word, and leaves.
         private void GetUp(Member m, float now)
         {
             m.Role.Quiet();
@@ -441,8 +420,6 @@ namespace RealLifeOverhaul.Law
 
         private void Errand(Member m, Vector3 at, Vector3 face, string clip, bool thenLeave, float now)
         {
-            m.ErrandAt = at;
-            m.ErrandFace = face;
             m.ErrandClip = clip;
             m.ErrandStarted = false;
             m.ThenLeave = thenLeave;
@@ -472,8 +449,6 @@ namespace RealLifeOverhaul.Law
             m.Until = now + (m.Use == SeatUse.Waiting ? Random.Range(VisitorGapMin, VisitorGapMax) : Random.Range(ShiftGapMin, ShiftGapMax));
         }
 
-        // ---------------------------------------------------------------- the officer walking the rooms
-
         private void Walk(float now)
         {
             if (_walking != Doing.Away && !_walker.Present)
@@ -490,7 +465,7 @@ namespace RealLifeOverhaul.Law
                     {
                         if (Spawn(_walker, _origin + _in * 0.5f, ActorLook.Officer, true))
                         {
-                            GoToStop(Random.Range(0, _stops.Count - 1), now);   // on shift: in through the door
+                            GoToStop(Random.Range(0, _stops.Count - 1), now);   // on shift, in through the door
                         }
                         else
                         {

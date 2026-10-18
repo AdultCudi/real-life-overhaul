@@ -4,20 +4,12 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Law
 {
-    // The floor a furnished station still leaves bare (a large unit, or one of a size the game has no office design for:
-    // its counter, cell, desks, waiting chairs, briefing row and break table take the front and the walls, and the middle
-    // of a big room stands empty) fitted out as a city office's back rooms by FitOut/FitView: desks with computers,
-    // filing, an interview table, a printer corner, a break corner, plants. Everything the station has placed stands as
-    // it is (its pieces solid, its ways to the counter and the cell and to every seat kept free), and FitView's own walkway
-    // check keeps every place the station's people go to reached from the door. Only bare rectangles of two and a half
-    // metres a side and more are given anything, so a station the game's design has already furnished keeps its look.
-    // Built a little a frame after the station itself, taken away with it.
+    /// <summary>The floor the furnished station leaves bare, fitted out as a city office's back rooms by FitOut/FitView.</summary>
     internal sealed partial class StationInterior
     {
         private FitView _fill;
         private readonly FitView.Request _fillRequest = new FitView.Request();
 
-        // After the station is furnished and its people are about: the rest of the floor.
         private void BeginFill()
         {
             if (_fill == null)
@@ -45,7 +37,7 @@ namespace RealLifeOverhaul.Law
             r.Floor = floor;
             r.Door = _origin;
             r.Inward = _in;
-            r.Look = false;                   // (the station has put the walls and floors of its own design on)
+            r.Look = false;   // the station has put its own design's walls and floors on
             r.Site.ZoneLamps = !_designLamps;
             for (int i = 0; i < _fixedRects.Count; i++)
             {
@@ -95,7 +87,7 @@ namespace RealLifeOverhaul.Law
             _fillRequest.Site.Keep.Add(new FitSpot(at.x, at.z, 0.5f));
         }
 
-        // A rectangle of the room's frame (aside, depth from the door) in the room's own axes.
+        // A rectangle of the room's frame (aside, depth from the door) in world axes.
         private FitRect World(FloorRect r, bool solid)
         {
             Vector3 middle = _origin + _right * r.A + _in * r.D;
