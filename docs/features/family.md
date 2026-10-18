@@ -7,24 +7,28 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 ## Where the code is
 
 - Folder: [`Scripts/Family`](../../Assets/Mods/RealLifeOverhaul/Scripts/Family/).
-- Read first: `FamilyDirector.cs` (the one component), `FamilyState.cs` (the save and `FamilyBalance`, every cost and threshold) and `FamilyBridges.cs` (what other features implement, call and may read).
+- Read first: `FamilyDirector.cs` (the one component), `FamilyState.cs` (the save), `FamilyBalance.cs` (every cost and threshold) and `FamilyBridges.cs` (what other features implement, call and may read).
 
 | File | What it is |
 | --- | --- |
-| `FamilyDirector` | the one component: a tick a second, the key prompt, questions, sequences (fade, time skip), scenes, the test buttons; FamilyModifiers |
-| `FamilyState` | per-save state as one JSON string in modData; FamilyBalance: every cost, threshold and time scale |
+| `FamilyDirector` | the one component: a tick a second; its parts `.Prompt` (the key prompt, the objective, questions), `.Sequences` (fade, time skip, the photograph, scenes) and `.Tests` (the test buttons) |
+| `FamilyScene`, `FamilyModifiers` | the base of a staged scene; the moods in the game's happiness registry |
+| `FamilyState` | per-save state as one JSON string in modData |
+| `FamilyBalance` | every cost, threshold and time scale |
 | `FamilyBridges` | ISocialBridge, IHomeBridge, ITravelBridge, ILeisureBridge, ILawBridge and FamilyApi: what other features implement, call and may read |
 | `Partner` | who the partner is: Social's person when its bridge is set, else the one record the default keeps |
 | `FamilyCast` | the family's own three characters (seeded looks, formal or day wear) and FamilyProps (wish-list props with plain-shape stand-ins) |
 | `FamilyPlaces` | the city's own buildings by kind of business (jeweller, planner, florist, hospital, school, theatre, restaurant...), the home, floor spots indoors |
-| `HomeLife` | the timetable, the partner shown at home, moving in, routines, their share of the rent, chores, support, evenings out |
+| `HomeLife` | the timetable, moving in, routines, their share of the rent, chores, support, evenings out; `.AtHome` (the partner shown at home) and `.Places` (where they stand or sit, the cot and the high chair) |
 | `Errands` | somewhere to be on a day (a scan, a dinner, the wedding, a school play) or to shop: marker, objective line, prompt at the door, what a miss does |
 | `Courtship` | the ring at the jeweller, the answer and its odds; ProposalScene |
-| `Wedding` | WeddingPlanner (venue, size, extras, date, deposit, invitations, postponing, cold feet), WeddingDay, WeddingScene |
-| `Children` | deciding, pregnancy and adoption, the nursery, birth, growing up, school, birthdays, costs; WalkScene (the pushchair walk) |
+| `WeddingPlanner`, `WeddingDay`, `WeddingScene` | the plan (venue, size, extras, date, deposit, invitations, postponing, cold feet), the day itself, the ceremony |
+| `Children` | deciding, pregnancy and adoption, the nursery, the day and the week, costs; `.Arrival` (appointments, birth, adoption), `.Growing` (milestones, school starting, birthdays), `.School` (school events, parties), `.Tests` |
+| `WalkScene` | the pushchair walk |
 | `Relatives` | Mom and the in-laws, the four family dinners of the game's year, next of kin |
 | `HardTimes` | arguments (a no-repeat pool with two answers), counselling, time apart, coming home, divorce and custody |
-| `FamilyPhone` | the Family, Someone special and in-laws contacts, everything that can be done from a conversation; FamilyPage (the five pages) |
+| `FamilyPhone` | the Family, Someone special and in-laws contacts and their calls; `.Choices` (everything that can be done from a conversation) |
+| `FamilyPage` | the Family page's five pages |
 | `FamilyTalk / FamilyText / FamilyCalendar` | conversations and menus, text and its fillers, what happens by the hour and the day |
 
 ## How it talks to other features
