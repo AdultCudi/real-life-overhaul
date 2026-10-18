@@ -6,48 +6,25 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The one reckless car: an ordinary traffic car already on the road, taken over where it drives
-    /// and driven on along its own lanes by the driver every unit of the mod has (ResponseUnit and
-    /// EmergencyDriver), told to drive carelessly. Nothing about the car changes but how it is driven:
-    /// no lights, no body, no sound of the mod's. This class holds what its kind does that the driver
-    /// does not know about (which lights it stops at, the drunk's uneven pace) and notices, by position
-    /// alone, what really comes of it: its box meeting another vehicle's, a bend taken faster than the
-    /// road holds, something solid a hand's width ahead of its nose. For a driver with no margin that
-    /// includes what stands beside the road (buildings, lamp posts and the like: EmergencyDriver.SeeSolids,
-    /// the same look with a wider mask), and one who takes a bend faster than the road holds is no longer
-    /// stopped dead in it: the car carries straight on, unsteered, for a second and a half at the most
-    /// (EmergencyDriver.Slide), and ends against whatever is there, a wall, a lamp post, a parked car
-    /// or another car, or comes to rest across the road if nothing is. Who reacts to it and what
-    /// scene follows is RecklessDrivers' business.
-    ///
-    /// WHICH OF THE ROAD'S SAFETY RULES ARE RELAXED, FOR THIS CAR ONLY. The traffic system stops its cars
-    /// for each other with a sensor box ahead of each and for lights with a flag on the stop line. This
-    /// car is out of that system while it is ours (as every unit is), so those rules reach it only
-    /// through its driver's look ahead, and that look is what is weakened: less braking, a shorter look,
-    /// and for some no eye for people (EmergencyDriver.Careless). Every other car keeps its own sensor
-    /// and still brakes for this one. A red light is read from the stop line's own flag on its route
-    /// (Waypoint.stop); only the red-light runner does not hold there.
-    ///
-    /// COST. Not on the road: the component is switched off and costs nothing. On the road: four times a
-    /// second (Tick) a walk of the traffic list for the cars within 35 m (one squared distance each), a
-    /// look at the next dozen route points for a light, and the bend at the next point; every other
-    /// physics step the box test against those few cars and the player's (three points each, no physics
-    /// query, nothing allocated). The driver's own look ahead is the one it has always had.
-    ///
-    /// GIVING IT BACK. Release hands it back to traffic or takes it off the road through ResponseUnit, in
-    /// the state every unit is given back in; HandOver passes it to an accident scene as it stands. A car
-    /// the pool took back under us is simply forgotten (IsLost).
+    /// The one reckless car: an ordinary traffic car already on the road, taken over where it drives and driven on along its
+    /// own lanes by the mod's driver (ResponseUnit, EmergencyDriver) told to drive carelessly; nothing else about the car
+    /// changes. This holds what its kind does that the driver does not know (the lights it stops at, the drunk's uneven pace)
+    /// and notices by position alone what comes of it: its box meeting another vehicle's, a bend too fast (it then slides
+    /// straight on for up to 1.5 s: EmergencyDriver.Slide), something solid at its nose. Only its own look ahead is weakened
+    /// (EmergencyDriver.Careless): every other car keeps its sensor and brakes for it. Cost: off the road none (disabled); on
+    /// it, four looks a second (the cars within 35 m, a light, the bend) and a box test every other physics step, with no
+    /// physics query and nothing allocated.
     /// </summary>
     public sealed class RecklessCar : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("streets", "RecklessCar", typeof(RecklessCar));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("streets", "RecklessCar", typeof(RecklessCar));
 
         public enum Hit { None, Car, Player, Solid, Bend }
 
         private const float RouteLength = 1100f;     // metres of road it is given ahead of it
         private const float RouteLeast = 140f;       // ...and the least that makes it worth taking
         private const int RoutePoints = 420;
-        private const float NearWithin = 35f;        // metres: traffic this near is tested for contact (nothing further can reach it before the next list walk)
+        private const float NearWithin = 35f;        // metres: traffic this near is tested for contact; nothing further reaches it before the next look
         private const int NearMost = 8;
         private const int LightLook = 14;            // route points ahead in which a light is looked for
         private const float Touch = 0.1f;            // metres the two boxes are grown by: contact, not a near miss
@@ -55,7 +32,7 @@ namespace RealLifeOverhaul
         private const float SolidSpeed = 2.5f;       // ...if it is still doing this much, m/s
         private const float BendWithin = 5f;         // metres from a route point at which the bend there is judged
         private const float SettledPace = 11f;       // m/s once it has settled down: the traffic's pace
-        private const float SlideMost = 1.5f;        // seconds a car that has lost a bend carries straight on before it has simply come to rest across the road
+        private const float SlideMost = 1.5f;        // seconds a car that lost a bend slides straight on before it has come to rest across the road
         private const float RollLeast = 2f;          // m/s: slower than this it is handed back standing
 
         private readonly List<Waypoint> _route = new List<Waypoint>(RoutePoints);
@@ -79,7 +56,6 @@ namespace RealLifeOverhaul
         private float _slideFrom;        // the speed it lost the bend at
 
         public StreetRules.Kind Kind { get; private set; }
-        public bool AccidentDue { get; private set; }
         public bool Settled { get; private set; }
 
         /// <summary>What it has run into, if anything; the director takes it from here.</summary>
@@ -91,7 +67,7 @@ namespace RealLifeOverhaul
         /// <summary>How fast the two were closing at that moment (or how fast it was going, alone), in m/s.</summary>
         public float Closing { get; private set; }
 
-        /// <summary>Its own velocity at the moment it struck (before it was stopped), for the scene to let it carry on a little from.</summary>
+        /// <summary>Its own velocity as it struck, before it was stopped, for the scene to carry it on a little.</summary>
         public Vector3 Velocity { get; private set; }
 
         /// <summary>The velocity of the traffic car it met, at that moment.</summary>
@@ -114,8 +90,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Takes a traffic car over as it drives and sends it on along its own road as that kind of driver.
-        /// False (and the car untouched) if it has too little road ahead of it or cannot be had.
+        /// Takes a traffic car over as it drives and sends it on along its own road as that kind of driver. False, and the car
+        /// untouched, if it has too little road ahead or cannot be had.
         /// </summary>
         /// <param name="accidentDue">The driver has no margin: see StreetRules.Stopping, Foresight and PlannedGrip.</param>
         /// <param name="blind">The driver does not see people on foot at all.</param>
@@ -144,7 +120,6 @@ namespace RealLifeOverhaul
             }
 
             Kind = kind;
-            AccidentDue = accidentDue;
             Settled = false;
             Struck = Hit.None;
             Other = null;
@@ -165,7 +140,7 @@ namespace RealLifeOverhaul
             _uneven = kind == StreetRules.Kind.Drunk;
 
             EmergencyDriver driver = _unit.Driver;
-            // (Its goal is the end of its road, measured along it: a road that comes back past its own end is not mistaken for arriving.)
+            // Its goal is the end of its road, measured along it: a road passing its own end is not taken for arriving.
             driver.BeginRoute(car, _unit.Path, 0f);
             driver.CruiseSpeed = _cruise;
             driver.Careless(_stopping, _foresight, _seesPeople, _grip);
@@ -227,16 +202,6 @@ namespace RealLifeOverhaul
             _unit.Driver.CruiseSpeed = _cruise;
         }
 
-        /// <summary>A change of pace asked for by the director (a patrol car behind it: faster, or slower).</summary>
-        public void Pace(float cruise)
-        {
-            if (InUse)
-            {
-                _cruise = cruise;
-                _unit.Driver.CruiseSpeed = cruise;
-            }
-        }
-
         public float Cruise => _cruise;
 
         /// <summary>The road point it has last passed, for something to be put on the road behind it; null if it has none.</summary>
@@ -252,27 +217,6 @@ namespace RealLifeOverhaul
 
         /// <summary>The index of that point in its route, which is also its index in the unit's path.</summary>
         public int BehindIndex => InUse ? Mathf.Clamp(_unit.Driver.NextPoint - 1, 0, Mathf.Max(0, _route.Count - 1)) : 0;
-
-        /// <summary>True if a traffic light stands on its route within so many metres of road ahead.</summary>
-        public bool LightAhead(float within)
-        {
-            if (!InUse)
-            {
-                return false;
-            }
-            float walked = 0f;
-            for (int i = Mathf.Max(1, _unit.Driver.NextPoint); i < _route.Count && walked < within; i++)
-            {
-                walked += Vector3.Distance(_route[i].position, _route[i - 1].position);
-                if (_route[i].enter && !_route[i].giveWay)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // ---------------------------------------------------------------- four times a second
 
         /// <summary>One look at where it is on its route: the light ahead, the traffic round it, the bend it is in. Called by the director.</summary>
         public void Tick(float now)
@@ -429,15 +373,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- every other physics step
-
         private static readonly int HotFixedUpdate = HotSpots.Slot("Traffic: RecklessCar.FixedUpdate");
         private void FixedUpdate()
         {
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -596,11 +538,7 @@ namespace RealLifeOverhaul
         private Vector3 _own;            // its velocity at the last physics step it looked at, and the other car's when they met
         private Vector3 _theirs;
 
-        /// <summary>
-        /// True if it can be handed back to traffic on the move: settled, at the traffic's pace, in its lane, with
-        /// nothing in its look ahead and no light holding it. Then nothing is lost by the traffic system starting
-        /// with an empty slate for it, and nothing shows as it changes hands.
-        /// </summary>
+        /// <summary>True if it can be handed back on the move: settled, at the traffic's pace, in its lane, nothing ahead and no light holding it.</summary>
         public bool CanRoll
         {
             get
@@ -615,10 +553,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// It has hit something, but no scene of its own is to come of that (it had just run somebody down, and that
-        /// scene will take the car): it stays where it stopped, held still, and what it hit is forgotten.
-        /// </summary>
+        /// <summary>It hit something, but the scene round somebody it just ran down will take it: it stays, held still, the hit forgotten.</summary>
         public void Stay()
         {
             Struck = Hit.None;
@@ -628,8 +563,6 @@ namespace RealLifeOverhaul
                 _unit.Park();
             }
         }
-
-        // ---------------------------------------------------------------- letting go
 
         /// <summary>Passes the car on as it stands to an accident scene (ResponseUnit.HandOver). Null if it was no longer ours.</summary>
         public VehicleComponent HandOver()
@@ -642,10 +575,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Back to traffic as an ordinary car, or (remove) off the road. Safe in any state. Handed back, it is pointed
-        /// at the road point it was driving to on its own route, not merely at the one nearest it: standing at a red
-        /// light that is the stop line itself, whose flag the traffic system reads at once and holds the car by, so
-        /// a car given back at a light waits for it like any other.
+        /// Back to traffic as an ordinary car, or (remove) off the road; safe in any state. Handed back, it is pointed at the road
+        /// point it was driving to on its own route: at a red light that is the stop line, whose flag holds it like any other car.
         /// </summary>
         /// <param name="rolling">It keeps the speed it has (ask CanRoll first).</param>
         public void Release(bool resumeTraffic, bool remove, bool rolling = false)
