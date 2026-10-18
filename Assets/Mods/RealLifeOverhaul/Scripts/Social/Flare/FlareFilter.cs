@@ -1,17 +1,16 @@
 using System;
+using System.Globalization;
 using System.Text;
 
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The mod's own word list for what another player of a Going Public session typed, used when Steam's own text filter
-    /// is not there (FlareGame.SteamFilter) and, at Strict, after it. A word on the list is shown as its first letter and
-    /// stars. Letters written as figures or signs ("sh1t", "$hit") and doubled letters count as the letters. At Standard
-    /// only whole words are matched; at Strict the longer words are found inside other words too, and any web address is
-    /// starred. The list is kept in ROT13 so that the source reads clean. Game-free (EconomyCheck, FlareLiveChecks.cs).
-    ///
-    /// COST: one pass over a text of at most 300 characters, when a post or a message of another player's comes in; never
-    /// per frame. What the player types is never filtered: it is shown to them as typed.
+    /// The mod's own word list for what another player of a Going Public session typed, used when Steam's own filter is not
+    /// there (FlareGame.SteamFilter) and, at Strict, after it. A listed word shows as its first letter and stars; letters
+    /// written as figures or signs ("sh1t", "$hit") and doubled letters count. At Strict longer words are found inside
+    /// others too and web addresses are starred. The list is in ROT13 so the source reads clean. Game-free. Cost: one pass
+    /// over a text of at most 300 characters when another player's post or message comes in. The player's own text is
+    /// never filtered.
     /// </summary>
     public static class FlareFilter
     {
@@ -26,6 +25,7 @@ namespace RealLifeOverhaul.Flare
 
         private const int InsideFrom = 5;   // at Strict, a word this long or longer is found inside other words too
 
+        // Kept collapsed, as the text is matched with doubled letters collapsed.
         private static readonly string[] Words = Unrot();
 
         private static string[] Unrot()
@@ -38,25 +38,22 @@ namespace RealLifeOverhaul.Flare
                 {
                     b.Append(c >= 'a' && c <= 'z' ? (char)('a' + (c - 'a' + 13) % 26) : c);
                 }
-                words[i] = b.ToString();
+                words[i] = Collapse(b.ToString());
             }
             return words;
         }
 
-        public const ulong SteamIdLeast = 76561197960265728UL, SteamIdMost = 76561202255233023UL;   // a person's Steam account, as a 64-bit number
+        public const ulong SteamIdLeast = 76561197960265728UL, SteamIdMost = 76561202255233023UL;   // a person's Steam account as a 64-bit number
 
-        /// <summary>
-        /// The author's Steam account for Steam's own filter (it filters by what that author is to the player), when the
-        /// session's id of a player is one; 0 (nobody in particular) when it is a name.
-        /// </summary>
+        /// <summary>The author's Steam account for Steam's filter, when the session's id of a player is one; 0 when it is a name.</summary>
         public static ulong SteamIdOf(string player)
         {
             ulong id;
-            return player != null && player.Length == 17 && ulong.TryParse(player, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out id)
+            return player != null && player.Length == 17 && ulong.TryParse(player, NumberStyles.None, CultureInfo.InvariantCulture, out id)
                    && id >= SteamIdLeast && id <= SteamIdMost ? id : 0UL;
         }
 
-        /// <summary>How many words the list has (for the checks).</summary>
+        /// <summary>How many words the list has, for the checks.</summary>
         public static int Count => Words.Length;
 
         /// <summary>A text with the list's words starred; the same text when there is none. Null stays null.</summary>
@@ -97,7 +94,7 @@ namespace RealLifeOverhaul.Flare
             string p = plain.ToString();
             for (int w = 0; w < Words.Length; w++)
             {
-                string word = Collapse(Words[w]);
+                string word = Words[w];
                 int from = 0;
                 while ((from = p.IndexOf(word, from, StringComparison.Ordinal)) >= 0)
                 {
@@ -195,10 +192,6 @@ namespace RealLifeOverhaul.Flare
                 case '5': case '$': return 's';
                 case '7': case '+': return 't';
                 case '8': return 'b';
-            }
-            if (c == '*' || c == '.' || c == '-' || c == '_')
-            {
-                return '\0';
             }
             char l = char.ToLowerInvariant(c);
             return char.IsLetter(l) ? l : '\0';

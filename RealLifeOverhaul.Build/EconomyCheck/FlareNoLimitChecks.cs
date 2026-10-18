@@ -335,7 +335,9 @@ internal static partial class Program
     {
         string flare = ReviewSource("Social/Flare/FlareRules.cs") + ReviewSource("Social/Flare/FlareDirector.cs") + ReviewSource("Social/Flare/FlareDirector.Live.cs")
                        + ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareApp.Sheet.cs") + ReviewSource("Social/Flare/FlareApp.Side.cs")
-                       + ReviewSource("Social/Flare/FlareLiveRules.cs") + ReviewSource("Social/Flare/FlareNetShare.cs") + ReviewSource("Meta/FeatureList.cs");
+                       + ReviewSource("Social/Flare/FlareLiveRules.cs") + ReviewSource("Social/Flare/FlareLiveRules.CityOffice.cs")
+                       + ReviewSource("Social/Flare/FlareLiveRules.Feed.cs") + ReviewSource("Social/Flare/FlareNetShare.cs") + ReviewSource("Social/Flare/FlareOutbox.cs")
+                       + ReviewSource("Social/Flare/FlareRateBook.cs") + ReviewSource("Social/Flare/FlarePieceBook.cs") + ReviewSource("Meta/FeatureList.cs");
         string[] gone = { "CanPost(", "NextPostMinute(", "PostGapMinutes", "PostsPerDay", "RepliesPerDay", "ReportsPerDay", "ReportedToday(", "Wait.DayFull", "Wait.TooSoon", "PostsDay = 40" };
         string left = gone.FirstOrDefault(flare.Contains);
         Check(flare.Length > 100000 && left == null, "Flare no limit: nothing in Flare waits two hours, counts three a day or refuses a report or a reply" + (left != null ? " (" + left + ")" : string.Empty));

@@ -6,34 +6,30 @@ using System.IO.Compression;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The small copy of a picture that goes to the other players of a Going Public session: at most 192 pixels wide and
-    /// 16 KB, so that a picture costs the session no more than a few seconds of a quiet connection. The picture (the small
-    /// copy Flare already has, Core/PhotoThumbs, 256 pixels wide, or a shot of the screen) is made smaller by averaging,
-    /// turned into brightness and two colours (the colours at half the size each way, as a photograph's own format keeps
-    /// them), each rounded to fewer steps, written as the difference from the pixel before (which packs well) and packed.
-    /// If it is still too large it is rounded harder, then made narrower, until it fits. Reading it back is the same in
-    /// reverse, to the rows the engine takes as they are (RGB24, bottom row first).
+    /// The small copy of a picture sent to the other players of a Going Public session: at most 192 pixels wide and 16 KB,
+    /// a few seconds of a quiet connection. The picture is shrunk by averaging, turned into brightness and two colours at
+    /// half size (as a photograph's own format keeps them), each rounded to fewer steps, written as differences from the
+    /// pixel before and deflated; rounded harder, then narrower, until it fits. Read back to RGB24, bottom row first.
     ///
     ///     "FS1" | rounding (byte) | width (ushort) | height (ushort) | the rest deflated: brightness, then the two colours
     ///
-    /// In the session it travels as text, in pieces of <see cref="ChunkChars"/> characters (Base64), sent a piece a second
-    /// with the player's requests and put back together by its number (<see cref="FlareSnapParts"/>). Game-free: it runs on
-    /// a worker thread, never the game's (FlareDirector.Share.cs), and EconomyCheck runs it as it is (FlareLiveChecks.cs).
+    /// It travels as Base64 in pieces of <see cref="ChunkChars"/> characters, a piece a second (<see cref="FlareSnapParts"/>).
+    /// Game-free: it runs on a worker thread.
     /// </summary>
     public static class FlareSnap
     {
         public const int Width = 192;              // pixels: the widest small copy
         public const int TallMost = 192;           // pixels: the tallest
-        public const int MostBytes = 16 * 1024;    // the largest small copy sent
-        public const int ChunkChars = 3000;        // characters of Base64 in one piece of it (a line of a request)
-        public const int PartsMost = 8;            // pieces of one picture at most (16 KB is 22,000 characters)
+        public const int MostBytes = 16 * 1024;    // bytes: the largest small copy sent
+        public const int ChunkChars = 3000;        // characters of Base64 in one piece (a line of a request)
+        public const int PartsMost = 8;            // pieces of one picture at most: 16 KB is 22,000 characters
         private static readonly int[] YShift = { 2, 3, 3 };
         private static readonly int[] CShift = { 3, 4, 5 };
         private static readonly int[] Widths = { 192, 160, 128, 96 };
 
         /// <summary>
-        /// A picture made smaller by averaging: from rows of 'bytes' bytes a pixel (3 or 4; 'bgr' for blue first) to RGB24
-        /// rows 'width' wide, the height in proportion and no more than 'tallMost'. Rows stay in the order they came in.
+        /// A picture shrunk by averaging: from rows of <paramref name="bytes"/> bytes a pixel (3 or 4; <paramref name="bgr"/>
+        /// for blue first) to RGB24 rows <paramref name="width"/> wide, no taller than <paramref name="tallMost"/>.
         /// </summary>
         public static byte[] Shrink(byte[] src, int w, int h, int bytes, bool bgr, int width, int tallMost, out int outW, out int outH)
         {
@@ -332,7 +328,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The pieces as text again (the host sends the picture on whole, Base64, as it came).</summary>
+        /// <summary>The pieces as text again: the host passes the picture on as it came.</summary>
         public string Text()
         {
             return Whole ? string.Concat(_parts) : null;

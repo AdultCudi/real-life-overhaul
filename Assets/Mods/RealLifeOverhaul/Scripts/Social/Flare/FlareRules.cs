@@ -4,11 +4,10 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare by rule: the account's followers and reputation, what a post reaches and brings, who of the player's
-    /// friends likes and answers it, a viral moment, which posts of a day count, and the daily round. Game-free: whoever
-    /// calls says what day it is and who the friends are; RealLifeOverhaul.Build/EconomyCheck runs these rules.
+    /// Flare by rule: the account's followers and reputation, what a post reaches and brings, who of the player's friends
+    /// likes and answers it, viral moments and the daily round. Game-free: the caller gives the day and the friends.
     ///
-    /// A WORKED EXAMPLE (the followers a post brings, reputation 50, nothing repeated):
+    /// The followers a post brings, reputation 50, nothing repeated:
     ///
     ///   followers   post                                  quality  tone fit   gain   reach
     ///          50   a selfie with a friend, cheerful         1000      1100     56      16
@@ -19,14 +18,8 @@ namespace RealLifeOverhaul.Flare
     ///       5,000   a selfie alone, reputation 10             750      1100    126   1,238
     ///
     /// The gain is (35 + 2.2 x the square root of the followers) x quality x tone fit x reputation (750 + 5 a point)
-    /// x repeats, so it grows ever more slowly. The player may post as often as they like; the first three posts of a day
-    /// move the account (followers, reputation, a viral moment) and the rest are seen and liked but move nothing, so many
-    /// posts change the feed, not the account. Three ordinary posts a day (a selfie, an outing, a picture, each worth
-    /// a little over half the next day for being the same kind again) take a new account to Known (5,000) in about a
-    /// month of game days; Celebrity takes viral moments and businesses. A post in
-    /// the wrong tone for what it is about (cheerful about an arrest) goes badly: 2% of the followers and 5 more are
-    /// lost and the reputation falls. A viral moment (a chance of a few in a thousand to 6%, once a week at most)
-    /// brings four times the gain and 3% of the followers more.
+    /// x repeats. Only the first three posts of a day move the account; three ordinary posts a day take a new account to
+    /// Known (5,000) in about a month.
     /// </summary>
     public static class FlareRules
     {
@@ -35,19 +28,23 @@ namespace RealLifeOverhaul.Flare
         public const int FollowFromStage = 1;      // acquaintances and closer follow the player
         public const int ReputationStart = 50;     // 0 to 100
         public const int StartExtra = 36;          // followers a new account has beyond the people the player has met
-        public const int PostsCounted = 3;         // the player's posts a day that move the account; any number may be posted, the rest are seen and liked only
+        public const int PostsCounted = 3;         // the player's posts a day that move the account; later ones are seen and liked only
         public const int DraftDays = 2;            // a draft made today can still be posted tomorrow
         public const int DraftsMost = 8;
-        public const int PostsMost = 220;          // posts kept, the player's, the friends' and the city's (the city's go first: FlareLiveRules.CityKeepDays)
+        public const int PostsMost = 220;          // the player's, the friends' and the city's (the city's go first: FlareLiveRules.CityKeepDays)
         public const int OwnMost = 40;             // ...of them the player's: older ones are folded into the totals
-        public const int FeedRows = 120;           // the Feed shows this many (only the cards in view are built: FlareList)
+        public const int FeedRows = 120;           // only the cards in view are built (FlareList)
 
-        // ---- what a post is worth, thousandths, by FlareSource (Life: the player's moment of now, a plain post; a friend's own sets its reach itself)
-        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 400, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650, 800, 950, 850, 650, 600, 700, 0, 0, 0, 0, 0, 0 };
+        // What a post is worth by FlareSource, thousandths (Life: the player's plain post of the moment).
+        public static readonly int[] SourceQuality =
+        {
+            0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 400, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650, 800, 950,
+            850, 650, 600, 700, 0, 0, 0, 0, 0, 0
+        };
         public const int WithFriend = 250;         // a friend tagged in it
         public const int InsideShop = 100;         // a picture taken in one of the player's businesses
 
-        // ---- how a tone suits a source, thousandths: cheerful, proud, honest, cheeky
+        // How a tone suits a source, thousandths: cheerful, proud, honest, cheeky.
         private static readonly int[,] ToneFits =
         {
             { 1000, 1000, 1000, 1000 },   // None
@@ -94,7 +91,7 @@ namespace RealLifeOverhaul.Flare
 
         public const int RepeatDays = 10;          // the same kind of post again within this many days is worth less
         public const int RepeatLoss = 500;         // thousandths lost the next day, less each day until RepeatDays
-        public const double GainBase = 35.0, GainRoot = 2.2;
+        public const double GainBase = 35.0, GainRoot = 2.2;   // followers: GainBase + GainRoot x the square root of the followers
         public const int ReachShare = 300;         // thousandths of the followers who see an ordinary post
         public const int LikeShare = 90;           // thousandths of those who see it who like it
         public const int ReplyPer = 250;           // one reply from the city for so many who see it
@@ -106,37 +103,37 @@ namespace RealLifeOverhaul.Flare
         public const int ViralReach = 8;           // ...seen by so many times as many
 
         public const int BadShare = 20;            // thousandths of the followers a bad post loses
-        public const int BadLeast = 5;
-        public const int BadReputation = 4, BadReputationKnown = 6;
-        public const int HonestReputation = 2;     // an honest post about an arrest
-        public const int ViralReputation = 2;
+        public const int BadLeast = 5;             // followers
+        public const int BadReputation = 4, BadReputationKnown = 6;   // points
+        public const int HonestReputation = 2;     // points, for an honest post about an arrest
+        public const int ViralReputation = 2;      // points
 
         public const int SilentFrom = 7;           // days without a post after which followers drift away
         public const int SilentShare = 10;         // thousandths of them a day
         public const int PullTenths = 1;           // the reputation moves a tenth of the way to the city's opinion each day
 
         public const int FriendPostChance = 300;   // per mille a day for a friend who follows
-        public const int FlakyPostChance = 150;
+        public const int FlakyPostChance = 150;   // per mille a day
 
-        // ---- what a post does elsewhere (Wiring/FlareLinks carries each to its feature)
+        // What a post does elsewhere (Wiring/FlareLinks carries each to its feature).
         public const int BuzzMost = 6;             // per cent of a business's customers from Flare's talk, all of it together, either way
         public const int BuzzDays = 3;             // a post about a business is talked about this long
         public const int HypeGapDays = 14;         // a viral post raises the game's own hype for a product once a fortnight at most
         public const int ScandalWorst = 1250;      // thousandths of a scandal's loss to a brand, for an account of no reputation...
         public const int ScandalAnswered = 800;    // ...and what is left of it after an honest answer
         public const int ArrestShare = 30;         // thousandths of the followers an arrest costs, from Local on
-        public const int ArrestReputation = 3, ArrestReputationKnown = 6;
+        public const int ArrestReputation = 3, ArrestReputationKnown = 6;   // points
         public const int EndorseFull = 100000;     // followers at which the account's word in an election is worth the most
         public const int BossBase = 200;           // per mille: the boss follows the player, and more for each rank and tier
-        public const int BossStep = 150;
+        public const int BossStep = 150;   // per mille more for each rank and tier
         public const int SponsoredFrom = 500;      // followers: a sponsored post is offered from Local on
         public const int SponsoredLeast = 250, SponsoredMost = 1500;   // thousandths of radio's customers a day, by followers
 
-        // ---- the rest of the city: people met online, the partner, friends, the market, the council and the courts
+        // The rest of the city: people met online, the partner, the market, the council and the courts.
         public static readonly int[] OnlinePerMonth = { 0, 2, 3, 4, 5 };   // people the player has still to meet who answer a post and become contacts, by tier
         public const int OnlineGapDays = 5;
         public const int NeverPostedDays = 21;     // the partner not posted this long, while others are: they mind
-        public const int OthersLately = 7;
+        public const int OthersLately = 7;   // days
         public const int NeglectPosts = 3;         // posts in a day while a friend's texts wait
         public const int NeglectGapDays = 7;
         public const int MoodBadNews = 8;          // the feed's mood about the city's running: each kind of bad news today
@@ -147,8 +144,6 @@ namespace RealLifeOverhaul.Flare
         public const int FameFee = 150;            // thousandths more a lawyer asks of a Celebrity
         public const int Thumbs = 5;               // the newest pictures shown in their posts
         public const int ThumbWidth = 256;         // pixels
-
-        // ---------------------------------------------------------------- the account
 
         public static FlareTier TierOf(int followers)
         {
@@ -200,19 +195,13 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- posting
-
         /// <summary>The player's posts made today (0 on a new day).</summary>
         public static int PostsToday(FlareFile f, int day)
         {
             return f.PostsDay == day ? f.PostsToday : 0;
         }
 
-        /// <summary>
-        /// Whether the player's next post today moves the account: the first three of a day do. There is no limit on
-        /// posting: a post past them is made, seen and liked like any other, and brings no followers, costs none and
-        /// cannot go viral, so posting a great deal changes the feed and not the account.
-        /// </summary>
+        /// <summary>Whether the player's next post today moves the account: the first three of a day do.</summary>
         public static bool Counts(FlareFile f, int day)
         {
             return PostsToday(f, day) < PostsCounted;
@@ -293,7 +282,7 @@ namespace RealLifeOverhaul.Flare
         /// </summary>
         public static int Reaction(in FlarePerson p, FlarePost post, int roll)
         {
-            bool money = post.Source == FlareSource.Promotion || post.Source == FlareSource.Opened || post.Source == FlareSource.RecordDay;
+            bool money = AboutMoney(post);
             if (p.Index == post.Tag || p.Partner)
             {
                 return 2;
@@ -343,7 +332,7 @@ namespace RealLifeOverhaul.Flare
 
         public static ReplyKind ReplyOf(in FlarePerson p, FlarePost post)
         {
-            bool money = post.Source == FlareSource.Promotion || post.Source == FlareSource.Opened || post.Source == FlareSource.RecordDay;
+            bool money = AboutMoney(post);
             if (post.Source == FlareSource.Arrested)
             {
                 return ReplyKind.Kind;
@@ -363,14 +352,18 @@ namespace RealLifeOverhaul.Flare
             return money ? ReplyKind.Proud : (p.Taste & FlareTaste.Cheers) != 0 ? ReplyKind.Cheer : ReplyKind.Plain;
         }
 
+        private static bool AboutMoney(FlarePost post)
+        {
+            return post.Source == FlareSource.Promotion || post.Source == FlareSource.Opened || post.Source == FlareSource.RecordDay;
+        }
+
         /// <summary>
-        /// The player posts a draft in a tone, with a friend tagged or not (-1). It is always made: there is no limit on
-        /// posting. One of the first three of the day moves every figure of the account (<see cref="Counts"/>); one past
-        /// them is seen, liked and answered alike, and moves no follower and no point of reputation, and cannot go viral.
-        /// The draft is spent. The friends are the social life's people, as they stand now. Returns the post. With
-        /// 'viral' (a test) a post that does not go badly goes viral whatever the roll, the gap and the count.
+        /// The player posts a draft in a tone, with a friend tagged or not (-1), and spends it. Only the first three posts of a
+        /// day move the account (<see cref="Counts"/>). With <paramref name="viral"/> (a test) a post that does not go badly
+        /// goes viral whatever the roll, the gap and the count.
         /// </summary>
-        public static FlarePost Post(FlareFile f, FlareDraft d, FlareTone tone, int tag, IReadOnlyList<FlarePerson> people, int day, int hour, int minuteOfDay, bool viral = false)
+        public static FlarePost Post(FlareFile f, FlareDraft d, FlareTone tone, int tag, IReadOnlyList<FlarePerson> people, int day, int hour, int minuteOfDay,
+            bool viral = false)
         {
             bool counts = viral || Counts(f, day);
             int id = f.NextId++;
@@ -391,7 +384,7 @@ namespace RealLifeOverhaul.Flare
             int reputation = 0;
             if (!counts)
             {
-                gain = 0;   // past the day's three: seen and liked, and the account stays as it is
+                gain = 0;   // past the day's three: the account stays as it is
             }
             else if (p.Bad)
             {
@@ -467,11 +460,7 @@ namespace RealLifeOverhaul.Flare
             return p;
         }
 
-        /// <summary>
-        /// Whether Flare may send a notification that asks for something (a viral moment; in later stages a deal on offer
-        /// or ending): only with the option on, and one a day at most. True takes the day's one. Everything else Flare
-        /// has to say waits in the app: the badge counts the friends' likes and replies and the drafts.
-        /// </summary>
+        /// <summary>Whether Flare may send a notification that asks for something: with the option on, one a day at most. True takes the day's one.</summary>
         public static bool MayNotify(FlareFile f, int day, bool allowed)
         {
             if (!allowed || f.NoticeDay == day)
@@ -482,9 +471,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        // ---------------------------------------------------------------- what a post does elsewhere
-
-        /// <summary>The talk a post about a business brings, per cent of its customers for three days: more as more people see it.</summary>
+        /// <summary>The talk a post about a business brings, per cent of its customers: more as more people see it.</summary>
         public static int BuzzOf(FlarePost p)
         {
             if (p.Place == null || p.Bad || p.Author != FlareAuthor.Player)
@@ -494,7 +481,7 @@ namespace RealLifeOverhaul.Flare
             return p.Viral ? 4 : p.Reach >= 5000 ? 3 : p.Reach >= 1000 ? 2 : 1;
         }
 
-        /// <summary>Talk about a business from today: kept beside what is there, the whole never past the cap either way. Returns the business's figure now.</summary>
+        /// <summary>Talk about a business from today, added within the cap either way. The business's figure now.</summary>
         public static int AddBuzz(FlareFile f, string place, int percent, int day, int days)
         {
             if (string.IsNullOrEmpty(place) || percent == 0)
@@ -531,7 +518,7 @@ namespace RealLifeOverhaul.Flare
             return day - f.HypeDay >= HypeGapDays;
         }
 
-        /// <summary>What a scandal at a brand's shop costs, thousandths of its loss: more for an account the city doubts, never under the whole.</summary>
+        /// <summary>What a scandal at a brand's shop costs, thousandths of its loss: more for an account the city doubts.</summary>
         public static int ScandalScale(int reputation)
         {
             return reputation >= 50 ? 1000 : Clamp(1000 + (50 - reputation) * (ScandalWorst - 1000) / 50, 1000, ScandalWorst);
@@ -543,7 +530,7 @@ namespace RealLifeOverhaul.Flare
             return Math.Max(0, lost - (int)((long)lost * ScandalAnswered / Math.Max(1000, scale)));
         }
 
-        /// <summary>How much of the most an account's word adds to an endorsement, thousandths: by followers on a log scale, and only for a reputation the city trusts.</summary>
+        /// <summary>How much of the most an account's word adds to an endorsement, thousandths: by followers, for a trusted account.</summary>
         public static int EndorseShare(int followers, int reputation)
         {
             double share = Math.Log10(1.0 + Math.Max(0, followers)) / Math.Log10(1.0 + EndorseFull);
@@ -564,13 +551,13 @@ namespace RealLifeOverhaul.Flare
             return lost;
         }
 
-        /// <summary>Whether the boss follows the player: a fifth of bosses, and more for each rank and each tier of the account. Always the same for the same job.</summary>
+        /// <summary>Whether the boss follows the player: a fifth of bosses, more for each rank and tier. The same for the same job.</summary>
         public static bool BossFollows(int seed, int career, FlareTier tier)
         {
             return career >= 0 && Roll(seed, career / 100, 811) < BossBase + BossStep * (career % 100 + (int)tier);
         }
 
-        /// <summary>What a sponsored post brings, thousandths of radio's customers a day: by followers on a log scale, from Local on; 0 below.</summary>
+        /// <summary>What a sponsored post brings, thousandths of radio's customers a day, from Local on; 0 below.</summary>
         public static int SponsoredReach(int followers)
         {
             if (followers < SponsoredFrom)
@@ -580,18 +567,15 @@ namespace RealLifeOverhaul.Flare
             return Clamp((int)Math.Round(SponsoredLeast + 375.0 * Math.Log10(followers / (double)SponsoredFrom)), SponsoredLeast, SponsoredMost);
         }
 
-        /// <summary>What a sponsored post costs, thousandths of its base price: its reach, a little less for a trusted account and more for a doubted one.</summary>
+        /// <summary>What a sponsored post costs, thousandths of its base price: less for a trusted account, more for a doubted one.</summary>
         public static int SponsoredCost(int reach, int reputation)
         {
             return (int)((long)reach * (1100 - 2 * Clamp(reputation, 0, 100)) / 1000);
         }
 
-        // ---------------------------------------------------------------- the company's campaigns on the Business tab
-
         /// <summary>
-        /// Whether a campaign of the company's is one of Flare's own deals still on (the same business, kind and first
-        /// day): that one already has its row as a deal. Any other campaign gets a row of its own, so the Business tab
-        /// shows everything that keeps a business from a new hire.
+        /// Whether a campaign of the company's is one of Flare's own deals still on (the same business, kind and first day),
+        /// which has its row on the Business tab as a deal already.
         /// </summary>
         public static bool IsDeal(FlareFile f, string place, int kind, int from)
         {
@@ -618,9 +602,7 @@ namespace RealLifeOverhaul.Flare
             return day >= from ? "reallife_flare_busy_running" : from >= to ? "reallife_flare_busy_booked_day" : "reallife_flare_busy_booked_days";
         }
 
-        // ---------------------------------------------------------------- the rest of the city
-
-        /// <summary>Whether, on a day after a post, somebody the player has still to meet answers it and becomes a contact: a few a month, more for a bigger account.</summary>
+        /// <summary>Whether somebody the player has still to meet answers yesterday's post and becomes a contact: a few a month.</summary>
         public static bool MeetsOnline(FlareFile f, int day, bool postedYesterday)
         {
             int perMonth = OnlinePerMonth[Clamp((int)f.Tier, 0, OnlinePerMonth.Length - 1)];
@@ -648,7 +630,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The partner has not been in a post for three weeks while others have been lately: they mind it, once in three weeks.</summary>
+        /// <summary>The partner not in a post for three weeks while others were lately minds it, once in three weeks.</summary>
         public static bool NeverPosted(FlareFile f, int day, bool partner)
         {
             if (!partner || day - Math.Max(f.PartnerTagDay, f.StartDay) < NeverPostedDays || f.OthersTagDay < 0 || day - f.OthersTagDay > OthersLately || day - f.NeverDay < NeverPostedDays)
@@ -683,7 +665,7 @@ namespace RealLifeOverhaul.Flare
             return Clamp(mood / 10, -10, 10);
         }
 
-        /// <summary>What a post about an issue adds to its weight in the council, thousandths of a point: by followers on a log scale, at most 0.3.</summary>
+        /// <summary>What a post about an issue adds to its weight in the council, thousandths of a point: at most 0.3.</summary>
         public static int IssueWeight(int followers)
         {
             return (int)(IssueMost * Math.Min(1.0, Math.Log10(1.0 + Math.Max(0, followers)) / Math.Log10(1.0 + EndorseFull)));
@@ -695,7 +677,10 @@ namespace RealLifeOverhaul.Flare
             return f.Tier >= FlareTier.Known;
         }
 
-        /// <summary>Selling a company's shares on a day: market abuse if the player's post about it went viral within two days. The viral post it was, or null (spent if found).</summary>
+        /// <summary>
+        /// Selling a company's shares: market abuse if the player's post about it went viral within two days. The viral post,
+        /// spent, or null.
+        /// </summary>
         public static FlareViralShares Abuse(FlareFile f, int stock, int day)
         {
             for (int i = 0; i < f.ViralShares.Count; i++)
@@ -728,7 +713,7 @@ namespace RealLifeOverhaul.Flare
             return f.Tier >= FlareTier.Celebrity ? FameFee : 0;
         }
 
-        /// <summary>The newest pictures of the player's posts, the ones shown with their picture: their post numbers into the list given, newest first.</summary>
+        /// <summary>Puts the post numbers of the player's newest posts with a picture into <paramref name="into"/>, newest first.</summary>
         public static void Pictures(FlareFile f, List<int> into)
         {
             into.Clear();
@@ -752,12 +737,11 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>The most friends' replies liked that are kept.</summary>
-        public const int ReplyLikesMost = 128;   // keys: more than any save has (forty own posts, a handful of friends each), and a bound for a damaged line
+        public const int ReplyLikesMost = 128;   // more than any save has, and a bound for a damaged line
 
         /// <summary>
         /// The key of a friend's reply under a post of the player's: the post's number and the reply's place among its
-        /// reactions. Stable (the reactions are written once with the post), unlike the negative number the reply is shown with.
+        /// reactions, which is stable, unlike the number the reply is shown with.
         /// </summary>
         public static int ReplyKey(int parentId, int slot)
         {
@@ -770,7 +754,7 @@ namespace RealLifeOverhaul.Flare
             return f != null && slot >= 0 && slot < 32 && f.ReplyLikes.Contains(ReplyKey(parentId, slot));
         }
 
-        /// <summary>The player likes a friend's reply, or takes the like back. The new state. It changes nothing else: no affection, standing or followers, and nothing is sent.</summary>
+        /// <summary>The player likes a friend's reply, or takes the like back; the new state. Moves nothing else and sends nothing.</summary>
         public static bool ToggleReplyLike(FlareFile f, int parentId, int slot)
         {
             if (f == null || slot < 0 || slot >= 32 || f.Post(parentId) == null)
@@ -806,9 +790,9 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>
-        /// Keeps the posts within their bounds: the city's posts older than a few days go first (and a reply goes with its
-        /// post), then the oldest post that is not the player's, and the player's own beyond forty. A post of the player's
-        /// still on its way to a session's host is never let go (it would come back as a stranger's); it goes once it is back.
+        /// Keeps the posts within their bounds: the city's old posts first (a reply with its post), then the oldest not the
+        /// player's, then the player's own past forty. A post on its way to a session's host is kept: it would come back as a
+        /// stranger's.
         /// </summary>
         public static void Prune(FlareFile f)
         {
@@ -819,7 +803,7 @@ namespace RealLifeOverhaul.Flare
                 int at = Oldest(f.Posts, true);
                 if (at < 0 || !OwnAfter(f.Posts, at))
                 {
-                    break;   // every one left is on its way, but the newest (just made: it is on its way in a moment)
+                    break;   // the only own post not on its way is the newest
                 }
                 f.Posts.RemoveAt(at);
                 own--;
@@ -837,7 +821,7 @@ namespace RealLifeOverhaul.Flare
             DropLikesOfGone(f);
         }
 
-        /// <summary>Lets go of the likes kept for replies and comments made for display whose post is gone (after any post is taken out). How many went.</summary>
+        /// <summary>Lets go of the likes of display-only replies and comments whose post is gone. How many went.</summary>
         public static int DropLikesOfGone(FlareFile f)
         {
             return DropReplyLikes(f) + FlareCommentRules.DropLikes(f);
@@ -867,11 +851,9 @@ namespace RealLifeOverhaul.Flare
             return -1;
         }
 
-        // ---------------------------------------------------------------- drafts
-
         /// <summary>
-        /// Something happened that can be posted about. One draft a source and a thing (the same promotion is not drafted
-        /// twice); the oldest goes when there are eight. Returns the draft, or null if it was there already.
+        /// Something happened that can be posted about. One draft a source and a thing; the oldest goes when there are eight.
+        /// Null if it was there already.
         /// </summary>
         public static FlareDraft Draft(FlareFile f, FlareSource source, int day, int hour, int person, string place, string name, int arg)
         {
@@ -936,8 +918,6 @@ namespace RealLifeOverhaul.Flare
             return record ? FlareSource.RecordDay : FlareSource.None;
         }
 
-        // ---------------------------------------------------------------- the day
-
         /// <summary>
         /// The daily round, once a day whatever the time skipped: the reputation moves a tenth of the way to the city's
         /// opinion, followers drift away after a week of silence, friends follow or stop, a few of them post, drafts
@@ -990,7 +970,7 @@ namespace RealLifeOverhaul.Flare
             return r;
         }
 
-        /// <summary>The topics a friend's own post can be about (FlareText words them): their work, their part of town, and what they like.</summary>
+        /// <summary>The topics a friend's own post can be about (FlareText words them).</summary>
         public enum LifeTopic { Work = 0, District = 1, Sport = 2, Food = 3, Night = 4, Shops = 5, Plain = 6 }
 
         public const int LifeVariants = 2;

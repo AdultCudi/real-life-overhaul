@@ -247,7 +247,8 @@ internal static partial class Program
     private static void PicturesShared()
     {
         // A post of the city's on the host (its own number) and the guest's copy of it (another number of the guest's, the host's as its session number).
-        string net = ReviewSource("Social/Flare/FlareNetShare.cs"), share = ReviewSource("Social/Flare/FlareDirector.Share.cs");
+        string net = (ReviewSource("Social/Flare/FlareNetShare.cs") + ReviewSource("Social/Flare/FlareOutbox.cs") + ReviewSource("Social/Flare/FlareRateBook.cs")
+            + ReviewSource("Social/Flare/FlarePieceBook.cs")), share = ReviewSource("Social/Flare/FlareDirector.Share.cs");
         Check(!net.Contains("CityPhoto") && !net.Contains("Avatar") && !share.Contains("CityPhoto") && !share.Contains("Avatar") && !net.Contains("City_"),
             "Flare pictures: nothing about faces or city photos is sent in a session (each machine makes its own)");
         string photos = ReviewSource("Social/Flare/FlareDirector.Photos.cs"), avatars = ReviewSource("Social/Flare/FlareAvatars.cs");

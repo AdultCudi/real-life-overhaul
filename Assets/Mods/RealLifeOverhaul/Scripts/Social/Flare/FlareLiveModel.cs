@@ -101,13 +101,13 @@ namespace RealLifeOverhaul.Flare
         Tycoon = 13,     // a rival tycoon answers an announcement in its trade
         Pressure = 14,   // after the paper: the City Office acts after all
         Site = 15,       // a building site was reported: the inspector goes
-        Nothing = 16,    // the city's faults (Scripts/Faults): a report of nothing, "we looked and found nothing"
+        Nothing = 16,    // the city's faults: a report of nothing, "we looked and found nothing"
         Warned = 17,     // ...nothing again: a warning
         Barred = 18,     // ...too many reports of nothing: no crew for this player's reports for a few days
         Clean = 19       // ...a business inspected and found clean: nothing against it
     }
 
-    /// <summary>What the city's real faults (Scripts/Faults, its FaultVerdict: the same numbers) make of a report, as Flare reads it through FlareBridges.FaultCheck.</summary>
+    /// <summary>What the city's faults (Scripts/Faults, FaultVerdict's numbers) make of a report, read through FlareBridges.FaultCheck.</summary>
     public enum FaultAnswer
     {
         True = 0,        // a real fault there: the crew goes to it
@@ -175,7 +175,7 @@ namespace RealLifeOverhaul.Flare
         public string District;      // the game's own id of their district, or null
         public FlarePersona Persona;
         public bool Female;          // as their first name says
-        public int Age;              // years, as suits their persona (FlareLiveRules.AgeOf)
+        public int Age;              // years, as suits their persona
     }
 
     /// <summary>A business of the city as the day's posts see it: handed over by the director when the day is played, never kept.</summary>
@@ -190,9 +190,8 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// The city as the day's posts read it (handed over by the director once a day, or made up by the offline checks):
-    /// the weather, the news, prices, the street's calendar, the election, the works, the market, the districts and some
-    /// of the city's businesses. Never kept.
+    /// The city as the day's posts read it, handed over once a day (or made up by the offline checks): the weather, the
+    /// news, prices, events, the election, the works, the market and some of the city's businesses. Never kept.
     /// </summary>
     public sealed class FlareCityFacts
     {
@@ -220,7 +219,7 @@ namespace RealLifeOverhaul.Flare
         public readonly List<FlareBiz> Mine = new List<FlareBiz>(8);     // the player's own
         public int Busy = 1;             // the option: 0 quiet, 1 normal, 2 busy
         public bool Following;           // a guest of a session that follows the host's feed: the city's posts are the host's
-        public bool RealFaults;          // the city's faults are real (Scripts/Faults): its people report only those, through the faults themselves
+        public bool RealFaults;          // the city's faults are real: its people report only those
     }
 
     /// <summary>A case of the City Office's: a report, its answer and what was done. Saved (FlareStore, the network's line).</summary>
@@ -243,15 +242,14 @@ namespace RealLifeOverhaul.Flare
         public string Reporter;          // whose report: "me", "c:12" (one of the city's people), "p:id" (a player of the session)
         public int Repeats;              // others who said the same since
         public int ActedDay = -1;        // the day a crew was sent (the week's crews are counted by it); -1 for none
-        public bool Counted = true;      // filed by one of its player's first three reports of the day: moves the mood, the tally and the paper (FlareLiveRules.Counted)
-        public int Verdict = -1;         // what the city's real faults made of it when it was answered (FaultAnswer's number); -1 not judged (Scripts/Faults)
-        public int Fault = -1;           // ...the fault it found and may take (a real one no other case has in hand); -1 none
+        public bool Counted = true;      // one of its player's first three reports of the day: moves the mood, the tally and the paper
+        public int Verdict = -1;         // what the city's faults made of it when answered (FaultAnswer); -1 not judged
+        public int Fault = -1;           // ...the fault it found and may take; -1 none
     }
 
     /// <summary>
-    /// A rival tycoon of the end game as Flare knows them (Rivals, through Wiring/FlareLiveLinks): who they are (their
-    /// place in the rivals' catalogue, which is their voice on Flare), their name, and the kind of their latest move
-    /// announced, if one is (Rivals.RivalMoveKind's number; -1 for none).
+    /// A rival tycoon of the end game as Flare knows them: their place in the rivals' catalogue (their voice on Flare),
+    /// their name, and the kind of their latest move announced (Rivals.RivalMoveKind; -1 for none).
     /// </summary>
     public sealed class FlareTycoon
     {
@@ -300,10 +298,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// The living network's own state in a save (FlareStore, its own line): the City Office's cases, the watches in the
-    /// districts, the complaints of the week, the direct messages, the stories waiting for the paper, the players muted
-    /// and hidden, the invitations the player goes to, how far the notifications have been read, and the pictures sent
-    /// today. Game-free.
+    /// The living network's state in a save: the City Office's cases, the watches, the week's complaints, the messages,
+    /// the stories for the paper, the players muted and hidden, the invitations, the notifications read and the pictures
+    /// sent today. Game-free.
     /// </summary>
     public sealed class FlareNet
     {
@@ -326,15 +323,15 @@ namespace RealLifeOverhaul.Flare
         public int PicDay = -1;          // the day PicsToday counts for
         public int PicsToday;            // pictures sent to the session today
         public int PicNext = 1;          // the number of the next picture of the player's sent to the session
-        public int RepliesDay = -1;      // the day RepliesToday counts for (replies have no limit: kept as the save has them)
+        public int RepliesDay = -1;      // the day RepliesToday counts for: kept for the save, nothing limits replies
         public int RepliesToday;
         public int ReportsDay = -1;      // the day ReportsToday counts for
         public int ReportsToday;         // the player's reports today that weighed in the council (FlareLiveRules.Weighs)
         public int MovedDay = -1;        // the day Moved is for
         public readonly List<string> Moved = new List<string>(8);      // what moved a business or the City Office today (FlareLiveRules.FirstToday)
         public int DmDay = -1;           // the last day one of the city's people wrote
-        public string HostKey;           // a guest: the host and session whose session numbers (NetId) this save's posts carry (FlareNetShare.NewHost)
-        public int CitySeed;             // the seed of the city's people on Flare: this save's, or the host's of the session it followed (their names stay theirs)
+        public string HostKey;           // a guest: the host and session whose NetIds this save's posts carry (FlareNetShare.NewHost)
+        public int CitySeed;             // the seed of the city's people: this save's, or the host's it followed, so their names stay
 
         public FlareCase Case(int id)
         {

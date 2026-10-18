@@ -151,8 +151,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCast.cs" Link="Mod\FlareCast.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveModel.cs" Link="Mod\FlareLiveModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveRules.cs" Link="Mod\FlareLiveRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveRules.CityOffice.cs" Link="Mod\FlareLiveRules.CityOffice.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveRules.Feed.cs" Link="Mod\FlareLiveRules.Feed.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveStore.cs" Link="Mod\FlareLiveStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareNetShare.cs" Link="Mod\FlareNetShare.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareOutbox.cs" Link="Mod\FlareOutbox.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareRateBook.cs" Link="Mod\FlareRateBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlarePieceBook.cs" Link="Mod\FlarePieceBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareSnap.cs" Link="Mod\FlareSnap.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareFilter.cs" Link="Mod\FlareFilter.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameModel.cs" Link="Mod\FameModel.cs" />
@@ -244,8 +249,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsMapRules.cs" Link="Mod\TextsMapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextRuntime.cs" Link="Mod\TextRuntime.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.cs" Link="Mod\FlareTextsMap.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.Comments.cs" Link="Mod\FlareTextsMap.Comments.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.Checks.cs" Link="Mod\FlareTextsMap.Checks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsAsked.cs" Link="Mod\FlareTextsAsked.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCommentRules.cs" Link="Mod\FlareCommentRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareInviteRules.cs" Link="Mod\FlareInviteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareInviteRules.Reading.cs" Link="Mod\FlareInviteRules.Reading.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetModel.cs" Link="Mod\StreetModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetRules.cs" Link="Mod\StreetRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetOffer.cs" Link="Mod\StreetOffer.cs" />
@@ -255,6 +264,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetCards.cs" Link="Mod\StreetCards.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareAvatarRules.cs" Link="Mod\FlareAvatarRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCityPhotoRules.cs" Link="Mod\FlareCityPhotoRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareBank.cs" Link="Mod\FlareBank.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareFaceAheadRules.cs" Link="Mod\FlareFaceAheadRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityShare.cs" Link="Mod\CityShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CivicCatalogue.cs" Link="Mod\CivicCatalogue.cs" />
