@@ -827,9 +827,11 @@ internal static partial class Program
         }
         // Warmed first: the runtime compiles the rules' methods in full only once it has seen them run for a while, in the
         // background (tiered compilation), and the game's runtime has no such first tier.
-        Looks(2000, road, obstacles, cx, cz, fx, fz, speed);
-        System.Threading.Thread.Sleep(300);
-        Looks(500, road, obstacles, cx, cz, fx, fz, speed);
+        for (int warm = 0; warm < 4; warm++)
+        {
+            Looks(1000, road, obstacles, cx, cz, fx, fz, speed);
+            System.Threading.Thread.Sleep(150);
+        }
         int bound = 0;
         double best = double.MaxValue;
         long allocated = 0L;
