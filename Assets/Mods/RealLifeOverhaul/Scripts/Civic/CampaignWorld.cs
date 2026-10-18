@@ -10,11 +10,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The campaign as seen in the street near the player in the week before an election: posters on shopfront walls and
-    /// boards on the pavement (put up one at a time out of view, 25 to 90 m away, more for whoever leads the polls, and taken
-    /// down 160 m behind or, once the count is in, when nobody is looking), a canvasser with leaflets, a rally round a speaker
-    /// on a box, and on election day the sign outside the district's polling place. The people come from civic life's own
-    /// cast. Cost: nothing per frame; a one-second tick, and a few rays every four seconds while the street is dressed.
+    /// The campaign in the street near the player: posters and boards put up out of view (more for the poll leader), a
+    /// canvasser, rallies, and on election day the polling place's sign. Cost: nothing per frame; a one-second tick.
     /// </summary>
     public sealed partial class CampaignWorld
     {
@@ -64,7 +61,6 @@ namespace RealLifeOverhaul
         private bool _forced;           // a test button asked: the hours of the day do not apply
         private int _stageTries;
 
-        // The player's own campaign (CivicOffice).
         private bool _own;              // the rally being held is the player's own: no speaker but them
         private bool _ownArrived;
         private float _ownGone;         // when the crowd at the player's rally stops waiting, or goes after the speech
@@ -73,7 +69,6 @@ namespace RealLifeOverhaul
         /// <summary>The share of posters and boards that are the player's own in a council race.</summary>
         public Func<float> OwnShare;
 
-        /// <summary>The colour of the player's posters and boards.</summary>
         public Func<int> OwnColour;
 
         /// <summary>The player has reached their own rally: the speech is theirs (the number listening, and what to call when it is over).</summary>
@@ -147,7 +142,6 @@ namespace RealLifeOverhaul
             TickCanvasser(now, player, hour, onFoot);
         }
 
-        /// <summary>Everything away at once. Safe at any time, any number of times.</summary>
         public void Clear()
         {
             _props.ReturnAll(_posters);

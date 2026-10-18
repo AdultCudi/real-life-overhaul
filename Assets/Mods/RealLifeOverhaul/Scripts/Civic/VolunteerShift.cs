@@ -10,9 +10,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// An afternoon's canvassing for a candidate, the player's own short job: they hold a pitch (80 m round where they began)
-    /// and offer a leaflet, a key press each, to the game's own pedestrians walking by, each asked once; some take one.
-    /// Thirty leaflets, four real minutes or six in the evening, whichever comes first; it ends on every path out.
+    /// An afternoon's canvassing, the player's own short job: from a pitch they offer leaflets, a key press each, to the game's
+    /// pedestrians walking by; thirty leaflets, four real minutes or six in the evening, whichever comes first.
     /// </summary>
     public sealed class VolunteerShift
     {

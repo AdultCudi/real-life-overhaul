@@ -15,12 +15,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The player in the city's politics: standing for their home district's council seat or for mayor, the run (papers,
-    /// platform, fund, donors, posters, doors, rallies, adverts, endorsements, attacks, the debate), the district race's count,
-    /// and an office held (salary, weekly meetings, the city's budget, the register of interests, recall). Rules on
-    /// <see cref="OfficeState"/> from <see cref="OfficeRules"/>, run on the government's clock through its hooks; nothing here
-    /// runs per frame. With the option off nothing new begins, but a run filed is still counted and an office keeps its title
-    /// until the next count.
+    /// The player in the city's politics: a run for their district's council seat or for mayor, its count, and an office held.
+    /// Rules on <see cref="OfficeState"/> from <see cref="OfficeRules"/>, run through the government's hooks; nothing per frame.
+    /// With the option off nothing new begins, but a run filed is still counted and an office lasts until the next count.
     /// </summary>
     public sealed partial class CivicOffice
     {
@@ -109,7 +106,6 @@ namespace RealLifeOverhaul
             return -1;
         }
 
-        /// <summary>True if a building is one the player rents or owns.</summary>
         public static bool IsMine(CityBuildingController building)
         {
             GameInstance save = SaveGameManager.Current;
@@ -167,7 +163,6 @@ namespace RealLifeOverhaul
             return district >= 0 && district < _city.Districts.Count ? CivicCity.Name(_city.Districts[district]) : CivicText.T("reallife_civic_office_the_city");
         }
 
-        /// <summary>Whether a run may begin now, and why not.</summary>
         public OfficeRefusal CanStand(int day)
         {
             bool open = OfficeRules.NominationsOpenOn(day, Gov.ElectionDay, _gov.Campaigning, CivicCatalogue.CampaignDays) && Gov.Phase != ElectionPhase.Counted;

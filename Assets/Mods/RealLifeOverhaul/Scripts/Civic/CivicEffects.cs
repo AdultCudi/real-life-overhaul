@@ -11,166 +11,10 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>Texts and toasts for civic life: every string comes from en.json, {names} are filled here.</summary>
-    public static class CivicText
-    {
-        public static string T(string key)
-        {
-            return key.GetLocalization();
-        }
-
-        public static string T(string key, string name, string value)
-        {
-            return key.GetLocalization().Replace("{" + name + "}", value);
-        }
-
-        public static string T(string key, string name, string value, string name2, string value2)
-        {
-            return key.GetLocalization().Replace("{" + name + "}", value).Replace("{" + name2 + "}", value2);
-        }
-
-        public static string T(string key, string name, string value, string name2, string value2, string name3, string value3)
-        {
-            return key.GetLocalization().Replace("{" + name + "}", value).Replace("{" + name2 + "}", value2).Replace("{" + name3 + "}", value3);
-        }
-
-        public static string Money(float amount)
-        {
-            return amount.ToCurrencyFormat();
-        }
-
-        /// <summary>What a policy does, in words, with its amounts at today's prices.</summary>
-        public static string Effect(PolicyDef policy)
-        {
-            if (policy == null)
-            {
-                return string.Empty;
-            }
-            string text = T(policy.Effect);
-            if (text.IndexOf('{') < 0)
-            {
-                return text;
-            }
-            return text.Replace("{levy}", Money(Math.Abs(CivicCatalogue.LevyNow(policy))))
-                .Replace("{grant}", Money(Math.Abs(CivicCatalogue.GrantNow(policy.Dir))))
-                .Replace("{ticket}", Money(Math.Abs(CivicCatalogue.TicketExtraNow(policy.Dir))))
-                .Replace("{fare}", Money(Math.Abs(CivicCatalogue.FareExtraNow(policy.Dir))))
-                .Replace("{floor}", Money(CivicCatalogue.WageFloorNow(policy.Dir)));
-        }
-
-        public static string Name(Candidate candidate)
-        {
-            if (candidate.Player)
-            {
-                return PlayerName();
-            }
-            return CivicCatalogue.FirstNames[candidate.First].GetLocalization() + " " + CivicCatalogue.LastNames[candidate.Last].GetLocalization();
-        }
-
-        /// <summary>The player's own name, as the game has it; "you" if it has none.</summary>
-        public static string PlayerName()
-        {
-            try
-            {
-                CharacterData data = PlayerHelper.CharacterData;
-                if (data != null && !string.IsNullOrEmpty(data.name))
-                {
-                    return data.name;
-                }
-            }
-            catch (Exception)
-            {
-                // the player's character is not there yet: the word below
-            }
-            return T("reallife_civic_office_you");
-        }
-
-        public static string Party(Candidate candidate)
-        {
-            return CivicCatalogue.PartyKey(candidate.Party).GetLocalization();
-        }
-
-        /// <summary>
-        /// Set by the director while the host of a Going Public session runs the city's hours: every toast of the city's is
-        /// heard as well (type, key, names and values, seconds), to be shown to the guests (Core/SharedCity, part N).
-        /// </summary>
-        public static Action<NotificationType, string, string[], float> Heard;
-
-        /// <summary>A toast with no names in it. Not kept in the save: the key would mean nothing without the mod.</summary>
-        public static void Toast(NotificationType type, string key, float seconds = 9f)
-        {
-            Heard?.Invoke(type, key, null, seconds);
-            Notifications.Show(type, key, null, seconds, null, null, true, false);
-        }
-
-        public static void Toast(NotificationType type, string key, string name, string value, float seconds = 9f)
-        {
-            if (Heard != null)
-            {
-                Heard(type, key, new[] { name, value }, seconds);
-            }
-            // A new dictionary each time: the game keeps hold of it for as long as the toast is listed.
-            var data = new Dictionary<string, string>(1) { { name, value } };
-            Notifications.Show(type, key, data, seconds, null, null, true, false);
-        }
-
-        public static void Toast(NotificationType type, string key, string name, string value, string name2, string value2, float seconds = 9f)
-        {
-            if (Heard != null)
-            {
-                Heard(type, key, new[] { name, value, name2, value2 }, seconds);
-            }
-            var data = new Dictionary<string, string>(2) { { name, value }, { name2, value2 } };
-            Notifications.Show(type, key, data, seconds, null, null, true, false);
-        }
-
-        public static void Toast(NotificationType type, string key, string name, string value, string name2, string value2, string name3, string value3, float seconds = 9f)
-        {
-            if (Heard != null)
-            {
-                Heard(type, key, new[] { name, value, name2, value2, name3, value3 }, seconds);
-            }
-            var data = new Dictionary<string, string>(3) { { name, value }, { name2, value2 }, { name3, value3 } };
-            Notifications.Show(type, key, data, seconds, null, null, true, false);
-        }
-
-        /// <summary>A toast of the host's, shown on a guest as the host's player saw it (names and values in pairs).</summary>
-        public static void Show(NotificationType type, string key, string[] pairs, float seconds)
-        {
-            Dictionary<string, string> data = null;
-            if (pairs != null && pairs.Length > 1)
-            {
-                data = new Dictionary<string, string>(pairs.Length / 2);
-                for (int i = 0; i + 1 < pairs.Length; i += 2)
-                {
-                    data[pairs[i]] = pairs[i + 1] ?? string.Empty;
-                }
-            }
-            Notifications.Show(type, key, data, seconds, null, null, true, false);
-        }
-    }
-
     /// <summary>
-    /// Makes the policies real. Every effect is one of three kinds, and all of them are undone
-    /// by <see cref="Revert"/> (called when the option is switched off, when the city unloads
-    /// and before anything is applied afresh):
-    ///
-    /// 1. A multiplier on a value the mod itself owns, or on one the game keeps only in memory:
-    ///    the police presence, patrol, street-crime and traffic-accident options of this mod
-    ///    (Core/Settings fields, never written to the options file from here), the weight of
-    ///    the street sweeper in city life's catalogue, and each neighbourhood's street-parking
-    ///    price (a field of the game's neighbourhood data that is not part of a save). The
-    ///    value found is remembered and put back exactly.
-    /// 2. A labelled transaction worked out from the game's own figures, because the figure
-    ///    itself is part of the save and must not be changed: income tax (the game's rate x the
-    ///    day's sales), the trade levy (sales), rent (each lease's daily rent), wages (each
-    ///    employee's hourly wage and rota), grants, the city levy; settled once a week. Fines,
-    ///    parking tickets and subway rides are topped up or part-refunded as they are charged
-    ///    (found by reading the day's transactions once an hour).
-    /// 3. A mood modifier of the mod's own (Core/ModState keeps those out of the save).
-    ///
-    /// Nothing of the game's that is saved is ever written: not the tax rate, not a rent, not a
-    /// wage. A save made under any policy loads without the mod exactly as the game left it.
+    /// Makes the policies real, all undone by <see cref="Revert"/>: multipliers on values the mod owns or the game keeps only in
+    /// memory, labelled transactions worked out from the game's own figures, and moods of the mod's own. Nothing the game
+    /// saves is ever written, so a save loads without the mod as the game left it.
     /// </summary>
     public sealed class CivicEffects
     {
@@ -181,7 +25,7 @@ namespace RealLifeOverhaul
         /// <summary>One of the mod's own integer options, scaled. What the player set is remembered and put back.</summary>
         private struct Knob
         {
-            public bool Held;      // we have changed it
+            public bool Held;      // changed by us
             public int Base;       // what the player's option says
             public int Applied;    // what we last wrote
         }
@@ -193,10 +37,7 @@ namespace RealLifeOverhaul
         private int _sweeperBase = -1;
         private bool _applied;
 
-        /// <summary>
-        /// Applies where the levers stand. Called when they change, on load, and once an hour (the
-        /// integer options are dithered: 2 scaled by 1.25 is 2 three hours in four and 3 the fourth).
-        /// </summary>
+        /// <summary>Applies where the levers stand: on a change, on load and hourly (integer options are dithered: 2 scaled by 1.25 is 2 or 3, each half the time).</summary>
         public void Apply(int[] levers)
         {
             _applied = true;
@@ -341,8 +182,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- once an hour
-
         /// <summary>The moods a policy keeps up, and the top-ups on what was charged this hour.</summary>
         public void Hourly(GovState state, int day)
         {
@@ -362,10 +201,7 @@ namespace RealLifeOverhaul
             Charges(state, day);
         }
 
-        /// <summary>
-        /// Keeps one of the mod's moods up for some hours more. If the player already has it only its hours are
-        /// topped up: adding it again through the game would play the "happier" face over the player every hour.
-        /// </summary>
+        /// <summary>Keeps one of the mod's moods up some hours more. One the player has only gets its hours topped up: adding it again would play the game's "happier" face every hour.</summary>
         public static void Keep(string type, int hours)
         {
             GameInstance save = SaveGameManager.Current;
@@ -477,8 +313,6 @@ namespace RealLifeOverhaul
             }
             state.SeenRides = Mathf.Max(state.SeenRides, rides);
         }
-
-        // ---------------------------------------------------------------- once a day, and the weekly settlement
 
         /// <summary>Yesterday's sales run up tax and levy; on the seventh day everything is settled.</summary>
         public void Daily(GovState state, int day)

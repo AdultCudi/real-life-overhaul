@@ -12,13 +12,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Civic life: the city's government (<see cref="CivicGovernment"/>), its construction programme (<see cref="CivicWorks"/>)
-    /// and what of them is seen in the street. This component owns the clock, the save (three modData lines), the street's
-    /// key prompts and the test buttons. In a Going Public session the host runs the city's hours and shares them (parts G,
-    /// W and N); a guest applies them and sends what its player does. A fault in the street clears it and leaves the street
-    /// off for the session; a fault in the data reverts every policy effect and switches civic life off for the session.
-    /// Cost: two comparisons a frame and a one-second tick that works only when the hour has changed; nothing allocates
-    /// on the tick.
+    /// Civic life: owns the clock, the save, the street prompts and the test buttons of the city's government
+    /// (<see cref="CivicGovernment"/>) and construction programme (<see cref="CivicWorks"/>), shared in a Going Public session.
+    /// A street fault clears the street for the session; a data fault reverts every policy and switches civic life off.
+    /// Cost: two comparisons a frame and a one-second tick that works only when the hour has changed.
     /// </summary>
     public sealed partial class CivicDirector : MonoBehaviour
     {

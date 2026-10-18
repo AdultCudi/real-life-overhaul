@@ -226,7 +226,6 @@ namespace RealLifeOverhaul
             return issue >= 0 && issue < _salience.Length ? _salience[issue] : 1f;
         }
 
-        /// <summary>The issues' weights today, into the array given.</summary>
         public void Weights(float[] into)
         {
             Salience();

@@ -8,13 +8,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city's government: a mayor and a council of five, an election every eight weeks with a week's campaign before it,
-    /// the count, the winner's policies coming in a day at a time, approval, petitions, council votes and recalls. All of it
-    /// is arithmetic on <see cref="GovState"/>, run once per in-game hour and caught up hour by hour after a skip; nothing
-    /// here runs per frame or puts anything in the street. The polls move each day towards what the city thinks: each
-    /// platform weighed by how much its issues matter now, plus a mayor's approval and the player's own part.
-    /// In a Going Public session the host runs the hours; a guest only follows (<see cref="FollowTick"/>) and sends what its
-    /// player does (<see cref="HostRequest"/>), so every player moves the same polls and is counted in the same election.
+    /// The city's government: mayor and council, an election every eight weeks after a week's campaign, the count, policies
+    /// phased in, approval, petitions, council votes and recalls; arithmetic on <see cref="GovState"/> once per in-game hour,
+    /// nothing per frame. In a Going Public session the host runs the hours and a guest follows (<see cref="FollowTick"/>).
     /// </summary>
     public sealed partial class CivicGovernment
     {
@@ -38,7 +34,6 @@ namespace RealLifeOverhaul
         /// <summary>Sites running late, set by the construction programme each day.</summary>
         public int LateSites;
 
-        /// <summary>Raised when a lever has moved: the effects are applied afresh.</summary>
         public Action LeversChanged;
         public Action CampaignChanged;   // campaign dressing goes up or comes down
 
@@ -270,7 +265,6 @@ namespace RealLifeOverhaul
             return at < f.Length && int.TryParse(f[at], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : -1;
         }
 
-        // A guest's doing that changes the city goes to the host too.
         private static void Share(string line)
         {
             if (SharedCity.Follows('G'))
@@ -313,8 +307,7 @@ namespace RealLifeOverhaul
 
         private void NewDay(int day)
         {
-            // Yesterday's crime and accidents, with what other features reported, fading a fifth a day; the city's police and
-            // streets budgets scale them.
+            // Yesterday's crime and accidents fade a fifth a day; the city's police and streets budgets scale them.
             State.CrimeHeat = State.CrimeHeat * 0.8f + (_crimesToday + CivicBridges.Crimes) * OfficeRules.HeatScale(Level(Department.Police));
             State.CrashHeat = State.CrashHeat * 0.8f + (_crashesToday + CivicBridges.Accidents) * OfficeRules.HeatScale(Level(Department.Streets));
             _crimesToday = 0;

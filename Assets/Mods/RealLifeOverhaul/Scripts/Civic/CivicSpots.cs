@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The few physics questions civic life asks that city life's CitySpots does not answer:
-    /// is this box free, is there a wall this way, is a door near. Layer names as CitySpots has them.
-    /// </summary>
+    /// <summary>The few physics questions civic life asks that CitySpots does not answer, with the same layer names.</summary>
     internal static class CivicSpots
     {
         private static bool _ready;

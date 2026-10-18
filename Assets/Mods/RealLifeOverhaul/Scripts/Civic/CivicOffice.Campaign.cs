@@ -21,7 +21,6 @@ namespace RealLifeOverhaul
             return i >= 0 && i < Gov.CandidateCount ? Gov.Candidates[i] : null;
         }
 
-        /// <summary>The player's number in their race.</summary>
         public int MyIndex => State.Race == OfficeRace.Council ? 0 : Gov.PlayerSlot;
 
         public float RacePoll(int i)

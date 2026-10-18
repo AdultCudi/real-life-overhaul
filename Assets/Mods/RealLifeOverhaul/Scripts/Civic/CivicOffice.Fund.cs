@@ -171,7 +171,6 @@ namespace RealLifeOverhaul
             return !_knocked.Contains(building) && _knocked.Count < KnockedMost;
         }
 
-        /// <summary>A door was knocked on and answered: what came of it.</summary>
         public void Knocked(int building, string neighbourhood, OfficeGain gain, int day)
         {
             _knocked.Add(building);
@@ -211,7 +210,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The player spoke at their own rally.</summary>
         public void Rallied(OfficeGain gain, int day)
         {
             State.Rallies++;
@@ -221,7 +219,6 @@ namespace RealLifeOverhaul
             Post(PostRally, Where());
         }
 
-        /// <summary>The player took part in the debate, or did not.</summary>
         public void Debated(float gain, bool there, int day)
         {
             State.Debate = there ? 1 : 2;

@@ -164,7 +164,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Result night has been seen (or missed).</summary>
         public void ResultSeen() => State.ResultShown = true;
 
         private void Discoveries(int day)

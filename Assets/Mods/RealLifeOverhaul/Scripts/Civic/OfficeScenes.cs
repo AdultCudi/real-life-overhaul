@@ -8,12 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The scenes of the player's run and office, in the game's list window (<see cref="OfficePanel"/>): a door answered,
-    /// the player's own rally, the televised debate, result night and the council's meetings. Each is a few pages of
-    /// choices; what a choice is worth is the rules' (OfficeRules), what it does is the office's (CivicOffice). The
-    /// debate, result night and a meeting begin on their hour as soon as the player is free (never at the wheel, never
-    /// over another scene or a conversation); a door and a rally begin when the player is at them. Ticked once a second by
-    /// the director; nothing at all is done while no scene is due.
+    /// The scenes of the player's run and office in <see cref="OfficePanel"/>: a door, their rally, the debate, result night and
+    /// the council's meetings. The timed ones begin on their hour once the player is free. Ticked once a second; idle otherwise.
     /// </summary>
     public sealed class OfficeScenes
     {
@@ -28,23 +24,19 @@ namespace RealLifeOverhaul
         private int _step;
         private float _gain;
 
-        // ---- the door
         private int _doorBuilding;
         private string _doorDistrict;
         private int _doorIssue, _doorMood;
 
-        // ---- the rally
         private int _listeners;
         private OfficeAnswer _rallyOpen;
         private bool _rallyPlank;
         private Action<bool> _rallyOver;
 
-        // ---- the debate
         private readonly int[] _questions = new int[2];
         private AttackKind _debateAttack;
         private bool _debateTrue;
 
-        // ---- the meeting
         private int _motion;
         private int _passed;
         private string _last;
@@ -61,8 +53,6 @@ namespace RealLifeOverhaul
         private static int Day => TimeHelper.CurrentDay;
 
         private OfficeState S => _office.State;
-
-        // ---------------------------------------------------------------- once a second
 
         public void Tick(int day, int hour)
         {
@@ -190,8 +180,7 @@ namespace RealLifeOverhaul
 
         private static string Issue(int issue) => T(CivicCatalogue.IssueNames[Mathf.Clamp(issue, 0, CivicCatalogue.Issues - 1)]);
 
-        // The player's plank on an issue, or null.
-        private PolicyDef Plank(Candidate c, int issue)
+        private static PolicyDef Plank(Candidate c, int issue)
         {
             for (int i = 0; i < c.Planks; i++)
             {
@@ -203,8 +192,6 @@ namespace RealLifeOverhaul
             }
             return null;
         }
-
-        // ---------------------------------------------------------------- a door
 
         /// <summary>The player knocks on a door; somebody answers. False if no scene could be begun.</summary>
         public bool Door(int building, string district, string address)
@@ -292,8 +279,6 @@ namespace RealLifeOverhaul
                 new[] { T("reallife_civic_office_leave") }, null, 1, _ => Over(true));
         }
 
-        // ---------------------------------------------------------------- the player's own rally
-
         /// <summary>The player has reached their rally: a crowd of so many. When it is over, the stage is told (true: the speech was given).</summary>
         public bool Rally(int listeners, Action<bool> over)
         {
@@ -355,8 +340,6 @@ namespace RealLifeOverhaul
                 T(g.Tone > 0 ? "reallife_civic_office_rally_went_well" : g.Tone < 0 ? "reallife_civic_office_rally_went_badly" : "reallife_civic_office_rally_went_so"),
                 new[] { T("reallife_civic_office_leave") }, null, 1, _ => Over(true));
         }
-
-        // ---------------------------------------------------------------- the debate
 
         private void BeginDebate()
         {
@@ -462,8 +445,6 @@ namespace RealLifeOverhaul
             DebatePage();
         }
 
-        // ---------------------------------------------------------------- result night
-
         private void BeginResult()
         {
             if (!Begin(Scene.Result))
@@ -535,8 +516,6 @@ namespace RealLifeOverhaul
                 Over(true);
             });
         }
-
-        // ---------------------------------------------------------------- a council meeting
 
         private void BeginMeeting()
         {

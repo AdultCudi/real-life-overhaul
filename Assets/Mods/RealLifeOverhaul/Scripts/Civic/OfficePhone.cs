@@ -9,16 +9,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// City Hall's fifth topic, the player's own politics, as pages of the game's conversation panel (a text, a button
-    /// that does something, a button that goes on, and hang up), like the other four:
-    ///   no run        when the next election is, when papers may be filed, what it takes; standing for the council
-    ///                 seat of the home's district or for mayor
-    ///   a run         the platform (a page a policy), the party, the slogan, the signatures, the papers, the fund
-    ///   the campaign  the polls, the fund, a donor's offer, spending (posters, adverts, a rally, canvassers), the
-    ///                 bodies that endorse, an attack to answer, the platform
-    ///   in office     the next meeting's agenda and tabling a motion (as mayor, setting it), the city's budget (as
-    ///                 mayor, proposing one), an order, the register of interests, the record, standing down
-    /// Everything is built when a page is shown; nothing here runs on a tick.
+    /// City Hall's fifth topic, the player's own politics, as pages of the game's conversation panel: standing, the run, the
+    /// campaign and an office held. Pages are built when shown; nothing here runs on a tick.
     /// </summary>
     internal static class OfficePhone
     {
@@ -49,8 +41,6 @@ namespace RealLifeOverhaul
         {
             return race == OfficeRace.Mayor ? T("reallife_civic_office_race_mayor") : Fill("reallife_civic_office_race_council", "district", office.DistrictName(office.HomeDistrict()));
         }
-
-        // ---------------------------------------------------------------- the topic
 
         /// <summary>The topic's first page: where the player stands in the city's politics, and the way in.</summary>
         public static DialogEntry Topic(Func<DialogEntry> next)
@@ -106,7 +96,7 @@ namespace RealLifeOverhaul
             return CityHallPhone.Page(none, "reallife_civic_office_button_stand", () => StandPage(next), "reallife_civic_button_next_topic", next);
         }
 
-        /// <summary>The key of the topic's first button (shown by City Hall's own topic page).</summary>
+        // Standing for the council or for mayor: what it takes.
         private static DialogEntry StandPage(Func<DialogEntry> next)
         {
             CivicOffice office = Office;
@@ -140,8 +130,6 @@ namespace RealLifeOverhaul
             }
             return CityHallPhone.Page(T(result), "reallife_civic_office_button_run", () => Prep(0));
         }
-
-        // ---------------------------------------------------------------- a run, before the papers are in
 
         private static string PrepSummary(CivicOffice office)
         {
@@ -258,8 +246,6 @@ namespace RealLifeOverhaul
                     "reallife_civic_button_back", () => FundPage(next));
             }, "reallife_civic_button_next_option", next);
         }
-
-        // ---------------------------------------------------------------- the campaign
 
         private static string CampaignSummary(CivicOffice office, CivicGovernment gov)
         {
@@ -466,8 +452,6 @@ namespace RealLifeOverhaul
             return office == null ? Gone() : CityHallPhone.Page(T(office.AnswerAttack(answer, Day)), "reallife_civic_button_next_option", more);
         }
 
-        // ---------------------------------------------------------------- in office
-
         private const int OfficePages = 6;
 
         private static DialogEntry OfficeMenu(int option)
@@ -504,7 +488,7 @@ namespace RealLifeOverhaul
                         Text.Append('\n').Append(T("reallife_civic_office_agenda_empty"));
                     }
                     Text.Append('\n').Append(T(mayor ? "reallife_civic_office_agenda_mayor" : "reallife_civic_office_agenda_council"));
-                    return CityHallPhone.Page(Text.ToString(), "reallife_civic_office_button_table", () => TablePage(0, false), "reallife_civic_button_next_option", more);
+                    return CityHallPhone.Page(Text.ToString(), "reallife_civic_office_button_table", () => TablePage(0), "reallife_civic_button_next_option", more);
                 }
                 case 1:
                 {
@@ -536,7 +520,7 @@ namespace RealLifeOverhaul
         }
 
         // A policy to put to the council: those not in force nor on their way.
-        private static DialogEntry TablePage(int from, bool asked)
+        private static DialogEntry TablePage(int from)
         {
             CivicOffice office = Office;
             CivicGovernment gov = Gov;
@@ -574,7 +558,7 @@ namespace RealLifeOverhaul
                             "reallife_civic_office_button_table_quietly", () => CityHallPhone.Page(T(office.Table(index, false, Day)), "reallife_civic_button_back", () => OfficeMenu(0)));
                     }
                     return CityHallPhone.Page(T(office.Table(index, true, Day)), "reallife_civic_button_back", () => OfficeMenu(0));
-                }, "reallife_civic_button_next_policy", () => TablePage(next, true));
+                }, "reallife_civic_button_next_policy", () => TablePage(next));
             }
             return CityHallPhone.Page(T("reallife_civic_office_table_none"), "reallife_civic_button_back", () => OfficeMenu(0));
         }

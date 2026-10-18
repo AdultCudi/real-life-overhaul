@@ -123,7 +123,6 @@ namespace RealLifeOverhaul
             return slot;
         }
 
-        // The sitting mayor's place if the player is mayor, else their party's, a free one, or the last challenger's.
         private int Seat(Candidate me)
         {
             int slot = -1;
@@ -291,7 +290,6 @@ namespace RealLifeOverhaul
             return most;
         }
 
-        /// <summary>The issue that matters most in the city today.</summary>
         public int TopIssue()
         {
             Salience();
@@ -336,7 +334,6 @@ namespace RealLifeOverhaul
 
         private readonly float[] _raw = new float[CivicCatalogue.MaxCandidates];
 
-        // The player's own part of a score (CivicOffice).
         private float Player(int district)
         {
             try

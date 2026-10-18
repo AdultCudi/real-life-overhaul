@@ -20,16 +20,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// What civic life reads from the city itself: the districts (the game's neighbourhoods),
-    /// how many voters each has, the building designated as each one's polling place, the
-    /// player's own buildings, and the building nearest a point. Built once per city load (one
-    /// walk over the game's building list); nothing here runs on a tick.
-    ///
-    /// The game keeps no population: its citizens are made at random as customers and
-    /// pedestrians are needed. So an electorate is derived from what the neighbourhood really
-    /// has: one resident for every 30 square metres of its residential buildings, and one for
-    /// every 150 of the rest (people who live over the shop). The petition threshold and the
-    /// counts on result night come from that.
+    /// What civic life reads from the city, once per load: districts (the game's neighbourhoods), voters, polling places and
+    /// the player's buildings. The game keeps no population, so an electorate comes from floor space.
     /// </summary>
     public sealed class CivicCity
     {
@@ -156,11 +148,8 @@ namespace RealLifeOverhaul
             return best;
         }
 
-        /// <summary>
-        /// The building with a street door nearest a point, between two distances, that a test
-        /// accepts. One walk over the city's buildings: for when a site is being placed, never a tick.
-        /// </summary>
-        public static CityBuildingController NearestBuilding(Vector3 point, float minDistance, float maxDistance, Predicate<CityBuildingController> only = null)
+        /// <summary>The building with a street door nearest a point, between two distances. One walk over the city's buildings: never on a tick.</summary>
+        public static CityBuildingController NearestBuilding(Vector3 point, float minDistance, float maxDistance)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
             CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
@@ -180,7 +169,7 @@ namespace RealLifeOverhaul
                 }
                 Vector3 offset = controller.entranceDoors[0].doorTransform.position - point;
                 float sqr = Flat(offset);
-                if (sqr < minSqr || sqr >= bestSqr || Mathf.Abs(offset.y) > 6f || (only != null && !only(controller)))
+                if (sqr < minSqr || sqr >= bestSqr || Mathf.Abs(offset.y) > 6f)
                 {
                     continue;
                 }

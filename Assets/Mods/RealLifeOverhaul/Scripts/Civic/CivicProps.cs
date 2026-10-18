@@ -6,20 +6,9 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Everything civic life stands in the street that is not a person: campaign posters and
-    /// boards, the polling-place sign, cones, barriers, scaffold bays, hoarding, the skip, the
-    /// crane. One object per prop, one mesh, no collider, no script.
-    ///
-    /// A prop is asked for by id. If the prop bundle has a model of that id it is used (shared
-    /// mesh, the atlas material). If it has not, the plain stand-in registered here under the
-    /// same id is used instead: boxes built to the real dimensions and merged, once, into one
-    /// mesh with one sub-mesh per colour (the shared paints of Core/Shapes). So the day a
-    /// model of `scaffold_bay` is added to the bundle it appears with no code change; the
-    /// dimensions and pivots a model must keep are in the wish-list of docs/features/civic.md and in
-    /// <see cref="CivicStandIns"/>.
-    ///
-    /// Objects are pooled per id: made the first time one is wanted, switched off on the shelf
-    /// after. Nothing here runs per frame.
+    /// Everything civic life stands in the street that is not a person, pooled by id: the prop bundle's model if it has one,
+    /// else the plain stand-in of the same id (<see cref="CivicStandIns"/>), so a model added to the bundle appears with no
+    /// code change. One object, one mesh, no collider, no script per prop. Nothing here runs per frame.
     /// </summary>
     public sealed class CivicProps
     {
@@ -34,7 +23,6 @@ namespace RealLifeOverhaul
         private readonly Dictionary<string, Kind> _kinds = new Dictionary<string, Kind>(32);
         private readonly Dictionary<string, Stack<Transform>> _shelf = new Dictionary<string, Stack<Transform>>(32);
         private readonly Transform _root;
-        private readonly Material[] _one = new Material[1];
 
         public CivicProps(Transform parent)
         {
@@ -42,17 +30,8 @@ namespace RealLifeOverhaul
             _root.SetParent(parent, false);
         }
 
-        /// <summary>How many prop objects exist, in use or on the shelf.</summary>
-        public int Made { get; private set; }
-
         /// <summary>How many are out now.</summary>
         public int Out { get; private set; }
-
-        /// <summary>True if the prop bundle supplied the model for an id that was asked for (false: its stand-in is in use).</summary>
-        public bool IsModelled(string id)
-        {
-            return _kinds.TryGetValue(id, out Kind kind) && kind.Modelled;
-        }
 
         /// <summary>A prop object, switched on. Null only if the id has neither a model nor a stand-in, or shapes cannot be drawn at all.</summary>
         public Transform Take(string id)
@@ -82,7 +61,6 @@ namespace RealLifeOverhaul
             renderer.sharedMaterials = kind.Materials;
             renderer.lightProbeUsage = LightProbeUsage.Off;
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
-            Made++;
             Out++;
             return made.transform;
         }
@@ -119,7 +97,6 @@ namespace RealLifeOverhaul
             Out = Mathf.Max(0, Out - 1);
         }
 
-        /// <summary>Returns a whole list and empties it.</summary>
         public void ReturnAll(List<Transform> props)
         {
             for (int i = 0; i < props.Count; i++)
@@ -193,17 +170,12 @@ namespace RealLifeOverhaul
                     if (old != null)
                     {
                         UnityEngine.Object.Destroy(old.gameObject);
-                        Made--;
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// The plain stand-ins, by id. Each is a list of boxes in metres (pivot: the ground under
-        /// its middle unless said otherwise; it faces +Z), merged into one mesh. These are also
-        /// the specification for the models on the wish-list: same id, same size, same pivot.
-        /// </summary>
+        /// <summary>The plain stand-ins by id: boxes in metres, pivot on the ground under the middle and facing +Z unless said; the specification for the bundle's models.</summary>
         private static class CivicStandIns
         {
             // Colours (sRGB). A sub-mesh per colour used.
@@ -234,7 +206,6 @@ namespace RealLifeOverhaul
                 B.Begin();
                 switch (id)
                 {
-                    // ---- campaign
                     case "campaign_poster_0": Poster(CivicColours.Party(0)); break;
                     case "campaign_poster_1": Poster(CivicColours.Party(1)); break;
                     case "campaign_poster_2": Poster(CivicColours.Party(2)); break;
@@ -243,7 +214,11 @@ namespace RealLifeOverhaul
                     case "campaign_board_1": CampaignBoard(CivicColours.Party(1)); break;
                     case "campaign_board_2": CampaignBoard(CivicColours.Party(2)); break;
                     case "campaign_board_3": CampaignBoard(CivicColours.Party(3)); break;
-                    case "polling_sign": CampaignBoard(White); B.Box(0f, 0.62f, 0.16f, 0.36f, 0.10f, 0.012f, HoardingBlue, -14f); B.Box(0f, 0.62f, -0.16f, 0.36f, 0.10f, 0.012f, HoardingBlue, 14f); break;
+                    case "polling_sign":
+                        CampaignBoard(White);
+                        B.Box(0f, 0.62f, 0.16f, 0.36f, 0.10f, 0.012f, HoardingBlue, -14f);
+                        B.Box(0f, 0.62f, -0.16f, 0.36f, 0.10f, 0.012f, HoardingBlue, 14f);
+                        break;
                     case "soapbox":
                         // 0.60 x 0.30 x 0.45: a crate to stand on; the top is 0.30 m up.
                         B.Box(0f, 0.15f, 0f, 0.60f, 0.30f, 0.45f, Board);
@@ -251,7 +226,6 @@ namespace RealLifeOverhaul
                         B.Box(0f, 0.15f, -0.228f, 0.56f, 0.06f, 0.006f, Dark);
                         break;
 
-                    // ---- street works
                     case "cone":
                         B.Box(0f, 0.015f, 0f, 0.36f, 0.03f, 0.36f, Dark);
                         B.Box(0f, 0.20f, 0f, 0.22f, 0.34f, 0.22f, Orange);
@@ -320,7 +294,6 @@ namespace RealLifeOverhaul
                         B.Box(0f, 0.025f, 0f, 0.66f, 0.05f, 0.66f, Steel);
                         break;
 
-                    // ---- building works
                     case "scaffold_bay":
                         // The first lift: 2.40 wide (X) x 2.40 high x 1.80 deep (Z). Pivot: the ground at the middle of its WALL side;
                         // it stands out from the wall towards +Z. Standards at the four corners (the outer row 1.74 from the pivot),
@@ -391,9 +364,10 @@ namespace RealLifeOverhaul
                     case "bucket":
                         B.Box(0f, 0.14f, 0f, 0.28f, 0.28f, 0.28f, White);
                         break;
-                    // ---- the city's faults (Faults/FaultWorld)
+                    // for Faults/FaultWorld
                     case "pothole":
-                        // 1.00 x 0.02 x 0.85: a hole in the road, its broken edge a little lighter than the road, its bottom dark and wet, loose chips round it. Pivot: road level at its middle; lies along Z.
+                        // 1.00 x 0.02 x 0.85: a hole in the road, its broken edge lighter than the road, a dark wet bottom, loose chips round it.
+                        // Pivot: road level at its middle; it lies along Z.
                         B.Box(0f, 0.004f, 0f, 0.95f, 0.008f, 0.55f, Broken);
                         B.Box(0.05f, 0.004f, 0.02f, 0.60f, 0.008f, 0.85f, Broken);
                         B.Box(0f, 0.007f, 0f, 0.74f, 0.008f, 0.40f, Asphalt);
@@ -404,7 +378,7 @@ namespace RealLifeOverhaul
                         B.Box(0.12f, 0.012f, 0.47f, 0.07f, 0.024f, 0.05f, Broken);
                         break;
                     case "litter_pile":
-                        // 0.43 x 0.10 x 0.41, as the bundle's model: a sheet of newspaper, a paper cup, a crushed can, a carton, a crisp packet. Pivot: ground centre.
+                        // 0.43 x 0.10 x 0.41, as the bundle's model: newspaper, a paper cup, a crushed can, a carton, a crisp packet. Pivot: ground centre.
                         B.Box(0f, 0.004f, 0f, 0.36f, 0.008f, 0.26f, Paper);
                         B.Box(0.12f, 0.04f, 0.10f, 0.08f, 0.08f, 0.10f, White, 90f);
                         B.Box(-0.13f, 0.035f, -0.09f, 0.065f, 0.065f, 0.12f, Red, 90f);

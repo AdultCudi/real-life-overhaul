@@ -11,14 +11,9 @@ namespace RealLifeOverhaul
     public enum SiteRefusal { None, NoPavement, NoLane, NoKerb, Vehicles, NoWall, NoRoom, CannotClose, NoSlot }
 
     /// <summary>
-    /// Puts the construction sites near the player in the street, and takes them away. A site is data (<see cref="CivicWorks"/>);
-    /// the three nearest become props within 125 m, and nothing beyond 175 m, on handover, indoors and on any fault. Every place
-    /// is found, never assumed, when a site is set out: works in the road go on a strip beside the kerb clear of parked cars,
-    /// with the lane closed (<see cref="RoadClosure"/>), or are not set out at all where the lane runs too near; scaffold and
-    /// hoarding go in bays along the wall the door is in. Nothing is cut from the navigation mesh: what stands on a pavement
-    /// is thin or flat against a wall, and anything bulky stands in the carriageway. A new phase is drawn only out of view,
-    /// and one site at a time has a crew. Cost: nothing per frame; at most one site set out a tick (some tens of physics and
-    /// navigation queries, and up to about 60 props for three sites).
+    /// Puts the construction sites near the player in the street as props and takes them away. Every place is found, never
+    /// assumed: works in the road by the kerb, with the lane closed or not set out at all; scaffold and hoarding in bays along
+    /// the wall. A new phase is drawn only out of view. Cost: nothing per frame; at most one site set out a tick.
     /// </summary>
     public sealed partial class SiteDresser
     {
@@ -85,7 +80,6 @@ namespace RealLifeOverhaul
         private Dressed _crewed;
         private NavMeshQueryFilter _pavement;
 
-        /// <summary>Why the last attempt to set a site out failed.</summary>
         public SiteRefusal LastRefusal { get; private set; }
 
         public SiteDresser(CivicProps props, CivicWorks works, CivicCast cast)
@@ -319,7 +313,6 @@ namespace RealLifeOverhaul
             _spare.Push(dressed);
         }
 
-        // Props back on the shelf, the lane open.
         private void Strip(Dressed dressed)
         {
             dressed.Road.Open();

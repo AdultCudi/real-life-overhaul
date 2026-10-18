@@ -188,7 +188,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel's button, on the game's key or a click.
         private void PromptPressed()
         {
             if (_failed || ThirdPersonCamera.IsUiOpen())
