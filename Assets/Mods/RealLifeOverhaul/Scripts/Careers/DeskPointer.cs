@@ -6,13 +6,11 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The player's desk on a fitted-out floor (FitOut/FitDesks) as a thing to point at, the way the game's own items are
-    /// (as Ledger/LedgerPointer and Transport/TransitPointer do it): a trigger box over the desk on the game's layer for
-    /// interactive items, with this component on it. The game's pointer outlines the desk, its computer and its chair,
-    /// shows "Your desk" with the game's own "Click to work" under it (Careers/DeskGame's entry in the game's calls to
-    /// action), and a left click walks the player to the chair and opens the work panel. The box is a trigger, so it is
-    /// hit by the pointer's ray and by nothing else. It has no Update: the game asks it only when the pointer comes onto
-    /// it, leaves it or clicks. It goes with the desk.
+    /// The player's desk on a fitted-out floor (FitOut/FitDesks) as a thing to point at, as the game's own items are (and
+    /// Ledger/LedgerPointer): a trigger box over the desk on the game's interactive layer. The game's pointer outlines the
+    /// desk and its chair and shows "Your desk" with its own "Click to work" (DeskGame's entry); a click walks the player to
+    /// the chair and opens the work panel. No Update, nothing per frame: the game asks it only as the pointer comes, goes or
+    /// clicks. It goes with the desk.
     /// </summary>
     public sealed class DeskPointer : EntityController
     {
@@ -135,7 +133,7 @@ namespace RealLifeOverhaul.Careers
 
         public override void OnDestroy()
         {
-            OverlayGuard.Release(this);   // (the game's own lets the card go only while it is on screen)
+            OverlayGuard.Release(this);   // the game's own lets the card go only while it is on screen
             if (!GameManager.isCitySceneBeingUnloaded && MouseController.currentTargetEntity == this)
             {
                 MouseController.ResetCurrentEntitySelected(this);

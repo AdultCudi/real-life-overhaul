@@ -4,27 +4,25 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>What an hour or more left to the clock is for: the saved number is never kept.</summary>
+    /// <summary>What a sitting is for; never saved.</summary>
     public enum SittingKind
     {
         Class = 0,      // a class of a course, at its campus or online at home
         Homework = 1,   // a piece of homework or revision, at home or at the campus
         Exam = 2,       // a course's exam
-        Work = 3,       // a day at a job (Stage B)
+        Work = 3,       // a day at a job
         Overtime = 4,   // more hours of it
-        Contract = 5,   // freelance work or a practice's client (Stage D)
-        Interview = 6,  // a job interview (Stage B)
-        Tutoring = 7,   // a tutoring session given (Stage F)
-        Ceremony = 8    // a graduation day (Stage E)
+        Contract = 5,   // freelance work or a practice's client
+        Interview = 6,  // a job interview
+        Tutoring = 7,   // a tutoring session given
+        Ceremony = 8    // a graduation day
     }
 
     /// <summary>
-    /// A class, a piece of homework, an exam or a day at work, left to the game's own clock as the game's own job and study
-    /// are: on the game's activity panel with its progress bar, fast-forward and time skip, either where the player stands
-    /// (<see cref="ShiftSkip"/>, where nothing in the world fits) or at the desk or computer it is done at, walked to first
-    /// (Careers/SchoolDesk, Careers/ComputerSitting, Careers/DeskWork). Energy is spent as the game's own studying spends it
-    /// while it runs; whichever way it ends, the director is told the minutes that passed (or, called off before it
-    /// began, that it was: <see cref="CalledOff"/>).
+    /// A class, homework, an exam or a working day left to the game's own clock on its activity panel, where the player
+    /// stands (<see cref="ShiftSkip"/>) or at the desk or computer it is done at (Careers/SchoolDesk, DeskWork,
+    /// ComputerSitting). Energy is spent while it runs, as studying spends it; however it ends, the director is told the
+    /// minutes that passed, or that it was called off before it began (<see cref="CalledOff"/>).
     /// </summary>
     public sealed class Sitting : ISkippableShift
     {
@@ -82,7 +80,7 @@ namespace RealLifeOverhaul.Careers
             if (Fee > 0)
             {
                 int fee = Fee;
-                Fee = 0;   // (once)
+                Fee = 0;   // once
                 _director.ChargeAtStart(this, fee);
             }
         }

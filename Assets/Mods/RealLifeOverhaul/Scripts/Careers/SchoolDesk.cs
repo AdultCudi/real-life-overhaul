@@ -13,40 +13,13 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// A class or an exam of the mod's at Manhattan Business School, through the game's own study flow: the player goes in,
-    /// walks to one of the school's study desks and presses Study, as for one of the game's seven courses. The game opens
-    /// its own panel with its own study activity for that desk (PlayerActivity.StudyActivity, made by the desk's
-    /// EducationDoorController). While the player is on a course of the mod's at the school, that activity is handed to
-    /// this one, which leaves every part of it to the game's activity (its course, price, slider, Start and Cancel, and all
-    /// that follows if the game's course is studied) and adds one button, on the game's secondary key beside its Start:
-    /// "Attend {course}" during the class's window, "Sit the {course} exam" while it is due, or, greyed, when the next
-    /// class is.
-    ///
-    /// Pressed, the class is this activity's own, done the way the game does its studying: the player walks to the desk,
-    /// sits on its chair at its computer (the screen shows its video), types now and then, and spends energy as studying
-    /// does; the game's panel shows the progress, the time left, fast forward and "skip time", and Stop. It sets off as
-    /// the game's own activities do (<see cref="Walk"/>), so that the panel never takes its walk for a click elsewhere.
-    /// When it is over, whichever way, the minutes are counted to the mod's enrolment (CareersDirector.Ended, as a class
-    /// from the Campus app is), never to a diploma of the game's: nothing of the game's courses or of the save's diplomas
-    /// is touched, and the player stands up at the desk's exit as the game's studying leaves them.
-    ///
-    /// One object per press of Study, made only while the player is inside the school and on a course there (Careers
-    /// director, one reference comparison a frame then). If the game's activity is not as expected, it is left alone.
-    ///
-    /// At Hudson City University (Careers/CampusInterior) the classrooms are the school's own, with one of the university's
-    /// courses in each: there the panel is the class's alone (<see cref="DeskOffer.Only"/>): the room's course as its
-    /// headline, where it is and when its class is, Cancel and the class's button on the game's Start key, and none of
-    /// the game's courses.
-    ///
-    /// From the Campus app (Attend, Sit, Homework while at the school or the university) the director opens the desk's
-    /// panel itself, as a click on the door does, and presses the button for the player (<see cref="Begin"/>): one press,
-    /// and the player walks to the desk and sits. A walk called off (a click elsewhere, no way there) counts nothing and
-    /// says nothing; once sat, the minutes are counted once whichever way it ends (<see cref="ClassTally"/>).
-    ///
-    /// In a Going Public session the game's study panel is never asked for (ClassPlayRules.WayToDesk): Going Public takes
-    /// every StudyActivity the panel is asked to show and puts up its own training window for the game's course instead.
-    /// There the desk is made with <see cref="Own"/>, from the door's own study place, and the game's panel is asked to
-    /// show this desk, which is not a StudyActivity: the class's panel alone, as at a classroom of the university.
+    /// A class or exam of the mod's at a study desk of Manhattan Business School or a classroom of Hudson City University,
+    /// through the game's own study flow. The game's study activity for the desk is handed to this one, which leaves all of
+    /// it to the game and adds one button ("Attend {course}", "Sit the {course} exam" or, greyed, the next class); at the
+    /// university the panel is the class's alone (<see cref="DeskOffer.Only"/>). Pressed, the player walks to the desk and
+    /// studies as the game's studying does, setting off as its activities do (<see cref="Walk"/>); the minutes count once to
+    /// the mod's enrolment (<see cref="ClassTally"/>), never to a diploma of the game's. In a Going Public session the desk
+    /// is made with <see cref="Own"/> and is no StudyActivity, which Going Public would take. One object per press of Study.
     /// </summary>
     internal sealed class SchoolDesk : IPlayerActivity
     {
@@ -78,7 +51,7 @@ namespace RealLifeOverhaul.Careers
         internal sealed class DeskOffer
         {
             public int Course;
-            public SittingKind Kind;   // a class, a piece of homework or an exam
+            public SittingKind Kind;   // a class, homework or an exam
             public bool Can;
             public string Key;
             public object Arguments;
@@ -102,9 +75,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True if the game's study activity and panel have the three members a desk of ours needs (looked up once).</summary>
         public static bool Works => Resolve();
 
-        // The game's members, all three looked up together the first time any is wanted. (Once the door's alone was looked
-        // up first, when a classroom of the university was opened; the other two were then never looked up, the desk was
-        // taken for broken, and every classroom door after it gave the game's own course, "Office Businesses" at room 4.)
+        // The game's three members, looked up together the first time any is wanted.
         private static bool Resolve()
         {
             if (_failed)
@@ -115,13 +86,14 @@ namespace RealLifeOverhaul.Careers
             {
                 return true;
             }
-            _doorField = GameContract.StudyDoor.Field;   // (the game's private pieces, resolved once as the mod starts: Core/GameContract)
+            _doorField = GameContract.StudyDoor.Field;   // the game's private pieces, resolved once (Core/GameContract)
             _placeField = GameContract.StudyPlace.Field;
             _setActivity = GameContract.CurrentActivity.Setter;
             if (_doorField == null || _placeField == null || _setActivity == null)
             {
                 _failed = true;
-                CareersDirector.Logger?.Warn("Careers: the game's study activity is not as this version expects (" + (_doorField == null ? "its door" : _placeField == null ? "its desk" : "the panel's activity")
+                CareersDirector.Logger?.Warn("Careers: the game's study activity is not as this version expects ("
+                                             + (_doorField == null ? "its door" : _placeField == null ? "its desk" : "the panel's activity")
                                              + " is not there); classes at the school and the university are attended with the Attend button where the player stands instead.");
                 return false;
             }
@@ -146,9 +118,8 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// The game's panel has just opened its own study activity at a desk of the school: it is handed to a desk of ours
-        /// with the offer. Returns it, or null if the game's activity is not as expected (then nothing is changed). A desk
-        /// without its chair or its way out (a layout the game changed) is refused alone; the others still work.
+        /// The game's panel has just opened its study activity at a school desk: it is handed to a desk of ours with the offer.
+        /// Null if the game's activity is not as expected (nothing changed); a desk without its chair or way out is refused alone.
         /// </summary>
         public static SchoolDesk Take(PlayerActivityUI ui, StudyActivity game, CareersDirector director, DeskOffer offer)
         {
@@ -179,10 +150,9 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// A desk of ours made from a study door without the game's panel (a Going Public session): the door's study
-        /// activity made as the game's door makes it (StudyDiploma.CreateActivity) but never shown, so the game's panel can
-        /// be asked to show this desk, the class's panel alone (<see cref="DeskOffer.Only"/>). Null if the desk lacks its
-        /// chair or its way out, or the game's activity is not a study activity (nothing is then changed).
+        /// A desk of ours made from a study door without the game's panel (a Going Public session): the door's study activity
+        /// is made as the door makes it but not handed to the panel, which gets the class's alone. Null if the desk lacks its
+        /// chair or its way out, or the door's activity is not a study one.
         /// </summary>
         public static SchoolDesk Own(EducationDoorController door, CareersDirector director, DeskOffer offer)
         {
@@ -196,7 +166,7 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 ItemController seat = place.chair.GetComponent<ItemController>();
-                place.computer = seat != null ? seat.parentItemController : null;   // (as the game's door sets it before its panel: the screen's video)
+                place.computer = seat != null ? seat.parentItemController : null;   // as the game's door sets it before its panel: the screen's video
                 if (!(place.CreateActivity(door) is StudyActivity game))
                 {
                     return null;
@@ -211,13 +181,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // ---------------------------------------------------------------- the mod's class
-
-        /// <summary>
-        /// The class's button pressed for the player: the Campus app's Attend (Sit, Homework) sent them to this desk, so
-        /// the one press goes the whole way, as a press of the button would, a frame after the game's panel has seen the
-        /// desk not started. The same checks as the button (busy, tired, the class's window) say why not, if not.
-        /// </summary>
+        /// <summary>The class's button pressed for the player (the Campus app sent them here), a frame after the game's panel has seen the desk not started.</summary>
         public void Begin()
         {
             _director.StartCoroutine(Guard.Routine(BeginSoon()));
@@ -252,16 +216,14 @@ namespace RealLifeOverhaul.Careers
             _director.StartCoroutine(Guard.Routine(Walk()));
         }
 
-        // Set off as the game's own activities are (docs/features/careers.md, "Setting off"): on its way only once every
-        // script of the press's frame has run, and the walk order in the next frame, the first in which the game's panel
-        // sees it on its way; a walk order after that frame's end is one the panel takes for a click elsewhere. Then, at
-        // the desk, the chair, the screen and the energy, as the game's studying.
+        // Set off as the game's own activities are ("Setting off" in docs/features/careers.md): on its way once every script of
+        // the press's frame has run, the walk order in the next frame; then at the desk the chair, the screen and the energy.
         private IEnumerator Walk()
         {
             yield return null;
             if (_state != PlayerActivityState.NotStarted)
             {
-                yield break;   // (called off meanwhile)
+                yield break;   // called off meanwhile
             }
             _state = PlayerActivityState.MovingTowardsActivity;
             yield return null;
@@ -312,7 +274,7 @@ namespace RealLifeOverhaul.Careers
             sitting?.CalledOff();
         }
 
-        // ---------------------------------------------------------------- IPlayerActivity: the game's, until the button is pressed
+        // IPlayerActivity: the game's study activity answers until the class's button is pressed.
 
         public bool RequiresEnergy() => true;
 
@@ -322,7 +284,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (FrameGuard.Off)
             {
-                return Guard.Ended(this);   // (its feature is off: the activity ends as its own Finish ends it, and the panel closes)
+                return Guard.Ended(this);   // its feature is off: ended as its Finish ends it, and the panel closes
             }
             try
             {
@@ -409,14 +371,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 else if (Time.time >= _nextType)
                 {
-                    try
-                    {
-                        PlayerHelper.GetAnimator().SetTrigger(AnimationType.UsingDesktopComputer.ToStringFast());
-                    }
-                    catch (Exception)
-                    {
-                        // the animation is a nicety
-                    }
+                    DeskGame.Type();
                     _nextType = Time.time + UnityEngine.Random.Range(5f, 10f);
                 }
             }
@@ -458,13 +413,13 @@ namespace RealLifeOverhaul.Careers
                     return;
                 }
                 _before = was;
-                _state = PlayerActivityState.Finished;   // (first: whatever the game's calls below do, nothing here runs twice)
+                _state = PlayerActivityState.Finished;   // first: whatever the game's calls below do, nothing here runs twice
                 StandUp();
                 Sitting sitting = _sitting;
                 _sitting = null;
                 if (_tally.Settle(out int minutes, out bool whole) == TallyEnd.Counted)
                 {
-                    sitting?.SkipEnded(minutes, whole);   // (once: a second end finds the tally settled)
+                    sitting?.SkipEnded(minutes, whole);   // once: a second end finds the tally settled
                 }
             }
             catch (Exception fault)
@@ -563,7 +518,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     return null;
                 }
-                return _running ?? (_running = _sitting.SkipLabels());   // (made once)
+                return _running ?? (_running = _sitting.SkipLabels());   // made once
             }
             catch (Exception fault)
             {
@@ -587,7 +542,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (_offer.Only)
                 {
-                    // (on the game's Start key: no course of the game's is offered here, and its secondary key is the panel's fast forward)
+                    // on the game's Start key: no course of the game's here, and its secondary key is the panel's fast forward
                     return _buttons ?? (_buttons = new[]
                     {
                         new ButtonInfo("CancelRealLifeClass", "common_cancel", "gray", Guard.Way(Close), PlayerAction.Cancel),
