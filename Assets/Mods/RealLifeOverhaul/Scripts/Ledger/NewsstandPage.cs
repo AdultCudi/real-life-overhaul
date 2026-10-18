@@ -12,13 +12,10 @@ namespace RealLifeOverhaul.Ledger
     }
 
     /// <summary>
-    /// A title's edition written for the phone, one column from top to bottom: the masthead and its line, the dateline,
-    /// the lead under its headline, then each section the title prints (its stories under their headlines, the rest as
-    /// briefs), the markets as the title has them (in full: the city index, the rates, the risers, the fallers, the most
-    /// traded and every sector; or one line), the weather, and for the City Ledger and the Exchange Gazette every listed
-    /// company's close. Written from the same pieces the printed paper is (LedgerText, in the language of the moment), as
-    /// a list of blocks the app sets one under the next. The app keeps what it wrote: an edition is written once a morning
-    /// for each title read, not each time it is opened.
+    /// A title's edition written for the phone as one column of blocks, top to bottom: the masthead, the dateline, the
+    /// lead, each section the title prints, its markets, the weather and, for two titles, every company's close.
+    /// Written from the same pieces as the printed paper (LedgerText), in the language of the moment; the app keeps
+    /// what it wrote.
     /// </summary>
     public sealed class NewsstandPage
     {
@@ -91,9 +88,7 @@ namespace RealLifeOverhaul.Ledger
             Add(into, Centre);
         }
 
-        // ---------------------------------------------------------------- the parts
-
-        // The lead: its kicker, its headline in capitals, the byline and its story; a quiet morning's words without one.
+        // The lead: kicker, headline in capitals, byline and story; a quiet morning's words without one.
         private void Lead(LedgerEdition e, LedgerPiece lead)
         {
             string kicker, headline, body;
