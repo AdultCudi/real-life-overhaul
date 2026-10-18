@@ -14,25 +14,10 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// The Flare app: a social network's own look inside the game's phone (an exception to the native rule).
-    /// The frame is the game's (GameUi.AppShell, copied from MyEmployees: the app's panel among the game's, its place and
-    /// size on the full phone); inside it Flare draws its own screens with the game's own font (FlareKit):
-    ///
-    ///   the rail     on the left: the wordmark, Home, Explore, Notifications, Messages, Business, Profile (badges for
-    ///                what is new), the Post button, and the player's own account at its foot
-    ///   the column   in the middle: a header (the screen's title, its tabs, a back arrow) over a scrolling list of cards
-    ///                (FlareList: only the cards in view are built, and reused as it scrolls)
-    ///   the side     on the right, where the phone is wide enough: the account (followers, tier, reputation, the week),
-    ///                Trending in the city, Who to follow, and in a Going Public session the players with mute and hide
-    ///   a sheet      over all of it: writing a post (FlareApp.Compose.cs) or hiring influencers (FlareApp.Hire.cs)
-    ///
-    /// Screens: Home (For you, Following), Explore (Trending, Accounts), a tag's posts, Notifications, Messages and a
-    /// conversation, a profile (the player's or an account's), a post's thread, Business. The look is light or dark, as the
-    /// option says (following the phone: dark from 19:00 to 07:00).
-    ///
-    /// PER FRAME: NOTHING while it stands still, open or closed. A screen's rows are made on a click and when the director
-    /// says something changed; its cards are bound as they scroll into view; the wheel glides the list (FlareGlide, on only
-    /// while it moves).
+    /// The Flare app: a social network's own look inside the game's phone, an exception to the native rule. The frame is
+    /// the game's (GameUi.AppShell); inside it Flare draws its rail, a column of cards (FlareList builds only those in view),
+    /// the account's side where the phone is wide enough and a sheet over all, with the game's font. Cost: nothing per frame
+    /// while it stands still, open or closed; rows are made on a click or the director's word, the glide only while it moves.
     /// </summary>
     public sealed partial class FlareApp
     {
@@ -78,12 +63,10 @@ namespace RealLifeOverhaul.Flare
             FlareFacePainter.AppShowing = false;
         }
 
-        // ---------------------------------------------------------------- building it
-
         /// <summary>The app's panel, asleep: the game's frame with Flare's own screens in it. Null if the game's parts are not as expected.</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            using var piece = SessionWatch.Piece("flare: the app being built in the game's frame");   // once per city: the frame copied, Flare's own parts made
+            using var piece = SessionWatch.Piece("flare: the app being built in the game's frame");   // once a city: the frame copied, Flare's own parts made
             _shell = AppShell.Make(menu, dormant, FlareDirector.AppId);
             if (_shell == null)
             {
@@ -100,7 +83,7 @@ namespace RealLifeOverhaul.Flare
                 layout.GetChild(i).gameObject.SetActive(false);   // the game's box and table: Flare draws its own screens in their place
             }
             _root = FlareKit.Rect(layout, "Flare");
-            _root.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().ignoreLayout = true;   // (the frame's own layout, if it has one, leaves Flare's screens alone)
+            _root.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().ignoreLayout = true;   // the frame's own layout, if it has one, leaves Flare's screens alone
             FlareKit.Stretch(_root, 0f, 0f, 0f, 0f);
             BuildFrame();
             _built = true;
@@ -108,8 +91,6 @@ namespace RealLifeOverhaul.Flare
         }
 
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
-
-        // ---------------------------------------------------------------- opening and closing
 
         public void Opened()
         {
@@ -123,19 +104,19 @@ namespace RealLifeOverhaul.Flare
                 _wanted = null;
             }
             _director.AppOpened();
-            FlareFacePainter.AppShowing = true;   // (faces in view are drawn while the app is open: FlareFacePainter)
+            FlareFacePainter.AppShowing = true;   // faces in view are drawn while the app is open
             Refresh(true);
         }
 
         public void Closed()
         {
             FlareFacePainter.AppShowing = false;
-            _pictures.Closed();   // (the pictures are kept for the next opening: FlarePictures)
+            _pictures.Closed();   // kept for the next opening
             _avatars.Closed();
             CloseSheet();
         }
 
-        /// <summary>The screen to show (the director's tabs: Feed, Post, Me, Business, City, Notifications, Messages, Explore).</summary>
+        /// <summary>The screen to show, by the director's tab.</summary>
         public void Want(int tab, string pick)
         {
             var s = new State { Post = -1 };
@@ -153,13 +134,12 @@ namespace RealLifeOverhaul.Flare
             Wanted(s);
         }
 
-        /// <summary>The app opens on a post's thread.</summary>
         public void WantPost(int id)
         {
             Wanted(new State { Screen = FlareScreen.Thread, Post = id });
         }
 
-        /// <summary>The compose sheet with a draft (a moment: a picture) in it, now or when the app opens.</summary>
+        /// <summary>The compose sheet with a draft in it (a moment: a picture), now or when the app opens.</summary>
         public void WantCompose(int draft)
         {
             _composeWanted = draft;
@@ -183,7 +163,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The director says something has changed: the screen is written again if it is showing.</summary>
+        /// <summary>The director says something changed: the screen is written again if showing.</summary>
         public void Changed()
         {
             if (Showing && !_writing)
@@ -192,7 +172,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>A comment's words came for this post: its thread is written again if it is the screen showing (else nothing).</summary>
+        /// <summary>A comment's words came for this post: its thread is written again if it is the screen showing.</summary>
         public void ThreadChanged(int postId)
         {
             if (_at.Screen == FlareScreen.Thread && _at.Post == postId)
@@ -201,7 +181,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A picture came in: the cards in view are shown again (a card's height may grow with it), and the sheet's.
+        // A picture came in: the cards in view and the sheet shown again, as a card may grow with it.
         private void PictureCame()
         {
             if (Showing)
@@ -210,8 +190,6 @@ namespace RealLifeOverhaul.Flare
                 SheetPicture();
             }
         }
-
-        // ---------------------------------------------------------------- moving between screens
 
         private void Go(State s, bool remember)
         {
@@ -313,8 +291,8 @@ namespace RealLifeOverhaul.Flare
                 }
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Flare: " + _at.Screen + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture)
-                        + " ms.");
+                    Logger?.Info("Flare: " + _at.Screen + " written, " + _rows.Count + " row(s); "
+                                 + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms.");
                 }
             }
             finally
@@ -322,8 +300,6 @@ namespace RealLifeOverhaul.Flare
                 _writing = false;
             }
         }
-
-        // ---------------------------------------------------------------- rows
 
         private void RecycleRows()
         {

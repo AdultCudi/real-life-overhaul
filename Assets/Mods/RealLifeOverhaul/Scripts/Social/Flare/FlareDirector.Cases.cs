@@ -6,8 +6,8 @@ namespace RealLifeOverhaul.Flare
     /// <summary>Flare's director, the City Office's cases and what a post does to a business.</summary>
     public sealed partial class FlareDirector
     {
-        // A report reaches the City Office: a case, or the case there is already, and the week's tally. The same report by the
-        // same player again today joins that case, is answered, and moves nothing more: null.
+        // A report reaches the City Office: a case and the week's tally. The same report by the same player again today joins
+        // its case, is answered and moves nothing more: null.
         private FlareCase FileCase(FlarePost p, string reporter, float x, float z)
         {
             if (Following || p.District == null)
@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Flare
             Shared_Changed(a);
         }
 
-        // A case's answer is due: what the City Office does, its answer in character, the tally, the mood about the city's running.
+        // A case's answer is due: what the City Office does, its answer, the tally and the mood.
         private void Answer(FlareCase c, int day)
         {
             // The city's faults judge the report first: nothing there is answered so; a real fault sends the crew to where it is.
@@ -141,7 +141,6 @@ namespace RealLifeOverhaul.Flare
             Shared_CaseChanged(c);
         }
 
-        /// <summary>True while the city's faults are real (Scripts/Faults): reports are checked against them.</summary>
         private static bool FaultsReal => FlareBridges.FaultsReal != null && FlareBridges.FaultsReal();
 
         // A report the faults found nothing in: answered so, nothing ignored, and a player's own costs a little reputation by the option.
@@ -167,10 +166,7 @@ namespace RealLifeOverhaul.Flare
             Shared_CaseChanged(c);
         }
 
-        /// <summary>
-        /// One of the city's people reports a real fault of the city's (on the city's runner only): a post naming where it is,
-        /// and a case like any other report. False when Flare cannot take it.
-        /// </summary>
+        /// <summary>One of the city's people reports a real fault of the city's: a post naming where, and a case. False when Flare cannot take it.</summary>
         public bool CityReport(FlareReport kind, string district, string address, float x, float z)
         {
             if (!Running || Following || Save == null || district == null)
@@ -221,7 +217,7 @@ namespace RealLifeOverhaul.Flare
             return _caseNotes++ < CaseNotesPerDay;
         }
 
-        // The answer in character, a reply to the report: by the City Office, the police, the transit company or the utilities.
+        // The answer in character, a reply to the report.
         private FlarePost AnswerPost(FlareCase c, FlareAnswer answer, string address, int days)
         {
             FlarePost report = c.Post >= 0 ? _file.Post(c.Post) : null;
@@ -305,11 +301,7 @@ namespace RealLifeOverhaul.Flare
             AnswerPost(c, FlareAnswer.Pressure, address, days);
         }
 
-        /// <summary>
-        /// A review, an announcement or a complaint about a business: its customers move at the owner's game alone (another
-        /// player's at theirs; the city's at every machine, which each have their own). <paramref name="mine"/> is the player's
-        /// own post: an announcement is only for the player's own business.
-        /// </summary>
+        /// <summary>A review, announcement or complaint moves a business's customers at its owner's game alone, the city's on every machine.</summary>
         private void BusinessEffect(FlarePost p, bool mine)
         {
             if (p.Place == null || Save == null)
@@ -358,7 +350,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // Talk about a business for some days, inside Flare's cap, written into its customers by business pressure's writer.
+        // Talk about a business for some days, written into its customers by business pressure's writer.
         private void Buzz(string place, int percent, int days, int day, BuildingRegistration reg)
         {
             FlareRules.AddBuzz(_file, place, percent, day, days);
@@ -368,7 +360,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A business of the city's answers a review of the player's, in character: thanks, or sorry.
         private void BusinessAnswer(FlarePost review)
         {
             int id = _file.NextId++;
@@ -381,7 +372,6 @@ namespace RealLifeOverhaul.Flare
             _file.Posts.Add(p);
         }
 
-        // An account called on in a post answers it in character: an official account, a brand, a rival tycoon.
         private void MentionAnswer(FlarePost p)
         {
             string m = p.Mention;

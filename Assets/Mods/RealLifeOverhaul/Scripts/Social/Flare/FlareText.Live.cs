@@ -2,11 +2,7 @@ using System.Text;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The words of the living network: the city's people's posts, the official accounts', the businesses', the reports,
-    /// reviews, announcements, invitations and answers, the replies, the notifications, the messages and how long ago.
-    /// Every key written out in full (the locale check finds each one). Made when shown, never kept.
-    /// </summary>
+    /// <summary>The words of the living network, every key written out in full so the locale check finds each one; made when shown, never kept.</summary>
     public static partial class FlareText
     {
         private static readonly StringBuilder Live = new StringBuilder(256);
@@ -220,11 +216,7 @@ namespace RealLifeOverhaul.Flare
             return Fill("reallife_flare_day", "day", (at / 1440).ToString());
         }
 
-        /// <summary>
-        /// The built part of a post of the living network, in words: what the city's people say, an official account's
-        /// post, a business's, a report, a review, an announcement, an invitation, an answer, a reply of the city's people.
-        /// Null for a post of another kind (FlareText.Post words it).
-        /// </summary>
+        /// <summary>The built part of a living network's post in words; null for another kind (FlareText.Post words it).</summary>
         public static string Built(FlarePost p, string author)
         {
             string district = District(p.District);

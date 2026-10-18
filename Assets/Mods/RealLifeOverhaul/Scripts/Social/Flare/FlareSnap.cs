@@ -27,10 +27,7 @@ namespace RealLifeOverhaul.Flare
         private static readonly int[] CShift = { 3, 4, 5 };
         private static readonly int[] Widths = { 192, 160, 128, 96 };
 
-        /// <summary>
-        /// A picture shrunk by averaging: from rows of <paramref name="bytes"/> bytes a pixel (3 or 4; <paramref name="bgr"/>
-        /// for blue first) to RGB24 rows <paramref name="width"/> wide, no taller than <paramref name="tallMost"/>.
-        /// </summary>
+        /// <summary>A picture shrunk by averaging from rows of <paramref name="bytes"/> a pixel to RGB24 rows <paramref name="width"/> wide, at most <paramref name="tallMost"/> tall.</summary>
         public static byte[] Shrink(byte[] src, int w, int h, int bytes, bool bgr, int width, int tallMost, out int outW, out int outH)
         {
             outW = outH = 0;
@@ -269,7 +266,7 @@ namespace RealLifeOverhaul.Flare
             return v < 0 ? 0 : v > 255 ? 255 : v;
         }
 
-        /// <summary>A small copy as pieces of text for the requests, into the list given (filled again).</summary>
+        /// <summary>A small copy as pieces of text for the requests, into <paramref name="into"/>.</summary>
         public static void Chunks(byte[] packed, List<string> into)
         {
             into.Clear();
@@ -310,7 +307,6 @@ namespace RealLifeOverhaul.Flare
             return Whole;
         }
 
-        /// <summary>The small copy, once whole and readable; null otherwise.</summary>
         public byte[] Bytes()
         {
             if (!Whole)
@@ -328,7 +324,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The pieces as text again: the host passes the picture on as it came.</summary>
         public string Text()
         {
             return Whole ? string.Concat(_parts) : null;

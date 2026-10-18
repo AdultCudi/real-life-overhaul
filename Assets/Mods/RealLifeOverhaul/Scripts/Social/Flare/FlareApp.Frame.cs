@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -6,15 +5,11 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The frame of Flare's screens: the rail on the left, the column's header and its list, the side on the right, and
-    /// the sheet layer over all. Made once when the app's panel is built; laid out again when its size changes; painted
-    /// again when the look changes (light, dark).
-    /// </summary>
+    /// <summary>The Flare app's frame: rail, header, list, side and sheet layer; made once, laid out again when its size changes.</summary>
     public sealed partial class FlareApp
     {
-        private const float RailWidth = 470f, SideWidth = 760f, ColumnMost = 1500f, Margin = 34f, HeaderHeight = 150f, NavHeight = 92f;
-        private const float SideFrom = 2700f;   // the frame's width from which the side shows
+        private const float RailWidth = 470f, SideWidth = 760f, ColumnMost = 1500f, Margin = 34f, HeaderHeight = 150f, NavHeight = 92f;   // canvas units
+        private const float SideFrom = 2700f;   // canvas units: the frame's width from which the side shows
 
         private static readonly FlareGlyph[] NavGlyphs = { FlareGlyph.Home, FlareGlyph.Explore, FlareGlyph.Bell, FlareGlyph.Mail, FlareGlyph.Store, FlareGlyph.Person };
         private static readonly string[] NavKeys =
@@ -40,8 +35,6 @@ namespace RealLifeOverhaul.Flare
         private readonly Image[] _tabHits = new Image[3];
         private FlareList _list;
         private float _laidWidth = -1f;
-
-        // ---------------------------------------------------------------- building
 
         private void BuildFrame()
         {
@@ -100,8 +93,6 @@ namespace RealLifeOverhaul.Flare
             BuildSheet();
         }
 
-        // ---------------------------------------------------------------- laying it out
-
         // Where each part stands for the frame's size now: laid out again only when that size changes.
         private void Lay()
         {
@@ -144,7 +135,7 @@ namespace RealLifeOverhaul.Flare
             float postY = 130f + NavKeys.Length * (NavHeight + 8f) + 24f;
             FlareKit.Place(_postButton.rectTransform, 0f, postY, rw - 20f, 96f);
             float h2 = h - Margin * 2f;
-            _railAvatarY = h2 - 120f;   // (placed when the rail is written: Avatar.Show)
+            _railAvatarY = h2 - 120f;   // placed when the rail is written (Avatar.Show)
             FlareKit.Place(_railName.rectTransform, 108f, h2 - 126f, rw - 120f, 42f);
             FlareKit.Place(_railHandle.rectTransform, 108f, h2 - 84f, rw - 120f, 34f);
             FlareKit.Place(_railTier.rectTransform, 108f, h2 - 48f, rw - 120f, 34f);
@@ -154,8 +145,6 @@ namespace RealLifeOverhaul.Flare
             LaySide(side ? sideW : 0f, h2);
             LaySheet(w, h);
         }
-
-        // ---------------------------------------------------------------- painting
 
         private void Paint()
         {
@@ -185,8 +174,6 @@ namespace RealLifeOverhaul.Flare
             PaintSheet();
             _list.Paint(l);
         }
-
-        // ---------------------------------------------------------------- the rail
 
         private void Nav(int n)
         {
@@ -236,8 +223,6 @@ namespace RealLifeOverhaul.Flare
             _railAvatar.Show(this, "me", name, 6f, _railAvatarY, 84f);
         }
 
-        // ---------------------------------------------------------------- the header
-
         private static readonly string[] HomeTabs = { "reallife_flare_tab_foryou", "reallife_flare_tab_following" };
         private static readonly string[] ExploreTabs = { "reallife_flare_tab_trending", "reallife_flare_tab_accounts" };
         private static readonly string[] ProfileTabs = { "reallife_flare_tab_posts", "reallife_flare_tab_replies", "reallife_flare_tab_pictures" };
@@ -285,7 +270,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>A name's initials, for its avatar: "AB".</summary>
+        /// <summary>A name's initials for its avatar: "AB".</summary>
         internal static string Initials(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -327,6 +312,6 @@ namespace RealLifeOverhaul.Flare
 
         // The heights of the rows measured so far, by what they show, so that a screen written again keeps its place.
         private readonly Dictionary<long, float> _heights = new Dictionary<long, float>(256);
-        private const int HeightsMost = 1024;   // rows' heights kept: posts come and go all session, and past this the old ones are measured again when seen
+        private const int HeightsMost = 1024;   // rows' heights kept; past this the old ones are measured again when seen
     }
 }

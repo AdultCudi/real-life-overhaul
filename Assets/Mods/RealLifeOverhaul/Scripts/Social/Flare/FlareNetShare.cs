@@ -5,7 +5,7 @@ using System.Text;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>What a guest asks of the host, one line of a request, as read by the host (<see cref="FlareNetShare.ReadAsk"/>).</summary>
+    /// <summary>One line of a guest's request as the host reads it (<see cref="FlareNetShare.ReadAsk"/>).</summary>
     public struct FlareAsk
     {
         public char Kind;            // 'P' a post, 'L' a like, 'S' a share, 'D' a message, 'X' a piece of a picture, 'G' going to an invitation
@@ -49,10 +49,7 @@ namespace RealLifeOverhaul.Flare
         public const int PicturesWhole = 6;       // the newest pictures in the whole part
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>
-        /// Whether a post of the host's is the city's, to be shared: the city's accounts', the players' own (the host's only if
-        /// it shares its posts), and replies to those. A friend's, an influencer's or a brand's post is that player's own.
-        /// </summary>
+        /// <summary>Whether a post of the host's is shared: the city's accounts', the players' own (the host's if it shares), replies to them.</summary>
         public static bool IsShared(FlareFile f, FlarePost p, bool hostShares)
         {
             if (p == null || p.Pending)
@@ -81,10 +78,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The host's whole part: every shared post, case and watch, and the newest pictures. Its head names the host and its
-        /// session, so a guest's save knows whose session numbers it holds.
-        /// </summary>
+        /// <summary>The host's whole part: every shared post, case and watch and the newest pictures, under a head naming the host's session.</summary>
         public static string WriteWhole(FlareFile f, int day, string hostId, string hostName, bool hostShares, IList<KeyValuePair<string, string>> pictures, int session)
         {
             var b = new StringBuilder(32 * 1024);
@@ -114,7 +108,7 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
-        /// <summary>One shared post as a line. The host's own posts go under its name; a reply names the session's number of its post.</summary>
+        /// <summary>One shared post as a line: the host's own under its name, a reply by its post's session number.</summary>
         public static void WritePost(StringBuilder b, FlareFile f, FlarePost p, string hostId, string hostName)
         {
             bool own = p.Author == FlareAuthor.Player;
@@ -142,7 +136,7 @@ namespace RealLifeOverhaul.Flare
             Ints(b, post != null ? (post.NetId > 0 ? post.NetId : post.Id) : -1, answer != null ? (answer.NetId > 0 ? answer.NetId : answer.Id) : -1);
         }
 
-        /// <summary>Every watch, each as a W line (after the "W-" line that clears a guest's).</summary>
+        /// <summary>Every watch as a W line, after the "W-" line that clears a guest's.</summary>
         public static void WriteWatches(StringBuilder b, FlareNet net)
         {
             for (int i = 0; i < net.Watches.Count; i++)
@@ -161,7 +155,7 @@ namespace RealLifeOverhaul.Flare
             b.Append('|').Append(base64 ?? string.Empty);
         }
 
-        /// <summary>A message for one player, from another (the host's own, or a guest's it passes on).</summary>
+        /// <summary>A message for one player, from the host or a guest it passes on.</summary>
         public static string WriteDm(string from, string name, long at, string text)
         {
             var b = new StringBuilder(64 + (text?.Length ?? 0));
@@ -185,7 +179,7 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
-        /// <summary>The host to a player whose invitation another is going to: who, their name, when, the post's session number.</summary>
+        /// <summary>The host tells a player that another goes to their invitation.</summary>
         public static string WriteGoing(string who, string name, long at, int net)
         {
             var b = new StringBuilder(64);
@@ -244,11 +238,7 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
-        /// <summary>
-        /// One line of a guest's request, as the host reads it; false for one it does not take (another kind, damaged, a
-        /// built part out of its bounds). The typed text is clipped to its length here; what decides an effect is the
-        /// built part, read with its bounds.
-        /// </summary>
+        /// <summary>One line of a guest's request as the host reads it, typed text clipped; false for one it does not take.</summary>
         public static bool ReadAsk(string line, out FlareAsk ask)
         {
             ask = default(FlareAsk);
@@ -325,7 +315,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The kinds of post a guest may send: a moment of now, its moments of the day, a report, a review, an announcement, a reply.</summary>
+        /// <summary>The kinds of post a guest may send.</summary>
         public static bool GuestSource(int source)
         {
             if (source <= 0 || source > (int)FlareSource.Answer)
@@ -338,7 +328,7 @@ namespace RealLifeOverhaul.Flare
                    || s == FlareSource.Graduated || s == FlareSource.Interior;
         }
 
-        /// <summary>The built part of a post within its bounds: a report's kind, a review's stars, an announcement's kind.</summary>
+        /// <summary>The built part of a post within its bounds.</summary>
         public static bool BuiltOk(FlarePost p)
         {
             switch (p.Source)
@@ -351,10 +341,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// One shared post of the host's as a post (its ReplyTo is still the session's number, for the caller to find);
-        /// false for a line that does not read. The typed text is as it came: the caller filters it before it keeps it.
-        /// </summary>
+        /// <summary>One of the host's shared posts, its ReplyTo still a session number and its text as it came; false for a line that does not read.</summary>
         public static bool ReadPost(string[] f, out FlarePost p, out int replyNet)
         {
             p = null;
@@ -445,10 +432,7 @@ namespace RealLifeOverhaul.Flare
             return from != null && text != null;
         }
 
-        /// <summary>
-        /// The head of the host's whole part: its day, the seed of its city's people, and the key of the host and its session
-        /// ("host id/session"; null from a host that gave none). False for a head this version does not read.
-        /// </summary>
+        /// <summary>The head of the host's whole part: its day, its city's seed and "host id/session" (null if none); false for another version.</summary>
         public static bool ReadHead(string line, out int day, out int seed, out string hostKey)
         {
             day = seed = 0;
@@ -465,11 +449,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>
-        /// A guest's save meets another host or session than the one its session numbers came from: the other session's posts
-        /// go, the player's own lose their session number and "on its way", and what was applied by number is forgotten. True
-        /// when the key was another; the key is kept either way.
-        /// </summary>
+        /// <summary>A guest's save meets another host or session: those posts go and the player's own lose their number. True when the key was another.</summary>
         public static bool NewHost(FlareFile f, string hostKey)
         {
             if (f == null || hostKey == null || string.Equals(f.Net.HostKey, hostKey, StringComparison.Ordinal))
@@ -495,11 +475,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>
-        /// A guest starts following: the city's posts it made itself today (its own city's people, officials, businesses and
-        /// tycoons) go, as the host's city's take their place; a reply of the city's to one of the player's own posts stays.
-        /// How many went.
-        /// </summary>
+        /// <summary>A guest starts following: the city posts it made itself today give way to the host's, but for replies to the player. How many went.</summary>
         public static int DropOwnCity(FlareFile f, int day)
         {
             int n = 0;
@@ -522,7 +498,7 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>The host has gone: the player's posts still on their way to it are the player's own, as they stand. How many.</summary>
+        /// <summary>The host has gone: the player's posts on their way to it are the player's own as they stand. How many.</summary>
         public static int HostLeft(FlareFile f)
         {
             int n = 0;
@@ -537,19 +513,13 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>
-        /// Whether a review of the host's feed moves a business here when it first comes: only one of today's, as a joining
-        /// guest gets the whole feed.
-        /// </summary>
+        /// <summary>Whether a review in the host's feed moves a business here when it first comes: only today's.</summary>
         public static bool AppliesOnArrival(FlarePost p, int today)
         {
             return p != null && p.Source == FlareSource.Review && p.Day == today;
         }
 
-        /// <summary>
-        /// Another player's post as this player is shown it: the text and the names through <paramref name="filter"/>; a place,
-        /// an account called on or a tag the filter would change is left out, never shown starred.
-        /// </summary>
+        /// <summary>Another player's post as this player sees it: through <paramref name="filter"/>; a key or tag the filter would change is left out.</summary>
         public static void CleanPost(FlarePost p, Func<string, string> filter)
         {
             if (p == null || filter == null)
@@ -599,10 +569,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>
-        /// A post's name as it leaves this machine: of a photo's path, or any name that is a path, only the file's name goes,
-        /// as a path would show the Windows user's name to the other players.
-        /// </summary>
+        /// <summary>A post's name as it leaves this machine: of a path only the file's name, as a path shows the Windows user's name.</summary>
         public static string NameOut(FlarePost p)
         {
             string name = p != null ? p.Name : null;
@@ -619,10 +586,7 @@ namespace RealLifeOverhaul.Flare
             return cut >= 0 ? name.Substring(cut + 1) : name;
         }
 
-        /// <summary>
-        /// The host takes a guest's like or share: each player likes a post once, takes it back once and shares it once. True
-        /// when the post's figures changed.
-        /// </summary>
+        /// <summary>The host takes a guest's like or share, once each a player. True when the post's figures changed.</summary>
         public static bool Count(FlarePost p, FlareAsk ask, string who, HashSet<string> liked, HashSet<string> shared)
         {
             if (p == null || string.IsNullOrEmpty(who))

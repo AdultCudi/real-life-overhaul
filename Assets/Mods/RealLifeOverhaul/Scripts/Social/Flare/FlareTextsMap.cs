@@ -28,12 +28,9 @@ namespace RealLifeOverhaul.Flare
     public enum FlareDmSpeaker { None, Citizen, Influencer, Friend, Partner, Official, Business, Tycoon }
 
     /// <summary>
-    /// Which trained RLO Texts intent each of Flare's worded posts is: the game decides the post (its source, kind, author,
-    /// reaction and time) and this picks the card the model words it from; a post with no intent keeps its written line.
-    /// Also the city's people as a card's speaker, and the comments under posts that are not the player's, which have no
-    /// written line. Every map takes the running pack's data version: a v3 pack also answers what the player typed, the
-    /// decided invitations, the rivals' stake, bid and suit, and comments under every kind of post. Game-free. Cost: a
-    /// switch and a few strings a post when it is made, and a comment when its words are asked.
+    /// Which trained RLO Texts intent each of Flare's worded posts is: the game decides the post, this picks the card the
+    /// model words it from; a post with no intent keeps its written line. Also the city's people as speakers. Every map
+    /// takes the running pack's data version. Game-free. Cost: a switch and a few strings a post or comment.
     /// </summary>
     public static partial class FlareTextsMap
     {
@@ -84,7 +81,7 @@ namespace RealLifeOverhaul.Flare
             return Allowed(r, postKind);
         }
 
-        /// <summary>A friend's reply's reaction (FlareRules.ReplyOf) as the training names it, where it has it.</summary>
+        /// <summary>A friend's reply's reaction as the training names it, where it has it.</summary>
         public static string Reaction(FlareRules.ReplyKind kind, string postKind)
         {
             string r;
@@ -178,10 +175,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// An account's answer to what the player typed (data v3): to being called on in a post, or to the player's reply under
-        /// the account's own post. Null for any other author, or a pack before data v3.
-        /// </summary>
+        /// <summary>An account's answer to what the player typed (data v3), to a mention or a reply under its post; null otherwise.</summary>
         public static string Said(FlareAuthor author, int data)
         {
             if (data < TextIntents.DataV3)
@@ -202,10 +196,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>True for the answers to a post that called on the account: a mention, a brand, a rival on an announcement.</summary>
         public static bool AnswersMention(FlareAnswer answer) => answer == FlareAnswer.Mention || answer == FlareAnswer.Brand || answer == FlareAnswer.Tycoon;
 
-        /// <summary>
-        /// A rival tycoon's post: their move (Rivals.RivalMoveKind) or, with none, a boast; null for a move the training has no
-        /// posts on. Data v3 adds the stake, the bid and the suit.
-        /// </summary>
+        /// <summary>A rival's post: their move (Rivals.RivalMoveKind) or, with none (-1), a boast; data v3 adds the stake, bid and suit.</summary>
         public static string Tycoon(int move, int data = TextIntents.DataV2)
         {
             switch (move)
@@ -237,11 +228,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The intent of an answer to a message of the player's, by who answers and its line's key, for a pack of this data
-        /// version: with v3 every account answers what was typed and a decided invitation has its own; before, only a city
-        /// person's chat and an influencer's. Null: the written line.
-        /// </summary>
+        /// <summary>The intent of an answer to a message of the player's by who answers; v3 answers every account, before only some. Null: the written line.</summary>
         public static string Dm(string key, FlareDmSpeaker speaker, int data)
         {
             if (key == null || speaker == FlareDmSpeaker.None)
@@ -274,10 +261,7 @@ namespace RealLifeOverhaul.Flare
 
         public const string DmChat = "reallife_flare_dm_answer_chat", DmCollab = "reallife_flare_dm_answer_collab", DmOffice = "reallife_flare_dm_answer_office";
 
-        /// <summary>
-        /// Who answers a message by its account: a city person ("c12", no colon) or an influencer ("i:3"). False for any other;
-        /// <see cref="DmSpeakerOf"/> reads every account.
-        /// </summary>
+        /// <summary>Who answers a message by its account: a city person ("c12") or an influencer ("i:3"); false for any other.</summary>
         public static bool DmSpeaker(string with, out bool influencer, out int number)
         {
             influencer = false;
@@ -298,11 +282,7 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        /// <summary>
-        /// Who answers a message, for every account Flare keys: a city person "c12", an influencer "i:3", a friend "f3", the
-        /// partner "p3", an official "o:1", a brand "b:name", a city business "k:name", a rival "t:name". None for another
-        /// player, the boss, a colleague, a candidate or the paper. <paramref name="number"/> is -1 for a named account.
-        /// </summary>
+        /// <summary>Who answers a message, for every account Flare keys; None for another player, the boss, a colleague, a candidate or the paper.</summary>
         public static FlareDmSpeaker DmSpeakerOf(string with, out int number)
         {
             if (DmSpeaker(with, out bool influencer, out number))
@@ -339,13 +319,10 @@ namespace RealLifeOverhaul.Flare
             return with != null && with.Length > 2 && with[1] == ':' && (with[0] == 'b' || with[0] == 'k' || with[0] == 't') ? with.Substring(2) : null;
         }
 
-        /// <summary>The key an answer's words are kept under: asked and drawn by the same.</summary>
+        /// <summary>The key an answer's words are kept under.</summary>
         public static string DmKey(FlareDm m) => "fd:" + m.With + ":" + m.At;
 
-        /// <summary>
-        /// Whether an answer to the player's message may have its words asked now: the city's (not the player's, not typed),
-        /// not yet shown, with an intent for this pack's data version and an account the model has a card for.
-        /// </summary>
+        /// <summary>Whether an answer to the player's message may have its words asked now: the city's, still to come, with a card.</summary>
         public static bool DmWants(FlareDm m, long now, int data)
         {
             return m != null && !m.Mine && m.Text == null && m.At > now && Dm(m.Key, DmSpeakerOf(m.With, out _), data) != null;
@@ -370,21 +347,14 @@ namespace RealLifeOverhaul.Flare
             return null;
         }
 
-        /// <summary>
-        /// A city person's mood today, as a card says it (TextWords.Moods): stable for the day from the city's seed and their
-        /// number; the grumpy are never better than fine.
-        /// </summary>
+        /// <summary>A city person's mood today as a card says it, stable for the day; the grumpy are never better than fine.</summary>
         public static string Mood(int citySeed, int number, int day, bool grumpy)
         {
             int roll = FlareRules.Roll(citySeed * 31 + number, day, 1207);
             return TextWords.Moods[grumpy ? roll % 3 : roll % TextWords.Moods.Length];
         }
 
-        /// <summary>
-        /// The intent of a city person's reply under a post of the player's, by the reply's kind: an angry pile-on keeps its
-        /// written lines; with data v3 a post with typed words is answered on its words, a built post by its kind, and the
-        /// other kinds as a comment on them (<see cref="Mine"/>). Null: the written line.
-        /// </summary>
+        /// <summary>The intent of a city person's reply under a post of the player's; an angry pile-on keeps its written lines.</summary>
         public static string Reply(FlarePost parent, FlareReplyKind kind, int data)
         {
             if (parent == null || parent.Author != FlareAuthor.Player || kind == FlareReplyKind.Angry)
@@ -430,10 +400,7 @@ namespace RealLifeOverhaul.Flare
         private static readonly string[] Announced = { "a sale", "new opening hours", "an event", "that it is hiring", "new stock" };
         private static readonly string[] Issues = { "safety after a crime", "the roads after a crash" };
 
-        /// <summary>
-        /// The values of a comment on a post of the player's (citizen.comment.mine_*). A value the post lacks is left out, and
-        /// the card is then not built.
-        /// </summary>
+        /// <summary>The values of a comment on a post of the player's; a value the post lacks is left out, and the card is not built.</summary>
         public static void MineSlots(TextSlots slots, FlarePost p, string player, string district)
         {
             slots.Set("player", player);
@@ -474,7 +441,7 @@ namespace RealLifeOverhaul.Flare
             return post != null ? post.Substring("citizen.post.".Length).Replace('_', ' ') : null;
         }
 
-        /// <summary>A city person's age: their own, the one their face is drawn at and an invitation meets them with.</summary>
+        /// <summary>A city person's age: their own, the one their face and an invitation have.</summary>
         public static int Age(FlareCitizen c, int citySeed)
         {
             return FlareLiveRules.CitizenAge(citySeed, c.Index);
@@ -492,7 +459,6 @@ namespace RealLifeOverhaul.Flare
             return "grumpy" + (comma > 0 ? style.Substring(comma) : string.Empty);
         }
 
-        /// <summary>The speaker of a city person's card.</summary>
         public static void Fill(TextWho who, FlareCitizen c, string district, int citySeed, string when)
         {
             who.Clear();

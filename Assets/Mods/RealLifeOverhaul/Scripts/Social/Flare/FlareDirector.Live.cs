@@ -32,16 +32,13 @@ namespace RealLifeOverhaul.Flare
         public const int NoticesMost = 60;
         private const int CaseNotesPerDay = 3;     // notifications of an answer to the player's report, a day at most
 
-        /// <summary>The city's people on Flare, by their number.</summary>
         public IReadOnlyList<FlareCitizen> Citizens => _citizens;
 
-        /// <summary>Game minutes since day 0 now.</summary>
         public long Now => Save != null ? FlareLiveRules.Now(Save.Day, Save.Hour, FlareGame.MinuteOfDay % 60) : 0;
 
         /// <summary>The player as a post's mention names them: "me" alone, "p:" and their id in a session.</summary>
         public string MeKey => GoingPublic.InSession && GoingPublicLink.MyId.Length > 0 ? "p:" + GoingPublicLink.MyId : "me";
 
-        /// <summary>The player's name as Flare shows it.</summary>
         public string MyName
         {
             get
@@ -51,7 +48,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The player's handle: their name in lower case, no spaces.</summary>
         public string MyHandle => FlareText.HandleOf(MyName);
 
         /// <summary>Some of the city's businesses for a review's choice: the day's sample, made now if the day has not made it.</summary>
@@ -67,7 +63,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>Today, in the save's days; 0 without a save.</summary>
         public int CurrentDay => Save != null ? Save.Day : 0;
 
         /// <summary>Notifications and messages not yet seen: the badge.</summary>
@@ -82,7 +77,7 @@ namespace RealLifeOverhaul.Flare
             EnsureCitizens(file);
         }
 
-        // The city's people for the seed in use (the host's while a guest follows it).
+        // The city's people for the seed in use: the host's while a guest follows it.
         private void EnsureCitizens(FlareFile file)
         {
             int seed = FlareLiveRules.CitySeed(file);
@@ -143,7 +138,6 @@ namespace RealLifeOverhaul.Flare
             TextsAhead();   // the day's posts: their words asked now, each by its own minute
         }
 
-        // What the city is like today, for its posts.
         private void ReadFacts(int day)
         {
             FlareCityFacts f = _facts;
@@ -190,7 +184,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // One of the city's people's reports or reviews as it goes up: a report is a case, a review moves its business's customers.
+        // A city person's report or review as it goes up: a report is a case, a review moves its business's customers.
         private void CityMade(FlarePost p)
         {
             if (p.Source == FlareSource.Report)
@@ -238,7 +232,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A tycoon's voice by their name (their place in the catalogue); -1 for a name not in play.
         private int TycoonVoice(string name)
         {
             for (int i = 0; i < _tycoonsIn.Count; i++)
@@ -251,7 +244,6 @@ namespace RealLifeOverhaul.Flare
             return -1;
         }
 
-        // One of the city's people writes to the player, now and then.
         private void CityDm(int day)
         {
             bool hiring = day - _hiringDay <= 7 || FlareBridges.Ask(FlareBridges.Hiring, false);
@@ -284,7 +276,6 @@ namespace RealLifeOverhaul.Flare
             TextsAhead();   // the hour's answers and replies: their words asked now
         }
 
-        // The police and the cleaners where the player stands, for the hour.
         private void Watched(int day)
         {
             if (FlareBridges.Watched == null)
@@ -375,7 +366,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The app opens on a post, its thread.</summary>
         public void OpenPost(int id)
         {
             if (_app != null && _view != null && Running)
@@ -385,10 +375,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The camera button: the phone's own camera, whose first photo comes back to the compose sheet; with the Camera off, a
-        /// shot of the screen without the phone (FlareDirector.Camera.cs).
-        /// </summary>
+        /// <summary>The camera button: the phone's own camera, or with the Camera off a shot of the screen (FlareDirector.Camera.cs).</summary>
         public void CameraPressed()
         {
             if (FlareBridges.OpenCamera == null || !FlareBridges.OpenCamera())
@@ -397,7 +384,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The selfie button: the phone is put away and photo mode starts as a selfie; the picture saved comes back to the compose sheet.</summary>
+        /// <summary>The selfie button: the phone is put away for a selfie in photo mode, which comes back to the compose sheet.</summary>
         public void SelfiePressed()
         {
             if (FlareBridges.TakeSelfie == null)

@@ -262,7 +262,7 @@ internal static partial class Program
     private static void PicturesSources()
     {
         string avatars = ReviewSource("Social/Flare/FlareAvatars.cs"), painter = ReviewSource("Social/Flare/FlareFacePainter.cs"), camera = ReviewSource("Social/Flare/FlareCityCamera.cs"),
-            photos = ReviewSource("Social/Flare/FlareDirector.Photos.cs"), cells = ReviewSource("Social/Flare/FlareApp.Cells.cs"), turn = ReviewSource("Phone/Contacts/PortraitTurn.cs"),
+            photos = ReviewSource("Social/Flare/FlareDirector.Photos.cs"), cells = (ReviewSource("Social/Flare/FlareApp.Cells.cs") + ReviewSource("Social/Flare/FlareApp.Cards.cs")), turn = ReviewSource("Phone/Contacts/PortraitTurn.cs"),
             contacts = ReviewSource("Phone/Contacts/ContactPainter.cs");
         Check(!avatars.Contains("void Update(") && !camera.Contains("void Update(") && !photos.Contains("void Update(") && !avatars.Contains("MonoBehaviour") && !camera.Contains("MonoBehaviour"),
             "Flare pictures: the avatars, the city camera and the photos' pacing have no Update (nothing per frame)");

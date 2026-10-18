@@ -156,10 +156,7 @@ namespace RealLifeOverhaul.Flare
         public int Arg;              // the outing's kind, the new rank
     }
 
-    /// <summary>
-    /// One post: not text but a source, a tone, an author and a seed. FlareText words it when shown, so a change of
-    /// language changes every post.
-    /// </summary>
+    /// <summary>One post: not text but a source, a tone, an author and a seed, worded by FlareText when shown.</summary>
     public sealed class FlarePost
     {
         public int Id;
@@ -339,10 +336,7 @@ namespace RealLifeOverhaul.Flare
             return null;
         }
 
-        /// <summary>
-        /// The first shop seen at a place, or null. Shops are only ever added at the end, so an index by place is brought up
-        /// to date at each look-up and the day's round costs one look-up a business, not a pass over the list.
-        /// </summary>
+        /// <summary>The first shop seen at a place, or null; the index by place is brought up to date as the list grows.</summary>
         public FlareShopSeen Shop(string place)
         {
             if (place == null)
@@ -418,10 +412,7 @@ namespace RealLifeOverhaul.Flare
         public int Until;            // the first day without it
     }
 
-    /// <summary>
-    /// One of the city's influencers: made by seed, kept in the save, growing, fading, quitting or caught in a scandal by
-    /// the month. They post under a handle; a star may turn out to be somebody the player can meet (Person).
-    /// </summary>
+    /// <summary>One of the city's influencers: made by seed, kept in the save, changing by the month; a star may be somebody to meet.</summary>
     public sealed class FlareInfluencer
     {
         public int Id;
@@ -441,7 +432,6 @@ namespace RealLifeOverhaul.Flare
         public int ScandalDay = -100;
         public int Seed;
 
-        /// <summary>The followers who answer a post.</summary>
         public int Engaged => (int)((long)Followers * Engagement / 10000);
 
         public bool Active => !Quit;
@@ -468,10 +458,7 @@ namespace RealLifeOverhaul.Flare
         public bool On(int day) => !Ended && day >= From && day <= To;
     }
 
-    /// <summary>
-    /// A campaign of the company's at one of the player's businesses, running or booked, as Flare is told of it
-    /// (Wiring/FlareLinks): read when the Business tab is written, never kept.
-    /// </summary>
+    /// <summary>A campaign of the company's at one of the player's businesses, as Flare is told of it for the Business tab; never kept.</summary>
     public struct FlareCampaign
     {
         public string Place;

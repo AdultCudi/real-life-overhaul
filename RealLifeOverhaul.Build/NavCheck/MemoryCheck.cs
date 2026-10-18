@@ -33,7 +33,7 @@ internal static partial class Program
         int fin = drawn.IndexOf("finally", StringComparison.Ordinal), release = drawn.IndexOf("RenderTexture.ReleaseTemporary(rt)", StringComparison.Ordinal);
         Check(fin >= 0 && release > fin && drawn.IndexOf("RenderTexture.active = before", fin, StringComparison.Ordinal) > fin,
             "let go: a post's picture lets its render target go in a finally, a fault while drawing included");
-        Check(Body(Source(scripts, @"Social\Flare\FlareApp.Cells.cs"), "private void Measured(").Contains("_heights.Count >= HeightsMost"),
+        Check(Body((Source(scripts, @"Social\Flare\FlareApp.Cells.cs") + Source(scripts, @"Social\Flare\FlareApp.Cards.cs")), "private void Measured(").Contains("_heights.Count >= HeightsMost"),
             "let go: Flare's rows' heights are kept for HeightsMost rows at most");
         string animators = Source(scripts, @"CityLife\Animation\ActivityAnimators.cs");
         string sweep = Body(animators, "private static void SweepDead()");

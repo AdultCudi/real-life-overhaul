@@ -11,21 +11,11 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Which faces Flare draws ahead of need, and when, so its accounts show faces without a frame of play paying for one
-    /// (FlareFacePainter draws them):
-    ///
-    ///   at a load               behind the loading screen, held <see cref="LoadBudgetMs"/> at most: the likeliest faces not
-    ///                           on disk yet, up to <see cref="LoadMost"/>, while the time left holds one more (<see cref="Another"/>)
-    ///   behind a black screen   (a door, sleep, travel) the rest of the list, up to <see cref="AheadMost"/>, a quarter of a
-    ///                           second apart (Phone/Contacts/PortraitTurn)
-    ///   with Flare open         a face a card in view asks for, two seconds apart; the initials meanwhile
-    ///
-    /// <see cref="Likely"/> orders them: the people the player knows (the partner first), the active influencers, the kept
-    /// posts newest first with their reactions and comments, the message threads, and tomorrow's posters. A face is drawn
-    /// once a look and kept on disk for every save; past <see cref="DiskMost"/> the ones used longest ago go
-    /// (<see cref="Evict"/>), and a face read is written again a day on (<see cref="Stale"/>), so a face in use is never the
-    /// oldest. Nothing is sent in a session: every machine draws its own. Game-free. Cost: Likely walks the kept posts once
-    /// a load, when Flare starts and once a game day; Evict sorts on a worker thread once a load.
+    /// Which faces Flare draws ahead of need, and when, so no frame of play pays for one (FlareFacePainter draws them):
+    /// behind the loading screen up to <see cref="LoadMost"/> while the time held lasts (<see cref="Another"/>), behind a
+    /// black screen up to <see cref="AheadMost"/>, and with Flare open a face in view. <see cref="Likely"/> orders them;
+    /// past <see cref="DiskMost"/> on disk the ones used longest ago go (<see cref="Evict"/>). Nothing is sent in a session.
+    /// Game-free. Cost: Likely walks the kept posts a load and a game day; Evict sorts on a worker once a load.
     /// </summary>
     public static class FlareFaceAheadRules
     {
@@ -39,10 +29,7 @@ namespace RealLifeOverhaul.Flare
         public const int DiskKeep = 1792;             // ...cleaned down to this many, so the clean-up is not made at every load
         public const long TouchTicks = 864000000000L; // a day in ticks
 
-        /// <summary>
-        /// The faces likely to be seen soon, most likely first, each once, at most <paramref name="most"/>, into
-        /// <paramref name="into"/>; tomorrow's posters are of <paramref name="day"/> + 1. How many.
-        /// </summary>
+        /// <summary>The faces likely to be seen soon, most likely first, each once, at most <paramref name="most"/>, into <paramref name="into"/>. How many.</summary>
         public static int Likely(FlareAvatarFacts facts, int day, int most, List<FlareAvatarPlan> into)
         {
             into.Clear();
@@ -117,10 +104,7 @@ namespace RealLifeOverhaul.Flare
             return plan.Kind == FlareAvatarKind.Staff ? FlareAvatarRules.StaffName(saveId, plan.Name) : FlareAvatarRules.FaceName(plan.Female, plan.Age, plan.Seed);
         }
 
-        /// <summary>
-        /// The faces of <paramref name="likely"/> not in <paramref name="onDisk"/>, in order, into <paramref name="draw"/>, so a
-        /// face drawn once is not drawn again while its file is there. How many were on disk.
-        /// </summary>
+        /// <summary>The faces of <paramref name="likely"/> not in <paramref name="onDisk"/>, in order, into <paramref name="draw"/>. How many were on disk.</summary>
         public static int Split(List<FlareAvatarPlan> likely, ICollection<string> onDisk, string saveId, List<FlareAvatarPlan> draw)
         {
             draw.Clear();
@@ -163,10 +147,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// Whether another face may start behind the loading screen: the time left must hold one more at the cost measured so
-        /// far (<see cref="FirstFaceMs"/> before any is measured).
-        /// </summary>
+        /// <summary>Whether another face may start behind the loading screen: the time left must hold one more at the cost measured so far.</summary>
         public static bool Another(double spentMs, double drawnMs, int drawn, double budgetMs)
         {
             double each = drawn > 0 ? Math.Max(0.0, drawnMs) / drawn : FirstFaceMs;
@@ -179,10 +160,7 @@ namespace RealLifeOverhaul.Flare
             return drawn > 0 ? Math.Max(0.0, drawnMs) / drawn : 0.0;
         }
 
-        /// <summary>
-        /// The faces' files to delete to keep the folder within its bound: past <see cref="DiskMost"/>, the ones used longest ago
-        /// until <see cref="DiskKeep"/> are left, never one in <paramref name="keep"/>. Into <paramref name="into"/>; how many.
-        /// </summary>
+        /// <summary>The faces' files to delete past <see cref="DiskMost"/>, longest unused first, down to <see cref="DiskKeep"/>, never one kept. How many.</summary>
         public static int Evict(List<FlareFaceFile> files, ICollection<string> keep, List<string> into)
         {
             into.Clear();

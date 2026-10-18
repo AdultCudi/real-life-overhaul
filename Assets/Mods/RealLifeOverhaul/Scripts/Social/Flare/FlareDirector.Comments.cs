@@ -6,13 +6,10 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// Flare's director, the comments under posts that are not the player's (FlareCommentRules): who writes them and when
-    /// is the game's, from the post's seed; their words are RLO Texts' alone, kept by the comment's key. Every comment a
-    /// post's count promises is asked ahead at the lowest priority, a few waiting at once: on the city's posts, each game
-    /// hour, when the feed is shown, and on the second after a request came back. An opened thread's due comments go ahead
-    /// of the rest. A comment shows once its words are there and its time has come; one that answers the comment before it
-    /// is asked once that one's words are here. In a session the host asks for the shared feed's comments and a guest only
-    /// shows what came. Cost: on those events a walk over the last day's posts and a dictionary look a comment; nothing per
-    /// frame (the second's look is one comparison while nothing came back).
+    /// is the game's, from the post's seed; their words are RLO Texts', kept by the comment's key. Every comment a count
+    /// promises is asked ahead at the lowest priority, an open thread's first; one that answers another waits for its words.
+    /// In a session only the host asks. Cost: on Flare's events a walk over the last day's posts and a dictionary look a
+    /// comment; nothing per frame.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -48,11 +45,7 @@ namespace RealLifeOverhaul.Flare
             return FlareBridges.TextKept != null ? FlareBridges.TextKept(FlareCommentRules.Key(p, c)) : null;
         }
 
-        /// <summary>
-        /// Asks for the words of comments still without them: <paramref name="first"/>'s ahead of the rest (a thread just
-        /// opened), then a walk over the posts up or going up soon, due comments first, while fewer than
-        /// <see cref="CommentsWaitingMost"/> wait. The walk runs once a game minute at most, or once a request came back.
-        /// </summary>
+        /// <summary>Asks for the words of comments still without them, <paramref name="first"/>'s ahead, while fewer than <see cref="CommentsWaitingMost"/> wait.</summary>
         public void CommentsAhead(FlarePost first)
         {
             if (FlareBridges.TextAsk == null || _file == null || Save == null)
@@ -102,7 +95,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // Forgets what was asked (another file, or none).
         private void CommentsForget()
         {
             _commentAsks.Clear();

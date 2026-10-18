@@ -54,19 +54,12 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Every account's picture on Flare: which kind each account gets and from what, the round picture made from rows of
-    /// pixels, and the files they are kept in.
-    ///
-    /// A person gets a face from the game's own portrait camera, as the Contacts app's people do: a city person's from the
-    /// city's seed (the same on every machine of a session), a friend's from the look the social life builds them with, an
-    /// influencer's from their seed. The player shows their latest selfie, else the game's portrait of their character;
-    /// another player their latest shared selfie, so no picture is ever sent for it. A business or a brand shows the game's
-    /// logo. An account that is not a person shows an emblem, never a face: the tycoons are parodies, and a face would be
-    /// somebody's likeness. Until a picture is there, the initials.
-    ///
-    /// The picture is <see cref="Size"/> pixels square, round with a soft edge, so the app needs no mask (a draw call a
-    /// row). A face is kept on disk by its look under the game's data folder, shared by every save that has it.
-    /// Game-free. Cost: a plan is a few comparisons when a card is bound; a round picture some 40,000 sums on a worker thread.
+    /// Every account's picture: which kind each gets and from what, and the round picture made from rows of pixels. A
+    /// person gets a face from the game's portrait camera of a look from the city's seed or the social life, the same on
+    /// every machine; the player and another session player their latest selfie, so no picture is sent; a business its
+    /// logo; an account that is not a person an emblem, never a face, as the tycoons are parodies. The picture is
+    /// <see cref="Size"/> pixels, round with a soft edge so the app needs no mask. Game-free. Cost: a plan is a few
+    /// comparisons; a round picture some 40,000 sums on a worker thread.
     /// </summary>
     public static class FlareAvatarRules
     {
@@ -82,7 +75,7 @@ namespace RealLifeOverhaul.Flare
 
         private const int SaltSex = 610, SaltAge = 611, SaltSeed = 612, SaltSeedLow = 613, SaltBoss = 620;
 
-        /// <summary>The picture an account shows. Every key the app shows an account by is one of these kinds.</summary>
+        /// <summary>The picture an account shows, by any key the app shows an account by.</summary>
         public static FlareAvatarPlan Plan(string key, FlareAvatarFacts facts)
         {
             var plan = new FlareAvatarPlan { Kind = FlareAvatarKind.Initials };
@@ -180,8 +173,7 @@ namespace RealLifeOverhaul.Flare
             return FacePlan(FlareLiveRules.CitizenFemale(citySeed, index), FlareLiveRules.CitizenAge(citySeed, index), Seed(citySeed, index, SaltSeed));
         }
 
-        // A friend, the partner or anybody of the social life: the look they are built in the street with, else one of the
-        // account's own.
+        // A friend, the partner or anybody of the social life: the look they are built in the street with, else the account's.
         private static FlareAvatarPlan Person(FlareAvatarFacts facts, int index)
         {
             IReadOnlyList<FlarePerson> people = facts.People;
@@ -242,10 +234,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The picture of the latest selfie posted: the player's own (<paramref name="authorId"/> null) or another session
-        /// player's shared one ("n:"). Null for none.
-        /// </summary>
+        /// <summary>The picture of the latest selfie posted: the player's own (<paramref name="authorId"/> null) or a session player's ("n:"); null for none.</summary>
         public static string LatestSelfie(FlareFile f, string authorId)
         {
             if (f == null)
@@ -300,11 +289,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The round picture of a source's rows: its middle cropped square, shrunk to <see cref="Size"/> by averaging, as RGBA
-        /// rows with a clear corner outside the circle. <paramref name="bytes"/> 3 or 4 (<paramref name="argb"/> for ARGB32);
-        /// <paramref name="into"/> is Size * Size * 4 bytes. False, writing nothing, for a source that is not whole.
-        /// </summary>
+        /// <summary>The round picture of a source's rows, its middle cropped square, as RGBA <see cref="Size"/> square; false, writing nothing, for a source not whole.</summary>
         public static bool Disc(byte[] src, int w, int h, int bytes, bool argb, byte[] into)
         {
             if (src == null || into == null || w <= 0 || h <= 0 || (bytes != 3 && bytes != 4) || src.Length < (long)w * h * bytes || into.Length < Size * Size * 4)
@@ -364,10 +349,7 @@ namespace RealLifeOverhaul.Flare
         }
     }
 
-    /// <summary>
-    /// The textures kept by key, at most <see cref="Most"/>; the one used longest ago goes first. A linked list and a
-    /// dictionary of its nodes, so a use is a look and a move, and nodes are reused. Game-free; nothing per frame.
-    /// </summary>
+    /// <summary>The textures kept by key, at most <see cref="Most"/>, the one used longest ago going first; a use is a look and a move. Game-free.</summary>
     public sealed class FlareAvatarLru
     {
         private readonly LinkedList<string> _used = new LinkedList<string>();
@@ -385,7 +367,7 @@ namespace RealLifeOverhaul.Flare
 
         public bool Contains(string key) => key != null && _at.ContainsKey(key);
 
-        /// <summary>A key used now: to the end. Returns the key that has to go to keep within the bound, or null.</summary>
+        /// <summary>A key used now, to the end; the key that has to go to keep within the bound, or null.</summary>
         public string Use(string key)
         {
             if (key == null)

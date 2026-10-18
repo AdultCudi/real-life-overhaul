@@ -26,11 +26,7 @@ namespace RealLifeOverhaul.Flare
         Influencer    // an influencer: they meet people through friends, never from a message
     }
 
-    /// <summary>
-    /// An invitation in a Flare message as the game reads it and what it decides (FlareInviteRules.Decide): who is asked,
-    /// what the social life knows of them (Wiring/FlareInviteLinks fills it) and, for a yes, the place and the time. Made
-    /// once a message the player sends to a city person or an influencer; never kept.
-    /// </summary>
+    /// <summary>An invitation in a Flare message as the game reads and decides it, filled by Wiring/FlareInviteLinks; never kept.</summary>
     public sealed class FlareInviteAsk
     {
         // Asked.
@@ -88,20 +84,12 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Invitations in the player's Flare messages: one accepted becomes a plan, as one made on the phone. The game decides;
-    /// the model only words the answer.
-    ///
-    ///   Read     fixed rules over the typed text, English only: an invitation and its outing (a plain "meet up" is a
-    ///            coffee), robust to typos, slang, capitals and emoji. A question about coffee's price is no invitation.
-    ///   Decide   yes, maybe or no by the social life's rules for a plan made on the phone, plus the rules for somebody new.
-    ///            The roll is the save's seed and the message's minute, so a reload answers the same.
-    ///   Answer   the answer's line, its RLO Texts intent and its time: a yes comes sooner and the plan starts at least
-    ///            <see cref="PlanAfterAnswer"/> minutes after it, so the yes is read before the plan's reminder.
-    ///
-    /// Somebody new says yes only after a few messages of theirs (<see cref="ChatsForYes"/>) or to a well-liked player
-    /// (<see cref="StandingForYes"/>), and then three times in four: a rule the player can act on, not a dice roll alone.
-    /// One taken, or who thinks poorly of the player (<see cref="DislikeBelow"/>), says no. An influencer says maybe at most:
-    /// they meet people through friends. Game-free. Cost: a pass over the message, once a message sent.
+    /// Invitations in the player's Flare messages; one accepted becomes a plan, as one made on the phone. The game reads
+    /// the text by fixed rules (English, robust to typos, slang and emoji) and decides by the social life's rules, rolled
+    /// from the save's seed and the message's minute so a reload answers the same; the model only words the answer. A yes
+    /// comes sooner and its plan starts at least <see cref="PlanAfterAnswer"/> minutes later, read before its reminder.
+    /// Somebody new says yes only after a few messages (<see cref="ChatsForYes"/>) or to a well-liked player, a rule the
+    /// player can act on; an influencer says maybe at most. Game-free. Cost: a pass over each message sent.
     /// </summary>
     public static partial class FlareInviteRules
     {
@@ -133,10 +121,10 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A city person's night hours: 23 to 8, a night owl's 2 to 10, as a person of the social life's.</summary>
         public static bool Asleep(int hour, bool nightOwl) => nightOwl ? hour >= 2 && hour < 10 : hour >= 23 || hour < 8;
 
-        /// <summary>The roll of an invitation: the save's seed and the message's minute, so a reload answers the same.</summary>
+        /// <summary>The roll of an invitation: the save's seed and the message's minute.</summary>
         public static int Roll(int seed, long sent) => FlareRules.Roll(seed, (int)(sent % int.MaxValue), 1201) % 1000;
 
-        /// <summary>Yes, maybe or no, and why, by the rules in the summary. Everything it reads is on the ask.</summary>
+        /// <summary>Yes, maybe or no, and why, by the rules in the summary.</summary>
         public static FlareInviteAnswer Decide(FlareInviteAsk a, out FlareInviteWhy why)
         {
             bool stranger = !a.Known && !a.Influencer;
@@ -207,7 +195,7 @@ namespace RealLifeOverhaul.Flare
             return FlareInviteAnswer.Yes;
         }
 
-        /// <summary>Somebody new may meet the player: a few messages of theirs already, or a good name in the city.</summary>
+        /// <summary>Somebody new may meet the player: a few messages of theirs, or a good name in the city.</summary>
         public static bool MayMeet(FlareInviteAsk a) => a.Chats >= ChatsForYes || a.Standing >= StandingForYes;
 
         /// <summary>When the answer comes: a yes within ten to thirty minutes, the rest within half an hour to two hours.</summary>
@@ -300,11 +288,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The answer's values as a message keeps them ("name=value", separated by '~'): what its line and card show and, for
-        /// a yes, what the booking needs: the kind, the minute, the street and number, the person (-1 for somebody new) and the
-        /// city person's name, sex and age.
-        /// </summary>
+        /// <summary>The answer's values as the message keeps them ("name=value" by '~'): what its line and card show and a yes's booking needs.</summary>
         public static string Data(FlareInviteAsk a, FlareInviteAnswer answer, FlareInviteWhy why)
         {
             var b = new StringBuilder(160);
@@ -349,7 +333,7 @@ namespace RealLifeOverhaul.Flare
             b.Append(name).Append('=').Append(Safe(value));
         }
 
-        /// <summary>A value as a message's data can keep it: no '~' or '=' (a name with one has a space instead), one line.</summary>
+        /// <summary>A value as a message's data can keep it: no '~' or '=', one line.</summary>
         public static string Safe(string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -359,7 +343,6 @@ namespace RealLifeOverhaul.Flare
             return value.Replace('~', ' ').Replace('=', ' ').Replace('\n', ' ').Replace('\r', ' ');
         }
 
-        /// <summary>One value of a message's data, or null.</summary>
         public static string Value(string data, string name)
         {
             if (string.IsNullOrEmpty(data))
@@ -399,7 +382,7 @@ namespace RealLifeOverhaul.Flare
             };
         }
 
-        /// <summary>The mark a booked yes gets, kept with the message, so it is never booked twice.</summary>
+        /// <summary>The mark a booked yes gets in its message, so it is never booked twice.</summary>
         public const string BookedMark = "~b=1";
 
         /// <summary>True if a yes's plan was booked, or the yes turned into a maybe.</summary>
@@ -440,10 +423,7 @@ namespace RealLifeOverhaul.Flare
             return null;
         }
 
-        /// <summary>
-        /// A yes that could not be booked when due is turned into "maybe, busy" before it shows: its key changes and it moves a
-        /// minute on, so words asked for the yes are never shown with it. Marked so it is not looked at again.
-        /// </summary>
+        /// <summary>A yes that cannot be booked when due turns into "maybe, busy", a minute on so the yes's words never show with it.</summary>
         public static void Unbook(FlareDm m)
         {
             m.Key = KeyStart + "maybe_busy";
@@ -451,7 +431,7 @@ namespace RealLifeOverhaul.Flare
             m.Data = (m.Data ?? string.Empty) + BookedMark;
         }
 
-        /// <summary>The account's messages to the player shown by now: how much they have talked.</summary>
+        /// <summary>The account's messages to the player shown by now.</summary>
         public static int Chats(List<FlareDm> dms, string with, long now)
         {
             int n = 0;
@@ -463,7 +443,7 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>The outing as an invitation's card says it (as data v3 has it).</summary>
+        /// <summary>The outing as an invitation's card says it.</summary>
         public static string CardOuting(PlanKind kind)
         {
             switch (kind)
@@ -487,10 +467,7 @@ namespace RealLifeOverhaul.Flare
             return "citizen.dm.invite_" + (a == FlareInviteAnswer.Yes ? "yes" : a == FlareInviteAnswer.No ? "no" : "maybe");
         }
 
-        /// <summary>
-        /// The intent of an answer if the pack in use is trained on it (data v3 on); null otherwise, and it keeps its written
-        /// line. A maybe for a plan already on keeps its line too: it names the plan's place and time, which the card cannot.
-        /// </summary>
+        /// <summary>The intent of an answer if the pack is trained on it (data v3 on); null keeps its written line.</summary>
         public static string TrainedIntent(string key, int data)
         {
             return data >= TextIntents.DataV3 && key != KeyStart + "maybe_plan" ? Intent(key) : null;
@@ -501,10 +478,7 @@ namespace RealLifeOverhaul.Flare
         public const string ReasonTaken = "they are seeing someone", ReasonNot = "they are not interested";
         public const string ReasonRude = "you were rude to them before", ReasonTooBusy = "they are too busy";
 
-        /// <summary>
-        /// The reason on a maybe's or a no's card, by the answer's key; for a no from a grudge, the message's data says whether
-        /// they remember something the player did. Null for a yes, a plan already on, or another key.
-        /// </summary>
+        /// <summary>The reason on a maybe's or a no's card, by the answer's key and, for a grudge, its data; null for a yes or another key.</summary>
         public static string CardReason(string key, string data)
         {
             if (key == null || !key.StartsWith(KeyStart, StringComparison.Ordinal))
@@ -527,10 +501,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// A city person's mood on an invitation's card: their mood of the day, but "fine" for a yes on a low day (as the
-        /// training's yes has it) and "having a rough day" for a no for a rough day.
-        /// </summary>
+        /// <summary>A city person's mood on an invitation's card: the day's, but "fine" for a yes on a low day, a rough day for that no.</summary>
         public static string CardMood(string key, string dayMood)
         {
             if (AnswerOf(key, out FlareInviteAnswer a) && a == FlareInviteAnswer.Yes)
@@ -540,7 +511,7 @@ namespace RealLifeOverhaul.Flare
             return key == KeyStart + "no_mood" ? TextWords.Moods[0] : dayMood;
         }
 
-        /// <summary>The card's values of an answer from its message's data: the outing, and the place and time or the reason.</summary>
+        /// <summary>The card's values of an answer from its message's data.</summary>
         public static void Slots(FlareDm m, TextSlots slots)
         {
             slots.Set("outing", Value(m.Data, "t_outing"));

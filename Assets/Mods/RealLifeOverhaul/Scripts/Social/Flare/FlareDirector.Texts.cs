@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using RealLifeOverhaul.Texts;
 
 namespace RealLifeOverhaul.Flare
@@ -36,12 +35,10 @@ namespace RealLifeOverhaul.Flare
     public delegate bool TextFriendOf(int index, TextWho who, out bool partner);
 
     /// <summary>
-    /// Flare's director, posts worded by RLO Texts: when the game makes a post that goes up later, its card is built and its
-    /// words asked at once, its going up the deadline; the words are kept by the post's number (the session's number in the
-    /// shared feed) and shown in place of the written line. Words that come after the post went up are not used, so a post
-    /// never changes its words in front of the player. In a session only the host asks for the shared feed's words. A
-    /// request handed back without words is asked again on the next event (FlareTextsAsked). Cost: on the events that make
-    /// posts, one walk over the posts not yet up and the messages; nothing per frame.
+    /// Flare's director, posts worded by RLO Texts: a post that goes up later has its card asked at once, its going up the
+    /// deadline, and the words kept by its number replace the written line; words that come after it went up are not used,
+    /// so a post never changes before the player. In a session only the host asks. Cost: on the events that make posts, a
+    /// walk over the posts not yet up and the messages; nothing per frame.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -73,8 +70,7 @@ namespace RealLifeOverhaul.Flare
             return m != null && m.Text == null && FlareBridges.TextKept != null ? FlareBridges.TextKept(FlareTextsMap.DmKey(m)) : null;
         }
 
-        // Every post made that goes up later and has an intent, and every answer to a message of the player's still to come:
-        // its words asked now, its going up the deadline.
+        // Every post that goes up later and has an intent, and every answer to a message of the player's still to come.
         private void TextsAhead()
         {
             if (FlareBridges.TextAsk == null || _file == null || Save == null)
@@ -167,8 +163,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The answer to a message of the player's: asked when it is scheduled, and again on the next event while it is still to
-        // come if it came back without words. Its speaker is read from the account; a decided invitation has its own card.
+        // The answer to a message of the player's: asked when scheduled, and again while it comes back without words.
         private void TextsDm(FlareDm answer, string typed)
         {
             int data = TextData;

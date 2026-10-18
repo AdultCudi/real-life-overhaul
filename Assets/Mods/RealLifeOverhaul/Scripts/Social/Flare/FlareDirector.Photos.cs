@@ -12,13 +12,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare's director, the city's photos (FlareCityPhotoRules says what the bank takes and which photo a post carries;
-    /// FlareCityCamera takes them) and the faces drawn ahead (FlareFacePainter). The bank lives in the save's photos'
-    /// folder, never in the save: its file is read and the folder listed on a worker at the start, files without records
-    /// deleted. Each second the posts going up soon are picked, the businesses' fronts read a millisecond at a time once a
-    /// game day, the bank's file written after a change, and, after the pace and outdoors, one photo of what the bank lacks
-    /// here. Each machine of a session keeps its own bank and picks the same way; nothing is sent. Cost: a comparison or
-    /// two a second while nothing is due; a look along the posts once a game minute; file work on a worker.
+    /// Flare's director, the city's photos (FlareCityPhotoRules decides, FlareCityCamera takes them) and the faces drawn
+    /// ahead (FlareFacePainter). The bank lives in the save's photos' folder, read on a worker at the start. Each machine of a
+    /// session keeps its own bank and picks alike; nothing is sent. Cost: a comparison or two a second while nothing is due,
+    /// a look along the posts a game minute, a millisecond of fronts a second once a day; file work on a worker.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -111,8 +108,7 @@ namespace RealLifeOverhaul.Flare
             return inf != null ? (int)inf.Niche : -1;
         }
 
-        // On a worker: the bank's file read and the photos listed, files without a record and records without a file let go;
-        // then, on the game's thread, the bank is Flare's.
+        // On a worker: the bank's file read and the photos listed, files and records without the other let go; then the bank is Flare's.
         private IEnumerator BankRead(string folder, int generation)
         {
             FlareBank bank = null;
@@ -227,8 +223,7 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
-        // Once a game day, and when the bank grows past its most: stale photos let go (their files deleted on a worker), and
-        // the picks of posts that are gone.
+        // Once a game day, and when the bank grows past its most: stale photos and the picks of posts that are gone let go.
         private void BankClean(int day)
         {
             FlareFile file = _file;
@@ -297,8 +292,7 @@ namespace RealLifeOverhaul.Flare
             StartCoroutine(Guard.Routine(PhotoTake(shot, FocusFor(shot, focus), _photoGeneration, false)));
         }
 
-        // The posts going up soon or just up, picked: a photo that fits, or none once a post is up and nothing does. At most
-        // PicksALook a look.
+        // The posts going up soon or just up, picked: a fitting photo, or none once a post is up; at most PicksALook a look.
         private void PicksLook(long now)
         {
             int citySeed = FlareLiveRules.CitySeed(_file);
@@ -474,10 +468,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// Test: a photo of the city for the bank now, of what the bank lacks here or the street, whatever the pace, and the
-        /// faces likely to be seen soon drawn ahead. A notice says what came of it; the log has the time and the bank.
-        /// </summary>
+        /// <summary>Test: a photo of the city for the bank now whatever the pace, and the likely faces drawn ahead.</summary>
         public void TestPictures()
         {
             Guarded(() =>

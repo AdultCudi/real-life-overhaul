@@ -174,12 +174,7 @@ namespace RealLifeOverhaul.Flare
             return inf;
         }
 
-        /// <summary>
-        /// The influencers' month: each grows or fades, some become stars, quit or are caught in a scandal, and newcomers come
-        /// into a niche the city makes busy (<paramref name="heat"/>, thousandths by FlareNiche), from the player's friends or
-        /// staff. Over <see cref="Level"/> the audience is shared, so the cast grows and shrinks round it. Once a month: a few
-        /// walks over the cast and the posts.
-        /// </summary>
+        /// <summary>The influencers' month: growing, fading, stars, quitting, scandals and newcomers in the niches <paramref name="heat"/> makes busy.</summary>
         public static void Month(FlareFile f, int day, int[] heat, IReadOnlyList<FlarePerson> people, bool staff, IReadOnlyList<string> districts, List<FlareCastNews> into)
         {
             f.MonthDay = day;
@@ -291,10 +286,7 @@ namespace RealLifeOverhaul.Flare
             return FlareRules.Clamp(ArrivalBase + ArrivalPull * (Level - active) / Level, 0, ArrivalBase + ArrivalPull);
         }
 
-        /// <summary>
-        /// Those who stopped posting and are named by nothing (no post, deal, message or follow; a friend who took it up stays)
-        /// go; past <see cref="KeptMost"/> the oldest who stopped go whatever names them. How many went.
-        /// </summary>
+        /// <summary>Those who stopped and are named by nothing go; past <see cref="KeptMost"/> the oldest who stopped go anyway. How many.</summary>
         public static int Retire(FlareFile f)
         {
             int gone = 0;
@@ -379,7 +371,7 @@ namespace RealLifeOverhaul.Flare
             return (50 + inf.Engaged / 2) / 10 * 10;
         }
 
-        /// <summary>What a deal with them costs, at the start's prices.</summary>
+        /// <summary>What a deal costs, at the start's prices.</summary>
         public static int Fee(FlareInfluencer inf, FlareDeal deal)
         {
             int d = FlareRules.Clamp((int)deal, 0, DealPosts.Length - 1);
@@ -434,11 +426,7 @@ namespace RealLifeOverhaul.Flare
             hire.Backfired = inf.Style == FlareStyle.Edgy && FlareRules.Roll(seed, hire.Id, 63) < 200;
         }
 
-        /// <summary>
-        /// The influencers', brands' and candidates' posts of the day: a paid one, one for a rival or a candidate, a visit to a
-        /// business of the player's (unpaid: added to <paramref name="visits"/> for its talk), local news, their niche, or an
-        /// apology on the day of a scandal.
-        /// </summary>
+        /// <summary>The influencers', brands' and candidates' posts of the day; visits to the player's businesses go into <paramref name="visits"/>.</summary>
         public static void Day(FlareFile f, int day, IReadOnlyList<FlareShop> shops, IReadOnlyList<string> rivals, IReadOnlyList<string> candidates, IReadOnlyList<string> brands,
             List<FlarePost> visits)
         {
@@ -518,19 +506,13 @@ namespace RealLifeOverhaul.Flare
             FlareRules.Prune(f);
         }
 
-        /// <summary>
-        /// The chance a day an influencer with nothing paid posts, per mille: shared beyond <see cref="PostsLevel"/> active,
-        /// so the feed has about as many of their posts however many there are.
-        /// </summary>
+        /// <summary>The chance a day an unpaid influencer posts, per mille, shared beyond <see cref="PostsLevel"/> so the feed's volume stays.</summary>
         public static int PostChanceOf(int active)
         {
             return active <= PostsLevel ? PostChance : PostChance * PostsLevel / active;
         }
 
-        /// <summary>
-        /// The posts about a business for its Business tab card: the player's own still kept, reviews apart
-        /// (<paramref name="own"/>), and the paid posts of every deal there. <paramref name="last"/> is the newest's day, -1 with none.
-        /// </summary>
+        /// <summary>The posts about a business for its card: the player's own bar reviews (<paramref name="own"/>) and its deals' paid posts.</summary>
         public static int PostsAbout(FlareFile f, string place, out int own, out int last)
         {
             own = 0;
@@ -565,10 +547,7 @@ namespace RealLifeOverhaul.Flare
             return h.Ended || day > h.To ? HireOver : day < h.From ? HireBefore : h.Posted > 0 ? HirePosting : HireWaiting;
         }
 
-        /// <summary>
-        /// The text key of a deal's line about its posts. Null for a deal from an older save with no post counted yet: its count
-        /// is not known.
-        /// </summary>
+        /// <summary>The text key of a deal's line about its posts; null for an older save's deal with no post counted yet.</summary>
         public static string HirePostsKey(FlareHire h, int day)
         {
             int stage = HireStage(h, day);
@@ -653,7 +632,7 @@ namespace RealLifeOverhaul.Flare
             return key != null && f.Follows.Contains(key);
         }
 
-        /// <summary>The player follows an account, or stops. True if anything changed.</summary>
+        /// <summary>The player follows an account or stops. True if anything changed.</summary>
         public static bool Follow(FlareFile f, string key, bool on)
         {
             if (string.IsNullOrEmpty(key) || Followed(f, key) == on)
@@ -671,7 +650,6 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>The posts of a day from accounts the player follows.</summary>
         public static int FollowedPosts(FlareFile f, int day)
         {
             int n = 0;

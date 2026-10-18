@@ -5,12 +5,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// Flare's director, the city's influencers, brands and candidates (FlareCast): the cast, its month and daily posts,
-    /// hiring one for a business (the company's campaign of the deal's kind), how a hire goes, scandals, a star the player
-    /// can meet, and following accounts. Followed accounts send one notification a day at most; what needs the player, one
-    /// a day too (FlareRules.MayNotify). Cost: nothing per frame; a walk over the influencers and businesses a day.
-    /// </summary>
+    /// <summary>Flare's director, the city's influencers, brands and candidates. Cost: nothing per frame; a walk over them and the businesses a day.</summary>
     public sealed partial class FlareDirector
     {
         private readonly List<string> _districts = new List<string>(16);
@@ -23,7 +18,6 @@ namespace RealLifeOverhaul.Flare
         private readonly List<int> _plan = new List<int>(3);
         private readonly int[] _heat = new int[(int)FlareNiche.Business + 1];
 
-        /// <summary>The brands' and the candidates' accounts, as read when the app opened.</summary>
         public IReadOnlyList<string> BrandAccounts => _brands;
         public IReadOnlyList<string> CandidateAccounts => _candidates;
 
@@ -129,7 +123,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The influencers' month: what the city does draws newcomers; each grows, fades, quits, becomes a star or meets a scandal.
+        // The influencers' month: newcomers drawn by what the city does; each grows, fades, quits, becomes a star or meets a scandal.
         private void Month(int day)
         {
             FlareGame.Shops(_file, _shops);
@@ -323,7 +317,7 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        /// <summary>What a deal at a business would cost today and bring. False, with the reason's key, if it cannot be made.</summary>
+        /// <summary>What a deal at a business would cost today and bring; false, with the reason's key, if it cannot be made.</summary>
         public bool HireQuote(string place, FlareDeal deal, int influencer, out int cost, out int percent, out string why)
         {
             return HireQuote(place, deal, influencer, out cost, out percent, out why, false);
@@ -517,7 +511,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The player follows an account or stops; saved with the save.</summary>
         public void Follow(string key, bool on)
         {
             if (Running && FlareCast.Follow(_file, key, on))

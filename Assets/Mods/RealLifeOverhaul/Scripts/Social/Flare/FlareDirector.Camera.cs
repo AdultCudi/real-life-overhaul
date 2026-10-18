@@ -9,10 +9,8 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// Flare's director, pictures into Flare: the camera button's shot of the screen without the phone, the selfie button,
-    /// and <see cref="SharePhoto"/> for another feature's photo. A shot puts the phone away, reads the screen at the end of
-    /// a frame a third of a second later, reopens the compose sheet and shrinks the screen on a worker thread to its small
-    /// copy, the only thing written. Cost: one read of the screen on the press (a few milliseconds); the rest off the main
-    /// thread.
+    /// and <see cref="SharePhoto"/> for another feature's photo. Cost: one read of the screen on the press (a few
+    /// milliseconds); the shrinking runs on a worker thread.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -100,7 +98,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>True while the camera is taking a shot (the compose sheet says so).</summary>
         public bool Shooting => _shooting;
 
         /// <summary>

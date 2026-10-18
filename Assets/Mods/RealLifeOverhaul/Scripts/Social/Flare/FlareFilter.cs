@@ -5,12 +5,10 @@ using System.Text;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The mod's own word list for what another player of a Going Public session typed, used when Steam's own filter is not
-    /// there (FlareGame.SteamFilter) and, at Strict, after it. A listed word shows as its first letter and stars; letters
-    /// written as figures or signs ("sh1t", "$hit") and doubled letters count. At Strict longer words are found inside
-    /// others too and web addresses are starred. The list is in ROT13 so the source reads clean. Game-free. Cost: one pass
-    /// over a text of at most 300 characters when another player's post or message comes in. The player's own text is
-    /// never filtered.
+    /// The mod's own word list for what another player of a session typed, used when Steam's filter is not there and, at
+    /// Strict, after it: a listed word shows as its first letter and stars, figures for letters and doubled letters
+    /// counting; at Strict longer words inside others and web addresses too. In ROT13 so the source reads clean. Game-free;
+    /// one pass over a text of 300 characters at most, as another player's post or message comes in.
     /// </summary>
     public static class FlareFilter
     {
@@ -63,9 +61,8 @@ namespace RealLifeOverhaul.Flare
             {
                 return text;
             }
-            // The letters as they read, and for each character of the text the letter of them it stands at: a space or a
-            // sign between words is a space; a dot, a dash, a star or an underscore inside a word is nothing ("s.h.i.t");
-            // a doubled letter stands at the letter before it ("shiiit").
+            // The letters as they read, and for each character the letter it stands at: a sign between words is a space, a dot,
+            // dash, star or underscore inside a word is nothing ("s.h.i.t"), and a doubled letter stands at the one before.
             var plain = new StringBuilder(text.Length);
             var at = new int[text.Length];
             for (int i = 0; i < text.Length; i++)

@@ -3,11 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The host's pictures on their way in, piece by piece, each its own player's. When there are many, a player's own
-    /// oldest gives way to its new one, or one with no piece for two minutes; another player's picture still coming is never
-    /// cleared for it. Game-free: the caller gives the time.
-    /// </summary>
+    /// <summary>The host's pictures coming in piece by piece; when many come a player's own oldest or a stale one gives way. Game-free.</summary>
     public sealed class FlarePieceBook
     {
         public const int Most = 8;               // pictures on their way at once
@@ -24,7 +20,7 @@ namespace RealLifeOverhaul.Flare
 
         public int Count => _coming.Count;
 
-        /// <summary>A piece of a player's picture. The whole picture's Base64 once its last piece is in, else null (also for a piece refused).</summary>
+        /// <summary>A piece of a player's picture: the whole picture's Base64 once its last piece is in, else null.</summary>
         public string Add(string who, FlareAsk ask, float now)
         {
             if (string.IsNullOrEmpty(who) || ask.PicId == null || !ask.PicId.StartsWith(who + "/", StringComparison.Ordinal))

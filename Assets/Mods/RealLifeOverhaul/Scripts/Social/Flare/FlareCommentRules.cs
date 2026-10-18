@@ -14,12 +14,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// The comments under a post that is not the player's. The post's reply count is the count on its card; each reply up
-    /// to <see cref="WrittenMost"/> is written out, by people picked from the post's seed, coming in as the count reaches
-    /// it, and only past those does the thread say how many more there are. Nothing is stored: the same post gives the same
-    /// comments on every machine of a Going Public session (a shared post's seed is the city's seed and its session number,
-    /// and only the city's people comment on it). A comment shows once RLO Texts has worded it (<see cref="Key"/>).
-    /// Game-free. Cost: a few rolls and an eleven-step search a written comment when a thread is drawn; nothing allocated.
+    /// The comments under a post that is not the player's: up to <see cref="WrittenMost"/> of its replies written out by
+    /// people picked from its seed, coming in as its count reaches them. Nothing is stored, so a post gives the same comments
+    /// on every machine of a session (a shared post's seed is the city's). Game-free. Cost: a few rolls a comment; no allocation.
     /// </summary>
     public static class FlareCommentRules
     {
@@ -64,7 +61,6 @@ namespace RealLifeOverhaul.Flare
             return City(p) ? FlareRules.Roll(citySeed, Net(p), SaltSeed) * 1000 + FlareRules.Roll(citySeed, Net(p), SaltSeed + 1) : p.Seed;
         }
 
-        /// <summary>How many of a post's replies are written out; the rest is the "more" line.</summary>
         public static int Written(int total)
         {
             return FlareRules.Clamp(total, 0, WrittenMost);
@@ -100,11 +96,7 @@ namespace RealLifeOverhaul.Flare
             return (int)((long)Math.Max(0, total) * FlareLiveRules.ArrivedAfter(since) / 1000);
         }
 
-        /// <summary>
-        /// The post's written comments in the order they come in, into <paramref name="into"/>. <paramref name="people"/> and
-        /// <paramref name="influencers"/> only for a post that is not the city's; <paramref name="taste"/> is what a friend must
-        /// care about to comment (None: no friend does). How many.
-        /// </summary>
+        /// <summary>The post's written comments in order into <paramref name="into"/>; how many.</summary>
         public static int Plan(FlarePost p, int citySeed, int citizens, IReadOnlyList<FlarePerson> people, FlareTaste taste, IReadOnlyList<FlareInfluencer> influencers,
             List<FlareComment> into)
         {
@@ -154,10 +146,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The "more" line's number: the count on the card less the comments written out.</summary>
         public static int More(int shownCount, int writtenShown) => Math.Max(0, shownCount - writtenShown);
 
-        /// <summary>
-        /// The key a comment's words are kept by: the post's number, its slot and who writes it ("fc:12:3:c17"), so words for one
-        /// person never show under another. A guest's copy of a shared post goes by the session's number ("fn:45:3:c17").
-        /// </summary>
+        /// <summary>The key a comment's words are kept by: post, slot and writer ("fc:12:3:c17"); a guest's shared copy by its session number ("fn:").</summary>
         public static string Key(FlarePost p, FlareComment c)
         {
             return (p.Shared && p.NetId > 0 ? "fn:" + p.NetId : "fc:" + p.Id) + ":" + c.Slot + ":" + c.Kind + c.Who;
@@ -178,10 +167,7 @@ namespace RealLifeOverhaul.Flare
 
         private const int WhoMost = 1 << 26;   // the largest who a key can hold
 
-        /// <summary>
-        /// The key of a comment the player liked: the post's number, the slot and who writes it, so a like never shows under
-        /// another person. Stable, unlike the shown number; -1 when out of range.
-        /// </summary>
+        /// <summary>The stable key of a comment the player liked: post, slot and writer; -1 when out of range.</summary>
         public static long LikeKey(int postId, int slot, char kind, int who)
         {
             int code = kind == 'f' ? 1 : kind == 'i' ? 2 : kind == 'c' ? 0 : -1;
@@ -192,7 +178,6 @@ namespace RealLifeOverhaul.Flare
             return (long)postId << 32 | (long)slot << 28 | (long)code << 26 | (uint)who;
         }
 
-        /// <summary>The post a like's key belongs to.</summary>
         public static int PostOf(long key) => (int)(key >> 32);
 
         /// <summary>A key's parts, for the save line (C|post|slot|kind|who).</summary>
@@ -210,17 +195,13 @@ namespace RealLifeOverhaul.Flare
             return kind >= 0 && kind <= 2 ? LikeKey(postId, slot, kind == 1 ? 'f' : kind == 2 ? 'i' : 'c', who) : -1;
         }
 
-        /// <summary>True if the player liked this comment.</summary>
         public static bool Liked(FlareFile f, int postId, int slot, char kind, int who)
         {
             long key = LikeKey(postId, slot, kind, who);
             return f != null && key >= 0 && f.CommentLikes.Contains(key);
         }
 
-        /// <summary>
-        /// The player likes a comment, or takes the like back; the new state. Moves nothing else and sends nothing. At
-        /// <see cref="LikesKept"/> the oldest like goes.
-        /// </summary>
+        /// <summary>The player likes a comment or takes the like back; the new state. Sends nothing; the oldest like goes past <see cref="LikesKept"/>.</summary>
         public static bool ToggleLike(FlareFile f, int postId, int slot, char kind, int who)
         {
             long key = LikeKey(postId, slot, kind, who);
@@ -270,21 +251,13 @@ namespace RealLifeOverhaul.Flare
         private const int SaltEarlier = 850, SaltAnswer = 851, SaltAnswerAt = 852;
         private const int AnswerBase = -(1 << 28);   // the numbers answers are shown under: below the friends' replies, above the comments' (IsDisplay stays false)
 
-        /// <summary>
-        /// Whether a written comment answers the one before it under the same post (for a citizen.comment.* intent). From the
-        /// post's comment seed, so the same on every machine.
-        /// </summary>
+        /// <summary>Whether a written comment answers the one before it, from the post's comment seed.</summary>
         public static bool AnswersEarlier(FlarePost p, int citySeed, int slot)
         {
             return slot >= 1 && FlareRules.Roll(Seed(p, citySeed), slot, SaltEarlier) % 1000 < EarlierShare;
         }
 
-        /// <summary>
-        /// Whether the author of a post answers the player's typed reply under it, and when (game minutes): a city person on a
-        /// topic the answers know (FlareTextsMap.AnswerTopic), or an official account, a business, a brand or a rival under its
-        /// own post. Never under a reply, for an empty reply or a post on its way. From the reply's seed and number, so the
-        /// same after a load. An answer the model did not word in time is not shown.
-        /// </summary>
+        /// <summary>Whether, and when in game minutes, a post's author answers the player's typed reply under it, from the reply's seed.</summary>
         public static bool AuthorAnswer(FlarePost reply, FlarePost parent, out long at)
         {
             at = 0;
@@ -398,12 +371,7 @@ namespace RealLifeOverhaul.Flare
         }
     }
 
-    /// <summary>
-    /// Which comments' words were asked, by <see cref="FlareCommentRules.Asked"/>: waiting (and whether for the open
-    /// thread), worded (never asked again), or asked so many times. A request handed back without words frees the comment
-    /// to be asked again, up to <see cref="Most"/> times a session, so one missed request never leaves it unwritten.
-    /// Game-free. Cost: a dictionary look a comment.
-    /// </summary>
+    /// <summary>Which comments' words were asked: waiting, worded or asked so many times, up to <see cref="Most"/> a session. Game-free.</summary>
     public sealed class FlareCommentAsks
     {
         public const int Most = 4;   // asks of one comment a session at most; past this it waits for the next load
@@ -420,19 +388,13 @@ namespace RealLifeOverhaul.Flare
         /// <summary>Requests waiting at the background's priority.</summary>
         public int Background { get; private set; }
 
-        /// <summary>How many comments are known.</summary>
         public int Count => _all.Count;
 
-        /// <summary>True once its words are kept: never asked again.</summary>
         public bool Worded(long id) => _all.TryGetValue(id, out Entry e) && e.Worded;
 
-        /// <summary>True while a request for it waits.</summary>
         public bool Waiting(long id) => _all.TryGetValue(id, out Entry e) && e.Waiting;
 
-        /// <summary>
-        /// True if it may be asked now: not worded, asked fewer than <see cref="Most"/> times, and not waiting (for the open
-        /// thread, not waiting ahead already).
-        /// </summary>
+        /// <summary>True if it may be asked now: not worded, under <see cref="Most"/> asks, not waiting unless now for the open thread.</summary>
         public bool May(long id, bool urgent)
         {
             if (!_all.TryGetValue(id, out Entry e))
@@ -459,7 +421,6 @@ namespace RealLifeOverhaul.Flare
             _all[id] = e;
         }
 
-        /// <summary>A request for it was taken by the hub.</summary>
         public void Asked(long id, bool urgent)
         {
             _all.TryGetValue(id, out Entry e);
@@ -512,7 +473,6 @@ namespace RealLifeOverhaul.Flare
             return _gone.Count;
         }
 
-        /// <summary>Another file, or none: nothing asked.</summary>
         public void Clear()
         {
             _all.Clear();

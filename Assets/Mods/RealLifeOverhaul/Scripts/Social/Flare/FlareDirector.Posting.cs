@@ -7,11 +7,7 @@ namespace RealLifeOverhaul.Flare
     /// <summary>Flare's director, the player's own: posts, likes, shares, invitations, messages and notifications.</summary>
     public sealed partial class FlareDirector
     {
-        /// <summary>
-        /// The player posts from the compose sheet: the built part, the typed text (it decides nothing), the picture, the tags
-        /// and the account called on. There is no limit: false, with the reason's key, only for a post that is not whole. What
-        /// many posts could move is bounded where it moves: FlareRules.Counts, FlareLiveRules.FirstToday and Weighs.
-        /// </summary>
+        /// <summary>The player posts from the compose sheet; false, with the reason's key, only for a post that is not whole.</summary>
         public bool Compose(FlareCompose c, out string why)
         {
             why = null;
@@ -135,8 +131,7 @@ namespace RealLifeOverhaul.Flare
             return p;
         }
 
-        // A report to the city: a post that gains nothing, and a case. The same thing again today joins the case already filed,
-        // and the day's first three weigh in the council.
+        // A report to the city: a post that gains nothing, and a case; the day's first three weigh in the council.
         private FlarePost Report(FlareCompose c, string text, int day, out string why)
         {
             why = null;
@@ -258,7 +253,6 @@ namespace RealLifeOverhaul.Flare
             TextsAhead();
         }
 
-        /// <summary>The player likes a post, or takes the like back.</summary>
         public void Like(int postId)
         {
             FlarePost p = Running ? _file.Post(postId) : null;
@@ -271,10 +265,7 @@ namespace RealLifeOverhaul.Flare
             Changed();
         }
 
-        /// <summary>
-        /// The player likes a friend's reply under one of their posts, or takes the like back: kept by the post and the reply's
-        /// place, as the reply is made for display. Nothing else changes and nothing is sent.
-        /// </summary>
+        /// <summary>The player likes a friend's reply under their post, or takes it back: kept by post and place; sends nothing.</summary>
         public void LikeReply(int parentId, int slot)
         {
             if (!Running)
@@ -285,13 +276,9 @@ namespace RealLifeOverhaul.Flare
             Changed();
         }
 
-        /// <summary>True if the player liked this friend's reply.</summary>
         public bool IsReplyLiked(int parentId, int slot) => Running && FlareRules.ReplyLiked(_file, parentId, slot);
 
-        /// <summary>
-        /// The player likes a comment under a post that is not theirs, or takes the like back: kept by the post, slot and
-        /// writer. Nothing else changes and nothing is sent.
-        /// </summary>
+        /// <summary>The player likes a comment under another's post, or takes it back: kept by post, slot and writer; sends nothing.</summary>
         public void LikeComment(int postId, int slot, char kind, int who)
         {
             if (!Running)
@@ -302,10 +289,9 @@ namespace RealLifeOverhaul.Flare
             Changed();
         }
 
-        /// <summary>True if the player liked this comment.</summary>
         public bool IsCommentLiked(int postId, int slot, char kind, int who) => Running && FlareCommentRules.Liked(_file, postId, slot, kind, who);
 
-        /// <summary>The player shares a post with their followers (once).</summary>
+        /// <summary>The player shares a post with their followers, once.</summary>
         public void Repost(int postId)
         {
             FlarePost p = Running ? _file.Post(postId) : null;
@@ -340,13 +326,9 @@ namespace RealLifeOverhaul.Flare
             Changed();
         }
 
-        /// <summary>True if the player goes to an invitation.</summary>
         public bool IsGoing(int postId) => Running && _file.Net.Going.Contains(postId);
 
-        /// <summary>
-        /// The player writes a message: one of the city's people answers within an hour or two; an invitation in it is answered
-        /// by the game's rules and a yes books the plan (FlareDirector.Invites.cs). A session's player gets it as written.
-        /// </summary>
+        /// <summary>The player writes a message: a city person answers within an hour or two, an invitation by the game's rules; a session player gets it as written.</summary>
         public bool SendDm(string with, string text)
         {
             text = FlareLiveRules.Clip(text, FlareLiveRules.DmTextMost);
@@ -372,7 +354,6 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>A conversation has been read.</summary>
         public void ReadDms(string with)
         {
             if (!Running)
@@ -392,7 +373,6 @@ namespace RealLifeOverhaul.Flare
             Badge();
         }
 
-        /// <summary>The Notifications screen has been seen: everything up to now is read.</summary>
         public void NoticesSeen()
         {
             if (Running)
@@ -415,7 +395,6 @@ namespace RealLifeOverhaul.Flare
             return _notices;
         }
 
-        // The notifications worked out again, and the badge's count.
         private void Recount()
         {
             if (_file == null || Save == null)
@@ -442,7 +421,7 @@ namespace RealLifeOverhaul.Flare
             _unread = unread;
         }
 
-        /// <summary>Mutes a player of the session (no notifications, no messages from them), or not.</summary>
+        /// <summary>Mutes a player of the session (no notifications or messages from them), or not.</summary>
         public void Mute(string player, bool on)
         {
             if (Running && player != null)
@@ -453,7 +432,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>Hides a player of the session (nothing of theirs shown, their pictures neither), or not.</summary>
+        /// <summary>Hides a player of the session (nothing of theirs shown), or not.</summary>
         public void Hide(string player, bool on)
         {
             if (Running && player != null)

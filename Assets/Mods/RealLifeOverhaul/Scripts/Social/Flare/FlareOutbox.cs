@@ -3,12 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// A guest's lines for the host, waiting for the next second, in the order asked: each second takes what a request
-    /// may carry, one piece of a picture and one post (many posts at once go a second apart, inside
-    /// <see cref="FlareRateBook.PostsWindow"/>). A post is never dropped: past <see cref="Most"/> the oldest other line
-    /// goes. Game-free.
-    /// </summary>
+    /// <summary>A guest's lines for the host, a second at a time in order; a post is never dropped: past <see cref="Most"/> the oldest other line goes. Game-free.</summary>
     public sealed class FlareOutbox
     {
         public const int Most = 400;             // other lines kept waiting at most (a guest offline for long)
@@ -46,10 +41,7 @@ namespace RealLifeOverhaul.Flare
             return line.Length > 0 && line[0] == 'P';
         }
 
-        /// <summary>
-        /// Hands this second's lines to <paramref name="ask"/>: at most <paramref name="room"/>, one piece of a picture and one
-        /// post. A line it refuses stays, with all after it, for the next second. How many went.
-        /// </summary>
+        /// <summary>Hands this second's lines to <paramref name="ask"/>, at most <paramref name="room"/>; a refused one waits with all after it. How many went.</summary>
         public int Send(Func<string, bool> ask, int room)
         {
             int sent = 0, posts = 0;

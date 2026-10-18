@@ -10,12 +10,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare, the city's social media app: an account with followers and a reputation, posts made only about what really
-    /// happened, and the friends who follow, like and answer. The rules are game-free (FlareRules and the rest); this keeps
-    /// them going and reads the game through FlareGame and FlareBridges. Cost: nothing per frame, open or closed. A
-    /// one-second timer on the real clock starts it, holds the handlers and puts the app on the phone; the work runs on the
-    /// game's hour, day and save, on what Wiring/FlareLinks tells and on clicks. A fault switches Flare off for the session
-    /// and leaves the game and the rest of the mod alone.
+    /// Flare, the city's social media app: an account with followers and a reputation, posts only about what really
+    /// happened, and friends who follow, like and answer. The rules are game-free; this keeps them going. Cost: nothing per
+    /// frame, open or closed: a one-second real-time timer starts it and holds its handlers, and the work runs on the
+    /// game's hour, day and save, on what Wiring/FlareLinks tells and on clicks. A fault switches Flare off for the session.
     /// </summary>
     public sealed partial class FlareDirector : MonoBehaviour
     {
@@ -104,7 +102,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly int HotTick = HotSpots.Slot("Social: FlareDirector.Tick");
-        // Once a second: start when the save is ready, stand down when the option goes off, hold the handlers, the app on the phone.
+        // Once a second: start when the save is ready, stand down when the option goes off, hold the handlers and the app.
         private void Slow()
         {
             using var hotSpot = HotSpots.Time(HotTick);
@@ -182,7 +180,7 @@ namespace RealLifeOverhaul.Flare
             Badge();
         }
 
-        // Flare stops: the app leaves the phone. With 'keep' the account goes into the save's data first (a stop in the middle of play).
+        // Flare stops and the app leaves the phone; with 'keep' the account goes into the save's data first.
         private void StandDown(bool keep)
         {
             if (keep && _running && Save != null && _file != null)
@@ -208,7 +206,7 @@ namespace RealLifeOverhaul.Flare
             _gaveUp = false;
         }
 
-        /// <summary>A fault: one line, and nothing more of Flare this session. What the save holds of it is left as it is.</summary>
+        /// <summary>A fault: one line, and nothing more of Flare this session; the save is left as it is.</summary>
         private void Fault(string where, Exception e)
         {
             _broken = true;
@@ -287,7 +285,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly int HotOnHour = HotSpots.Slot("Social: FlareDirector.OnHour");
-        // GlobalEvents.onNewHour: a promotion, a ballot or an endorsement since the last hour becomes a draft.
+        // A promotion, a ballot or an endorsement since the last hour becomes a draft.
         private void OnHour()
         {
             using var hotSpot = HotSpots.Time(HotOnHour);
@@ -342,7 +340,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Social: FlareDirector.OnDay");
-        // GlobalEvents.onNewDay: after the game's daily run, so yesterday's statement of every business is there.
+        // After the game's daily run, so yesterday's statement of every business is there.
         private void OnDay()
         {
             using var hotSpot = HotSpots.Time(HotOnDay);
@@ -394,7 +392,6 @@ namespace RealLifeOverhaul.Flare
             Changed();
         }
 
-        // The social life's people as they stand now, through the bridge; nobody without it.
         private void ReadPeople()
         {
             _people.Clear();
@@ -432,7 +429,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A draft was made: one line, and the app's badge (never a notification: the player looks when they like).
+        // A draft was made: one line and the badge, never a notification.
         private void Made(FlareDraft d)
         {
             if (d == null)
@@ -468,7 +465,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>A friend's first name by the social life's number, or null.</summary>
         public string PersonName(int index)
         {
             FlarePerson p;

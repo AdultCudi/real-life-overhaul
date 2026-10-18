@@ -16,10 +16,8 @@ namespace RealLifeOverhaul.Flare
 
     /// <summary>
     /// Flare's director, an invitation in the player's message to a city person or an influencer (FlareInviteRules): read
-    /// when sent, decided by the game at once by the social life's rules, and answered at its minute. A yes is booked a
-    /// moment before it shows, as a call books a plan; one that can no longer be booked then shows as a maybe. Booked once:
-    /// the message keeps a mark in the save. Nothing is sent in a session: the messages and the plan are the player's own.
-    /// Cost: a pass over each message sent; once a second one comparison with the next yes due; nothing per frame.
+    /// when sent, decided at once by the social life's rules, answered at its minute, a yes booked a moment before it shows
+    /// and marked in the save. Nothing is sent in a session. Cost: a pass over each message sent; one comparison a second.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -27,8 +25,7 @@ namespace RealLifeOverhaul.Flare
         private FlareFile _inviteFile;             // the account it was worked out for: a load or a new account works it out again
         private int _testInvitee = -1;             // the test's city person: counts as somebody the player has talked with, this session
 
-        // An invitation in the player's message: the answer decided and scheduled; null when it is none, or not to somebody the
-        // game answers for.
+        // An invitation in the player's message, decided and scheduled; null when it is none or to somebody the game does not answer for.
         private FlareDm Invite(string with, string text, long now)
         {
             if (!FlareInviteRules.Read(text, out PlanKind kind) || !FlareTextsMap.DmSpeaker(with, out bool influencer, out int number))
@@ -156,10 +153,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// Test: a city person writes to the player now and counts, this session, as somebody talked with and free of anybody
-        /// else, so an invitation to them is decided as for somebody known a while.
-        /// </summary>
+        /// <summary>Test: a city person writes now and counts as known a while, so an invitation to them is decided so.</summary>
         public void TestInvitee()
         {
             if (!TestReady("Flare invitation answered"))

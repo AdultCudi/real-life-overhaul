@@ -4,17 +4,15 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare's director, what a post does outside Flare, each through a bridge Wiring/FlareLinks fills in: talk about a
-    /// business (a share of its customers for three days, inside Flare's cap), a viral post's hype and piece in the paper,
-    /// a tagged friend closer, an honest answer to a scandal, an arrest trending, a picture posted while wanted, a post on
-    /// shift. Also what the company, business pressure and brands ask of Flare. Cost: nothing per frame;
-    /// <see cref="FootfallOf"/> walks the talk there is (none most days) each time a business's figure is written.
+    /// Flare's director, what a post does outside Flare through bridges Wiring/FlareLinks fills in: talk about a business,
+    /// a viral post's hype and paper piece, a tagged friend, a scandal's answer, an arrest trending; and what the company,
+    /// business pressure and brands ask of Flare. Cost: nothing per frame; <see cref="FootfallOf"/> walks the talk there is
+    /// each time a business's figure is written.
     /// </summary>
     public sealed partial class FlareDirector
     {
         private readonly List<string> _talked = new List<string>(8);
 
-        // After a post: everything it does elsewhere.
         private void Influence(FlarePost p, FlareDraft d)
         {
             int day = p.Day;
@@ -124,10 +122,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// What Flare's talk adds to a business's customers now, per cent, and a point more where the City Office's cleaners go
-        /// round; asked each time business pressure writes the figure. 0 while Flare is not running.
-        /// </summary>
+        /// <summary>What Flare's talk adds to a business's customers now, per cent, a point more where the cleaners go; 0 while not running.</summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             FlareDirector d = Instance;

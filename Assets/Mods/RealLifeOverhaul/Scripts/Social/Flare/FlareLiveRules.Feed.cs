@@ -17,11 +17,7 @@ namespace RealLifeOverhaul.Flare
         public const int DmGapDays = 2;
         public const int DmChance = 450;               // per mille a day after the gap
 
-        /// <summary>
-        /// Who with a name reacts to a post of the player's, and when: the friends who liked or replied, the partner first, some
-        /// of the staff, the boss if they follow, and a few of the city's people by how far it went. One short line kept on the
-        /// post ("L:f3:12;R:c7:95"): the notifications come in from it as the minutes pass.
-        /// </summary>
+        /// <summary>Who with a name reacts to a post of the player's, and when, as one short line kept on the post ("L:f3:12;R:c7:95").</summary>
         public static string Reactors(FlarePost p, IReadOnlyList<FlarePerson> people, IReadOnlyList<string> staff, bool boss, StringBuilder b)
         {
             b.Length = 0;
@@ -88,7 +84,7 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
-        /// <summary>The reactions of a post's line, into the list given (filled again). Nothing for none, or for a line that does not read.</summary>
+        /// <summary>The reactions of a post's line, into <paramref name="into"/>; none for a line that does not read.</summary>
         public static void ReadReactors(string line, List<FlareReaction> into)
         {
             into.Clear();
@@ -121,7 +117,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>How much of a post's figures have come in by now, thousandths: on a curve, all of it a day after.</summary>
         public static int Arrived(FlarePost p, long now) => ArrivedAfter(now - p.At);
 
-        /// <summary>How much of a post's figures have come in so many game minutes after it went up, thousandths.</summary>
+        /// <summary>The same, so many game minutes after it went up.</summary>
         public static int ArrivedAfter(long since)
         {
             if (since <= 0)
@@ -140,10 +136,7 @@ namespace RealLifeOverhaul.Flare
             return (int)((long)Math.Max(0, total) * Arrived(p, now) / 1000);
         }
 
-        /// <summary>
-        /// The city's people's replies to a post of the player's, each a post of its own at its minute: more for a post that
-        /// went further, and a pile-on for one that went badly and was seen by enough. How many were made.
-        /// </summary>
+        /// <summary>The city's people's replies to a post of the player's, a post each at its minute; a pile-on for a bad one seen widely.</summary>
         public static int CityReplies(FlareFile f, FlarePost p, List<FlarePost> made)
         {
             int count = p.Bad && p.Reach >= PileOnFrom ? FlareRules.Clamp(PileOnLeast + p.Reach / 2000, PileOnLeast, PileOnMost)
@@ -192,13 +185,12 @@ namespace RealLifeOverhaul.Flare
             return p.Viral || roll < 350 ? FlareReplyKind.Love : roll < 700 ? FlareReplyKind.Agree : FlareReplyKind.Question;
         }
 
-        /// <summary>A post that drew a pile-on: it went badly, it was seen widely, and the angry replies came.</summary>
+        /// <summary>A post that drew a pile-on: it went badly and was seen widely.</summary>
         public static bool PileOn(FlarePost p)
         {
             return p != null && p.Bad && p.Reach >= PileOnFrom && p.Author == FlareAuthor.Player;
         }
 
-        /// <summary>Puts a post at a minute of the game's clock.</summary>
         public static void SetAt(FlarePost p, long at)
         {
             at = Math.Max(0, at);
@@ -207,10 +199,7 @@ namespace RealLifeOverhaul.Flare
             p.Day = (int)(at / 1440);
         }
 
-        /// <summary>
-        /// The day's Trending: the tags of the posts shown in the last day, counted by how far each post went, the most
-        /// first, at most so many. Into the two lists given (filled again).
-        /// </summary>
+        /// <summary>The day's Trending: the tags of the last day's posts, weighed by reach, the most first, at most <paramref name="most"/>.</summary>
         public static void Trending(List<FlarePost> posts, long now, int most, List<string> tags, List<int> counts)
         {
             tags.Clear();
@@ -268,7 +257,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The tags typed in a text (#word: letters, digits and _, lower case), joined by a space, at most five, each once.</summary>
+        /// <summary>The tags typed (#word) and built, lower case, joined by a space, at most five, each once.</summary>
         public static string TagsOf(string text, string built)
         {
             var b = new StringBuilder(64);
@@ -315,10 +304,7 @@ namespace RealLifeOverhaul.Flare
             return all.IndexOf(" " + tag + " ", StringComparison.Ordinal) >= 0;
         }
 
-        /// <summary>
-        /// Typed text as Flare keeps it: on one line (a line break is a space), nothing that is not printable, spaces run
-        /// together, trimmed, and no longer than <paramref name="most"/> characters. Null for nothing.
-        /// </summary>
+        /// <summary>Typed text as Flare keeps it: one line of printable characters, spaces run together, at most <paramref name="most"/>; null for nothing.</summary>
         public static string Clip(string text, int most = TextMost)
         {
             if (string.IsNullOrEmpty(text))
@@ -358,11 +344,7 @@ namespace RealLifeOverhaul.Flare
             return b.Length > 0 ? b.ToString() : null;
         }
 
-        /// <summary>
-        /// Whether one of the city's people writes to the player today, and who and about what (a key's end): a fan after a
-        /// viral post, somebody asking for work when a business of the player's is hiring, an influencer offering to work
-        /// together from Local on, the City Office thanking the player for a report acted on. Once every two days at most.
-        /// </summary>
+        /// <summary>Whether one of the city's people writes to the player today, who and about what; once every two days at most.</summary>
         public static bool CityDm(FlareFile f, int day, bool hiring, out string with, out string what)
         {
             with = null;
@@ -410,7 +392,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>A message added to the player's, the oldest going when there are too many.</summary>
+        /// <summary>A message added, the oldest going past the most.</summary>
         public static FlareDm Dm(FlareNet net, string with, string name, long at, bool mine, string text, string key, string data)
         {
             var dm = new FlareDm { Id = net.NextDm++, With = with, Name = name, At = at, Mine = mine, Text = text, Key = key, Data = data, Read = mine };
@@ -422,11 +404,7 @@ namespace RealLifeOverhaul.Flare
             return dm;
         }
 
-        /// <summary>
-        /// The Notifications screen, newest first, at most <paramref name="most"/>: reactions to the player's posts as they come
-        /// in, replies, answers to reports, reviews of the player's businesses, mentions, messages and who goes to an
-        /// invitation. Worked out afresh each time; only how far it has been read is kept.
-        /// </summary>
+        /// <summary>The Notifications screen, newest first, at most <paramref name="most"/>, worked out afresh from the posts and messages.</summary>
         public static void Notices(FlareFile f, long now, string me, List<string> myPlaces, List<FlareReaction> scratch, List<FlareNotice> into, int most)
         {
             into.Clear();
@@ -491,7 +469,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>Notifications newer than the ones read, and messages not read: the app's badge.</summary>
+        /// <summary>Notifications newer than the ones read: the app's badge.</summary>
         public static int Unread(List<FlareNotice> notices, FlareNet net)
         {
             int n = 0;
@@ -502,7 +480,7 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>The account a post is from, as a key: "me", "f3", "c12", "o:0", "b:name", "i:3", "p:player", "l:ledger", "m:company", "k:name", "t:name".</summary>
+        /// <summary>The account a post is from, as a key: "me", "f3", "c12", "o:0", "i:3", "p:id", "k:name", "t:name" and FlareCast's.</summary>
         public static string KeyOf(FlarePost p)
         {
             switch (p.Author)
@@ -518,10 +496,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The city's posts older than a few days go (the players' of a session a day later), and so does a reply whose
-        /// post has gone. The player's own, the friends' and the influencers' are kept by FlareRules.Prune.
-        /// </summary>
+        /// <summary>The city's posts past a few days go (the session players' a day later), with replies whose post is gone.</summary>
         public static void PruneCity(FlareFile f)
         {
             if (f.Posts.Count == 0)

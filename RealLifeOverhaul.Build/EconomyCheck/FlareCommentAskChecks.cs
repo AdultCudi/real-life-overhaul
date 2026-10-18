@@ -180,7 +180,7 @@ internal static partial class Program
         }
         Check(own, "Flare comment asks: each comment is shown at its own minute (after the post, within its day), never at the minute the thread is opened");
         Check(spread, "Flare comment asks: the comments come in order over the hours, not all at once");
-        string screens = TextsSource("Social/Flare/FlareApp.Screens.cs");
+        string screens = (TextsSource("Social/Flare/FlareApp.Screens.cs") + TextsSource("Social/Flare/FlareApp.Profile.cs") + TextsSource("Social/Flare/FlareApp.Business.cs") + TextsSource("Social/Flare/FlareApp.Shown.cs") + TextsSource("Social/Flare/FlareApp.Clicks.cs"));
         Check(screens.Contains("FlareLiveRules.SetAt(comment, c.At);") && !screens.Contains("FlareLiveRules.SetAt(comment, now"),
             "Flare comment asks sources: a comment's time label is its own arrival (\"3h\", \"45m\"), from the plan");
     }

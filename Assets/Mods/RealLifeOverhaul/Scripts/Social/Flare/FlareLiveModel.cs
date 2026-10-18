@@ -189,10 +189,7 @@ namespace RealLifeOverhaul.Flare
         public bool Mine;            // the player's own
     }
 
-    /// <summary>
-    /// The city as the day's posts read it, handed over once a day (or made up by the offline checks): the weather, the
-    /// news, prices, events, the election, the works, the market and some of the city's businesses. Never kept.
-    /// </summary>
+    /// <summary>The city as the day's posts read it, handed over once a day or made up by the offline checks; never kept.</summary>
     public sealed class FlareCityFacts
     {
         public int Day;
@@ -247,10 +244,7 @@ namespace RealLifeOverhaul.Flare
         public int Fault = -1;           // ...the fault it found and may take; -1 none
     }
 
-    /// <summary>
-    /// A rival tycoon of the end game as Flare knows them: their place in the rivals' catalogue (their voice on Flare),
-    /// their name, and the kind of their latest move announced (Rivals.RivalMoveKind; -1 for none).
-    /// </summary>
+    /// <summary>A rival tycoon as Flare knows them: their place in the rivals' catalogue (their voice), name and latest move (-1 none).</summary>
     public sealed class FlareTycoon
     {
         public int Index;
@@ -297,11 +291,7 @@ namespace RealLifeOverhaul.Flare
         public bool Acted;               // the City Office did something about it
     }
 
-    /// <summary>
-    /// The living network's state in a save: the City Office's cases, the watches, the week's complaints, the messages,
-    /// the stories for the paper, the players muted and hidden, the invitations, the notifications read and the pictures
-    /// sent today. Game-free.
-    /// </summary>
+    /// <summary>The living network's state in a save: cases, watches, complaints, messages, stories, muted and hidden players and more. Game-free.</summary>
     public sealed class FlareNet
     {
         public const int CasesMost = 40, DmsMost = 120, StoriesMost = 8, ComplaintsMost = 120, MutedMost = 32, GoingMost = 16, AppliedMost = 200;

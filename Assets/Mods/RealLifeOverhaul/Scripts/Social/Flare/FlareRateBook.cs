@@ -2,12 +2,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The host's bounds on what one player may ask over the last ten minutes of real time and the game's day: posts,
-    /// messages, likes and pictures. They guard the host against a flood, never the player's posting: a post a second is
-    /// well inside <see cref="PostsWindow"/>. Pictures are four a day; a post past them goes without its picture.
-    /// Game-free: the caller gives the time.
-    /// </summary>
+    /// <summary>The host's bounds on what one player may ask over ten real minutes and a game day, against a flood. Game-free.</summary>
     public sealed class FlareRateBook
     {
         public const float Window = 600f;        // real seconds
@@ -15,13 +10,9 @@ namespace RealLifeOverhaul.Flare
         public const int DmsWindow = 20, LikesWindow = 80;   // in ten minutes
         public const int PicturesDay = 4;        // a player's pictures a game day: the network's own bound, kept
 
-        /// <summary>What becomes of the picture of a post of the player's in a session today.</summary>
         public enum PictureWay { Send, TellWithout, Without }
 
-        /// <summary>
-        /// A picture of the player's for the session: one of the day's four goes (counted); past them the post goes without
-        /// it, and the first time today the player is told (TellWithout), never again that day (Without).
-        /// </summary>
+        /// <summary>A picture for the session: one of the day's four goes; past them the post goes without, told the first time only.</summary>
         public static PictureWay Picture(FlareNet n, int day)
         {
             if (n.PicDay != day)
@@ -46,10 +37,7 @@ namespace RealLifeOverhaul.Flare
         private readonly Dictionary<string, int> _day = new Dictionary<string, int>(16);
         private int _dayOf = -1;
 
-        /// <summary>
-        /// True, and counted, if the player may ask this now. A piece of a picture ('X') gives its number: the first piece
-        /// counts one of the day's four pictures, and every piece one of the day's pieces.
-        /// </summary>
+        /// <summary>True, and counted, if the player may ask this now; a picture's pieces ('X') count its day's pictures and pieces.</summary>
         public bool Allow(string player, char kind, float now, int day, int piece = 0)
         {
             if (string.IsNullOrEmpty(player))

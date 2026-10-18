@@ -109,13 +109,11 @@ namespace RealLifeOverhaul.Flare
         private const int SaltSex = 606, SaltAge = 607, SaltName = 608, SaltNameLow = 609;                            // the rest's, and everybody's age
         private const int NameTries = 8;               // rolls for a name nobody in the city has yet, before the surnames are walked in order
 
-        /// <summary>Game minutes since day 0.</summary>
         public static long Now(int day, int hour, int minute)
         {
             return ((long)day * 24 + hour) * 60 + minute;
         }
 
-        /// <summary>A post is shown from its minute on.</summary>
         public static bool Visible(FlarePost p, long now)
         {
             return p != null && p.At <= now;
@@ -127,11 +125,7 @@ namespace RealLifeOverhaul.Flare
             return f.Net.CitySeed != 0 ? f.Net.CitySeed : f.CastSeed != 0 ? f.CastSeed : f.Seed;
         }
 
-        /// <summary>
-        /// The city's people on Flare, the same for the same seed on every machine. The first <see cref="FirstCitizens"/> are
-        /// made as they always were, so every key a save keeps ("c12") is still the same person; each after them gets a name
-        /// nobody has yet and the district with the fewest people so far. Allocates, once a seed: some 0.2 ms.
-        /// </summary>
+        /// <summary>The city's people, the same for a seed on every machine, so a save's "c12" stays the same person. Allocates once a seed (0.2 ms).</summary>
         public static void CitizensOf(int seed, IReadOnlyList<string> districts, List<FlareCitizen> into)
         {
             into.Clear();
@@ -154,7 +148,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // One of the first forty, as the city has always had them.
         private static FlareCitizen First(int seed, int i, IReadOnlyList<string> districts)
         {
             int first = FlareRules.Roll(seed, i, SaltFirst) % FirstNames.Length;
@@ -219,13 +212,13 @@ namespace RealLifeOverhaul.Flare
             };
         }
 
-        /// <summary>Whether one of the city's people is a woman, as CitizensOf makes them, without the list.</summary>
+        /// <summary>Whether one of the city's people is a woman, as CitizensOf makes them.</summary>
         public static bool CitizenFemale(int seed, int index)
         {
             return index < FirstCitizens ? FemaleFirst[FlareRules.Roll(seed, index, SaltFirst) % FirstNames.Length] : FemaleAfter(seed, index);
         }
 
-        /// <summary>One of the city's people's age in years, as CitizensOf makes them, without the list.</summary>
+        /// <summary>One of the city's people's age in years, as CitizensOf makes them.</summary>
         public static int CitizenAge(int seed, int index)
         {
             return AgeOf((FlarePersona)(FlareRules.Roll(seed, index, SaltPersona) % 8), FlareRules.Roll(seed, index, SaltAge));
@@ -261,17 +254,13 @@ namespace RealLifeOverhaul.Flare
             return Wide(seed, day * 31 + k, 501) % Citizens;
         }
 
-        /// <summary>One of the city's people by a roll, evenly among all of them: their number, 0 to Citizens - 1.</summary>
+        /// <summary>One of the city's people by a roll, evenly among all of them.</summary>
         public static int PickCitizen(int seed, int a, int salt)
         {
             return Wide(seed, a, salt) % Citizens;
         }
 
-        /// <summary>
-        /// The city's posts of a day, once a day, each at its own minute: its people's, the official accounts' and the
-        /// businesses'. Nothing for a guest that follows the host's feed. The city's people's posts also go into
-        /// <paramref name="made"/>, for the director to file and apply. The count made.
-        /// </summary>
+        /// <summary>The city's posts of a day, once, each at its minute; its people's also into <paramref name="made"/>. None on a following guest.</summary>
         public static int CityDay(FlareFile f, FlareCityFacts facts, IReadOnlyList<FlareCitizen> citizens, List<FlarePost> made)
         {
             made?.Clear();
@@ -590,10 +579,7 @@ namespace RealLifeOverhaul.Flare
         public const int TycoonVoices = 3, TycoonLines = 3, TycoonMoves = 8;   // the tycoons with a voice of their own, their everyday lines, the kinds of move they post about
         public const int TycoonMoveArg = 10;                                     // a post's Arg from here on: about a move of that kind (Arg - 10)
 
-        /// <summary>
-        /// A rival tycoon's post of the day on about a third of days, in their own voice: the move they just announced if any,
-        /// else an everyday line. Null on a day without one.
-        /// </summary>
+        /// <summary>A rival tycoon's post on about a third of days, about their latest move if any; null on other days.</summary>
         public static FlarePost TycoonPost(FlareFile f, IList<FlareTycoon> tycoons, int day)
         {
             int seed = CitySeed(f);

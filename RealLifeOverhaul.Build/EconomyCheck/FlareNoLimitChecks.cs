@@ -334,7 +334,7 @@ internal static partial class Program
     private static void NoLimitSources()
     {
         string flare = ReviewSource("Social/Flare/FlareRules.cs") + ReviewSource("Social/Flare/FlareDirector.cs") + (ReviewSource("Social/Flare/FlareDirector.Live.cs") + ReviewSource("Social/Flare/FlareDirector.Cases.cs") + ReviewSource("Social/Flare/FlareDirector.Posting.cs"))
-                       + (ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs")) + ReviewSource("Social/Flare/FlareApp.Sheet.cs") + ReviewSource("Social/Flare/FlareApp.Side.cs")
+                       + (ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs")) + (ReviewSource("Social/Flare/FlareApp.Sheet.cs") + ReviewSource("Social/Flare/FlareApp.Compose.cs")) + ReviewSource("Social/Flare/FlareApp.Side.cs")
                        + ReviewSource("Social/Flare/FlareLiveRules.cs") + ReviewSource("Social/Flare/FlareLiveRules.CityOffice.cs")
                        + ReviewSource("Social/Flare/FlareLiveRules.Feed.cs") + ReviewSource("Social/Flare/FlareNetShare.cs") + ReviewSource("Social/Flare/FlareOutbox.cs")
                        + ReviewSource("Social/Flare/FlareRateBook.cs") + ReviewSource("Social/Flare/FlarePieceBook.cs") + ReviewSource("Meta/FeatureList.cs");
@@ -481,7 +481,7 @@ internal static partial class Program
             }
         }
         Check(bad.Count == 0, "Flare no limit words: the new texts are in en, pt and zh-cn with the same {names}" + (bad.Count > 0 ? " (" + string.Join(", ", bad) + ")" : string.Empty));
-        string scripts = string.Join("\n", new[] { "Social/Flare/FlareApp.Sheet.cs", "Social/Flare/FlareApp.Side.cs", "Social/Flare/FlareDirector.Share.cs", "Social/Flare/FlareDirector.Following.cs" }.Select(ReviewSource));
+        string scripts = string.Join("\n", new[] { "Social/Flare/FlareApp.Sheet.cs", "Social/Flare/FlareApp.Compose.cs", "Social/Flare/FlareApp.Side.cs", "Social/Flare/FlareDirector.Share.cs", "Social/Flare/FlareDirector.Following.cs" }.Select(ReviewSource));
         string unread = NoLimitNewKeys.FirstOrDefault(k => !scripts.Contains("\"" + k + "\""));
         Check(unread == null, "Flare no limit words: every new text is read" + (unread != null ? " (" + unread + ")" : string.Empty));
         var still = new List<string>();

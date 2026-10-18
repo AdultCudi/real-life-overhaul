@@ -180,7 +180,7 @@ namespace RealLifeOverhaul.Flare
             return value < least ? least : value > most ? most : value;
         }
 
-        /// <summary>A number from 0 to 999 that is always the same for the same three numbers.</summary>
+        /// <summary>0 to 999, always the same for the same three numbers.</summary>
         public static int Roll(int seed, int a, int b)
         {
             unchecked
@@ -195,7 +195,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The player's posts made today (0 on a new day).</summary>
         public static int PostsToday(FlareFile f, int day)
         {
             return f.PostsDay == day ? f.PostsToday : 0;
@@ -245,14 +244,12 @@ namespace RealLifeOverhaul.Flare
             return 750 + 5 * Clamp(reputation, 0, 100);
         }
 
-        /// <summary>The followers an ordinary post brings.</summary>
         public static int Gain(int followers, int quality, int fit, int reputation, int repeat)
         {
             double g = (GainBase + GainRoot * Math.Sqrt(Math.Max(0, followers))) * quality / 1000.0 * fit / 1000.0 * ReputationFactor(reputation) / 1000.0 * repeat / 1000.0;
             return (int)Math.Round(g);
         }
 
-        /// <summary>The people who see an ordinary post.</summary>
         public static int Reach(int followers, int quality, int fit)
         {
             return (int)Math.Round(Math.Max(0, followers) * (ReachShare / 1000.0) * quality / 1000.0 * fit / 1000.0);
@@ -270,16 +267,12 @@ namespace RealLifeOverhaul.Flare
             return day - f.LastViralDay >= ViralGapDays;
         }
 
-        /// <summary>What a bad post costs.</summary>
         public static int BadLoss(int followers)
         {
             return Math.Min(Math.Max(0, followers), (int)((long)Math.Max(0, followers) * BadShare / 1000) + BadLeast);
         }
 
-        /// <summary>
-        /// A friend's answer to a post: 0 nothing, 1 a like, 2 a like and a reply. Tagged friends and partners always
-        /// look; a flaky friend often does not; an envious one is cool about money; each likes what they like.
-        /// </summary>
+        /// <summary>A friend's answer to a post: 0 nothing, 1 a like, 2 a like and a reply.</summary>
         public static int Reaction(in FlarePerson p, FlarePost post, int roll)
         {
             bool money = AboutMoney(post);
@@ -311,7 +304,6 @@ namespace RealLifeOverhaul.Flare
             return roll < reply ? 2 : roll < like ? 1 : 0;
         }
 
-        // What a friend's taste likes in particular: the shop, a workout, a meal, a night out.
         private static bool Likes(FlareTaste taste, FlarePost post)
         {
             if ((taste & FlareTaste.Shops) != 0 && (post.Source == FlareSource.Opened || post.Source == FlareSource.RecordDay || post.Place != null))
@@ -357,11 +349,7 @@ namespace RealLifeOverhaul.Flare
             return post.Source == FlareSource.Promotion || post.Source == FlareSource.Opened || post.Source == FlareSource.RecordDay;
         }
 
-        /// <summary>
-        /// The player posts a draft in a tone, with a friend tagged or not (-1), and spends it. Only the first three posts of a
-        /// day move the account (<see cref="Counts"/>). With <paramref name="viral"/> (a test) a post that does not go badly
-        /// goes viral whatever the roll, the gap and the count.
-        /// </summary>
+        /// <summary>The player posts a draft (tag -1 for none) and spends it; with <paramref name="viral"/>, a test, it goes viral unless it went badly.</summary>
         public static FlarePost Post(FlareFile f, FlareDraft d, FlareTone tone, int tag, IReadOnlyList<FlarePerson> people, int day, int hour, int minuteOfDay,
             bool viral = false)
         {
@@ -498,7 +486,7 @@ namespace RealLifeOverhaul.Flare
             return f.BuzzAt(place, day);
         }
 
-        /// <summary>Talk that has run its days is gone. True if any went.</summary>
+        /// <summary>Talk that has run its days goes. True if any went.</summary>
         public static bool BuzzDay(FlareFile f, int day)
         {
             bool gone = false;
@@ -573,10 +561,7 @@ namespace RealLifeOverhaul.Flare
             return (int)((long)reach * (1100 - 2 * Clamp(reputation, 0, 100)) / 1000);
         }
 
-        /// <summary>
-        /// Whether a campaign of the company's is one of Flare's own deals still on (the same business, kind and first day),
-        /// which has its row on the Business tab as a deal already.
-        /// </summary>
+        /// <summary>Whether a company campaign is one of Flare's own deals still on, which has its Business tab row already.</summary>
         public static bool IsDeal(FlareFile f, string place, int kind, int from)
         {
             for (int i = 0; f != null && i < f.Hires.Count; i++)
@@ -590,13 +575,11 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        /// <summary>The key that says how a campaign was booked: from the Company app, or hired on Flare.</summary>
         public static string BusyKey(bool onFlare)
         {
             return onFlare ? "reallife_flare_busy_flare" : "reallife_flare_busy_company";
         }
 
-        /// <summary>The key that says when: running until its last day, or booked for its day or days.</summary>
         public static string BusyWhenKey(int day, int from, int to)
         {
             return day >= from ? "reallife_flare_busy_running" : from >= to ? "reallife_flare_busy_booked_day" : "reallife_flare_busy_booked_days";
@@ -617,7 +600,7 @@ namespace RealLifeOverhaul.Flare
             return (partner & FlareTaste.Cheers) != 0 ? PartnerView.Proud : (partner & FlareTaste.Cool) != 0 ? PartnerView.Jealous : PartnerView.Cool;
         }
 
-        /// <summary>A tag noted: the partner's, or somebody else's (for "you never post us").</summary>
+        /// <summary>A tag noted, the partner's or somebody else's, for "you never post us".</summary>
         public static void Tagged(FlareFile f, bool partner, int day)
         {
             if (partner)
@@ -671,16 +654,12 @@ namespace RealLifeOverhaul.Flare
             return (int)(IssueMost * Math.Min(1.0, Math.Log10(1.0 + Math.Max(0, followers)) / Math.Log10(1.0 + EndorseFull)));
         }
 
-        /// <summary>A post about a company the player holds carries a disclosure from Known on.</summary>
         public static bool Discloses(FlareFile f)
         {
             return f.Tier >= FlareTier.Known;
         }
 
-        /// <summary>
-        /// Selling a company's shares: market abuse if the player's post about it went viral within two days. The viral post,
-        /// spent, or null.
-        /// </summary>
+        /// <summary>Market abuse: the viral post, spent, about a company sold within two days of it; or null.</summary>
         public static FlareViralShares Abuse(FlareFile f, int stock, int day)
         {
             for (int i = 0; i < f.ViralShares.Count; i++)
@@ -695,7 +674,6 @@ namespace RealLifeOverhaul.Flare
             return null;
         }
 
-        /// <summary>Viral posts about shares older than the window are let go.</summary>
         public static void AbuseDay(FlareFile f, int day)
         {
             for (int i = f.ViralShares.Count - 1; i >= 0; i--)
@@ -739,16 +717,12 @@ namespace RealLifeOverhaul.Flare
 
         public const int ReplyLikesMost = 128;   // more than any save has, and a bound for a damaged line
 
-        /// <summary>
-        /// The key of a friend's reply under a post of the player's: the post's number and the reply's place among its
-        /// reactions, which is stable, unlike the number the reply is shown with.
-        /// </summary>
+        /// <summary>A friend's reply's stable key: its post's number and its place among the post's reactions.</summary>
         public static int ReplyKey(int parentId, int slot)
         {
             return parentId * 32 + slot;
         }
 
-        /// <summary>True if the player liked this friend's reply.</summary>
         public static bool ReplyLiked(FlareFile f, int parentId, int slot)
         {
             return f != null && slot >= 0 && slot < 32 && f.ReplyLikes.Contains(ReplyKey(parentId, slot));
@@ -789,11 +763,7 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>
-        /// Keeps the posts within their bounds: the city's old posts first (a reply with its post), then the oldest not the
-        /// player's, then the player's own past forty. A post on its way to a session's host is kept: it would come back as a
-        /// stranger's.
-        /// </summary>
+        /// <summary>Keeps the posts within their bounds, the city's old ones first; a post on its way to a session's host is kept.</summary>
         public static void Prune(FlareFile f)
         {
             FlareLiveRules.PruneCity(f);
@@ -851,10 +821,7 @@ namespace RealLifeOverhaul.Flare
             return -1;
         }
 
-        /// <summary>
-        /// Something happened that can be posted about. One draft a source and a thing; the oldest goes when there are eight.
-        /// Null if it was there already.
-        /// </summary>
+        /// <summary>A draft of something that happened, once a source and thing; the oldest of eight goes. Null if it was there.</summary>
         public static FlareDraft Draft(FlareFile f, FlareSource source, int day, int hour, int person, string place, string name, int arg)
         {
             for (int i = 0; i < f.Drafts.Count; i++)
@@ -874,7 +841,6 @@ namespace RealLifeOverhaul.Flare
             return draft;
         }
 
-        /// <summary>A draft made today can still be posted tomorrow; after that it is gone.</summary>
         public static bool Lapsed(FlareDraft d, int day)
         {
             return day - d.Day >= DraftDays;
@@ -896,10 +862,7 @@ namespace RealLifeOverhaul.Flare
             return before >= 0 && key >= 0 && key / 100 == before / 100 && key % 100 > before % 100;
         }
 
-        /// <summary>
-        /// A business's day: the first sight of it (opened, once Flare had been running a day), or its best day of
-        /// takings yet (after three days with figures, and a fifth better than the old best). What to draft.
-        /// </summary>
+        /// <summary>A business's day: opened (first seen after Flare's first day), or a record a fifth over its best after three days.</summary>
         public static FlareSource ShopDay(FlareFile f, string place, int takings, int day)
         {
             FlareShopSeen s = f.Shop(place);
@@ -918,11 +881,7 @@ namespace RealLifeOverhaul.Flare
             return record ? FlareSource.RecordDay : FlareSource.None;
         }
 
-        /// <summary>
-        /// The daily round, once a day whatever the time skipped: the reputation moves a tenth of the way to the city's
-        /// opinion, followers drift away after a week of silence, friends follow or stop, a few of them post, drafts
-        /// lapse and the chart moves on.
-        /// </summary>
+        /// <summary>The daily round, once a day: reputation, silence, the friends following and posting, drafts, the chart.</summary>
         public static FlareDayReport Day(FlareFile f, int day, int publicReputation, IReadOnlyList<FlarePerson> people)
         {
             var r = new FlareDayReport { Day = day, FollowersBefore = f.Followers, ReputationBefore = f.Reputation };

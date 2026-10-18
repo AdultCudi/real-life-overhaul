@@ -143,10 +143,7 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
-        /// <summary>
-        /// The cast, the hires and the follows into a file, a line at a time; another version's entry leaves the file without
-        /// them, and a new cast is made.
-        /// </summary>
+        /// <summary>The cast, the hires and the follows into a file; another version's entry leaves them out, and a new cast is made.</summary>
         public static void ReadCast(FlareFile f, string text)
         {
             if (string.IsNullOrEmpty(text))

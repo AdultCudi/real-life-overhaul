@@ -9,15 +9,10 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// Flare in a Going Public session (Core/SharedCity, part F; the lines are FlareNetShare's): one network for the city.
-    /// The host makes the city's posts and runs the City Office; every shared post goes to the guests, whole when one says
-    /// hello and then what changed. A guest's post comes in as a request and goes in the feed under its player's name. A
-    /// guest that follows makes none of the city's posts and keeps its own friends, influencers and brands; its own post
-    /// shows at once and comes back with the host's number for it, found by its token.
-    ///
-    /// Pictures go as small copies (FlareSnap), four a day a player. What another player typed is shown only after a filter,
-    /// and a player can be muted or hidden. A review of, or a complaint about, another player's business is applied by
-    /// that player's own game. Cost: nothing per frame; once a second a guest's waiting lines, every few seconds the host's
-    /// update, and a picture's encode on a worker thread.
+    /// The host makes the city's posts and runs the City Office, and sends every shared post to the guests; a guest's post
+    /// comes in as a request and goes in the feed under its player's name. A following guest keeps its own friends,
+    /// influencers and brands. Pictures go as small copies; another player's text is filtered. Cost: nothing per frame;
+    /// a guest's waiting lines once a second, the host's update every few seconds, a picture's encode on a worker.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -134,7 +129,6 @@ namespace RealLifeOverhaul.Flare
             _watchesChanged = GoingPublic.IsHost;
         }
 
-        // The host's whole part, for a guest that says hello.
         private string HostWhole()
         {
             if (!Running || Save == null)
@@ -503,10 +497,7 @@ namespace RealLifeOverhaul.Flare
             Changed();
         }
 
-        /// <summary>
-        /// What another player typed, as this player is shown it: Steam's filter as its author's, else the mod's word list, and
-        /// at Strict both. Also for the City Ledger's pieces of guests (Wiring/LedgerLinks).
-        /// </summary>
+        /// <summary>What another player typed as this player is shown it: Steam's filter, else the mod's word list; both at Strict.</summary>
         public static string Filter(string text, string author)
         {
             if (string.IsNullOrEmpty(text))

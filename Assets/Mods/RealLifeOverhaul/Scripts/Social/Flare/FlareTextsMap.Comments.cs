@@ -7,11 +7,10 @@ namespace RealLifeOverhaul.Flare
     public static partial class FlareTextsMap
     {
         /// <summary>
-        /// The trained intent of a comment under a post that is not the player's, by what the post is about: a resident on
-        /// another resident's topic (citizen.thread.*), on an account's news (citizen.react.*), a stranger on another player's
-        /// post (citizen.reply.*). <paramref name="niche"/> is an influencer's, -1 for anybody else. With data v3 every other
-        /// kind has its own comments (<see cref="CommentKind"/>), and a post on a v2 topic or of no kind is commented on its
-        /// words, which answered the post better than v2's topic rows. Null: the post shows only its count.
+        /// The trained intent of a comment under a post that is not the player's, by what the post is about (a thread, a
+        /// reaction, a stranger's reply); <paramref name="niche"/> is an influencer's, -1 for anybody else. With data v3 every
+        /// kind has comments, a post on a v2 topic or of no kind on its words, as those answered the post better. Null: only the
+        /// count shows.
         /// </summary>
         public static string Comment(FlarePost p, int niche, int data = TextIntents.DataV2)
         {
@@ -103,9 +102,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// The data v3 comment kind of a post the v2 training has no comments for (defs_v3.COMMENT_KINDS); null otherwise.
-        /// </summary>
+        /// <summary>The data v3 comment kind of a post the v2 training has none for (defs_v3.COMMENT_KINDS); null otherwise.</summary>
         public static string CommentKind(FlarePost p, int niche)
         {
             switch (p.Source)
@@ -175,7 +172,6 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A resident's post's intent as the reply to such a post.
         private static string Thread(string post)
         {
             return post != null ? "citizen.thread." + post.Substring("citizen.post.".Length) : null;
@@ -204,10 +200,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>True for a comment intent that can answer an earlier comment under its post (data v3's citizen.comment.*).</summary>
         public static bool AnswersComments(string intent) => intent != null && intent.StartsWith("citizen.comment.", StringComparison.Ordinal);
 
-        /// <summary>
-        /// A comment's card: its intent, its use and the values its lines take from the post; the caller fills the speaker.
-        /// False if a value is missing: nothing is made up. A v3 comment with an earlier comment answers it.
-        /// </summary>
+        /// <summary>A comment's card from the post it answers, the caller filling the speaker; false if a value is missing.</summary>
         public static bool CommentCard(TextRequest r, string intent, FlareCommentPost post)
         {
             if (intent == null)
@@ -254,8 +247,8 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        // A data v3 comment (defs_v3.make_comment, make_comment_pair): a thread kind and a post's words with the post in
-        // history, the paper's headline under "the City Ledger", a news kind told in news and facts; an earlier comment last.
+        // A data v3 comment (defs_v3.make_comment): the post in history, the paper's headline as the City Ledger's, or a news
+        // kind told in values; an earlier comment last.
         private static bool CommentCardV3(TextRequest r, string kind, FlareCommentPost post)
         {
             bool earlier = !string.IsNullOrEmpty(post.EarlierHandle) && !string.IsNullOrEmpty(post.EarlierWords);

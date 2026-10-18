@@ -15,10 +15,9 @@ namespace RealLifeOverhaul.Flare
     }
 
     /// <summary>
-    /// Flare's director, the rest of the city, each through a bridge Wiring/FlareLinks fills in: somebody met online, the
-    /// partner's view of a post, a friend whose texts wait, the stock market (results, the biggest mover, disclosures and
-    /// market abuse), the City Ledger's account, issues in the council and the mood's pull on the mayor, a Celebrity's day
-    /// in court. Each is small, capped and logged once. Cost: nothing per frame; a few comparisons a day and an hour.
+    /// Flare's director, the rest of the city through bridges Wiring/FlareLinks fills in: somebody met online, the partner,
+    /// the stock market, the City Ledger, the council and the mayor, a Celebrity's day in court. Each is small, capped and
+    /// logged once. Cost: nothing per frame; a few comparisons a day and an hour.
     /// </summary>
     public sealed partial class FlareDirector
     {

@@ -121,11 +121,7 @@ namespace RealLifeOverhaul.Flare
             "branch", "winner", "dinners", "thinks", "drunks", "fancies", "tonights", "cinemas", "workouts", "coffees", "moves", "movers", "drinker", "brunches", "toffee"
         };
 
-        /// <summary>
-        /// True if the text invites the reader out, with the outing it names (a plain "meet up" is a coffee). English only;
-        /// slang, typos, capitals and emoji are read; a question about the thing itself (its price, whether they like it) is not
-        /// an invitation unless a proposal is plainly made too. Builds a few strings: once per message sent.
-        /// </summary>
+        /// <summary>True if the text invites the reader out, with the outing it names (a plain "meet up" is a coffee); once a message sent.</summary>
         public static bool Read(string text, out PlanKind kind)
         {
             kind = PlanKind.Coffee;
@@ -208,11 +204,7 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        /// <summary>
-        /// The text mended for reading, with a space either side: small letters, accents off, emoji as their words, an
-        /// apostrophe dropped ("let's" is "lets"), a question mark a word of its own, a letter said three times said twice
-        /// ("coffeeee"), slang and shorthand as words, a typo of an outing mended.
-        /// </summary>
+        /// <summary>The text mended for reading, a space either side: lower case, no accents or apostrophes, emoji and slang as words, typos mended.</summary>
         public static string Mend(string text)
         {
             var b = new StringBuilder(text.Length + 16);
@@ -401,14 +393,12 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        // The mended text's word at a place (0 the first), or an empty string.
         private static string Word(string s, int at)
         {
             string[] tokens = s.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             return at < tokens.Length ? tokens[at] : string.Empty;
         }
 
-        // Words in the mended text, the question mark not counted.
         private static int WordCount(string s)
         {
             int n = 0;

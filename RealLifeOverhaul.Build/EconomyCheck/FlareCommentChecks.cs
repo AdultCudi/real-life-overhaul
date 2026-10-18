@@ -444,7 +444,7 @@ internal static partial class Program
     private static void CommentsSources()
     {
         string rules = TextsSource("Social/Flare/FlareCommentRules.cs"), director = TextsSource("Social/Flare/FlareDirector.Comments.cs"),
-            screens = TextsSource("Social/Flare/FlareApp.Screens.cs"), texts = TextsSource("Social/Flare/FlareDirector.Texts.cs");
+            screens = (TextsSource("Social/Flare/FlareApp.Screens.cs") + TextsSource("Social/Flare/FlareApp.Profile.cs") + TextsSource("Social/Flare/FlareApp.Business.cs") + TextsSource("Social/Flare/FlareApp.Shown.cs") + TextsSource("Social/Flare/FlareApp.Clicks.cs")), texts = TextsSource("Social/Flare/FlareDirector.Texts.cs");
         Check(!rules.Contains("UnityEngine") && !rules.Contains("System.Linq") && !director.Contains("System.Linq"),
             "Flare comments sources: the rules are game-free and nothing uses LINQ");
         Check(!director.Contains("void Update") && !director.Contains("LateUpdate")

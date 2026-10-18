@@ -6,7 +6,6 @@ namespace RealLifeOverhaul.Flare
     /// <summary>Flare's living network, the City Office: its cases and crews, the paper's stories, and what a post moves once a day.</summary>
     public static partial class FlareLiveRules
     {
-        // The City Office.
         public const int ReplyLeast = 45;              // minutes before an answer, at the least...
         public const int ReplyPerOpen = 25;            // ...and so many more for each case still open
         public const int ReplyMost = 300;              // ...within five hours at the most
@@ -21,11 +20,7 @@ namespace RealLifeOverhaul.Flare
         public const int MoodEscalated = -20;          // ...the tally in the paper
         public const int ReportsWeigh = 400;           // thousandths of a point of an issue's weight in the council a report adds (Wiring/FlareLinks: Issue)
 
-        /// <summary>
-        /// A report reaches the City Office. The same kind in the same district (for a business, the same business) while an
-        /// earlier case is open or acted on is that case again: its repeats grow and <paramref name="again"/> is set. Otherwise
-        /// a new case, its answer due within hours, later the more cases are open.
-        /// </summary>
+        /// <summary>A report reaches the City Office: the open case of its kind and district again (<paramref name="again"/> set), else a new one.</summary>
         public static FlareCase File(FlareNet net, FlareReport kind, string district, string place, string name, float x, float z, long now, string reporter, int post, int seed,
             out bool again, bool counted = true)
         {
@@ -56,10 +51,7 @@ namespace RealLifeOverhaul.Flare
             return made;
         }
 
-        /// <summary>
-        /// The case that gives way when there are too many: the oldest closed one, else the oldest open one that is not another
-        /// player's. Another player's open case never goes for somebody else's; the one just filed always qualifies.
-        /// </summary>
+        /// <summary>The case that gives way when there are too many: the oldest closed, else the oldest open not another player's.</summary>
         public static int Evicted(FlareNet net, string reporter)
         {
             int closed = OldestClosed(net);
@@ -78,10 +70,7 @@ namespace RealLifeOverhaul.Flare
             return net.Cases.Count - 1;
         }
 
-        /// <summary>
-        /// Whether a player's report today is one of their first three (counted when it is): only those move the mood, the
-        /// week's tally and the paper. <paramref name="who"/> as MoveKey has it; null (the city's people) always counts.
-        /// </summary>
+        /// <summary>Whether a player's report today is one of their first three, which alone move the mood, tally and paper; the city's always counts.</summary>
         public static bool Counted(FlareNet net, int day, string who)
         {
             if (who == null)
@@ -99,19 +88,19 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        /// <summary>A key for what a post does to a friend (tagged) or to the partner (seeing one tagged): once a day each (FirstToday).</summary>
+        /// <summary>A once-a-day key for what a post does to a tagged friend ('T') or to the partner seeing it ('P').</summary>
         public static string FriendKey(char what, int person)
         {
             return "me|" + what + "|" + person;
         }
 
-        /// <summary>A key for the talk a post of the player's brings a business: once a day (FirstToday).</summary>
+        /// <summary>A once-a-day key for the talk a post of the player's brings a business.</summary>
         public static string TalkKey(string place)
         {
             return place != null ? "me|B|" + place : null;
         }
 
-        /// <summary>The case still open or being acted on for a thing (a kind in a district; a business by its place), or null.</summary>
+        /// <summary>The case open or acted on for a kind in a district (a business by its place), or null.</summary>
         public static FlareCase OpenCase(FlareNet net, FlareReport kind, string district, string place)
         {
             for (int i = 0; i < net.Cases.Count; i++)
@@ -155,13 +144,12 @@ namespace RealLifeOverhaul.Flare
 
         public const int FalseReportCost = 2;      // points of the player's reputation on Flare a report of nothing costs
 
-        /// <summary>The player's reputation after a report of nothing: <see cref="FalseReportCost"/> less, never below 0.</summary>
         public static int FalseReport(int reputation)
         {
             return FlareRules.Clamp(reputation - FalseReportCost, 0, 100);
         }
 
-        /// <summary>The cases whose answer is due by now, into the list given (oldest first).</summary>
+        /// <summary>The cases whose answer is due by now, oldest first.</summary>
         public static void Due(FlareNet net, long now, List<FlareCase> into)
         {
             into.Clear();
@@ -174,7 +162,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>The orders of a kind given in the week up to now: the crews it took.</summary>
+        /// <summary>The crews of a kind sent in the week up to now.</summary>
         public static int CrewsUsed(FlareNet net, FlareOrder order, long now)
         {
             int n = 0;
@@ -188,19 +176,13 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>
-        /// What the City Office does about a due case: its kind's order if a crew is free this week, an answer alone for the
-        /// buses and the power, "not now" when the week's crews are taken, and an answer alone with the option to act off.
-        /// </summary>
+        /// <summary>What the City Office does about a due case: its kind's crew if one is free this week, else an answer.</summary>
         public static FlareOrder Decide(FlareNet net, FlareCase c, long now, bool acts, bool siteNear, out FlareAnswer answer)
         {
             return Decide(net, c, now, acts, siteNear, false, out answer);
         }
 
-        /// <summary>
-        /// The same, for a report the city's faults found true (<paramref name="realFault"/>): an unsafe place that is real
-        /// gets a works crew to make it safe, as a road or a lamp does.
-        /// </summary>
+        /// <summary>The same; an unsafe place the city's faults found real (<paramref name="realFault"/>) gets a works crew.</summary>
         public static FlareOrder Decide(FlareNet net, FlareCase c, long now, bool acts, bool siteNear, bool realFault, out FlareAnswer answer)
         {
             answer = FlareAnswer.Received;
@@ -232,7 +214,7 @@ namespace RealLifeOverhaul.Flare
             return order;
         }
 
-        /// <summary>A case acted on (or not): its state, its order and until when, and the watch it puts on its district.</summary>
+        /// <summary>A case acted on: its state, order and end, and the watch it puts on its district.</summary>
         public static void Act(FlareNet net, FlareCase c, FlareOrder order, int day, int siteRef)
         {
             c.Order = order;
@@ -269,7 +251,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>A watch on a district until a day: the one there already is made longer, never shorter.</summary>
+        /// <summary>A watch on a district until a day, made longer if there is one, never shorter.</summary>
         public static void Watch(FlareNet net, string district, FlareOrder kind, int until)
         {
             if (district == null)
@@ -288,7 +270,7 @@ namespace RealLifeOverhaul.Flare
             net.Watches.Add(new FlareWatch { District = district, Kind = kind, Until = until });
         }
 
-        /// <summary>The day's turn: watches that ran out go, and cases whose days are over are done. True if anything changed.</summary>
+        /// <summary>The day's turn: watches and case days that ran out end. True if anything changed.</summary>
         public static bool WatchDay(FlareNet net, int day)
         {
             bool changed = false;
@@ -328,7 +310,7 @@ namespace RealLifeOverhaul.Flare
             return changed;
         }
 
-        /// <summary>A complaint noted for the week's tally: whose does not matter, the player's, the city's people's or another player's.</summary>
+        /// <summary>A complaint noted for the week's tally, whoever made it.</summary>
         public static void Complained(FlareNet net, FlareReport kind, string district, int day, bool acted)
         {
             if (district == null)
@@ -342,7 +324,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>A complaint acted on after all: the week's complaints of its kind there are acted on too.</summary>
+        /// <summary>A complaint acted on after all: the week's complaints of its kind there are too.</summary>
         public static void Answered(FlareNet net, FlareReport kind, string district)
         {
             for (int i = 0; i < net.Complaints.Count; i++)
@@ -367,10 +349,7 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>
-        /// Whether the week's ignored complaints of a kind in a district are a story for the paper now: three or more, and
-        /// not in the paper already this week. True takes it (it is noted).
-        /// </summary>
+        /// <summary>Whether the week's ignored complaints of a kind in a district reach the paper now: three, once a week. True takes it.</summary>
         public static bool Escalate(FlareNet net, FlareReport kind, string district, int day, bool acts)
         {
             if (!Escalates(kind, acts) || district == null || Tally(net, kind, district, day) < TallyToPaper)
@@ -389,19 +368,13 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>
-        /// Whether ignored complaints of a kind can reach the paper: only while the City Office acts on reports, and never for
-        /// the buses or the power, which it only passes on.
-        /// </summary>
+        /// <summary>Whether ignored complaints can reach the paper: only while the office acts, never for the buses or the power.</summary>
         public static bool Escalates(FlareReport kind, bool acts)
         {
             return acts && kind != FlareReport.Transit && kind != FlareReport.Utilities;
         }
 
-        /// <summary>
-        /// What the City Office does once ignored complaints are in the paper: the crew for the case's kind, if the case is not
-        /// acted on already and a crew is free this week; None otherwise.
-        /// </summary>
+        /// <summary>The crew sent once ignored complaints are in the paper, if the case is not acted on and one is free; else None.</summary>
         public static FlareOrder EscalationOrder(FlareNet net, FlareCase c, long now, bool acts)
         {
             if (c == null || !Escalates(c.Kind, acts) || c.State == FlareCaseState.Acting || FoundNothing(c.Verdict))
@@ -429,16 +402,13 @@ namespace RealLifeOverhaul.Flare
             return sharePosts || source == FlareSource.Report;
         }
 
-        /// <summary>
-        /// Whether the host answers a post of this player's (the city's replies, an account's answer): true on a guest that
-        /// follows and sends it; it then does not answer it itself, or the replies would come twice.
-        /// </summary>
+        /// <summary>Whether the host answers this post (true on a following guest that sends it), so it is not answered twice.</summary>
         public static bool HostAnswers(bool following, bool sharePosts, FlareSource source)
         {
             return following && ToSession(sharePosts, source);
         }
 
-        /// <summary>A story for a morning's paper, kept until it is printed (a few at most, the oldest go).</summary>
+        /// <summary>A story for a morning's paper, kept until printed; the oldest go past a few.</summary>
         public static void Story(FlareNet net, int day, string key, params string[] data)
         {
             net.Stories.Add(new FlareStory { Day = day, Key = key, Data = data ?? new string[0] });
@@ -448,10 +418,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>
-        /// A story for a morning's paper, once for its day and key: false (nothing kept) when that morning has it already.
-        /// A pile-on is in the paper once, however many posts went badly the day before.
-        /// </summary>
+        /// <summary>A story for a morning's paper once for its day and key; false when that morning has it already.</summary>
         public static bool StoryOnce(FlareNet net, int day, string key, params string[] data)
         {
             for (int i = 0; i < net.Stories.Count; i++)
@@ -465,10 +432,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>
-        /// The key of what a post moves, for <see cref="FirstToday"/>: who posted it ("me", or "p:" and a session's player),
-        /// what it is (a review, an announcement, a report of a kind in a district) and the business. Null for anything else.
-        /// </summary>
+        /// <summary>The key of what a post moves, for <see cref="FirstToday"/>: who, what and where; null for anything else.</summary>
         public static string MoveKey(string who, FlareSource source, int arg, string district, string place)
         {
             if (string.IsNullOrEmpty(who))
@@ -494,16 +458,13 @@ namespace RealLifeOverhaul.Flare
             return p.Author == FlareAuthor.Player ? "me" : p.Author == FlareAuthor.Network && !string.IsNullOrEmpty(p.AuthorId) ? "p:" + p.AuthorId : null;
         }
 
-        /// <summary>Whether a key has moved something today; read only (the compose sheet's note).</summary>
+        /// <summary>Whether a key has moved something today, read only (the compose sheet's note).</summary>
         public static bool MovedToday(FlareNet net, int day, string key)
         {
             return key != null && net.MovedDay == day && net.Moved.Contains(key);
         }
 
-        /// <summary>
-        /// The first time today a player's review, announcement or report moves its thing: true, and noted. The same again the
-        /// same day is made and answered but moves nothing more. A null key (the city's own) is always first.
-        /// </summary>
+        /// <summary>The first time today a player's review, announcement or report moves its thing: true, and noted. A null key is always first.</summary>
         public static bool FirstToday(FlareNet net, int day, string key)
         {
             if (key == null)
@@ -527,7 +488,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>Whether a report of the player's adds to an issue's weight in the council: the first three of a day do. Counted when it does.</summary>
+        /// <summary>Whether a report of the player's weighs in the council: the first three of a day do, counted when they do.</summary>
         public static bool Weighs(FlareNet net, int day)
         {
             if (net.ReportsDay != day)
@@ -543,11 +504,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        /// <summary>
-        /// Whether this machine applies what a post does to a business: never for another player's post in a session (their own
-        /// game applies it); an announcement only to the poster's own business; a review or a complaint's inspection to the
-        /// player's own or one of the city's, which every machine has its own copy of.
-        /// </summary>
+        /// <summary>Whether this machine applies what a post does to a business: never another player's post, which their own game applies.</summary>
         public static bool EffectHere(FlareSource source, bool foreign, bool mine, bool ownPost)
         {
             if (foreign)
@@ -568,7 +525,7 @@ namespace RealLifeOverhaul.Flare
             return stars >= 4 ? 1 + big : stars <= 2 ? -1 - big : 0;
         }
 
-        /// <summary>What an announcement for a business does: a little more custom for two days, more for an account many follow.</summary>
+        /// <summary>What an announcement does for a business: a little more custom for two days, more for a big account.</summary>
         public static int AnnounceBuzz(int reach)
         {
             return reach >= 5000 ? 2 : 1;

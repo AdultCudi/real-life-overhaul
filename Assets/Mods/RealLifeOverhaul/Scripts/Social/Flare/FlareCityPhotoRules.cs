@@ -6,22 +6,12 @@ using System.Text;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The city's photos, as a phone's photos of the city: a bank of them taken quietly while the player is out, and the
-    /// city's posts carrying one that fits, so the city's people post photos as real people do.
-    ///
-    /// The bank: while the player is outdoors, the director's second looks after the pace at what can be seen
-    /// (<see cref="Plan"/>): the street event, the park or sight, a business's front within <see cref="FrontRange"/>
-    /// metres, else the street, and takes one only where the bank lacks it. At most <see cref="BankMost"/> are kept, none
-    /// older than <see cref="FreshDays"/> days, an event's only on its day.
-    ///
-    /// The pick: a city post carries a photo when its kind has something to see (<see cref="Wish"/>) and a roll of its seed
-    /// falls under its kind's share (<see cref="Share"/>). Around the time it goes up the bank is asked once for one that
-    /// fits its district, kind, light and weather (<see cref="Pick"/>); nothing fits, no photo, never a wrong one. The pick
-    /// is kept, so a post keeps its photo after a load.
-    ///
-    /// In a Going Public session which posts carry one, and which of the fitting photos, goes by the post's seed: every
-    /// machine picks the same way from its own bank, and nothing is sent. Game-free. Cost: a pass over the bank (144 photos
-    /// at most) when a post is picked or a photo planned; nothing per frame, nothing allocated.
+    /// The city's photos: a bank of them taken quietly while the player is out, and the city's posts carrying one that
+    /// fits, so the city's people post photos as real people do. While the player is outdoors the bank's pass
+    /// (<see cref="Plan"/>) takes what the bank lacks here. A city post whose kind has something to see (<see cref="Wish"/>)
+    /// and whose seed rolls under its share is given the fitting photo (<see cref="Pick"/>), never a wrong one, kept after a
+    /// load. Which posts carry one and which photo go by the post's seed, so every machine of a session picks alike and
+    /// nothing is sent. Game-free. Cost: a pass over the bank (144 photos at most) a pick or plan; no allocation.
     /// </summary>
     public static class FlareCityPhotoRules
     {
@@ -53,20 +43,15 @@ namespace RealLifeOverhaul.Flare
 
         private static readonly int[] Scale = { 0, 500, 1000, 1600 };   // thousandths of each kind's share, by the option: none, a few, some, many
 
-        /// <summary>The option's values.</summary>
         public static int Options => Scale.Length;
 
-        /// <summary>The light of an hour of the game's day.</summary>
         public static FlarePhotoLight LightAt(int hour)
         {
             hour = ((hour % 24) + 24) % 24;
             return hour >= 21 || hour < 6 ? FlarePhotoLight.Night : hour == 6 || hour >= 17 ? FlarePhotoLight.Dusk : FlarePhotoLight.Day;
         }
 
-        /// <summary>
-        /// The share of a post's kind that carries a photo at the "some" option, thousandths. None for a kind with nothing to
-        /// see, a reply, the player's own or a post on its way.
-        /// </summary>
+        /// <summary>The share of a post's kind that carries a photo at "some", thousandths; none for a kind with nothing to see.</summary>
         public static int KindShare(FlarePost p, int niche)
         {
             if (p == null || p.ReplyTo >= 0 || p.Pending)
@@ -123,11 +108,7 @@ namespace RealLifeOverhaul.Flare
             return p != null && now >= p.At - LeadMinutes && now <= p.At + WindowMinutes;
         }
 
-        /// <summary>
-        /// What a post's photo must show, in order of preference; false for nothing to see. <paramref name="niche"/> and
-        /// <paramref name="home"/> are an influencer's, -1 and null for anybody else; <paramref name="wetNow"/> whether it rains
-        /// now (a weather post says its own weather).
-        /// </summary>
+        /// <summary>What a post's photo must show, in order of preference; false for nothing to see.</summary>
         public static bool Wish(FlarePost p, int niche, string home, bool wetNow, out FlarePhotoWish w)
         {
             w = new FlarePhotoWish { Niche0 = -1, Niche1 = -1, Niche2 = -1 };
@@ -230,10 +211,7 @@ namespace RealLifeOverhaul.Flare
             return string.IsNullOrEmpty(w.District) || string.Equals(photo.District, w.District, StringComparison.Ordinal);
         }
 
-        /// <summary>
-        /// The bank's photo for a post, or null when none fits: the first way of the wish with any free photo, and among those
-        /// the one the post's seed rolls, so the same bank gives the same pick.
-        /// </summary>
+        /// <summary>The bank's photo for a post, or null: among the first way's free photos, the one its seed rolls.</summary>
         public static FlareBankPhoto Pick(FlareBank bank, FlarePhotoWish w, int seed)
         {
             if (bank == null)
@@ -298,10 +276,7 @@ namespace RealLifeOverhaul.Flare
             bank.Picks.Add(new FlareBankPick { Post = post, Photo = photo != null ? photo.Id : -1 });
         }
 
-        /// <summary>
-        /// The next post whose photo is to be picked now: due, wanted, not picked yet and not in <paramref name="skip"/>; newest
-        /// first, null for none.
-        /// </summary>
+        /// <summary>The next post due a pick, wanted and not yet picked or in <paramref name="skip"/>, newest first; null for none.</summary>
         public static FlarePost NextPick(FlareFile f, FlareBank bank, int citySeed, int option, long now, Func<FlarePost, int> nicheOf, HashSet<int> skip)
         {
             if (f == null || bank == null || option <= 0)
@@ -380,11 +355,7 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>
-        /// What the bank's pass photographs where the player is now, or false for nothing the bank lacks here: the street event,
-        /// the park or sight, the best front near them the bank lacks (posting businesses and the player's first, then food
-        /// and night life, then fashion, the nearer first), else the street.
-        /// </summary>
+        /// <summary>What the bank's pass photographs here now: the street event, a park or sight, the best front, else the street; false for nothing lacking.</summary>
         public static bool Plan(FlareBank bank, FlarePhotoScene here, out FlarePhotoShot shot)
         {
             shot = new FlarePhotoShot { Niche = -1 };
@@ -439,7 +410,6 @@ namespace RealLifeOverhaul.Flare
             return false;
         }
 
-        /// <summary>A photo taken: its record in the bank under the number it was taken as.</summary>
         public static FlareBankPhoto Taken(FlareBank bank, int id, FlarePhotoShot shot, string district, FlarePhotoLight light, bool wet, int day, int minute)
         {
             var photo = new FlareBankPhoto
@@ -452,10 +422,7 @@ namespace RealLifeOverhaul.Flare
             return photo;
         }
 
-        /// <summary>
-        /// The photos that go, into <paramref name="into"/>: older than <see cref="FreshDays"/>, an event's past its day, and
-        /// past <see cref="BankMost"/> the oldest of the rest. How many.
-        /// </summary>
+        /// <summary>The photos that go, into <paramref name="into"/>: past <see cref="FreshDays"/>, an event's after its day, the oldest past <see cref="BankMost"/>.</summary>
         public static int Stale(FlareBank bank, int day, List<int> into)
         {
             into.Clear();
@@ -535,13 +502,11 @@ namespace RealLifeOverhaul.Flare
             return Math.Min(PaceMost, Math.Max(PaceLeast, pace) * 2f);
         }
 
-        /// <summary>Whether a place is near enough to be seen as it is: within the range of the player.</summary>
         public static bool InRange(float dx, float dz)
         {
             return dx * dx + dz * dz <= (float)FrontRange * FrontRange;
         }
 
-        /// <summary>A bank photo's name; its small copy is this name's PhotoThumbs.FileOf.</summary>
         public static string FileName(int photoId)
         {
             return Prefix + photoId + Extension;
@@ -565,11 +530,7 @@ namespace RealLifeOverhaul.Flare
             return fileName != null && fileName.StartsWith(LegacyPrefix, StringComparison.Ordinal);
         }
 
-        /// <summary>
-        /// The bank as its file's text: "v=1", "n=(next number)", then a line a photo
-        /// ("p|id|district|kind|place|niche|light|wet|day|minute|uses") and a line a pick ("u|post|photo"). A place or a
-        /// district never holds a '|' (one is written as '/').
-        /// </summary>
+        /// <summary>The bank as its file's text: "v=1", "n=" the next number, a "p|..." line a photo and a "u|post|photo" line a pick.</summary>
         public static string Write(FlareBank bank)
         {
             var b = new StringBuilder(64 + bank.Photos.Count * 64 + bank.Picks.Count * 16);

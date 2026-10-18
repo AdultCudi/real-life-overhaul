@@ -3,10 +3,9 @@ using RealLifeOverhaul.Texts;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// Flare's director, the author's answer to the player's typed reply under their post (RLO Texts data v3). Whether and
-    /// when is the game's (FlareCommentRules.AuthorAnswer); the words are the model's alone, kept by the reply's number, and
-    /// an answer not worded in time is not shown. It is the player's own: never saved in Flare's file, never sent. Cost: a
-    /// few rolls a waiting reply on Flare's events, and a look-up a reply when a thread is drawn.
+    /// Flare's director, the author's answer to the player's typed reply under their post (RLO Texts data v3): whether and
+    /// when is the game's, the words the model's, and one not worded in time is not shown. Never saved or sent. Cost: a few
+    /// rolls a waiting reply on Flare's events, a look-up a reply when a thread is drawn.
     /// </summary>
     public sealed partial class FlareDirector
     {
