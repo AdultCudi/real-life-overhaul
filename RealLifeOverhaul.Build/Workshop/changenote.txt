@@ -1,4 +1,4 @@
-0.32.4
+0.32.5
 
 Fixed
-- A police station's Go into the station panel and its key come up only at the station's door, as near as the game's own doors ask, and no longer from the kerb or the middle of the road. The desk officer inside answers only at the counter.
+- When your internet provider has an outage, an online class, a working day from home or a video interview it keeps you from is no longer held against you. The class is excused and left out of your attendance, the day is excused like a sick day, and the interview moves to the next weekday.
