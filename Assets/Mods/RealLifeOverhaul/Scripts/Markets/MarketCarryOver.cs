@@ -5,31 +5,21 @@ using RealLifeOverhaul.Economy.Ventures;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The old stock market (Ventures' twelve companies) brought into this one, once. Game-free.
-    ///
-    ///   - each of the old companies is a company here (<see cref="MarketCatalogue.VenturesMap"/>: by its sector and
-    ///     which of its sector's two names it had; a rival's holding by the name it was listed under), and a new market
-    ///     opened for a save that had the old one starts those companies at the old prices with their last closes;
-    ///   - the player's holdings move exactly: the same shares, what they cost and the dividends they had paid,
-    ///     marked as a test's where they were. Nothing is bought or sold and no money moves;
-    ///   - the old file is left with no holdings and marked as moved, so a second look finds nothing to bring.
-    ///
-    /// A holding whose company cannot be found here (it cannot happen with the old market's companies) is paid out at
-    /// its old price, with no commission, so nothing is lost: <see cref="Move"/> says so in its answer.
+    /// The old Ventures stock market brought into this one, once: each old company maps to one here
+    /// (<see cref="MarketCatalogue.VenturesMap"/>, a rival's by name) at its old price, and the player's holdings move
+    /// exactly, no money moving. A holding with no company here is paid out at its old price.
     /// </summary>
     public static class MarketCarryOver
     {
-        /// <summary>What a carry-over did.</summary>
         public struct Result
         {
-            public int Moved;            // holdings moved
-            public long Shares;          // shares in them
-            public long Cost;            // what they had cost
-            public int PaidOut;          // holdings that had no company here, paid out
+            public int Moved;
+            public long Shares;
+            public long Cost;
+            public int PaidOut;          // holdings with no company here, paid out
             public long PaidMoney;
         }
 
-        /// <summary>The id here of one of the old market's companies; 0 if there is none.</summary>
         public static int IdOf(Company old, MarketState state)
         {
             if (old == null)
@@ -49,7 +39,7 @@ namespace RealLifeOverhaul.Markets
             return MarketCatalogue.VenturesMap[sector][old.NameIndex & 1];
         }
 
-        /// <summary>The old companies' prices, for a new market (a rival's under a rival id here, matched by name when the market is opened).</summary>
+        /// <summary>The old companies' prices for a new market; a rival's under a rival id here, matched by name at the opening.</summary>
         public static List<CarriedPrice> Prices(VenturesFile file)
         {
             var prices = new List<CarriedPrice>(16);
@@ -73,17 +63,12 @@ namespace RealLifeOverhaul.Markets
             return prices;
         }
 
-        /// <summary>True if the old file still has holdings to bring.</summary>
         public static bool Waiting(VenturesFile file)
         {
             return file != null && !file.MarketMoved && file.Holdings.Count > 0;
         }
 
-        /// <summary>
-        /// The holdings moved from the old file into the market, once. The old file is emptied of them and marked as
-        /// moved whatever happens, so this can never bring the same shares twice. A holding of a company that is gone
-        /// from this market (it failed, it was taken over) is paid out at its old price with no commission.
-        /// </summary>
+        /// <summary>The holdings moved from the old file, once: the old file is emptied and marked as moved whatever happens.</summary>
         public static Result Move(VenturesFile file, MarketState state, IMarketWallet wallet)
         {
             var result = new Result();

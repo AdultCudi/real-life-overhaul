@@ -3,25 +3,20 @@ using System;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The rival tycoons' holdings on the market (Scripts/Rivals, through Wiring/RivalLinks): a holding comes to the market
-    /// when its tycoon comes forward, as a pipeline company comes (at its price at today's level, its history from today),
-    /// and a bid for the player's company can name the holding that makes it. Game-free, as the rest of the engine. Asked
-    /// on the rivals' day or a test, never per frame; nothing while no tycoon has come forward.
+    /// Part of the engine: the rival tycoons' holdings, listed when their tycoon comes forward as a pipeline company is, and
+    /// a bid for the player's company made by a named holding. Asked on the rivals' day or a test, never per frame.
     /// </summary>
     public sealed partial class MarketEngine
     {
-        private int _bidderNext;   // the holding the next bid for the player's company is made by (OwnBid); 0 for the market's own pick
+        private int _bidderNext;   // the holding the next bid for the player's company is made by; 0 the market's own pick
 
         /// <summary>
-        /// A rival's holding (a catalogue company marked Holding) comes to the market now, sized by its tycoon's fortune
-        /// (<paramref name="worth"/>, dollars; 0 for the catalogue's own size): the whole company scaled together (its
-        /// takings, profit, debt, equity, past results and shares), so a share is what it would be and the tycoon's own stake
-        /// (<see cref="MarketCatalogue.HoldingFounderBp"/>) at its price is the fortune. Only the rest, its free float, trades
-        /// and counts in the index (MarketIndex). True if it is listed (or already was).
+        /// A rival's holding comes to the market now, scaled so the tycoon's own stake at its price is their fortune
+        /// <paramref name="worth"/> (0: the catalogue's size). True if it is listed, or already was.
         /// </summary>
         public bool ListHolding(int id, long worth)
         {
-            Finish();   // (a moment half played is played out first: Midway)
+            Finish();
             CompanyDef d = MarketCatalogue.Find(id);
             if (d == null || !d.Holding)
             {
@@ -46,16 +41,15 @@ namespace RealLifeOverhaul.Markets
             double cap = s.Shares * (double)s.MidCents / 100.0;
             if (worth > 0 && cap > 0.0)
             {
-                Scale(s, MarketValuation.Clamp(worth * 10000.0 / MarketCatalogue.HoldingFounderBp / cap, 0.001, 100000.0));   // (the tycoon's own stake is their fortune)
+                Scale(s, MarketValuation.Clamp(worth * 10000.0 / MarketCatalogue.HoldingFounderBp / cap, 0.001, 100000.0));
             }
-            Reweigh(s, true);   // (before it is counted: the indices stay where they were)
+            Reweigh(s, true);   // before it is counted: the indices stay where they were
             State.Stocks.Add(s);
             Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.Listing, Stock = s.Id, A = s.MidCents, B = State.Day });
             return true;
         }
 
-        // A company made larger or smaller as a whole: every sum it has and its shares by the same factor, so that each
-        // share's figures (its price, earnings, dividend) are what they were.
+        // A company scaled as a whole: every sum and its shares by the same factor, so each share's figures are unchanged.
         private static void Scale(Stock s, double k)
         {
             s.Rev *= k;
@@ -63,7 +57,7 @@ namespace RealLifeOverhaul.Markets
             s.Equity *= k;
             s.QRev *= k;
             s.QNi *= k;
-            s.Adv *= k * (10000.0 - MarketCatalogue.HoldingFounderBp) / 10000.0;   // (only its free float trades: the tycoon's own stake never does)
+            s.Adv *= k * (10000.0 - MarketCatalogue.HoldingFounderBp) / 10000.0;   // only its free float trades
             s.Shares = Math.Max(100000L, (long)Math.Round(s.Shares * k));
             for (int i = 0; i < s.Results.Count; i++)
             {
@@ -74,7 +68,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>A rival's holding with no tycoon in play leaves the market at its price (its holders, the player too, paid at it). True if it did.</summary>
+        /// <summary>A rival's holding with no tycoon in play leaves the market at its price. True if it did.</summary>
         public bool DelistHolding(int id)
         {
             CompanyDef d = MarketCatalogue.Find(id);
@@ -82,7 +76,7 @@ namespace RealLifeOverhaul.Markets
             return d != null && d.Holding && s != null && s.Listed && Delist(id, GoneReason.Delisted, s.MidCents);
         }
 
-        /// <summary>A bid for the player's company by a named holding (the test tools' bid, with its bidder given). True if the bid stands.</summary>
+        /// <summary>The test tools: a bid for the player's company by a named holding. True if the bid stands.</summary>
         public bool BidBy(int stockId, int bidderId)
         {
             Stock s = State.Stock(stockId);

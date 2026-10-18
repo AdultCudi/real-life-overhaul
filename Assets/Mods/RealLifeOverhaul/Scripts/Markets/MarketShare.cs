@@ -6,22 +6,12 @@ using System.Text;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The stock market in a Going Public session (Core/SharedCity, part M): one market for the city, the host's, with
-    /// every player's own holdings, orders and account their own. Game-free (RealLifeOverhaul.Build/EconomyCheck).
-    ///
-    /// Nothing of the market's prices is sent as prices. A market is exact: the same state, the same day's secret, the
-    /// same city of the day and the same events give the same moments, to the cent (that is what makes it proof against
-    /// a reload, see <see cref="MarketTape"/>). So a guest is given the host's market once, whole (the city's part of its
-    /// state, <see cref="MarketStore.Write(MarketState, bool)"/>, with the host's tape from that day), and from then on
-    /// only the new lines of the host's tape: each day's secret and city, what happened and when, how far the host has
-    /// played, and every player's trades (MarketInputs.EventTrade). The guest's market follows that tape, never past
-    /// the host's furthest moment, and plays the very moments the host played; its own orders fill on the way as they
-    /// would alone, and their moves go to the host to be put on the tape for everybody.
-    ///
-    /// The check: with each set of lines the host says what its prices came to at the moment it sent them
-    /// (<see cref="Checksum"/>); a guest whose market comes out different at that moment asks for the whole market again.
-    ///
-    ///     the snapshot   the city's line of the market (MarketStore), a new line, the tape's lines from its day, a K line
+    /// The stock market in a Going Public session (Core/SharedCity, part M): the host's market for the city, every player's
+    /// holdings and account their own. Game-free. No price is sent: a market is exact, so a guest is given the host's market
+    /// once, whole, and then only the host's new tape lines (each day's secret and city, events, the host's furthest moment
+    /// and every player's trades), and plays the very moments the host played. Each set of lines ends with a checksum of the
+    /// host's prices (<see cref="Checksum"/>); a guest that comes out different asks for the whole market again.
+    ///     the snapshot   the city's line of the market, a new line, the tape's lines from its day, a K line
     ///     an update      the tape's new lines, a K line
     ///     K day phase n  the checksum of the market at that moment
     /// </summary>
@@ -29,7 +19,6 @@ namespace RealLifeOverhaul.Markets
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>The host's market, whole, for a guest.</summary>
         public static string Write(MarketState s, MarketTape tape)
         {
             var t = new StringBuilder(128 * 1024);
@@ -39,7 +28,7 @@ namespace RealLifeOverhaul.Markets
             return t.ToString();
         }
 
-        /// <summary>The host's update: the tape's new lines and the check of where the market stands; null if nothing has moved.</summary>
+        /// <summary>The host's new tape lines and a check of where the market stands; null if nothing moved.</summary>
         public static string Changes(string lines, MarketState s, ref long checkedAt)
         {
             if (string.IsNullOrEmpty(lines) && s.Now == checkedAt)
@@ -58,7 +47,7 @@ namespace RealLifeOverhaul.Markets
             t.Append("K ").Append(s.Day.ToString(Inv)).Append(' ').Append(s.Phase.ToString(Inv)).Append(' ').Append(Checksum(s).ToString(Inv)).Append('\n');
         }
 
-        /// <summary>What the city's market comes to at its moment: every listed company's last price, by company, and the index.</summary>
+        /// <summary>Every listed company's last price and volume, and the index, at the market's moment.</summary>
         public static long Checksum(MarketState s)
         {
             unchecked
@@ -77,13 +66,9 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The host's market for a guest: a new state, the host's city with the guest's own holdings, orders, trades,
-        /// watch list, account, dividends owed and trading bots, and the host's tape from that day, put on <paramref name="into"/> if it
-        /// is a tape of the host's market (a guest's own copy of it from an earlier session: its past is kept, what it
-        /// played alone since is forgotten) or on a new one. <paramref name="frontier"/> is the furthest moment the host has
-        /// played. Null (and nothing changed) for a text that cannot be read. A holding in a company the host's market does
-        /// not have (it should not happen: the companies are the catalogue's) is kept, its company standing still at its
-        /// last price.
+        /// The host's market for a guest with the guest's own holdings, account and bots, and the host's tape on
+        /// <paramref name="into"/> if it is a copy of the host's, else a new one. Null, nothing changed, for a text that cannot
+        /// be read.
         /// </summary>
         public static MarketState Adopt(MarketState mine, string text, List<long> checks, MarketTape into, out MarketTape tape, out long frontier)
         {
@@ -94,11 +79,10 @@ namespace RealLifeOverhaul.Markets
             {
                 return null;
             }
-            int version;
             MarketState host;
             try
             {
-                host = MarketStore.Read(text.Substring(0, cut), out version);
+                host = MarketStore.Read(text.Substring(0, cut), out _);
             }
             catch (Exception)
             {
@@ -111,7 +95,7 @@ namespace RealLifeOverhaul.Markets
             var lines = new MarketTape(host.Id);
             if (!Follow(lines, text.Substring(cut + 1), checks, ref frontier))
             {
-                return null;   // (read once on a tape of its own first: a damaged text leaves the guest's tape as it was)
+                return null;   // read on a tape of its own first: a damaged text leaves the guest's tape as it was
             }
             MarketTape follow = lines;
             if (into != null && into.Id == host.Id)
@@ -121,9 +105,8 @@ namespace RealLifeOverhaul.Markets
                 Follow(follow, text.Substring(cut + 1), null, ref frontier);
             }
             host.Me = mine.Me;
-            host.Listing = mine.Listing ?? new ListingFile();   // (the player's own way to the market and books: theirs, never the host's)
-            // The player's own listed company is not in the host's city: it is set aside, whole, until they play alone again
-            // (MarketEngine.Alone), and nothing of it moves meanwhile.
+            host.Listing = mine.Listing ?? new ListingFile();   // the player's own way to the market and books, never the host's
+            // The player's own listed company is not in the host's city: set aside whole until they play alone again.
             for (int i = 0; i < mine.Stocks.Count; i++)
             {
                 Stock own = mine.Stocks[i];
@@ -135,14 +118,14 @@ namespace RealLifeOverhaul.Markets
             }
             host.NextOrderId = Math.Max(1, mine.NextOrderId);
             host.CarriedOver = mine.CarriedOver;
-            host.HeldDay = host.HeldPhase = 0;   // (what the guest has seen is what the host has played: nothing to hold back)
+            host.HeldDay = host.HeldPhase = 0;   // what the guest has seen is what the host has played
             host.Positions.AddRange(mine.Positions);
             host.Orders.AddRange(mine.Orders);
             host.Trades.AddRange(mine.Trades);
             host.Watch.AddRange(mine.Watch);
             host.Dues.AddRange(mine.Dues);
-            host.Bots.AddRange(mine.Bots);   // (the player's bots: theirs, trading in the city's market as the player does)
-            host.Bonds.Take(mine.Bonds);     // (the player's bonds: theirs, paid on the city's calendar)
+            host.Bots.AddRange(mine.Bots);
+            host.Bonds.Take(mine.Bonds);
             Account a = host.Account, m = mine.Account;
             a.Margin = m.Margin;
             a.Cash = m.Cash;
@@ -161,7 +144,7 @@ namespace RealLifeOverhaul.Markets
                 Stock own = mine.Stocks[i];
                 if (own.Own != null && own.Own.Owner == mine.Me && mine.Me != 0UL)
                 {
-                    continue;   // (set aside above)
+                    continue;   // set aside above
                 }
                 Stock city = host.Stock(own.Id);
                 if (city != null)
@@ -183,9 +166,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The host's tape lines put on a guest's tape: the host's secret and city of a day in place of any it had, what
-        /// happened, the host's furthest moment (into <paramref name="frontier"/>, which only grows); the checks (moment,
-        /// sum) into the list. False for lines that cannot be read.
+        /// The host's tape lines put on a guest's tape, replacing any day it had; the furthest moment into
+        /// <paramref name="frontier"/>, which only grows, and the checks into the list. False for lines that cannot be read.
         /// </summary>
         public static bool Follow(MarketTape tape, string lines, List<long> checks, ref long frontier)
         {
@@ -260,19 +242,15 @@ namespace RealLifeOverhaul.Markets
         }
     }
 
-    /// <summary>
-    /// A Going Public guest's trades on their way to the host (MarketDirector, its trade sink): each fill's lasting move and
-    /// shares added up by company until the next request, then sent as the line every host reads, "i|stock|micros|shares".
-    /// A host reads at most <see cref="LinesMost"/> lines of one request and takes a line's move only to
-    /// <see cref="MicrosMost"/> micros either way (MarketEngine.GuestTrade), so a larger sum goes over several lines and what
-    /// does not fit in one request waits for the next: a catch-up of many slices loses nothing, and the host's tape takes the
-    /// same total as if every fill had been sent alone (its moves only add up). The same line as ever: an older host reads
-    /// it. Game-free; nothing is made as fills come (a few kept lists), a line's text once a second.
-    /// </summary>
+        /// <summary>
+        /// A Going Public guest's trades on their way to the host, added up by company until the next request and sent as
+        /// "i|stock|micros|shares" lines; a larger sum goes over several lines, so the host's tape takes the same total as if
+        /// every fill had been sent alone. A line's text once a second.
+        /// </summary>
     public sealed class GuestTrades
     {
-        public const int LinesMost = 64;          // the lines a host reads of one request (MarketDirector.HostRequest)
-        public const int MicrosMost = 200000;     // the move of one line a host takes whole, either way (MarketEngine.GuestTrade)
+        public const int LinesMost = 64;          // a request (MarketDirector.HostRequest)
+        public const int MicrosMost = 200000;     // a line, either way (MarketEngine.GuestTrade)
 
         private readonly List<int> _stocks = new List<int>(8);
         private readonly List<long> _micros = new List<long>(8);
@@ -299,7 +277,6 @@ namespace RealLifeOverhaul.Markets
             _shares[at] += shares;
         }
 
-        /// <summary>The lines what is waiting comes to.</summary>
         public int Lines
         {
             get
@@ -313,11 +290,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>
-        /// Up to 'most' lines given to 'send', the company that traded first first; a company's sum over the lines its move
-        /// and its shares need, each line's shares its part of the move (one at least). What is left waits for the next
-        /// request. How many lines were sent.
-        /// </summary>
+        /// <summary>Up to <paramref name="most"/> lines sent, the company that traded first first; the rest waits. How many were sent.</summary>
         public int Send(Action<string> send, int most)
         {
             int sent = 0;
@@ -358,8 +331,7 @@ namespace RealLifeOverhaul.Markets
             _shares.Clear();
         }
 
-        // The lines a company's sum takes: its move in parts of MicrosMost at most, its shares in parts a host counts whole
-        // (int.MaxValue), one at least.
+        // The lines a company's sum takes: its move in parts of MicrosMost, its shares in parts of int.MaxValue; one at least.
         private static int LinesOf(long micros, long shares)
         {
             long byMove = (Math.Abs(micros) + MicrosMost - 1) / MicrosMost;

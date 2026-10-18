@@ -3,30 +3,15 @@ using System;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// A player's company on the city's market: how it is made a listed company, its business day by day from the game's
-    /// own statements, its quarters and dividends, its reserve, and what its founder's dealings cost. Game-free
-    /// (EconomyCheck compiles it). Called from MarketEngine on the market's own steps: nothing here runs per frame.
-    ///
-    /// THE PRICE is worked out as every company's is (MarketValuation: what its profits to come are worth, with the
-    /// market's mood and its news), but its business is not made up: it is the company's real takings and profit, a
-    /// statement day at a time, followed over about a quarter (what it makes now) and about a year (what it usually
-    /// makes). Its turnover is the quarter's rate; its usual margin the year's; the gap between the two is a good or bad
-    /// patch the market expects to pass within a year. So one day's spike moves the price by a few hundredths of what a
-    /// whole quarter at that rate would, and a business that really grows lifts it for good. The council's policies are
-    /// priced the moment they change (as for every company) and fade out of the reckoning as the year's figures come to
-    /// show them. Its growth is read from its books at each results (the year's takings against the year before, half
-    /// believed), so a quarter that only the founder knows about moves nothing until it is out.
-    ///
-    /// THE RESERVE (see OwnListing): each day's profit after tax and pay belongs to every holder by their shares. The other
-    /// holders' part is taken from the founder's cash into the reserve the moment the market counts the day, and comes
-    /// back to it out of a loss. A share is worth the business's profits to come and the reserve a share; a dividend is
-    /// paid out of the reserve and goes out of the price; every deal of the founder's carries the reserve of its shares.
+    /// A player's company on the city's market: its listing, its business day by day from the game's statements, its
+    /// quarters, dividends and reserve, and what its founder's dealings cost. Game-free, run on the market's steps. Its
+    /// price is worked out as every company's, but from its real books: takings and profit followed over about a quarter
+    /// (what it makes now) and a year (what it usually makes), so one day's spike moves the price little and real growth
+    /// lifts it for good.
     /// </summary>
     public static class ListingRules
     {
-        // ---------------------------------------------------------------- what a company is
-
-        /// <summary>The id a founder's company has on the market: from a hash of the founder, among ids no company of the city's has.</summary>
+        /// <summary>The founder's company's id on the market: a hash of the founder, among ids no city company has.</summary>
         public static int IdFor(ulong owner)
         {
             return ListingCatalogue.IdFirst + (int)(MarketRandom.Mix64(owner) % (ulong)ListingCatalogue.IdCount);
@@ -37,7 +22,7 @@ namespace RealLifeOverhaul.Markets
             return id >= ListingCatalogue.IdFirst && id < ListingCatalogue.IdFirst + ListingCatalogue.IdCount;
         }
 
-        /// <summary>A ticker from a name: the first letters of its words, or its first letters, three or four of them in capitals.</summary>
+        /// <summary>A ticker of three or four capitals from the first letters of the name's words.</summary>
         public static string TickerOf(string name)
         {
             var t = new System.Text.StringBuilder(4);
@@ -74,9 +59,6 @@ namespace RealLifeOverhaul.Markets
             return t.ToString();
         }
 
-        // ---------------------------------------------------------------- the business, from the books
-
-        /// <summary>What a share is worth from the company's books, and the stock the advisers worked it out on (all its shares, old and new).</summary>
         public static Stock Provisional(ListingFile f, ulong owner, int day, int year, in MarketEnv env, long debt)
         {
             int id = f.StockId > 0 ? f.StockId : IdFor(owner);
@@ -95,10 +77,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The books as the advisers read them, as rates a day: the last four complete quarters' takings and profit after
-        /// the founder's fair pay (with eight on record, the lower of the last year and the two years' mean), the last
-        /// complete quarter's, and the year's growth in takings (against the year before, or the last half against the
-        /// one before; a log a year, before inflation). Nothing on record: all nothing.
+        /// The books as rates a day: the last four complete quarters' takings and profit after fair pay (with eight, the lower
+        /// of the last year and the two years' mean), the last quarter's, and the year's growth as a log before inflation.
         /// </summary>
         public static void Books(ListingFile f, int day, int year, out double revY, out double niY, out double revQ, out double niQ, out double growth)
         {
@@ -157,13 +137,12 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>A day's (or a quarter's) profit after the founder's pay: pay is a share of a profit, nothing of a loss.</summary>
+        /// <summary>A profit after the founder's pay, which is a share of a profit and nothing of a loss.</summary>
         public static long AfterPay(long profit, int payBp)
         {
             return profit > 0 ? profit - profit * payBp / 10000L : profit;
         }
 
-        /// <summary>The market's view of the business set from rates a day (takings and profit after pay, over a year and a quarter).</summary>
         public static void Seed(Stock s, in MarketEnv env, int year, double revY, double niY, double revQ, double niQ, double debt, double growth)
         {
             OwnListing o = s.Own;
@@ -180,24 +159,19 @@ namespace RealLifeOverhaul.Markets
             s.Equity = Math.Max(s.Rev * 0.1, MarketValuation.Profit(s, s.Margin, MarketInputs.TaxRate(env)) / MarketCatalogue.RoeLong);
         }
 
-        /// <summary>The growth the market believes from a log a year of the books' takings: half the company's own over the city's long run, after inflation.</summary>
+        /// <summary>The growth the market believes from a log a year of the books' takings: half its lead over the city's long run.</summary>
         public static double GrowthFrom(double nominal, in MarketEnv env)
         {
             double real = nominal - env.InflationBp / 10000.0;
             return MarketValuation.Clamp(MarketCatalogue.LongRealGrowth + ListingCatalogue.GrowthShrink * (real - MarketCatalogue.LongRealGrowth), -0.25, 0.4);
         }
 
-        /// <summary>What the council's policies and the bank rate do to the company's margin, as the market reckons them for its sector.</summary>
         public static double LeverMargin(Stock s, in MarketEnv env)
         {
             return (MarketInputs.LeversBp(env, s.Sector) + s.Def.RateBp * (env.RateBp - 300) / 100.0) / 10000.0;
         }
 
-        /// <summary>
-        /// The business as the market sees it, from what it has followed: its turnover a year at the quarter's rate, its
-        /// usual margin the year's (the council's policies since then counted on top), the quarter's against it a patch
-        /// that passes, its debt and how near it is to failing.
-        /// </summary>
+        /// <summary>The business as the market sees it: turnover at the quarter's rate, the margin the year's, the quarter's a passing patch.</summary>
         public static void Figures(Stock s, in MarketEnv env, int year)
         {
             OwnListing o = s.Own;
@@ -212,9 +186,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// One day of the calendar of a listed player's company: the statement of the day before (if the day's city has
-        /// it) into what the market follows, the quarter's figures and the reserve. Returns the money that moves from the
-        /// founder's cash into the reserve for the other holders (under nothing: back to the founder, out of a loss).
+        /// One day of a listed player's company: yesterday's statement into what the market follows, the quarter and the
+        /// reserve. Returns the money moved from the founder's cash into the reserve (negative: back out of a loss).
         /// </summary>
         public static double Day(Stock s, in MarketEnv env, int year, int day)
         {
@@ -230,8 +203,8 @@ namespace RealLifeOverhaul.Markets
             double profit = before > 0.0 ? before * (1.0 - o.PayBp / 10000.0) : before;
             double ni = profit > 0.0 ? profit * (1.0 - MarketInputs.TaxRate(env)) : profit;
             double quarter = Math.Min(1.0, 4.0 / y), whole = 1.0 / y;
-            // What the market follows takes a day far beyond the company's usual as a one-off (a sale of stock, a bad
-            // night): counted at most so many times the year's rate. The reserve and the quarter take the day as it was.
+            // A day far beyond the usual (a stock sale, a bad night) is followed as a one-off, at most so many times the
+            // year's rate; the reserve and the quarter take the day as it was.
             double seenRev = o.RevY > 0.0 ? Math.Min(rev, ListingCatalogue.DaySeenMost * o.RevY) : rev;
             double most = ListingCatalogue.DaySeenMost * Math.Max(Math.Abs(o.NiY), 0.02 * o.RevY);
             double seen = o.RevY > 0.0 ? MarketValuation.Clamp(profit, -most, most) : profit;
@@ -255,7 +228,7 @@ namespace RealLifeOverhaul.Markets
             return ToReserve(s, ni / s.Shares);
         }
 
-        /// <summary>The reserve a share moved by so much: the money the other holders' part of that moves into it from the founder's cash (under nothing: out of it back).</summary>
+        /// <summary>The reserve a share moved by so much; returns the other holders' part, moved from the founder's cash.</summary>
         public static double ToReserve(Stock s, double perShare)
         {
             OwnListing o = s.Own;
@@ -264,11 +237,6 @@ namespace RealLifeOverhaul.Markets
             return (Math.Max(0.0, o.Rps) - was) * Math.Max(0L, o.Others(s));
         }
 
-        /// <summary>
-        /// After the days of a market morning: the market's view set again from what it followed, and what it expected of
-        /// the company beyond its figures passing as they come to show it (its own figures, not made up: nothing is added
-        /// to them, the expectation only fades).
-        /// </summary>
         public static void Morning(Stock s, in MarketEnv env, int year, int days)
         {
             Figures(s, env, year);
@@ -284,7 +252,6 @@ namespace RealLifeOverhaul.Markets
             s.Distress = MarketValuation.DistressOf(s, env);
         }
 
-        /// <summary>A quarter has ended on the calendar: as every company's, and what the market expected of the quarter that waits is kept, the next one's set from its rate now.</summary>
         public static void CloseQuarter(Stock s, int quarter, int year, in MarketEnv env)
         {
             OwnListing o = s.Own;
@@ -293,7 +260,6 @@ namespace RealLifeOverhaul.Markets
             o.Expect = Expected(s, quarter, year, env);
         }
 
-        /// <summary>What the market expects a quarter to make after tax and pay: the rate it has followed over the year, for the quarter's days.</summary>
         public static double Expected(Stock s, int quarter, int year, in MarketEnv env)
         {
             OwnListing o = s.Own;
@@ -302,19 +268,12 @@ namespace RealLifeOverhaul.Markets
             return rate * days;
         }
 
-        // ---------------------------------------------------------------- results and dividends
-
-        /// <summary>
-        /// The results of the quarter that waits, as the books have them (nothing is drawn: they are the company's own):
-        /// what it made against what the market expected, its growth read again from the year's takings, and the
-        /// dividend the board declares with them (the founder's proposal while they chair it, else half the reserve; never
-        /// more than the reserve a share). The price answers at the open, as for every company.
-        /// </summary>
+        /// <summary>The waiting quarter's results from the books, nothing drawn, and the dividend declared with them.</summary>
         public static MarketNews Results(Stock s, int day, int year, in MarketEnv env)
         {
             OwnListing o = s.Own;
             double reported = s.PendingNi, expected = o.PendingExpect;
-            // Growth: the year's takings (this quarter and the three before) against the four before them.
+            // Growth: the year's takings, this quarter and the three before, against the four before them.
             long recent = (long)(s.PendingRev / 1000.0), earlier = 0;
             int recentCount = 1, earlierCount = 0;
             for (int i = s.Results.Count - 1, n = 1; i >= 0 && n < 8; i--, n++)
@@ -344,7 +303,7 @@ namespace RealLifeOverhaul.Markets
             o.YearDividendCents += declared;
             if (o.Board)
             {
-                o.ProposedCents = 0;   // (a proposal is for one set of results)
+                o.ProposedCents = 0;   // a proposal is for one set of results
             }
             s.Results.Add(new QuarterResult
             {
@@ -364,7 +323,6 @@ namespace RealLifeOverhaul.Markets
             return new MarketNews { Day = day, Kind = MarketNewsKind.Results, Stock = s.Id, A = eps, B = consensus };
         }
 
-        /// <summary>The dividend a share the board declares with results, in cents: within the reserve a share.</summary>
         public static int Declared(Stock s)
         {
             OwnListing o = s.Own;
@@ -373,25 +331,19 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(0, Math.Min(most, asked));
         }
 
-        /// <summary>The most the company can pay a share now, in cents: its reserve a share (nothing of a deficit).</summary>
+        /// <summary>The most the company can pay a share now, in cents: its reserve a share, nothing of a deficit.</summary>
         public static int Most(OwnListing o)
         {
             return (int)Math.Floor(Math.Max(0.0, Math.Min(1e7, o.Rps)) * 100.0);
         }
 
-        /// <summary>A dividend goes out of the reserve on its record day: the other holders are paid out of it (the founder's part was theirs already).</summary>
+        /// <summary>A dividend out of the reserve on its record day; the founder's part was theirs already.</summary>
         public static void PaidOut(Stock s, int cents)
         {
             s.Own.Rps -= cents / 100.0;
         }
 
-        // ---------------------------------------------------------------- the morning's news of the founder
-
-        /// <summary>
-        /// The market's mood at the open from what the city made of the founder yesterday (ln, to add to the mood): their
-        /// Standing's move, what the papers said, and a scandal (which also cuts what the market expects of the company,
-        /// for good). The day's mood is held to its limits either way.
-        /// </summary>
+        /// <summary>The mood at the open (ln) from what the city made of the founder yesterday; a scandal also cuts the outlook.</summary>
         public static double OpenNews(Stock s, in MarketEnv env)
         {
             OwnListing o = s.Own;
@@ -419,12 +371,7 @@ namespace RealLifeOverhaul.Markets
             return bp > most ? most : bp < -most ? -most : bp;
         }
 
-        // ---------------------------------------------------------------- the founder's dealings
-
-        /// <summary>
-        /// True while the founder may not deal: from the last third of a quarter until that quarter's results are out
-        /// (they know its figures before the market does).
-        /// </summary>
+        /// <summary>True from the last third of a quarter until its results are out: the founder knows the figures first.</summary>
         public static bool Closed(Stock s, int day, int year)
         {
             if (s.PendingQuarter >= 0)
@@ -435,7 +382,6 @@ namespace RealLifeOverhaul.Markets
             return day >= next - Math.Max(1, (next - from) / ListingCatalogue.ClosedShare);
         }
 
-        /// <summary>The first day the founder may deal again after a closed time (the day after the results that end it), for the app.</summary>
         public static int OpensAgain(Stock s, int day, int year)
         {
             if (!Closed(s, day, year))
@@ -446,11 +392,7 @@ namespace RealLifeOverhaul.Markets
             return MarketTrading.NextTradingDay(results - 1);
         }
 
-        /// <summary>
-        /// What a deal of the founder's moves, before commission: the shares at the price, with the reserve they carry (a
-        /// purchase takes theirs out of the reserve to the founder, a sale puts it in for the buyer). Above nothing: what
-        /// the founder pays; under nothing: what they receive.
-        /// </summary>
+        /// <summary>A founder's deal before commission with the reserve its shares carry: positive the founder pays, negative receives.</summary>
         public static long DealMoney(long shares, int cents, double rps, bool buying)
         {
             long value = MarketTrading.Value(Math.Abs(shares), cents, buying);
@@ -459,10 +401,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// A founder's deal against those before it within the time the rules look back (a year / ShortSwingYearShare):
-        /// shares bought and sold in that time are matched oldest first, and any gain on a match (sold dearer than bought,
-        /// or bought back cheaper than sold) is what the founder pays back to the company. The deal is then kept for the
-        /// next. Returns the gain, in money.
+        /// A founder's deal matched oldest first against opposite deals in the short-swing time; returns the gain on the
+        /// matches, which the founder pays back to the company.
         /// </summary>
         public static long ShortSwing(OwnListing o, int day, long shares, int cents, int year)
         {
@@ -503,12 +443,12 @@ namespace RealLifeOverhaul.Markets
                 {
                     o.Deals.RemoveAt(0);
                 }
-                o.Deals.Add(new OwnDeal { Day = day, Shares = shares > 0 ? left : -left, Cents = cents });   // (what was not matched, for a deal the other way to come)
+                o.Deals.Add(new OwnDeal { Day = day, Shares = shares > 0 ? left : -left, Cents = cents });
             }
             return (long)Math.Floor(gain);
         }
 
-        /// <summary>The market's reading of a move in the company's shares by the founder or the company, ln: so much for each 1% of the company, within its limit.</summary>
+        /// <summary>The market's reading (ln) of a move in the company's shares: so much for each 1%, within its limit.</summary>
         public static double Reading(long shares, long issued, int perPercentBp)
         {
             if (issued <= 0)
@@ -520,7 +460,6 @@ namespace RealLifeOverhaul.Markets
             return Capped(bp, ListingCatalogue.KickMostBp) / 10000.0;
         }
 
-        /// <summary>The year's room for new shares, against the company now: what was sold this year is counted.</summary>
         public static long IssueRoom(Stock s, int day, int year)
         {
             OwnListing o = s.Own;
@@ -529,7 +468,6 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(0L, s.Shares * Math.Max(0, ListingCatalogue.IssueMostBpYear - used) / 10000L);
         }
 
-        /// <summary>Why the founder may not deal now (None: they may): a sale in the lock-up, a deal in a closed time, more than they hold, or past the most they may hold.</summary>
         public static OwnWhy DealBlocked(Stock s, int day, int year, long shares)
         {
             OwnListing o = s.Own;
@@ -564,19 +502,17 @@ namespace RealLifeOverhaul.Markets
             return OwnWhy.None;
         }
 
-        /// <summary>A count of shares as bp of so many (rounded up: the year's limits are never passed by a rounding).</summary>
+        /// <summary>Shares as bp of so many, rounded up so a rounding never passes the year's limits.</summary>
         public static int Bp(long shares, long of)
         {
             return of > 0 ? (int)Math.Min(100000L, (shares * 10000L + of - 1) / of) : 100000;
         }
 
-        /// <summary>What has been used of a year's limit this game year (nothing once a new year has begun).</summary>
         public static int YearUsedBp(OwnListing o, int day, int year, int used)
         {
             return o.DealYear == MarketCatalogue.YearOf(day, Math.Max(8, year)) ? used : 0;
         }
 
-        /// <summary>A deal, a buy-back, counted against the year's limits.</summary>
         public static void Count(OwnListing o, int day, int year, int bought, int sold, int back)
         {
             int y = MarketCatalogue.YearOf(day, Math.Max(8, year));
@@ -591,9 +527,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The price a share the founder pays every other holder to take the company private: its price with the premium,
-        /// and never less than its highest close over the last year of market days, nor (in its first year) what it came to
-        /// the market at. So a company run down to buy it back cheap is bought back at what it was.
+        /// What a share is paid when the founder takes the company private: never under the last year's highest close nor, in
+        /// its first year, its listing price, so running it down first does not pay.
         /// </summary>
         public static int PrivateCents(Stock s, int day, int year)
         {

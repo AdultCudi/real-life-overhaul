@@ -6,27 +6,18 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>
-    /// The Bonds tab of the Stocks app (Markets/Bonds): the bonds on offer today, with their yield, term and payments, a
-    /// Treasury ladder (one sum over the Treasury's terms), and the player's own, with their price, what they would bring
-    /// and their next payment (the filter shows one or the other). Picking a bond on offer puts what it pays in the box,
-    /// with the amount to put in (up to the most of one purchase, by what the player is worth), the share of its interest
-    /// to put back into it, whether it rolls over at its end, and the button to buy it; the ladder its pieces at each
-    /// term's rate, with the same choices; picking one of the player's puts its record there, with those choices to change
-    /// and the button to sell it (or close a deposit). Written when the app opens and when the player does something in
-    /// it, never per frame.
-    /// </summary>
+    /// <summary>Part of the Stocks app: the Bonds tab, the bonds on offer with a Treasury ladder, and the player's own.</summary>
     public sealed partial class MarketApp
     {
         public const int TabBonds = 7;
         private const string BondOfferRow = "bo:", BondHeldRow = "bd:", BondLadderRow = "bl:";
 
-        // The purchase being written for the offer picked (or the ladder).
+        // The purchase being written for the offer picked, or the ladder.
         private string _bondFor;
         private long _bondAmount;
         private int _bondReinvest;
         private bool _bondRoll;
-        private readonly List<BondOffer> _ladderOffers = new List<BondOffer>(8);   // the Treasury's offers a ladder is made of, shortest first
+        private readonly List<BondOffer> _ladderOffers = new List<BondOffer>(8);   // the Treasury's offers in a ladder, shortest first
         private readonly long[] _ladderPieces = new long[8];
 
         private TableSpec WriteBonds(InfoBox box, MarketState s)
@@ -100,8 +91,8 @@ namespace RealLifeOverhaul.Markets
                 box.Line(s.Bonds.Holdings.Count > 0
                     ? MarketText.Fill("reallife_mkt_bond_box_held", "count", s.Bonds.Holdings.Count.ToString(), "worth", MarketText.Money(worth), "day", next.ToString())
                     : MarketText.T("reallife_mkt_bond_box_none"));
-                box.Line(MarketText.Fill("reallife_mkt_bond_box_rates", "rate", BondText.Rate(s.Env.RateBp),
-                    "year", BondText.Rate(BondRules.YieldBp(BondKind.Treasury, -1, 1.0, s.Env)), "five", BondText.Rate(BondRules.YieldBp(BondKind.Treasury, -1, 5.0, s.Env))));
+                box.Line(MarketText.Fill("reallife_mkt_bond_box_rates", "rate", BondText.Rate(s.Env.RateBp), "year", BondText.Rate(BondRules.YieldBp(BondKind.Treasury, -1, 1.0, s.Env)),
+                    "five", BondText.Rate(BondRules.YieldBp(BondKind.Treasury, -1, 5.0, s.Env))));
                 box.Line(Settings.MarketsLarge
                     ? MarketText.Fill("reallife_mkt_bond_box_most", "most", MarketText.Money(_director.BondMost), "flat", MarketText.Money(_director.BondFlat),
                         "pct", BondCatalogue.MostWorthPct + "%", "cap", MarketText.Money(_director.BondCap))
@@ -112,8 +103,7 @@ namespace RealLifeOverhaul.Markets
             return MarketTables.Bonds;
         }
 
-        // A bond's next payment in words: "120, day 34"; its last with what it repays, or, rolling over, its interest alone
-        // and that it rolls over (what it repays goes into a new one, not into the cash).
+        // A bond's next payment in words, "120, day 34": the last with what it repays, or rolling over, its interest alone.
         private static string NextWords(BondHolding h, BondDef d, int day)
         {
             bool last = h.Paid + 1 >= h.Payments, rolls = last && InvestRules.Rolls(h, Settings.MarketsBonds);
@@ -121,7 +111,6 @@ namespace RealLifeOverhaul.Markets
             return MarketText.Fill(rolls ? "reallife_mkt_inv_next_roll" : "reallife_mkt_next_pay", "amount", BondText.Money(cents), "day", day.ToString());
         }
 
-        // A bond on offer: what it pays, the amount to put in, the share of its interest to put back, and the button to buy it.
         private void WriteBondOffer(InfoBox box, MarketState s, BondOffer o, string rowId)
         {
             if (_bondFor != rowId)
@@ -139,8 +128,8 @@ namespace RealLifeOverhaul.Markets
             box.Section("reallife_ibox_sec_terms");
             box.Note(MarketText.Fill("reallife_mkt_bond_offer_what", "rate", BondText.Rate(o.YieldBp), "pays", BondText.Pays(o.Def), "term", BondText.Term(o.Def.TermQuarters),
                 "day", (s.Day + BondRules.TermDays(o.Def, year)).ToString()));
-            box.Line(MarketText.Fill(o.Def.Kind == BondKind.Deposit ? "reallife_mkt_bond_about_deposit" : o.Def.Kind == BondKind.City ? "reallife_mkt_bond_about_city" : "reallife_mkt_bond_about_treasury",
-                "bank", o.Issuer ?? string.Empty, "months", BondCatalogue.DepositPenaltyMonths.ToString()));
+            string about = o.Def.Kind == BondKind.Deposit ? "reallife_mkt_bond_about_deposit" : o.Def.Kind == BondKind.City ? "reallife_mkt_bond_about_city" : "reallife_mkt_bond_about_treasury";
+            box.Line(MarketText.Fill(about, "bank", o.Issuer ?? string.Empty, "months", BondCatalogue.DepositPenaltyMonths.ToString()));
             box.Note(MarketText.Fill("reallife_mkt_bond_offer_limits", "least", MarketText.Money(_director.BondLeast), "most", MarketText.Money(_director.BondMost)));
             PurchaseChoices(box);
             BondWhy why = _director.CanBuyBond(o, _bondAmount);
@@ -167,7 +156,6 @@ namespace RealLifeOverhaul.Markets
             return pct <= 0 ? MarketText.T("reallife_mkt_bond_set_reinvest_none") : MarketText.Fill("reallife_mkt_bond_set_reinvest", "pct", pct.ToString());
         }
 
-        // The share of its interest put back and whether it rolls over, for a purchase being written (a bond or the ladder).
         private void PurchaseChoices(InfoBox box)
         {
             box.Selector(BondCatalogue.Reinvest.Length, Math.Max(0, Array.IndexOf(BondCatalogue.Reinvest, _bondReinvest)), ReinvestWords, i => UiClone.Safe(() =>
@@ -187,7 +175,7 @@ namespace RealLifeOverhaul.Markets
             long amount = _bondAmount;
             int reinvest = _bondReinvest;
             bool roll = _bondRoll;
-            BondWhy why = _director.CanBuyBond(o, amount);   // (as it is now, not as it was drawn)
+            BondWhy why = _director.CanBuyBond(o, amount);   // as it is now, not as it was drawn
             if (why != BondWhy.None)
             {
                 BondError(why);
@@ -197,8 +185,9 @@ namespace RealLifeOverhaul.Markets
             int end = (_director.State != null ? _director.State.Day : 0) + BondRules.TermDays(o.Def, _director.State != null ? _director.State.YearDays : 60);
             GameConfirm.Show(
                 MarketText.Fill("reallife_mkt_bond_confirm_buy", "name", name),
-                MarketText.Fill("reallife_mkt_bond_confirm_buy_body", "amount", MarketText.Money(amount), "name", name, "rate", BondText.Rate(o.YieldBp), "day", end.ToString(), "reinvest",
-                    ReinvestWords(Math.Max(0, Array.IndexOf(BondCatalogue.Reinvest, reinvest)))) + (roll ? "\n" + MarketText.T("reallife_mkt_bond_confirm_roll") : string.Empty),
+                MarketText.Fill("reallife_mkt_bond_confirm_buy_body", "amount", MarketText.Money(amount), "name", name, "rate", BondText.Rate(o.YieldBp), "day", end.ToString(),
+                    "reinvest", ReinvestWords(Math.Max(0, Array.IndexOf(BondCatalogue.Reinvest, reinvest))))
+                + (roll ? "\n" + MarketText.T("reallife_mkt_bond_confirm_roll") : string.Empty),
                 () => UiClone.Safe(() =>
                 {
                     BondHolding h = _director.BuyBond(o, amount, reinvest, roll, out BondWhy refused);
@@ -209,14 +198,14 @@ namespace RealLifeOverhaul.Markets
                     else
                     {
                         Notifications.Show(NotificationType.Success, "reallife_mkt_bond_note_bought",
-                            new Dictionary<string, string> { { "name", name }, { "amount", MarketText.Money(amount) }, { "rate", BondText.Rate(h.RateBp) } }, 6f, null, null, true, false);
+                            new Dictionary<string, string> { { "name", name }, { "amount", MarketText.Money(amount) }, { "rate", BondText.Rate(h.RateBp) } }, 6f, null, null, true,
+                            false);
                         _picked = BondHeldRow + h.Id;
                     }
                     Refresh();
                 }), null, "reallife_mkt_bond_buy", "common_cancel", false, false);
         }
 
-        // One of the player's bonds: its record, the share of its interest put back, and the button to sell it.
         private void WriteBondHeld(InfoBox box, MarketState s, BondHolding h)
         {
             BondDef d = BondCatalogue.Find(h.Def);
@@ -224,17 +213,18 @@ namespace RealLifeOverhaul.Markets
             box.Title(name);
             box.Chip(BondText.Rate(h.RateBp));
             StatusLine(box);
-            box.Note(MarketText.Fill("reallife_mkt_bond_held_what", "face", BondText.Money(h.Face), "rate", BondText.Rate(h.RateBp), "day", h.EndDay.ToString(), "paid", h.Paid.ToString(),
-                "count", h.Payments.ToString()));
+            box.Note(MarketText.Fill("reallife_mkt_bond_held_what", "face", BondText.Money(h.Face), "rate", BondText.Rate(h.RateBp), "day", h.EndDay.ToString(), "paid",
+                h.Paid.ToString(), "count", h.Payments.ToString()));
             int day = BondRules.NextPayDay(h);
             box.Section("reallife_ibox_sec_payments");
             if (day > 0 && d != null)
             {
-                bool last = h.Paid + 1 >= h.Payments, rolls = last && InvestRules.Rolls(h, Settings.MarketsBonds);   // (rolling over: what it repays goes into a new one)
-                box.Line(MarketText.Fill(rolls ? "reallife_mkt_bond_held_last_roll" : last ? "reallife_mkt_bond_held_last" : "reallife_mkt_bond_held_next", "day", day.ToString(),
-                    "amount", BondText.Money(BondRules.InterestCents(h, d)), "face", BondText.Money(h.Face)));
+                bool last = h.Paid + 1 >= h.Payments, rolls = last && InvestRules.Rolls(h, Settings.MarketsBonds);   // rolling over, what it repays goes into a new one
+                box.Line(MarketText.Fill(rolls ? "reallife_mkt_bond_held_last_roll" : last ? "reallife_mkt_bond_held_last" : "reallife_mkt_bond_held_next", "day",
+                    day.ToString(), "amount", BondText.Money(BondRules.InterestCents(h, d)), "face", BondText.Money(h.Face)));
             }
-            box.Line(MarketText.Fill("reallife_mkt_bond_held_record", "received", BondText.Money(h.Received), "back", BondText.Money(h.Reinvested), "tax", BondText.Money(h.Taxed)));
+            box.Line(MarketText.Fill("reallife_mkt_bond_held_record", "received", BondText.Money(h.Received), "back", BondText.Money(h.Reinvested), "tax",
+                BondText.Money(h.Taxed)));
             long sale = _director.BondSale(h);
             box.Section("reallife_ibox_sec_selling");
             if (d != null && d.Kind == BondKind.Deposit)
@@ -243,7 +233,8 @@ namespace RealLifeOverhaul.Markets
             }
             else
             {
-                box.Line(MarketText.Fill("reallife_mkt_bond_held_price", "price", BondText.Price(_director.BondPrice(h)), "worth", BondText.Money(sale), "gain", BondText.Money(sale - h.Cost)));
+                box.Line(MarketText.Fill("reallife_mkt_bond_held_price", "price", BondText.Price(_director.BondPrice(h)), "worth", BondText.Money(sale), "gain",
+                    BondText.Money(sale - h.Cost)));
             }
             int id = h.Id;
             box.Selector(BondCatalogue.Reinvest.Length, Math.Max(0, Array.IndexOf(BondCatalogue.Reinvest, h.Reinvest)), ReinvestWords, i => UiClone.Safe(() =>
@@ -264,7 +255,8 @@ namespace RealLifeOverhaul.Markets
             }));
             Transform buttons = box.ButtonRow();
             bool deposit = d != null && d.Kind == BondKind.Deposit;
-            InfoBox.Button(buttons, InfoBox.Negative, deposit ? "reallife_mkt_bond_close" : "reallife_mkt_bond_sell", () => UiClone.Safe(() => ConfirmSellBond(id, name, deposit)));
+            InfoBox.Button(buttons, InfoBox.Negative, deposit ? "reallife_mkt_bond_close" : "reallife_mkt_bond_sell",
+                () => UiClone.Safe(() => ConfirmSellBond(id, name, deposit)));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -288,8 +280,8 @@ namespace RealLifeOverhaul.Markets
                     }
                     else
                     {
-                        Notifications.Show(NotificationType.Success, "reallife_mkt_bond_note_sold", new Dictionary<string, string> { { "name", name }, { "amount", MarketText.Money(money) } }, 6f, null, null,
-                            true, false);
+                        Notifications.Show(NotificationType.Success, "reallife_mkt_bond_note_sold",
+                            new Dictionary<string, string> { { "name", name }, { "amount", MarketText.Money(money) } }, 6f, null, null, true, false);
                         _picked = null;
                     }
                     Refresh();
@@ -301,9 +293,7 @@ namespace RealLifeOverhaul.Markets
             Notifications.Show(NotificationType.Error, "reallife_mkt_bond_note_refused", new Dictionary<string, string> { { "why", BondText.Why(why) } }, 8f, null, null, true, false);
         }
 
-        // ---------------------------------------------------------------- a ladder
-
-        // The ladder's row among the offers: the Treasury's terms it spreads over (shortest first), their average yield.
+        // The ladder's row among the offers: the Treasury's terms it spreads over and their average yield.
         private void WriteLadderRow(List<BondOffer> offers, int year)
         {
             _ladderOffers.Clear();
@@ -329,7 +319,8 @@ namespace RealLifeOverhaul.Markets
             row.Kind = MarketTables.BondsOffered;
             row.Set(0, MarketText.T("reallife_mkt_bond_ladder"));
             row.Set(1, BondText.KindWords(first));
-            row.Set(2, MarketText.Fill("reallife_mkt_bond_ladder_terms", "first", BondText.Term(first.TermQuarters), "last", BondText.Term(last.TermQuarters)), BondRules.TermDays(last, year));
+            row.Set(2, MarketText.Fill("reallife_mkt_bond_ladder_terms", "first", BondText.Term(first.TermQuarters), "last", BondText.Term(last.TermQuarters)),
+                BondRules.TermDays(last, year));
             row.Set(3, BondText.Rate(average), average);
             row.Set(4, MarketText.T("reallife_mkt_bond_ladder_pays"));
             row.Set(5, BondText.Price(100.0), 100.0);
@@ -338,7 +329,7 @@ namespace RealLifeOverhaul.Markets
             row.Set(8, string.Empty);
         }
 
-        // The ladder's yield: its terms' yields of today averaged (its pieces are even).
+        // Its terms' yields of today averaged, as its pieces are even.
         private int LadderYield()
         {
             long sum = 0;
@@ -349,7 +340,6 @@ namespace RealLifeOverhaul.Markets
             return _ladderOffers.Count > 0 ? (int)(sum / _ladderOffers.Count) : 0;
         }
 
-        // The ladder picked: what it is, its pieces at each term's rate for the amount, the choices, and the button to buy it.
         private void WriteLadder(InfoBox box, MarketState s, string rowId)
         {
             int n = _ladderOffers.Count;
@@ -365,7 +355,8 @@ namespace RealLifeOverhaul.Markets
             box.Chip(BondText.Rate(LadderYield()), CellTone.Green);
             StatusLine(box);
             box.Section("reallife_ibox_sec_terms");
-            box.Note(MarketText.Fill("reallife_mkt_bond_ladder_about", "count", n.ToString(), "first", BondText.Term(first.TermQuarters), "last", BondText.Term(last.TermQuarters)));
+            box.Note(MarketText.Fill("reallife_mkt_bond_ladder_about", "count", n.ToString(), "first", BondText.Term(first.TermQuarters), "last",
+                BondText.Term(last.TermQuarters)));
             int pieces = _director.LadderPieces(_bondAmount, _ladderPieces);
             for (int i = 0; i < pieces && i < n; i++)
             {
@@ -392,7 +383,7 @@ namespace RealLifeOverhaul.Markets
             int reinvest = _bondReinvest;
             bool roll = _bondRoll;
             int n = _ladderOffers.Count;
-            BondWhy why = n > 0 ? _director.LadderWhy(amount) : BondWhy.NoBank;   // (as it is now, not as it was drawn)
+            BondWhy why = n > 0 ? _director.LadderWhy(amount) : BondWhy.NoBank;   // as it is now, not as it was drawn
             if (why != BondWhy.None)
             {
                 BondError(why);
@@ -402,7 +393,8 @@ namespace RealLifeOverhaul.Markets
             GameConfirm.Show(
                 MarketText.T("reallife_mkt_bond_ladder_confirm"),
                 MarketText.Fill("reallife_mkt_bond_ladder_confirm_body", "amount", MarketText.Money(amount), "count", n.ToString(), "first", first, "last", last, "reinvest",
-                    ReinvestWords(Math.Max(0, Array.IndexOf(BondCatalogue.Reinvest, reinvest)))) + (roll ? "\n" + MarketText.T("reallife_mkt_bond_ladder_confirm_roll") : string.Empty),
+                    ReinvestWords(Math.Max(0, Array.IndexOf(BondCatalogue.Reinvest, reinvest))))
+                + (roll ? "\n" + MarketText.T("reallife_mkt_bond_ladder_confirm_roll") : string.Empty),
                 () => UiClone.Safe(() =>
                 {
                     int bought = _director.BuyLadder(amount, reinvest, roll, out BondWhy refused);
@@ -413,16 +405,14 @@ namespace RealLifeOverhaul.Markets
                     else
                     {
                         Notifications.Show(NotificationType.Success, "reallife_mkt_bond_note_ladder",
-                            new Dictionary<string, string> { { "amount", MarketText.Money(amount) }, { "count", bought.ToString() }, { "first", first }, { "last", last } }, 6f, null, null, true, false);
+                            new Dictionary<string, string> { { "amount", MarketText.Money(amount) }, { "count", bought.ToString() }, { "first", first }, { "last", last } }, 6f, null,
+                            null, true, false);
                         _picked = null;
                     }
                     Refresh();
                 }), null, "reallife_mkt_bond_ladder_buy", "common_cancel", false, false);
         }
 
-        // ---------------------------------------------------------------- the account's line of the bonds held
-
-        // The account box's line of the bonds held: their worth and the next payment.
         private void BondsLine(InfoBox box, MarketState s)
         {
             if (s.Bonds.Holdings.Count == 0)
@@ -441,9 +431,7 @@ namespace RealLifeOverhaul.Markets
             box.Line(MarketText.Fill("reallife_mkt_account_bonds", "count", s.Bonds.Holdings.Count.ToString(), "worth", MarketText.Money(worth), "day", next.ToString()));
         }
 
-        // ---------------------------------------------------------------- a property trust on its page
-
-        // What a property trust pays: its year's rate a share, how often, and the next distribution declared.
+        // What a property trust pays on its page: its year's rate a share, how often, and the next distribution declared.
         private static void TrustLine(InfoBox box, Stock k)
         {
             if (!TrustRules.Is(k))

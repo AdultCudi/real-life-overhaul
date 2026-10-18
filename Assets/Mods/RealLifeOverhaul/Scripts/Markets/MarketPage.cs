@@ -10,17 +10,18 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// A company's page (or the city index's) in the Stocks app, in place of the table on the right: its name and its
-    /// state over the candle chart (<see cref="MarketChart"/>) or its figures and results, and under it the choices of
-    /// what to show (the chart or the figures, the stretch of time, the line over the candles, the pane under them).
-    /// Made of the game's own parts: the white box's lines, title and previous/next selectors, over a copy of the
-    /// table's background.
+    /// A company's or the index's page in the Stocks app, in place of the table: its name over the candle chart or its
+    /// figures, and the selectors of what to show under it. Made of the game's own parts, the white box's lines, title and
+    /// selectors over a copy of the table's background. Written on a click, nothing per frame.
     /// </summary>
     internal sealed class MarketPage
     {
         private const int ViewChart = 0, ViewFigures = 1;
         private static readonly string[] ViewKeys = { "reallife_mkt_view_chart", "reallife_mkt_view_figures" };
-        private static readonly string[] FrameKeys = { "reallife_mkt_frame_today", "reallife_mkt_frame_days", "reallife_mkt_frame_weeks", "reallife_mkt_frame_months", "reallife_mkt_frame_years" };
+        private static readonly string[] FrameKeys =
+        {
+            "reallife_mkt_frame_today", "reallife_mkt_frame_days", "reallife_mkt_frame_weeks", "reallife_mkt_frame_months", "reallife_mkt_frame_years"
+        };
         private static readonly string[] OverlayKeys =
         {
             "reallife_mkt_overlay_none", "reallife_mkt_overlay_sma20", "reallife_mkt_overlay_sma50", "reallife_mkt_overlay_ema20", "reallife_mkt_overlay_both", "reallife_mkt_overlay_bollinger"
@@ -37,14 +38,14 @@ namespace RealLifeOverhaul.Markets
         private RectTransform _root, _view, _figures, _controls;
         private TMP_Text _title, _sub, _left, _right, _results;
         private MarketChart _chart;
-        private int _showing = int.MinValue;   // what the page is of: a company's id or MarketApp.IndexPage
+        private int _showing = int.MinValue;   // a company's id or MarketApp.IndexPage
         private int _viewMode;
         private ChartFrame _frame = ChartFrame.Days;
         private ChartOverlay _overlay = ChartOverlay.Sma20And50;
         private ChartLower _lower = ChartLower.Rsi;
 
-        // What the selectors under the page were made for and show (Controls): made again only when that is not what the page
-        // asks for now. A selector clicked shows its new choice itself; its click writes it here as well.
+        // What the selectors under the page were made for and show, so they are made again only when the page asks for
+        // others. A selector clicked shows its new choice itself and writes it here too.
         private bool _madeFor, _madeCompany, _madeChart;
         private string _madeLanguage;
         private int _showsView, _showsFrame, _showsOverlay, _showsLower;
@@ -76,10 +77,8 @@ namespace RealLifeOverhaul.Markets
                     rect.anchorMin = Vector2.zero;
                     rect.anchorMax = Vector2.one;
                     rect.offsetMin = rect.offsetMax = Vector2.zero;
-                    // The game keeps this background switched off (MyEmployees' prefab has it so, and nothing of the game's switches
-                    // it on), so its copy is switched off too: up to 0.27.0 the page stood on no sheet at all. Switched on here, white
-                    // as the white box whose dark lines, title and selectors the page is made of (and as the sheet made below when the
-                    // game has none), its rounded corners kept; it only draws: a click on it falls through as before.
+                    // The game's prefab keeps this background switched off, and so its copy: switched on here, white as the box the
+                    // page is made of, its rounded corners kept; it only draws, so a click falls through.
                     var sheet = copy.GetComponent<Image>();
                     if (sheet != null)
                     {
@@ -125,8 +124,8 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // A text of the box's lifted out of the box's layout and placed by hand.
-        private static TMP_Text Free(TMP_Text text, Vector2 min, Vector2 max, Vector2 at, Vector2 size)
+        // A text of the box's lifted out of the box's layout, to be placed by hand.
+        private static RectTransform Loose(TMP_Text text)
         {
             var layout = text.GetComponent<LayoutElement>();
             if (layout != null)
@@ -138,7 +137,12 @@ namespace RealLifeOverhaul.Markets
             {
                 fitter.enabled = false;
             }
-            var rect = (RectTransform)text.transform;
+            return (RectTransform)text.transform;
+        }
+
+        private static TMP_Text Free(TMP_Text text, Vector2 min, Vector2 max, Vector2 at, Vector2 size)
+        {
+            RectTransform rect = Loose(text);
             rect.anchorMin = min;
             rect.anchorMax = max;
             rect.pivot = new Vector2(0f, 1f);
@@ -164,17 +168,7 @@ namespace RealLifeOverhaul.Markets
         private static TMP_Text Block(AppShell shell, RectTransform parent, Vector2 min, Vector2 max)
         {
             TMP_Text text = shell.Box.Line(string.Empty, parent);
-            var layout = text.GetComponent<LayoutElement>();
-            if (layout != null)
-            {
-                layout.ignoreLayout = true;
-            }
-            var fitter = text.GetComponent<ContentSizeFitter>();
-            if (fitter != null)
-            {
-                fitter.enabled = false;
-            }
-            var rect = (RectTransform)text.transform;
+            RectTransform rect = Loose(text);
             rect.anchorMin = min;
             rect.anchorMax = max;
             rect.offsetMin = new Vector2(10f, 6f);
@@ -186,8 +180,6 @@ namespace RealLifeOverhaul.Markets
             text.enableAutoSizing = false;
             return text;
         }
-
-        // ---------------------------------------------------------------- showing
 
         public void Hide()
         {
@@ -210,11 +202,7 @@ namespace RealLifeOverhaul.Markets
         public void ShowIndex(MarketState s)
         {
             Show();
-            if (_showing != MarketApp.IndexPage)
-            {
-                _showing = MarketApp.IndexPage;
-                _viewMode = ViewChart;
-            }
+            _showing = MarketApp.IndexPage;
             int today = MarketHistory.IndexDayMoveBp(s);
             UiClone.Words(_title, MarketText.T("reallife_mkt_index") + "   " + (s.IndexLast / 100.0).ToString("N2", CultureInfo.CurrentCulture) + "   " + Coloured(today));
             UiClone.Words(_sub, MarketText.Fill("reallife_mkt_page_index_sub", "count", Listed(s).ToString()));
@@ -226,13 +214,11 @@ namespace RealLifeOverhaul.Markets
         public void ShowCompany(MarketState s, Stock k)
         {
             Show();
-            if (_showing != k.Id)
-            {
-                _showing = k.Id;
-            }
+            _showing = k.Id;
             int today = MarketHistory.DayMoveBp(k);
             UiClone.Words(_title, k.Name + "  <size=70%>" + k.Ticker + "</size>   " + MarketText.Price(k.Last) + "   " + Coloured(today));
-            UiClone.Words(_sub, MarketText.Sector(k.Sector) + ", " + MarketText.Size(k.Size) + (k.BidCents > 0 ? "   " + MarketText.Fill("reallife_mkt_status_bid", "price", MarketText.Price(k.BidCents), "day", k.BidEndDay.ToString()) : string.Empty)
+            UiClone.Words(_sub, MarketText.Sector(k.Sector) + ", " + MarketText.Size(k.Size)
+                                + (k.BidCents > 0 ? "   " + MarketText.Fill("reallife_mkt_status_bid", "price", MarketText.Price(k.BidCents), "day", k.BidEndDay.ToString()) : string.Empty)
                                 + (k.SplitDay > 0 ? "   " + MarketText.Fill("reallife_mkt_status_split", "ratio", k.SplitRatio.ToString(), "day", k.SplitDay.ToString()) : string.Empty));
             Controls(s, k);
             if (_viewMode == ViewFigures)
@@ -265,9 +251,8 @@ namespace RealLifeOverhaul.Markets
             return "<color=" + colour + ">" + MarketText.Change(bp) + "</color>";
         }
 
-        // The choices under the page: the view, then (for the chart) the stretch of time, the line and the pane. The selectors
-        // already there are kept when they are the ones the page asks for and show its choices (every click in the app
-        // writes the page again; the selectors were destroyed and copied again each time, four of the game's parts).
+        // The choices under the page: the view, then for the chart the stretch of time, the line and the pane. Every click
+        // writes the page again, so the selectors there are kept while they are the ones asked for.
         private void Controls(MarketState s, Stock k)
         {
             bool company = k != null, chart = _viewMode == ViewChart || k == null;
@@ -325,8 +310,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // ---------------------------------------------------------------- the chart
-
         private void DrawChart(MarketState s, Stock k)
         {
             _candles.Clear();
@@ -354,8 +337,6 @@ namespace RealLifeOverhaul.Markets
             _chart.Show(_candles, _frame, _overlay, _lower, year, k == null, MarketText.T(_frame == ChartFrame.Today ? "reallife_mkt_chart_no_bars" : "reallife_mkt_chart_no_candles"));
         }
 
-        // ---------------------------------------------------------------- the figures
-
         private void Figures(MarketState s, Stock k)
         {
             double worth = k.Shares * (k.Last / 100.0);
@@ -377,8 +358,11 @@ namespace RealLifeOverhaul.Markets
             Pair("reallife_mkt_fig_margin", quarters == 4 && revenue > 0 ? MarketText.Percent((int)(profit * 10000L / revenue)) : "-");
             Pair("reallife_mkt_fig_eps", double.IsNaN(eps) ? "-" : MarketText.PerShare((int)Math.Round(eps * 10000.0)));
             Pair("reallife_mkt_fig_pe", double.IsNaN(pe) ? "-" : pe.ToString("0.0", CultureInfo.CurrentCulture));
-            Pair("reallife_mkt_fig_book", book > 0 ? MarketText.Price((int)Math.Round(book * 100.0)) + "  (" + MarketText.Fill("reallife_mkt_fig_pb", "times", (k.Last / 100.0 / book).ToString("0.0", CultureInfo.CurrentCulture)) + ")" : "-");
-            Pair("reallife_mkt_fig_debt", MarketText.Large(k.Debt) + (k.Rev > 0 ? "  (" + MarketText.Fill("reallife_mkt_fig_of_turnover", "share", MarketText.Percent((int)(k.Debt * 10000.0 / k.Rev))) + ")" : string.Empty));
+            Pair("reallife_mkt_fig_book", book > 0
+                ? MarketText.Price((int)Math.Round(book * 100.0)) + "  (" + MarketText.Fill("reallife_mkt_fig_pb", "times", (k.Last / 100.0 / book).ToString("0.0", CultureInfo.CurrentCulture)) + ")"
+                : "-");
+            Pair("reallife_mkt_fig_debt", MarketText.Large(k.Debt)
+                                          + (k.Rev > 0 ? "  (" + MarketText.Fill("reallife_mkt_fig_of_turnover", "share", MarketText.Percent((int)(k.Debt * 10000.0 / k.Rev))) + ")" : string.Empty));
             UiClone.Words(_left, _text.ToString());
 
             _text.Length = 0;
@@ -387,7 +371,8 @@ namespace RealLifeOverhaul.Markets
             Pair("reallife_mkt_fig_payout", yearly > 0 && !double.IsNaN(eps) && eps > 0 ? MarketText.Percent((int)(yearly / 100.0 / eps * 10000.0)) : "-");
             if (k.DeclaredCents > 0 && k.PayDay >= s.Day)
             {
-                Pair("reallife_mkt_fig_declared", MarketText.Fill("reallife_mkt_fig_declared_value", "amount", MarketText.Price(k.DeclaredCents), "record", k.RecordDay.ToString(), "pay", k.PayDay.ToString()));
+                Pair("reallife_mkt_fig_declared", MarketText.Fill("reallife_mkt_fig_declared_value", "amount", MarketText.Price(k.DeclaredCents), "record", k.RecordDay.ToString(), "pay",
+                    k.PayDay.ToString()));
             }
             Pair("reallife_mkt_fig_results", k.ResultsDay > 0 ? MarketText.Fill("reallife_mkt_day", "day", k.ResultsDay.ToString()) : "-");
             Pair("reallife_mkt_fig_beta", (k.Def.Beta / 100.0).ToString("0.00", CultureInfo.CurrentCulture));
@@ -400,7 +385,8 @@ namespace RealLifeOverhaul.Markets
             }
             Pair("reallife_mkt_fig_range_days", hi > 0 ? MarketText.Fill("reallife_mkt_range", "low", MarketText.Price(lo), "high", MarketText.Price(hi)) : "-");
             Pair("reallife_mkt_fig_volume", MarketApp.Count((long)k.Adv));
-            Pair("reallife_mkt_fig_distress", MarketText.T(k.Distress >= 0.3 ? "reallife_mkt_fig_distress_high" : k.Distress >= MarketCatalogue.DistressFrom ? "reallife_mkt_fig_distress_some" : "reallife_mkt_fig_distress_none"));
+            Pair("reallife_mkt_fig_distress", MarketText.T(k.Distress >= 0.3 ? "reallife_mkt_fig_distress_high"
+                : k.Distress >= MarketCatalogue.DistressFrom ? "reallife_mkt_fig_distress_some" : "reallife_mkt_fig_distress_none"));
             UiClone.Words(_right, _text.ToString());
 
             _text.Length = 0;

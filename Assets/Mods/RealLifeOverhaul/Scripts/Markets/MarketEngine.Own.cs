@@ -2,7 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>What a founder's deal, a buy-back or new shares would come to now (nothing is changed).</summary>
+    /// <summary>What a founder's deal, a buy-back or new shares would come to now; nothing is changed.</summary>
     public struct OwnQuote
     {
         public long Shares;
@@ -10,21 +10,14 @@ namespace RealLifeOverhaul.Markets
         public long Value;           // money for the shares
         public long Reserve;         // the reserve that goes with them
         public long Fee;             // commission, or the underwriters' for new shares
-        public long Total;           // what the founder pays (above nothing) or receives (under nothing)
+        public long Total;           // positive: the founder pays; negative: receives
         public OwnWhy Why;           // None: it can be asked for
     }
 
     /// <summary>
-    /// A player's own company on the market's clock (Markets/Listing): the way to the market at each open (the book
-    /// priced, the first day), its business from its founder's books, its results, what its founder asks for (each a
-    /// tape event, so a reload and every machine of a Going Public session play it at the same moment), and its life
-    /// after each close (meetings, an investor's demand, a bid while it is cheap). Game-free, as the rest of the engine.
-    /// It costs nothing while no player's company is listed or on its way (a field read per company where companies are
-    /// looked at, one comparison at the open); one listed adds a statement day's arithmetic at the open and its meetings
-    /// and bids at the close.
-    ///
-    /// Money moves only on the founder's own machine (<see cref="Mine"/>): every machine plays the company alike, but
-    /// only the founder's cash pays its holders. A test's company (Own.Test) moves no money at all.
+    /// Part of the engine: a player's own company on the market's clock. The founder's asks are tape events, so a reload and
+    /// every machine play them at the same moment; money moves only on the founder's machine (<see cref="Mine"/>), never for
+    /// a test's company. Costs a field read per company while none is listed.
     /// </summary>
     public sealed partial class MarketEngine
     {
@@ -34,7 +27,6 @@ namespace RealLifeOverhaul.Markets
             return MarketBots.Mine(State, s);
         }
 
-        /// <summary>The player of this machine's own listed company, or null.</summary>
         public Stock MineListed()
         {
             for (int i = 0; i < State.Stocks.Count; i++)
@@ -68,14 +60,12 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The market plays alone again (its player has left a Going Public city, or a save made as a guest is opened
-        /// alone): every other player's company leaves it (this player's holding paid out at its last price), and the
-        /// player's own company, set aside while they were a guest, is back where it was. Its days away are counted from
-        /// its founder's books at the next open. Returns how many companies came or went.
+        /// The market plays alone again: every other player's company leaves, paid out at its last price, and the player's own,
+        /// set aside while a guest, is back. Returns how many companies came or went.
         /// </summary>
         public int Alone()
         {
-            Finish();   // (a moment half played is played out first: Midway)
+            Finish();
             if (State.Following)
             {
                 return 0;
@@ -122,10 +112,7 @@ namespace RealLifeOverhaul.Markets
             return moved;
         }
 
-        // ---------------------------------------------------------------- the way to the market, at the open
-
-        // The founder's book priced at its last open, and the company on the market on its first day. Only the founder's
-        // own market does either, alone: a market that follows a Going Public host waits until it plays alone again.
+        // The book priced at its last open and the company listed on its first day, only by the founder's market playing alone.
         private void OwnMorning(int day, in MarketEnv env)
         {
             ListingFile f = State.Listing;
@@ -151,7 +138,7 @@ namespace RealLifeOverhaul.Markets
             f.BookEnd = day;
             if (price < f.WalkCents)
             {
-                f.Stage = ListingStage.Audited;   // (the audit still stands: another prospectus may follow)
+                f.Stage = ListingStage.Audited;   // the audit still stands: another prospectus may follow
                 Say(new MarketNews { Day = day, Kind = MarketNewsKind.OwnPulled, Stock = f.StockId, A = price, B = f.WalkCents });
                 return;
             }
@@ -160,7 +147,7 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.OwnPriced, Stock = f.StockId, A = price, B = f.ListDay, C = f.FloatBp });
         }
 
-        // An id no company in this market has (another player's company may have the one that is the founder's by hash).
+        // An id no company in this market has; another player's company may have the founder's own by hash.
         private int FreeId(int id)
         {
             for (int tries = 0; tries < ListingCatalogue.IdCount; tries++)
@@ -175,7 +162,6 @@ namespace RealLifeOverhaul.Markets
             return id;
         }
 
-        // The city index's move over the last month of market days, in bp.
         private int IndexMonthBp()
         {
             int n = State.IndexDaily.Count;
@@ -192,7 +178,7 @@ namespace RealLifeOverhaul.Markets
             {
                 State.Stocks.Remove(old);
             }
-            Reweigh(s, true);   // (before it is counted: the indices stay where they were)
+            Reweigh(s, true);   // before it is counted: the indices stay where they were
             State.Stocks.Add(s);
             long raised = MarketTrading.Value(f.NewShares, f.PriceCents, false);
             long underwriters = ListingBook.Underwriting(raised, PriceLevel);
@@ -208,15 +194,11 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.Listing, Stock = s.Id, A = f.PriceCents, B = day });
         }
 
-        // ---------------------------------------------------------------- its business, from the founder's books
-
-        // The days of the calendar since the last open: the statements the day's city has, its quarters, and the other
-        // holders' part of each day's profit taken into the reserve (or given back out of a loss).
+        // The calendar days since the last open: the statements, quarters and the other holders' part of each day's profit.
         private void OwnBusiness(Stock s, in MarketEnv env, int from, int day)
         {
             double moved = 0.0;
-            // Statement days before the days of the calendar played now (the company was set aside while its founder was
-            // a guest in another city): their profit is the holders' all the same.
+            // Statement days from before the days played now (set aside while its founder was a guest) count all the same.
             for (int d = env.OwnFrom + 1; d < from && d <= env.OwnFrom + env.OwnDays; d++)
             {
                 moved += ListingRules.Day(s, env, Year, d);
@@ -228,7 +210,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     if (s.PendingQuarter >= 0)
                     {
-                        Say(ListingRules.Results(s, day, Year, env));   // (results that were never given out, after a long gap: out now)
+                        Say(ListingRules.Results(s, day, Year, env));   // results never given out after a long gap: out now
                         OwnResults(s, day);
                     }
                     ListingRules.CloseQuarter(s, quarter, Year, env);
@@ -243,8 +225,7 @@ namespace RealLifeOverhaul.Markets
             Holders(s, moved);
         }
 
-        // The other holders' part of the company's profit, between the founder's cash and the reserve: whole units move,
-        // what is left over waits for the next morning.
+        // The other holders' part of the profit between the founder's cash and the reserve; the part under a unit waits.
         private void Holders(Stock s, double money)
         {
             OwnListing o = s.Own;
@@ -265,7 +246,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // After its results: an investor may buy in to press the board.
         private void OwnResults(Stock s, int day)
         {
             OwnListing o = s.Own;
@@ -281,14 +261,12 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.OwnActivist, Stock = s.Id, A = o.ActBp, B = (int)demand, C = o.ActDay });
         }
 
-        // ---------------------------------------------------------------- after the close
-
-        // A bid's last day, its meetings, a bid while it is cheap, a split when its shares trade high (as every company's).
+        // A bid's last day, its meetings, a bid while it is cheap, a split when its shares trade high.
         private void OwnCorporate(Stock s, int day)
         {
             if (OwnBidDue(s, day))
             {
-                return;   // (it has left the market)
+                return;   // it has left the market
             }
             OwnMeetings(s, day);
             OwnBidChance(s, day);
@@ -359,11 +337,11 @@ namespace RealLifeOverhaul.Markets
             }
             if (!o.Board)
             {
-                o.PayBp = Math.Min(o.PayBp, ListingCatalogue.PayRefBp);   // (a board that is not the founder's sets the fair pay)
+                o.PayBp = Math.Min(o.PayBp, ListingCatalogue.PayRefBp);   // a board that is not the founder's sets the fair pay
             }
             if ((bits & ListingVotes.HadDemand) != 0)
             {
-                o.ActBp = 0;   // (the investor has had their vote and sells out)
+                o.ActBp = 0;   // the investor has had their vote and sells out
                 o.ActDemand = ActivistDemand.None;
                 o.ActDay = 0;
             }
@@ -382,7 +360,7 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.OwnMeeting, Stock = s.Id, A = bits, B = against, C = extraordinary ? 1 : 0 });
         }
 
-        // A dividend out of the reserve the holders voted for: declared now, on top of one declared and not yet paid.
+        // A dividend out of the reserve the holders voted for, on top of one declared and not yet paid.
         private void Special(Stock s, int day, int cents)
         {
             cents = Math.Min(cents, ListingRules.Most(s.Own));
@@ -402,10 +380,10 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.Dividend, Stock = s.Id, A = s.DeclaredCents, B = s.RecordDay, C = s.PayDay });
         }
 
-        /// <summary>An investor buys into a player's company to press its board for a demand now (the test tools), as one would after results.</summary>
+        /// <summary>An investor presses a player company's board for a demand now (the test tools), as one would after results.</summary>
         public bool PressBoard(int stockId, ActivistDemand demand)
         {
-            Finish();   // (a moment half played is played out first: Midway)
+            Finish();
             Stock s = State.Stock(stockId);
             if (s == null || s.Own == null || !s.Listed || demand == ActivistDemand.None)
             {
@@ -418,8 +396,6 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.OwnActivist, Stock = s.Id, A = o.ActBp, B = (int)demand, C = o.ActDay });
             return true;
         }
-
-        // ---------------------------------------------------------------- a bid for it
 
         private void OwnBidChance(Stock s, int day)
         {
@@ -435,8 +411,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // A bid for a player's company: a premium on its price, to complete in some weeks. As for any company, from the next
-        // open its price is what the bid is worth less the chance it fails, and the market's mood about it no longer counts.
+        // A bid for a player's company at a premium; as for any company, from the next open its price is the bid's.
         private void OwnBid(Stock s, int day)
         {
             double premium = ListingCatalogue.OwnTakeoverPremiumLeast + (ListingCatalogue.OwnTakeoverPremiumMost - ListingCatalogue.OwnTakeoverPremiumLeast)
@@ -452,7 +427,8 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock other = State.Stocks[i];
-                if (other.Listed && other != s && other.Own == null && other.Sector == s.Sector && other.MarketValue > s.MarketValue * 3.0 && other.BidCents <= 0 && (other.Def == null || !other.Def.Holding))
+                if (other.Listed && other != s && other.Own == null && other.Sector == s.Sector && other.MarketValue > s.MarketValue * 3.0 && other.BidCents <= 0
+                    && (other.Def == null || !other.Def.Holding))
                 {
                     _scratch.Add(other);
                 }
@@ -462,23 +438,21 @@ namespace RealLifeOverhaul.Markets
             _bidderNext = 0;
             if (named != null && named.Listed && named != s)
             {
-                s.BidderId = named.Id;   // (a rival tycoon's holding bids: MarketEngine.Holdings.cs)
+                s.BidderId = named.Id;   // a rival tycoon's holding bids (MarketEngine.Holdings.cs)
                 named.Outlook -= 0.02;
             }
             else if (_scratch.Count > 0 && MarketRandom.Unit(_secret, MarketRandom.OwnBid, s.Id, 4) < 0.7)
             {
                 Stock bidder = _scratch[MarketRandom.Below(_secret, MarketRandom.OwnBid, s.Id, 5, _scratch.Count)];
                 s.BidderId = bidder.Id;
-                bidder.Outlook -= 0.02;   // (the premium it pays: from the next open)
+                bidder.Outlook -= 0.02;   // the premium it pays, from the next open
             }
             _scratch.Clear();
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.Bid, Stock = s.Id, A = s.BidCents, B = s.BidEndDay, C = s.BidderId });
         }
 
-        // A bid's last day: it wins only while the founder holds less than the threshold and the holders take it (the
-        // likelier the more it offers over what the company is worth). Won, every holder is paid the bid, the founder
-        // for their own shares too, and the company leaves the market with its reserve: its businesses are the bidder's
-        // (the founder's machine hands them over: the director hears BidDone). True when it has left.
+        // A bid's last day: it wins only while the founder holds under the threshold and the holders take it; the founder's
+        // machine hands its businesses over when the director hears BidDone. True when it has left.
         private bool OwnBidDue(Stock s, int day)
         {
             if (s.BidCents <= 0 || s.BidEndDay > day)
@@ -506,12 +480,7 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        // ---------------------------------------------------------------- what the founder asks for
-
-        /// <summary>
-        /// Why an action of the founder's cannot be asked for now (OwnWhy.None: it can), from the market as it stands; the
-        /// same test is made again when its moment comes, on every machine alike.
-        /// </summary>
+        /// <summary>Why a founder's action cannot be asked for now; the same test is made again at its moment on every machine.</summary>
         public OwnWhy CanAsk(Stock s, OwnAction action, long value)
         {
             if (s == null || !s.Listed || s.Own == null)
@@ -521,7 +490,7 @@ namespace RealLifeOverhaul.Markets
             OwnListing o = s.Own;
             if (action == OwnAction.Audit || action == OwnAction.Proceeds)
             {
-                return OwnWhy.None;   // (the auditors' findings and a business sold: not the founder's to ask)
+                return OwnWhy.None;   // the auditors' findings and a business sold are not the founder's to ask
             }
             bool board = action == OwnAction.Pay || action == OwnAction.Dividend || action == OwnAction.BuyBack || action == OwnAction.Issue || action == OwnAction.Private;
             if (board && !o.Board)
@@ -574,7 +543,7 @@ namespace RealLifeOverhaul.Markets
             return OwnWhy.None;
         }
 
-        /// <summary>What a founder's deal (shares bought, or under nothing sold), a buy-back, new shares or taking the company private comes to now. Nothing is changed.</summary>
+        /// <summary>What a founder's deal (positive bought), a buy-back, new shares or going private comes to now.</summary>
         public OwnQuote Quote(Stock s, OwnAction action, long value)
         {
             var q = new OwnQuote { Why = CanAsk(s, action, value) };
@@ -628,8 +597,7 @@ namespace RealLifeOverhaul.Markets
             return q;
         }
 
-        // An action of the founder's at its moment (from the tape on a reload or a guest's machine): the same test as when
-        // it was asked for, and then done. A refusal is news (the founder is told why).
+        // A founder's action at its moment, from the tape too: the same test as when asked, then done; a refusal is news.
         private void OwnEvent(in MarketEvent e)
         {
             var action = (OwnAction)(e.Kind - MarketInputs.EventOwn);
@@ -667,8 +635,8 @@ namespace RealLifeOverhaul.Markets
                     break;
                 case OwnAction.Proceeds:
                 {
-                    // A business of the company's sold: the price is the company's, every holder's by their shares; the other
-                    // holders' part goes from the founder's cash into the reserve.
+                    // A company business sold: the price is every holder's by their shares; the others' part goes from the
+                    // founder's cash into the reserve.
                     double each = Math.Max(0, e.B) * 1000.0 / Math.Max(1L, s.Shares);
                     Pay(s, (long)Math.Floor(each * Math.Max(0L, o.Others(s))), ListingMoney.Proceeds);
                     o.Rps += each;
@@ -759,8 +727,7 @@ namespace RealLifeOverhaul.Markets
             Leave(s, State.Day, GoneReason.Delisted, q.Cents, MarketNewsKind.OwnPrivate);
         }
 
-        // Shares in issue changed (bought back, or new ones sold): the indices take it in without a jump, and an ordinary
-        // day's volume goes with the other holders' shares.
+        // Shares in issue changed: the indices take it without a jump, and a day's volume follows the other holders' shares.
         private void Reshare(Stock s, long change)
         {
             long othersBefore = Math.Max(1L, s.Own.Others(s));
@@ -770,8 +737,7 @@ namespace RealLifeOverhaul.Markets
             s.Adv = Math.Max(1000.0, s.Adv * Math.Max(1L, s.Own.Others(s)) / othersBefore);
         }
 
-        // What a deal of the founder's or the company's does to the price: the lasting part of its own size's move (as any
-        // trade's), and the market's reading of who traded.
+        // A founder's or the company's deal on the price: the lasting part of its size's move, and the market's reading of it.
         private void Moved(Stock s, bool buying, long shares, double reading)
         {
             double share = Math.Sqrt(shares / Math.Max(1.0, s.Adv));

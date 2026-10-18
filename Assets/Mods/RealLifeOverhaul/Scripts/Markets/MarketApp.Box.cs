@@ -9,10 +9,11 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Markets
 {
+    /// <summary>Part of the Stocks app: the Market, Companies, Orders and History tabs, and a company's quote and order ticket.</summary>
     public sealed partial class MarketApp
     {
         private const string CompanyRow = "co:", HoldingRow = "po:", SectorRow = "ix:", OrderRow = "or:", TradeRow = "tr:";
-        private const int NewsInBox = 3, TypedLength = 12;   // the news in the box: the three newest (the Ledger's markets page has the rest)
+        private const int NewsInBox = 3, TypedLength = 12;   // the newest in the box; the Ledger's markets page has the rest
         private const int QtyDefault = 10;
 
         private static readonly string[] SideKeys = { "reallife_mkt_side_buy", "reallife_mkt_side_sell" };
@@ -32,13 +33,12 @@ namespace RealLifeOverhaul.Markets
             "reallife_mkt_kind_bot_taken"
         };
 
-        // The order being written on a company's page.
         private OrderSide _side;
         private OrderType _type;
-        private int _kind;           // KindMarket...: _type and whether it only closes follow from it
+        private int _kind;           // KindMarket...: the type and whether it only closes follow from it
         private OrderLife _life;
         private long _qty = QtyDefault;
-        private int _priceCents;     // a limit's or a stop's price; 0 until one is typed (the quote is then taken)
+        private int _priceCents;     // a limit's or a stop's price; 0 until one is typed, the quote then taken
 
         private void ResetTicket()
         {
@@ -49,8 +49,6 @@ namespace RealLifeOverhaul.Markets
             _qty = QtyDefault;
             _priceCents = 0;
         }
-
-        // ---------------------------------------------------------------- the market's state, the same on every page
 
         private void StatusLine(InfoBox box)
         {
@@ -84,8 +82,6 @@ namespace RealLifeOverhaul.Markets
             return (hundredths / 100.0).ToString("N2", CultureInfo.CurrentCulture);
         }
 
-        // ---------------------------------------------------------------- Market
-
         private TableSpec WriteMarket(InfoBox box, MarketState s)
         {
             int today = MarketHistory.IndexDayMoveBp(s);
@@ -108,7 +104,7 @@ namespace RealLifeOverhaul.Markets
                 string news = MarketText.News(n, s);
                 if (news.Length == 0)
                 {
-                    continue;   // (a player's company's refusals and the like are no news)
+                    continue;   // a player's company's refusals and the like are no news
                 }
                 box.Line(news);
                 said++;
@@ -156,7 +152,6 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The city index's page: its box.
         private void WriteIndexBox(InfoBox box, MarketState s)
         {
             box.Title(MarketText.T("reallife_mkt_index"));
@@ -171,8 +166,6 @@ namespace RealLifeOverhaul.Markets
             box.Note(MarketText.T("reallife_mkt_box_index_about"));
             Meta.Guide.Point(box, GuideTitle);
         }
-
-        // ---------------------------------------------------------------- Companies and the watch list
 
         private TableSpec WriteCompanies(InfoBox box, MarketState s, bool watched)
         {
@@ -212,8 +205,6 @@ namespace RealLifeOverhaul.Markets
             Meta.Guide.Point(box, GuideTitle);
             return watched ? MarketTables.Watch : MarketTables.Companies;
         }
-
-        // ---------------------------------------------------------------- Orders
 
         private TableSpec WriteOrders(InfoBox box, MarketState s)
         {
@@ -265,7 +256,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (o.Worked || o.Back)
             {
-                WriteInvestOrder(box, s, k, o);   // a worked order's progress, or a dividend put back (MarketApp.Invest.cs)
+                WriteInvestOrder(box, s, k, o);   // MarketApp.Invest.cs
             }
             else
             {
@@ -310,8 +301,6 @@ namespace RealLifeOverhaul.Markets
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // ---------------------------------------------------------------- Portfolio (MarketApp.Portfolio.cs)
-
         // The game's own text box for a sum of money; what is typed is checked by what it is for.
         private void AskMoney(Transform row, int kind, string buttonKey, string placeholderKey, Action<long> then)
         {
@@ -322,8 +311,8 @@ namespace RealLifeOverhaul.Markets
             }
             InfoBox.Button(row, kind, buttonKey, () => uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
             {
-                long amount;
-                if (!long.TryParse((text ?? string.Empty).Trim().Replace(",", string.Empty).Replace(".", string.Empty), NumberStyles.Integer, CultureInfo.InvariantCulture, out amount)
+                if (!long.TryParse((text ?? string.Empty).Trim().Replace(",", string.Empty).Replace(".", string.Empty), NumberStyles.Integer, CultureInfo.InvariantCulture,
+                        out long amount)
                     || amount <= 0)
                 {
                     Notifications.ShowError("common_notification_invalid_amount", null, false);
@@ -333,8 +322,6 @@ namespace RealLifeOverhaul.Markets
                 Refresh();
             }), null, string.Empty, false, TypedLength));
         }
-
-        // ---------------------------------------------------------------- History
 
         private TableSpec WriteHistory(InfoBox box, MarketState s)
         {
@@ -366,13 +353,11 @@ namespace RealLifeOverhaul.Markets
             return MarketTables.History;
         }
 
-        // ---------------------------------------------------------------- a company's quote and the order ticket
-
         private void WriteTicket(InfoBox box, MarketState s, Stock k)
         {
             if (k.Own != null && _director.Engine != null && _director.Engine.Mine(k))
             {
-                WriteOwnTicket(box, s, k);   // the founder deals by the rules of their own (MarketApp.Own.cs)
+                WriteOwnTicket(box, s, k);   // the founder deals by their own rules (MarketApp.Own.cs)
                 return;
             }
             box.Title(k.Name);
@@ -382,7 +367,8 @@ namespace RealLifeOverhaul.Markets
             box.Chip(MarketText.Change(bp), bp > 0 ? CellTone.Green : bp < 0 ? CellTone.Red : CellTone.Plain);
             box.Section("reallife_ibox_sec_quote");
             box.RowPair("reallife_ibox_bid", MarketText.Price(q.Bid), "reallife_ibox_ask", MarketText.Price(q.Ask));
-            box.Note(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change", MarketText.Change(bp)));
+            box.Note(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change",
+                MarketText.Change(bp)));
             long held = s.Held(k.Id);
             Position p = s.Position(k.Id);
             if (held != 0 && p != null)
@@ -396,13 +382,13 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Line(MarketText.Fill("reallife_mkt_ticket_status", "status", Status(s, k)));
             }
-            TrustLine(box, k);   // a property trust: what it pays and when (MarketApp.Bonds.cs)
-            PutBackChoice(box, k, p);   // the share of each dividend the holding puts back (MarketApp.Invest.cs)
+            TrustLine(box, k);
+            PutBackChoice(box, k, p);
             bool closing = _kind >= KindStopLoss;
             box.Section("reallife_ibox_sec_order");
             if (closing)
             {
-                // A stop loss or a take profit is on what is held: it sells a holding, or buys back shares sold short.
+                // A stop loss or a take profit is on what is held: it sells a holding or buys back a short.
                 _side = held < 0 ? OrderSide.Buy : OrderSide.Sell;
             }
             else
@@ -422,7 +408,7 @@ namespace RealLifeOverhaul.Markets
                 long holding = Math.Abs(s.Held(k.Id));
                 if (i >= KindStopLoss && holding > 0)
                 {
-                    _qty = holding;   // (all of it, to begin with)
+                    _qty = holding;   // all of it, to begin with
                 }
                 Refresh();
             }));
@@ -439,8 +425,8 @@ namespace RealLifeOverhaul.Markets
             });
             if (_type != OrderType.Market)
             {
-                AskNumber(typed, InfoBox.Positive, MarketText.Fill(_kind == KindTakeProfit ? "reallife_mkt_ticket_take_profit" : _type == OrderType.Limit ? "reallife_mkt_ticket_limit" : "reallife_mkt_ticket_stop",
-                        "price", MarketText.Price(price)),
+                string key = _kind == KindTakeProfit ? "reallife_mkt_ticket_take_profit" : _type == OrderType.Limit ? "reallife_mkt_ticket_limit" : "reallife_mkt_ticket_stop";
+                AskNumber(typed, InfoBox.Positive, MarketText.Fill(key, "price", MarketText.Price(price)),
                     "reallife_mkt_price_placeholder", true, value =>
                     {
                         _priceCents = (int)Math.Max(1, Math.Min(int.MaxValue, value));
@@ -449,12 +435,12 @@ namespace RealLifeOverhaul.Markets
             Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0, closing);
             if (Worked(e, closing))
             {
-                WorkedLines(box, s, k, q);   // over one order's most: it is worked, a slice of each step's trading (MarketApp.Invest.cs)
+                WorkedLines(box, s, k, q);   // over one order's most it is worked (MarketApp.Invest.cs)
             }
             else if (e.Why == OrderWhy.None)
             {
-                box.Line(MarketText.Fill(_side == OrderSide.Buy ? "reallife_mkt_ticket_cost" : "reallife_mkt_ticket_brings", "price", MarketText.Price(e.PriceCents), "value", MarketText.Money(e.Value),
-                    "fee", MarketText.Money(e.Fee), "total", MarketText.Money(e.Total)));
+                box.Line(MarketText.Fill(_side == OrderSide.Buy ? "reallife_mkt_ticket_cost" : "reallife_mkt_ticket_brings", "price", MarketText.Price(e.PriceCents), "value",
+                    MarketText.Money(e.Value), "fee", MarketText.Money(e.Fee), "total", MarketText.Money(e.Total)));
                 if (e.ImpactBp >= 5)
                 {
                     box.Line(MarketText.Fill("reallife_mkt_ticket_impact", "move", MarketText.Percent(e.ImpactBp)), CellTone.Yellow);
@@ -466,7 +452,7 @@ namespace RealLifeOverhaul.Markets
             }
             Transform buttons = box.ButtonRow();
             Stock company = k;
-            // (always lit: an order that cannot be placed has its reason in the line above, and pressed, in the game's notification)
+            // Always lit: an order that cannot be placed says why in the line above, and pressed, in a notification.
             InfoBox.Button(buttons, InfoBox.Positive, _side == OrderSide.Buy ? "reallife_mkt_buy" : "reallife_mkt_sell", () => UiClone.Safe(() => Confirm(company, price)));
             bool watching = s.Watching(k.Id);
             InfoBox.Button(buttons, InfoBox.Additional, watching ? "reallife_mkt_unwatch" : "reallife_mkt_watch", () => UiClone.Safe(() =>
@@ -481,8 +467,7 @@ namespace RealLifeOverhaul.Markets
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // A limit's or a stop's price as typed, or one to begin with: a limit to buy at the offer and to sell at the bid, a
-        // stop loss a twentieth beyond the price, a take profit a tenth.
+        // A limit's or a stop's price to begin with: a limit at the offer or bid, a stop loss a twentieth beyond, a take profit a tenth.
         private int TicketPrice(in Quote q)
         {
             if (_priceCents > 0)
@@ -500,7 +485,7 @@ namespace RealLifeOverhaul.Markets
             return _side == OrderSide.Buy ? q.Ask : q.Bid;
         }
 
-        // An order's kind in words: a stop loss and a take profit by their own names, a worked order and a dividend put back by theirs.
+        // A stop loss and a take profit by their own names, a worked order and a dividend put back by theirs.
         private static string KindWords(Order o)
         {
             if (o.Worked || o.Back)
@@ -532,34 +517,43 @@ namespace RealLifeOverhaul.Markets
             return MarketText.Sector(k.Sector) + ", " + MarketText.Size(k.Size);
         }
 
-        // The game's own text box for a number of shares or a price.
         private void AskNumber(Transform row, int kind, string words, string placeholderKey, bool price, Action<long> then)
+        {
+            UnityEngine.UI.Button button = AskValue(row, kind, "reallife_mkt_ticket_shares", placeholderKey, price, true, then);
+            if (button != null)
+            {
+                var label = button.GetComponentInChildren<TMPro.TMP_Text>(true);
+                if (label != null)
+                {
+                    UiClone.Words(label, words);   // the figure on the button; the key above only stands for its kind
+                }
+            }
+        }
+
+        // The game's own text box for a number of shares, or a price in cents with 'price'; null if the game has none.
+        private UnityEngine.UI.Button AskValue(Transform row, int kind, string key, string placeholderKey, bool price, bool refresh, Action<long> then)
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
             if (uis == null || uis.textInputUi == null)
             {
-                return;
+                return null;
             }
-            UnityEngine.UI.Button button = InfoBox.Button(row, kind, "reallife_mkt_ticket_shares", () => uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
+            return InfoBox.Button(row, kind, key, () => uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
             {
                 long value;
-                if (!(price ? TryCents(text, out value) : long.TryParse((text ?? string.Empty).Trim().Replace(",", string.Empty), NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
+                if (!(price ? TryCents(text, out value)
+                        : long.TryParse((text ?? string.Empty).Trim().Replace(",", string.Empty), NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
                     || value <= 0)
                 {
                     Notifications.ShowError("common_notification_invalid_amount", null, false);
                     return;
                 }
                 then(value);
-                Refresh();
-            }), null, string.Empty, false, TypedLength));
-            if (button != null)
-            {
-                var label = button.GetComponentInChildren<TMPro.TMP_Text>(true);
-                if (label != null)
+                if (refresh)
                 {
-                    UiClone.Words(label, words);   // (the figure on the button: the key above only stands for the button's kind)
+                    Refresh();
                 }
-            }
+            }), null, string.Empty, false, TypedLength));
         }
 
         /// <summary>A price as typed ("12.5", "12,50", "1234") in cents.</summary>
@@ -567,8 +561,7 @@ namespace RealLifeOverhaul.Markets
         {
             cents = 0;
             string t = (text ?? string.Empty).Trim().Replace(',', '.');
-            decimal value;
-            if (!decimal.TryParse(t, NumberStyles.Number, CultureInfo.InvariantCulture, out value) || value <= 0m || value > 10000000m)
+            if (!decimal.TryParse(t, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal value) || value <= 0m || value > 10000000m)
             {
                 return false;
             }
@@ -576,14 +569,14 @@ namespace RealLifeOverhaul.Markets
             return cents > 0;
         }
 
-        // The order, as it will be placed, put to the player before it is.
         private void Confirm(Stock k, int price)
         {
             bool closing = _kind >= KindStopLoss;
-            Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0, closing);   // (as it is now, not as it was drawn)
+            // As it is now, not as it was drawn.
+            Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0, closing);
             if (Worked(e, closing))
             {
-                ConfirmWorked(k);   // (larger than one order may be: worked, MarketApp.Invest.cs)
+                ConfirmWorked(k);   // larger than one order may be (MarketApp.Invest.cs)
                 return;
             }
             if (e.Why != OrderWhy.None)
@@ -608,8 +601,7 @@ namespace RealLifeOverhaul.Markets
 
         private void Place(Stock k, OrderSide side, OrderType type, OrderLife life, long qty, int price, bool closing)
         {
-            OrderWhy why;
-            Order order = _director.Place(k.Id, side, type, life, qty, type == OrderType.Limit ? price : 0, type == OrderType.Stop ? price : 0, false, out why, closing);
+            Order order = _director.Place(k.Id, side, type, life, qty, type == OrderType.Limit ? price : 0, type == OrderType.Stop ? price : 0, false, out OrderWhy why, closing);
             if (order == null)
             {
                 Error(why, k);
@@ -623,8 +615,8 @@ namespace RealLifeOverhaul.Markets
 
         private static void Error(OrderWhy why, Stock k)
         {
-            Notifications.Show(NotificationType.Error, "reallife_mkt_note_refused", new Dictionary<string, string> { { "name", k != null ? k.Name : string.Empty }, { "why", MarketText.Why(why) } },
-                8f, null, null, true, false);
+            Notifications.Show(NotificationType.Error, "reallife_mkt_note_refused",
+                new Dictionary<string, string> { { "name", k != null ? k.Name : string.Empty }, { "why", MarketText.Why(why) } }, 8f, null, null, true, false);
         }
     }
 }

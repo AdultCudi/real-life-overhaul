@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>A company's price brought from the old market: its new id, its last price and its last closes (oldest first).</summary>
+    /// <summary>A company's price brought from the old market: its new id, last price and last closes, oldest first.</summary>
     public struct CarriedPrice
     {
         public int Id;
@@ -14,11 +14,9 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// A new market for a save. Game-free. Every company of the catalogue that is listed at the start, and up to four
-    /// holdings of the game's own named rivals, at the city's price level, each with a history of its last hundred
-    /// market days and the two years before (made up from the moves its prices have; a company brought over from the
-    /// old market keeps its price and its last closes). The city's index starts at 1,000 and so does each sector's.
-    /// The same save opened twice on the same day gives the same market (its seed is the playthrough's and the day).
+    /// A new market for a save: every catalogue company listed at the start and up to four rivals' holdings, each with a
+    /// made-up history; a company brought over keeps its price and closes. The index and every sector start at 1,000. Seeded
+    /// by the playthrough and the day, so it is the same twice.
     /// </summary>
     public static class MarketSetup
     {
@@ -69,8 +67,8 @@ namespace RealLifeOverhaul.Markets
                 Add(state, s, default(CarriedPrice), day, year, seed);
             }
             Indices(state, year);
-            state.Weighted = true;   // (no holding and no company over the cap at the start: the float-weighted, capped index is this one)
-            MarketLife.DayBases(state, state.InSession);   // (as a save of this moment reads: MarketStore.Read)
+            state.Weighted = true;   // no holding and nobody over the cap at the start: this is the weighted index
+            MarketLife.DayBases(state, state.InSession);   // as a save of this moment reads (MarketStore.Read)
             return state;
         }
 
@@ -86,7 +84,6 @@ namespace RealLifeOverhaul.Markets
             return default(CarriedPrice);
         }
 
-        /// <summary>The rival holding listed under a name; null if there is none.</summary>
         public static Stock Rival(MarketState state, string name)
         {
             for (int i = 0; i < state.Stocks.Count; i++)
@@ -113,19 +110,17 @@ namespace RealLifeOverhaul.Markets
 
         private static void Add(MarketState state, Stock s, in CarriedPrice c, int day, int year, ulong seed)
         {
-            double dayVol = MarketCatalogue.VolScale(year) * Math.Sqrt(Math.Pow(MarketCatalogue.IndexDayVol * s.Def.Beta / 100.0, 2) + Math.Pow(MarketCatalogue.Sectors[(int)s.Sector].SectorVolBp / 10000.0, 2)
-                                      + Math.Pow(s.Def.IdioBp / 10000.0, 2));
+            double dayVol = MarketCatalogue.VolScale(year) * Math.Sqrt(Math.Pow(MarketCatalogue.IndexDayVol * s.Def.Beta / 100.0, 2)
+                                                                       + Math.Pow(MarketCatalogue.Sectors[(int)s.Sector].SectorVolBp / 10000.0, 2)
+                                                                       + Math.Pow(s.Def.IdioBp / 10000.0, 2));
             MarketLife.MakePast(s, day, year, seed, dayVol, c.Closes, c.Closes != null ? Math.Min(c.CloseCount, c.Closes.Length) : 0);
             s.ListedDay = ListedLongAgo(day, year);
             state.Stocks.Add(s);
         }
 
         /// <summary>
-        /// Companies of the catalogue's first block that a save's market has never had (added to the catalogue after it was
-        /// opened, as the property trusts were), made now at the city's price level with their past, as a new market makes
-        /// them: listed years ago, from the save's own id, so the same save loaded twice has the same companies. The city's
-        /// index takes them in without a jump; a sector that had none starts at 1,000 with its history from theirs. How
-        /// many joined. Once a load, for the save's own market (a Going Public guest's is the host's).
+        /// Catalogue companies a save's market never had, made now as a new market makes them, seeded by the save's id; the
+        /// index takes them without a jump. Returns how many joined. Once a load.
         /// </summary>
         public static int Join(MarketState state)
         {
@@ -146,7 +141,6 @@ namespace RealLifeOverhaul.Markets
             {
                 return 0;
             }
-            // What the companies there were and those joining are worth, as the market's index counts them (MarketEngine.Index).
             var had = new double[(int)MarketSector.Count];
             var added = new double[(int)MarketSector.Count];
             double before = 0.0, all = 0.0;
@@ -171,7 +165,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (state.IndexDivisor > 0.0 && before > 0.0)
             {
-                state.IndexDivisor *= (before + all) / before;   // (the index stays where it was)
+                state.IndexDivisor *= (before + all) / before;   // the index stays where it was
             }
             for (int sec = 0; sec < added.Length; sec++)
             {
@@ -214,13 +208,13 @@ namespace RealLifeOverhaul.Markets
             return joined.Count;
         }
 
-        /// <summary>The day a company of a new market counts as listed on: years before (it is no new listing).</summary>
+        /// <summary>The day a company of a new market counts as listed on: years before, so it is no new listing.</summary>
         public static int ListedLongAgo(int day, int year)
         {
             return day - 5 * Math.Max(8, year);
         }
 
-        // The index and each sector's at 1,000 today, and their histories from the companies' (the same day's closes added up).
+        // The index and each sector at 1,000 today, their histories from the companies' closes of each day added up.
         private static void Indices(MarketState state, int year)
         {
             double all = 0.0;
@@ -269,7 +263,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // Open, high, low and close of each day (money: shares times cents) and each sector's close.
+        // Open, high, low and close of each day in shares times cents, and each sector's close.
         private static void AddUp(SortedDictionary<int, double[]> into, List<Candle> candles, long shares, int sector)
         {
             for (int i = 0; i < candles.Count; i++)

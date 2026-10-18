@@ -2,18 +2,12 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>
-    /// The Stocks app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts, which are
-    /// summed, what its rows can be filtered by, and the sentence shown when a filter leaves nothing. The numbers beside
-    /// each are the columns, for whoever writes the rows.
-    /// </summary>
+    /// <summary>The Stocks app's tables as data (GameUi.TableSpec); each summary numbers the columns for whoever writes the rows.</summary>
     internal static class MarketTables
     {
-        // ---- whether an order is still open (the filter of the Orders tab)
         public const int IsOpen = 0, IsDone = 1;
         private static readonly string[] OrderStates = { "reallife_mkt_filter_open", "reallife_mkt_filter_done" };
 
-        /// <summary>While the market is not running: one empty column.</summary>
         public static readonly TableSpec Off = new TableSpec("Stocks", "Off").Column("reallife_mkt_col_company", 600f, TableSort.None, flexible: true);
 
         /// <summary>Market: 0 index, 1 level, 2 today, 3 five days, 4 a month, 5 a quarter, 6 the last hundred days.</summary>
@@ -68,11 +62,7 @@ namespace RealLifeOverhaul.Markets
             .Filter("reallife_mkt_filter_orders", OrderStates)
             .Empty("reallife_mkt_empty_orders");
 
-        /// <summary>
-        /// Portfolio, every holding (MarketApp.Portfolio.cs): 0 holding, 1 what it is (ordered by kind, so a click on its head
-        /// groups them), 2 shares, 3 price (a bond's for each 100), 4 what it cost, 5 worth, 6 gain or loss, 7 income paid so
-        /// far, 8 the next payment; filtered by sector and by kind.
-        /// </summary>
+        /// <summary>Portfolio: 0 holding, 1 kind (sorted by kind), 2 shares, 3 price, 4 cost, 5 worth, 6 gain, 7 income so far, 8 next payment.</summary>
         public static readonly TableSpec Portfolio = new TableSpec("Stocks", "Portfolio")
             .Column("reallife_mkt_col_holding", 400f, TableSort.Text, flexible: true)
             .Column("reallife_mkt_col_kind", 190f, TableSort.Number)
@@ -98,11 +88,10 @@ namespace RealLifeOverhaul.Markets
             .Column("reallife_mkt_bot_col_trades", 150f, TableSort.Number)
             .Column("reallife_mkt_col_state", 220f, TableSort.Text, right: true);
 
-        // ---- bonds on offer and held (the Bonds tab's filter)
         public const int BondsOffered = 0, BondsHeld = 1;
         private static readonly string[] BondStates = { "reallife_mkt_bond_filter_offers", "reallife_mkt_bond_filter_held" };
 
-        /// <summary>Bonds: 0 bond, 1 kind, 2 its term (on offer) or its end, 3 rate, 4 pays, 5 price for each 100, 6 held, 7 worth, 8 the next payment.</summary>
+        /// <summary>Bonds: 0 bond, 1 kind, 2 term or end, 3 rate, 4 pays, 5 price for each 100, 6 held, 7 worth, 8 next payment.</summary>
         public static readonly TableSpec Bonds = new TableSpec("Stocks", "Bonds")
             .Column("reallife_mkt_bond_col_bond", 400f, TableSort.Text, flexible: true)
             .Column("reallife_mkt_bond_col_kind", 190f, TableSort.Text)

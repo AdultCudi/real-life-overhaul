@@ -4,16 +4,12 @@ using System.Text;
 
 namespace RealLifeOverhaul.Markets
 {
+    /// <summary>Part of the market director: the save tools' and the test buttons' parts.</summary>
     public sealed partial class MarketDirector
     {
-        // ---------------------------------------------------------------- for the save tools
-
         /// <summary>
-        /// For the save tools ("prepare this save for removing the mod", "reset the mod's data"): shares do not exist in
-        /// the plain game, so every holding is sold at today's bid and every short bought back at the offer, with no
-        /// commission; a margin account pays back what it holds (or what it owes is taken from the cash), worked orders' money
-        /// with the broker comes back, and every order goes. Each is listed in the log. Then the market stops; the timer
-        /// starts it again while the option is on.
+        /// For the save tools: shares do not exist in the plain game, so everything held is settled at today's bid or offer
+        /// with no commission and every order goes, each listed in the log. Then the market stops.
         /// </summary>
         public void StopAll()
         {
@@ -24,7 +20,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     MarketState s = _engine.State;
                     var log = new StringBuilder(256);
-                    long total = InvestRules.EmptyBroker(s, out long parked, out long dueThen);   // worked orders' money with the broker, first: nothing after gives it back twice
+                    long total = InvestRules.EmptyBroker(s, out long parked, out long dueThen);   // first, so nothing after gives it back twice
                     if (total > 0)
                     {
                         log.Append(" the money with the broker for worked orders ").Append(total).Append(" (").Append(parked).Append(" parked, ").Append(dueThen).Append(" due);");
@@ -57,9 +53,9 @@ namespace RealLifeOverhaul.Markets
                         total += s.Account.Cash;
                         log.Append(" the margin account's ").Append(s.Account.Cash).Append(';');
                     }
-                    total += OwnSettled(log);   // the player's own listed company taken private at its last price (MarketDirector.Own.cs)
-                    total += BotsSettled(log);  // the player's bots' shares (MarketDirector.Bots.cs)
-                    total += BondsSettled(log); // the player's bonds (MarketDirector.Bonds.cs)
+                    total += OwnSettled(log);   // the player's listed company taken private at its last price
+                    total += BotsSettled(log);
+                    total += BondsSettled(log);
                     if (total > 0)
                     {
                         _world.Wallet.Give(total, MarketMoney.Sold, string.Empty);
@@ -95,8 +91,6 @@ namespace RealLifeOverhaul.Markets
             RemoveApp();
         }
 
-        // ---------------------------------------------------------------- the test buttons
-
         /// <summary>Test button: the Stocks app opened on the market's tab.</summary>
         public void TestOpen()
         {
@@ -116,11 +110,7 @@ namespace RealLifeOverhaul.Markets
             Logger?.Info(Test + " test: the app is open on the market (" + State.Stocks.Count + " companies, day " + State.Day + ", phase " + State.Phase + ").");
         }
 
-        /// <summary>
-        /// Test button: a crisis (or a windfall) at a company the player holds, else one they watch, else the largest
-        /// listed: the news is out at once, as a real one is (the notification, the app, tomorrow's City Ledger), and the
-        /// price follows at the next open.
-        /// </summary>
+        /// <summary>Test button: a crisis or a windfall at a company the player holds, else one they watch, else the largest.</summary>
         public void TestNews(bool crisis)
         {
             FinishMoment();
@@ -139,7 +129,7 @@ namespace RealLifeOverhaul.Markets
             OpenCompany(k.Id);
         }
 
-        /// <summary>Test button: a takeover bid for a company the player holds, else one they watch, else the largest listed, made as a real one is.</summary>
+        /// <summary>Test button: a takeover bid for a company the player holds, else one they watch, else the largest.</summary>
         public void TestBid()
         {
             FinishMoment();
@@ -159,7 +149,7 @@ namespace RealLifeOverhaul.Markets
             OpenCompany(k.Id);
         }
 
-        // A company a test can work on: listed and not under a bid, the player's own first, then a watched one, then the largest.
+        // A company a test can work on, listed and not under a bid: the player's own first, then a watched one, then the largest.
         private Stock TestCompany()
         {
             MarketState s = State;

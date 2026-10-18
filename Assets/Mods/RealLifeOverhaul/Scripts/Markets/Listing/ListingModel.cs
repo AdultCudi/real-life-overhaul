@@ -14,8 +14,7 @@ namespace RealLifeOverhaul.Markets
         Listed = 6       // on the market
     }
 
-    /// <summary>What the founder of a listed company asks for (a tape event: MarketInputs.EventOwn + this). Saved as a number.</summary>
-    // (Audit: the yearly audit's findings, B the bits; Proceeds: a business of the company's sold, B the price in thousands. Neither is the founder's to ask.)
+    /// <summary>What the founder asks for, as a tape event (MarketInputs.EventOwn + this); Audit and Proceeds are not theirs to ask. Saved as a number.</summary>
     public enum OwnAction { Pay = 0, Dividend = 1, Deal = 2, BuyBack = 3, Issue = 4, Private = 5, Audit = 6, Proceeds = 7, Count }
 
     /// <summary>Why something the founder asked for cannot be done. Saved as a number (in the news); each has a sentence.</summary>
@@ -27,7 +26,7 @@ namespace RealLifeOverhaul.Markets
     /// <summary>What an investor who buys in to press the board asks for. Saved as a number.</summary>
     public enum ActivistDemand { None = 0, Payout = 1, Pay = 2, Board = 3, Sale = 4, Count }
 
-    /// <summary>The transaction keys of a player's company's money (each has a text and a "_label" in en.json; "shares_" puts them under investments, "fee" under fees, "tax" under tax).</summary>
+    /// <summary>The transaction keys of a listed company's money: "shares_" files them under investments, "fee" under fees.</summary>
     public static class ListingMoney
     {
         public const string Holders = "reallife_transaction_shares_holders";             // the other holders' part of a day's profit, into the reserve
@@ -35,8 +34,8 @@ namespace RealLifeOverhaul.Markets
         public const string Offer = "reallife_transaction_shares_offer";                 // the shares sold in the offer
         public const string Underwriting = "reallife_transaction_shares_underwriting";   // the underwriters, out of an offer or new shares
         public const string Advisers = "reallife_transaction_listing_advisers_fee";          // the advisers' retainer
-        public const string Audit = "reallife_transaction_listing_audit_fee";            // the auditors (a business cost the game's tax deducts)
-        public const string Exchange = "reallife_transaction_listing_fee";               // the exchange, on the first day and each year (deducted too)
+        public const string Audit = "reallife_transaction_listing_audit_fee";            // a business cost the game's tax deducts
+        public const string Exchange = "reallife_transaction_listing_fee";               // on the first day and each year; deducted too
         public const string ReserveIn = "reallife_transaction_shares_reserve_in";        // the reserve of the shares a founder buys, to them
         public const string ReserveOut = "reallife_transaction_shares_reserve_out";      // ...and of those they sell, from them to the reserve
         public const string BuyBack = "reallife_transaction_shares_buyback";
@@ -45,8 +44,8 @@ namespace RealLifeOverhaul.Markets
         public const string ShortSwing = "reallife_transaction_shares_short_swing";
         public const string Takeover = "reallife_transaction_shares_takeover";
         public const string DividendTax = "reallife_transaction_shares_dividend_tax";
-        public const string Kept = "reallife_transaction_shares_takeover_kept";             // businesses a takeover's buyer could not be handed in time, paid for
-        public const string Proceeds = "reallife_transaction_shares_proceeds";              // the other holders' part of a business of the company's sold, into the reserve
+        public const string Kept = "reallife_transaction_shares_takeover_kept";   // businesses a buyer could not be handed in time, paid for
+        public const string Proceeds = "reallife_transaction_shares_proceeds";   // the other holders' part of a company business sold
 
         /// <summary>True for the costs of being listed that are a business's costs, which the game's own tax deducts.</summary>
         public static bool Deductible(string key)
@@ -55,7 +54,7 @@ namespace RealLifeOverhaul.Markets
         }
     }
 
-    /// <summary>The figures of one quarter of the company's own books, from the game's statements.</summary>
+    /// <summary>One quarter of the company's own books, from the game's statements.</summary>
     public struct BookQuarter
     {
         public int Quarter;          // counted from the start of the game (MarketCatalogue.QuarterOf)
@@ -73,15 +72,9 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// A player's company as a listed company (<see cref="Stock.Own"/>): what the market and its holders know of it beyond
-    /// a company of the city's. On every machine of a Going Public session alike (it is in the city's market); its
-    /// founder is the player whose save hashes to <see cref="Owner"/>. Game-free.
-    ///
-    /// THE RESERVE. Every day the company's profit, after tax and the founder's pay, belongs to all its holders by their
-    /// shares. The founder's part is in their cash already (the game puts the takings there); the other holders' part is
-    /// taken from it and kept for them (<see cref="Rps"/>, money a share): it is what dividends are paid from, what a
-    /// buy-back or taking the company private pays first, and what the price counts as the company's cash. A loss is
-    /// borne the same way: it comes back out of the reserve, and beyond it is made good first by later profits.
+    /// A player's company as a listed company, alike on every machine of a session; its founder is the save that hashes to
+    /// <see cref="Owner"/>. Each day the other holders' part of its profit is taken from the founder's cash into a reserve
+    /// (<see cref="Rps"/>) that pays dividends, buy-backs and a take-private, and that a loss comes back out of.
     /// </summary>
     public sealed class OwnListing
     {
@@ -92,9 +85,9 @@ namespace RealLifeOverhaul.Markets
         public int PayBp;                        // the founder's pay: a share of each day's profit before tax
         public int ProposedCents;                // the dividend the board proposes with the next results, a share
         public bool Board = true;                // the founder chairs the board (lost at a meeting: until the next yearly one)
-        public double RevQ, NiQ, RevY, NiY;      // takings and profit (after the founder's pay) a day, followed over about a quarter and about a year
+        public double RevQ, NiQ, RevY, NiY;      // a day, after the founder's pay, followed over a quarter and a year
         public double LeverY;                    // what the council's policies did to its margin, followed over about a year
-        public double Expect;                    // profit after tax and pay the market expected of the quarter that runs, at its start
+        public double Expect;                    // profit after tax and pay expected of the running quarter, at its start
         public double PendingExpect;             // ...and of the quarter that waits for its results
         public int DebtBp;                       // its usual debt against a year's takings, as it came to the market
         public int ListedCents;                  // the price it came to the market at
@@ -117,23 +110,18 @@ namespace RealLifeOverhaul.Markets
         public double Carry;                     // the other holders' part of the profit not yet moved, under a whole unit
         public readonly List<OwnDeal> Deals = new List<OwnDeal>(8);
 
-        /// <summary>Shares the founder does not hold: the other holders'.</summary>
         public long Others(Stock s)
         {
             return s.Shares - Founder;
         }
 
-        /// <summary>The founder's stake in bp of the shares in issue.</summary>
         public int StakeBp(Stock s)
         {
             return s.Shares > 0 ? (int)(Founder * 10000L / s.Shares) : 0;
         }
     }
 
-    /// <summary>
-    /// The player's own way to the market, and the company's books: kept in their market's line of the save, never sent
-    /// to anybody (MarketStore writes it only for the save). Game-free.
-    /// </summary>
+    /// <summary>The player's own way to the market and the company's books: in their save only, never sent. Game-free.</summary>
     public sealed class ListingFile
     {
         public ListingStage Stage;
@@ -161,7 +149,7 @@ namespace RealLifeOverhaul.Markets
         public int FirstDay;                     // the day the first of the player's businesses was taken on (0 not known)
         public int BooksDay;                     // the last statement day counted into the books
         public string Suspended;                 // the company's record while its founder is a guest in another player's city
-        public int SetAsideDay;                  // ...the day it was set aside: the founder's statements from it on are counted when it is back
+        public int SetAsideDay;                  // the day it was set aside; statements from it count when it is back
         public long Proceeds;                    // money from businesses of the listed company sold, not yet heard by the market
         public string HandOverTo;                // a bid took the company: the buyer its businesses pass to...
         public int HandOverBy;                   // ...by this day (those that cannot be handed over by then are paid for)...
@@ -172,11 +160,10 @@ namespace RealLifeOverhaul.Markets
 
         public bool OnTheWay => Stage >= ListingStage.Advised && Stage <= ListingStage.Priced;
 
-        /// <summary>True for a file with nothing in it (a save's line then has no part for it, as before there was a listing).</summary>
+        /// <summary>True for a file with nothing in it: the save line then has no part for it.</summary>
         public bool Empty => Stage == ListingStage.None && Books.Count == 0 && AuditDay == 0 && StockId == 0 && Fees == 0 && FirstDay == 0 && string.IsNullOrEmpty(Suspended)
                              && string.IsNullOrEmpty(Name) && AdvisedDay == 0 && AuditFrom == 0 && HandOver.Count == 0 && string.IsNullOrEmpty(HandOverTo) && Proceeds == 0;
 
-        /// <summary>The books' quarter of a number, or null-like (Quarter -1) if none.</summary>
         public int IndexOf(int quarter)
         {
             for (int i = 0; i < Books.Count; i++)

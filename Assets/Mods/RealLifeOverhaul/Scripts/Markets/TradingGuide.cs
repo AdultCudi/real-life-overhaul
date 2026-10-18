@@ -6,13 +6,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// Orders that wait (stop losses, take profits, limits), worked orders and trading bots in the mod's feature list, and
-    /// the figures their Guide page prints: every {name} in its text is filled from <see cref="MarketBots"/> and
-    /// <see cref="MarketCatalogue"/> here, so the page can never say anything the rules do not do. With them, the market's
-    /// own entry (Meta/FeatureList, registered first) takes a large investor's options, tests and figures: worked orders and
-    /// larger bond purchases, dividends put back, a bond's rollover (InvestRules, BondCatalogue). Called once, when the
-    /// feature list is built; each figure is worked out when the page is opened. Their data is the market's own line
-    /// (MarketStore), which the market's entry already names.
+    /// Trading bots and a large investor's options in the mod's feature list, and the figures their Guide pages print, each
+    /// filled from the rules when the page is opened so a page cannot say what the rules do not do.
     /// </summary>
     public static class TradingGuide
     {
@@ -20,7 +15,7 @@ namespace RealLifeOverhaul.Markets
 
         public static void Register()
         {
-            Features.Add("markets", "reallife_meta_title_markets")   // (the market's entry, made just before: its large investor's parts)
+            Features.Add("markets", "reallife_meta_title_markets")   // the market's entry, made just before: its large investor's parts
                 .Owns(Settings.MarketsLargeId, Settings.MarketsReinvestId)
                 .Test("reallife_mkt_inv_test_back", "reallife_mkt_inv_test_roll")
                 .Fact("bond_most_share", () => Whole(BondCatalogue.MostWorthPct) + "%")
@@ -79,7 +74,7 @@ namespace RealLifeOverhaul.Markets
             return Guide.Percent(bp / 10000f);
         }
 
-        // "10%, 20%, 25%, 50% or 100%" in the language's words; from 'skip' on (a 0 that means none is left out).
+        // "10%, 20%, 25%, 50% or 100%" in the language's words, from 'skip' on so a 0 that means none is left out.
         private static string List(int[] values, int skip = 0)
         {
             var text = new StringBuilder(48);

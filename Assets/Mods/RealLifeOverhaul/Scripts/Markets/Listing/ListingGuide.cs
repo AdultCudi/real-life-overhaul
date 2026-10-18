@@ -4,10 +4,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The player's company on the market in the mod's feature list, and the figures its Guide page prints: every {name}
-    /// in its text is filled from <see cref="ListingCatalogue"/> here, so the page can never say anything the rules do
-    /// not do. Called once, when the feature list is built (Meta/FeatureList); each figure is worked out when the page is
-    /// opened. Its data is the market's own line (MarketStore), which the market's entry already names.
+    /// The listing in the mod's feature list, and the figures its Guide page prints, each filled from
+    /// <see cref="ListingCatalogue"/> when the page is opened, so the page cannot say what the rules do not do.
     /// </summary>
     public static class ListingGuide
     {

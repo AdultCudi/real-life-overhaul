@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Markets
 {
+    /// <summary>Part of the market director: the Stocks app on the game's phone.</summary>
     public sealed partial class MarketDirector
     {
         private static readonly string[] AppGlyphs = { "Icon-Graph", "Icon-Statistics", "Icon-Money" };
@@ -14,7 +15,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The Stocks app, while it is on the phone.</summary>
         public MarketApp View => _view;
 
-        // Once a second while the market runs: the app on the phone (the game's phone is built a little after the city).
+        // Once a second while the market runs, since the game's phone is built a little after the city.
         partial void InstallApp()
         {
             if (_app != null || _gaveUp)
@@ -23,7 +24,6 @@ namespace RealLifeOverhaul.Markets
             }
             var view = new MarketApp(this);
             GameSprites.Want(AppGlyphs);
-            bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,
@@ -32,13 +32,14 @@ namespace RealLifeOverhaul.Markets
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed
-            }, out tryAgain);
+            }, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    Logger?.Warn("Stock market: the game's phone is not built as this version expects, so the Stocks app is left off. The market still runs, and orders that wait are still filled.");
+                    Logger?.Warn("Stock market: the game's phone is not built as this version expects, so the Stocks app is left off. The market still runs, and orders that wait are "
+                                 + "still filled.");
                 }
                 return;
             }
@@ -64,7 +65,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>Opens the Stocks app on a company's page (a notification was clicked, or the test tools).</summary>
+        /// <summary>Opens the Stocks app on a company's page.</summary>
         public void OpenCompany(int stockId)
         {
             if (_app != null && _view != null && Running)
