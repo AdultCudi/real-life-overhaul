@@ -5,7 +5,7 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 ## Read first
 
 - `FamilyDirector.cs`: the one component.
-- `FamilyState.cs`: the save, and FamilyBalance with every cost and threshold.
+- `FamilyState.cs`: the save; `FamilyBalance.cs`: every cost and threshold.
 - `FamilyBridges.cs`: what other features implement, call and may read.
 
 ## Documentation
