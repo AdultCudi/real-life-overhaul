@@ -774,7 +774,7 @@ internal static partial class Program
         Check(update.Success && update.Groups["body"].Value.Contains("using var hotSpot = HotSpots.Time(") && on.Success,
             "texts: nothing per frame but one time comparison (the director's Update: its hot spot, then now < _next)");
         Check(!director.Contains("FindObjectsOfType") && !director.Contains("FindObjectsByType"), "texts: no search of the scene");
-        string flare = TextsSource("Social/Flare/FlareDirector.Texts.cs"), live = TextsSource("Social/Flare/FlareDirector.Live.cs"), app = TextsSource("Social/Flare/FlareApp.Screens.cs");
+        string flare = TextsSource("Social/Flare/FlareDirector.Texts.cs"), live = (TextsSource("Social/Flare/FlareDirector.Live.cs") + TextsSource("Social/Flare/FlareDirector.Cases.cs") + TextsSource("Social/Flare/FlareDirector.Posting.cs")), app = TextsSource("Social/Flare/FlareApp.Screens.cs");
         Check(flare.Contains("p.Shared && p.NetId > 0 ? TextsShare.PostKey(p.NetId)") && flare.Contains("p.At <= now || p.Text != null || p.Shared ||")
               && flare.Contains("bool shared = GoingPublic.InSession && FlareNetShare.IsShared(_file, p, hostShares);"),
             "texts, Going Public: a guest shows the host's words for a shared post by the session's number and never asks for a shared post itself; the host marks the shared feed's words to be sent");
@@ -943,7 +943,8 @@ internal static partial class Program
         }
         Check(longest <= 240 && director.Contains("private const int WhyMost = 60;"), "texts: the status notices stay within 240 characters filled (" + longest + ")");
         string flare = TextsSource("Social/Flare/FlareDirector.Texts.cs"), flareMain = TextsSource("Social/Flare/FlareDirector.cs");
-        Check(Regex.Matches(flareMain, @"_textAsked\.Clear\(\);").Count == 3 && Regex.Matches(flareMain, @"_textDms\.Clear\(\);").Count == 3
+        string forget = FlareMethod(flareMain, "private void ForgetAsked()");
+        Check(Regex.Matches(flareMain, @"ForgetAsked\(\);").Count == 3 && forget.Contains("_textAsked.Clear();") && forget.Contains("_textDms.Clear();")
               && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textAsked\.Asked\(id\);") && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textDms\.Asked\(key\);"),
             "texts, Flare: the posts and answers asked for are forgotten with the file, and one counts as asked only when it was");
         string phone = TextsSource("Wiring/TextsPhone.cs");

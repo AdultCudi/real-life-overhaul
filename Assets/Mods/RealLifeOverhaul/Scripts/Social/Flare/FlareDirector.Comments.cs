@@ -1,33 +1,24 @@
+using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Texts;
 
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The comments under posts that are not the player's (FlareCommentRules): who writes them and when is the game's, from
-    /// the post's seed; their words are RLO Texts' alone (there are no written comment lines). Every
-    /// comment a post's count promises is written out, up to FlareCommentRules.WrittenMost, so the words of every one are
-    /// asked ahead, at the lowest priority, a few waiting at once: when the city's posts are made and each game hour (with
-    /// the other words of Flare), when the feed is shown, and again on the director's second while a request has just come
-    /// back (the next one asked at once, so a GPU writes a whole thread long before it is opened). In the walk the comments
-    /// already due come first (newest posts first), then those still to come. When a thread is opened, its due comments
-    /// without words are asked first and ahead of the background (<see cref="CommentThreadSeconds"/>), and the thread is
-    /// written again the moment words come. A request handed back without words frees the comment to be asked again
-    /// (FlareCommentAsks, at most four asks a session). Words are kept by the comment's key, so a load shows the same, and
-    /// a comment shows only once its words are there and its time has come. In a Going Public session the host asks for
-    /// the shared feed's comments and sends them (Texts/TextsShare); a guest only shows what came. With a v3 pack every kind
-    /// of post has comments (FlareTextsMap.Comment), and now and then a comment answers the one before it
-    /// (FlareCommentRules.AnswersEarlier): it is asked once that one's words are here (or once it is known to have none,
-    /// then it answers the post alone).
-    /// COST: on those events, one walk over the posts of the last day (a few dozen) with a plan of at most sixteen comments
-    /// for each that has replies, a dictionary look per comment; at most <see cref="CommentsWaitingMost"/> background
-    /// requests waiting at once; nothing per frame (the second's look is one comparison while nothing came back).
+    /// Flare's director, the comments under posts that are not the player's (FlareCommentRules): who writes them and when
+    /// is the game's, from the post's seed; their words are RLO Texts' alone, kept by the comment's key. Every comment a
+    /// post's count promises is asked ahead at the lowest priority, a few waiting at once: on the city's posts, each game
+    /// hour, when the feed is shown, and on the second after a request came back. An opened thread's due comments go ahead
+    /// of the rest. A comment shows once its words are there and its time has come; one that answers the comment before it
+    /// is asked once that one's words are here. In a session the host asks for the shared feed's comments and a guest only
+    /// shows what came. Cost: on those events a walk over the last day's posts and a dictionary look a comment; nothing per
+    /// frame (the second's look is one comparison while nothing came back).
     /// </summary>
     public sealed partial class FlareDirector
     {
-        public const int CommentsWaitingMost = 8;          // comments' background requests waiting at once: a share of the queue (TextQueue.Most 48), never all of it
-        public const double CommentSeconds = 900.0;        // real seconds a comment's words may take at least: a comment waits for its words, nobody waits for it
-        public const double CommentThreadSeconds = 60.0;   // ...the open thread's due comments: asked ahead of the background, past the ahead-only notice (TextSpeed.AheadSeconds 30)
+        public const int CommentsWaitingMost = 8;          // comments' background requests waiting at once: a share of the queue (TextQueue.Most 48)
+        public const double CommentSeconds = 900.0;        // real seconds a comment's words may take at least: nobody waits for a comment
+        public const double CommentThreadSeconds = 60.0;   // real seconds for the open thread's due comments, past the ahead-only notice (TextSpeed.AheadSeconds 30)
         public const long CommentsAheadMinutes = 180;      // game minutes ahead of now a post may go up and have its comments asked already
 
         private readonly FlareCommentAsks _commentAsks = new FlareCommentAsks();
@@ -36,7 +27,7 @@ namespace RealLifeOverhaul.Flare
         private int _commentsDay = -1;
         private bool _commentsFreed;   // a request came back since the last walk: the next are asked on the second's look
 
-        /// <summary>The comments a post has (its written ones, whether their words are here or not), in the order they come in; none for a post whose comments have no intent.</summary>
+        /// <summary>A post's written comments, words or not, in the order they come in; none for a post whose comments have no intent.</summary>
         public int CommentsOf(FlarePost p, List<FlareComment> into)
         {
             into.Clear();
@@ -58,10 +49,9 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>
-        /// Asks for the words of comments still without them: 'first' before the rest (a thread just opened: its due comments
-        /// ahead of the background, then its others), then the walk over the posts up or going up soon, the due comments
-        /// first, while fewer than <see cref="CommentsWaitingMost"/> wait. The walk runs once a game minute at most, or again
-        /// once a request has come back.
+        /// Asks for the words of comments still without them: <paramref name="first"/>'s ahead of the rest (a thread just
+        /// opened), then a walk over the posts up or going up soon, due comments first, while fewer than
+        /// <see cref="CommentsWaitingMost"/> wait. The walk runs once a game minute at most, or once a request came back.
         /// </summary>
         public void CommentsAhead(FlarePost first)
         {
@@ -86,8 +76,8 @@ namespace RealLifeOverhaul.Flare
             {
                 _commentsDay = day;
                 FlareFile file = _file;
-                _commentAsks.Prune(id => file.Post(id) != null);   // (the comments of posts that are gone let go, once a game day)
-                _textAsked.Prune(id => file.Post(id) != null);     // (and the record of the words asked for them and for the answers under them)
+                _commentAsks.Prune(id => file.Post(id) != null);   // the comments of posts that are gone, once a game day
+                _textAsked.Prune(id => file.Post(id) != null);     // and the record of the words asked for them and the answers under them
                 _textAnswers.Prune(id => file.Post(id) != null);
             }
             for (int pass = 0; pass < 2; pass++)
@@ -97,13 +87,13 @@ namespace RealLifeOverhaul.Flare
                     FlarePost p = _file.Posts[i];
                     if (p.At <= now + CommentsAheadMinutes && p.At + 1440 > now)
                     {
-                        AskComments(p, now, pass == 0, false);   // (the first pass the comments already due, the second those still to come)
+                        AskComments(p, now, pass == 0, false);   // the first pass the comments already due, the second those still to come
                     }
                 }
             }
         }
 
-        // The second's look (the director's timer): a request came back, so the next comments are asked now, not at the next event.
+        // The second's look: a request came back, so the next comments are asked now, not at the next event.
         private void CommentsSecond()
         {
             if (_commentsFreed)
@@ -121,12 +111,12 @@ namespace RealLifeOverhaul.Flare
             _commentsFreed = false;
         }
 
-        // A post's comments asked: 'due' those whose time has come, else those still to come; 'urgent' the open thread's (ahead of the background, past the cap).
+        // A post's comments asked: due ones, or those still to come; 'urgent' the open thread's, ahead of the background and past the cap.
         private void AskComments(FlarePost p, long now, bool due, bool urgent)
         {
             if (!FlareCommentRules.Has(p) || p.Shared || (!urgent && _commentAsks.Background >= CommentsWaitingMost))
             {
-                return;   // (a guest's copy of a shared post: the host's words come, a guest never asks)
+                return;   // a guest's copy of a shared post: the host's words come
             }
             bool shared = GoingPublic.InSession && FlareNetShare.IsShared(_file, p, Settings.FlareSharePosts);
             if (FlareBridges.TextWants != null && !FlareBridges.TextWants(TextUse.Replies, shared))
@@ -150,7 +140,7 @@ namespace RealLifeOverhaul.Flare
                 string key = FlareCommentRules.Key(p, c), earlier = null;
                 if (FlareBridges.TextKept != null && FlareBridges.TextKept(key) != null)
                 {
-                    _commentAsks.Kept(asked);   // (kept from before a load, or sent by the host: never asked again)
+                    _commentAsks.Kept(asked);   // kept from before a load, or sent by the host
                     continue;
                 }
                 if (i > 0 && FlareTextsMap.AnswersComments(intent) && FlareCommentRules.AnswersEarlier(p, citySeed, c.Slot))
@@ -159,7 +149,7 @@ namespace RealLifeOverhaul.Flare
                     earlier = FlareBridges.TextKept != null ? FlareBridges.TextKept(FlareCommentRules.Key(p, _commentPlan[i - 1])) : null;
                     if (earlier == null && (_commentAsks.Waiting(beforeAsked) || _commentAsks.May(beforeAsked, false)))
                     {
-                        continue;   // (the comment it answers has no words yet: asked on a later look, once it has them or is known to have none)
+                        continue;   // the comment it answers has no words yet: asked later, once it has them or is known to have none
                     }
                 }
                 TextRequest r = CommentRequest(p, c, intent, now, earlier != null ? _commentPlan[i - 1] : c, earlier, asked, urgent);
@@ -177,7 +167,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // A comment's card: the commenter as the speaker, the post it answers (and the earlier comment it answers, with words); null if a value is missing.
+        // A comment's card: the commenter as the speaker, the post and any earlier comment it answers; null if a value is missing.
         private TextRequest CommentRequest(FlarePost p, FlareComment c, string intent, long now, FlareComment before, string earlier, long asked, bool urgent)
         {
             var r = new TextRequest { Priority = urgent ? TextPriority.Soon : TextPriority.Background, Day = (int)(c.At / 1440) };
@@ -201,17 +191,17 @@ namespace RealLifeOverhaul.Flare
             {
                 return null;
             }
-            r.Seconds = urgent ? CommentThreadSeconds : System.Math.Max(CommentSeconds, Seconds(c.At - now));
+            r.Seconds = urgent ? CommentThreadSeconds : Math.Max(CommentSeconds, Seconds(c.At - now));
             FlarePost parent = p;
             r.Wanted = () => _file != null && _file.Post(parent.Id) == parent;
             long at = c.At;
             r.Done = words =>
             {
-                _commentAsks.Ended(asked, words != null);   // (none: free to be asked again, FlareCommentAsks)
+                _commentAsks.Ended(asked, words != null);   // none: free to be asked again
                 _commentsFreed = true;
                 if (words != null && at <= Now)
                 {
-                    _view?.ThreadChanged(parent.Id);   // (its time has come: shown now if its thread is open, never a placeholder before)
+                    _view?.ThreadChanged(parent.Id);   // its time has come: shown now if its thread is open
                 }
             };
             return r;
@@ -301,12 +291,12 @@ namespace RealLifeOverhaul.Flare
                     post.Handle = p.Name != null ? FlareText.HandleOf(p.Name) : null;
                     break;
             }
-            post.Words = p.Text ?? WordsFor(p, post.First);   // (what was typed, else the built line: what the reader sees first)
+            post.Words = p.Text ?? WordsFor(p, post.First);   // what was typed, else the built line: what the reader sees first
             post.District = string.IsNullOrEmpty(p.District) ? null : FlareGame.DistrictName(p.District);
             post.Player = MyName;
             if (p.Author == FlareAuthor.Business || p.Author == FlareAuthor.Brand || p.Source == FlareSource.Review)
             {
-                post.Shop = p.Name;   // (data v3's news kinds: the business that posted, or the one reviewed)
+                post.Shop = p.Name;   // data v3's news kinds: the business that posted, or the one reviewed
             }
             if (p.Source == FlareSource.Review)
             {
@@ -321,7 +311,7 @@ namespace RealLifeOverhaul.Flare
                 post.Tycoon = p.Name;
                 post.Company = FlareTextsMap.TycoonCompanies[FlareRules.Clamp(p.Who, 0, FlareTextsMap.TycoonCompanies.Length - 1)];
                 int move = p.Arg - FlareLiveRules.TycoonMoveArg;
-                post.Target = move == 3 || move == 4 ? (FlareBridges.TextListed != null ? FlareBridges.TextListed() : null) : null;   // (a stake or a bid: in the player's listed company)
+                post.Target = move == 3 || move == 4 ? (FlareBridges.TextListed != null ? FlareBridges.TextListed() : null) : null;   // a stake or a bid: in the player's listed company
             }
             return post;
         }
@@ -340,7 +330,7 @@ namespace RealLifeOverhaul.Flare
             return known ?? inf.Handle.TrimStart('@');
         }
 
-        /// <summary>A post's words as the feed shows them: the model's when it wrote them in time, the post's own built line, or its kind's.</summary>
+        /// <summary>A post's words as the feed shows them: the model's if it wrote them in time, else the built line, else its kind's.</summary>
         public string WordsFor(FlarePost p, string author)
         {
             string model = ModelWords(p);

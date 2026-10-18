@@ -5,48 +5,11 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>What the player is writing in Flare's compose sheet: the built part, the typed text, the picture.</summary>
-    public sealed class FlareCompose
-    {
-        public FlareSource Kind = FlareSource.Life;   // Life: a moment of now; a draft's source; Report, Review, Announce or Reply
-        public int Draft = -1;           // a moment from a draft (what happened today)
-        public int Arg;                  // a report's kind, a review's stars, an announcement's kind
-        public string Place, Name;       // the business it is about
-        public string District;          // where (a report's, a moment's)
-        public FlareTone Tone = FlareTone.Cheerful;
-        public bool ToneChosen;          // the player picked the tone (else the one that suits it best)
-        public bool Tag = true;          // a draft's friend tagged
-        public string Mention;           // an account called on: "o:0", "b:name", "p:player"
-        public string Text;              // typed
-        public string Pic;               // "f:" a picture of the player's
-        public int ReplyTo = -1;         // a reply's post
-        public int When = -1;            // an event's hour (day * 24 + hour)
-        public string Tags;              // tags picked from the chips, a space between each
-
-        public void Reset()
-        {
-            Kind = FlareSource.Life;
-            Draft = -1;
-            Arg = 0;
-            Place = Name = District = Mention = Text = Pic = Tags = null;
-            Tone = FlareTone.Cheerful;
-            ToneChosen = false;
-            Tag = true;
-            ReplyTo = -1;
-            When = -1;
-        }
-    }
-
     /// <summary>
-    /// Flare as a living network (FlareLiveRules): the city's posts each morning from what really happened, the reactions
-    /// that come in over the hours, the City Office's cases and what it does about them, reviews, complaints and
-    /// announcements that move a business's customers, invitations, the city's people's messages, the stories for the
-    /// paper and the badge. Going Public is FlareDirector.Share.cs.
-    ///
-    /// COST: nothing per frame. The city's four hundred people: made once for a seed (some 0.2 ms), never walked by the
-    /// day's round, which rolls who speaks. The day: the city's posts (a few dozen), one pass over the buildings for a sample of the
-    /// city's businesses, the watches. The hour: the cases due (a few), the invitations due, the badge (one walk over some
-    /// two hundred posts). A post: its reactions and the city's replies (a dozen posts at most), a case.
+    /// Flare as a living network (FlareLiveRules): the city's posts each morning from what happened, the reactions over the
+    /// hours, the City Office's cases, posts that move a business's customers, invitations, messages, stories for the paper
+    /// and the badge. Cost: nothing per frame. The city's people are made once a seed (some 0.2 ms) and never walked; the
+    /// day makes a few dozen posts and one pass over the buildings, the hour answers the cases due and counts the badge.
     /// </summary>
     public sealed partial class FlareDirector
     {
@@ -55,7 +18,7 @@ namespace RealLifeOverhaul.Flare
         private readonly List<FlarePost> _made = new List<FlarePost>(32);
         private readonly List<FlareCase> _due = new List<FlareCase>(8);
         private readonly List<string> _staff = new List<string>(8);
-        private readonly List<string> _tycoons = new List<string>(4);              // their names, for the accounts called on
+        private readonly List<string> _tycoons = new List<string>(4);              // names, for the accounts called on
         private readonly List<FlareTycoon> _tycoonsIn = new List<FlareTycoon>(4);
         private readonly List<FlareReaction> _reactions = new List<FlareReaction>(16);
         private readonly List<FlareNotice> _notices = new List<FlareNotice>(64);
@@ -91,7 +54,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The player's handle: their name in lower case, no spaces.</summary>
         public string MyHandle => FlareText.HandleOf(MyName);
 
-        /// <summary>Some of the city's businesses, for a review's choice (the day's sample; made now if the day has not made it yet).</summary>
+        /// <summary>Some of the city's businesses for a review's choice: the day's sample, made now if the day has not made it.</summary>
         public IReadOnlyList<FlareBiz> CityShops
         {
             get
@@ -109,8 +72,6 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>Notifications and messages not yet seen: the badge.</summary>
         public int Unread => _unread;
-
-        // ---------------------------------------------------------------- starting
 
         private void LiveStart(FlareFile file)
         {
@@ -134,10 +95,8 @@ namespace RealLifeOverhaul.Flare
             _citizensSeed = seed;
         }
 
-        /// <summary>True while this machine is a guest that follows the host's feed: the city's posts and the City Office are the host's.</summary>
+        /// <summary>True while this machine is a guest that follows the host's feed: its city posts and City Office are the host's.</summary>
         public bool Following => SharedCity.Follows(FlareNetShare.Part);
-
-        // ---------------------------------------------------------------- the day
 
         // After the account's own daily round: the watches, the city's posts of the day, the city's people's message.
         private void LiveDay(int day)
@@ -176,11 +135,12 @@ namespace RealLifeOverhaul.Flare
             CityDm(day);
             if (made > 0)
             {
-                Logger?.Info("Flare: the city's posts of day " + day + ": " + made + " (" + _made.Count + " reports and reviews among them), at its own minute each; the feed's busyness " + _facts.Busy + ".");
+                Logger?.Info("Flare: the city's posts of day " + day + ": " + made + " (" + _made.Count + " reports and reviews among them), at its own minute each; the feed's busyness "
+                             + _facts.Busy + ".");
                 Shared_Changed(null);
             }
             Recount();
-            TextsAhead();   // (the day's posts: their words asked now, each by its own minute, RLO Texts)
+            TextsAhead();   // the day's posts: their words asked now, each by its own minute
         }
 
         // What the city is like today, for its posts.
@@ -230,7 +190,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // One of the city's people's reports or reviews of the day, as it goes up: a report is a case of the City Office's, a review moves its business's customers.
+        // One of the city's people's reports or reviews as it goes up: a report is a case, a review moves its business's customers.
         private void CityMade(FlarePost p)
         {
             if (p.Source == FlareSource.Report)
@@ -243,7 +203,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // The rival tycoons of the end game (Rivals): one of them posts in their own voice, now and then, about their latest move if they have one.
+        // The rival tycoons of the end game: one posts in their own voice now and then, about their latest move if any.
         private void Tycoons(int day)
         {
             ReadTycoons();
@@ -306,14 +266,12 @@ namespace RealLifeOverhaul.Flare
             Logger?.Info("Flare: " + name + " writes to the player (" + what + ") on day " + day + ".");
         }
 
-        // ---------------------------------------------------------------- the hour
-
         private void LiveHour(int day, int hour)
         {
             long now = FlareLiveRules.Now(day, hour, 0);
             if (!Following)
             {
-                FlareLiveRules.Due(_file.Net, now + 59, _due);   // (the cases of this hour: the answer is dated at its own minute)
+                FlareLiveRules.Due(_file.Net, now + 59, _due);   // the cases of this hour: the answer is dated at its own minute
                 for (int i = 0; i < _due.Count; i++)
                 {
                     Answer(_due[i], day);
@@ -323,7 +281,7 @@ namespace RealLifeOverhaul.Flare
             Invitations(day, hour);
             Watched(day);
             Recount();
-            TextsAhead();   // (the hour's answers and replies: their words asked now, RLO Texts)
+            TextsAhead();   // the hour's answers and replies: their words asked now
         }
 
         // The police and the cleaners where the player stands, for the hour.
@@ -349,7 +307,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     c.State = FlareCaseState.Done;
                     Logger?.Info("Flare: the City Office's works for case " + c.Id + " (" + c.Kind + " in " + FlareGame.DistrictName(c.District) + ") are done.");
-                    FlareBridges.FaultDone?.Invoke(c.Id);   // (a real fault the works were for is mended: Scripts/Faults)
+                    FlareBridges.FaultDone?.Invoke(c.Id);   // a real fault the works were for is mended
                     Shared_CaseChanged(c);
                 }
             }
@@ -381,908 +339,6 @@ namespace RealLifeOverhaul.Flare
                 FlareBridges.Ask(FlareBridges.EventDestination, false);
             }
         }
-
-        // ---------------------------------------------------------------- the City Office
-
-        // A report reaches the City Office: a case (or the case there is already), and the tally of the week's complaints. The
-        // same report by the same player again today joins that case and is answered, and moves nothing more (no tally, no
-        // weight, no crew): null.
-        private FlareCase FileCase(FlarePost p, string reporter, float x, float z)
-        {
-            if (Following || p.District == null)
-            {
-                return null;
-            }
-            bool again;
-            var kind = (FlareReport)FlareRules.Clamp(p.Arg, 0, (int)FlareReport.Utilities);
-            string who = reporter == "me" || reporter.StartsWith("p:", StringComparison.Ordinal) ? reporter : null;
-            if (!FlareLiveRules.FirstToday(_file.Net, Save.Day, FlareLiveRules.MoveKey(who, FlareSource.Report, (int)kind, p.District, p.Place)))
-            {
-                FlareCase open = FlareLiveRules.OpenCase(_file.Net, kind, p.District, p.Place);
-                p.Case = open != null ? open.Id : -1;
-                RepeatAnswer(p, kind);
-                Logger?.Info("Flare: " + reporter + " reported " + kind + " in " + FlareGame.DistrictName(p.District) + " again today: in the feed and answered, with the case filed already.");
-                return null;
-            }
-            bool counted = FlareLiveRules.Counted(_file.Net, Save.Day, who);
-            FlareCase c = FlareLiveRules.File(_file.Net, kind, p.District, p.Place, p.Name, x, z, Now, reporter, p.Id, FlareLiveRules.CitySeed(_file), out again, counted);
-            p.Case = c.Id;
-            if (!counted)
-            {
-                Logger?.Info("Flare: " + reporter + " has made three reports today: this one is filed and answered, and moves no mood, tally or paper.");
-            }
-            if (again && c.State == FlareCaseState.Open && FaultsReal)
-            {
-                c.ReplyAt = FlareLiveRules.Sooner(c.ReplyAt, Now);   // the same real fault reported again: the City Office answers sooner
-            }
-            if (again && counted)
-            {
-                FlareLiveRules.Complained(_file.Net, kind, p.District, Save.Day, c.State == FlareCaseState.Acting);
-                Escalation(c, Save.Day);
-            }
-            Shared_CaseChanged(c);
-            return c;
-        }
-
-        // The same report again today: the account that answers it says it is noted, a reply to this post. The case, the tally
-        // and the crews stay as they are.
-        private void RepeatAnswer(FlarePost report, FlareReport kind)
-        {
-            FlareOfficial who = kind == FlareReport.Crime ? FlareOfficial.Police : kind == FlareReport.Transit ? FlareOfficial.Transit
-                : kind == FlareReport.Utilities ? FlareOfficial.Utilities : FlareOfficial.CityOffice;
-            int id = _file.NextId++;
-            var a = new FlarePost
-            {
-                Id = id, Author = FlareAuthor.Official, Who = (int)who, Source = FlareSource.Answer, Arg = (int)FlareAnswer.Received, ReplyTo = report.Id, Case = report.Case,
-                Name = report.Name, District = report.District, Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29),
-                Reach = 400 + FlareRules.Roll(_file.Seed, id, 5), Likes = 3 + FlareRules.Roll(_file.Seed, id, 6) % 40, Topic = FlareLiveRules.ReportTag(kind)
-            };
-            FlareLiveRules.SetAt(a, Math.Max(report.At, Now) + FlareLiveRules.ReplyLeast);
-            _file.Posts.Add(a);
-            Shared_Changed(a);
-        }
-
-        // A case's answer is due: what the City Office does, its answer in character, the tally, the mood about the city's running.
-        private void Answer(FlareCase c, int day)
-        {
-            // The city's real faults judge the report first (Scripts/Faults): nothing there is answered so; a real fault sends the crew to where it is.
-            float fx = c.X, fz = c.Z;
-            int fault = -1;
-            int verdict = Settings.FlareCityOffice && FlareBridges.FaultCheck != null ? FlareBridges.FaultCheck(c.Kind, c.District, c.X, c.Z, c.Reporter, c.Id, c.Place, out fx, out fz, out fault) : -1;
-            c.Verdict = verdict;
-            c.Fault = verdict == (int)FaultAnswer.True ? fault : -1;   // (kept with the case, so a crew sent later, under the paper's eye, takes the same fault)
-            if (FlareLiveRules.FoundNothing(verdict))
-            {
-                NothingFound(c, day, (FaultAnswer)verdict);
-                return;
-            }
-            bool real = verdict == (int)FaultAnswer.True;
-            if (real)
-            {
-                c.X = fx;
-                c.Z = fz;
-            }
-            bool siteNear = !real && c.Kind == FlareReport.Unsafe && FlareBridges.SiteNear != null && (c.X != 0f || c.Z != 0f) && FlareBridges.SiteNear(c.X, c.Z, 120f);
-            FlareAnswer answer;
-            FlareOrder order = FlareLiveRules.Decide(_file.Net, c, c.ReplyAt, Settings.FlareCityOffice, siteNear, real, out answer);
-            int site = -1, days = 0;
-            string address = null;
-            if (order == FlareOrder.Works)
-            {
-                if (FlareBridges.Works == null || !FlareBridges.Works(c.Kind, c.District, c.X, c.Z, FlareLiveRules.CitySeed(_file) + c.Id, out site, out days, out address))
-                {
-                    order = FlareOrder.Queued;
-                    answer = FlareAnswer.Busy;
-                }
-            }
-            else if (order == FlareOrder.SiteCheck)
-            {
-                FlareBridges.SiteReported?.Invoke(c.X, c.Z);
-            }
-            FlareLiveRules.Act(_file.Net, c, order, day, site);
-            if (order == FlareOrder.Inspection && verdict == (int)FaultAnswer.Clean)
-            {
-                c.State = FlareCaseState.Done;   // the inspector found the business clean: nothing against it (and nothing for its owner's game to apply)
-                answer = FlareAnswer.Clean;
-            }
-            else if (order == FlareOrder.Inspection)
-            {
-                Inspected(c, day);
-            }
-            if (real && (order == FlareOrder.Works || order == FlareOrder.Patrol || order == FlareOrder.Cleanup))
-            {
-                FlareBridges.FaultActed?.Invoke(c.Id, c.Fault, order == FlareOrder.Works);
-            }
-            bool acted = order != FlareOrder.Queued && order != FlareOrder.Answered;
-            if (c.Counted)
-            {
-                FlareLiveRules.Complained(_file.Net, c.Kind, c.District, day, acted);   // (a report past its player's three a day: no tally, no mood)
-            }
-            if (acted)
-            {
-                FlareLiveRules.Answered(_file.Net, c.Kind, c.District);
-            }
-            if (c.Counted)
-            {
-                _file.MayorMood = FlareRules.Clamp(_file.MayorMood + (acted ? FlareLiveRules.MoodActed : order == FlareOrder.Queued ? FlareLiveRules.MoodQueued : 0), -100, 100);
-            }
-            FlarePost reply = AnswerPost(c, answer, address, days);
-            Logger?.Info("Flare: the City Office answers case " + c.Id + " (" + c.Kind + " in " + FlareGame.DistrictName(c.District) + ", reported by " + c.Reporter + "): " + answer + ", " + order
-                         + (order == FlareOrder.Works ? " (site " + site + " at " + address + ", about " + days + " days)" : c.Until >= 0 ? " until day " + c.Until : string.Empty)
-                         + "; the feed's mood " + _file.MayorMood + ".");
-            if (c.Reporter == "me" && reply != null && Settings.SocialMediaNotices && CaseNote(day))
-            {
-                int id = reply.Id;
-                Tell(NotificationType.Info, "reallife_flare_note_case", () => OpenPost(id), "account", FlareText.OfficialName(reply.Who));
-            }
-            Escalation(c, day);
-            Shared_CaseChanged(c);
-        }
-
-        /// <summary>True while the city's faults are real (Scripts/Faults): reports are checked against them, and the city's people report those.</summary>
-        private static bool FaultsReal => FlareBridges.FaultsReal != null && FlareBridges.FaultsReal();
-
-        // A report the faults found nothing in: answered so, nothing ignored (no complaint for the tally, no mood), and a player's own costs a little reputation by the option.
-        private void NothingFound(FlareCase c, int day, FaultAnswer verdict)
-        {
-            FlareAnswer answer = verdict == FaultAnswer.Barred ? FlareAnswer.Barred : verdict == FaultAnswer.Warned ? FlareAnswer.Warned : FlareAnswer.Nothing;
-            FlareLiveRules.Act(_file.Net, c, FlareOrder.Answered, day, -1);
-            bool mine = c.Reporter == "me";
-            int was = _file.Reputation;
-            if (mine && verdict != FaultAnswer.Barred && Settings.CityFaultsFalseCost)
-            {
-                _file.Reputation = FlareLiveRules.FalseReport(_file.Reputation);
-            }
-            FlarePost reply = AnswerPost(c, answer, null, 0);
-            Logger?.Info("Flare: the City Office looked into case " + c.Id + " (" + c.Kind + " in " + FlareGame.DistrictName(c.District) + ", reported by " + c.Reporter + ") and found nothing: "
-                         + answer + (mine && _file.Reputation != was ? "; the player's reputation on Flare " + was + " to " + _file.Reputation : string.Empty) + ".");
-            if (mine && reply != null && Settings.SocialMediaNotices && CaseNote(day))
-            {
-                int id = reply.Id;
-                Tell(answer == FlareAnswer.Nothing ? NotificationType.Info : NotificationType.Warning,
-                    answer == FlareAnswer.Barred ? "reallife_flare_note_barred" : answer == FlareAnswer.Warned ? "reallife_flare_note_warned" : "reallife_flare_note_nothing", () => OpenPost(id));
-            }
-            Shared_CaseChanged(c);
-        }
-
-        /// <summary>
-        /// One of the city's people reports a real fault of the city's (Scripts/Faults, on the city's runner only): a post
-        /// of theirs naming where it is, and a case of the City Office's like any other report. False when Flare cannot
-        /// take it (not running, a guest, no district).
-        /// </summary>
-        public bool CityReport(FlareReport kind, string district, string address, float x, float z)
-        {
-            if (!Running || Following || Save == null || district == null)
-            {
-                return false;
-            }
-            EnsureCitizens(_file);
-            if (_citizens.Count == 0)
-            {
-                return false;
-            }
-            int start = FlareLiveRules.PickCitizen(_file.Seed, _file.NextId, 880) % _citizens.Count;
-            FlareCitizen who = _citizens[start];
-            for (int i = 0; i < _citizens.Count; i++)
-            {
-                FlareCitizen c = _citizens[(start + i) % _citizens.Count];
-                if (string.Equals(c.District, district, StringComparison.Ordinal))
-                {
-                    who = c;   // somebody who lives there, if anybody does
-                    break;
-                }
-            }
-            int id = _file.NextId++;
-            int reach = 60 + FlareRules.Roll(_file.Seed, id, 531) * 3;
-            var p = new FlarePost
-            {
-                Id = id, Author = FlareAuthor.Citizen, Who = who.Index, Source = FlareSource.Report, Arg = (int)kind, District = district, Name = string.IsNullOrEmpty(address) ? null : address,
-                Topic = FlareLiveRules.ReportTag(kind), Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29), Reach = reach,
-                Likes = reach / 8 + FlareRules.Roll(_file.Seed, id, 533) % 12, Replies = FlareRules.Roll(_file.Seed, id, 534) % 6
-            };
-            FlareLiveRules.SetAt(p, Now);
-            _file.Posts.Add(p);
-            FileCase(p, "c" + who.Index, x, z);
-            FlareRules.Prune(_file);
-            Shared_Changed(p);
-            Recount();
-            Changed();
-            return true;
-        }
-
-        private bool CaseNote(int day)
-        {
-            if (_caseNoteDay != day)
-            {
-                _caseNoteDay = day;
-                _caseNotes = 0;
-            }
-            return _caseNotes++ < CaseNotesPerDay;
-        }
-
-        // The answer in character, a reply to the report: by the City Office, the police, the transit company or the utilities office.
-        private FlarePost AnswerPost(FlareCase c, FlareAnswer answer, string address, int days)
-        {
-            FlarePost report = c.Post >= 0 ? _file.Post(c.Post) : null;
-            bool reportedByMe = c.Reporter == "me" || (c.Reporter != null && c.Reporter.StartsWith("p:", StringComparison.Ordinal));
-            if (report == null && !reportedByMe)
-            {
-                return null;
-            }
-            if (!reportedByMe && answer != FlareAnswer.Works && answer != FlareAnswer.Patrol && answer != FlareAnswer.Cleanup && FlareRules.Roll(c.Id, c.Repeats, 860) >= 350)
-            {
-                return null;   // the city's people's complaints are answered when something is done, and now and then otherwise
-            }
-            FlareOfficial who = c.Kind == FlareReport.Crime ? FlareOfficial.Police : c.Kind == FlareReport.Transit ? FlareOfficial.Transit : c.Kind == FlareReport.Utilities ? FlareOfficial.Utilities
-                : c.Kind == FlareReport.Unsafe && answer == FlareAnswer.Patrol ? FlareOfficial.Police : FlareOfficial.CityOffice;
-            int id = _file.NextId++;
-            var p = new FlarePost
-            {
-                Id = id, Author = FlareAuthor.Official, Who = (int)who, Source = FlareSource.Answer, Arg = (int)answer, ReplyTo = report != null ? report.Id : -1, Case = c.Id,
-                Name = address ?? c.Name, District = c.District, When = days, Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29),
-                Reach = 400 + FlareRules.Roll(_file.Seed, id, 5), Likes = 3 + FlareRules.Roll(_file.Seed, id, 6) % 40, Topic = FlareLiveRules.ReportTag(c.Kind)
-            };
-            FlareLiveRules.SetAt(p, Math.Max(c.ReplyAt, report != null ? report.At + 5 : c.ReplyAt));
-            _file.Posts.Add(p);
-            c.Answer = id;
-            FlareRules.Prune(_file);
-            Shared_Changed(p);
-            return p;
-        }
-
-        // A business complained about and inspected: the talk turns against it for a few days, at the owner's game alone.
-        private void Inspected(FlareCase c, int day)
-        {
-            if (c.Place == null)
-            {
-                return;
-            }
-            BuildingRegistration reg = FlareLiveGame.AnyBusiness(c.Place);
-            if (reg == null || !FlareLiveRules.EffectHere(FlareSource.Report, GoingPublic.Foreign(reg), GoingPublic.Mine(reg), false))
-            {
-                return;   // another player's: their own game applies it when the case comes to it (FlareDirector.Share.cs)
-            }
-            Buzz(c.Place, FlareLiveRules.ComplaintBuzz, FlareLiveRules.InspectionDays, day, reg);
-            Logger?.Info("Flare: an inspector visits " + c.Name + " after a complaint: " + FlareLiveRules.ComplaintBuzz + "% customers for " + FlareLiveRules.InspectionDays + " days.");
-        }
-
-        // The week's ignored complaints of a kind in a district: three, and it is in the paper, the mood falls, and the City Office acts after all.
-        private void Escalation(FlareCase c, int day)
-        {
-            if (!c.Counted || !FlareLiveRules.Escalate(_file.Net, c.Kind, c.District, day, Settings.FlareCityOffice))
-            {
-                return;
-            }
-            FlareLiveRules.Story(_file.Net, day + 1, "reallife_flare_news_ignored", "problem", FlareText.ReportWord(c.Kind), "district", FlareGame.DistrictName(c.District),
-                "count", FlareLiveRules.Tally(_file.Net, c.Kind, c.District, day).ToString());
-            _file.MayorMood = FlareRules.Clamp(_file.MayorMood + FlareLiveRules.MoodEscalated, -100, 100);
-            Logger?.Info("Flare: " + FlareLiveRules.Tally(_file.Net, c.Kind, c.District, day) + " complaints about " + c.Kind + " in " + FlareGame.DistrictName(c.District)
-                         + " this week, none acted on: in tomorrow's City Ledger; the feed's mood " + _file.MayorMood + ".");
-            // Under the paper's eye a crew is found after all, if one of the week's is free.
-            FlareOrder order = FlareLiveRules.EscalationOrder(_file.Net, c, Now, Settings.FlareCityOffice);
-            if (order == FlareOrder.None)
-            {
-                return;
-            }
-            int site = -1, days = 0;
-            string address = null;
-            if (order == FlareOrder.Works && (FlareBridges.Works == null || !FlareBridges.Works(c.Kind, c.District, c.X, c.Z, FlareLiveRules.CitySeed(_file) + c.Id, out site, out days, out address)))
-            {
-                return;
-            }
-            FlareLiveRules.Act(_file.Net, c, order, day, site);
-            if (order == FlareOrder.Inspection)
-            {
-                Inspected(c, day);
-            }
-            if (c.Verdict == (int)FaultAnswer.True && (order == FlareOrder.Works || order == FlareOrder.Patrol || order == FlareOrder.Cleanup))
-            {
-                FlareBridges.FaultActed?.Invoke(c.Id, c.Fault, order == FlareOrder.Works);   // (the fault the case found when it was answered is taken)
-            }
-            FlareLiveRules.Answered(_file.Net, c.Kind, c.District);
-            AnswerPost(c, FlareAnswer.Pressure, address, days);
-        }
-
-        // ---------------------------------------------------------------- what a post does to a business
-
-        /// <summary>
-        /// A review, an announcement or a complaint about a business: its customers move, at the game of the business's
-        /// owner alone (the player's own here; another player's in a session at theirs; the city's at every machine
-        /// alike, as every machine has its own). 'mine' is a post of the player's own (an announcement is only for the
-        /// player's own business).
-        /// </summary>
-        private void BusinessEffect(FlarePost p, bool mine)
-        {
-            if (p.Place == null || Save == null)
-            {
-                return;
-            }
-            BuildingRegistration reg = FlareLiveGame.AnyBusiness(p.Place);
-            if (reg == null || !FlareLiveRules.EffectHere(p.Source, GoingPublic.Foreign(reg), GoingPublic.Mine(reg), mine))
-            {
-                return;
-            }
-            int day = Save.Day;
-            if (!FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.MoveKey(FlareLiveRules.Mover(p), p.Source, p.Arg, null, p.Place)))
-            {
-                Logger?.Info("Flare: " + FlareLiveRules.KeyOf(p) + " posted about " + p.Name + " again today (" + p.Source + "): in the feed, its customers moved once today already.");
-                return;
-            }
-            if (p.Source == FlareSource.Review)
-            {
-                int buzz = FlareLiveRules.ReviewBuzz(p.Arg, p.Reach);
-                if (buzz != 0)
-                {
-                    Buzz(p.Place, buzz, FlareLiveRules.ReviewDays, day, reg);
-                    Logger?.Info("Flare: a " + p.Arg + "-star review of " + p.Name + " by " + FlareLiveRules.KeyOf(p) + ": " + (buzz > 0 ? "+" : string.Empty) + buzz + "% customers for "
-                                 + FlareLiveRules.ReviewDays + " days.");
-                }
-                if (p.Author != FlareAuthor.Player && GoingPublic.Mine(reg) && Settings.SocialMediaNotices && p.Arg <= 2 && FlareRules.MayNotify(_file, day, true))
-                {
-                    int id = p.Id;
-                    Tell(NotificationType.Warning, "reallife_flare_note_review", () => OpenPost(id), "business", p.Name, "stars", p.Arg.ToString());
-                }
-                if (FlareLiveGame.City(reg) && p.Author == FlareAuthor.Player)
-                {
-                    BusinessAnswer(p);
-                }
-            }
-            else if (p.Source == FlareSource.Announce)
-            {
-                int buzz = FlareLiveRules.AnnounceBuzz(p.Reach);
-                int days = p.Arg == (int)FlareAnnounce.Event && p.When > 0 ? Math.Max(1, p.When / 24 - day + 1) : FlareLiveRules.AnnounceDays;
-                Buzz(p.Place, buzz + (p.Arg == (int)FlareAnnounce.Event ? FlareLiveRules.EventCrowd - 1 : 0), days, day, reg);
-                if (p.Arg == (int)FlareAnnounce.Hiring)
-                {
-                    _hiringDay = day;
-                }
-            }
-        }
-
-        // Talk about a business for some days, inside Flare's cap, written into its customers by business pressure's own writer.
-        private void Buzz(string place, int percent, int days, int day, BuildingRegistration reg)
-        {
-            FlareRules.AddBuzz(_file, place, percent, day, days);
-            if (FlareBridges.Footfall != null && reg != null)
-            {
-                FlareBridges.Footfall(reg, false);
-            }
-        }
-
-        // A business of the city's answers a review of the player's, in character: thanks, or sorry.
-        private void BusinessAnswer(FlarePost review)
-        {
-            int id = _file.NextId++;
-            var p = new FlarePost
-            {
-                Id = id, Author = FlareAuthor.Business, Source = FlareSource.Answer, Arg = (int)(review.Arg >= 4 ? FlareAnswer.Thanks : FlareAnswer.Sorry), ReplyTo = review.Id,
-                Place = review.Place, Name = review.Name, Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000, Reach = 200, Likes = FlareRules.Roll(_file.Seed, id, 3) % 20
-            };
-            FlareLiveRules.SetAt(p, review.At + 40 + FlareRules.Roll(_file.Seed, id, 4) % 200);
-            _file.Posts.Add(p);
-        }
-
-        // An account called on in a post answers it in character: an official account, a brand, a rival tycoon.
-        private void MentionAnswer(FlarePost p)
-        {
-            string m = p.Mention;
-            if (m == null || m.Length < 3 || (m[0] != 'o' && m[0] != 'b' && m[0] != 't') || m[1] != ':')
-            {
-                return;
-            }
-            int id = _file.NextId++;
-            var a = new FlarePost
-            {
-                Id = id, Source = FlareSource.Answer, ReplyTo = p.Id, Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000, Reach = 300, Likes = FlareRules.Roll(_file.Seed, id, 3) % 30
-            };
-            if (m[0] == 'o')
-            {
-                int who;
-                int.TryParse(m.Substring(2), out who);
-                a.Author = FlareAuthor.Official;
-                a.Who = FlareRules.Clamp(who, 0, (int)FlareOfficial.Bank);
-                a.Arg = (int)FlareAnswer.Mention;
-            }
-            else
-            {
-                a.Author = m[0] == 'b' ? FlareAuthor.Brand : FlareAuthor.Tycoon;
-                a.Name = m.Substring(2);
-                a.Arg = (int)(m[0] == 'b' ? FlareAnswer.Brand : FlareAnswer.Tycoon);
-                a.Who = m[0] == 'b' ? -1 : TycoonVoice(a.Name);   // a tycoon answers in their own voice
-            }
-            FlareLiveRules.SetAt(a, p.At + 30 + FlareRules.Roll(_file.Seed, id, 4) % 90);
-            _file.Posts.Add(a);
-            Shared_Changed(a);
-        }
-
-        // ---------------------------------------------------------------- the player's own
-
-        /// <summary>
-        /// The player posts from the compose sheet: the built part (a moment, a report, a review, an announcement or a reply),
-        /// the typed text (it decides nothing: the built part does), the picture, the tags and the account called on. There
-        /// is no limit on posting: false, with the reason's key, only for a post that is not whole (a reply's words, a
-        /// review's business, a report's district missing). What many posts could move is bounded where it is moved: the
-        /// account by the day's first three (FlareRules.Counts), a business or the City Office by the first of the same
-        /// thing a day (FlareLiveRules.FirstToday), the council by the day's first three reports (FlareLiveRules.Weighs).
-        /// </summary>
-        public bool Compose(FlareCompose c, out string why)
-        {
-            why = null;
-            if (!Running || Save == null || c == null)
-            {
-                why = "reallife_flare_off_title";
-                return false;
-            }
-            try
-            {
-                int day = Save.Day, minute = FlareGame.MinuteOfDay;
-                string text = FlareLiveRules.Clip(c.Text);
-                FlarePost p;
-                switch (c.Kind)
-                {
-                    case FlareSource.Reply:
-                        p = Reply(c, text, day, out why);
-                        break;
-                    case FlareSource.Report:
-                        p = Report(c, text, day, out why);
-                        break;
-                    default:
-                        p = Built(c, day, minute, out why);
-                        break;
-                }
-                if (p == null)
-                {
-                    Changed();
-                    return false;
-                }
-                p.Text = text;
-                p.Pic = c.Pic ?? p.Pic;
-                p.Mention = c.Mention;
-                p.Minute = minute % 60;
-                if (p.District == null)
-                {
-                    p.District = c.District ?? FlareBridges.Ask(FlareBridges.PlayerDistrict, null);
-                }
-                p.Topic = FlareLiveRules.TagsOf(text, Join(c.Tags, BuiltTag(p)));
-                PostLive(p);
-                Logger?.Info("Flare: the player posts (" + p.Source + (p.Place != null ? ", " + p.Name : string.Empty) + (text != null ? ", " + text.Length + " characters typed" : string.Empty)
-                             + (p.Pic != null ? ", a picture" : string.Empty) + (p.Topic != null ? ", #" + p.Topic.Replace(" ", " #") : string.Empty) + ").");
-                Changed();
-                return true;
-            }
-            catch (Exception e)
-            {
-                Fault("a post", e);
-                return false;
-            }
-        }
-
-        private static string Join(string a, string b)
-        {
-            return string.IsNullOrEmpty(a) ? b : string.IsNullOrEmpty(b) ? a : a + " " + b;
-        }
-
-        private static string BuiltTag(FlarePost p)
-        {
-            switch (p.Source)
-            {
-                case FlareSource.Report: return FlareLiveRules.ReportTag((FlareReport)FlareRules.Clamp(p.Arg, 0, (int)FlareReport.Utilities));
-                case FlareSource.Review: return "review";
-                case FlareSource.Announce: return p.Arg == (int)FlareAnnounce.Event ? "events" : "shoplocal";
-                default: return null;
-            }
-        }
-
-        // A moment, a review or an announcement: a post by the account's own rules (followers, reputation, a viral moment, the friends' answers).
-        private FlarePost Built(FlareCompose c, int day, int minute, out string why)
-        {
-            why = null;
-            FlareDraft d = c.Draft >= 0 ? _file.Draft(c.Draft) : null;
-            if (c.Kind == FlareSource.Review && (c.Place == null || c.Arg < 1 || c.Arg > 5))
-            {
-                why = "reallife_flare_compose_need_place";
-                return null;
-            }
-            if (c.Kind == FlareSource.Review && FlareGame.Business(c.Place) != null)
-            {
-                why = "reallife_flare_compose_own_review";
-                return null;
-            }
-            if (c.Kind == FlareSource.Announce && (c.Place == null || FlareGame.Business(c.Place) == null))
-            {
-                why = "reallife_flare_compose_need_mine";
-                return null;
-            }
-            if (d == null)
-            {
-                d = new FlareDraft { Id = -1, Source = c.Kind, Day = day, Hour = Save.Hour, Place = c.Place, Name = c.Name, Arg = c.Arg };
-            }
-            FlareTone tone = c.ToneChosen ? c.Tone : FlareRules.BestTone(d.Source);
-            ReadPeople();
-            bool tag = c.Tag && d.Person >= 0;
-            bool counts = _testViral || FlareRules.Counts(_file, day);
-            FlarePost p = FlareRules.Post(_file, d, tone, tag ? d.Person : -1, _people, day, Save.Hour, minute, _testViral);
-            _testViral = false;
-            if (!counts)
-            {
-                Logger?.Info("Flare: post " + FlareRules.PostsToday(_file, day) + " of the day: past the first " + FlareRules.PostsCounted + ", seen and liked, the account as it was.");
-            }
-            if (d.Source == FlareSource.Photo || d.Source == FlareSource.Selfie)
-            {
-                p.Pic = !string.IsNullOrEmpty(d.Name) ? "f:" + d.Name : null;
-            }
-            p.When = c.When;
-            if (d.Id >= 0)
-            {
-                Influence(p, d);
-                CityInfluence(p, d);
-            }
-            else if (p.Viral)
-            {
-                Viral(p, day);
-            }
-            if (p.Viral && FlareRules.MayNotify(_file, day, Settings.SocialMediaNotices))
-            {
-                Tell(NotificationType.Success, "reallife_flare_note_viral", _openFeed, "followers", FlareText.N(p.Gained));
-            }
-            return p;
-        }
-
-        // A report to the city: a post of its own (it gains nothing), a case of the City Office's. Any number may be made: the
-        // same thing again today joins the case already filed (FileCase), and the first three of a day weigh in the council.
-        private FlarePost Report(FlareCompose c, string text, int day, out string why)
-        {
-            why = null;
-            string district = c.District ?? FlareBridges.Ask(FlareBridges.PlayerDistrict, null);
-            if (district == null)
-            {
-                why = "reallife_flare_compose_need_district";
-                return null;
-            }
-            if (c.Arg == (int)FlareReport.Business && c.Place == null)
-            {
-                why = "reallife_flare_compose_need_place";
-                return null;
-            }
-            int id = _file.NextId++;
-            int reach = Math.Max(1, FlareRules.Reach(_file.Followers, FlareRules.Quality(FlareSource.Report, false, false), FlareRules.ToneFit(FlareSource.Report, c.ToneChosen ? c.Tone : FlareTone.Honest)));
-            var p = new FlarePost
-            {
-                Id = id, Day = day, Hour = Save.Hour, Author = FlareAuthor.Player, Source = FlareSource.Report, Tone = c.ToneChosen ? c.Tone : FlareTone.Honest, Arg = c.Arg,
-                Place = c.Place, Name = c.Name, District = district, Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29), Reach = reach,
-                Likes = reach * FlareRules.LikeShare / 1000, Replies = reach / FlareRules.ReplyPer
-            };
-            _file.Posts.Add(p);
-            _file.TotalPosts++;
-            float x, z;
-            FlareLiveGame.PlayerPoint(out x, out z);
-            if (!Following)
-            {
-                FlareCase cs = FileCase(p, "me", c.District == null ? x : 0f, c.District == null ? z : 0f);
-                if (cs != null && (cs.Kind == FlareReport.Road || cs.Kind == FlareReport.Crime) && FlareBridges.Issue != null && FlareLiveRules.Weighs(_file.Net, day))
-                {
-                    FlareBridges.Issue(cs.Kind == FlareReport.Crime ? (int)FlareIssue.Safety : (int)FlareIssue.Roads, FlareLiveRules.ReportsWeigh * FlareRules.IssueWeight(_file.Followers) / 1000);
-                }
-            }
-            return p;
-        }
-
-        // A reply: the typed words under a post (they decide nothing); an honest answer to a poor review of the player's business wins a little back.
-        private FlarePost Reply(FlareCompose c, string text, int day, out string why)
-        {
-            why = null;
-            FlarePost parent = c.ReplyTo >= 0 ? _file.Post(c.ReplyTo) : null;
-            if (parent == null)
-            {
-                why = "reallife_flare_compose_gone";
-                return null;
-            }
-            if (text == null)
-            {
-                why = "reallife_flare_compose_need_words";
-                return null;
-            }
-            int id = _file.NextId++;
-            var p = new FlarePost
-            {
-                Id = id, Day = day, Hour = Save.Hour, Author = FlareAuthor.Player, Source = FlareSource.Reply, Tone = c.ToneChosen ? c.Tone : FlareTone.Honest, ReplyTo = parent.Id,
-                Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000 + FlareRules.Roll(_file.Seed, id, 29), Reach = Math.Max(1, parent.Reach / 20), Place = parent.Place, Name = parent.Name
-            };
-            p.Likes = p.Reach / 15;
-            _file.Posts.Add(p);
-            if (parent.Source == FlareSource.Review && parent.Arg <= 2 && parent.Place != null && FlareGame.Business(parent.Place) != null && p.Tone != FlareTone.Cheeky
-                && !_file.Net.Applied.Contains(-parent.Id))
-            {
-                _file.Net.Applied.Add(-parent.Id);   // (once for each review)
-                Buzz(parent.Place, 1, FlareLiveRules.ReviewDays, day, FlareGame.Business(parent.Place));
-                Logger?.Info("Flare: the player answered a poor review of " + parent.Name + " politely: +1% customers for " + FlareLiveRules.ReviewDays + " days.");
-            }
-            return p;
-        }
-
-        // After any post of the player's: who reacts and when, the city's replies, what it does to a business, an answer to a mention, the session.
-        private void PostLive(FlarePost p)
-        {
-            ReadPeople();
-            Names(FlareBridges.Staff, _staff);
-            int shift = FlareBridges.Ask(FlareBridges.OnShift, -1);
-            string employer;
-            int career = FlareBridges.Career != null ? FlareBridges.Career(out employer) : -1;
-            bool boss = career >= 0 && FlareRules.BossFollows(_file.Seed, career, _file.Tier) && shift < 0;
-            p.Reactors = FlareLiveRules.Reactors(p, _people, _staff, boss, _line);
-            bool hostAnswers = FlareLiveRules.HostAnswers(Following, Settings.FlareSharePosts, p.Source);   // (the host's replies come back with the post)
-            if (p.Source != FlareSource.Reply)
-            {
-                if (!hostAnswers)
-                {
-                    FlareLiveRules.CityReplies(_file, p, null);
-                }
-                if (FlareLiveRules.PileOn(p))
-                {
-                    bool paper = FlareLiveRules.StoryOnce(_file.Net, p.Day + 1, "reallife_flare_news_pileon", "name", MyName, "handle", MyHandle);
-                    Logger?.Info("Flare: the post went badly and was seen by " + p.Reach + ": a pile-on of angry replies" + (paper ? ", and tomorrow's City Ledger has it." : " (the City Ledger has today's already)."));
-                    if (FlareRules.MayNotify(_file, p.Day, Settings.SocialMediaNotices))
-                    {
-                        Tell(NotificationType.Warning, "reallife_flare_note_pileon", _openFeed);
-                    }
-                }
-            }
-            if (p.Source == FlareSource.Review || p.Source == FlareSource.Announce)
-            {
-                BusinessEffect(p, true);
-            }
-            if (p.Source == FlareSource.Announce && _tycoons.Count == 0)
-            {
-                ReadTycoons();
-            }
-            if (p.Source == FlareSource.Announce && _tycoons.Count > 0 && FlareRules.Roll(_file.Seed, p.Id, 870) < 400)
-            {
-                p.Mention = p.Mention ?? "t:" + _tycoons[FlareRules.Roll(_file.Seed, p.Id, 871) % _tycoons.Count];
-            }
-            if (!hostAnswers)
-            {
-                MentionAnswer(p);
-            }
-            FlareRules.Prune(_file);
-            Shared_Own(p);
-            TextsFriends(p);   // (the friends' replies and the city's: their words asked now, RLO Texts)
-            TextsAhead();
-        }
-
-        /// <summary>The player likes a post, or takes the like back.</summary>
-        public void Like(int postId)
-        {
-            FlarePost p = Running ? _file.Post(postId) : null;
-            if (p == null)
-            {
-                return;
-            }
-            p.Liked = !p.Liked;
-            Shared_Like(p, p.Liked);
-            Changed();
-        }
-
-        /// <summary>
-        /// The player likes a friend's reply under one of their posts, or takes the like back. Those replies are made for
-        /// display, so the like is kept in the file by the post and the reply's place. Nothing else changes and nothing is
-        /// sent (the reply is the player's own and is never shared).
-        /// </summary>
-        public void LikeReply(int parentId, int slot)
-        {
-            if (!Running)
-            {
-                return;
-            }
-            FlareRules.ToggleReplyLike(_file, parentId, slot);
-            Changed();
-        }
-
-        /// <summary>True if the player liked this friend's reply.</summary>
-        public bool IsReplyLiked(int parentId, int slot) => Running && FlareRules.ReplyLiked(_file, parentId, slot);
-
-        /// <summary>
-        /// The player likes a comment under a post that is not theirs, or takes the like back. Those comments are made for
-        /// display, so the like is kept in the file by the post, the comment's slot and who wrote it. Nothing else changes and
-        /// nothing is sent (in a session the like on a shared post's comment is this player's own).
-        /// </summary>
-        public void LikeComment(int postId, int slot, char kind, int who)
-        {
-            if (!Running)
-            {
-                return;
-            }
-            FlareCommentRules.ToggleLike(_file, postId, slot, kind, who);
-            Changed();
-        }
-
-        /// <summary>True if the player liked this comment.</summary>
-        public bool IsCommentLiked(int postId, int slot, char kind, int who) => Running && FlareCommentRules.Liked(_file, postId, slot, kind, who);
-
-        /// <summary>The player shares a post with their followers (once).</summary>
-        public void Repost(int postId)
-        {
-            FlarePost p = Running ? _file.Post(postId) : null;
-            if (p == null || p.Reposted)
-            {
-                return;
-            }
-            p.Reposted = true;
-            p.Reposts++;
-            Shared_Repost(p);
-            Changed();
-        }
-
-        /// <summary>The player goes to an invitation, or not: a notification when it starts, with the way there.</summary>
-        public void Going(int postId)
-        {
-            FlarePost p = Running ? _file.Post(postId) : null;
-            if (p == null)
-            {
-                return;
-            }
-            if (_file.Net.Going.Remove(postId))
-            {
-                Changed();
-                return;
-            }
-            if (_file.Net.Going.Count < FlareNet.GoingMost)
-            {
-                _file.Net.Going.Add(postId);
-                Shared_Going(p);
-            }
-            Changed();
-        }
-
-        /// <summary>True if the player goes to an invitation.</summary>
-        public bool IsGoing(int postId) => Running && _file.Net.Going.Contains(postId);
-
-        /// <summary>
-        /// The player writes a message. One of the city's people answers within the hour or two in character; an invitation
-        /// in it (coffee, a meal, drinks...) is answered yes, maybe or no by the game's own rules, and a yes books the plan
-        /// (FlareDirector.Invites.cs). A player of a session gets it as written, through the host.
-        /// </summary>
-        public bool SendDm(string with, string text)
-        {
-            text = FlareLiveRules.Clip(text, FlareLiveRules.DmTextMost);
-            if (!Running || Save == null || with == null || text == null)
-            {
-                return false;
-            }
-            long now = Now;
-            FlareLiveRules.Dm(_file.Net, with, AccountName(with), now, true, text, null, null);
-            if (with.StartsWith("p:", StringComparison.Ordinal))
-            {
-                Shared_Dm(with.Substring(2), text);
-            }
-            else
-            {
-                string what = with.StartsWith("i:", StringComparison.Ordinal) ? "collab" : with.StartsWith("o:", StringComparison.Ordinal) ? "office" : "chat";
-                FlareDm answer = Invite(with, text, now)   // (an invitation: the game decides, FlareDirector.Invites.cs)
-                                 ?? FlareLiveRules.Dm(_file.Net, with, AccountName(with), now + 30 + FlareRules.Roll(_file.Seed, _file.Net.NextDm, 844) % 90, false, null, FlareText.DmKey("answer_" + what), null);
-                TextsDm(answer, text);   // (its words asked now, RLO Texts)
-            }
-            Changed();
-            return true;
-        }
-
-        /// <summary>A conversation has been read.</summary>
-        public void ReadDms(string with)
-        {
-            if (!Running)
-            {
-                return;
-            }
-            long now = Now;
-            for (int i = 0; i < _file.Net.Dms.Count; i++)
-            {
-                FlareDm m = _file.Net.Dms[i];
-                if (m.With == with && m.At <= now)
-                {
-                    m.Read = true;
-                }
-            }
-            Recount();
-            Badge();
-        }
-
-        /// <summary>The Notifications screen has been seen: everything up to now is read.</summary>
-        public void NoticesSeen()
-        {
-            if (Running)
-            {
-                _file.Net.NoticeSeen = Now;
-                Recount();
-                Badge();
-            }
-        }
-
-        /// <summary>The Notifications screen's lines, newest first (the list is the director's, filled again on each call).</summary>
-        public List<FlareNotice> Notices()
-        {
-            if (!Running)
-            {
-                _notices.Clear();
-                return _notices;
-            }
-            Recount();
-            return _notices;
-        }
-
-        // The notifications worked out again, and the badge's count.
-        private void Recount()
-        {
-            if (_file == null || Save == null)
-            {
-                _unread = 0;
-                return;
-            }
-            if (_myPlaces.Count == 0)
-            {
-                List<BuildingRegistration> mine = FlareGame.Businesses();
-                for (int i = 0; i < mine.Count; i++)
-                {
-                    _myPlaces.Add(FlareGame.Place(mine[i]));
-                }
-            }
-            long now = Now;
-            FlareLiveRules.Notices(_file, now, MeKey, _myPlaces, _reactions, _notices, NoticesMost);
-            int unread = FlareLiveRules.Unread(_notices, _file.Net);
-            for (int i = 0; i < _file.Net.Dms.Count; i++)
-            {
-                FlareDm m = _file.Net.Dms[i];
-                unread += !m.Read && !m.Mine && m.At <= now && m.At <= _file.Net.NoticeSeen ? 1 : 0;   // (a message newer than that is counted with the notifications already)
-            }
-            _unread = unread;
-        }
-
-        /// <summary>Mutes a player of the session (no notifications, no messages from them), or not.</summary>
-        public void Mute(string player, bool on)
-        {
-            if (Running && player != null)
-            {
-                Toggle(_file.Net.Muted, player, on);
-                Logger?.Info("Flare: a player of the session is " + (on ? "muted" : "no longer muted") + ".");
-                Changed();
-            }
-        }
-
-        /// <summary>Hides a player of the session (nothing of theirs shown, their pictures neither), or not.</summary>
-        public void Hide(string player, bool on)
-        {
-            if (Running && player != null)
-            {
-                Toggle(_file.Net.Hidden, player, on);
-                Logger?.Info("Flare: a player of the session is " + (on ? "hidden" : "shown again") + ".");
-                Changed();
-            }
-        }
-
-        private static void Toggle(List<string> list, string item, bool on)
-        {
-            if (on && !list.Contains(item) && list.Count < FlareNet.MutedMost)
-            {
-                list.Add(item);
-            }
-            else if (!on)
-            {
-                list.Remove(item);
-            }
-        }
-
-        /// <summary>The stories Flare has for a morning's paper (the City Ledger, through Wiring/FlareLinks): the same for the same day however often asked.</summary>
-        public void Stories(int day, List<FlareStory> into)
-        {
-            into.Clear();
-            for (int i = 0; Running && i < _file.Net.Stories.Count; i++)
-            {
-                if (_file.Net.Stories[i].Day == day)
-                {
-                    into.Add(_file.Net.Stories[i]);
-                }
-            }
-        }
-
-        // ---------------------------------------------------------------- names
 
         /// <summary>An account's name as shown, by its key ("c12", "o:0", "i:3", "b:name", "k:name", "p:player", "f3", "me").</summary>
         public string AccountName(string key)
@@ -1329,11 +385,9 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        // ---------------------------------------------------------------- the camera and pictures
-
         /// <summary>
-        /// The camera button: the phone's own camera (the Camera app's, Photos/CameraMode), whose first photo comes back to the
-        /// compose sheet; with the Camera off, a shot of the screen as it is, without the phone (FlareDirector.Camera.cs).
+        /// The camera button: the phone's own camera, whose first photo comes back to the compose sheet; with the Camera off, a
+        /// shot of the screen without the phone (FlareDirector.Camera.cs).
         /// </summary>
         public void CameraPressed()
         {

@@ -4,37 +4,31 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>What Flare asks of the social life for an invitation in a message, wired by Wiring/FlareInviteLinks. Without it nothing is booked: every invitation is a maybe.</summary>
+    /// <summary>What Flare asks of the social life for an invitation in a message (Wiring/FlareInviteLinks). Without it every invitation is a maybe.</summary>
     public static partial class FlareBridges
     {
-        /// <summary>Fills what the social life knows for the decision, and for a yes the place and the time (FlareInviteAsk). Default: nothing can be booked.</summary>
+        /// <summary>Fills what the social life knows for the decision and, for a yes, the place and the time.</summary>
         public static Action<FlareInviteAsk> InviteLook;
 
-        /// <summary>Books a yes's plan as a call does (somebody new met online first): their place in the cast, or -1 if it cannot be booked now. Default: never.</summary>
+        /// <summary>Books a yes's plan as a call does (somebody new is met online first): their place in the cast, or -1.</summary>
         public static Func<FlareInviteBook, int> InviteBook;
     }
 
     /// <summary>
-    /// An invitation in a message of the player's to one of the city's people or an influencer (FlareInviteRules): read when
-    /// it is sent, decided by the game at once (the social life's rules for a plan made on the phone, through
-    /// FlareBridges.InviteLook), and answered at the answer's minute with the decision's line (a yes sooner, with the place
-    /// and the time). A yes is booked a moment before it shows, exactly as a call books a plan (FlareBridges.InviteBook:
-    /// somebody new is met online first, as when they answer a post); a yes that can no longer be booked then (a plan made
-    /// meanwhile by phone, the place gone, its hour past while the player slept) shows as a maybe instead. Booked once: the
-    /// message keeps a mark in the save. Nothing new is sent in a Going Public session: the messages and the plan are the
-    /// player's own.
-    /// COST: per message sent, the reading (a pass over its characters) and, for an invitation, the social life's look (a
-    /// walk over the city's buildings for a place, as a call does); once a second, one comparison of the minute with the
-    /// next yes due (none most of the time); a booking once per yes. Nothing per frame.
+    /// Flare's director, an invitation in the player's message to a city person or an influencer (FlareInviteRules): read
+    /// when sent, decided by the game at once by the social life's rules, and answered at its minute. A yes is booked a
+    /// moment before it shows, as a call books a plan; one that can no longer be booked then shows as a maybe. Booked once:
+    /// the message keeps a mark in the save. Nothing is sent in a session: the messages and the plan are the player's own.
+    /// Cost: a pass over each message sent; once a second one comparison with the next yes due; nothing per frame.
     /// </summary>
     public sealed partial class FlareDirector
     {
-        private long _inviteDue = -1;              // the minute the next yes is booked; -1 still to be worked out for this account, long.MaxValue none
-        private FlareFile _inviteFile;             // the account it was worked out for (a load or a new account works it out again)
-        private int _testInvitee = -1;             // the test's city person: counts as somebody the player has talked with (this session)
+        private long _inviteDue = -1;              // the minute the next yes is booked; -1 still to be worked out, long.MaxValue none
+        private FlareFile _inviteFile;             // the account it was worked out for: a load or a new account works it out again
+        private int _testInvitee = -1;             // the test's city person: counts as somebody the player has talked with, this session
 
-        // An invitation in the player's message to one of the city's people or an influencer: the answer decided and scheduled
-        // (null when the message is not an invitation, or not to somebody the game can answer for: the usual answer then).
+        // An invitation in the player's message: the answer decided and scheduled; null when it is none, or not to somebody the
+        // game answers for.
         private FlareDm Invite(string with, string text, long now)
         {
             if (!FlareInviteRules.Read(text, out PlanKind kind) || !FlareTextsMap.DmSpeaker(with, out bool influencer, out int number))
@@ -58,7 +52,7 @@ namespace RealLifeOverhaul.Flare
                 a.Last = c.Last;
                 a.Sex = FlareInviteRules.SexOf(c);
                 a.Age = FlareTextsMap.Age(c, citySeed);
-                a.Face = FlareAvatarRules.Citizen(citySeed, number).Seed;   // (the face they have on Flare, kept when they are met)
+                a.Face = FlareAvatarRules.Citizen(citySeed, number).Seed;   // the face they have on Flare, kept when they are met
                 a.NightOwl = c.Persona == FlarePersona.NightOwl;
                 a.Grumpy = c.Persona == FlarePersona.Grumpy;
                 a.Taken = FlareInviteRules.Taken(citySeed, number) && number != _testInvitee;
@@ -68,7 +62,7 @@ namespace RealLifeOverhaul.Flare
             a.From = FlareInviteRules.PlanFrom(yesAt);
             a.Off = FlareBridges.InviteLook == null;
             FlareBridges.InviteLook?.Invoke(a);
-            FlareDm waiting = FlareInviteRules.WaitingWith(_file.Net.Dms, null);   // (a yes on its way is the player's plan already: one at a time)
+            FlareDm waiting = FlareInviteRules.WaitingWith(_file.Net.Dms, null);   // a yes on its way is the player's plan already: one at a time
             if (waiting != null && waiting.With == with)
             {
                 a.PlanWithThem = true;
@@ -86,7 +80,7 @@ namespace RealLifeOverhaul.Flare
             bool yes = answer == FlareInviteAnswer.Yes;
             long at = yes ? yesAt : FlareInviteRules.AnswerAt(now, _file.Seed, _file.Net.NextDm, false);
             FlareDm dm = FlareLiveRules.Dm(_file.Net, with, AccountName(with), at, false, null, FlareInviteRules.Key(answer, why, kind), FlareInviteRules.Data(a, answer, why));
-            _inviteDue = yes ? -1 : _inviteDue;   // (worked out again on the next second)
+            _inviteDue = yes ? -1 : _inviteDue;   // worked out again on the next second
             Logger?.Info("Flare: an invitation to " + kind + " read in a message to " + AccountName(with) + ": " + answer + " (" + why + ")"
                          + (yes ? ", " + a.Place + " at " + a.CardWhen + ", booked when the answer comes in " + (at - now) + " min" : ", answered in " + (at - now) + " min")
                          + "; talked " + a.Chats + " times, standing " + a.Standing + ".");
@@ -99,7 +93,7 @@ namespace RealLifeOverhaul.Flare
             return dm;
         }
 
-        // Once a second (Slow): one comparison while no yes is due; a yes due is booked a moment before it shows.
+        // Once a second: one comparison while no yes is due; a yes due is booked a moment before it shows.
         private void InvitesTick()
         {
             if (!Running || Save == null)
@@ -137,7 +131,7 @@ namespace RealLifeOverhaul.Flare
         private void Book(FlareDm m, long now)
         {
             FlareInviteBook b = FlareInviteRules.BookOf(m);
-            bool late = b == null || now > b.At - FlareInviteRules.PanelBefore;   // (its reminder's hour passed: slept through the answer)
+            bool late = b == null || now > b.At - FlareInviteRules.PanelBefore;   // its reminder's hour passed: slept through the answer
             int cast = !late && FlareBridges.InviteBook != null ? FlareBridges.InviteBook(b) : -1;
             if (cast < 0)
             {
@@ -152,8 +146,7 @@ namespace RealLifeOverhaul.Flare
                 "place", b.Place, "time", FlareInviteRules.Value(m.Data, "time"));
         }
 
-        // RLO Texts: an invitation's answer is asked with its own intent and card values (FlareInviteRules), not the chat's:
-        // a v3 pack's decided answer (an influencer's worded as a city person's: data v3 has no influencer's), a v2 pack none.
+        // RLO Texts: an invitation's answer is asked with its own intent and card values: a v3 pack's decided answer, a v2 pack none.
         private static void InviteCard(FlareDm answer, int data, TextRequest r)
         {
             if (FlareInviteRules.AnswerOf(answer.Key, out _))
@@ -164,8 +157,8 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>
-        /// Test: a city person writes to the player now and counts as somebody the player has talked with, for this session,
-        /// and as free of anybody else: an invitation sent to them in a message is decided as for somebody known a while.
+        /// Test: a city person writes to the player now and counts, this session, as somebody talked with and free of anybody
+        /// else, so an invitation to them is decided as for somebody known a while.
         /// </summary>
         public void TestInvitee()
         {

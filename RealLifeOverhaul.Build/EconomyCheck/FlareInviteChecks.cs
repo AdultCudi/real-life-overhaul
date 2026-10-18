@@ -472,7 +472,7 @@ internal static partial class Program
     {
         string invites = TextsSource(@"Social\Flare\FlareDirector.Invites.cs");
         string links = TextsSource(@"Wiring\FlareInviteLinks.cs");
-        string live = TextsSource(@"Social\Flare\FlareDirector.Live.cs");
+        string live = (TextsSource(@"Social\Flare\FlareDirector.Live.cs") + TextsSource(@"Social\Flare\FlareDirector.Cases.cs") + TextsSource(@"Social\Flare\FlareDirector.Posting.cs"));
         string director = TextsSource(@"Social\Flare\FlareDirector.cs");
         string phone = TextsSource(@"Social\SocialDialogs.cs");
         string flareLinks = TextsSource(@"Wiring\FlareLinks.cs");

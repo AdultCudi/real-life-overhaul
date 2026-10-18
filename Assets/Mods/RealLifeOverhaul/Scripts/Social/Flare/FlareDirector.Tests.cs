@@ -3,13 +3,10 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>
-    /// The test tools of the options page: a draft of every kind now, the daily round now, followers enough to reach the
-    /// next tier, and the account started again. Each says in a notice why not when it cannot run.
-    /// </summary>
+    /// <summary>Flare's director, the test tools of the Tests page. Each says in a notice why not when it cannot run.</summary>
     public sealed partial class FlareDirector
     {
-        private bool _testViral;   // the next post goes viral (a test)
+        private bool _testViral;   // the next post goes viral
 
         private bool TestReady(string test)
         {
@@ -26,7 +23,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        // A test tool runs here: a fault in one switches Flare off for the session like any other, and never reaches the options page.
+        // A fault in a test tool switches Flare off for the session like any other, and never reaches the options page.
         private void Guarded(Action test)
         {
             try
@@ -39,7 +36,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>Test: a draft of every kind, as if each had just happened (the first friend met is in the outing and the selfie).</summary>
+        /// <summary>Test: a draft of every kind, as if each had just happened, with the first friend met in the outing and the selfie.</summary>
         public void TestDrafts()
         {
             if (!TestReady("Flare drafts"))
@@ -62,7 +59,8 @@ namespace RealLifeOverhaul.Flare
                 FlareRules.Draft(_file, FlareSource.GoodDeed, day, hour, -1, null, null, 0);
                 FlareRules.Draft(_file, FlareSource.Arrested, day, hour, -1, null, null, 0);
                 _file.PostsToday = 0;   // the test's posts are the day's first: they move the account
-                Logger?.Info("Flare: test drafts made (" + _file.Drafts.Count + ", friend " + (friend >= 0 ? PersonName(friend) : "none") + ", business " + (place ?? "none") + ").");
+                Logger?.Info("Flare: test drafts made (" + _file.Drafts.Count + ", friend " + (friend >= 0 ? PersonName(friend) : "none") + ", business " + (place ?? "none")
+                             + ").");
                 Changed();
                 Open(TabPost);
             });
@@ -198,7 +196,7 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
-        /// <summary>Test: the City Ledger's account posts this morning's headlines now, and the market's news of yesterday is read.</summary>
+        /// <summary>Test: the City Ledger's account posts this morning's headlines now, and yesterday's market news is read.</summary>
         public void TestCity()
         {
             if (!TestReady("Flare city accounts"))
@@ -215,10 +213,7 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
-        /// <summary>
-        /// Test: a report of a broken road where the player stands, and the City Office's answer at once: a crew is sent (a
-        /// site of the council's works near the player, with its days), or why not.
-        /// </summary>
+        /// <summary>Test: a report of a broken road where the player stands, answered by the City Office at once.</summary>
         public void TestReport()
         {
             if (!TestReady("Flare report"))
@@ -259,7 +254,7 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
-        /// <summary>Test: the city's posts of today made again now (its people, the official accounts, the businesses, the invitations).</summary>
+        /// <summary>Test: the city's posts of today made again now.</summary>
         public void TestCityDay()
         {
             if (!TestReady("Flare city posts"))
@@ -313,7 +308,8 @@ namespace RealLifeOverhaul.Flare
             Guarded(() =>
             {
                 ReadPeople();
-                FlareDraft d = FlareRules.Draft(_file, FlareSource.Arrested, Save.Day, Save.Hour, -1, null, null, 0) ?? new FlareDraft { Id = -1, Source = FlareSource.Arrested, Day = Save.Day };
+                FlareDraft d = FlareRules.Draft(_file, FlareSource.Arrested, Save.Day, Save.Hour, -1, null, null, 0)
+                               ?? new FlareDraft { Id = -1, Source = FlareSource.Arrested, Day = Save.Day };
                 FlarePost p = FlareRules.Post(_file, d, FlareTone.Cheerful, -1, _people, Save.Day, Save.Hour, FlareGame.MinuteOfDay);
                 p.Reach = Math.Max(p.Reach, FlareLiveRules.PileOnFrom * 4);
                 p.Minute = FlareGame.MinuteOfDay % 60;
@@ -364,7 +360,7 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
-        /// <summary>Test: three complaints about litter in the player's district this week that nothing was done about: in tomorrow's paper, and the mood falls.</summary>
+        /// <summary>Test: three ignored complaints about litter in the player's district this week: in tomorrow's paper, and the mood falls.</summary>
         public void TestEscalate()
         {
             if (!TestReady("Flare ignored complaints"))

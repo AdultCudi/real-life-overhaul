@@ -333,15 +333,15 @@ internal static partial class Program
 
     private static void NoLimitSources()
     {
-        string flare = ReviewSource("Social/Flare/FlareRules.cs") + ReviewSource("Social/Flare/FlareDirector.cs") + ReviewSource("Social/Flare/FlareDirector.Live.cs")
-                       + ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareApp.Sheet.cs") + ReviewSource("Social/Flare/FlareApp.Side.cs")
+        string flare = ReviewSource("Social/Flare/FlareRules.cs") + ReviewSource("Social/Flare/FlareDirector.cs") + (ReviewSource("Social/Flare/FlareDirector.Live.cs") + ReviewSource("Social/Flare/FlareDirector.Cases.cs") + ReviewSource("Social/Flare/FlareDirector.Posting.cs"))
+                       + (ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs")) + ReviewSource("Social/Flare/FlareApp.Sheet.cs") + ReviewSource("Social/Flare/FlareApp.Side.cs")
                        + ReviewSource("Social/Flare/FlareLiveRules.cs") + ReviewSource("Social/Flare/FlareLiveRules.CityOffice.cs")
                        + ReviewSource("Social/Flare/FlareLiveRules.Feed.cs") + ReviewSource("Social/Flare/FlareNetShare.cs") + ReviewSource("Social/Flare/FlareOutbox.cs")
                        + ReviewSource("Social/Flare/FlareRateBook.cs") + ReviewSource("Social/Flare/FlarePieceBook.cs") + ReviewSource("Meta/FeatureList.cs");
         string[] gone = { "CanPost(", "NextPostMinute(", "PostGapMinutes", "PostsPerDay", "RepliesPerDay", "ReportsPerDay", "ReportedToday(", "Wait.DayFull", "Wait.TooSoon", "PostsDay = 40" };
         string left = gone.FirstOrDefault(flare.Contains);
         Check(flare.Length > 100000 && left == null, "Flare no limit: nothing in Flare waits two hours, counts three a day or refuses a report or a reply" + (left != null ? " (" + left + ")" : string.Empty));
-        string live = ReviewSource("Social/Flare/FlareDirector.Live.cs");
+        string live = (ReviewSource("Social/Flare/FlareDirector.Live.cs") + ReviewSource("Social/Flare/FlareDirector.Cases.cs") + ReviewSource("Social/Flare/FlareDirector.Posting.cs"));
         string compose = FlareMethod(live, "private FlarePost Built(") + FlareMethod(live, "private FlarePost Report(") + FlareMethod(live, "private FlarePost Reply(");
         Check(compose.Length > 1000 && !compose.Contains("reallife_flare_wait") && !compose.Contains("compose_reported") && !compose.Contains("compose_replies"),
             "Flare no limit: a post, a report and a reply are refused only when they are not whole");
@@ -358,7 +358,7 @@ internal static partial class Program
             "Flare no limit: the same report again the same day is answered as noted, and moves no case, tally or crew");
         string postLive = FlareMethod(live, "private void PostLive(");
         Check(postLive.Contains("FlareLiveRules.StoryOnce(") && !postLive.Contains("FlareLiveRules.Story(_file"), "Flare no limit: a pile-on reaches the paper once a day");
-        string share = ReviewSource("Social/Flare/FlareDirector.Share.cs");
+        string share = (ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs"));
         Check(FlareMethod(share, "private bool PictureAllowed(").Contains("FlareRateBook.Picture(") && FlareMethod(share, "private bool PictureAllowed(").Contains("reallife_flare_note_pictures_day"),
             "Flare no limit: a picture past the day's four is left off its post, and the player told");
         string side = ReviewSource("Social/Flare/FlareApp.Side.cs");
@@ -417,7 +417,7 @@ internal static partial class Program
         Check(FlareLiveRules.FirstToday(f, 5, FlareLiveRules.FriendKey('T', 3)) && !FlareLiveRules.FirstToday(f, 5, FlareLiveRules.FriendKey('T', 3)) && FlareLiveRules.FirstToday(f, 5, FlareLiveRules.FriendKey('P', 3))
               && FlareLiveRules.FirstToday(f, 5, FlareLiveRules.TalkKey("Elm~1")) && !FlareLiveRules.FirstToday(f, 5, FlareLiveRules.TalkKey("Elm~1")) && FlareLiveRules.TalkKey(null) == null,
             "Flare no limit: a tagged friend, the partner seeing it, and a business's talk each once a day");
-        string live = ReviewSource("Social/Flare/FlareDirector.Live.cs");
+        string live = (ReviewSource("Social/Flare/FlareDirector.Live.cs") + ReviewSource("Social/Flare/FlareDirector.Cases.cs") + ReviewSource("Social/Flare/FlareDirector.Posting.cs"));
         string links = FlareMethod(ReviewSource("Social/Flare/FlareDirector.Links.cs"), "private void Influence(");
         string city = FlareMethod(ReviewSource("Social/Flare/FlareDirector.City.cs"), "private void CityInfluence(");
         string answer = FlareMethod(live, "private void Answer(");
@@ -481,7 +481,7 @@ internal static partial class Program
             }
         }
         Check(bad.Count == 0, "Flare no limit words: the new texts are in en, pt and zh-cn with the same {names}" + (bad.Count > 0 ? " (" + string.Join(", ", bad) + ")" : string.Empty));
-        string scripts = string.Join("\n", new[] { "Social/Flare/FlareApp.Sheet.cs", "Social/Flare/FlareApp.Side.cs", "Social/Flare/FlareDirector.Share.cs" }.Select(ReviewSource));
+        string scripts = string.Join("\n", new[] { "Social/Flare/FlareApp.Sheet.cs", "Social/Flare/FlareApp.Side.cs", "Social/Flare/FlareDirector.Share.cs", "Social/Flare/FlareDirector.Following.cs" }.Select(ReviewSource));
         string unread = NoLimitNewKeys.FirstOrDefault(k => !scripts.Contains("\"" + k + "\""));
         Check(unread == null, "Flare no limit words: every new text is read" + (unread != null ? " (" + unread + ")" : string.Empty));
         var still = new List<string>();

@@ -409,7 +409,7 @@ internal static partial class Program
         Check(same && spread.Count >= 6, "Flare photo bank Going Public: the pick goes by the post's seed alone (" + spread.Count + " of the nine photos picked over 300 posts), and a host and a guest agree which shared posts carry a photo, and pick the same one from the same bank (the city's seed and the post's session number)");
         Check(guestNone, "Flare photo bank Going Public: a machine whose bank has none that fits shows none");
         string net = (ReviewSource("Social/Flare/FlareNetShare.cs") + ReviewSource("Social/Flare/FlareOutbox.cs") + ReviewSource("Social/Flare/FlareRateBook.cs")
-            + ReviewSource("Social/Flare/FlarePieceBook.cs")), share = ReviewSource("Social/Flare/FlareDirector.Share.cs"), texts = ReviewSource("Texts/TextsShare.cs");
+            + ReviewSource("Social/Flare/FlarePieceBook.cs")), share = (ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs")), texts = ReviewSource("Texts/TextsShare.cs");
         Check(!net.Contains("Bank_") && !net.Contains("FlareBank") && !share.Contains("FlareBank") && !share.Contains("CityPhotoKey") && !texts.Contains("FlareBank"),
             "Flare photo bank Going Public: nothing of the bank is sent (each machine's photos stay its own)");
     }

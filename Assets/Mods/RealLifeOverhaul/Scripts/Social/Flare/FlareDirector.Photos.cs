@@ -12,35 +12,19 @@ using UnityEngine;
 namespace RealLifeOverhaul.Flare
 {
     /// <summary>
-    /// The city's photos (FlareCityPhotoRules says what the bank takes and which photo a post carries; FlareCityCamera
-    /// takes them) and the faces drawn ahead (FlareFacePainter: the faces likely to be seen soon, FlareFaceAheadRules, when
-    /// Flare starts and each day):
-    ///
-    ///   the folder     the save's photos' folder (FlareBridges.PictureFolder: Photos/(the save)), its "Flare" in it, marked
-    ///                  as the save's with the first photo so a deleted save's go with its photos; the bank's file there
-    ///                  (bank.txt: the photos' records and the posts' picks), nothing in the save
-    ///   at the start   the bank's file read and the photos listed on a worker: an old photo of one post (0.29) and a file
-    ///                  without a record deleted, a record without its file let go
-    ///   each second    (the director's timer) the posts going up soon or just up picked, once a game minute, eight a look
-    ///                  at most; the fronts of the city's businesses read, a millisecond a second, once a game day; the
-    ///                  bank's file written on a worker after a change; and, after the pace, while the player is outdoors,
-    ///                  one photo of what the bank lacks here (one at a time, two dozen a game day at most)
-    ///   each day       photos too old, a past event's and those past the most deleted, the oldest first
-    ///   a post's picture  the app asks <see cref="CityPhotoKey"/>: its photo's small copy, read as any picture of the player's
-    ///
-    /// In Going Public each machine keeps its own bank and picks the same way among the photos that fit (the post's seed);
-    /// nothing is sent.
-    ///
-    /// COST: a comparison or two a second while nothing is due; a look along the posts (two hundred at most) once a game
-    /// minute; the fronts' list read at a millisecond a second (a few seconds once a game day), held at most
-    /// <see cref="FrontsMost"/>; a pass over the bank (144 photos) when a photo is planned, every pace (twenty real seconds
-    /// at least); a photo as FlareCityCamera says; the folder's list and the bank's file on a worker.
+    /// Flare's director, the city's photos (FlareCityPhotoRules says what the bank takes and which photo a post carries;
+    /// FlareCityCamera takes them) and the faces drawn ahead (FlareFacePainter). The bank lives in the save's photos'
+    /// folder, never in the save: its file is read and the folder listed on a worker at the start, files without records
+    /// deleted. Each second the posts going up soon are picked, the businesses' fronts read a millisecond at a time once a
+    /// game day, the bank's file written after a change, and, after the pace and outdoors, one photo of what the bank lacks
+    /// here. Each machine of a session keeps its own bank and picks the same way; nothing is sent. Cost: a comparison or
+    /// two a second while nothing is due; a look along the posts once a game minute; file work on a worker.
     /// </summary>
     public sealed partial class FlareDirector
     {
         private const float EventNear = 90f;              // metres from a street event's middle it can be photographed from
         private const double FrontsSliceMs = 1.0;         // milliseconds of the main thread a second the fronts' list may take while it is read
-        private const int FrontsMost = 2000;              // fronts held at most (the city has about a thousand businesses)
+        private const int FrontsMost = 2000;              // fronts held at most; the city has about a thousand businesses
         private const int FrontsNearMost = 24;            // fronts within range handed to the plan at most
         private const int PicksALook = 8;                 // posts picked in one look at most
 
@@ -70,7 +54,7 @@ namespace RealLifeOverhaul.Flare
             return id >= 0 && _bankFiles.Contains(id) ? "f:" + Path.Combine(_photoFolder, FlareCityPhotoRules.FileName(id)) : null;
         }
 
-        // Flare starts (or the save changes): the folder, the bank read on a worker; the faces drawn ahead.
+        // Flare starts or the save changes: the folder, the bank read on a worker, the faces drawn ahead.
         private void PhotosStart()
         {
             _bank = null;
@@ -91,8 +75,7 @@ namespace RealLifeOverhaul.Flare
             FacesAhead(Save != null ? Save.Day : 0);
         }
 
-        // The faces likely to be seen soon (the people met, the influencers, the newest posts and their comments, the
-        // messages, tomorrow's posters) handed to the painter, drawn behind the black screens; none with the option off.
+        // The faces likely to be seen soon handed to the painter, drawn behind the black screens; none with the option off.
         private void FacesAhead(int day)
         {
             if (!Settings.FlarePictures || _file == null)
@@ -109,7 +92,7 @@ namespace RealLifeOverhaul.Flare
         {
             if (_bank != null && _bankDirty && _photoFolder != null)
             {
-                BankWrite();   // (what changed since the last second goes to its file)
+                BankWrite();   // what changed since the last second goes to its file
             }
             _photoGeneration++;
             _bank = null;
@@ -128,10 +111,8 @@ namespace RealLifeOverhaul.Flare
             return inf != null ? (int)inf.Niche : -1;
         }
 
-        // ---------------------------------------------------------------- the bank's file and folder
-
-        // On a worker: the bank's file read, the photos listed; an old photo of one post, a file without a record and a
-        // record without a file let go. Then, on the game's thread, the bank is Flare's.
+        // On a worker: the bank's file read and the photos listed, files without a record and records without a file let go;
+        // then, on the game's thread, the bank is Flare's.
         private IEnumerator BankRead(string folder, int generation)
         {
             FlareBank bank = null;
@@ -192,7 +173,8 @@ namespace RealLifeOverhaul.Flare
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Flare check (city photos): the bank for this save has " + bank.Photos.Count + " photo(s) and " + bank.Picks.Count + " post(s) picked; " + legacy
-                             + " photo(s) of the old kind, " + orphans + " without a record and " + lost + " record(s) without a photo let go (at most " + FlareCityPhotoRules.BankMost + "): PASS");
+                             + " photo(s) of the old kind, " + orphans + " without a record and " + lost + " record(s) without a photo let go (at most " + FlareCityPhotoRules.BankMost
+                             + "): PASS");
             }
             if (bank.Picks.Count > 0)
             {
@@ -208,14 +190,14 @@ namespace RealLifeOverhaul.Flare
             }
             catch (IOException)
             {
-                // (deleted at the next start)
+                // deleted at the next start
             }
             catch (UnauthorizedAccessException)
             {
             }
         }
 
-        // The bank's file written on a worker (its text made here, a few kilobytes): a temporary file, then copied over the old.
+        // The bank's file written on a worker: a temporary file, then copied over the old.
         private void BankWrite()
         {
             _bankDirty = false;
@@ -233,7 +215,7 @@ namespace RealLifeOverhaul.Flare
                 }
                 catch (IOException)
                 {
-                    // (written again with the next change)
+                    // written again with the next change
                 }
                 catch (UnauthorizedAccessException)
                 {
@@ -245,8 +227,8 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
-        // Once a game day, and when the bank grows past its most: photos too old, a past event's and those past the most
-        // let go (their files deleted on a worker), and the picks of posts that are gone.
+        // Once a game day, and when the bank grows past its most: stale photos let go (their files deleted on a worker), and
+        // the picks of posts that are gone.
         private void BankClean(int day)
         {
             FlareFile file = _file;
@@ -272,9 +254,7 @@ namespace RealLifeOverhaul.Flare
             _bankDirty |= picks > 0 || gone > 0;
         }
 
-        // ---------------------------------------------------------------- the second
-
-        // Once a real second (the director's timer): the picks, the fronts' list, the bank's file, and the next photo if its time has come.
+        // Once a real second: the picks, the fronts' list, the bank's file, and the next photo if its time has come.
         private void PhotosSecond()
         {
             if (_bank == null || _photoFolder == null || Save == null || LoadScene.isLoading)
@@ -301,7 +281,7 @@ namespace RealLifeOverhaul.Flare
             float t = Time.realtimeSinceStartup;
             if (t < _photoNext || _photoBusy || Settings.FlareCityPhotos <= 0 || FlarePictureGame.Driving())
             {
-                return;   // (in a vehicle the photo waits, its pace not spent: it comes in the first second on foot)
+                return;   // in a vehicle the photo waits, its pace not spent
             }
             _photoNext = t + _photoPace;
             if (_photoDay != day)
@@ -311,14 +291,14 @@ namespace RealLifeOverhaul.Flare
             }
             if (_photoToday >= FlareCityPhotoRules.DayMost || !Scene(now, out Vector3? focus) || !FlareCityPhotoRules.Plan(_bank, _scene, out FlarePhotoShot shot))
             {
-                return;   // (indoors, or the bank has all it wants of here)
+                return;   // indoors, or the bank has all it wants of here
             }
             _photoToday++;
             StartCoroutine(Guard.Routine(PhotoTake(shot, FocusFor(shot, focus), _photoGeneration, false)));
         }
 
-        // The posts going up soon or just up, picked: a photo of the bank that fits, or none once it is up and nothing does
-        // (before it is up, it waits for the next look: a photo may come meanwhile). At most PicksALook a look.
+        // The posts going up soon or just up, picked: a photo that fits, or none once a post is up and nothing does. At most
+        // PicksALook a look.
         private void PicksLook(long now)
         {
             int citySeed = FlareLiveRules.CitySeed(_file);
@@ -365,7 +345,7 @@ namespace RealLifeOverhaul.Flare
             _frontsDone = FlarePictureGame.FrontSlice(ref _frontsCursor, _fronts, (long)(Stopwatch.Frequency * FrontsSliceMs / 1000.0)) || _fronts.Count >= FrontsMost;
         }
 
-        // What can be photographed here now, into the scene; false indoors or nowhere known. 'focus' the event's or the sight's middle.
+        // What can be photographed here now, into the scene; false indoors. 'focus' is the event's or the sight's middle.
         private bool Scene(long now, out Vector3? focus)
         {
             focus = null;
@@ -407,7 +387,7 @@ namespace RealLifeOverhaul.Flare
             return true;
         }
 
-        // A business whose own posts are in the city's feed today (the day's sample) or one of the player's: its front first.
+        // A business posting in the city's feed today, or one of the player's: its front first.
         private bool Posting(string place)
         {
             for (int i = 0; i < _facts.Shops.Count; i++)
@@ -432,15 +412,13 @@ namespace RealLifeOverhaul.Flare
             return shot.Kind == FlarePhotoKind.Event || shot.Kind == FlarePhotoKind.Park || shot.Kind == FlarePhotoKind.Landmark ? focus : null;
         }
 
-        // ---------------------------------------------------------------- one photo
-
         private IEnumerator PhotoTake(FlarePhotoShot shot, Vector3? focus, int generation, bool test)
         {
             _photoBusy = true;
             string folder = _photoFolder, district = _scene.District;
             FlarePhotoLight light = _scene.Light;
             bool wet = _scene.Wet;
-            int day = _scene.Day, minute = _scene.Minute, id = _bank.NextId++;   // (the number is the bank's from now: a photo that fails leaves a gap, never a reuse)
+            int day = _scene.Day, minute = _scene.Minute, id = _bank.NextId++;   // the number is the bank's from now: a photo that fails leaves a gap, never a reuse
             var result = new FlareCityCamera.Result();
             try
             {
@@ -448,7 +426,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     _photoMarked = true;
                     Action marking = FlareBridges.MarkPictureFolder;
-                    Task mark = Task.Run(() => marking?.Invoke());   // (the save's id beside its photos: a deleted save's photos go with it)
+                    Task mark = Task.Run(() => marking?.Invoke());   // the save's id beside its photos: a deleted save's photos go with it
                     while (!mark.IsCompleted)
                     {
                         yield return null;
@@ -463,7 +441,7 @@ namespace RealLifeOverhaul.Flare
             }
             finally
             {
-                _photoBusy = false;   // (on every path: a fault in the camera leaves the next photo free to come)
+                _photoBusy = false;   // on every path: a fault in the camera leaves the next photo free to come
             }
             if (generation != _photoGeneration || _bank == null)
             {
@@ -477,7 +455,7 @@ namespace RealLifeOverhaul.Flare
                 _bankDirty = true;
                 if (_bank.Photos.Count > FlareCityPhotoRules.BankMost)
                 {
-                    BankClean(day);   // (past the most: the oldest goes now)
+                    BankClean(day);   // past the most: the oldest goes now
                 }
             }
             if (Meta.Dev.Verbose || test)
@@ -492,14 +470,13 @@ namespace RealLifeOverhaul.Flare
             if (test)
             {
                 Tell(result.Written ? NotificationType.Info : NotificationType.Warning, result.Written ? "reallife_flare_test_photo_taken" : "reallife_flare_test_photo_not", _openFeedTab,
-                    "ms", result.RenderMs.ToString("0"));   // (why not, in the log line above: a reason in the mod's own words)
+                    "ms", result.RenderMs.ToString("0"));   // why not is in the log line above
             }
         }
 
         /// <summary>
-        /// Test: a photo of the city for the bank now, of what the bank lacks here (or the street, if it has all of here),
-        /// whatever the pace and the day's most, and the faces likely to be seen soon drawn ahead at the next black screens.
-        /// A notice says what came of it; the log has the measured time and what the bank holds.
+        /// Test: a photo of the city for the bank now, of what the bank lacks here or the street, whatever the pace, and the
+        /// faces likely to be seen soon drawn ahead. A notice says what came of it; the log has the time and the bank.
         /// </summary>
         public void TestPictures()
         {
@@ -510,7 +487,8 @@ namespace RealLifeOverhaul.Flare
                     return;
                 }
                 FacesAhead(Save.Day);
-                Logger?.Info("Flare test (pictures): " + FlareFacePainter.Report() + "; " + (_bank != null ? _bank.Photos.Count + " city photo(s) in the bank, " + _bank.Picks.Count + " post(s) picked" : "the bank not read yet")
+                Logger?.Info("Flare test (pictures): " + FlareFacePainter.Report() + "; "
+                             + (_bank != null ? _bank.Photos.Count + " city photo(s) in the bank, " + _bank.Picks.Count + " post(s) picked" : "the bank not read yet")
                              + "; the folder " + (_photoFolder ?? "(none)") + ".");
                 if (_photoBusy || _photoFolder == null || _bank == null)
                 {

@@ -106,13 +106,13 @@ internal static partial class Program
         Check(FlareLiveRules.HostAnswers(true, true, FlareSource.Life) && FlareLiveRules.HostAnswers(true, false, FlareSource.Report)
               && !FlareLiveRules.HostAnswers(true, false, FlareSource.Life) && !FlareLiveRules.HostAnswers(false, true, FlareSource.Report),
               "Flare review: a following guest's post that goes to the host is answered by the host alone; one that stays is answered here");
-        string live = FlareMethod(ReviewSource("Social/Flare/FlareDirector.Live.cs"), "private void PostLive(FlarePost p)");
+        string live = FlareMethod((ReviewSource("Social/Flare/FlareDirector.Live.cs") + ReviewSource("Social/Flare/FlareDirector.Cases.cs") + ReviewSource("Social/Flare/FlareDirector.Posting.cs")), "private void PostLive(FlarePost p)");
         Check(live.Contains("FlareLiveRules.HostAnswers(Following, Settings.FlareSharePosts, p.Source)") && Regex.Matches(live, @"if \(!hostAnswers\)").Count == 2
               && live.IndexOf("CityReplies", StringComparison.Ordinal) > live.IndexOf("if (!hostAnswers)", StringComparison.Ordinal)
               && live.IndexOf("MentionAnswer(p)", StringComparison.Ordinal) > live.LastIndexOf("if (!hostAnswers)", StringComparison.Ordinal),
               "Flare review: the guest makes no city replies and no account's answer to a post the host answers (none come twice)");
         Check(FlareLiveRules.ToSession(false, FlareSource.Report) && !FlareLiveRules.ToSession(false, FlareSource.Life) && FlareLiveRules.ToSession(true, FlareSource.Life)
-              && FlareMethod(ReviewSource("Social/Flare/FlareDirector.Share.cs"), "private void Shared_Own(FlarePost p)").Contains("FlareLiveRules.ToSession(Settings.FlareSharePosts, p.Source)"),
+              && FlareMethod((ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs")), "private void Shared_Own(FlarePost p)").Contains("FlareLiveRules.ToSession(Settings.FlareSharePosts, p.Source)"),
               "Flare review: with posts not shared, a following guest's report still goes to the host's City Office (and its other posts do not)");
     }
 
@@ -147,7 +147,7 @@ internal static partial class Program
         g.Posts.Add(new FlarePost { Id = g.NextId++, Author = FlareAuthor.Player, Source = FlareSource.Life, Pending = true });
         Check(FlareNetShare.HostLeft(g) == 1 && !g.Posts[0].Pending && FlareNetShare.HostLeft(g) == 0,
               "Flare review: when the host goes, the player's posts on their way stay their own, no longer waiting");
-        string share = ReviewSource("Social/Flare/FlareDirector.Share.cs");
+        string share = (ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs"));
         string flare = ReviewSource("Social/Flare/FlareDirector.cs");
         Check(share.Contains("Ready = () => (Running && Save != null) || _offToSend") && share.Contains("Left = HostGone")
               && FlareMethod(share, "private string HostWhole()").Contains("_offToSend = false")
@@ -194,7 +194,7 @@ internal static partial class Program
               "Flare review: another player's post is filtered whole: its words, its names, the account it calls on, and a starred tag left out of its tags");
         Check(FlareNetShare.CleanTopic("roads mainst <b> " + new string('x', 40), null) == "roads mainst",
               "Flare review: what a guest sends as tags is tags only (letters, figures; not too long)");
-        string share = ReviewSource("Social/Flare/FlareDirector.Share.cs");
+        string share = (ReviewSource("Social/Flare/FlareDirector.Share.cs") + ReviewSource("Social/Flare/FlareDirector.Following.cs"));
         Check(FlareMethod(share, "private void GuestPost(FlareAsk ask, string who)").Contains("FlareNetShare.CleanPost(p,")
               && FlareMethod(share, "private int HostPost(string[] f, out bool added)").Contains("FlareNetShare.CleanPost(p,")
               && share.Contains("Filter(goer, who)") && share.Contains("Filter(text, from)"),
@@ -235,7 +235,7 @@ internal static partial class Program
         Check(!FlareLiveRules.Escalate(tally, FlareReport.Litter, "d7", 21, false) && !FlareLiveRules.Escalate(tally, FlareReport.Transit, "d7", 21, true)
               && !FlareLiveRules.Escalate(tally, FlareReport.Utilities, "d7", 21, true) && FlareLiveRules.Escalate(tally, FlareReport.Litter, "d7", 21, true),
               "Flare review: ignored complaints reach the paper and pull on approval only while the office acts, and never about the buses or the power");
-        string live = ReviewSource("Social/Flare/FlareDirector.Live.cs");
+        string live = (ReviewSource("Social/Flare/FlareDirector.Live.cs") + ReviewSource("Social/Flare/FlareDirector.Cases.cs") + ReviewSource("Social/Flare/FlareDirector.Posting.cs"));
         Check(FlareMethod(live, "private void Escalation(FlareCase c, int day)").Contains("FlareLiveRules.EscalationOrder(_file.Net, c, Now, Settings.FlareCityOffice)")
               && FlareMethod(live, "private void Escalation(FlareCase c, int day)").Contains("FlareLiveRules.Escalate(_file.Net, c.Kind, c.District, day, Settings.FlareCityOffice)"),
               "Flare review: the director's escalation goes by those rules");

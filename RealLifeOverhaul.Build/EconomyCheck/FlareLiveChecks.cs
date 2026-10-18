@@ -643,7 +643,7 @@ internal static partial class Program
         foreach (string file in new[]
                  {
                      "Social/Flare/FlareText.Live.cs", "Social/Flare/FlareApp.cs", "Social/Flare/FlareApp.Frame.cs", "Social/Flare/FlareApp.Side.cs", "Social/Flare/FlareApp.Cells.cs",
-                     "Social/Flare/FlareApp.Screens.cs", "Social/Flare/FlareApp.Sheet.cs", "Social/Flare/FlareDirector.Live.cs", "Social/Flare/FlareDirector.Share.cs",
+                     "Social/Flare/FlareApp.Screens.cs", "Social/Flare/FlareApp.Sheet.cs", "Social/Flare/FlareDirector.Live.cs", "Social/Flare/FlareDirector.Cases.cs", "Social/Flare/FlareDirector.Posting.cs", "Social/Flare/FlareDirector.Share.cs", "Social/Flare/FlareDirector.Following.cs",
                      "Social/Flare/FlareDirector.Camera.cs", "Social/Flare/FlareDirector.Tests.cs", "Core/RealLifeOverhaulMod.cs"
                  })
         {
