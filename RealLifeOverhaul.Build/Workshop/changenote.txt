@@ -1,4 +1,4 @@
-0.37.0
+0.37.1
 
-New
-- Traffic near you now brakes in good time and smoothly, not hard at the last moment. It keeps room behind you while you park and lets you out of a space. At an accident, the officer on traffic duty steps aside to wave an ambulance, a fire engine or a patrol car through.
+Fixed
+- The person you came to meet now always gets the panel to say hello, also beside a subway entrance, a bus stop or a kiosk. Of two places with a panel, the one you are nearer to and facing has it, and if it still cannot come up, you are asked whether to say hello.
