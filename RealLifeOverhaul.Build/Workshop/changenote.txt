@@ -1,4 +1,4 @@
-0.32.3
+0.32.4
 
 Fixed
-- Saving and leaving with the city map open no longer throws an error into Player.log as the police stations come off the map, which stopped the rest of them being cleared.
+- A police station's Go into the station panel and its key come up only at the station's door, as near as the game's own doors ask, and no longer from the kerb or the middle of the road. The desk officer inside answers only at the counter.
