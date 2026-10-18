@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Careers
     /// <summary>
     /// Education and careers, each part behind its own option in a partial file of this class. No Update: a one-second timer
     /// starts and stops the parts and keeps the game's hour, day and save handlers in place (the game empties its events on
-    /// every load); the frame cost is LateUpdate's (.Prompt). A fault switches it off for the session.
+    /// every load); the frame cost is LateUpdate's (.Prompt). A fault, or the guard switching education off (Core/Guard, which
+    /// also disables the component), stops it for the session: a sitting needs it enabled, as ShiftSkip starts on its host.
     /// </summary>
     public sealed partial class CareersDirector : MonoBehaviour
     {
@@ -74,6 +75,11 @@ namespace RealLifeOverhaul.Careers
                 yield return wait;
                 if (_broken)
                 {
+                    continue;
+                }
+                if (FrameGuard.Off)
+                {
+                    StandDown("its feature was switched off after its faults (Core/Guard)");
                     continue;
                 }
                 while (StartLine.Holds(StartSeats.Careers))
@@ -250,6 +256,10 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Offers a sitting on the game's activity panel; null if offered, else why not, as a locale key.</summary>
         internal string Offer(Sitting sitting)
         {
+            if (_broken || !isActiveAndEnabled)
+            {
+                return "reallife_study_test_off";   // switched off: ShiftSkip would call a sitting off at Start, as it needs its host enabled
+            }
             if (_skip != null && _skip.Open)
             {
                 return "reallife_study_why_busy";
@@ -393,8 +403,14 @@ namespace RealLifeOverhaul.Careers
 
         private void Fault(string where, Exception e)
         {
-            _broken = true;
             Logger?.Error(e);
+            StandDown("an error in " + where);
+        }
+
+        // Off for the session, with nothing left running: no sitting is offered on a director that is not there for it.
+        private void StandDown(string why)
+        {
+            _broken = true;
             try
             {
                 CloseSitting();
@@ -405,7 +421,7 @@ namespace RealLifeOverhaul.Careers
             {
                 Logger?.Error(second);
             }
-            Logger?.Warn("Careers: switched off for this session after an error in " + where + ". The game's own courses and jobs are not affected; the records are kept as they were last saved.");
+            Logger?.Warn("Careers: switched off for this session after " + why + ". The game's own courses and jobs are not affected; the records are kept as they were last saved.");
         }
 
         /// <summary>A notification of the game's that opens the Campus app on a tab with a row picked.</summary>

@@ -109,10 +109,10 @@ The courier and cab ranks come to about the van job's 100 an hour of play, and t
 The per-hour column is worked out from the catalogue's figures, not measured in play.
 **Owners are paid less:** every job's pay, freelance or employed, is multiplied by `CareerCatalogue.OwnerFactor`: 1 with no business, 0.85 with one, 0.70 with two, 0.55 from three on.
 
-**The dispatcher's desk** (`DispatchJob`, `DispatchList`): three batches of six parcels round the depot; each parcel goes on one of three vans (three a van) with the choice keys, 55 s a batch, the interaction key takes one back.
+**The dispatcher's desk** (`DispatchJob`, `DispatchList`): three batches of six parcels round the depot; each parcel goes on one of three vans (three a van) by that van's button on the game's panel over the desk (`JobPanel`, run on the game's keys or a click), 55 s a batch; its Take one back button takes the last one back.
 
 The board is the game's list window (`GameUi.DeskList`): the parcels still waiting as a note at the top (how far and which way from the depot), then an entry for each van with what it carries and how long its round is, and a button to send the next parcel on it, and an entry to take one back.
-The same choices stay on the game's panel over the desk (the keys).
+The same buttons stay on the game's panel over the desk.
 
 The window opens with each batch; the cancel key closes it for that batch.
 If the game's list window cannot be copied the panel is all there is (`Jobs check (dispatch list) ... FAIL`).
