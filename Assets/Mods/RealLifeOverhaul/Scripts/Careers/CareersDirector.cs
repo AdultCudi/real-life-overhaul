@@ -300,13 +300,13 @@ namespace RealLifeOverhaul.Careers
                     case SittingKind.Overtime:
                         if (_workOn)
                         {
-                            WorkEnded(sitting, minutes, whole);
+                            WorkEnded(sitting, minutes);
                         }
                         break;
                     case SittingKind.Interview:
                         if (_workOn)
                         {
-                            InterviewEnded(sitting, minutes, whole);
+                            InterviewEnded(sitting, whole);
                         }
                         break;
                     default:

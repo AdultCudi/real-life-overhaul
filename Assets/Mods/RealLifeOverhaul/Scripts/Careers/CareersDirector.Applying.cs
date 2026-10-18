@@ -239,7 +239,7 @@ namespace RealLifeOverhaul.Careers
                 CareersText.T("reallife_work_skip_interview_for", "title", CareersText.Title(a.Post.Prof, a.Post.Rank))));
         }
 
-        private void InterviewEnded(Sitting s, int minutes, bool whole)
+        private void InterviewEnded(Sitting s, bool whole)
         {
             Application a = _study.Work.ApplicationOf(s.Of);
             if (a == null || a.Stage != (int)ApplyStep.Interview)

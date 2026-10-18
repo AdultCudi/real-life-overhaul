@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        private void WorkedMore(Job j, Sitting s, int minutes, bool whole, int day)
+        private void WorkedMore(Job j, Sitting s, int minutes, int day)
         {
             if (!Settings.CareersLife)
             {
@@ -105,7 +105,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        private void PaidMore(Job j, long cents, bool overtime)
+        private void PaidMore(Job j, long cents)
         {
             if (!Settings.CareersLife)
             {

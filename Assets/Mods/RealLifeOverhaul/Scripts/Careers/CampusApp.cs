@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Careers
                         case CareersDirector.TabResults: table = WriteResults(box, f); break;
                         case CareersDirector.TabSkills: table = WriteSkills(box, f, day); break;
                         case CareersDirector.TabFamily: table = WriteFamily(box); break;
-                        default: table = WriteCourses(box, f, day); break;
+                        default: table = WriteCourses(box, f); break;
                     }
                 }
                 box.Done();
@@ -233,7 +233,7 @@ namespace RealLifeOverhaul.Careers
         // The Guide's pages the tabs point to at their foot: courses and skills, and the family's schooling.
         private const string StudyGuide = "reallife_meta_title_careers_study", FamilyGuide = "reallife_meta_title_careers_family";
 
-        private TableSpec WriteCourses(InfoBox box, StudyFile f, int day)
+        private TableSpec WriteCourses(InfoBox box, StudyFile f)
         {
             CourseDef picked = null;
             int id = PickedId(_picked, CourseRow);

@@ -225,7 +225,7 @@ namespace RealLifeOverhaul.Careers
                     Results(e, day, false);
                     continue;
                 }
-                Instalment(e, day);
+                Instalment(e);
             }
             long interest = StudyRules.LoanInterest(_study.LoanCents, GameCalendar.DaysPerYear);
             _study.LoanCents += interest;
@@ -239,7 +239,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>An instalment that has fallen due is charged, or lent; one that cannot be paid stands as owed and the classes wait for it.</summary>
-        private void Instalment(Enrolment e, int day)
+        private void Instalment(Enrolment e)
         {
             CourseDef c = e.Def;
             int due = Prices.At(StudyRules.InstalmentDue(e));

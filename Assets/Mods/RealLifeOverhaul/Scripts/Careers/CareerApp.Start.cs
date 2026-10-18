@@ -6,10 +6,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// The Career app's first tab, Professions: in a few lines how offers come, what the player can apply for now and the
-    /// first step; then every profession with what the player still needs for its first post (the course and where it is
-    /// taught, more points of its skills, or a vacancy to come), and, picked, its whole ladder with what each rung asks.
-    /// Every figure is the rules' own (Careers/Work/ProPath, ProRules), worked out when the tab is shown.
+    /// The Career app's first tab, Professions: how offers come, what the player can apply for now and the first step; then
+    /// every profession with what its first post still needs, and, picked, its whole ladder (Careers/Work/ProPath, ProRules).
     /// </summary>
     public sealed partial class CareerApp
     {
@@ -71,7 +69,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (picked != null)
             {
-                WriteProfession(box, w, f, picked, pickedView, day);
+                WriteProfession(box, w, f, picked, pickedView);
                 return CareerColumns.Professions;
             }
             _picked = null;
@@ -125,7 +123,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        private void WriteProfession(InfoBox box, WorkFile w, StudyFile f, Profession p, PathView v, int day)
+        private void WriteProfession(InfoBox box, WorkFile w, StudyFile f, Profession p, PathView v)
         {
             box.Title(CareersText.ProName(p.Id));
             bool apply = v.Step == PathStep.Ready && _openTo[p.Id] > 0;

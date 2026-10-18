@@ -173,7 +173,8 @@ namespace RealLifeOverhaul.Careers
                     }
                 case ContractStep.Taken:
                     {
-                        box.Meter("reallife_ibox_work_done", c.Hours > 0 ? c.Minutes / (c.Hours * 60f) : 1f, CareersText.T("reallife_own_contract_left", "time", CareersText.Minutes(OwnRules.Left(c))), late ? CellTone.Red : CellTone.Plain);
+                        box.Meter("reallife_ibox_work_done", c.Hours > 0 ? c.Minutes / (c.Hours * 60f) : 1f,
+                            CareersText.T("reallife_own_contract_left", "time", CareersText.Minutes(OwnRules.Left(c))), late ? CellTone.Red : CellTone.Plain);
                         string why = _director.CanWorkContract(c);
                         if (why != null)
                         {

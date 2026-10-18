@@ -429,7 +429,7 @@ namespace RealLifeOverhaul.Careers
             return Offer(DaySitting(j, minutes));
         }
 
-        private void WorkEnded(Sitting s, int minutes, bool whole)
+        private void WorkEnded(Sitting s, int minutes)
         {
             Job j = _study.Work.Job;
             if (j == null || minutes <= 0)
@@ -438,14 +438,14 @@ namespace RealLifeOverhaul.Careers
             }
             int day = Save.Day;
             ProRules.Worked(j, day, minutes);
-            Pay(j, minutes, s.Kind == SittingKind.Overtime);
+            Pay(j, minutes);
             Profession p = j.Def;
             int a, b;
             p.SkillsOf(j.Post.Rank, out a, out b);
             int hours = Math.Max(1, minutes / 60);
             LearnAtWork(a, hours, day);
             LearnAtWork(b, hours, day);
-            WorkedMore(j, s, minutes, whole, day);
+            WorkedMore(j, s, minutes, day);
             if (ProRules.DayOver(p, day, day, CareersGame.MinuteOfDay) && j.SettledDay < day)
             {
                 SettleDay(j, day);
@@ -459,7 +459,7 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>The pay for minutes worked, with the student loan's repayment taken from it.</summary>
-        private void Pay(Job j, int minutes, bool overtime)
+        private void Pay(Job j, int minutes)
         {
             int rate = Prices.At(j.Pay);
             long cents = ProRules.Wage(rate, minutes);
@@ -483,7 +483,7 @@ namespace RealLifeOverhaul.Careers
                     LoanCleared();
                 }
             }
-            PaidMore(j, cents, overtime);
+            PaidMore(j, cents);
         }
 
         /// <summary>The player hands in their notice: the job ends after it, with a good reference if the days are worked.</summary>

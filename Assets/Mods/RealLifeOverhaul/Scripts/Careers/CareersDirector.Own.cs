@@ -473,7 +473,7 @@ namespace RealLifeOverhaul.Careers
                 CareersText.T("reallife_own_skip_left", "time", CareersText.Minutes(OwnRules.Left(c))), CareersText.T("reallife_own_skip_fee", "fee", CareersText.Money(Prices.At((int)c.Fee)))));
         }
 
-        private void ContractEnded(Sitting s, int minutes, bool whole)
+        private void ContractEnded(Sitting s, int minutes)
         {
             Contract c = ContractOf(s.Of);
             if (c == null || minutes <= 0)
@@ -528,7 +528,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (sitting.Kind == SittingKind.Contract && _workOn && OwnOn)
             {
-                ContractEnded(sitting, minutes, whole);
+                ContractEnded(sitting, minutes);
             }
             OtherEndedMore(sitting, minutes, whole);
         }
