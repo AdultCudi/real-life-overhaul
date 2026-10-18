@@ -25,6 +25,11 @@ namespace RealLifeOverhaul.Careers
     ///                   neither enters the building nor opens another desk.
     ///   the Campus app  its Attend, Sit and Homework buttons go the same way from the phone, in one press: to the desk of
     ///                   the school or the classroom, or to the computer at home, and sat down there (CareersDirector.ClassPlay).
+    ///   in a session    Going Public takes the game's study panel for its own training window of the game's course, so a
+    ///                   click on a school's desk is Going Public's: inside the school the class or exam is offered by the
+    ///                   panel where the player stands (ClassPlayRules.SchoolInPlace), whose button walks them to the nearest
+    ///                   desk and sits them there on the desk's own panel; a classroom door of the university opens the
+    ///                   room's own panel (CareersDirector.OpenDesk).
     ///
     /// When a class's hour comes, a notice: where the player is right, how to join it (press the key; at the school,
     /// press Study at a desk); where not, why, where it is held and how long it runs. One line goes to the log with how far
@@ -74,16 +79,22 @@ namespace RealLifeOverhaul.Careers
             bool busy = !_studyOn || player == null || PlayerHelper.IsUsingVehicle || ThirdPersonCamera.IsUiOpen() || (_skip != null && _skip.Open) || DeskBusy
                         || PlayerActivityUI.IsPanelOpen || JobDirector.TakesInteractKey;
             int offer = -1;
+            bool session = GoingPublic.InSession;
             for (int i = 0; !busy && i < _study.Courses.Count && offer < 0; i++)
             {
                 Enrolment e = _study.Courses[i];
-                bool online = e != null && ClassPlayRules.HeldOnline(e.Def, (StudyMode)e.Mode);
-                if (e == null || e.Def == null || (AtTheSchool(e, false) || online) && AtTheSchool(e, true) || InRooms(e))
+                if (e == null || e.Def == null)
+                {
+                    continue;
+                }
+                bool online = ClassPlayRules.HeldOnline(e.Def, (StudyMode)e.Mode);
+                ClassPlayRules.InPlace(AtTheSchool(e, false), online, AtTheSchool(e, true), InRooms(e), session, out bool classHere, out bool examHere);
+                if (!classHere && !examHere)
                 {
                     continue;   // (at the school's desks, at the computer at home, or in the university's classrooms: no panel in place)
                 }
-                string classWhy = AtTheSchool(e, false) ? "reallife_study_why_not_school" : online ? "reallife_study_why_no_computer" : CanAttend(e, out _);
-                string examWhy = AtTheSchool(e, true) ? "reallife_study_why_exam_school" : CanSit(e);
+                string classWhy = classHere ? CanAttend(e, out _) : online ? "reallife_study_why_no_computer" : "reallife_study_why_not_school";
+                string examWhy = examHere ? CanSit(e) : "reallife_study_why_exam_school";
                 StudyPrompt prompt = StudyRules.Prompt(classWhy, examWhy, false);
                 if (prompt != StudyPrompt.None)
                 {
@@ -204,9 +215,14 @@ namespace RealLifeOverhaul.Careers
 
         // ---------------------------------------------------------------- the school's desks
 
-        // Once a second: the game's study panel is watched while the player is inside the school on a course there.
+        // Once a second: the game's study panel is watched while the player is inside the school on a course there; in a
+        // Going Public session, with the university's floors there, the click on its classroom doors is the mod's (DeskGame).
         private void DeskTick()
         {
+            if (_studyOn && _interior != null && GoingPublic.InSession)
+            {
+                DeskGame.Install();   // (once: then a null check; it answers only over a classroom door of the floor the player is on)
+            }
             bool watch = _studyOn && _interior != null && _interior.Floor > 0;   // (the university's classrooms: always, so no course of the game's opens there)
             if (!watch && _studyOn && CareersGame.InSchool())
             {
@@ -541,7 +557,7 @@ namespace RealLifeOverhaul.Careers
                              + " (the player is " + (_interior.Floor > 0 ? "on floor " + _interior.Floor : "not on a floor")
                             + ", the university " + (_interior.OpenNow() ? "open" : "closed") + "); " : string.Empty)
                          + (why == null ? "it can be joined now ("
-                             + (AtTheSchool(e, false) ? "Study at a desk" : InRooms(e) ? "the classroom's door"
+                             + (AtTheSchool(e, false) && !ClassPlayRules.SchoolInPlace(GoingPublic.InSession) ? "Study at a desk" : InRooms(e) ? "the classroom's door"
                                  : ClassPlayRules.HeldOnline(c, mode) ? "the computer at home" : "the panel where the player stands")
                              + ")." : "it cannot be joined now: " + why + "."));
             int notice = StudyRules.ClassNotice(why);
@@ -566,7 +582,7 @@ namespace RealLifeOverhaul.Careers
                         TabStudying, CampusApp.CourseRow + c.Id);
                     return;
                 }
-                Tell(NotificationType.Info, AtTheSchool(e, false) ? "reallife_study_note_class_desk"
+                Tell(NotificationType.Info, AtTheSchool(e, false) && !ClassPlayRules.SchoolInPlace(GoingPublic.InSession) ? "reallife_study_note_class_desk"
                     : ClassPlayRules.HeldOnline(c, mode) ? "reallife_study_note_class_computer" : "reallife_study_note_class_here",
                     Data("course", course, "key", Keys.Label(KeyAction.Interact)), TabStudying, CampusApp.CourseRow + c.Id);
                 return;

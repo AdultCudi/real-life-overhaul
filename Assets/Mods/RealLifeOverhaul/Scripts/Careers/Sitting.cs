@@ -55,6 +55,9 @@ namespace RealLifeOverhaul.Careers
 
         public int SkipMinutes => _minutes;
 
+        /// <summary>Its lines as written, for a desk's panel before it is begun (SchoolDesk.DeskOffer.Lines). The array itself, not a copy.</summary>
+        public string[] Lines => _lines;
+
         public LabelInfo[] SkipLabels()
         {
             Color32 white = GameUi.WorldPanel.White();

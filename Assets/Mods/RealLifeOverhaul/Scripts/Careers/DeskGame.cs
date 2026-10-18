@@ -10,6 +10,7 @@ using Player.HUD.ItemInfoOverlays;
 using PlayerActivity;
 using UI.Elements;
 using UI.Guiders;
+using UI.Notification;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 
@@ -31,7 +32,11 @@ namespace RealLifeOverhaul.Careers
     ///                 Ledger/LedgerPointer does): over the player's own station or desk it says the game's own "Click to
     ///                 work", and a click walks the player there and opens the work panel, as the game's cash register
     ///                 does. Asked only when the pointer comes onto something: a reference comparison. (A day from home is
-    ///                 begun from the home computer's own panel instead: Careers/ComputerButtons.)
+    ///                 begun from the home computer's own panel instead: Careers/ComputerButtons.) In a Going Public
+    ///                 session it also answers over a classroom door of the university with the game's own "Click to
+    ///                 learn", which opens the room's own panel of the mod's: the game's own click there would reach
+    ///                 Going Public's training window for the game's course the door was laid with
+    ///                 (CareersDirector.RoomDoorClicked); then the pointer on a door costs a look at the floor's five doors.
     ///   the pose      at a desk computer of the game's, or a desk of the mod's, seated on its chair as the game's people
     ///                 sit at one, typing now and then; at a till, a counter or any station whose people stand,
     ///                 WorkActivity's own (the station given the player as its employee, in the business's uniform where
@@ -312,6 +317,34 @@ namespace RealLifeOverhaul.Careers
             return best;
         }
 
+        /// <summary>
+        /// A study door's own refusals, as its door makes them before its panel (EducationDoorController.StartLearning): the
+        /// building closed, something in hand that is not a bag, a vehicle in use. True if refused; with say, said in the
+        /// game's own words, for a desk's panel of the mod's, which does not go through the door.
+        /// </summary>
+        public static bool StudyDoorRefuses(bool say)
+        {
+            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+            if (manager == null || !manager.isOpen)
+            {
+                if (say)
+                {
+                    Notifications.ShowError("educationdoorcontroller_closed", "educationdoorcontroller_closed");
+                }
+                return true;
+            }
+            bool driving = SaveGameManager.Current != null && !string.IsNullOrEmpty(SaveGameManager.Current.ActiveVehicleId);
+            if ((PlayerHelper.ItemInstanceInHands != null && !PlayerHelper.IsHoldingBag) || driving)
+            {
+                if (say)
+                {
+                    Notifications.ShowError("businessschool_holding_item", "educationdoorcontroller_holding_item");
+                }
+                return true;
+            }
+            return false;
+        }
+
         // ---------------------------------------------------------------- the click
 
         private sealed class Behaviour : ICtaBehavior
@@ -348,7 +381,7 @@ namespace RealLifeOverhaul.Careers
                         return (string.Empty, null);
                     }
                     _clicked = entityController;
-                    return ("click_to_work", Click);
+                    return (entityController is EducationDoorController ? "click_to_learn" : "click_to_work", Click);
                 }
                 catch (Exception e)
                 {
@@ -368,6 +401,10 @@ namespace RealLifeOverhaul.Careers
 
         private static bool Offers(EntityController e)
         {
+            if (e is EducationDoorController door)
+            {
+                return CareersDirector.Instance != null && CareersDirector.Instance.TakesRoomClick(door);   // (a classroom of the university in a session)
+            }
             if (e == null || !ReferenceEquals(e, Target))
             {
                 return false;
@@ -438,6 +475,11 @@ namespace RealLifeOverhaul.Careers
             _clicked = null;
             try
             {
+                if (e is EducationDoorController door)
+                {
+                    CareersDirector.Instance?.RoomDoorClicked(door);
+                    return;
+                }
                 CareersDirector.Instance?.DeskClicked(e);
             }
             catch (Exception ex)

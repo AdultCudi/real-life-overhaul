@@ -19,6 +19,9 @@ namespace RealLifeOverhaul.Careers
     ///                   walk the player to it and sit them there as the game's computer passes the time
     ///                   (Careers/ComputerSitting). A home with no computer, or no working internet for an online class, says so.
     ///
+    /// In a Going Public session the school's and the university's desks open the desk's own panel of the mod's, never the
+    /// game's study panel, which Going Public takes for its own training window (<see cref="OpenDesk"/>).
+    ///
     /// Where nothing in the world fits (a hospital's ward, the university while its floors are not there) the game's panel
     /// where the player stands, as before (<see cref="Offer"/>). The minutes count to the enrolment once, however it ends
     /// (Study/ClassPlayRules: ClassTally); nothing new is saved, and nothing is sent: classes are the local player's own.
@@ -100,6 +103,116 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
+        /// <summary>
+        /// A study desk's panel opened for the player as a click on its door opens it, at the school (room 0) or a classroom
+        /// of the university, by ClassPlayRules.WayToDesk: alone the game's study panel (StartLearning), given the class by
+        /// the watch on it; in a Going Public session the desk's own panel (SchoolDesk.Own), never a StudyActivity, which
+        /// Going Public would take for its training window. begin: the caller's <see cref="BeginHere"/> said yes. Null if the
+        /// panel is open or the game has said why not; else the reason key. One self-check line a call.
+        /// </summary>
+        internal string OpenDesk(EducationDoorController door, int room, bool begin)
+        {
+            bool session = GoingPublic.InSession;
+            DeskWay way = ClassPlayRules.WayToDesk(session);
+            string where = room > 0 ? "room " + room + " on floor " + (_interior != null ? _interior.Floor : 0) + " of the university" : "a desk of the school";
+            if (way == DeskWay.GameStudy)
+            {
+                bool refused = DeskGame.StudyDoorRefuses(false);   // (asked first, unsaid: the door says it itself)
+                door.StartLearning();   // the game's study panel (its own refusals: closed, something in hand), its class given by the watch
+                bool study = ShowsStudy();
+                DeskCheck(session, way, where, begin, study || refused ? null : PlayerActivityUI.IsPanelOpen ? "the game's panel shows another activity"
+                        : "the game's study panel did not open though its door lets the player in: no energy, or another mod took it (Going Public, in a session the mod has not seen)",
+                    study ? "the game's study panel is up" : refused ? "the game's door refused it in its own words (closed, or something in hand)" : null);
+                return null;
+            }
+            SchoolDesk.DeskOffer offer = room > 0 ? RoomOffer(room) : new SchoolDesk.DeskOffer { Course = -1, Key = "reallife_study_why_no_class" };
+            bool begun = begin && TakeBegin(room > 0 ? offer.Course : -1, offer);
+            if (room == 0 && !begun)
+            {
+                DeskCheck(session, way, where, begin, "no class of the school's was to be begun there", null);
+                return "reallife_study_why_no_class";   // (a desk of the school is opened only to begin: its own click is Going Public's)
+            }
+            if (room == 0)
+            {
+                SchoolOffer(offer);
+            }
+            if (PlayerActivityUI.IsPanelOpen)
+            {
+                DeskCheck(session, way, where, begin, "the game's panel is busy", null);
+                return "reallife_study_why_game_busy";
+            }
+            if (DeskGame.StudyDoorRefuses(true))
+            {
+                DeskCheck(session, way, where, begin, null, "the door refused it in the game's own words (closed, or something in hand)");
+                return null;
+            }
+            SchoolDesk desk = SchoolDesk.Own(door, this, offer);
+            if (desk == null)
+            {
+                DeskCheck(session, way, where, begin, "the desk lacks its chair or its way out", null);
+                return "reallife_study_why_game_busy";
+            }
+            if (!DeskGame.Show(desk))
+            {
+                DeskCheck(session, way, where, begin, null, "the game's panel refused it in its own words (no energy, or a vehicle)");
+                return null;
+            }
+            if (_activityUi == null)
+            {
+                UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+                _activityUi = uis != null ? uis.playerActivityUI : null;
+            }
+            _desk = desk;
+            _deskSeen = desk;
+            if (begun)
+            {
+                desk.Begin();
+            }
+            DeskCheck(session, way, where, begin, DeskGame.Shows(desk) && !ShowsStudy() ? null : "the game's panel does not hold the desk's own activity",
+                "the desk's own panel is up, no study panel of the game's asked for");
+            return null;
+        }
+
+        // True while the game's panel shows a study activity of the game's own.
+        private static bool ShowsStudy()
+        {
+            UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+            return uis != null && uis.playerActivityUI != null && uis.playerActivityUI.GetCurrentActivity is StudyActivity;
+        }
+
+        // A school desk's offer as its own panel shows it before it is begun: the course as its headline, the sitting's lines.
+        private void SchoolOffer(SchoolDesk.DeskOffer offer)
+        {
+            Enrolment e = _study.Live(offer.Course);
+            offer.Title = CareersText.Course(offer.Course);
+            if (e == null || e.Def == null)
+            {
+                offer.Lines = new string[0];
+                return;
+            }
+            Sitting shown = offer.Kind == SittingKind.Exam ? ExamSitting(e) : offer.Kind == SittingKind.Homework ? HomeworkSitting(e) : ClassSitting(e, Minutes(e));
+            offer.Lines = shown.Lines;
+        }
+
+        // With Developer diagnostics on, one line a desk's panel opened for the player: in a session or not, the way taken
+        // against the way wanted, and what came of it. fail: why it failed, or null; said: what the game did, if anything.
+        private static void DeskCheck(bool session, DeskWay way, string where, bool begin, string fail, string said)
+        {
+            if (!Meta.Dev.Verbose)
+            {
+                return;
+            }
+            DeskWay wanted = ClassPlayRules.WayToDesk(session);
+            Logger?.Info("Careers check (desk panel): " + (session ? "in a Going Public session" : "alone") + ", " + where + (begin ? ", begun for the player" : string.Empty)
+                         + ": the way taken is " + WayWords(way) + ", wanted " + WayWords(wanted) + (said != null ? " (" + said + ")" : string.Empty) + ": "
+                         + (way != wanted ? "FAIL, not the way the session asks for" : fail == null ? "PASS" : "FAIL, " + fail));
+        }
+
+        private static string WayWords(DeskWay way)
+        {
+            return way == DeskWay.OwnPanel ? "the desk's own panel" : "the game's study panel";
+        }
+
         // A class, an exam or homework at the school: its nearest desk's own panel opened, as a click on it opens it, and
         // begun there for the player. Null if under way (or the game has said why not); else the reason key.
         private string ToSchoolDesk(Enrolment e, SittingKind kind)
@@ -121,12 +234,12 @@ namespace RealLifeOverhaul.Careers
                 return "reallife_study_why_game_busy";
             }
             CloseApps();
-            door.StartLearning();   // the game's study panel for the desk (its own refusals: closed, something in hand)
-            if (!PlayerActivityUI.IsPanelOpen)
+            string why = OpenDesk(door, 0, true);   // the desk's panel: alone the game's study panel, in a session the desk's own
+            if (why != null || !PlayerActivityUI.IsPanelOpen)
             {
-                _beginCourse = -1;   // (refused: the game has said why)
+                _beginCourse = -1;   // (refused: the game has said why, or why is the reason key)
                 _beginFrame = -1;
-                return null;
+                return why;
             }
             Logger?.Info("Careers: " + Words(kind) + " of " + e.Def.Key + " is begun at a desk of the school from the Campus app.");
             return null;

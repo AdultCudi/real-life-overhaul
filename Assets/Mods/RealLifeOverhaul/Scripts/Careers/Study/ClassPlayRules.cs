@@ -89,9 +89,59 @@ namespace RealLifeOverhaul.Careers
         }
     }
 
+    /// <summary>How a study desk of the school, or a classroom door of the university, comes to the game's activity panel (<see cref="ClassPlayRules.WayToDesk"/>).</summary>
+    public enum DeskWay
+    {
+        GameStudy = 0,   // the game's own study panel (the door's StartLearning), given the class by the mod's desk as it opens
+        OwnPanel = 1     // the desk's own activity of the mod's, which is not the game's StudyActivity, on the game's panel
+    }
+
     /// <summary>Game-free rules for classes played as the game's own studying: which button a computer shows, and where a class is held.</summary>
     public static class ClassPlayRules
     {
+        /// <summary>
+        /// The one rule for how a desk's panel is opened for a class, an exam or homework of the mod's: the game's own study
+        /// panel when alone; in a Going Public session the desk's own panel, since Going Public takes every StudyActivity the
+        /// game's panel is asked to show, for its own training window of the game's course (its "Requires ... first").
+        /// </summary>
+        public static DeskWay WayToDesk(bool inSession)
+        {
+            return inSession ? DeskWay.OwnPanel : DeskWay.GameStudy;
+        }
+
+        /// <summary>
+        /// True if a click on a classroom door of the university is the mod's (room from 1; 0 for none): in a Going Public
+        /// session only, where the game's click would reach Going Public's training window for the game's course the door
+        /// was laid with. Alone the game's click opens its study panel, which the room's desk takes.
+        /// </summary>
+        public static bool TakesRoomClick(bool inSession, int room)
+        {
+            return inSession && room > 0;
+        }
+
+        /// <summary>
+        /// True if the school's classes and exams are offered by the panel where the player stands inside the school: in a
+        /// Going Public session, where a click on one of its desks is Going Public's (the game's course), so the desks
+        /// cannot carry the class's button. Alone they are offered at the desks.
+        /// </summary>
+        public static bool SchoolInPlace(bool inSession)
+        {
+            return inSession;
+        }
+
+        /// <summary>
+        /// Whether the panel where the player stands offers a course's class (<paramref name="classHere"/>) and its exam
+        /// (<paramref name="examHere"/>): not where the school's desks (<see cref="SchoolInPlace"/>), the computer at home
+        /// or a classroom of the university offer them. classAtSchool and examAtSchool: held at the school; online: its
+        /// classes from home; inRooms: in a classroom of the university.
+        /// </summary>
+        public static void InPlace(bool classAtSchool, bool online, bool examAtSchool, bool inRooms, bool inSession, out bool classHere, out bool examHere)
+        {
+            bool desks = !SchoolInPlace(inSession);
+            classHere = !inRooms && !online && !(classAtSchool && desks);
+            examHere = !inRooms && !(examAtSchool && desks);
+        }
+
         /// <summary>True for a course whose classes are held online, from home: an online course, or one followed at a distance.</summary>
         public static bool HeldOnline(CourseDef c, StudyMode mode)
         {
