@@ -2,7 +2,6 @@ using System;
 using BAModAPI;
 using Dialogs;
 using Entities;
-using Extensions;
 using Localizor;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
@@ -10,10 +9,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The phone contact "City Cabs": a call asks for a taxi to where the caller is, or, while one is out, says
-    /// how far off it is and cancels it. Registered the way the mod's other contacts are; the conversation is the
-    /// game's own dialogue panel with the game's reply buttons, and every decision in it is the director's
-    /// (<see cref="TaxiDirector"/>).
+    /// The phone contact "City Cabs": a call asks for a taxi, or while one is out says how far off it is and cancels it.
+    /// The conversation is the game's own dialogue panel; every decision in it is <see cref="TaxiDirector"/>'s.
     /// </summary>
     public static class TaxiPhone
     {
@@ -70,7 +67,7 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>City Cabs on the line: the offer, the refusals, and the taxi that is out.</summary>
-    public class TaxiDialog : Dialog
+    public sealed class TaxiDialog : Dialog
     {
         public TaxiDialog()
         {
@@ -111,7 +108,6 @@ namespace RealLifeOverhaul
                 : PhoneContacts.Closing("reallife_taxi_refuse_none");
         }
 
-        // A taxi is out: how far off it is, what a cancel costs now, and the cancel.
         private static DialogEntry Status(TaxiDirector director)
         {
             float due = director.CancelFee;

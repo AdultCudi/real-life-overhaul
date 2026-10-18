@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using RealLifeOverhaul;
 
-// The bus network (Scripts/Transport/TransitPlan, TransitSearch's TransitEta, Core/RouteSearch): the timetable hour by hour
+// The bus network (Scripts/Transport/TransitPlan, TransitEta, Core/RouteSearch): the timetable hour by hour
 // and the night service, the calls at one stop kept apart, the estimate of a bus's arrival and what it learns from the buses
 // that come, the panel's figure and when it says DELAYED, and the layout over a made-up city of avenues and streets: which
 // station pairs the routes join, both directions of each, no line doubling back, the stops lines share, how many lines each

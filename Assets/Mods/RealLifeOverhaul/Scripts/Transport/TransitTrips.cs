@@ -7,47 +7,38 @@ namespace RealLifeOverhaul
     /// <summary>One stop a rider can be taken to from where they are, and what the ride is.</summary>
     public struct TransitTrip
     {
-        public TransitStop To;        // the stop got off at: of the last bus's line
+        public TransitStop To;        // the stop got off at, of the last bus's line
         public float Minutes;         // game minutes of the ride, from boarding the first bus, the change included where there is one
         public float Metres;          // of road: along the lines where planned, else estimated from the straight line
         public bool Direct;           // one bus all the way
-        public TransitStop Board;     // the stop boarded at, at the place the rider is at: its line is the bus to take (null: the old estimate, a change not planned)
-        public TransitStop ChangeOff; // a change: where they get off the first bus...
-        public TransitStop ChangeOn;  // ...and the stop of the second line they board at (the same place, or a short walk)
+        public TransitStop Board;     // the stop boarded at, whose line is the bus to take; null for an estimate without a plan
+        public TransitStop ChangeOff; // a change: where they get off the first bus
+        public TransitStop ChangeOn;  // and the second line's stop they board at (the same place, or a short walk)
         public float Wait;            // game minutes until the first bus calls
 
-        /// <summary>True for a journey the planner found (one bus, or two with the change at a transfer point).</summary>
+        /// <summary>True for a journey the planner found.</summary>
         public bool Planned => Board != null;
 
-        /// <summary>True for a journey with its change planned.</summary>
         public bool Changes => ChangeOff != null && ChangeOn != null;
     }
 
     /// <summary>
-    /// Where the buses take a rider from a place: any stop of the network, as the game's subway takes a rider from any
-    /// station to any other. The journey planner (TransitPlan.From) finds, for each place, the soonest arrival on the
-    /// timetables: on one bus of any line that calls where the rider is, or on two, with the change at a place both lines
-    /// stop at or a short walk between two places (a transfer point). A place no journey of one change reaches is offered
-    /// as before, its time worked out from the straight line between the two stops, lengthened by what streets add to it,
-    /// plus the stops on the way and the wait for a second bus, and its ride passes under the fade. Nothing here searches
-    /// the road graph: it reads <see cref="TransitMap.Net"/> once per opening of the list.
-    ///
-    /// Not offered: the place itself, and a place within 150 m, which is the other side of the street or the next corner
-    /// and is walked to.
+    /// Where the buses take a rider from a place: any stop of the network, by the planner (TransitPlan.From) where one bus or
+    /// two reach it, else estimated from the straight line. Reads <see cref="TransitMap.Net"/> once per opening of the list.
     /// </summary>
     public static class TransitTrips
     {
         public const float WalkedTo = 150f;          // metres, as the crow flies: a stop this near is not a ride
-        public const float RoadFactor = 1.35f;       // a way along streets is about this much longer than the straight line
+        public const float RoadFactor = 1.35f;       // a way along the streets is about this much longer than the straight line
         public const float ChangeMinutes = 6f;       // game minutes for getting off one bus and onto the next, where the change is not planned
         public const float StopEvery = 330f;         // metres between stops on a line, on average (TransitMap: every 260 m, in the 140 m after)
-        public const float MinutesPerMetre = 0.06f;  // the game's taxi takes 0.04
-        public const float MinutesPerStop = 1f;
+        public const float MinutesPerMetre = 0.06f;  // game minutes; the game's taxi takes 0.04
+        public const float MinutesPerStop = 1f;      // game minutes
 
-        private static readonly IComparer<TransitTrip> Comparer = Comparer<TransitTrip>.Create(Compare);   // made once: sorting makes nothing
+        private static readonly IComparer<TransitTrip> Comparer = Comparer<TransitTrip>.Create(Compare);   // made once, so a sort allocates nothing
         private static TransitPlan.Journey[] _best = new TransitPlan.Journey[0];
 
-        /// <summary>The game's speed setting scales a journey's length, as it does the game's taxi's.</summary>
+        // The game's speed setting, which scales a journey's length as it does the game's taxi's.
         private static float Speed()
         {
             try
@@ -60,19 +51,19 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Game minutes of a ride along a line: so many metres, with so many stops called at on the way (each a minute).</summary>
+        /// <summary>Game minutes of a ride of so many metres and stops along a line.</summary>
         public static float RideMinutes(float metres, int stops)
         {
             return Mathf.Max(0f, metres) * MinutesPerMetre + Mathf.Max(0, stops) * MinutesPerStop;
         }
 
-        /// <summary>True when <paramref name="to"/> lies further along the line <paramref name="from"/> is on.</summary>
+        /// <summary>True when <paramref name="to"/> lies further along <paramref name="from"/>'s line.</summary>
         public static bool IsDirect(TransitStop from, TransitStop to)
         {
             return from != null && to != null && to.Line == from.Line && to.Order > from.Order;
         }
 
-        /// <summary>The ride from one stop to another: its time in game minutes and its length. For a list or a boarding, not a frame.</summary>
+        /// <summary>The ride from one stop to another. For a list or a boarding, not a frame.</summary>
         public static TransitTrip Between(TransitStop from, TransitStop to)
         {
             return Between(from, to, Speed());
@@ -96,10 +87,7 @@ namespace RealLifeOverhaul
             return trip;
         }
 
-        /// <summary>
-        /// The ride of a journey from a stop of its first bus (or, with <paramref name="from"/> null, from its change) to its
-        /// end: what is left of the first bus, the change and the second bus. For a skip of the rest of a journey.
-        /// </summary>
+        /// <summary>Game minutes left of a journey from a stop of its first bus, or from its change with <paramref name="from"/> null.</summary>
         public static float RestMinutes(TransitTrip trip, TransitStop from)
         {
             if (!trip.Changes)
@@ -112,9 +100,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Every place offered from <paramref name="place"/>: first those one bus reaches, line by line in the order the bus calls
-        /// at them, then those with a change, soonest first, then the rest, nearest first. <paramref name="call"/> gives when a
-        /// line next calls at a stop of its (TransitDirector: the timetable, as the panel shows it). Returns how many are direct.
+        /// Every place offered from <paramref name="place"/>: one bus by line, then a change soonest first, then the rest nearest
+        /// first. Returns how many are direct.
         /// </summary>
         public static int From(TransitStop place, List<TransitTrip> into, double now, Func<int, int, double, double> call)
         {
@@ -173,7 +160,6 @@ namespace RealLifeOverhaul
             return direct;
         }
 
-        // A journey the planner found, as the list offers it.
         private static TransitTrip Planned(TransitPlan.Journey journey, double now, float speed)
         {
             TransitLine first = TransitMap.Lines[journey.Line];

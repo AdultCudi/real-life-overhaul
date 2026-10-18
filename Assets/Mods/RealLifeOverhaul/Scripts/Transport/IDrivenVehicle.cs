@@ -3,10 +3,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A vehicle of the mod's own that <see cref="BusDriver"/> can drive: the city bus (<see cref="BusVehicle"/>) and the
-    /// tow truck (<see cref="TowTruck"/>). What the driver needs of it: where it is, whether it is out, its body (what it
-    /// leaves out of its look ahead), its measurements from its own middle, and the pose it is given every physics step.
-    /// Nothing here runs by itself.
+    /// A vehicle of the mod's own that <see cref="BusDriver"/> drives: the city bus (<see cref="BusVehicle"/>) and the tow
+    /// truck (<see cref="TowTruck"/>). Nothing here runs by itself.
     /// </summary>
     public interface IDrivenVehicle
     {
@@ -35,9 +33,9 @@ namespace RealLifeOverhaul
         float HalfBreadth { get; }
 
         /// <summary>
-        /// Where it stands now, as the driver has moved it: its axles' middles on the road, how far it has rolled since it
-        /// was last posed, the front wheels' angle to the body (degrees, to the right positive), and what it is doing with
-        /// its speed (m/s2) and its heading (degrees a second). Called from the physics step.
+        /// Places it as the driver has moved it: its axles' middles on the road, metres rolled since the last pose, the front
+        /// wheels' angle (degrees, right positive), acceleration (m/s2) and turn rate (degrees a second). Called from the
+        /// physics step.
         /// </summary>
         void Pose(Vector3 frontAxle, Vector3 rearAxle, float rolled, float steer, float acceleration, float turning, float speed, float dt);
     }

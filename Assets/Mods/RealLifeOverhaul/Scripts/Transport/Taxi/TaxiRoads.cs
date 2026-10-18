@@ -8,26 +8,23 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What the taxi feature asks of the rest of the mod, each with an answer of its own when nobody has filled
-    /// it in (Wiring/TaxiLinks.cs does, once per city load).
-    /// </summary>
+    /// <summary>What the taxi feature asks of the rest of the mod, each with its default (Wiring/TaxiLinks fills them in a city).</summary>
     public static class TaxiBridges
     {
-        /// <summary>True while a scene of the mod's holds the player and it is not their doing (an arrest, custody, a test). Default: never.</summary>
+        /// <summary>True while a scene of the mod's holds the player (an arrest, a test). Default: never.</summary>
         public static Func<bool> Held;
 
-        /// <summary>True while the player is being carried by something of the mod's they chose (a bus ride). Default: never.</summary>
+        /// <summary>True while the player is carried by something of the mod's (a bus ride). Default: never.</summary>
         public static Func<bool> Riding;
 
         /// <summary>True in rain or a storm of the mod's weather. Default: never.</summary>
         public static Func<bool> Wet;
 
-        /// <summary>The road graph somebody else has already made for this city, to search over without making it again; null if nobody has. Default: nobody.</summary>
+        /// <summary>A road graph already made for this city (the GPS's), or null. Default: none.</summary>
         public static Func<RouteSearch> Roads;
     }
 
-    /// <summary>A way for a taxi to the caller: the lane point it starts on, the places it drives through and where it stops.</summary>
+    /// <summary>A way for a taxi to the caller: the lane point it starts on, the places it drives through and its stop.</summary>
     public sealed class TaxiPlan
     {
         public readonly List<Vector3> Route = new List<Vector3>(160);   // every place after the start, the stopping place last
@@ -37,7 +34,7 @@ namespace RealLifeOverhaul
         public Vector3 Stop;             // the lane point it stops at
         public Vector3 Along;            // the way the lane runs there
         public Vector3 Caller;           // where the caller stood when it was planned
-        public float Metres;             // of road, from the start to the stop
+        public float Metres;             // of road from the start to the stop
         public float FromCaller;         // metres between the stop and the caller
         public float StartAway;          // metres between the start and the caller, as the crow flies
         public int Starts, Goals, Steps;
@@ -58,24 +55,17 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The roads as a called taxi needs them: which lane is the caller's, where out of view a taxi can be put,
-    /// and the way between the two. It searches the mod's shared road graph (Core/RoadGraph, Core/RouteSearch):
-    /// the one the GPS has made if there is one (the places and edges are shared, only this search's own four
-    /// working arrays are new), else one made here the first time somebody calls, once per city.
-    ///
-    /// One search answers both questions at once: it starts from every place a taxi may be put (plain lane points
-    /// in a band of distances round the caller, out of view) and ends at the caller's lane, so what comes back is
-    /// the nearest of those places by road and the way from it. The cost is one pass over the lane points and one
-    /// search, when a call is made and never otherwise; nothing here runs on a timer.
+    /// The roads as a called taxi needs them: one search of the shared road graph (Core/RoadGraph) from every place a taxi may
+    /// be put, out of view in a band round the caller, to the caller's lane. One pass and one search a call; nothing on a timer.
     /// </summary>
     public sealed class TaxiRoads
     {
-        private const float LaneChangeCost = 30f;    // as the bus network and the GPS have it
+        private const float LaneChangeCost = 30f;    // metres, as the bus network and the GPS count a lane change
         private const int MostStarts = 4096;         // one lane point in four of the band: more than any band holds
-        private const int MostGoals = 12;
+        private const int MostGoals = 12;            // lane points of the caller's lane a route may end at
         private const float GoalSpread = 5f;         // lane points this much further from the caller than the nearest also end a route
-        private const int SearchLimit = 60000;
-        private const float NeverNearer = 60f;       // nothing is put on the road nearer the caller than this, in view or not
+        private const int SearchLimit = 60000;       // steps
+        private const float NeverNearer = 60f;       // metres from the caller nothing is put on the road within, in view or not
         private const float SeenWithin = 115f;       // metres from the camera beyond which nothing counts as in view (CitySpots.InView looks to 110)
         private const float FinalShort = 1.2f;       // the driver stops this far short of the last place of a route (EmergencyDriver.FinalReach)
 
@@ -90,22 +80,20 @@ namespace RealLifeOverhaul
         private Vector3 _eye;
         private bool _hasEye;
 
-        /// <summary>The lane point with this number, or null.</summary>
         public Waypoint Point(int index)
         {
             return _points != null && index >= 0 && index < _points.Length ? _points[index] : null;
         }
 
-        /// <summary>The lane points, for whoever follows a route over them.</summary>
         public Waypoint[] Points => _points;
 
-        /// <summary>Forgets the lane points a taxi could not be put on (traffic stood there): a new call starts with none.</summary>
+        /// <summary>Forgets the lane points traffic stood on: a new call starts with none.</summary>
         public void NewCall()
         {
             _taken.Clear();
         }
 
-        /// <summary>A lane point traffic stood on when a taxi was to be put there: the next plan leaves it out.</summary>
+        /// <summary>A lane point traffic stood on: the next plan leaves it out.</summary>
         public void Refuse(int point)
         {
             _taken.Add(point);
@@ -118,7 +106,6 @@ namespace RealLifeOverhaul
             _taken.Clear();
         }
 
-        // The graph, the first time it is wanted in this city.
         private bool Ready()
         {
             if (_search != null && _points != null)
@@ -152,14 +139,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Plans a taxi's way to the caller. False with why: no lane a car can use within reach of them, or no way
-        /// to it from any place a taxi may start.
-        /// </summary>
-        /// <param name="type">The traffic system's kind of the vehicle that will come: only lanes it may use.</param>
-        /// <param name="least">The nearest to the caller a taxi may start, in metres as the crow flies.</param>
-        /// <param name="most">...and the furthest.</param>
-        /// <param name="mayBeSeen">A start in view is allowed (the test that brings one at once), though never close.</param>
+        /// <summary>Plans a taxi's way to the caller from a start in the band (in view only for the test). False, with why.</summary>
         public bool Find(Vector3 caller, VehicleTypes type, float least, float most, bool mayBeSeen, TaxiPlan plan, out TaxiRules.Refusal refusal)
         {
             plan.Clear();
@@ -204,8 +184,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // One pass over the lane points: the caller's lane (the nearest plain lane points on their level) and the places
-        // a taxi may start from.
+        // One pass over the lane points: the caller's lane and the starts.
         private void Collect(Vector3 caller, VehicleTypes type, float least, float most, bool mayBeSeen)
         {
             _starts.Clear();
@@ -219,7 +198,6 @@ namespace RealLifeOverhaul
             _eye = _hasEye ? camera.transform.position : caller;
             for (int pass = 0; pass < 2; pass++)
             {
-                // The first pass finds how near the caller's lane is; the second takes its points and the starts.
                 float reach = pass == 0 ? 0f : Mathf.Sqrt(nearest) + GoalSpread;
                 for (int i = 0; i < _points.Length; i++)
                 {
@@ -256,20 +234,19 @@ namespace RealLifeOverhaul
                 {
                     return;   // no lane within reach: nothing to start for
                 }
-                // (No end of the route is further from the caller than this: across, and the two levels a lane may differ by.)
+                // No end of the route is further from the caller than this: across, and the two levels a lane may differ by.
                 _goalReach = Mathf.Sqrt(nearest) + GoalSpread + TaxiRules.RoadLevel * 2f + 1f;
             }
         }
 
-        // A plain lane point of a road proper that this kind of vehicle may use, open, with road ahead of it.
+        // A plain lane point of a road proper this vehicle may use, open, with road ahead.
         private static bool Usable(Waypoint point, VehicleTypes type)
         {
             return !point.temporaryDisabled && point.neighbors != null && point.neighbors.Count > 0
                    && point.allowedCars != null && point.allowedCars.Contains(type) && RoadGraph.Drivable(point) && RoadGraph.Plain(point);
         }
 
-        // Nothing appears where it would be seen to: not where the camera looks, by both of the mod's tests of that.
-        // (Further from the camera than either test looks, neither is asked: a band's places mostly are.)
+        // Not where the camera looks, by both of the mod's tests.
         private bool Unseen(Vector3 place)
         {
             return (_hasEye && (place - _eye).sqrMagnitude > SeenWithin * SeenWithin) || (!CitySpots.InView(place) && !StreetSpots.IsInView(place));
@@ -287,8 +264,7 @@ namespace RealLifeOverhaul
             Vector3 along = last.position - _points[_path[_path.Count - 2]].position;
             along.y = 0f;
             along = along.sqrMagnitude > 0.01f ? along.normalized : Vector3.forward;
-            // The driver stops short of the last place of a route by FinalShort: the last place is that far beyond the
-            // lane point, so the taxi comes to rest on it.
+            // The driver stops FinalShort short of a route's last place, so that place is put that far beyond the lane point.
             plan.Route.Add(last.position + along * FinalShort);
             plan.Points.Add(-1);
             plan.Start = _path[0];
