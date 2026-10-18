@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Careers
     {
         private const string ChildRow = "child:";
 
-        private TableSpec WriteFamily(InfoBox box, StudyFile f, int day)
+        private TableSpec WriteFamily(InfoBox box)
         {
             if (!CareersDirector.FamilyOn)
             {
@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Careers
                 return CampusColumns.Family;
             }
             IReadOnlyList<ChildView> kids = _director.Kids();
-            string pickedName = _picked != null && _picked.StartsWith(ChildRow, System.StringComparison.Ordinal) ? _picked.Substring(ChildRow.Length) : null;
+            string pickedName = Picked(_picked, ChildRow);
             ChildView picked = default(ChildView);
             bool any = false;
             for (int i = 0; i < kids.Count; i++)
@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Careers
                 TableRow row = Row(ChildRow + k.Name);
                 row.Set(0, k.Name);
                 row.Set(1, ((int)k.Age).ToString(), k.Age);
-                row.Set(2, CareersText.T(k.School == 2 ? "reallife_campus_school_private" : k.School == 1 ? "reallife_campus_school_state" : "reallife_campus_school_none"));
+                row.Set(2, Schooling(k.School));
                 row.Set(3, CareersText.Money(k.Fund), k.Fund);
                 row.Set(4, c != null ? CareersText.Course(c.Course) : "-");
                 row.Set(5, CareersText.T(c == null ? (k.Grown ? "reallife_campus_child_grown" : "reallife_campus_child_home") : ChildStateKey(c)),
@@ -58,6 +58,11 @@ namespace RealLifeOverhaul.Careers
             return CampusColumns.Family;
         }
 
+        private static string Schooling(int school)
+        {
+            return CareersText.T(school == 2 ? "reallife_campus_school_private" : school == 1 ? "reallife_campus_school_state" : "reallife_campus_school_none");
+        }
+
         private static string ChildStateKey(ChildStudy c)
         {
             switch (c.At)
@@ -76,7 +81,7 @@ namespace RealLifeOverhaul.Careers
                 c != null && c.Stage == (int)ChildStep.Offered ? CellTone.Green : CellTone.Plain);
             box.Section("reallife_ibox_sec_now");
             box.Row("reallife_campus_col_age", ((int)k.Age).ToString());
-            box.Row("reallife_campus_col_schooling", CareersText.T(k.School == 2 ? "reallife_campus_school_private" : k.School == 1 ? "reallife_campus_school_state" : "reallife_campus_school_none"));
+            box.Row("reallife_campus_col_schooling", Schooling(k.School));
             box.Row("reallife_campus_col_fund", CareersText.Money(k.Fund));
             string name = k.Name;
             box.Section("reallife_ibox_sec_university");
@@ -129,7 +134,7 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Note(CareersText.T("reallife_campus_tutor_none", "least", StudyCatalogue.TutorLeast.ToString()));
             }
-            if (rate > 0)
+            else
             {
                 box.Row("reallife_ibox_subject", CareersText.Skill(skill));
                 box.Row("reallife_career_col_pay", CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(rate)));

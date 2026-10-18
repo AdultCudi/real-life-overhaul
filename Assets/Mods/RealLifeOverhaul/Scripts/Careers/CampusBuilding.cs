@@ -12,44 +12,24 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Hudson City University: one of the game's own buildings, a building of its own, and the same one in every game, as
-    /// the game's own Manhattan Business School is: its permanent building, 26 2nd Avenue (CampusRules.HomeStreet, why
-    /// that one is said there). The address is reserved for it from the start (Core/SpecialBuildings.Reserve, from
-    /// Wiring/CareersLinks), so no other feature of the mod chooses it; the player is refused it for rent, sale and
-    /// takeover with the mod's other buildings (Core/ClaimedOffers); and no rival or business of the game's can take it
-    /// (its size is none of theirs). It is taken whenever it is free: no business in it, nobody's, nothing left inside.
-    ///
-    /// AN OLDER GAME. Where a player (or, in a session, another player) rents or owns it, the university stays where the
-    /// earlier rule put it, the largest office building of the city that is no special service, holds no business and is
-    /// nobody's (CampusRules.NoBusinessIn), ties broken by address, leaving out every building another feature holds (the
-    /// City Utilities office, the courthouse, the police stations, chosen first); and where every office building is taken
-    /// (by players, businesses or other mods' businesses: an advanced save can have none free), at the door
-    /// of the game's own Manhattan Business School, which always stands and is nobody's: its classes are joined at the
-    /// door with the game's panel, the school inside stays the game's, and it keeps its own name. So the university always
-    /// stands somewhere, with its map row, and why it is where it is goes to the log as one plain line whatever the
-    /// diagnostics switch says (Meta.Dev.Always) and is told to the player once (CareersDirector.Floors). Every five seconds the permanent building
-    /// is looked at: once it is free the university moves there for good (CampusRules.MovesHome: never while the player is
-    /// inside the old one or a class or exam is being sat). A move is said once, with the courses and everything under
-    /// way kept (CareersDirector.Floors: an enrolment is on "the university", and its classes, the Planner and the Campus
-    /// app read where it is now; the save keeps the address only so that a move is said once). A building that has come to
-    /// be the player's is left for the next that may serve, as before. Never a player's building.
-    ///
-    /// Every machine of a Going Public session sees the same businesses and rentals, so every machine takes the same
-    /// building. Once chosen it carries its own name wherever the game names the building, and on the game's own sign
-    /// holders of its front, lit at night as the tech companies' towers are (Core/FrontSigns), and is on the city map in
-    /// its own row (World/MapLinks). At its door it also gets a board on two posts lettered with the game's font, stood
-    /// against the wall a few steps from the door where there is wall, pavement and room, the way the courthouse's is: the
-    /// place to attend. Inside it is the game's own school on several floors (Careers/CampusInterior), chosen at the door.
-    /// Looked for once per city load, then a few comparisons every five seconds; nothing here runs by itself.
+    /// Hudson City University's building: its permanent building, 26 2nd Avenue (CampusRules.HomeStreet), the same in every
+    /// game, reserved from the start (Wiring/CareersLinks) and refused to the player with the mod's other buildings. While a
+    /// player holds it (an older game, or another player in a session) the university stands meanwhile in the largest free
+    /// office building no other feature holds, or else at the door of the game's own Manhattan Business School; it moves home
+    /// for good once that is free (CampusRules.MovesHome), and why it is where it is goes to the log as one line. Every
+    /// machine of a session takes the same building. It carries its own name and lit sign, a map row and a board at its door;
+    /// inside it is the game's own school on several floors (Careers/CampusInterior). Looked for once a city load, then a few
+    /// comparisons every five seconds; nothing here runs by itself.
     /// </summary>
     public sealed class CampusBuilding
     {
         private const string Office = "ba:buildingtype_office";
-        private const float FromWall = 0.30f;
-        private const float Reach = 2.2f;
-        private static readonly float ReachAtSchool = CampusRules.DoorReachAt(CampusPlace.School, LicenceDesks.Aside, LicenceDesks.Reach);   // metres: clear of the driving school's desk at the school's door
+        private const float FromWall = 0.30f;                                                                                                // metres the board stands from the wall
+        private const float Reach = 2.2f;                                                                                                    // metres from the board the player attends within
+        // metres: clear of the driving school's desk at the school's door
+        private static readonly float ReachAtSchool = CampusRules.DoorReachAt(CampusPlace.School, LicenceDesks.Aside, LicenceDesks.Reach);
         private const int WaitForOthers = 30;   // seconds to wait for the utilities office and the courthouse to choose theirs
-        private static readonly float[] Aside = { -4.6f, 4.6f, -6.2f, 6.2f };   // (the courthouse tries the other side first)
+        private static readonly float[] Aside = { -4.6f, 4.6f, -6.2f, 6.2f };   // metres along the front; the courthouse tries the other side first
 
         private readonly IModLogger _logger;
         private readonly Func<bool> _sitting;    // a class or exam of the mod's is being sat (CareersDirector.SittingNow)
@@ -118,13 +98,9 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>
-        /// Once a second: until <see cref="Searched"/>, finds where the university is (CampusRules.Choose: its permanent
-        /// building when free, at once; otherwise, once the other features have chosen, the largest free office; otherwise
-        /// the door of the game's Manhattan Business School), then stands the sign; after that, every five seconds, a
-        /// university whose office building has become the player's (a save from before the mod's buildings were off the
-        /// market, another player's in a session) or has come to hold a business moves off it, to the next that may serve,
-        /// and one that stands anywhere but its permanent building moves there once that is free (never while the player is
-        /// inside the old one or a class or exam is being sat).
+        /// Once a second: until <see cref="Searched"/>, finds where the university is (CampusRules.Choose) and stands its board;
+        /// then every five seconds moves off a building that has become the player's or come to hold a business, and moves home
+        /// once its permanent building is free (never while the player is inside the old one or a class is being sat).
         /// </summary>
         public void Tick()
         {
@@ -137,7 +113,7 @@ namespace RealLifeOverhaul.Careers
                 if (Building != null && ++_look >= 5)
                 {
                     _look = 0;
-                    string why = Place == CampusPlace.School ? null : WhyNotStill();   // (the game's school is always the game's school)
+                    string why = Place == CampusPlace.School ? null : WhyNotStill();   // the game's school is always the game's school
                     bool inside = CareersGame.InsideAt(Street, Number);
                     if (why != null && !inside)
                     {
@@ -168,11 +144,11 @@ namespace RealLifeOverhaul.Careers
                     Func<bool> others = CareersBridges.OthersPicked;
                     if (others != null && !others() && ++_waited < WaitForOthers)
                     {
-                        return;   // (the utilities office and the courthouse choose first: the university is never one of them)
+                        return;   // the utilities office and the courthouse choose first: the university is never one of them
                     }
                 }
                 CityBuildingController office = Pick(buildings, out CityBuildingController largest, out CityBuildingController before);
-                office = Pretend == 1 ? null : office;   // (the test's pretence: every office building taken)
+                office = Pretend == 1 ? null : office;   // the test's pretence: every office building taken
                 CityBuildingController school = School(buildings);
                 Before = before != null ? before.building.StreetName + "|" + before.building.StreetNumber : null;
                 Searched = true;
@@ -184,13 +160,15 @@ namespace RealLifeOverhaul.Careers
                     // Said once a city load: why the university is not in the city's largest office building.
                     string held = SpecialBuildings.NameFor(largest);
                     _logger?.Info("Careers: the largest office building, " + largest.building.Address.ToFormattedString() + ", is "
-                                  + (held != null ? "another of the mod's buildings (" + held + ")" : SpecialBuildings.Players(largest) ? "the player's" : "a business's (" + (largest.buildingRegistration != null ? largest.buildingRegistration.businessTypeName : "?") + ")")
+                                  + (held != null ? "another of the mod's buildings (" + held + ")" : SpecialBuildings.Players(largest) ? "the player's"
+                                      : "a business's (" + (largest.buildingRegistration != null ? largest.buildingRegistration.businessTypeName : "?") + ")")
                                   + "; meanwhile the university takes the largest office building with no business in it.");
                 }
                 if (picked == null)
                 {
                     Place = CampusPlace.None;
-                    Dev.Always(_logger, "Careers: the university has no building: " + Away(block) + ", no office building is free and the city has no Manhattan Business School; its lectures are followed online from home.");
+                    Dev.Always(_logger, "Careers: the university has no building: " + Away(block)
+                                        + ", no office building is free and the city has no Manhattan Business School; its lectures are followed online from home.");
                     return;
                 }
                 Building = picked;
@@ -198,7 +176,7 @@ namespace RealLifeOverhaul.Careers
                 Number = picked.building.Address.streetNumber;
                 Name = picked.building.Address.ToFormattedString();
                 bool atDoor = JobSpots.Front(picked, out Vector3 door);
-                bool placed = Place != CampusPlace.School && Stand(picked);   // (the game's school has its own sign and the driving school's desk at its front)
+                bool placed = Place != CampusPlace.School && Stand(picked);   // the game's school has its own sign and the driving school's desk at its front
                 if (!placed && atDoor)
                 {
                     Front = door;
@@ -216,7 +194,8 @@ namespace RealLifeOverhaul.Careers
                 Dev.Always(_logger, "Careers: the university is " + Name + " (" + (Place == CampusPlace.Home ? "its permanent building" : Place == CampusPlace.Office
                                         ? "meanwhile, the largest office building with no business in it, as " + Away(block)
                                         : "meanwhile, at the door of Manhattan Business School, as " + Away(block) + " and no office building is free")
-                                    + "; " + picked.building.totalSqm + " sqm, " + picked.building.BuildingType + ", size " + picked.building.BuildingSize + " version " + picked.building.BuildingVersion + "); "
+                                    + "; " + picked.building.totalSqm + " sqm, " + picked.building.BuildingType + ", size " + picked.building.BuildingSize
+                                    + " version " + picked.building.BuildingVersion + "); "
                                     + (placed ? "board up." : Usable ? "joined at the door." : "no pavement at its door: online only."));
             }
             catch (Exception e)
@@ -235,7 +214,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>What kept it out of its permanent building when it was found (None at home).</summary>
         public HomeBlock Blocked { get; private set; }
 
-        /// <summary>The permanent building's address as the game writes it (from the game's street names; the constant until the city is there).</summary>
+        /// <summary>The permanent building's address as the game writes it (the constant until the city is there).</summary>
         public string HomeName => _home != null && _home.building != null ? _home.building.Address.ToFormattedString() : CampusRules.HomeAddress(null);
 
         public void Dispose()
@@ -282,9 +261,11 @@ namespace RealLifeOverhaul.Careers
             bool chosen = h != null && CampusRules.HomeIsAsChosen(h.BuildingType, h.BuildingSize, h.BuildingVersion, h.SpecialService != null);
             bool rivals = h != null && RivalsCanHave(h);
             string line = "Careers: the university's permanent building check (" + CampusRules.HomeAddress(null) + ": "
-                          + (h == null ? "not in this city" : h.BuildingType + ", " + h.BuildingSize + " version " + h.BuildingVersion + (h.SpecialService != null ? ", a special service" : string.Empty))
+                          + (h == null ? "not in this city"
+                              : h.BuildingType + ", " + h.BuildingSize + " version " + h.BuildingVersion + (h.SpecialService != null ? ", a special service" : string.Empty))
                           + "; wanted an office of size C version 2 that the game's rivals cannot have, reserved for the university): "
-                          + (chosen && !rivals ? "PASS" : !chosen ? "FAIL (the game's city has changed: it is not the building chosen)" : "FAIL (the game's rivals can have an office of its size now)") + ".";
+                          + (chosen && !rivals ? "PASS" : !chosen ? "FAIL (the game's city has changed: it is not the building chosen)"
+                              : "FAIL (the game's rivals can have an office of its size now)") + ".";
             if (chosen && !rivals)
             {
                 _logger?.Info(line);
@@ -318,7 +299,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (Pretend > 0)
             {
-                return HomeBlock.Business;   // (the test's pretence)
+                return HomeBlock.Business;   // the test's pretence
             }
             CityBuildingController h = _home;
             BuildingRegistration r = h != null ? h.buildingRegistration : null;
@@ -333,11 +314,15 @@ namespace RealLifeOverhaul.Careers
         {
             switch (block)
             {
-                case HomeBlock.Players: return "its permanent building " + CampusRules.HomeAddress(null) + " is rented or owned by the player" + (GoingPublic.InSession ? " (or, in this session, another player)" : string.Empty);
+                case HomeBlock.Players:
+                    return "its permanent building " + CampusRules.HomeAddress(null) + " is rented or owned by the player"
+                           + (GoingPublic.InSession ? " (or, in this session, another player)" : string.Empty);
                 case HomeBlock.Business: return "its permanent building " + CampusRules.HomeAddress(null) + " holds a business (the game's, a rival's or another mod's)";
                 case HomeBlock.Left: return "its permanent building " + CampusRules.HomeAddress(null) + " has a layout left inside";
                 case HomeBlock.Missing: return "its permanent building " + CampusRules.HomeAddress(null) + " cannot be used in this city";
-                case HomeBlock.Held: return "its permanent building " + CampusRules.HomeAddress(null) + " is still another of the mod's buildings, chosen while the university was off, until it moves off at its next choice";
+                case HomeBlock.Held:
+                    return "its permanent building " + CampusRules.HomeAddress(null)
+                           + " is still another of the mod's buildings, chosen while the university was off, until it moves off at its next choice";
                 default: return "its permanent building is free";
             }
         }
@@ -364,7 +349,7 @@ namespace RealLifeOverhaul.Careers
             Func<int, bool> fits = i =>
             {
                 CityBuildingController b = buildings[i];
-                return May(b) && !SpecialBuildings.Players(b);   // (one the player rents or owns stays theirs)
+                return May(b) && !SpecialBuildings.Players(b);   // one the player rents or owns stays theirs
             };
             Func<int, bool> free = i => fits(i) && Empty(buildings[i]);
             Func<int, int> sqm = i => buildings[i].building.totalSqm;
@@ -372,7 +357,7 @@ namespace RealLifeOverhaul.Careers
             Func<int, int> number = i => buildings[i].building.StreetNumber;
             int any = SpecialNameBook.PickLargest(buildings.Length, fits, sqm, street, number, null);
             int chosen = SpecialNameBook.PickLargest(buildings.Length, free, sqm, street, number, SpecialBuildings.Holds);
-            int old = SpecialNameBook.PickLargest(buildings.Length, fits, sqm, street, number, SpecialBuildings.Holds);   // (the earlier rule: whatever was in it)
+            int old = SpecialNameBook.PickLargest(buildings.Length, fits, sqm, street, number, SpecialBuildings.Holds);   // the earlier rule: whatever was in it
             largest = any >= 0 ? buildings[any] : null;
             before = old >= 0 ? buildings[old] : null;
             return chosen >= 0 ? buildings[chosen] : null;
@@ -385,15 +370,12 @@ namespace RealLifeOverhaul.Careers
                    && !GameMembers.Fenced(b.building) && b.building.SpecialService == null && b.building.BuildingType == Office && !Offices.Conversions.Holds(b.building);
         }
 
-        /// <summary>
-        /// True for a building that holds no business and is nobody's (CampusRules.NoBusinessIn): any business type but the
-        /// game's empty one counts as a business, the game's, a rival's or another mod's, and so does a layout left inside.
-        /// </summary>
+        /// <summary>True for a building that holds no business and is nobody's (CampusRules.NoBusinessIn); a layout left inside counts as a business.</summary>
         public static bool Empty(CityBuildingController b)
         {
             BuildingRegistration r = b != null ? b.buildingRegistration : null;
             return r != null && CampusRules.NoBusinessIn(r.businessTypeName, r.RentedByPlayer, r.BuildingOwnedByPlayer, r.businessOwnerRivalId)
-                   && string.IsNullOrEmpty(r.Layout);   // (a layout left behind would have the game look for it inside, and go back out)
+                   && string.IsNullOrEmpty(r.Layout);   // a layout left behind would have the game look for it inside, and go back out
         }
 
         /// <summary>
