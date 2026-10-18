@@ -7,34 +7,21 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Contract cleaner. A business near the player that is not theirs, and is open, is dirty: walk to its door, go
-    /// in, and clean its floor to 100 %, the way the player cleans their own shop.
-    ///
-    /// It is the game's own cleaning, not a copy of it. On going in, the client's floor is given the game's own dirt
-    /// (<see cref="JobDirt"/>: the game's floor objects, its dirtiness values, its cleanliness percentage), the
-    /// player is handed the game's own mop (<see cref="JobMop"/>) and the game's dirt highlighting comes on with it.
-    /// The player clicks the dirty patches; the game walks them there, plays its cleaning stance and takes the dirt
-    /// off at its own pace. The job reads the game's percentage and pays by how much of the dirt the player took off:
-    /// the whole fee at 100 %, the share done at any point before. Half or more is a shift done; less is a failed one.
-    ///
-    /// The shift goes on inside that one building (<see cref="WorksInside"/>); going into any other ends it, and the
-    /// player may step out and come back (the dirt they left is kept, off the client's registration while they are out).
-    /// If the game's dirt cannot be had on a floor, the job falls back to the mod's own spills (CleanerJob.Spills.cs).
-    ///
-    /// IN THE GAME'S OWN INTERFACE. The player works in the cleaner's uniform (<see cref="JobUniform"/>). The game's
-    /// panel over a place (<see cref="JobPanel"/>) stands over the client's door with "Go in", and over the player
-    /// while they are not mopping with "Take the mop" (if they have put it away) and "Let time pass", which hands the rest of the
-    /// floor to the game's clock (<see cref="ShiftClock"/>): <see cref="ShiftRates"/> minutes an eighth of the floor, at
-    /// <see cref="ShiftRates.Share"/> of that share's pay. The figures are on the HUD in a copy of the game's job panel
-    /// (<see cref="ShiftFigures"/>): the cleanliness and its target.
+    /// Contract cleaner: an open business near the player, not theirs, is dirty; go in and clean its floor to 100 %, the
+    /// game's own way. The client's floor is given the game's dirt (<see cref="JobDirt"/>), the player the game's mop
+    /// (<see cref="JobMop"/>) with its highlighting, and the game walks them to each patch and cleans it at its own pace. Pay
+    /// follows the share of the dirt taken off; half or more is a shift done. The shift goes on inside that one building
+    /// (<see cref="WorksInside"/>), and the player may step out and back. Where the game's dirt cannot be had, the mod's own
+    /// spills stand in (the Spills part). The rest of the floor can be left to the game's clock (<see cref="ShiftClock"/>)
+    /// at <see cref="ShiftRates.Share"/> of the pay. The player wears the cleaner's uniform.
     /// </summary>
     public sealed partial class CleanerJob : Job, IClockedShift
     {
         private enum Step { ToClient, Floor, Mopping }
         private enum Mode { Undecided, Game, Spills }
 
-        private const float Debounce = 0.7f;           // seconds after a mopping in which the panel's "let time pass" does nothing
-        private const float PanelUp = 1.6f;            // metres over the door the panel stands
+        private const float Debounce = 0.7f;           // seconds after a mopping in which Let time pass does nothing
+        private const float PanelUp = 1.6f;            // metres over the door
         private const float PanelOver = 2.1f;          // ...and over the player
         private const float Settle = 0.6f;             // seconds after going in for the shop to finish arriving round the player
         private const string ButtonEnter = "reallife_job_button_enter";
@@ -42,11 +29,11 @@ namespace RealLifeOverhaul
         private const string ButtonTake = "reallife_job_cleaner_button_take";
         private const string ButtonSkip = "reallife_job_button_skip";
 
-        private const float ClientMin = 15f;
-        private const float ClientMax = 260f;
-        private const float DoorReach = 3.2f;
-        private const float Seconds = 330f;            // for the whole floor, the walk there included
-        private const float SecondsPerMetre = 0.5f;    // more for a client further off
+        private const float ClientMin = 15f;           // metres from the player
+        private const float ClientMax = 260f;          // metres
+        private const float DoorReach = 3.2f;          // metres
+        private const float Seconds = 330f;            // seconds for the whole floor, the walk there included
+        private const float SecondsPerMetre = 0.5f;    // seconds a metre more for a client further off
         private const float Spotless = 100f;           // the game's cleanliness at which a floor shows no dirt
         private const float RedoShare = 0.3f;          // share of the dirtied cells a difficult client has put back
         private const float RedoStrength = 0.8f;       // ...at this share of the dirt they had
@@ -67,7 +54,7 @@ namespace RealLifeOverhaul
         private Mode _mode;
         private DoorSpot _client;
         private string _clientName;
-        private int _units;            // how big the shift is: the fee is this many times a unit's pay at 100 %
+        private int _units;            // the fee is this many units' pay at 100 %
         private float _endsAt;
         private System.Random _dice;
         private float _start;          // the game's cleanliness when the dirt was laid
@@ -103,7 +90,7 @@ namespace RealLifeOverhaul
 
         public override bool PassingTime => _clock != null && _clock.Working;
 
-        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>
+        /// <summary>While the panel is up its first button has the interact key.</summary>
         public override bool OwnsInteractKey => _panel.Up;
 
         int IClockedShift.ClockLeft => LeftUnits();
@@ -118,17 +105,15 @@ namespace RealLifeOverhaul
             return _client.Building != null && ReferenceEquals(_client.Building.building, building);
         }
 
-        // ---------------------------------------------------------------- how much of the floor is done
-
         private float GameShare => _start >= Spotless ? 1f : Mathf.Clamp01((_clean - _start) / (Spotless - _start));
 
         /// <summary>The share of the dirt that has been taken off, by hand and by the clock: 0 to 1.</summary>
         private float TotalShare => _mode == Mode.Game ? GameShare : Mathf.Clamp01(_mopped / (float)_units);
 
-        /// <summary>...of which by hand: what the player is paid for in the end (the clock was paid as it went).</summary>
+        /// <summary>The share done by hand: what the player is paid for at the end (the clock was paid as it went).</summary>
         private float HandShare => Mathf.Max(0f, TotalShare - _clockUnits / (float)_units);
 
-        /// <summary>Units of the floor still to do (a part of a unit counts as a whole one).</summary>
+        /// <summary>Units still to do; part of a unit counts as a whole one.</summary>
         private int LeftUnits()
         {
             return Mathf.Clamp(_units - Mathf.FloorToInt(TotalShare * _units + 0.001f), 0, _units);
@@ -139,7 +124,7 @@ namespace RealLifeOverhaul
             return PercentText[value] ?? (PercentText[value] = value.ToString() + "%");
         }
 
-        // The game's own cleanliness is a whole number; this reads it while the dirt is on the registration.
+        // The game's cleanliness is a whole number, read while the dirt is on the registration.
         private void ReadClean()
         {
             if (_dirt.InPlace)
@@ -147,8 +132,6 @@ namespace RealLifeOverhaul
                 _clean = _dirt.Cleanliness;
             }
         }
-
-        // ---------------------------------------------------------------- begin
 
         protected override bool OnBegin(float now)
         {
@@ -163,7 +146,7 @@ namespace RealLifeOverhaul
                 Ctx.Logger?.Info("Jobs: no cleaning work: neither the mop clip nor the game's own cleaning animation can be played on the player.");
                 return false;
             }
-            _units = ShiftSize();   // the offer's floor: the bigger it is, the dirtier and the better paid
+            _units = ShiftSize();   // the offer's floor: the bigger, the dirtier and the better paid
             if (_units <= 0)
             {
                 Refusal = "reallife_job_no_daily";
@@ -203,7 +186,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The game is about to write a save: the client's registration and the player's hands are as the game had them while it does.
+        // The game is about to save: the client's registration and the player's hands are as the game had them meanwhile.
         private void OnSaveGame()
         {
             if (Ctx == null || Over)
@@ -219,13 +202,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- tick
-
         public override void Tick(float now)
         {
             if (_clock.Hold())
             {
-                Figures(now);   // the clock is doing the work (or the offer is up, with the game paused)
+                Figures(now);   // the clock is working, or its offer is up with the game paused
                 return;
             }
             if (!_dressed && !Ctx.Driving && !PlayerHelper.IsUsingVehicle && Ctx.Player.Character.visible)
@@ -268,7 +249,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The player is out of the shop: its registration is the game's again, the mop is back, and the dirt waits for them.
+        // Out of the shop: its registration is the game's again, the mop goes back, and the dirt waits for them.
         private void LeftPremises()
         {
             ReadClean();
@@ -281,7 +262,7 @@ namespace RealLifeOverhaul
             _step = Step.ToClient;
         }
 
-        // The shift's figures on the card: each line is written only when what it says changes.
+        // The shift's figures on the card, each line written only when it changes.
         private void Figures(float now)
         {
             bool clock = _clock.Working;
@@ -323,8 +304,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- on the floor
-
         private void Floor(float now)
         {
             if (!_arrived)
@@ -356,7 +335,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's dirt if the floor can have it; the mod's own spills if not (said once in the log).
+        // The game's dirt if the floor can have it, else the mod's own spills (said once in the log).
         private void Decide()
         {
             string why = "the game's cleaning animation cannot be played on the player";
@@ -400,7 +379,7 @@ namespace RealLifeOverhaul
                 if (!cleaning)
                 {
                     _mopOver = now;
-                    _mop.Show(_clean);   // the game sets its bar back to 100 when a spot is done: this client's floor is not the player's
+                    _mop.Show(_clean);   // the game resets its bar to 100 when a spot is done; this floor is not the player's
                 }
             }
             int pct = Mathf.FloorToInt(_clean + 0.001f);
@@ -416,7 +395,7 @@ namespace RealLifeOverhaul
             }
             if (_clean >= Spotless - 0.001f && Ctx.Offer.RedoAt > 0 && !_redone)
             {
-                // The difficult client, if the offer drew one, finds a patch they say was missed: some of the dirt is put back, and the pay follows the floor.
+                // The difficult client, if the offer drew one, finds a missed patch: some dirt is put back, and the pay follows the floor.
                 _redone = true;
                 int back = _dirt.Redo(RedoShare, RedoStrength);
                 ReadClean();
@@ -452,7 +431,7 @@ namespace RealLifeOverhaul
             }
             if (cleaning)
             {
-                _panel.Hide();   // the game's own stance and cursor are on; nothing of the mod's stands over them
+                _panel.Hide();   // the game's own stance and cursor are on: nothing of the mod's stands over them
                 Hint(3);
                 return;
             }
@@ -461,7 +440,7 @@ namespace RealLifeOverhaul
             _panel.Show(Ctx.Player.transform, PanelOver, Ctx.Player);
         }
 
-        // The panel's first button was pressed (the game ran it on its key or on a click).
+        // The panel's first button, run by the game on its key or a click.
         private void Act(string action)
         {
             if (Ctx == null || Over)
@@ -490,8 +469,6 @@ namespace RealLifeOverhaul
                 ActMop();
             }
         }
-
-        // ---------------------------------------------------------------- the end
 
         private void Conclude()
         {
@@ -533,8 +510,6 @@ namespace RealLifeOverhaul
 
         protected override ShiftClock Clocked => _clock;
 
-        // ---------------------------------------------------------------- the rest of the floor by the clock
-
         private void OfferSkip()
         {
             if (Ctx == null || Over || _step != Step.Floor || JobMop.HandsFull || JobMop.Cleaning || Time.time - _mopOver < Debounce || LeftUnits() <= 0)
@@ -556,7 +531,7 @@ namespace RealLifeOverhaul
 
         void IClockedShift.ClockStarted()
         {
-            // The floor is left to the clock: the mop is put away, and the spills, if there are any, go back.
+            // The floor is left to the clock: the mop is put away, and any spills go back.
             _mop.Take();
             _leftAtClock = LeftUnits();
             ClearPatch();
@@ -571,7 +546,7 @@ namespace RealLifeOverhaul
             _clockPay += pay;
             if (_mode == Mode.Game)
             {
-                // The clock cleaned that many of the units that were left: the floor really is that much cleaner afterwards.
+                // The clock cleaned that share of what was left: the floor really is that much cleaner.
                 _dirt.Clean(_leftAtClock > 0 ? Mathf.Min(1f, count / (float)_leftAtClock) : 1f);
                 ReadClean();
                 if (Meta.Dev.Verbose)
@@ -586,7 +561,6 @@ namespace RealLifeOverhaul
             _autoMop = true;
             _endsAt += away;   // the minutes the clock took are not the floor's own time
             _mopOver = Time.time;
-            _nextTry = Time.time + 0.4f;
             _hint = -1;
             _shownSeconds = int.MinValue;
         }
@@ -600,7 +574,7 @@ namespace RealLifeOverhaul
             SaveHook.Drop(_onSave);
             _panel.Hide();
             _clock?.Close();   // the game's activity panel goes; nothing more is settled through it
-            _mop?.Take();      // never a mop in the hands once the job is over, whatever ended it
+            _mop?.Take();      // never a mop in the hands once the job is over
             Ctx.Self.Rest();
             Ctx.Self.Free();
             ClearPatch();
@@ -612,7 +586,7 @@ namespace RealLifeOverhaul
             _dirt.Discard();   // the client's registration is the game's again
         }
 
-        // The line under the job's name, rebuilt only when what it says changes.
+        // The line under the job's name, rebuilt only when it changes.
         private void Hint(int which)
         {
             if (which == _hint)
