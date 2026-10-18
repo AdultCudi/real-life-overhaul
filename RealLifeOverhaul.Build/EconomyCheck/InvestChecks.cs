@@ -1219,6 +1219,13 @@ internal static partial class Program
         return o;
     }
 
+    // Every part of the market's engine (MarketEngine.cs and MarketEngine.*.cs), as text.
+    private static string[] EngineSources()
+    {
+        string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets"));
+        return System.IO.Directory.Exists(dir) ? System.IO.Directory.GetFiles(dir, "MarketEngine*.cs").Select(System.IO.File.ReadAllText).ToArray() : new string[0];
+    }
+
     private static string ModSource(string relative)
     {
         string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts", relative));
@@ -1685,7 +1692,7 @@ internal static partial class Program
               && bridges.Contains("public static Func<long> NetWorth;") && bridges.Contains("NetWorth = null;") && links.Contains("MarketBridges.NetWorth = Books.NetWorth;")
               && books.Contains("public static long NetWorth()") && books.Contains("Owing(file.Accounts[i])") && books.Contains("EconomyBridges.OtherDebts?.Invoke(Debts);")
               && books.Contains("file.Shark.Active") && overview.Contains("if (!Books.Owing(a))") && overview.Contains("FinanceText.Money(Books.NetWorth())")
-              && !ModSource(@"Markets\MarketEngine.cs").Contains("RealLifeOverhaul.Economy"),
+              && EngineSources().Length >= 9 && !EngineSources().Any(e => e.Contains("RealLifeOverhaul.Economy")),
             "invest: the most of one bond purchase reads the Finance app's net worth through the wiring (the same accounts, the same debts), the market adding its own once, and no feature calls the other");
     }
 

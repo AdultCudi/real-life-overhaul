@@ -190,14 +190,20 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketTape.cs" Link="Mod\MarketTape.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketLife.cs" Link="Mod\MarketLife.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.cs" Link="Mod\MarketEngine.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Session.cs" Link="Mod\MarketEngine.Session.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Close.cs" Link="Mod\MarketEngine.Close.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Orders.cs" Link="Mod\MarketEngine.Orders.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Own.cs" Link="Mod\MarketEngine.Own.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Holdings.cs" Link="Mod\MarketEngine.Holdings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketIndex.cs" Link="Mod\MarketIndex.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Bots.cs" Link="Mod\MarketEngine.Bots.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketBots.cs" Link="Mod\MarketBots.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketBots.Decide.cs" Link="Mod\MarketBots.Decide.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Bot.cs" Link="Mod\Bot.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\TrustRules.cs" Link="Mod\TrustRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Bonds.cs" Link="Mod\MarketEngine.Bonds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Invest.cs" Link="Mod\MarketEngine.Invest.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\BrokerWallet.cs" Link="Mod\BrokerWallet.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\InvestRules.cs" Link="Mod\InvestRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Bonds\BondCatalogue.cs" Link="Mod\BondCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Bonds\BondModel.cs" Link="Mod\BondModel.cs" />
@@ -212,6 +218,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCarryOver.cs" Link="Mod\MarketCarryOver.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCodec.cs" Link="Mod\MarketCodec.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.cs" Link="Mod\MarketStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.Stocks.cs" Link="Mod\MarketStore.Stocks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.Player.cs" Link="Mod\MarketStore.Player.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerModel.cs" Link="Mod\LedgerModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerCatalogue.cs" Link="Mod\LedgerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerRules.cs" Link="Mod\LedgerRules.cs" />

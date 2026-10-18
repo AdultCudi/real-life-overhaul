@@ -3,22 +3,17 @@ using System;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// What everything in the city does to the market: the tables, by sector. Game-free. A day's environment
-    /// (<see cref="MarketEnv"/>) moves companies' margins and growth (their business) and the market's mood; an event
-    /// during the day (a fire, a crime, a policy changed: <see cref="MarketEvent"/>) moves prices at once.
-    ///
-    /// Basis points (bp) are hundredths of a per cent. A margin effect is on a company's operating margin and lasts
-    /// while its cause lasts (the market prices it the moment it is known); a "kick" is a one-off move of the price, the
-    /// market's mood, which fades over time. Adding a source of news: one more Event kind, its row in
-    /// <see cref="EventKicks"/>, and one line in Wiring/MarketLinks that hands it over.
+    /// What everything in the city does to the market, by sector. Game-free. A day's <see cref="MarketEnv"/> moves margins
+    /// and growth (lasting while their cause lasts) and the mood; an event during the day moves prices at once by a
+    /// "kick", a one-off move of the mood that fades. A new source of news is an Event kind, its row in
+    /// <see cref="EventKicks"/> and a line in Wiring/MarketLinks.
     /// </summary>
     public static class MarketInputs
     {
         private const int Sectors = (int)MarketSector.Count;
 
-        // ---------------------------------------------------------------- the game's trades the player competes in
-
-        /// <summary>The parts of the game's business type ids a listed company can share a trade with (CompanyDef.Trade).</summary>
+        // The game's trades the player competes in
+        /// <summary>Parts of the game's business type ids a listed company can share a trade with (CompanyDef.Trade).</summary>
         public static readonly string[] Trades =
         {
             "supermarket", "fruitandvegetable", "liquorstore", "coffeeshop", "fastfood", "clothing", "electronics", "appliance", "furniture", "jewelry", "giftshop",
@@ -47,9 +42,7 @@ namespace RealLifeOverhaul.Markets
         public const double PlayerShareTaken = 0.5;      // of the player's takings in a trade, what is taken from the listed companies in it
         public const double CompetitionMost = 0.25;      // of one company's turnover, at most
 
-        // ---------------------------------------------------------------- supply: a kind of goods dearer or cheaper
-
-        // Margin bp for each tenth the kind's price is above the usual (a glut: the other way), by kind and sector.
+        // Supply: margin bp for each tenth a kind of goods is dearer than usual (cheaper: the other way), by kind and sector.
         private static readonly int[][] SupplyMargin = Table(
             new[] { G(MarketSector.Groceries, -25), G(MarketSector.Restaurants, -30), G(MarketSector.Goods, -10) },                              // fresh produce
             new[] { G(MarketSector.Groceries, -30), G(MarketSector.Restaurants, -40), G(MarketSector.Goods, 15), G(MarketSector.Leisure, -10) }, // groceries and drink
@@ -73,11 +66,9 @@ namespace RealLifeOverhaul.Markets
             return bp;
         }
 
-        // ---------------------------------------------------------------- the council's policies
-
-        // Margin bp of each lever tightened or raised by one step (relaxed or cut: the other way), in the order of Civic's
-        // levers: policing, traffic, business tax, trade levy, grants, rents, parking, transit, cleaning, night life, permits,
-        // events, wages. Business tax is the tax rate itself (MarketCatalogue.TaxPerStep), not a margin.
+        // The council's policies: margin bp for each step a lever is tightened, in the order of Civic's levers (policing,
+        // traffic, business tax, trade levy, grants, rents, parking, transit, cleaning, night life, permits, events, wages).
+        // Business tax moves the tax rate itself (MarketCatalogue.TaxPerStep), not a margin.
         private static readonly int[][] LeverMargin = Table(
             new[] { G(MarketSector.Services, 30), G(MarketSector.Stores, 10), G(MarketSector.Specialists, 10), G(MarketSector.Insurance, 15) },
             new[] { G(MarketSector.Transport, -20), G(MarketSector.Logistics, -25), G(MarketSector.Energy, -10), G(MarketSector.Stores, -10) },
@@ -113,11 +104,8 @@ namespace RealLifeOverhaul.Markets
             return MarketCatalogue.TaxRate + env.Lever(BusinessTaxLever) * MarketCatalogue.TaxPerStep;
         }
 
-        // ---------------------------------------------------------------- the day: weather, the street, crime
-
-        // One-off moves of a sector's prices, in bp, at the open of the day after: rain, a storm; a heat wave, a cold snap, ice;
-        // the street event (as the city's economy counts them: a market, the farmers' market, a parade, a protest, a fun run,
-        // a film shoot, fireworks).
+        // One-off moves of a sector at the next open, in bp: rain, a storm; a heat wave, a cold snap, ice; the street event
+        // as the city's economy counts them (a market, the farmers' market, a parade, a protest, a fun run, a shoot, fireworks).
         private static readonly int[][] SkyKick = Table(
             new Cell[0],
             new[] { G(MarketSector.Stores, -8), G(MarketSector.Leisure, -10), G(MarketSector.Restaurants, -5), G(MarketSector.Transport, 5) },
@@ -157,22 +145,15 @@ namespace RealLifeOverhaul.Markets
             return bp > most ? most : bp < -most ? -most : bp;
         }
 
-        // ---------------------------------------------------------------- events during the day
-
         /// <summary>
-        /// What happened (MarketEvent.Kind). Saved on the tape as a number: never renumber. Trade and Volume are a player's
-        /// trade in a Going Public session, where every player's trades move the one city's prices (MarketEngine.FillNow):
-        /// the lasting part of its move (A the company, B the move in millionths of the log price) and its shares (B).
-        /// They are 9 and 10 (8 is Flare's buzz, from social media). From 11 on are what the founder of a player's listed
-        /// company asks for (Markets/Listing: EventOwn plus an OwnAction, A the company, B the figure). After them, Company is
-        /// news of one listed company from the tech sector (Tech: a product of the player's overtaking its rival's, the rival
-        /// shipping, a cloud's price war): A the company, B the move in millionths of the log price, at most a twentieth
-        /// either way, into its mood as a news item is.
+        /// What happened (MarketEvent.Kind). On the tape as a number: never renumber. Trade (A the company, B the lasting move
+        /// in millionths of the log price) and Volume (B shares) are a Going Public player's trade; Buzz is Flare's. From
+        /// EventOwn come a listed founder's OwnActions; Company is a tech news item, B in millionths, held to a twentieth.
         /// </summary>
         public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventBuzz = 8, EventTrade = 9, EventVolume = 10,
             EventOwn = 11, EventCompany = EventOwn + (int)OwnAction.Count, EventCount = EventCompany + 1;
 
-        public const int CompanyMicrosMost = 50000;   // the most a company's news moves its log price
+        public const int CompanyMicrosMost = 50000;   // millionths of the log price, either way
 
         /// <summary>A trade's lasting move of a price, in the millionths the tape keeps it in.</summary>
         public static int TradeMicros(double move)
@@ -181,7 +162,7 @@ namespace RealLifeOverhaul.Markets
             return micros > 1000000.0 ? 1000000 : micros < -1000000.0 ? -1000000 : (int)micros;
         }
 
-        // The move of a sector's prices, in bp, the moment the market hears of it (a policy: a step tightened, by lever, below).
+        // A sector's move in bp the moment the market hears of an event; a buzz moves only its trade's sector (BuzzKickBp).
         private static readonly int[][] EventKicks = Table(
             new Cell[0],
             new[] { G(MarketSector.Insurance, -12), G(MarketSector.Construction, 4) },
@@ -191,22 +172,19 @@ namespace RealLifeOverhaul.Markets
             new Cell[0],
             new Cell[0],
             new[] { G(MarketSector.Insurance, -25), G(MarketSector.Transport, -15), G(MarketSector.Stores, -10), G(MarketSector.Power, 8) },
-            new Cell[0]);   // a buzz: the sector of its trade, below (BuzzKickBp)
+            new Cell[0]);
 
-        public const int ElectionKickBp = 30;            // the whole market, when an election is counted (the doubt is over)
+        public const int ElectionKickBp = 30;            // the whole market when an election is counted: the doubt is over
         public const int FireTradeKickBp = -60;          // a listed company in the trade of a business that burned
-        public const int BuzzKickBp = 25;                // the sector of a trade social media buzzes about (Flare: a viral post, or a brand's scandal), either way, at most
+        public const int BuzzKickBp = 25;                // the sector of a trade social media buzzes about, at most, either way
 
-        /// <summary>A buzz's move of a sector, in bp: A the trade, B which way (a viral post +1, a scandal -1, held to one step), for the sector of the trade's listed companies.</summary>
+        /// <summary>A buzz's move of a sector in bp: A the trade, B which way, for the sector of the trade's listed companies.</summary>
         public static int BuzzBp(in MarketEvent e, MarketSector sector, MarketSector tradeSector)
         {
             return e.Kind == EventBuzz && sector == tradeSector ? Capped(Math.Sign(e.B) * BuzzKickBp, BuzzKickBp) : 0;
         }
 
-        /// <summary>
-        /// A sector's move, in bp, when the market hears of an event. A policy (its lever and the step it moved: A, B) has
-        /// none of its own: it is part of the business at once, and the market prices it as that (MarketEngine).
-        /// </summary>
+        /// <summary>A sector's move in bp when the market hears of an event. A policy has none: it is priced as part of the business.</summary>
         public static int EventBp(in MarketEvent e, MarketSector sector)
         {
             if (e.Kind == EventPolicy)
@@ -220,14 +198,10 @@ namespace RealLifeOverhaul.Markets
             return e.Kind > 0 && e.Kind < EventKicks.Length ? EventKicks[e.Kind][(int)sector] : 0;
         }
 
-        // ---------------------------------------------------------------- the districts, inflation
-
-        /// <summary>How much a sector's turnover follows what the city's households earn (the districts' income), in per cent.</summary>
+        /// <summary>How much a sector's turnover follows the districts' income, per cent.</summary>
         public static readonly int[] IncomeShare = Row(G(MarketSector.Stores, 60), G(MarketSector.Specialists, 80), G(MarketSector.Restaurants, 70), G(MarketSector.Leisure, 90),
             G(MarketSector.Goods, 30), G(MarketSector.Groceries, 20), G(MarketSector.Property, 40), G(MarketSector.Banks, 30), G(MarketSector.Media, 40), G(MarketSector.Transport, 30),
             G(MarketSector.Trusts, 40));
-
-        // ---------------------------------------------------------------- building the tables
 
         private struct Cell
         {

@@ -4,37 +4,16 @@ using RealLifeOverhaul.Economy;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// PROPERTY TRUSTS (MarketSector.Trusts): listed companies that own buildings and let them, pay out nearly all they
-    /// earn (MarketCatalogue.TrustPayout), and pay it in small sums often. Game-free.
-    ///
-    /// THE SCHEDULE. A trust's calendar is cut into periods of its CompanyDef.PayDays days from day 1 (a week, Monday to
-    /// Sunday, or three days). Each period's record day is its last market day; holders at that close are owed the
-    /// period's distribution, paid on the next market day, and the price drops by it at the open after the record day,
-    /// as a quarterly dividend does. At that same open the next one is declared (<see cref="Declare"/>), so the existing
-    /// dividend fields carry it (DeclaredCents, RecordDay, PayDay, ExDone, LastExDay): every holder, the trading bots'
-    /// shares among them, is owed it at the record day by MarketEngine.Dividends as for any company, and the price builds
-    /// it up by the days of the calendar from the last record day to its own (MarketLife.Accrued), so a record day can
-    /// be the very next market day and the price still holds all of it. A period whose record day had already gone when
-    /// it was declared (a long gap) is paid with the next one: nothing of the year's rate is skipped.
-    ///
-    /// HOW MUCH. The board sets its quarterly dividend at its results as every company does (DpsCents, from what it can
-    /// pay out); a period's share is that dividend's year spread by the days, the fractions carried from one period to the
-    /// next (<see cref="Cents"/>), so over a year a trust pays its quarterly rate four times, whatever the length of the
-    /// year, and a price never jumps when the rate is set. So a trust's yield is its earnings' at a payout of nine tenths:
-    /// no more than its price makes up for (a fair bet, as every share is), and buying before a record day and selling
-    /// after earns the distribution less the drop it makes in the price, and pays the spread and commission twice.
-    ///
-    /// ITS PRICE follows where the city's property market is heading: Economy/Estate's own rule
-    /// (EstateRules.RealTarget: the cycle less what the bank rate takes off) as the market expects the cycle to go,
-    /// for <see cref="MarketCatalogue.TrustPropertyShare"/> of its worth (<see cref="PropertyFactor"/>); its rents
-    /// follow prices, households' income and the council's rent policy (MarketInputs). Both are read from the market's
-    /// own city of the day (MarketEnv, kept on the tape), so it is the same on every machine of a Going Public session.
-    ///
-    /// The cost: a few comparisons for each trust at each open; nothing per frame.
+    /// Property trusts: listed companies that let buildings, pay out nearly all they earn and pay it every few days. Game-free.
+    /// Each period of CompanyDef.PayDays days has its last market day as record day, and the next distribution is declared at
+    /// the open its last leaves the price, carried in the usual dividend fields so every holder is owed it as for any
+    /// company. Over a year a trust pays its quarterly rate four times whatever the year's length. Its price follows where
+    /// Economy/Estate's property market is heading (<see cref="PropertyFactor"/>), read from the day's MarketEnv so every
+    /// machine agrees. A few comparisons for each trust at each open.
     /// </summary>
     public static class TrustRules
     {
-        /// <summary>True for a property trust: a company of the catalogue that pays every few days.</summary>
+        /// <summary>True for a property trust: a catalogue company that pays every few days.</summary>
         public static bool Is(Stock s)
         {
             return s != null && s.Own == null && s.Def != null && s.Def.PayDays > 0;
@@ -42,7 +21,7 @@ namespace RealLifeOverhaul.Markets
 
         private static int Every(Stock s)
         {
-            return Math.Max(MarketCatalogue.TrustThreeDays, s.Def.PayDays);   // (three days at least: every period then has a market day)
+            return Math.Max(MarketCatalogue.TrustThreeDays, s.Def.PayDays);   // three days at least, so every period has a market day
         }
 
         /// <summary>The period a day is in: period n has the days n * every + 1 to (n + 1) * every.</summary>
@@ -62,11 +41,7 @@ namespace RealLifeOverhaul.Markets
             return day;
         }
 
-        /// <summary>
-        /// A period's distribution, in cents a share: the quarterly dividend's year shared by the days, a period's share
-        /// rounded so that the fractions carry on into the next (the sums over any run of periods are the year's rate to
-        /// the cent).
-        /// </summary>
+        /// <summary>A period's distribution in cents a share, rounded so the fractions carry on and any run of periods sums to the year's rate.</summary>
         public static int Cents(int quarterlyCents, int period, int every, int year)
         {
             if (quarterlyCents <= 0)
@@ -78,10 +53,9 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// At a market day's open, once the last distribution has gone out of the price: the next is declared for the
-        /// first period whose record day is today or later (after today with <paramref name="today"/> false), with any
-        /// period between whose record day had already gone, and the price builds it up from the last period's record
-        /// day (LastExDay holds that day for a trust: MarketLife.Accrued). Nothing while one waits for its record day.
+        /// At an open, once the last distribution has left the price: the next declared for the first period whose record day
+        /// is today or later (after today when <paramref name="today"/> is false), with any period between whose record day
+        /// had gone. Nothing while one waits for its record day.
         /// </summary>
         public static void Declare(Stock s, int day, int year, bool today = true)
         {
@@ -98,7 +72,7 @@ namespace RealLifeOverhaul.Markets
             int from = s.RecordDay > 0 ? Period(s.RecordDay, every) + 1 : next;
             if (from > next || from < next - 8)
             {
-                from = next;   // (a first declaration, one re-declared that had nothing, or a record day of another schedule)
+                from = next;   // a first declaration, one with nothing, or another schedule's record day
             }
             int cents = 0;
             for (int p = from; p <= next; p++)
@@ -110,7 +84,7 @@ namespace RealLifeOverhaul.Markets
             s.LastExDay = RecordDay(from - 1, every);
             if (cents <= 0)
             {
-                s.DeclaredCents = 0;   // (nothing this period: its record day is kept, so the next one starts after it)
+                s.DeclaredCents = 0;   // nothing this period: its record day is kept, so the next starts after it
                 s.PayDay = 0;
                 s.ExDone = true;
                 return;
@@ -120,7 +94,7 @@ namespace RealLifeOverhaul.Markets
             s.ExDone = false;
         }
 
-        /// <summary>A trust made (a new market, a listing, a save from before trusts): its first distribution declared for a record day after today.</summary>
+        /// <summary>A trust made: its first distribution declared for a record day after today.</summary>
         public static void Begin(Stock s, int day, int year)
         {
             s.DeclaredCents = 0;
@@ -131,13 +105,12 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// What the property market does to a trust's worth: its buildings (<see cref="MarketCatalogue.TrustPropertyShare"/>
-        /// of it) valued where Economy/Estate's market is heading in each state of the economy, by the market's odds of
-        /// the next state (MarketCatalogue.Expected), at the bank rate of the day. 1 at the long-run level.
+        /// What the property market does to a trust's worth: its buildings' share valued where Economy/Estate's market is heading
+        /// by the market's odds of the next state, at the day's bank rate. 1 at the long-run level.
         /// </summary>
         public static double PropertyFactor(in MarketEnv env)
         {
-            int quarters = (int)Math.Round((env.RateBp - 300) / 25.0);   // (the city's rate in quarter points over the banks' own, as Estate reads it)
+            int quarters = (int)Math.Round((env.RateBp - 300) / 25.0);   // the city's rate in quarter points over the banks' own, as Estate reads it
             int now = env.Cycle < 0 ? 0 : env.Cycle > 3 ? 3 : env.Cycle;
             double next = 0.0;
             for (int state = 0; state < 4; state++)
@@ -148,7 +121,7 @@ namespace RealLifeOverhaul.Markets
             return 1.0 + MarketCatalogue.TrustPropertyShare * (level - 1.0);
         }
 
-        /// <summary>A trust's distributions over a year at its rate now, in cents a share (its quarterly dividend four times).</summary>
+        /// <summary>A trust's distributions over a year at its rate now, in cents a share.</summary>
         public static int YearCents(Stock s)
         {
             return Math.Max(0, s.DpsCents) * 4;

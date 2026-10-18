@@ -5,35 +5,12 @@ using RealLifeOverhaul.Economy;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// Bonds by rule: their yields, their payments, their price before their end and what a payment does. Game-free and
-    /// without a chance of its own: everything is worked out from the market's city of the day (MarketEnv, the same on
-    /// every machine) and the calendar, so the same bond pays the same on the same day wherever it is played.
-    ///
-    ///     the yield for a term   w x (the bank rate with half its next decision) + (1 - w) x the long run (the neutral
-    ///                            rate and half of inflation over its target) + a premium for the term, w = e^(-term / 2 years);
-    ///                            a city bond more, a deposit less (BondCatalogue)
-    ///     a bond bought          at 100 for each 100 it repays, at the yield of its whole term, for good; no commission
-    ///     its payments           on fixed days from the day it was bought, the last on the day it ends: its rate for the
-    ///                            part of the year on what it repays, less the tax withheld as on a dividend (Listing's
-    ///                            ListingVotes.DividendTax); of what is left, the share the player chose is put back into it
-    ///                            at the day's price, the rest is paid into their cash
-    ///     its end                what it repays comes back with the last payment
-    ///     sold before its end    every payment still to come and what it repays, discounted at the yield for what is left
-    ///                            of its term: so its price falls when rates rise and rises when they fall; less a small
-    ///                            spread. A deposit is closed instead, for what it repays less a few months' interest.
-    ///     one purchase           from the least to the larger of a flat sum and a share of what the player is worth, up
-    ///                            to a cap (<see cref="Most(int, long)"/>); a ladder spreads one sum evenly over the
-    ///                            Treasury's terms, each piece a purchase and a holding of its own (<see cref="Ladder"/>)
-    ///     a rollover             at its end a bond set to roll over is bought again, the same kind, term and bank at the
-    ///                            day's yield, with what it repays (<see cref="Rolled"/>)
-    /// Over a year a bond pays its yield, near the bank rate: less than shares are expected to return, and with no fall
-    /// of more than its price can move when rates move.
+    /// Bonds by rule: their yields, payments, price before their end and what a payment does. Game-free and with no chance
+    /// of its own: everything comes from the day's MarketEnv and the calendar, so every machine pays the same.
     /// </summary>
     public static class BondRules
     {
-        // ---------------------------------------------------------------- the yields
-
-        /// <summary>The yield a year, in bp, of a bond of a kind (at a bank's rank, for a deposit) for so many years, on the city of the day.</summary>
+        /// <summary>A bond's yield a year in bp for a term in years; a deposit's at the bank of that rank.</summary>
         public static int YieldBp(BondKind kind, int bank, double years, in MarketEnv env)
         {
             years = Math.Max(0.0, years);
@@ -81,41 +58,37 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>The least and the most one purchase may be, in money, at the city's price level (tenths of a point, 1000 at the start).</summary>
+        /// <summary>The least one purchase may be, in money, at the city's price level (1000 at the start).</summary>
         public static long Least(int priceLevel)
         {
             return Math.Max(1L, (long)BondCatalogue.LeastAtStart * Math.Max(100, priceLevel) / 1000L);
         }
 
+        /// <summary>The flat most of one purchase, in money, at the city's price level.</summary>
         public static long Most(int priceLevel)
         {
             return Math.Max(1L, (long)BondCatalogue.MostAtStart * Math.Max(100, priceLevel) / 1000L);
         }
 
         /// <summary>
-        /// The most one purchase may be for a player worth so much (money: what the game counts them worth, with what they hold
-        /// on the market; nothing or less, the flat sum): the larger of the flat sum and <see cref="BondCatalogue.MostWorthPct"/>
-        /// of their worth, never over the cap; both at the city's price level. Grows with the player's wealth, so a large
-        /// investor is not held to the flat sum a beginner is, and no purchase is larger than a city's issue believably sells.
+        /// The most one purchase may be for a player worth so much (money, the market's holdings included): the larger of
+        /// the flat sum and a share of their worth, never over the cap.
         /// </summary>
         public static long Most(int priceLevel, long worth)
         {
             long flat = Most(priceLevel);
             long cap = Math.Max(flat, (long)BondCatalogue.MostCapAtStart * Math.Max(100, priceLevel) / 1000L);
-            long share = worth > 0 ? worth / 100L * BondCatalogue.MostWorthPct : 0L;   // (divided first: no sum a save can hold overflows)
+            long share = worth > 0 ? worth / 100L * BondCatalogue.MostWorthPct : 0L;   // divided first: no sum a save holds overflows
             return Math.Max(flat, Math.Min(cap, share));
         }
 
-        /// <summary>The cap of one purchase, at the city's price level (what <see cref="Most(int, long)"/> never passes).</summary>
+        /// <summary>What <see cref="Most(int, long)"/> never passes, at the city's price level.</summary>
         public static long Cap(int priceLevel)
         {
             return Math.Max(Most(priceLevel), (long)BondCatalogue.MostCapAtStart * Math.Max(100, priceLevel) / 1000L);
         }
 
-        /// <summary>
-        /// The bonds and deposits that may be held at once: the larger number with "Worked orders and larger bond purchases"
-        /// on (room for ladders). One who holds more, with it switched off since, keeps them and buys none until under it.
-        /// </summary>
+        /// <summary>Holdings allowed at once. One over it after switching the large option off keeps them and buys none.</summary>
         public static int HoldingsMost(bool large)
         {
             return large ? BondCatalogue.HoldingsMostLarge : BondCatalogue.HoldingsMost;
@@ -127,10 +100,7 @@ namespace RealLifeOverhaul.Markets
             return CanBuy(book, offer, money, cash, open, held, on, Least(priceLevel), Most(priceLevel), 1, BondCatalogue.HoldingsMost);
         }
 
-        /// <summary>
-        /// The same with the least and the most one purchase may be given, how many holdings it makes (a ladder: one for
-        /// each of its terms, all of them room in the book) and how many may be held at once (<see cref="HoldingsMost(bool)"/>).
-        /// </summary>
+        /// <summary>The same with the limits given; a ladder makes one holding for each of its terms.</summary>
         public static BondWhy CanBuy(BondBook book, BondOffer offer, long money, long cash, bool open, bool held, bool on, long least, long most, int holdings, int holdingsMost)
         {
             if (!on)
@@ -164,9 +134,7 @@ namespace RealLifeOverhaul.Markets
             return money > cash ? BondWhy.NoCash : BondWhy.None;
         }
 
-        // ---------------------------------------------------------------- a ladder and a rollover
-
-        /// <summary>The Treasury's terms a ladder spreads a sum over, shortest first, into a list of the catalogue's bonds; how many.</summary>
+        /// <summary>The Treasury's bonds a ladder spreads a sum over, shortest first; how many.</summary>
         public static int LadderTerms(List<BondDef> into)
         {
             into.Clear();
@@ -181,7 +149,7 @@ namespace RealLifeOverhaul.Markets
             return into.Count;
         }
 
-        /// <summary>A sum spread evenly over so many pieces: each the same whole money, the units left over one each to the first pieces.</summary>
+        /// <summary>A sum spread evenly over the pieces, the units left over one each to the first.</summary>
         public static void Ladder(long money, int pieces, long[] into)
         {
             int n = Math.Max(1, Math.Min(pieces, into.Length));
@@ -193,10 +161,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// A bond come to its end bought again: the same kind, term and bank, with the same share of its interest put back
-        /// and still set to roll over, at the yield of the day, for the face given (cents: what it repays, the cents carried
-        /// and the last payment's share put back); its payments from that day. Nothing changes hands: no purchase limit, no
-        /// commission. The number it takes is the book's next.
+        /// A bond at its end bought again: same kind, term, bank and share put back, at the day's yield, for the face given
+        /// in cents. Nothing changes hands, so no purchase limit and no commission.
         /// </summary>
         public static BondHolding Rolled(BondHolding h, BondDef d, int id, int yieldBp, long face, int day, int year)
         {
@@ -233,8 +199,6 @@ namespace RealLifeOverhaul.Markets
             return chosen;
         }
 
-        // ---------------------------------------------------------------- its payments
-
         /// <summary>The day of a bond's payment (1 to its count): evenly from the day it was bought, the last on its end.</summary>
         public static int PayDay(BondHolding h, int payment)
         {
@@ -249,13 +213,13 @@ namespace RealLifeOverhaul.Markets
             return h.Paid < h.Payments ? PayDay(h, h.Paid + 1) : 0;
         }
 
-        /// <summary>One payment's interest, in cents, before tax: its rate on what it repays for a part of the year.</summary>
+        /// <summary>One payment's interest in cents, before tax.</summary>
         public static long InterestCents(BondHolding h, BondDef d)
         {
             return Math.Max(0L, h.Face) * Math.Max(0, h.RateBp) / (10000L * Math.Max(1, d.PaysPerYear));
         }
 
-        /// <summary>A payment of interest shared out: the tax withheld, then of what is left the share put back, and the rest paid out (cents).</summary>
+        /// <summary>A payment of interest shared out in cents: the tax withheld, the share put back, the rest paid out.</summary>
         public static void Share(long interest, int taxStep, int reinvest, out long tax, out long back, out long paid)
         {
             interest = Math.Max(0L, interest);
@@ -265,12 +229,7 @@ namespace RealLifeOverhaul.Markets
             paid = net - back;
         }
 
-        // ---------------------------------------------------------------- its price
-
-        /// <summary>
-        /// What a bond is worth today for each 100 it repays: its payments still to come and what it repays, each
-        /// discounted at today's yield for what is left of its term. At its rate, on the day it is bought, it is 100.
-        /// </summary>
+        /// <summary>A bond's worth today for each 100 it repays, its payments and face discounted at today's yield for what is left.</summary>
         public static double Price(BondHolding h, BondDef d, in MarketEnv env, int day, int year)
         {
             double y = Math.Max(8, year);
@@ -287,7 +246,7 @@ namespace RealLifeOverhaul.Markets
             return price + 100.0 * Math.Pow(1.0 + rate, -left * m);
         }
 
-        /// <summary>What selling (or closing) it now brings, in cents: its price less the spread; a deposit what it repays less a few months' interest.</summary>
+        /// <summary>What selling it now brings, in cents: its price less the spread; a deposit its face less a few months' interest.</summary>
         public static long SaleCents(BondHolding h, BondDef d, in MarketEnv env, int day, int year)
         {
             if (d.Kind == BondKind.Deposit)
@@ -300,7 +259,7 @@ namespace RealLifeOverhaul.Markets
             return value > 0.0 ? (long)Math.Floor(value) : 0L;
         }
 
-        /// <summary>Interest put back into a bond: what it buys of the same bond at the day's price (cents of face), and what is left over (cents).</summary>
+        /// <summary>Cents of face that interest put back buys of the same bond at the day's price; what is left over.</summary>
         public static long Buys(long cents, double price, out long left)
         {
             left = Math.Max(0L, cents);
@@ -314,11 +273,7 @@ namespace RealLifeOverhaul.Markets
             return face;
         }
 
-        /// <summary>
-        /// The interest a bond has paid so far, after tax, in cents: what was paid out to the player and what was put back
-        /// into it (<see cref="BondHolding.Received"/> and <see cref="BondHolding.Reinvested"/>, the running totals each
-        /// payment adds to and the save keeps). For "N paid on this bond so far" in the notice of each payment.
-        /// </summary>
+        /// <summary>Interest paid so far after tax, in cents, paid out and put back.</summary>
         public static long InterestSoFar(BondHolding h)
         {
             return h == null ? 0L : h.Received + h.Reinvested;

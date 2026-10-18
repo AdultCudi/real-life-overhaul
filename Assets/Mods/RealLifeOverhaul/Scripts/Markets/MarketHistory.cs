@@ -7,17 +7,13 @@ namespace RealLifeOverhaul.Markets
     public enum Timeframe { Intraday = 0, Day = 1, Week = 2, Month = 3, Year = 4, Count = 5 }
 
     /// <summary>
-    /// A company's (or an index's) price history, kept small: one candle a step for today and the session before, one a
-    /// day for the last <see cref="MarketCatalogue.DailyKept"/> market days, and before that one a month (a month's
-    /// candle is its days folded together: first open, highest high, lowest low, last close, volumes added). Weeks,
-    /// months and years for a chart are made from these when the chart is drawn. Game-free.
+    /// A company's or an index's price history, kept small: a candle a step for today and the session before, a day for
+    /// the last <see cref="MarketCatalogue.DailyKept"/> market days, and a month before that. Charts build weeks, months
+    /// and years from these. Game-free.
     /// </summary>
     public static class MarketHistory
     {
-        /// <summary>
-        /// A move from one price (or level) to another in basis points; 0 if there is none before. Every day's move the
-        /// Stocks app shows is this, of the price now against the close it is measured from (<see cref="DayBase(List{Candle}, bool, int)"/>).
-        /// </summary>
+        /// <summary>A move from one price or level to another in bp; 0 with none before. Every day's move the app shows is this.</summary>
         public static int MoveBp(long now, long before)
         {
             return before > 0 ? (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (now - before) * 10000L / before)) : 0;
@@ -42,11 +38,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The close a day's move is measured from, out of a history of daily candles: in a session, the last close
-        /// (yesterday's); between sessions (after the close, overnight, over a weekend), the close before it, so the
-        /// session just ended keeps showing what it did until the next one opens, as a market's screens do. With too
-        /// short a history (a company listed at the last session or today) it is <paramref name="was"/>: the price it
-        /// was listed at. No allocation.
+        /// The close a day's move is measured from: in a session yesterday's, between sessions the one before, so the session
+        /// just ended shows what it did until the next opens. With too short a history, <paramref name="was"/>, the listing price.
         /// </summary>
         public static int DayBase(List<Candle> daily, bool session, int was)
         {
@@ -95,7 +88,7 @@ namespace RealLifeOverhaul.Markets
             monthly.Add(start);
         }
 
-        /// <summary>The first game day of a month (as <see cref="MarketCatalogue.MonthOf"/> counts them).</summary>
+        /// <summary>The first game day of a month as <see cref="MarketCatalogue.MonthOf"/> counts them.</summary>
         public static int MonthStart(int month, int year)
         {
             year = Math.Max(8, year);
@@ -133,9 +126,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The candles of a timeframe, oldest first, into a list: days, weeks, months or years, from the month candles
-        /// and the daily ones together (and today's, still in progress, last). A week is only made from daily candles:
-        /// a month cannot be cut into weeks. Nothing is allocated if the list is large enough.
+        /// The candles of a timeframe, oldest first, from the months and days together, today's last. A week is made only from
+        /// days: a month cannot be cut into weeks. Nothing is allocated if the list is large enough.
         /// </summary>
         public static void Build(List<Candle> daily, List<Candle> monthly, in Candle today, Timeframe frame, int year, List<Candle> into)
         {
@@ -169,7 +161,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // A candle into the period it belongs to: with the last one if that is the same period, else a new one.
+        // A candle into its period: with the last one if that is the same period, else a new one.
         private static void Merge(List<Candle> into, in Candle c, Timeframe frame, int year)
         {
             int period = PeriodOf(c.Day, frame, year);
@@ -222,7 +214,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>A split: every price of a history divided by the ratio (to the nearest cent, never under one) and its volume multiplied.</summary>
+        /// <summary>A split: every price divided by the ratio, to the nearest cent and at least one, and the volume multiplied.</summary>
         public static void Split(List<Candle> candles, int ratio)
         {
             for (int i = 0; i < candles.Count; i++)

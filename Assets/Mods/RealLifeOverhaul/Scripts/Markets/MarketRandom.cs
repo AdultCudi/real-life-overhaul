@@ -3,21 +3,20 @@ using System;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The market's numbers by chance. Game-free. Nothing here is random by itself: every draw is a hash of a secret and
-    /// of what it is for (the purpose, the step, the company), so the same secret always gives the same market and the
-    /// order things are asked in changes nothing. The secrets themselves come from outside (a fresh one for each market
-    /// day, kept on the tape: <see cref="MarketTape"/>), never from the save.
+    /// The market's numbers by chance. Game-free. Every draw is a hash of a secret and what it is for (purpose, step,
+    /// company), so the same secret gives the same market whatever order things are asked in. The secrets come from the
+    /// tape (<see cref="MarketTape"/>), a fresh one each market day.
     /// </summary>
     public static class MarketRandom
     {
-        // Purposes: what a draw is for. Never renumber (16 and 27 are no longer used).
+        // Purposes: what a draw is for. Never renumber; 16 and 27 are unused.
         public const int MarketShock = 1, SectorShock = 2, OwnShock = 3, OwnTail = 4, MarketTail = 5, SectorTail = 6, BarHigh = 7, BarLow = 8, Volume = 9,
             Revenue = 10, Margin = 11, Growth = 12, Crash = 13, CrashSize = 14, Mania = 15, Takeover = 17, TakeoverTerms = 18, Failure = 19,
             Listing = 20, ListingPick = 21, ResultsShock = 22, OpenShock = 23, OpenTail = 24, Start = 25, Recovery = 26, Bidder = 28,
             Mood = 29, OpenMood = 30, Crisis = 31, CrisisTerms = 32,
-            Meeting = 33, Activist = 34, OwnBid = 35, Book = 36;   // a player's company (Markets/Listing): its meetings, investors who press it, a bid for it, its book
+            Meeting = 33, Activist = 34, OwnBid = 35, Book = 36;   // a player's company: its meetings, investors, a bid, its book
 
-        // The mood's draws: the market's (a step, 0), a sector's (a step, 1000 + the sector), a company's own (a step, 2000 + its id).
+        // The mood's draws are keyed by step and 0 for the market, MoodSector + sector, or MoodOwn + company id.
         public const int MoodSector = 1000, MoodOwn = 2000;
 
         /// <summary>A 32-bit integer mixer (lowbias32).</summary>
@@ -79,10 +78,7 @@ namespace RealLifeOverhaul.Markets
             return InverseNormal(Unit(Key(secret, purpose, a, b)));
         }
 
-        /// <summary>
-        /// A bell-shaped number with fat tails, spread 1: most draws from a narrower bell, a few from a much wider one, as
-        /// daily moves are in real markets (a large move is far likelier than a plain bell curve says).
-        /// </summary>
+        /// <summary>A bell-shaped number with fat tails, spread 1: mostly a narrow bell, now and then a much wider one, as daily moves are.</summary>
         public static double Fat(ulong secret, int purpose, int tailPurpose, int a, int b = 0)
         {
             double z = Normal(secret, purpose, a, b);

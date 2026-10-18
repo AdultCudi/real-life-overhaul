@@ -9,10 +9,7 @@ namespace RealLifeOverhaul.Markets
     /// <summary>Why a company left the market. Saved as a number.</summary>
     public enum GoneReason { None = 0, Failed = 1, TakenOver = 2, Delisted = 3 }
 
-    /// <summary>
-    /// One candle: the first, highest, lowest and last price of a stretch of trading, and the shares traded in it.
-    /// Prices in cents (an index in hundredths of a point); <see cref="Day"/> is the game day the stretch began on.
-    /// </summary>
+    /// <summary>One candle of a stretch of trading: prices in cents (an index in hundredths of a point), from the game day it began.</summary>
     public struct Candle
     {
         public int Day;
@@ -59,14 +56,9 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// One listed company as it stands: its price, its business, its results and dividends, its history.
-    ///
-    /// Its price is what the market makes of its business and of what it expects of it, with its mood:
-    ///     ln price = LogFair + Mis, LogFair = ln(worth of the business as it stands x e^Outlook + the dividend built up)
-    /// Each move of the price is partly news (it stays: at the close it goes into Outlook, which the business then bears
-    /// out in its figures over the next years) and partly mood (Sent, which fades slowly). Mis is the day's moves so far
-    /// on top of the mood; after each close it is the mood alone. The figures shown to the player are the quarters'
-    /// results as they come out; nothing of what is still to come is decided before it happens.
+    /// One listed company as it stands: price, business, results, dividends and history. ln price = LogFair + Mis, where
+    /// LogFair is the business's worth with its outlook and Mis today's moves on top of the mood. At each close a move's
+    /// news part goes into Outlook, which the figures bear out over years, and its mood part into Sent, which fades.
     /// </summary>
     public sealed class Stock
     {
@@ -76,37 +68,37 @@ namespace RealLifeOverhaul.Markets
         public string Ticker = string.Empty;
         public MarketSector Sector;
         public MarketSize Size;
-        public string RivalId;                   // a holding of one of the game's rivals: the game's id of the rival; else null
+        public string RivalId;                   // the game's id of the rival whose holding it is; else null
 
         public StockStatus Status;
         public int ListedDay;
         public int GoneDay;
         public GoneReason Reason;
-        public int GoneCents;                    // what each share was paid out at when it left (0: nothing)
+        public int GoneCents;                    // what each share was paid out at when it left; 0 nothing
 
-        // ---- the price
+        // The price
         public double LogFair;                   // ln of what the market thinks a share is worth, in money
         public double Mis;                       // ln of the price less LogFair: today's moves so far and the mood
         public double Sent;                      // the market's mood about it (ln), which fades
-        public double Outlook;                   // what the market expects of the business beyond its figures (ln), which they bear out in time
+        public double Outlook;                   // what the market expects of the business beyond its figures (ln)
         public long Shares;                      // in issue
         public double Impact;                    // the player's recent trading in it, in shares, fading
-        public int PrevClose, Open, High, Low, Last;   // cents; Last is the price of the last step; PrevClose the close today's move is from (set at the open: MarketLife.DayBases)
+        public int PrevClose, Open, High, Low, Last;   // cents; PrevClose is what today's move is from (MarketLife.DayBases)
         public long DayVolume;
 
-        // ---- the business
+        // The business
         public double Rev;                      // turnover a year, in money at today's prices
         public double Margin;                   // operating profit on turnover
         public double Growth;                   // real growth a year as things stand
-        public double MarginShift;               // its usual margin has moved by this for good (what the market expected of it came through)
-        public double MarginTarget, GrowthTarget; // where the city put its margin and growth at the last open: its own ups and downs are kept apart from the city's
+        public double MarginShift;               // its usual margin has moved by this for good
+        public double MarginTarget, GrowthTarget;   // the city's part at the last open, kept apart from its own swings
         public double Debt;                      // in money
         public double DebtRate;                  // what the debt costs a year
         public double Equity;                    // book value, in money
         public double Distress;                  // 0 to 1: how near it is to failing
         public double Competition;               // the share of its turnover the player's businesses in its trade take
 
-        // ---- this quarter so far, and the quarter waiting for its results
+        // This quarter so far, and the quarter waiting for its results
         public int Quarter = -1;
         public double QRev, QNi;                 // turnover and profit after tax so far
         public int PendingQuarter = -1;
@@ -114,7 +106,7 @@ namespace RealLifeOverhaul.Markets
         public int ResultsDay;                   // when the pending quarter's results come out; 0 none
         public readonly List<QuarterResult> Results = new List<QuarterResult>(MarketCatalogue.QuartersKept + 1);
 
-        // ---- dividends
+        // Dividends
         public int DpsCents;                     // the last quarterly dividend declared, a share
         public int DeclaredCents;                // a dividend declared and not yet paid
         public int RecordDay;                    // holders at the close of this day are paid it
@@ -122,15 +114,15 @@ namespace RealLifeOverhaul.Markets
         public bool ExDone;                      // the price has already dropped by it
         public int LastExDay;                    // the day the last dividend left the price
 
-        // ---- the life of the company
+        // The life of the company
         public double Adv;                       // shares traded on an ordinary day
         public int SplitDay, SplitRatio;         // a split announced, effective at the open of that day
-        public int BidDay, BidEndDay, BidCents;  // a takeover bid: made, to complete on, at (whether it completes is drawn on that day, never before)
+        public int BidDay, BidEndDay, BidCents;  // a takeover bid: made, completes on, at; whether it completes is drawn on that day
         public int BidderId;                     // the listed company that bids, or 0 for a private buyer
         public int ResultsBoostDay;              // its own moves are larger on this day (its results)
         public int LowDays;                      // market days running it has closed under PennyCents
 
-        // ---- candles
+        // Candles
         public readonly Candle[] Bars = new Candle[MarketCatalogue.IntradayBars];   // today's, one a step
         public int BarCount;
         public readonly Candle[] LastBars = new Candle[MarketCatalogue.IntradayBars];  // the session before today's
@@ -139,7 +131,7 @@ namespace RealLifeOverhaul.Markets
         public readonly List<Candle> Daily = new List<Candle>(MarketCatalogue.DailyKept + 1);
         public readonly List<Candle> Monthly = new List<Candle>(16);
 
-        /// <summary>A player's own company, listed (Markets/Listing): its founder, its reserve, its board and meetings. Null for every company of the city's.</summary>
+        /// <summary>A player's own company, listed: its founder, reserve and board. Null for every city company.</summary>
         public OwnListing Own;
 
         public bool Listed => Status == StockStatus.Listed;
@@ -159,21 +151,24 @@ namespace RealLifeOverhaul.Markets
     {
         public int StockId;
         public long Shares;
-        public long Cost;            // what the shares held cost, commission included (for a short: what selling them brought, less commission)
-        public long Dividends;       // received (for a short: paid) so far
+        public long Cost;            // commission included; for a short, what selling brought less commission
+        public long Dividends;       // received; for a short, paid
         public long Realised;        // gains and losses taken so far
         public bool Test;
         public int OpenedDay;
-        public int Reinvest;         // per cent of each dividend, after tax, put back into the same company at the next open (InvestRules.ReinvestOf); 0 none
+        public int Reinvest;         // per cent of each dividend after tax put back at the next open; 0 none
     }
 
+    /// <summary>Whether an order buys or sells. Saved as a number.</summary>
     public enum OrderSide { Buy = 0, Sell = 1 }
 
+    /// <summary>What price an order fills at. Saved as a number.</summary>
     public enum OrderType { Market = 0, Limit = 1, Stop = 2 }
 
-    /// <summary>How long an order stands. Saved as a number. UntilDone is a worked order's alone (Order.Worked): it is never in the save's part o.</summary>
+    /// <summary>How long an order stands. Saved as a number; UntilDone is a worked order's and never in the save.</summary>
     public enum OrderLife { Day = 0, UntilCancelled = 1, UntilDone = 2 }
 
+    /// <summary>Where an order stands. Saved as a number.</summary>
     public enum OrderState { Open = 0, Filled = 1, Cancelled = 2, Expired = 3, Refused = 4 }
 
     /// <summary>Why an order was refused or stopped. Saved as a number; each has a sentence (MarketText).</summary>
@@ -182,9 +177,9 @@ namespace RealLifeOverhaul.Markets
         None = 0, Closed, Held, Behind, NoShares, NoMoney, TooLarge, HoldingLimit, NotListed, NoBorrow, NoMargin, BelowMargin, BadPrice, TooMany,
         Halted, Expired, Cancelled, CompanyGone, Forced,
         NothingHeld,    // a stop loss or a take profit with nothing (left) to close
-        StopSide,       // a stop loss on the wrong side of the price: to sell it is under the bid, to buy back over the offer
+        StopSide,       // a stop loss on the wrong side of the price
         ProfitSide,     // a take profit on the wrong side: to sell it is over the bid, to buy back under the offer
-        Switched,       // worked orders, or dividends put back, were switched off in the options (Settings.MarketsLarge, MarketsReinvest)
+        Switched,       // worked orders or dividends put back switched off in the options
         Count
     }
 
@@ -198,7 +193,7 @@ namespace RealLifeOverhaul.Markets
         public OrderLife Life;
         public long Qty;
         public long Filled;
-        public long FilledValue;     // money paid or received for what is filled (before commission)
+        public long FilledValue;     // money paid or received for what is filled, before commission
         public int LimitCents;
         public int StopCents;
         public int PlacedDay, PlacedPhase;
@@ -208,34 +203,30 @@ namespace RealLifeOverhaul.Markets
         public bool Triggered;       // a stop has been reached and is now an order at the market
         public bool Test;
         public bool Forced;          // the broker's own order (a margin call)
-        public bool Closing;         // a stop loss (a stop) or a take profit (a limit): it only ever closes what is held, and holds nothing back for other orders
+        public bool Closing;         // a stop loss or take profit: only closes what is held, holds nothing back
 
-        // A worked order (MarketEngine.Invest.cs): at the market, larger than one order may be, filled a slice of each step's
-        // trading at a time until it is done, stopped or cancelled. Its life is UntilDone. A payout put back (Back): a purchase
-        // at the next open with the share of a dividend the player chose, its shares (Qty) worked out then from its Budget.
+        // A worked order (MarketEngine.Invest.cs) fills a slice of each step's trading until done; its life is UntilDone. A
+        // payout put back (Back) buys at the next open with its Budget.
         public bool Worked;
         public bool Back;
         public long Budget;          // a payout put back: the money it buys with
-        public int EndDay;           // the day a worked order stopped (kept for the app ten days after)
+        public int EndDay;           // the day a worked order stopped; kept for the app ten days
         public int DayOf;            // a worked order: the last day it filled a slice...
         public long DayQty, DayValue;    // ...and the shares and money of that day's slices (the day's notification at the close)
-        public int SlicePct;         // (never saved) that day's largest slice against its step's trading, per cent: the self-check
-        // A worked order on a cash account settles its money once a day, never by the slice (MarketEngine.Invest.cs): a
-        // purchase's day of money is parked from the cash at its first slice and what is left given back at the close or its
-        // end; a sale's takings, after the commission, wait here and are paid at the close or its end. Both stay the
-        // player's for every other purchase in the market (BrokerWallet).
+        public int SlicePct;         // never saved: that day's largest slice against its step's trading, per cent
+        // A worked order on a cash account settles once a day: a purchase parks a day's money at its first slice and gives
+        // back the rest at the close, a sale's takings wait here until the close. Both stay the player's (BrokerWallet).
         public long Parked;          // money parked for today's slices of a purchase, whole units
         public long Due;             // takings of today's slices of a sale after the commission, whole units
-        public int ParkedDay;        // the market day its money was parked (0: none yet): once a day
+        public int ParkedDay;        // the market day its money was parked; 0 none yet
 
         public long Left => Qty - Filled;
         public bool IsOpen => State == OrderState.Open;
     }
 
     /// <summary>
-    /// What a line of the account's history is. BotAdded and BotTaken (capital given to a running bot or taken out of
-    /// it: no money moves) are written in the save as a payment in and a withdrawal with a mark after them
-    /// (MarketStore), so a version before them reads them as those, never as the last kind it knows.
+    /// What a line of the account's history is. BotAdded and BotTaken (capital given to or taken from a running bot, no money
+    /// moving) are saved as a deposit and a withdrawal with a mark, so an older reader takes them as those.
     /// </summary>
     public enum TradeKind { Bought = 0, Sold = 1, Dividend = 2, DividendPaid = 3, Payout = 4, Interest = 5, BorrowFee = 6, Deposit = 7, Withdrawal = 8, Shortfall = 9, BotAdded = 10, BotTaken = 11 }
 
@@ -250,8 +241,8 @@ namespace RealLifeOverhaul.Markets
         public long Value;           // money in (more than nothing) or out, before commission
         public long Fee;
         public bool Test;
-        public int Bot;              // a trading bot's (its firm, MarketBots), 0 the player's own
-        public int Order;            // a worked order's line (its id): a day's slices of it on one line; 0 for any other
+        public int Bot;              // a trading bot's firm (MarketBots); 0 the player's own
+        public int Order;            // a worked order's id: a day's slices on one line; 0 any other
         public bool Back;            // bought with a dividend put back
     }
 
@@ -266,37 +257,32 @@ namespace RealLifeOverhaul.Markets
         public int OpenedDay;
     }
 
-    /// <summary>
-    /// What the city was like on a market day, as the market reads it (<see cref="MarketInputs"/>). Kept on the tape
-    /// for every day, so that a day replayed after a load is the day that was played.
-    /// </summary>
+    /// <summary>What the city was like on a market day, as the market reads it; kept on the tape so a replayed day is the day played.</summary>
     public struct MarketEnv
     {
         public const int SupplyKinds = 6, LeverCount = 13, TradesMost = 12;
 
         public int Cycle;            // boom 0, steady 1, slowdown 2, recession 3
         public int RateBp;           // the bank rate, a year
-        public int RateNextBp;       // the next decision as it can be read from prices and the bank's rule
+        public int RateNextBp;       // the next decision as prices and the bank's rule read it
         public int InflationBp;      // a year
         public int PriceLevel;       // tenths of a point (1000 at the start)
         public int DistrictIncome;   // the districts' mean income, tenths of a point (1000 ordinary)
         public int[] Supply;         // each kind of goods' price factor, thousandths
-        public int Levers;           // the council's policies, packed: one base-3 digit each (0 relaxed, 1 as was, 2 tightened)
+        public int Levers;           // the council's policies: a base-3 digit each, 0 relaxed, 1 as was, 2 tightened
         public int Campaign;         // an election campaign is on
         public int Elections;        // elections counted so far
         public int Sky;              // 0 fair, 1 rain, 2 a storm
         public int Spell;            // 0 none, 1 a heat wave, 2 a cold snap, 3 ice
-        public int Event;            // the street event on: as the city's economy counts them (0 none)
+        public int Event;            // the street event on, as the city's economy counts them; 0 none
         public int Crimes, BreakIns, Fires, Accidents;   // reported yesterday
         public int Trades;           // how many of the next two are given
         public int[] TradeOf;        // the player's businesses' trades (MarketInputs.Trades)...
         public int[] TradeSales;     // ...and their takings yesterday, in money
         public int RivalMood;        // the game's rivals: their income against a month ago, per cent (100 the same)
 
-        // The player's own listed company (Markets/Listing), from the game's own daily statements of its businesses: the
-        // statement days counted (OwnFrom and the OwnDays after it), their takings and profit together, in money; the
-        // player's Standing (0 to 100, -1 not known), what the papers made of them (tenths of a point either way) and a
-        // scandal that came out; what the player owes on loans. Nothing while the player has no company on the market.
+        // The player's own listed company, from the game's daily statements: the days counted (OwnDays from OwnFrom), their
+        // takings and profit, the Standing (-1 not known), the papers (tenths of a point), a scandal and loan debt.
         public int OwnFrom, OwnDays;
         public long OwnRev, OwnProfit;
         public int OwnStanding;
@@ -337,7 +323,7 @@ namespace RealLifeOverhaul.Markets
         }
     }
 
-    /// <summary>Something that happened during a day that the market answers at once (a fire, a crime, a policy changed). Kept on the tape.</summary>
+    /// <summary>Something during a day the market answers at once (a fire, a crime, a policy changed). Kept on the tape.</summary>
     public struct MarketEvent
     {
         public int Day, Phase;
@@ -345,14 +331,14 @@ namespace RealLifeOverhaul.Markets
         public int A, B;
     }
 
-    /// <summary>A dividend owed to (or by, for a short) the player: worked out at the close of its record day, paid on its day.</summary>
+    /// <summary>A dividend owed to the player, or by them on a short: worked out at the close of its record day.</summary>
     public struct DividendDue
     {
         public int StockId;
-        public long Cents;           // the whole sum, in cents: shares held at the record day times the dividend (under nothing: owed)
+        public long Cents;           // shares at the record day times the dividend; negative: owed
         public int PayDay;
         public bool Test;
-        public int Bot;              // on a trading bot's holding (its firm): paid to the player and into the bot's money; 0 the player's own
+        public int Bot;              // a trading bot's firm: paid to the player and into the bot; 0 the player's own
     }
 
     /// <summary>What kind of piece the market has for the paper or a notification. Saved as a number.</summary>
@@ -372,26 +358,26 @@ namespace RealLifeOverhaul.Markets
         Sector = 11,        // a sector moved most: A the sector, B the change in bp
         Rate = 12,          // the market answered the bank rate: A the move in bp, B the index change
         Mania = 13,         // a sector craze: A the sector, B 1 begun, 2 burst
-        Crisis = 14,        // a company's crisis: Stock, A what it does to the company's worth, in bp (the price follows at the open)
+        Crisis = 14,        // Stock, A the change to its worth in bp; the price follows at the open
         Windfall = 15,      // a company's windfall: Stock, A the same
         Delisted = 16,      // shares that traded under a unit for weeks leave the market: Stock, A cents a share paid out
-        // A player's own company (Markets/Listing):
-        OwnPriced = 17,     // its shares priced by the book: Stock the id it will have, A the price in cents, B its first day, C the share offered in bp
+        // A player's own company:
+        OwnPriced = 17,     // Stock its coming id, A the price in cents, B its first day, C the share offered in bp
         OwnPulled = 18,     // its listing called off: A the price the book came to, B the least the player would take
         OwnDeal = 19,       // its founder bought or sold: Stock, A shares (under nothing: sold), B the price in cents
         OwnBuyBack = 20,    // it bought back shares: Stock, A shares, B the price in cents
         OwnIssue = 21,      // it sold new shares: Stock, A shares, B the price in cents
-        OwnMeeting = 22,    // a meeting of its shareholders: Stock, A what passed (ListingVotes bits), B against the board in bp, C 1 for an extraordinary meeting
-        OwnActivist = 23,   // an investor bought in to press a demand: Stock, A their stake in bp, B the demand (ActivistDemand), C the meeting's day
+        OwnMeeting = 22,    // Stock, A what passed (ListingVotes bits), B against the board in bp, C 1 extraordinary
+        OwnActivist = 23,   // Stock, A their stake in bp, B the demand, C the meeting's day
         OwnPrivate = 24,    // taken off the market by its founder: Stock, A the price paid a share
-        OwnDisgorged = 25,  // the founder paid back a gain on shares bought and sold within the time the rules allow: Stock, A the money
-        OwnBidBlocked = 26, // a bid for it lapsed: Stock, A 1 the founder's holding stood in its way, 0 the holders did not take it
-        OwnRefused = 27,    // something its founder asked for could not be done when its moment came: Stock, A the action (OwnAction), B why (OwnWhy)
+        OwnDisgorged = 25,  // the founder paid back a short-swing gain: Stock, A the money
+        OwnBidBlocked = 26,   // Stock, A 1 the founder's holding stood in its way, 0 the holders said no
+        OwnRefused = 27,    // something the founder asked failed when its moment came: Stock, A the action, B why
         OwnWithdrawn = 28,  // an investor dropped a demand that was met: Stock, A the demand
-        OwnAway = 29,       // another player's company left this market (its founder's city is no longer this one): Stock, A cents a share paid out
+        OwnAway = 29,       // another player's company left this market: Stock, A cents a share paid out
         OwnAudit = 30,      // its yearly audit found the books wanting: Stock, A what it found (ListingBook bits)
-        // The player of this machine's own money, never in the city's line nor in the City Ledger:
-        Paid = 31,          // a dividend paid to them, on their shares or a bot's: Stock, A the money before tax, B the bot's firm (0 their own shares)
+        // This machine's player's own money, never in the city's line nor in the City Ledger:
+        Paid = 31,          // a dividend paid to them: Stock, A the money before tax, B the bot's firm (0 their own)
         Count
     }
 
@@ -404,17 +390,14 @@ namespace RealLifeOverhaul.Markets
         public int A, B, C;
     }
 
-    /// <summary>
-    /// Everything the market keeps of a save: one line of the save's data (<see cref="MarketStore"/>), plus the tape
-    /// outside it (<see cref="MarketTape"/>). Game-free.
-    /// </summary>
+    /// <summary>Everything the market keeps of a save: one line of save data (<see cref="MarketStore"/>) and the tape outside it. Game-free.</summary>
     public sealed class MarketState
     {
         public ulong Id;                         // the playthrough's: the tape's name
         public int CreatedDay;
         public int YearDays = 60;                // the game's year, in days
         public int Day, Phase;                   // the market clock: the day and the phase of it last done
-        public int FrontierDay, FrontierPhase;   // the furthest market time played in this playthrough, in any session (from the tape)
+        public int FrontierDay, FrontierPhase;   // the furthest market time played in this playthrough, from the tape
         public int HeldDay, HeldPhase;           // after a load: no order until the clock is past this
         public double Variance = 1.0;            // the market's variance against the ordinary, today
         public double LastShock;                 // yesterday's market shock, for the variance
@@ -422,10 +405,10 @@ namespace RealLifeOverhaul.Markets
         public readonly double[] SectorDayZ = new double[(int)MarketSector.Count];
         public readonly double[] SectorVar = new double[(int)MarketSector.Count];
         public readonly double[] SectorShock = new double[(int)MarketSector.Count];
-        public readonly int[] ManiaDays = new int[(int)MarketSector.Count];      // a craze: days it has run (0 none)
+        public readonly int[] ManiaDays = new int[(int)MarketSector.Count];      // a craze: days it has run; 0 none
         public readonly double[] ManiaAdded = new double[(int)MarketSector.Count]; // what it has added so far (ln)
         public double IndexDivisor;              // the index is the market value of every listed company over this
-        public bool Weighted;                    // the divisors are those of the index weighed by free float and capped (MarketIndex); false: a save from before, set right at its first step
+        public bool Weighted;                    // divisors of the float-weighted, capped index; false: an old save, set at its first step
         public int ListingId, ListingDay;        // a listing announced: the company and its first day
         public int NextOrderId = 1;
         public bool CarriedOver;                 // the Ventures market's shares have been brought over
@@ -441,14 +424,13 @@ namespace RealLifeOverhaul.Markets
         public readonly Account Account = new Account();
         public readonly List<MarketNews> News = new List<MarketNews>(32);   // the last few days' pieces
         public readonly List<DividendDue> Dues = new List<DividendDue>(8);  // dividends worked out at a record day, to be paid
-        public readonly List<Bot> Bots = new List<Bot>(4);                  // the trading bots the player has hired (MarketBots), one a firm
-        public readonly BondBook Bonds = new BondBook();                    // the bonds the player holds (Markets/Bonds): never in the city's line
+        public readonly List<Bot> Bots = new List<Bot>(4);                  // one a firm
+        public readonly BondBook Bonds = new BondBook();                    // never in the city's line
         public int BusinessDay;                  // the last day of the calendar the companies' business has been run for
 
-        // The player's own company (Markets/Listing). Me is who the player of this machine is (a hash of their save, set by
-        // the director at every start, never saved): a listed company whose Own.Owner is Me is theirs, any other player's
-        // is another holder's company to them. Listing is their way to the market and their books (saved, never shared);
-        // Following is set while this market follows a Going Public host's (nothing of the player's own company moves then).
+        // Me is a hash of this machine's player's save, set at every start and never saved: a listed company whose Own.Owner
+        // is Me is theirs. Listing is their way to the market (saved, never shared); Following is set while this market
+        // follows a Going Public host's, when nothing of the player's own company moves.
         public ulong Me;
         public bool Following;
         public ListingFile Listing = new ListingFile();

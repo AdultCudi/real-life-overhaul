@@ -3,17 +3,9 @@ using System;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The analysis tools of a chart, worked out over a run of candles. Game-free. Each fills an array the caller keeps
-    /// (nothing is allocated) and writes NaN where there is not yet enough history for a value.
-    ///
-    ///   SMA        the simple moving average of the closes over n candles
-    ///   EMA        the exponential moving average (weight 2 / (n + 1)), started from the simple average of the first n
-    ///   Bollinger  the simple average and k standard deviations (of the whole population of the window) either side
-    ///   RSI        Wilder's relative strength index: average gain against average loss, smoothed over n
-    ///   MACD       the 12-candle EMA less the 26-candle one, its 9-candle EMA (the signal) and their difference
-    ///   ATR        Wilder's average true range: the day's range, counting a gap from the close before
-    ///   Stochastic where the close stands in the range of the last n candles (%K), and its 3-candle average (%D)
-    ///   OBV        on-balance volume: volume added on a rise, taken away on a fall
+    /// A chart's analysis tools over a run of candles. Game-free; each fills an array the caller keeps, with NaN until there
+    /// is history enough. An EMA starts from the simple average of its first n; Bollinger bands use the window's population
+    /// deviation; RSI and ATR are Wilder's, smoothed over n.
     /// </summary>
     public static class MarketIndicators
     {
@@ -36,7 +28,7 @@ namespace RealLifeOverhaul.Markets
             Ema(values, 0, count, n, into);
         }
 
-        // From a first index on (the values before it are NaN or not to be used).
+        // From a first index on; the values before it are not used.
         private static void Ema(double[] values, int from, int count, int n, double[] into)
         {
             double alpha = 2.0 / (n + 1);

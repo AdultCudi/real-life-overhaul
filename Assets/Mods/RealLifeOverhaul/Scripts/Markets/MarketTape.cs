@@ -6,27 +6,16 @@ using System.Text;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The market's journal, kept OUTSIDE the save, one for each playthrough (a file of the game's own data folder,
-    /// named by the playthrough's id; Markets/MarketGame reads and writes it). It is what makes the market proof against
-    /// loading a save:
-    ///
-    ///   - every market day's chance comes from a secret made fresh when the market first reaches that day, and the
-    ///     secret is written here at once, never into the save. So nothing in a save says what tomorrow brings, and a
-    ///     day played again after a load (from an older save, after a crash) is played with the same secret and the
-    ///     same city as it was the first time: the same prices, the same results. A load cannot re-roll a known outcome;
-    ///   - the furthest market time ever reached in the playthrough (the frontier) is written here as the market goes.
-    ///     After a load, no order can be placed, changed or cancelled until the market is past it: what was seen before
-    ///     the load cannot be traded on;
-    ///   - what the city was like each day, and what happened during it, is written here too, so a replayed day answers
-    ///     to the same news even if the city does something else this time.
-    ///
-    /// The file is plain lines, written as the market goes and read once at load:
-    ///     T1 id                                the header
-    ///     D day secret                         a day's secret (hexadecimal)
-    ///     V day n,n,n,...                      the city on that day (MarketEnv, in a fixed order)
-    ///     E day phase kind a b                 something that happened, applied after that phase
-    ///     F day phase                          the frontier (the last line of these counts)
-    /// A line that cannot be read is passed over. Game-free.
+    /// The market's journal, kept outside the save in a file per playthrough (MarketGame reads and writes it); it makes the
+    /// market proof against loading. Each market day's secret is written here when the day is first reached, never into
+    /// the save, so a day replayed after a load has the same secret and city and gives the same prices. The furthest time
+    /// reached (the frontier) is kept too: after a load nothing can be traded until the market is past it. Plain lines,
+    /// read once at load; a line that cannot be read is passed over. Game-free.
+    ///     T1 id                   the header
+    ///     D day secret            a day's secret, hexadecimal
+    ///     V day n,n,n,...         the city on that day (MarketEnv in a fixed order)
+    ///     E day phase kind a b    something that happened, applied after that phase
+    ///     F day phase             the frontier; the last of these counts
     /// </summary>
     public sealed class MarketTape
     {
@@ -35,10 +24,10 @@ namespace RealLifeOverhaul.Markets
         private readonly Dictionary<int, ulong> _secrets = new Dictionary<int, ulong>(64);
         private readonly Dictionary<int, MarketEnv> _envs = new Dictionary<int, MarketEnv>(64);
         private readonly List<MarketEvent> _events = new List<MarketEvent>(32);
-        private readonly HashSet<int> _traded = new HashSet<int>();   // the days on which a player's trade is an event (a Going Public session)
+        private readonly HashSet<int> _traded = new HashSet<int>();   // days on which a player's trade is an event (a Going Public session)
         private readonly StringBuilder _pending = new StringBuilder(256);
-        private readonly StringBuilder _whole = new StringBuilder(4096);   // the whole tape as it is written at a save, kept for the next (its room grows once)
-        private readonly List<int> _days = new List<int>(64);              // its days in order, as it is written
+        private readonly StringBuilder _whole = new StringBuilder(4096);   // the whole tape as written at a save, kept for the next
+        private readonly List<int> _days = new List<int>(64);              // its days in order
 
         public ulong Id { get; private set; }
         public int FrontierDay { get; private set; }
@@ -66,7 +55,7 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             _secrets[day] = secret;
-            _pending.Append("D ").Append(day.ToString(Inv)).Append(' ').Append(secret.ToString("X16", Inv)).Append('\n');
+            AppendSecret(_pending, day, secret);
         }
 
         public bool Env(int day, out MarketEnv env)
@@ -81,12 +70,10 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             _envs[day] = env;
-            _pending.Append("V ").Append(day.ToString(Inv)).Append(' ');
-            WriteEnv(_pending, env);
-            _pending.Append('\n');
+            AppendEnv(_pending, day, env);
         }
 
-        /// <summary>The events recorded for a moment of the market (applied after the phase), into a list.</summary>
+        /// <summary>The events recorded for a moment of the market, applied after the phase, into a list.</summary>
         public void EventsAt(int day, int phase, List<MarketEvent> into)
         {
             for (int i = 0; i < _events.Count; i++)
@@ -104,7 +91,7 @@ namespace RealLifeOverhaul.Markets
             return _traded.Contains(day);
         }
 
-        /// <summary>A day's secret from the host's tape (a guest that follows it): the host's, in place of whatever was here.</summary>
+        /// <summary>A day's secret from the host's tape, which a guest follows, in place of whatever was here.</summary>
         public void SetSecret(int day, ulong secret)
         {
             if (_secrets.TryGetValue(day, out ulong had) && had == secret)
@@ -112,22 +99,19 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             _secrets[day] = secret;
-            _pending.Append("D ").Append(day.ToString(Inv)).Append(' ').Append(secret.ToString("X16", Inv)).Append('\n');
+            AppendSecret(_pending, day, secret);
         }
 
         /// <summary>A day's city from the host's tape, in place of whatever was here.</summary>
         public void SetEnv(int day, in MarketEnv env)
         {
             _envs[day] = env;
-            _pending.Append("V ").Append(day.ToString(Inv)).Append(' ');
-            WriteEnv(_pending, env);
-            _pending.Append('\n');
+            AppendEnv(_pending, day, env);
         }
 
         /// <summary>
-        /// Every event from a moment on, forgotten: a guest that takes the host's market again keeps its tape's past, but what
-        /// it played alone after it last followed is not the host's (the host's lines take its place; a day's secret and city
-        /// are replaced as they come).
+        /// Every event from a moment on, forgotten: what a guest played alone after it last followed is not the host's. A day's
+        /// secret and city are replaced as the host's come.
         /// </summary>
         public void Forget(long from)
         {
@@ -142,7 +126,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        /// <summary>The tape from a day on, as lines of the file: what a guest needs to play the host's market from that day.</summary>
+        /// <summary>The tape from a day on, as file lines: what a guest needs to play the host's market from that day.</summary>
         public string From(int day)
         {
             var t = new StringBuilder(256);
@@ -152,16 +136,14 @@ namespace RealLifeOverhaul.Markets
             {
                 if (days[i] >= day)
                 {
-                    t.Append("D ").Append(days[i].ToString(Inv)).Append(' ').Append(_secrets[days[i]].ToString("X16", Inv)).Append('\n');
+                    AppendSecret(t, days[i], _secrets[days[i]]);
                 }
             }
             foreach (KeyValuePair<int, MarketEnv> env in _envs)
             {
                 if (env.Key >= day)
                 {
-                    t.Append("V ").Append(env.Key.ToString(Inv)).Append(' ');
-                    WriteEnv(t, env.Value);
-                    t.Append('\n');
+                    AppendEnv(t, env.Key, env.Value);
                 }
             }
             for (int i = 0; i < _events.Count; i++)
@@ -169,11 +151,10 @@ namespace RealLifeOverhaul.Markets
                 MarketEvent e = _events[i];
                 if (e.Day >= day)
                 {
-                    t.Append("E ").Append(e.Day.ToString(Inv)).Append(' ').Append(e.Phase.ToString(Inv)).Append(' ').Append(e.Kind.ToString(Inv)).Append(' ')
-                        .Append(e.A.ToString(Inv)).Append(' ').Append(e.B.ToString(Inv)).Append('\n');
+                    AppendEvent(t, e);
                 }
             }
-            t.Append("F ").Append(FrontierDay.ToString(Inv)).Append(' ').Append(FrontierPhase.ToString(Inv)).Append('\n');
+            AppendFrontier(t);
             return t.ToString();
         }
 
@@ -184,11 +165,10 @@ namespace RealLifeOverhaul.Markets
             {
                 _traded.Add(e.Day);
             }
-            _pending.Append("E ").Append(e.Day.ToString(Inv)).Append(' ').Append(e.Phase.ToString(Inv)).Append(' ').Append(e.Kind.ToString(Inv)).Append(' ')
-                .Append(e.A.ToString(Inv)).Append(' ').Append(e.B.ToString(Inv)).Append('\n');
+            AppendEvent(_pending, e);
         }
 
-        /// <summary>The frontier moved on (only ever forwards).</summary>
+        /// <summary>The frontier moved on, only ever forwards.</summary>
         public void Reach(int day, int phase, bool write)
         {
             if (MarketState.Time(day, phase) <= Frontier)
@@ -205,7 +185,7 @@ namespace RealLifeOverhaul.Markets
 
         public void WriteFrontier()
         {
-            _pending.Append("F ").Append(FrontierDay.ToString(Inv)).Append(' ').Append(FrontierPhase.ToString(Inv)).Append('\n');
+            AppendFrontier(_pending);
         }
 
         /// <summary>The lines to append to the file, and none pending after.</summary>
@@ -228,7 +208,7 @@ namespace RealLifeOverhaul.Markets
             days.Sort();
             for (int i = 0; i < days.Count; i++)
             {
-                t.Append("D ").Append(days[i].ToString(Inv)).Append(' ').Append(_secrets[days[i]].ToString("X16", Inv)).Append('\n');
+                AppendSecret(t, days[i], _secrets[days[i]]);
             }
             List<int> envDays = _days;
             envDays.Clear();
@@ -236,17 +216,14 @@ namespace RealLifeOverhaul.Markets
             envDays.Sort();
             for (int i = 0; i < envDays.Count; i++)
             {
-                t.Append("V ").Append(envDays[i].ToString(Inv)).Append(' ');
-                WriteEnv(t, _envs[envDays[i]]);
-                t.Append('\n');
+                AppendEnv(t, envDays[i], _envs[envDays[i]]);
             }
             for (int i = 0; i < _events.Count; i++)
             {
                 MarketEvent e = _events[i];
-                t.Append("E ").Append(e.Day.ToString(Inv)).Append(' ').Append(e.Phase.ToString(Inv)).Append(' ').Append(e.Kind.ToString(Inv)).Append(' ')
-                    .Append(e.A.ToString(Inv)).Append(' ').Append(e.B.ToString(Inv)).Append('\n');
+                AppendEvent(t, e);
             }
-            t.Append("F ").Append(FrontierDay.ToString(Inv)).Append(' ').Append(FrontierPhase.ToString(Inv)).Append('\n');
+            AppendFrontier(t);
             _pending.Length = 0;
             return t.ToString();
         }
@@ -322,12 +299,33 @@ namespace RealLifeOverhaul.Markets
             return tape;
         }
 
+        private static void AppendSecret(StringBuilder t, int day, ulong secret)
+        {
+            t.Append("D ").Append(day.ToString(Inv)).Append(' ').Append(secret.ToString("X16", Inv)).Append('\n');
+        }
+
+        private static void AppendEnv(StringBuilder t, int day, in MarketEnv env)
+        {
+            t.Append("V ").Append(day.ToString(Inv)).Append(' ');
+            WriteEnv(t, env);
+            t.Append('\n');
+        }
+
+        private static void AppendEvent(StringBuilder t, in MarketEvent e)
+        {
+            t.Append("E ").Append(e.Day.ToString(Inv)).Append(' ').Append(e.Phase.ToString(Inv)).Append(' ').Append(e.Kind.ToString(Inv)).Append(' ')
+                .Append(e.A.ToString(Inv)).Append(' ').Append(e.B.ToString(Inv)).Append('\n');
+        }
+
+        private void AppendFrontier(StringBuilder t)
+        {
+            t.Append("F ").Append(FrontierDay.ToString(Inv)).Append(' ').Append(FrontierPhase.ToString(Inv)).Append('\n');
+        }
+
         private static int Int(string text)
         {
             return int.TryParse(text, NumberStyles.Integer, Inv, out int value) ? value : 0;
         }
-
-        // ---------------------------------------------------------------- the city of a day, as numbers
 
         public static void WriteEnv(StringBuilder t, in MarketEnv e)
         {
@@ -346,7 +344,7 @@ namespace RealLifeOverhaul.Markets
             {
                 t.Append(',').Append(e.TradeOf[i].ToString(Inv)).Append(',').Append(e.TradeSales[i].ToString(Inv));
             }
-            // A player's own company's day (Markets/Listing), only while it has one: a day without is written as before.
+            // A player's own company's day, only while there is one; a day without is written as before.
             if (e.OwnDays > 0 || e.OwnStanding >= 0 || e.OwnDebt != 0 || e.OwnPress != 0 || e.OwnScandal != 0)
             {
                 t.Append(',').Append(e.OwnFrom.ToString(Inv)).Append(',').Append(e.OwnDays.ToString(Inv)).Append(',').Append(e.OwnRev.ToString(Inv)).Append(',')

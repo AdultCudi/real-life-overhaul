@@ -2,11 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>
-    /// The bonds' words (Markets/Bonds): a bond's name, its term, how often it pays, why something cannot be done. Every
-    /// text is a key of en.json; written when a page is written, a notification goes out or a transaction is made, never
-    /// per frame.
-    /// </summary>
+    /// <summary>The bonds' words: names, terms, how often one pays, why something cannot be done. Built on demand.</summary>
     public static class BondText
     {
         private static readonly string[] KindKeys = { "reallife_mkt_bond_kind_treasury", "reallife_mkt_bond_kind_city", "reallife_mkt_bond_kind_deposit" };
@@ -27,7 +23,7 @@ namespace RealLifeOverhaul.Markets
             return MarketText.Fill(NameKeys[Kind(d)], "term", Term(d.TermQuarters), "bank", issuer ?? string.Empty);
         }
 
-        /// <summary>A bond held, by its name (for the game's transactions, in the language of the moment).</summary>
+        /// <summary>A bond held, by its name in the language of the moment.</summary>
         public static string Name(BondHolding h)
         {
             return h != null ? Name(BondCatalogue.Find(h.Def), h.Issuer) : string.Empty;

@@ -5,13 +5,9 @@ using System.Text;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The player's bonds in the market's line of the save (MarketStore, its part f). Game-free.
-    ///
+    /// The player's bonds in part f of the market's save line, each player's own and never shared. Game-free. A reader
+    /// takes the fields it knows, keeps each in bounds and drops a bond it does not know.
     ///     f:next;id|bond|bank|issuer|face|cost|rate|bought|end|payments|paid|reinvest|carry|received|reinvested|taxed|test|rollover;...
-    ///
-    /// Never in the city's line a Going Public host sends: each player's own. A newer version adds fields at the end of a
-    /// record; this reader takes the fields it knows, keeps every figure inside its bounds, and drops a record of a bond
-    /// it does not know. A line without the part (a save from before bonds) has none.
     /// </summary>
     public static class BondStore
     {
@@ -27,7 +23,7 @@ namespace RealLifeOverhaul.Markets
                 L(t, h.Face, h.Cost);
                 I(t, h.RateBp, h.BoughtDay, h.EndDay, h.Payments, h.Paid, h.Reinvest);
                 L(t, h.Carry, h.Received, h.Reinvested, h.Taxed);
-                I(t, h.Test ? 1 : 0, h.Rollover ? 1 : 0);   // (whether it rolls over: a version before it reads a bond repaid at its end)
+                I(t, h.Test ? 1 : 0, h.Rollover ? 1 : 0);
             }
         }
 

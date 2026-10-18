@@ -4,14 +4,10 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// How the city's index weighs its companies, as real indices do: each by its free float, the shares the public can
-    /// trade, at its price; and no company over <see cref="CapShare"/> of the whole. A rival tycoon's holding
-    /// (CompanyDef.Holding) counts only the shares its tycoon does not own (<see cref="MarketCatalogue.HoldingFounderBp"/>);
-    /// every other company counts all its shares, as it always has (a player's own company too: its founder's holding
-    /// changes with each of their deals, which the index has no rebalancing for). With no holding listed and no company
-    /// over the cap, the index is exactly what it was before this rule. The sectors' indices weigh by float and are not
-    /// capped (a sector of one company is all that company). Game-free; the engine calls it at each step: a pass or two
-    /// over the listed companies, nothing allocated once its scratch is as long as the list.
+    /// How the city's index weighs its companies: each by its free float at its price, none over <see cref="CapShare"/>
+    /// of the whole. A rival tycoon's holding counts only the shares its tycoon does not own; every other company, a
+    /// player's own too, all its shares. The sectors' indices are not capped. Game-free; a pass or two over the listed
+    /// companies at each step, nothing allocated once the scratch is long enough.
     /// </summary>
     public static class MarketIndex
     {
@@ -30,9 +26,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// The index's whole: every listed company's float value, each held to the cap of the whole, but <paramref name="skip"/>
-        /// (a company leaving) and with <paramref name="add"/> (one joining, not in the list yet). <paramref name="capped"/> is
-        /// the caller's scratch, grown as the list needs.
+        /// The index's whole: every listed company's float value held to the cap, without <paramref name="skip"/> and with
+        /// <paramref name="add"/> (one joining, not in the list yet). <paramref name="capped"/> is the caller's scratch.
         /// </summary>
         public static double Total(List<Stock> stocks, Stock skip, Stock add, ref bool[] capped)
         {

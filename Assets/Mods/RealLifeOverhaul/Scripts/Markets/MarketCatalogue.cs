@@ -13,9 +13,8 @@ namespace RealLifeOverhaul.Markets
     public enum MarketSize { Large = 0, Mid = 1, Small = 2 }
 
     /// <summary>
-    /// One listed company as the catalogue writes it: what it is and its starting figures. Never changed in play; what
-    /// changes is its <see cref="Stock"/>. The profile figures (margin, growth, beta...) are the sector's, moved for each
-    /// company by a fixed amount worked out from its id, so the same company is the same company in every save.
+    /// One listed company as the catalogue writes it; what changes in play is its <see cref="Stock"/>. Its profile is its
+    /// sector's moved by a fixed amount from its id, so a company is the same in every save.
     /// </summary>
     public sealed class CompanyDef
     {
@@ -25,16 +24,17 @@ namespace RealLifeOverhaul.Markets
         public readonly MarketSector Sector;
         public readonly MarketSize Size;
         public readonly int RevenueM;           // turnover a year at the start's prices, in millions
-        public readonly int PriceCents;         // where it starts (the shares in issue are worked out from it)
-        public readonly string Trade;           // the game's business type it competes with (a part of the id), or null
-        public readonly bool Pipeline;          // not listed at the start: a company that may come to the market later
-        public readonly int PayDays;            // a property trust: it pays a distribution every so many days of the calendar (TrustRules); 0 a dividend each quarter
-        public readonly bool Holding;           // a rival tycoon's holding (Scripts/Rivals): not listed at the start nor from the pipeline, only when its tycoon comes forward
+        public readonly int PriceCents;         // where it starts; the shares in issue follow from it
+        public readonly string Trade;           // the game's business type it competes with, or null
+        public readonly bool Pipeline;          // not listed at the start: may come to the market later
+        public readonly int PayDays;            // a property trust pays every so many calendar days; 0 a dividend each quarter
+        public readonly bool Holding;           // a rival tycoon's: listed only when its tycoon comes forward
 
-        // The profile, worked out from the sector and the id (MarketCatalogue.Profile).
+        // Worked out from the sector and the id (MarketCatalogue.Profile).
         public int MarginBp, GrowthBp, Beta, Cyclical, DebtPct, IdioBp, PassPct, RateBp, TurnoverBp, SpreadBp;
 
-        public CompanyDef(int id, string name, string ticker, MarketSector sector, MarketSize size, int revenueM, int priceCents, string trade, bool pipeline = false, int payDays = 0, bool holding = false)
+        public CompanyDef(int id, string name, string ticker, MarketSector sector, MarketSize size, int revenueM, int priceCents, string trade, bool pipeline = false,
+            int payDays = 0, bool holding = false)
         {
             Id = id;
             Name = name;
@@ -70,43 +70,36 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>
-    /// EVERY FIGURE OF THE CITY'S STOCK MARKET, and its companies. Game-free: the offline checks compile this file, the
-    /// Guide prints from it, and nothing else in the market writes a figure of its own.
-    ///
-    /// Time: a market day is a game day from Monday to Friday; the session runs from 09:30 to 16:00 in 78 steps of five
-    /// game minutes. Figures "a year" are a year of the game's (60 to 365 days, as the save was started); a quarter is a
-    /// quarter of it. Money in the model is in whole units of the game's currency at today's prices; share prices are in
-    /// cents. Basis points (bp) are hundredths of a per cent.
+    /// Every figure of the city's stock market, and its companies. Game-free: the offline checks compile it and the Guide
+    /// prints from it. A market day is a game weekday, 09:30 to 16:00 in 78 steps of five minutes; "a year" is the game's
+    /// year (60 to 365 days). Model money is whole units at today's prices, share prices in cents, bp hundredths of a per cent.
     /// </summary>
     public static class MarketCatalogue
     {
-        // ---------------------------------------------------------------- the session
-
+        // The session
         public const int OpenMinute = 9 * 60 + 30;       // 09:30
         public const int CloseMinute = 16 * 60;          // 16:00
         public const int StepMinutes = 5;
         public const int Steps = (CloseMinute - OpenMinute) / StepMinutes;   // 78
-        public const int ResultsMinute = 7 * 60 + 30;    // results are given out before the open
+        public const int ResultsMinute = 7 * 60 + 30;    // before the open
         /// <summary>Phases of a market day: 0 not begun, 1 results out, 2 open, 3 + k after step k, then the close.</summary>
         public const int PhaseNone = 0, PhaseResults = 1, PhaseOpen = 2, PhaseClose = 3 + Steps;   // 81
 
-        // ---------------------------------------------------------------- how prices move
-
-        public const double IndexDayVol = 0.0095;        // the market's own daily move, ordinary times, in a long year (the whole market's moves come to about 1%)
-        public const double OvernightShare = 0.22;       // of a day's variance, at the open (the gap)
-        public const double WeekendExtra = 0.25;         // a further share of a night for each day the market was shut
+        // How prices move
+        public const double IndexDayVol = 0.0095;        // the market's own daily move in ordinary times, in a long year
+        public const double OvernightShare = 0.22;       // of a day's variance, at the open
+        public const double WeekendExtra = 0.25;         // of a night more for each day the market was shut
         public const double SizePremiumMid = 0.003, SizePremiumSmall = 0.01;    // a year, on the cost of equity
 
-        // Most of a price's moves are news about the business (they stay: the business comes to bear them out over the
-        // next years, MarketLife.Business); a part is the market's mood, which fades slowly. These are the mood's share of
-        // each kind of move's variance, and how slowly the mood fades.
+        // Most of a move is news about the business, which stays; a part is the market's mood, which fades slowly. These are
+        // the mood's share of each kind of move's variance, and how slowly it fades.
         public const double MarketMoodShare = 0.35;      // of the whole market's moves
         public const double SectorMoodShare = 0.25;      // of a sector's
         public const double OwnMoodShare = 0.08;         // of a company's own
-        public const double CrashMoodShare = 0.5;        // of a crash: the panic part, which the market makes up again in time
-        public const double MoodHalfLifeYears = 3.0;     // half of a mood is gone after about this long...
-        public const int MoodHalfLifeDaysLeast = 40;     // ...and never sooner than this many market days (a very short game year)
-        public const double OutlookYears = 3.0;          // what the market expects of a business comes through in its turnover over about this long
+        public const double CrashMoodShare = 0.5;        // of a crash: the panic the market makes up in time
+        public const double MoodHalfLifeYears = 3.0;     // years until half a mood is gone...
+        public const int MoodHalfLifeDaysLeast = 40;     // ...never under this many market days
+        public const double OutlookYears = 3.0;          // years for what the market expects to show in turnover
         public const double GarchA = 0.06, GarchGamma = 0.05, GarchB = 0.895;   // the market's variance: a day's shock, a fall's extra, persistence
         public const double VarianceLeast = 0.30, VarianceMost = 9.0;          // of the ordinary variance
         public const double SectorGarchA = 0.06, SectorGarchB = 0.88;
@@ -117,36 +110,35 @@ namespace RealLifeOverhaul.Markets
         public const double CrashChanceYear = 0.035;     // in an ordinary year of the market
         public const double CrashRecessionScale = 3.0, CrashSlowdownScale = 1.6, CrashDearScale = 2.0;
         public const double CrashLeast = 0.05, CrashMost = 0.12;   // the first day's fall
-        public const double ManiaChanceYear = 0.006;     // a sector catching a craze, each sector each year
+        public const double ManiaChanceYear = 0.006;     // each sector each year
         public const int ManiaDaysLeast = 15, ManiaDaysMost = 45;
         public const double ManiaDrift = 0.0035;         // a day, while it lasts
 
-        // ---------------------------------------------------------------- what a company does
-
-        public const double TaxRate = 0.22;              // on profit, before the council's business tax lever
-        public const double TaxPerStep = 0.02;           // each step of that lever
-        public const double LongRealGrowth = 0.015;      // the city's economy over the long run, after inflation
-        public const double GrowthFadeYears = 10.0;       // a company's growth comes back to that over about this long
-        public const double MarginReturnYears = 1.0;     // a company's own ups and downs in its margin fade over about this long (as the market values them: MarketValuation.PatchFadeYears)
-        public const double RevenueNoiseYear = 0.04;     // what nobody outside the company can see coming, a year
+        // What a company does
+        public const double TaxRate = 0.22;              // on profit, before the council's business tax lever...
+        public const double TaxPerStep = 0.02;           // ...each step of it
+        public const double LongRealGrowth = 0.015;      // a year, after inflation
+        public const double GrowthFadeYears = 10.0;       // years for a company's growth to come back to it
+        public const double MarginReturnYears = 1.0;     // years for its own swings in margin to fade (MarketValuation.PatchFadeYears)
+        public const double RevenueNoiseYear = 0.04;     // a year: what nobody outside can see coming
         public const double MarginNoiseYear = 0.008;
         public const double GrowthNoiseYear = 0.010;
-        public const double DebtRepriceYears = 2.0;      // a company's debt takes on a new rate over about this long
+        public const double DebtRepriceYears = 2.0;      // years to take on a new rate
         public const double CreditSpreadLeast = 0.012, CreditSpreadMost = 0.07;
-        public const double DistressHazardMost = 1.5;    // a year, for a company in the worst shape (as distress squared: 0.3 gives 13% a year)
+        public const double DistressHazardMost = 1.5;    // a year, at the worst; as distress squared
         public const double DistressFrom = 0.15;         // no company with less distress than this fails
-        public const double RecoveryChance = 0.6;        // a company that fails pays its holders something this often...
-        public const double RecoveryMost = 0.08;         // ...at most this share of its last price (less the deeper its distress)
-        public const int PennyCents = 100;               // a share that closes under this (at the start's prices)...
-        public const int PennyDays = 20;                 // ...this many market days running leaves the market, at its last price
-        public const double RoeLong = 0.12;              // what a company earns on what it keeps back to grow: it pays out the rest (MarketValuation.Payout)
+        public const double RecoveryChance = 0.6;        // how often a failed company pays its holders something...
+        public const double RecoveryMost = 0.08;         // ...at most this share of its last price
+        public const int PennyCents = 100;               // cents at the start's prices; closing under it...
+        public const int PennyDays = 20;                 // ...this many market days running delists it
+        public const double RoeLong = 0.12;              // earned on what it keeps back; it pays out the rest
 
         // The cycle: growth and margins by state (boom, steady, slowdown, recession), times a company's cyclicality.
         public static readonly int[] CycleGrowthBp = { 300, 0, -300, -800 };
         public static readonly int[] CycleMarginBp = { 60, 0, -80, -220 };
-        public static readonly double[] CyclePremium = { 0.92, 1.0, 1.1, 1.25 };    // the equity premium the market asks
+        public static readonly double[] CyclePremium = { 0.92, 1.0, 1.1, 1.25 };    // the equity premium asked
         public static readonly double[] CycleVolatility = { 0.9, 1.0, 1.2, 1.6 };   // of the ordinary variance
-        /// <summary>What the market expects to follow each state, in per cent (the city's own odds: Economy/City's table, before a save's own small change to them).</summary>
+        /// <summary>What the market expects to follow each state, per cent: the city's odds before a save's own change to them.</summary>
         public static readonly int[][] CycleNext = { new[] { 0, 70, 30, 0 }, new[] { 45, 20, 35, 0 }, new[] { 0, 65, 0, 35 }, new[] { 0, 65, 35, 0 } };
         public const double CycleNowWeight = 0.6;        // the state as it is, against the state the market expects next
 
@@ -173,36 +165,31 @@ namespace RealLifeOverhaul.Markets
             return CycleNowWeight * byState[now] + (1.0 - CycleNowWeight) * next / 100.0;
         }
 
-        // ---------------------------------------------------------------- results and dividends
-
-        public const int ResultsLagLeastPct = 4, ResultsLagMostPct = 11;   // days after a quarter ends, as a share of the year
+        // Results and dividends
+        public const int ResultsLagLeastPct = 4, ResultsLagMostPct = 11;   // days after a quarter ends, per cent of the year
         public const int DividendRecordDays = 4;         // market days from the results to the record day
-        public const int DividendPayDays = 4;            // and from the record day to the payment
-        public const double DividendSmooth = 0.35;       // how far a board moves its dividend towards what it can pay out at once
+        public const int DividendPayDays = 4;            // ...and from the record day to the payment
+        public const double DividendSmooth = 0.35;       // how far a board moves its dividend to what it can pay at once
         public const int QuartersKept = 8;
-        public const double ResultsDayVolScale = 1.5;    // a company's own moves on the day of its results (besides its answer to them)
-        public const double ResultsReaction = 0.5;       // of a quarter's surprise in profit, the move of the price at the open: news of the years to come
+        public const double ResultsDayVolScale = 1.5;    // a company's own moves on its results day
+        public const double ResultsReaction = 0.5;       // of a quarter's profit surprise, the price's move at the open
 
-        // A property trust (MarketSector.Trusts, Markets/TrustRules): it owns buildings and lets them, pays out most of what
-        // it earns, and pays it in small sums often, every week or every third day of the calendar (its PayDays), each the
-        // year's dividend shared by the days. Its price follows where the city's property market is heading (Economy/Estate's
-        // own rule: the cycle and the bank rate) as well as its rents.
+        // A property trust lets buildings and pays out most of what it earns, in small sums every week or every third
+        // calendar day (TrustRules). Its price follows the city's property market as well as its rents.
         public const int TrustWeekly = 7, TrustThreeDays = 3;   // days of the calendar between two distributions
-        public const double TrustPayout = 0.9;           // of its profit, at least: a trust pays out nearly all it earns
-        public const double TrustPropertyShare = 0.5;    // of its worth, the buildings as the property market values them (the rest: its rents)
+        public const double TrustPayout = 0.9;           // of its profit, at least
+        public const double TrustPropertyShare = 0.5;    // of its worth: the buildings at the property market's value
 
-        // ---------------------------------------------------------------- the life of the market
-
+        // The life of the market
         public const int SplitAboveCents = 30000;        // a board splits its shares when they trade over this...
         public const int SplitNoticeDays = 5;            // ...announcing it this many market days before
-        public const double TakeoverChanceYear = 0.012;  // each company, each year (more for small ones: TakeoverSizeScale)
+        public const double TakeoverChanceYear = 0.012;  // each company, more for small ones
         public static readonly double[] TakeoverSizeScale = { 0.4, 1.2, 2.0 };   // by size
         public const double TakeoverPremiumLeast = 0.18, TakeoverPremiumMost = 0.45;
         public const int TakeoverDaysLeast = 8, TakeoverDaysMost = 20;
         public const double TakeoverFailChance = 0.2;
-        // A company's own big news, now and then: a crisis (a big customer lost, a product recalled, a scandal) or a windfall
-        // (a big contract, a product that sells beyond hopes). Its usual margin moves for good, and its price by what that
-        // does to its worth, at the next open: a company with much debt is hit hardest, and may be pushed towards failing.
+        // A company's own big news now and then, a crisis or a windfall: its usual margin moves for good, its price at the
+        // next open, hardest for a company with much debt.
         public const double CrisisChanceYear = 0.015;    // each company, each year...
         public static readonly double[] CrisisSizeScale = { 0.7, 1.0, 1.5 };   // ...by size
         public const double CrisisMarginLeast = 0.25, CrisisMarginMost = 0.65; // of its usual margin, lost for good
@@ -212,16 +199,15 @@ namespace RealLifeOverhaul.Markets
         public const int ListingNoticeDays = 5;
         public const int CompaniesMost = 200;
 
-        // ---------------------------------------------------------------- trading
-
+        // Trading
         public const int CommissionBp = 10;              // 0.10% of every purchase and sale...
         public const int CommissionLeastAtStart = 5;     // ...and never less than this, at the start's prices (Prices.At)
-        public const double ImpactTemporary = 0.6;       // of a day's move times the square root of the order against a day's volume
+        public const double ImpactTemporary = 0.6;       // of a day's move times the root of the order over a day's volume
         public const double ImpactPermanent = 0.25;      // the part of it that stays in the price
-        public const double ImpactMemorySteps = 12.0;    // the player's recent trading in a company counts towards the next order for about this long
+        public const double ImpactMemorySteps = 12.0;    // steps: recent trading in a company counts towards the next order
         public const int OrderShareOfVolumePct = 20;     // one order: at most this share of a day's usual volume
         public const int HoldingShareBp = 1000;          // at most 10% of a company's shares
-        public const int HoldingFounderBp = 7500;        // a rival tycoon's own stake in their holding: the rest is its free float, all the market trades (MarketIndex)
+        public const int HoldingFounderBp = 7500;        // a rival tycoon's own stake in their holding; the rest is free float
         public const int ParticipationPct = 25;          // a resting order takes at most this share of a step's volume
         public const int GoodTillDays = 60;              // market days an order "until cancelled" stays open
         public const int OrdersMost = 60;
@@ -232,8 +218,7 @@ namespace RealLifeOverhaul.Markets
         public static readonly int[] SpreadBp = { 4, 14, 55 };          // the bid-offer spread, by size, in ordinary times
         public const int SpreadMostBp = 400;
 
-        // ---------------------------------------------------------------- borrowing (a margin account)
-
+        // Borrowing on margin
         public const int MarginOpenLeastAtStart = 2000;  // equity to open one, at the start's prices
         public const int InitialMarginPct = 50;          // of a new position, in equity
         public const int MaintenanceLongPct = 25, MaintenanceShortPct = 30, MaintenanceRiskyExtraPct = 15;
@@ -242,14 +227,12 @@ namespace RealLifeOverhaul.Markets
         public const int CallDays = 1;                   // market days to meet a margin call before the broker sells
         public const int ForcedBelowPct = 80;            // of the maintenance: below this the broker sells at once
 
-        // ---------------------------------------------------------------- history kept
-
+        // History kept
         public const int DailyKept = 100;                // daily candles; older ones are folded into months
         public const int MonthlyKept = 120;
         public const int IntradayBars = Steps;
 
-        // ---------------------------------------------------------------- the sectors
-
+        // The sectors
         public static readonly SectorProfile[] Sectors =
         {
             //                margin growth beta cycl debt idio secvol pass rate
@@ -279,7 +262,7 @@ namespace RealLifeOverhaul.Markets
             new SectorProfile(4500, 100, 75, 70, 300, 90, 55, 60, 0)         // property trusts
         };
 
-        private const string P = "reallife";   // (apart, so that a key made from parts is not taken for a whole one)
+        private const string P = "reallife";   // apart, so a key made of parts is not taken for a whole key
 
         public static readonly string[] SectorKeys = Keys(P + "_mkt_sector_", "banks", "insurance", "finance", "property", "construction", "power", "water", "telecoms",
             "energy", "transport", "logistics", "stores", "specialists", "groceries", "restaurants", "leisure", "media", "hardware", "software", "healthcare", "industry",
@@ -297,8 +280,7 @@ namespace RealLifeOverhaul.Markets
             return keys;
         }
 
-        // ---------------------------------------------------------------- the companies
-
+        // The companies
         private const MarketSector Bk = MarketSector.Banks, In = MarketSector.Insurance, Fi = MarketSector.Finance, Pr = MarketSector.Property,
             Cn = MarketSector.Construction, Pw = MarketSector.Power, Wa = MarketSector.Water, Tc = MarketSector.Telecoms, En = MarketSector.Energy,
             Tr = MarketSector.Transport, Lg = MarketSector.Logistics, St = MarketSector.Stores, Sp = MarketSector.Specialists, Gr = MarketSector.Groceries,
@@ -308,9 +290,8 @@ namespace RealLifeOverhaul.Markets
         private const int Week = TrustWeekly, Third = TrustThreeDays;
 
         /// <summary>
-        /// Every company there is. Names are invented. The first block is listed when the market opens; the pipeline
-        /// comes to the market one by one later. Rival holdings (the game's own named rivals) are made in play from
-        /// <see cref="RivalTemplates"/>. A new company is one more row with a new id (never one used before).
+        /// Every company there is; names are invented. The first block is listed at the start, the pipeline later. A new
+        /// company is one more row with an id never used before.
         /// </summary>
         public static readonly CompanyDef[] All =
         {
@@ -450,18 +431,18 @@ namespace RealLifeOverhaul.Markets
             new CompanyDef(134, "Hiring Hall Recruitment", "HHR", Sv, M, 2300, 2600, "recruitment"),
             new CompanyDef(135, "Counsel Row Consulting", "CRC", Sv, M, 1400, 5300, "lawfirm"),
             new CompanyDef(136, "Paperclip Office Supplies", "POS", Sv, S, 800, 1500, "officesupply"),
-            // ---- the property trusts: they pay a distribution every week or every third day (TrustRules)
+            // The property trusts
             new CompanyDef(137, "Cobblegate Property Trust", "CPT", Pt, L, 1600, 3400, null, false, Week),
             new CompanyDef(138, "Hearthstone Homes Trust", "HHT", Pt, M, 700, 2600, null, false, Week),
             new CompanyDef(139, "Wharfside Warehouse Trust", "WWT", Pt, M, 550, 2200, null, false, Third),
             new CompanyDef(140, "Brambleway Retail Trust", "BRT", Pt, M, 600, 1900, null, false, Week),
             new CompanyDef(141, "Mossbank Residential Trust", "MRT", Pt, S, 280, 1500, null, false, Third),
             new CompanyDef(142, "Gullpoint Hotel Trust", "GHT", Pt, S, 320, 1700, null, false, Third),
-            // ---- the rival tycoons' holdings (Scripts/Rivals/RivalCatalogue): on the market only once their tycoon comes forward (MarketEngine.ListHolding)
+            // The rival tycoons' holdings, listed only once their tycoon comes forward (MarketEngine.ListHolding)
             new CompanyDef(143, "Karen Aerospace & Motors", "KRN", Pr, M, 1400, 3800, null, true, 0, true),
             new CompanyDef(144, "Luthor Everything Co.", "LUTH", St, M, 1800, 2900, null, true, 0, true),
             new CompanyDef(145, "Zucc Social Holdings", "ZUCC", Fi, M, 1100, 5200, null, true, 0, true),
-            // ---- the pipeline: companies that may come to the market later
+            // The pipeline
             new CompanyDef(201, "Seedling Biotech", "SEED", Hc, S, 120, 1800, null, true),
             new CompanyDef(202, "Rooftop Solar Works", "RSW", Pw, S, 200, 1400, null, true),
             new CompanyDef(203, "Quickcart Delivery", "QCD", Lg, S, 300, 2100, null, true),
@@ -476,7 +457,7 @@ namespace RealLifeOverhaul.Markets
             new CompanyDef(212, "Overcast Hosting", "OVH", Sw, S, 230, 3100, null, true),
         };
 
-        /// <summary>The game's own named rivals, listed as holding companies: the ids and sectors of up to four, in the order the game names them.</summary>
+        /// <summary>The game's own named rivals as holding companies: up to four, in the order the game names them.</summary>
         public static readonly CompanyDef[] RivalTemplates =
         {
             new CompanyDef(901, string.Empty, "RVA", St, M, 1500, 4000, null),
@@ -485,10 +466,7 @@ namespace RealLifeOverhaul.Markets
             new CompanyDef(904, string.Empty, "RVD", Pr, M, 800, 2500, null)
         };
 
-        /// <summary>
-        /// Where each company of the old Ventures market went: [sector][name index] of Ventures (transport, property,
-        /// retail, food, security, utilities, banking, entertainment; first and second name) to the id here.
-        /// </summary>
+        /// <summary>The Ventures market's companies by [sector][name] to their ids here.</summary>
         public static readonly int[][] VenturesMap =
         {
             new[] { 52, 58 }, new[] { 20, 21 }, new[] { 64, 65 }, new[] { 75, 82 },
@@ -533,9 +511,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// A player's company as a row of the catalogue (Markets/Listing): small, its sector's figures moved by its id as
-        /// every company's are, but nothing of the cycle, of inflation or of the day's supply of goods made up for it (its
-        /// own books carry those), and its usual debt its own. Made when it is listed and again from the save's line.
+        /// A player's company as a catalogue row: small, its sector's figures moved by its id, but none of the cycle or
+        /// inflation made up for it (its books carry those), and its debt its own.
         /// </summary>
         public static CompanyDef PlayerDef(int id, string name, string ticker, MarketSector sector, int debtBp, string trade)
         {
@@ -573,18 +550,14 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// How much more every price moves in a day of a short game year: a year of 60 days has 43 market days, and if each
-        /// moved as a real day does a year's risk would be a third of a real year's. So days move a little more, by the
-        /// fifth root of how much shorter the year is (1.43 in a 60-day year, 1 in a year of 365), and a year's risk and
-        /// reward stay near a real one's.
+        /// How much more every price moves in a day of a short game year, so a year's risk stays near a real one's: the fifth
+        /// root of how much shorter the year is, 1.43 in a 60-day year.
         /// </summary>
         public static double VolScale(int year)
         {
             double scale = Math.Pow(260.0 / TradingDaysPerYear(year), 0.2);
             return scale < 1.0 ? 1.0 : scale > 1.5 ? 1.5 : scale;
         }
-
-        // ---------------------------------------------------------------- the calendar
 
         /// <summary>The day of the week of a game day: 0 Monday to 6 Sunday (day 1 is a Monday).</summary>
         public static int Weekday(int day)
@@ -603,10 +576,7 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(8, year) * 5.0 / 7.0;
         }
 
-        /// <summary>
-        /// The quarter a day is in, counted from the start of the game (year 0's first quarter is 0). Days before the
-        /// game's first (a market's history goes back before it) are in the years before: year -1, quarter -1 and so on.
-        /// </summary>
+        /// <summary>The quarter a day is in, counted from the game's start; days before it fall in quarter -1 and down.</summary>
         public static int QuarterOf(int day, int year)
         {
             year = Math.Max(8, year);
@@ -623,7 +593,7 @@ namespace RealLifeOverhaul.Markets
             return y * year + (q * year + 3) / 4 + 1;
         }
 
-        /// <summary>The month a day is in (a twelfth of the year, the year's months together), counted from the start of the game.</summary>
+        /// <summary>The month (a twelfth of the year) a day is in, counted from the game's start.</summary>
         public static int MonthOf(int day, int year)
         {
             year = Math.Max(8, year);
@@ -643,7 +613,7 @@ namespace RealLifeOverhaul.Markets
             return FloorDiv(day - 1, 7);
         }
 
-        /// <summary>A whole division rounded down, below nothing too (-1 / 7 is -1).</summary>
+        /// <summary>A whole division rounded down, below nothing too: -1 / 7 is -1.</summary>
         public static int FloorDiv(int a, int b)
         {
             int q = a / b;
@@ -668,7 +638,7 @@ namespace RealLifeOverhaul.Markets
             return Math.Min(CloseMinute, OpenMinute + (phase - PhaseOpen) * StepMinutes);
         }
 
-        /// <summary>The phase a trading day has reached at a minute of the day (the close is reached at 16:00).</summary>
+        /// <summary>The phase a trading day has reached at a minute of the day.</summary>
         public static int PhaseAt(int minute)
         {
             if (minute < ResultsMinute)
