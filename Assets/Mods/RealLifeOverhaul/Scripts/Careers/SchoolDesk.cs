@@ -42,6 +42,11 @@ namespace RealLifeOverhaul.Careers
     /// panel itself, as a click on the door does, and presses the button for the player (<see cref="Begin"/>): one press,
     /// and the player walks to the desk and sits. A walk called off (a click elsewhere, no way there) counts nothing and
     /// says nothing; once sat, the minutes are counted once whichever way it ends (<see cref="ClassTally"/>).
+    ///
+    /// In a Going Public session the game's study panel is never asked for (ClassPlayRules.WayToDesk): Going Public takes
+    /// every StudyActivity the panel is asked to show and puts up its own training window for the game's course instead.
+    /// There the desk is made with <see cref="Own"/>, from the door's own study place, and the game's panel is asked to
+    /// show this desk, which is not a StudyActivity: the class's panel alone, as at a classroom of the university.
     /// </summary>
     internal sealed class SchoolDesk : IPlayerActivity
     {
@@ -165,6 +170,39 @@ namespace RealLifeOverhaul.Careers
                 _setActivity.Invoke(ui, new object[] { desk });
                 ui.UpdateActivityDisplay();
                 return desk;
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// A desk of ours made from a study door without the game's panel (a Going Public session): the door's study
+        /// activity made as the game's door makes it (StudyDiploma.CreateActivity) but never shown, so the game's panel can
+        /// be asked to show this desk, the class's panel alone (<see cref="DeskOffer.Only"/>). Null if the desk lacks its
+        /// chair or its way out, or the game's activity is not a study activity (nothing is then changed).
+        /// </summary>
+        public static SchoolDesk Own(EducationDoorController door, CareersDirector director, DeskOffer offer)
+        {
+            StudyDiploma place = door != null ? door.StudyDiploma : null;
+            if (offer == null || place == null || place.chair == null || place.exitPosition == null)
+            {
+                CareersDirector.Logger?.Warn("Careers: a study desk of the game's has " + (place == null ? "no desk" : place.chair == null ? "no chair" : "no way out")
+                                             + " (" + (door != null ? door.name : "?") + "); its class is not offered there.");
+                return null;
+            }
+            try
+            {
+                ItemController seat = place.chair.GetComponent<ItemController>();
+                place.computer = seat != null ? seat.parentItemController : null;   // (as the game's door sets it before its panel: the screen's video)
+                if (!(place.CreateActivity(door) is StudyActivity game))
+                {
+                    return null;
+                }
+                offer.Only = true;
+                return new SchoolDesk(game, door, place, director, offer);
             }
             catch (Exception e)
             {

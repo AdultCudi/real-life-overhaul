@@ -60,7 +60,9 @@ namespace RealLifeOverhaul.Careers
     /// says the room and course. The game's mark over the door is the course's (Careers/CampusMarks): a class soon,
     /// enrolled, completed. A classroom door opens the game's study panel with the room's course alone, in place of the
     /// game's courses (Careers/SchoolDesk): its class or exam to begin, or when its next class is. The game's own five
-    /// courses are never offered here; they are the business school's. Each door keeps the game's custom value, so the
+    /// courses are never offered here; they are the business school's. In a Going Public session, which takes the game's
+    /// study panel for its own training window, a click on a classroom door opens the room's own panel of the mod's
+    /// instead (CareersDirector.OpenDesk, RoomDoorClicked). Each door keeps the game's custom value, so the
     /// game's door still finds its own room's chair, where the class is sat.
     ///
     /// CLOSED. The building card, the panel at the door and the Campus app say when it closes or when it opens again. A
@@ -1146,8 +1148,7 @@ namespace RealLifeOverhaul.Careers
                     return "reallife_study_why_game_busy";
                 }
                 _logger?.Info("Careers: the class of " + StudyCatalogue.Find(course).Key + " (floor " + floor + ", room " + room + ") is begun at its desk from the Campus app.");
-                door.StartLearning();   // the game's study panel (its own refusals: closed, something in hand), the class pressed for the player
-                return null;
+                return _director.OpenDesk(door, room, true);   // the door's panel (CareersDirector.OpenDesk), the class pressed for the player
             }
             if (!player.ExistsRoute(door, true))
             {
@@ -1159,9 +1160,10 @@ namespace RealLifeOverhaul.Careers
             {
                 try
                 {
-                    if (Floor == floor && !PlayerActivityUI.IsPanelOpen)
+                    string why = Floor == floor && !PlayerActivityUI.IsPanelOpen ? _director.OpenDesk(door, room, false) : null;   // the door's panel, with the class
+                    if (why != null)
                     {
-                        door.StartLearning();   // the game's study panel, with the class (Careers/SchoolDesk)
+                        Tell(why);
                     }
                 }
                 catch (Exception e)

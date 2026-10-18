@@ -9,8 +9,8 @@ namespace RealLifeOverhaul.Careers
     /// followed in person is held in its own room on its own floor (CampusRules), attended at that classroom's door with
     /// the game's study panel, as the school's courses are at the school's desks. Here: whether the university has
     /// something of the player's now (a class to join, an exam to sit, the graduation ceremony), what a classroom's panel
-    /// offers, the way from the Campus app to the room, and the address the save keeps so that a move of the university
-    /// is said once.
+    /// offers, the way from the Campus app to the room, the click on its door in a Going Public session (which takes the
+    /// game's study panel), and the address the save keeps so that a move of the university is said once.
     /// </summary>
     public sealed partial class CareersDirector
     {
@@ -262,6 +262,36 @@ namespace RealLifeOverhaul.Careers
             }
             offer.Lines = new[] { where, CareersText.T(e.FeeLate ? "reallife_study_why_fee_owed" : examWhy != "reallife_study_why_no_exam" ? examWhy : classWhy) };
             return offer;
+        }
+
+        /// <summary>
+        /// True if a click on this study door is the mod's (Careers/DeskGame's click, "Click to learn"): a classroom door of
+        /// the floor the player is on, in a Going Public session (ClassPlayRules.TakesRoomClick). Asked when the pointer
+        /// comes onto a study door: out of a session one flag, in one a look at the floor's five doors.
+        /// </summary>
+        internal bool TakesRoomClick(EducationDoorController door)
+        {
+            bool session = GoingPublic.InSession;
+            int room = session && _studyOn && !_roomDesksOff && _interior != null && _interior.Floor > 0 ? _interior.RoomOf(door) : 0;
+            return ClassPlayRules.TakesRoomClick(session, room);
+        }
+
+        /// <summary>
+        /// A classroom door clicked in a Going Public session: the room's own panel of the mod's, as the game's click opens
+        /// the game's study panel there alone (<see cref="OpenDesk"/>), with the room's class, exam or next class.
+        /// </summary>
+        internal void RoomDoorClicked(EducationDoorController door)
+        {
+            int room = _studyOn && _interior != null && _interior.Floor > 0 ? _interior.RoomOf(door) : 0;
+            if (room == 0 || PlayerActivity.PlayerActivityUI.IsPanelOpen)
+            {
+                return;
+            }
+            string why = OpenDesk(door, room, false);
+            if (why != null)
+            {
+                Tell(NotificationType.Warning, why, null, TabStudying, null);
+            }
         }
 
         /// <summary>

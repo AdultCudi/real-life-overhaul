@@ -89,6 +89,14 @@ Read in its decompiled code (`evidence/othermods/GoingPublic`), never run. What 
   to tell the host; this mod's own sale of a business, a building's sale and car hire do not, so they wait in a session.
   A guest cannot start a business of the city's (`CompetitionHelper.StartNewCompetitorBusiness` is host only): a guest's
   franchised shop is in the books only.
+- **The game's study panel is Going Public's.** In a session a prefix on `PlayerActivityUI.Show(IPlayerActivity, bool)`
+  (`Patch_TrainingDoor_HonoraryDegree`) never shows a `StudyActivity`: it hands it to its own paid training window
+  (`MPCanvasUI.TickTrainingPopup`), which reads the activity's game course and says "Requires the {course} course first"
+  (the enum's name) or sells the whole course at once. So the mod's classes, exams and homework at the school and the
+  university never ask for the game's study panel in a session: they show the desk's own activity of the mod's, which is
+  not a `StudyActivity` (`Careers/CareersDirector.OpenDesk`, `ClassPlayRules.WayToDesk`). A click on a desk of the school
+  stays Going Public's; the school's class is offered where the player stands inside it, and a classroom door of the
+  university opens the room's own panel (see [Careers](../../docs/features/careers.md)).
 - **Closing a business.** `BuildingRegistration.TemporarilyClose` has a postfix that sends the player's own shop's state to
   everyone at once, and a prefix that routes a merged company's shop to its owner. This mod closes only the player's own
   (through `Mine`), so its closures reach the others.
