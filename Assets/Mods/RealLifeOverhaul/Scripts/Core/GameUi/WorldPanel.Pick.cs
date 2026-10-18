@@ -110,7 +110,7 @@ namespace RealLifeOverhaul.GameUi
             _toldHolder = held;
             _toldAsking = this;
             _toldTaken = takes;
-            string asking = "the " + Name + " panel (" + Measured(mine) + ")";
+            string asking = Called(this) + " (" + Measured(mine) + ")";
             if (holder == null)
             {
                 bool game = Theirs(InstanceBehavior<UIs>.Instance.overlayUI, type) != null;
@@ -119,12 +119,19 @@ namespace RealLifeOverhaul.GameUi
                                  : ": FAIL (it cannot be asked to step aside; the mod's panel waits until it goes)."));
                 return;
             }
-            string other = "the " + holder.Name + " panel (" + Measured(theirs) + ")";
+            string other = Called(holder) + " (" + Measured(theirs) + ")";
             float margin = PanelPickRules.Margin(PanelPickRules.Counted(theirs));
             Logger?.Info("Panel check (who has the box): " + (takes ? asking + " takes it from " + other + ": the nearer place the player faces has it: PASS."
                              : other + " keeps it over " + asking + ": the one asking does not count nearer by " + margin.ToString("F2", CultureInfo.InvariantCulture)
                                + " m (counted " + PanelPickRules.Counted(mine).ToString("F1", CultureInfo.InvariantCulture) + " against "
                                + PanelPickRules.Counted(theirs).ToString("F1", CultureInfo.InvariantCulture) + "): PASS."));
+        }
+
+        // "the stop panel", "the Social prompt panel": a name that already ends in "panel" is not given another.
+        private static string Called(WorldPanel panel)
+        {
+            string name = panel.Name ?? "place";
+            return "the " + name + (name.EndsWith("panel", StringComparison.Ordinal) ? string.Empty : " panel");
         }
 
         private static string Measured(in PanelClaim claim)
