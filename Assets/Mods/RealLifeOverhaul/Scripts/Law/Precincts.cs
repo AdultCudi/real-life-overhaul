@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Law
 
         public Precinct Dressed => _frontage.Dressed;
 
-        /// <summary>The badge the precincts carry on the map and the records desk on the phone.</summary>
+        /// <summary>The badge on the destination marker that points the way to a precinct.</summary>
         public Sprite Icon => _icon != null ? _icon : _icon = MakeIcon();
 
         public Precinct Nearest(Vector3 at)
