@@ -11,20 +11,20 @@ namespace RealLifeOverhaul
     /// <summary>What the taxi feature asks of the rest of the mod, each with its default (Wiring/TaxiLinks fills them in a city).</summary>
     public static class TaxiBridges
     {
-        /// <summary>True while a scene of the mod's holds the player and it is not their doing (an arrest, custody, a test). Default: never.</summary>
+        /// <summary>True while a scene of the mod's holds the player (an arrest, a test). Default: never.</summary>
         public static Func<bool> Held;
 
-        /// <summary>True while the player is being carried by something of the mod's they chose (a bus ride). Default: never.</summary>
+        /// <summary>True while the player is carried by something of the mod's (a bus ride). Default: never.</summary>
         public static Func<bool> Riding;
 
         /// <summary>True in rain or a storm of the mod's weather. Default: never.</summary>
         public static Func<bool> Wet;
 
-        /// <summary>A road graph already made for this city to search over (the GPS's); null if there is none. Default: none.</summary>
+        /// <summary>A road graph already made for this city (the GPS's), or null. Default: none.</summary>
         public static Func<RouteSearch> Roads;
     }
 
-    /// <summary>A way for a taxi to the caller: the lane point it starts on, the places it drives through and where it stops.</summary>
+    /// <summary>A way for a taxi to the caller: the lane point it starts on, the places it drives through and its stop.</summary>
     public sealed class TaxiPlan
     {
         public readonly List<Vector3> Route = new List<Vector3>(160);   // every place after the start, the stopping place last
@@ -55,10 +55,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The roads as a called taxi needs them: the caller's lane, where out of view a taxi can be put, and the way between.
-    /// One search of the mod's shared road graph (Core/RoadGraph; the GPS's if it has made one, else one made here once a
-    /// city) answers both: it starts from every place a taxi may be put, in a band round the caller, and ends at the
-    /// caller's lane. One pass over the lane points and one search when a call is made; nothing on a timer.
+    /// The roads as a called taxi needs them: one search of the shared road graph (Core/RoadGraph) from every place a taxi may
+    /// be put, out of view in a band round the caller, to the caller's lane. One pass and one search a call; nothing on a timer.
     /// </summary>
     public sealed class TaxiRoads
     {
@@ -82,22 +80,20 @@ namespace RealLifeOverhaul
         private Vector3 _eye;
         private bool _hasEye;
 
-        /// <summary>The lane point with this number, or null.</summary>
         public Waypoint Point(int index)
         {
             return _points != null && index >= 0 && index < _points.Length ? _points[index] : null;
         }
 
-        /// <summary>The lane points, for whoever follows a route over them.</summary>
         public Waypoint[] Points => _points;
 
-        /// <summary>Forgets the lane points a taxi could not be put on (traffic stood there): a new call starts with none.</summary>
+        /// <summary>Forgets the lane points traffic stood on: a new call starts with none.</summary>
         public void NewCall()
         {
             _taken.Clear();
         }
 
-        /// <summary>A lane point traffic stood on when a taxi was to be put there: the next plan leaves it out.</summary>
+        /// <summary>A lane point traffic stood on: the next plan leaves it out.</summary>
         public void Refuse(int point)
         {
             _taken.Add(point);
@@ -110,7 +106,6 @@ namespace RealLifeOverhaul
             _taken.Clear();
         }
 
-        // The graph, the first time it is wanted in this city.
         private bool Ready()
         {
             if (_search != null && _points != null)
@@ -144,11 +139,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Plans a taxi's way to the caller for a vehicle of the traffic's <paramref name="type"/>, starting between
-        /// <paramref name="least"/> and <paramref name="most"/> metres off (in view only if <paramref name="mayBeSeen"/>,
-        /// for the test). False, with why: no lane within reach of the caller, or no way to it from any start.
-        /// </summary>
+        /// <summary>Plans a taxi's way to the caller from a start in the band (in view only for the test). False, with why.</summary>
         public bool Find(Vector3 caller, VehicleTypes type, float least, float most, bool mayBeSeen, TaxiPlan plan, out TaxiRules.Refusal refusal)
         {
             plan.Clear();
@@ -193,7 +184,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // One pass over the lane points: the caller's lane (the nearest plain lane points on their level) and the starts.
+        // One pass over the lane points: the caller's lane and the starts.
         private void Collect(Vector3 caller, VehicleTypes type, float least, float most, bool mayBeSeen)
         {
             _starts.Clear();
@@ -207,7 +198,6 @@ namespace RealLifeOverhaul
             _eye = _hasEye ? camera.transform.position : caller;
             for (int pass = 0; pass < 2; pass++)
             {
-                // The first pass finds how near the caller's lane is; the second takes its points and the starts.
                 float reach = pass == 0 ? 0f : Mathf.Sqrt(nearest) + GoalSpread;
                 for (int i = 0; i < _points.Length; i++)
                 {
@@ -249,14 +239,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A plain lane point of a road proper that this kind of vehicle may use, open, with road ahead of it.
+        // A plain lane point of a road proper this vehicle may use, open, with road ahead.
         private static bool Usable(Waypoint point, VehicleTypes type)
         {
             return !point.temporaryDisabled && point.neighbors != null && point.neighbors.Count > 0
                    && point.allowedCars != null && point.allowedCars.Contains(type) && RoadGraph.Drivable(point) && RoadGraph.Plain(point);
         }
 
-        // Not where the camera looks, by both of the mod's tests; beyond either test's reach neither is asked.
+        // Not where the camera looks, by both of the mod's tests.
         private bool Unseen(Vector3 place)
         {
             return (_hasEye && (place - _eye).sqrMagnitude > SeenWithin * SeenWithin) || (!CitySpots.InView(place) && !StreetSpots.IsInView(place));

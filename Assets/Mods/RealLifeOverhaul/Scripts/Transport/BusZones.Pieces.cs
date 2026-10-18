@@ -12,8 +12,7 @@ namespace RealLifeOverhaul
         private const float ObstacleMost = 2.6f;  // metres across an obstacle of the game's may be at the most to go with a piece (TransitMap.BoardingPieceMost)
         private static readonly List<NavMeshObstacle> Carving = new List<NavMeshObstacle>(4);
 
-        // Switches a piece off with everything under it, and the game's obstacles of it that hang elsewhere, and asks the walkable
-        // ground about its footprint a moment later (Probe).
+        // Switches a piece off with everything under it and the game's obstacles of it elsewhere; the ground is asked a moment later.
         private static void Hide(GameObject piece, TransitStop stop)
         {
             Bounds bounds = Footprint(piece);
@@ -22,7 +21,7 @@ namespace RealLifeOverhaul
                 Piece = piece, Where = stop.Name, Foot = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z),
                 Reach = Mathf.Max(bounds.extents.x, bounds.extents.z), ProbeAt = Time.unscaledTime + ProbeAfter
             };
-            // What of the walkable ground changes: the piece's own obstacles that are on, and those of the game's beside it.
+            // What of the walkable ground changes: the piece's own obstacles that are on, and the game's beside it.
             piece.GetComponentsInChildren(false, Carving);
             int changed = 0;
             for (int i = 0; i < Carving.Count; i++)
@@ -71,7 +70,7 @@ namespace RealLifeOverhaul
             Hidden.Add(hid);
         }
 
-        // The piece's footprint by its colliders (by its models where it has none), while it is still switched on.
+        // The piece's footprint by its colliders, or its models where it has none, while it is still switched on.
         private static Bounds Footprint(GameObject piece)
         {
             piece.GetComponentsInChildren(false, Colliders);
@@ -112,8 +111,7 @@ namespace RealLifeOverhaul
             return bounds;
         }
 
-        // The pieces switched off a moment ago: where the walkable ground still has a hole under one that the ground round it
-        // does not (the hole is baked in), the piece is put back and stays, so the player sees what they cannot walk through.
+        // A piece whose footprint the walkable ground still has a hole under (it is baked in) is put back and stays.
         private static void Probe(float now)
         {
             for (int i = 0; i < Hidden.Count; i++)
@@ -155,7 +153,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // How many carving obstacles switching a piece back on changes: its own that are on, and the game's beside it.
+        // How many carving obstacles switching a piece back on changes.
         private static int Carves(Hid hid)
         {
             int count = 0;

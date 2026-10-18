@@ -4,14 +4,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Drives the mod's own bus (<see cref="BusVehicle"/>) and its tow truck (<see cref="TowTruck"/>) along a route as a bus
-    /// is driven. The path, the pace and the trailing rear axle are <see cref="BusPath"/>'s, which NavCheck drives as it
-    /// ships; this adds the physics step, the road's height under the axles, and what is in the way: every
-    /// <see cref="SenseEvery"/> seconds, boxes as wide as the bus along its own path ahead of its nose, as far as it needs to
-    /// stop in, leaving out what is beyond the kerb (<see cref="Kerb"/>) so whoever waits at a stop is never in its way. A
-    /// pull-up point it can no longer stop short of is driven past. The body is kinematic: it pushes, it is not pushed.
-    /// Cost: one comparison a physics step while idle; driving, a pose a step, a box query each 0.15 s and two ground
-    /// rays each 0.1 s.
+    /// Drives the mod's bus and tow truck (<see cref="IDrivenVehicle"/>) along a route by <see cref="BusPath"/>, adding the
+    /// physics step, the road's height and what is in the way ahead (not beyond the kerb). Cost: one comparison a physics
+    /// step while idle; driving, a pose a step, a box query each 0.15 s and two ground rays each 0.1 s.
     /// </summary>
     public sealed class BusDriver : MonoBehaviour
     {
@@ -57,43 +52,36 @@ namespace RealLifeOverhaul
         private float _rearY;
         private float _heading;
 
-        /// <summary>True while it drives a route; false once it has come to rest at the end or where it was told to pull up.</summary>
-        public bool Active { get; private set; }
+        public bool Active { get; private set; }   // driving a route
 
-        /// <summary>True once it has come to rest at the end of its route, or where it was told to pull up.</summary>
+        /// <summary>True once it has come to rest at the end of its route or where it was told to pull up.</summary>
         public bool Arrived { get; private set; }
 
         public float Speed => Active ? _speed : 0f;
 
-        /// <summary>m/s it drives at on an open road.</summary>
-        public float CruiseSpeed { get; set; } = 11f;
+        public float CruiseSpeed { get; set; } = 11f;   // m/s on an open road
 
-        /// <summary>Metres of route still to drive.</summary>
-        public float RouteLeft => Active ? Mathf.Max(0f, _path.End - _s) : 0f;
+        public float RouteLeft => Active ? Mathf.Max(0f, _path.End - _s) : 0f;   // metres
 
-        /// <summary>Metres to the end of the route it was last given, driving or not (pulled up at a light, say).</summary>
+        /// <summary>Metres to the end of its last route, driving or not.</summary>
         public float PathLeft => _path.Count >= 2 ? Mathf.Max(0f, _path.End - _s) : 0f;
 
-        /// <summary>Where its front axle is: the point its routes are laid for.</summary>
+        /// <summary>Its front axle, the point its routes are laid for.</summary>
         public Vector3 Front => _front;
 
-        /// <summary>Seconds it has stood behind something in its way; 0 when it is not held up.</summary>
+        /// <summary>Seconds it has stood behind something in its way; 0 when not held up.</summary>
         public float HeldFor => Active && _blocked ? Time.time - _blockedSince : 0f;
 
         /// <summary>What it stands behind while held up, else null.</summary>
         public Collider HeldBy => Active && _blocked ? _obstacleHit : null;
 
-        /// <summary>Metres ahead of its nose of the SenseBox stretch of its way that what holds it is in.</summary>
+        /// <summary>Metres ahead of its nose of what holds it.</summary>
         public float HeldAhead => Active && _blocked ? _obstacle : float.MaxValue;
 
-        /// <summary>The first point of the route as given that its front axle has not yet reached.</summary>
+        /// <summary>The first point of the route its front axle has not reached.</summary>
         public int NextPoint => _path.NextPoint(_s);
 
-        /// <summary>
-        /// Seconds it will take to come to rest at the end of its route as it will drive it, at <paramref name="cruise"/> and
-        /// no faster than <paramref name="slowSpeed"/> over the last <paramref name="slowRun"/> metres (a bay; 0 for none).
-        /// 0 when it is not driving.
-        /// </summary>
+        /// <summary>Seconds to rest at the end of its route, no faster than <paramref name="slowSpeed"/> over the last <paramref name="slowRun"/> metres.</summary>
         public float SecondsLeft(float cruise, float slowRun, float slowSpeed)
         {
             return Active ? _path.SecondsLeft(_s, _speed, cruise, slowRun > 0f ? _path.Total - slowRun : float.MaxValue, slowSpeed) : 0f;
@@ -112,7 +100,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The bus it drives from now on, standing where it has just been put (BusVehicle.Place).</summary>
+        /// <summary>Takes the bus it drives from now on, where it has just been put.</summary>
         public void Take(IDrivenVehicle bus)
         {
             Forget();
@@ -129,10 +117,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Drives the bus along a route from where it stands, its first point the next one ahead; it comes to rest
-        /// BusPath.FinalShort before the last. A route begun while moving carries on at its speed, from the axles this driver
-        /// last placed. Held up with under <paramref name="nearEnough"/> metres left (0: never), where it is becomes the end;
-        /// <paramref name="caps"/> (or null) is the most it may be doing at each route point.
+        /// Drives the bus along a route, coming to rest BusPath.FinalShort before its last point; held up with under
+        /// <paramref name="nearEnough"/> metres left (0: never), where it is becomes the end.
         /// </summary>
         public void BeginRoute(IDrivenVehicle bus, List<Vector3> route, float nearEnough, List<float> caps = null)
         {
@@ -177,7 +163,7 @@ namespace RealLifeOverhaul
             _gateAt = pathIndex >= 0 && pathIndex < _path.PointArc.Count ? _path.PointArc[pathIndex] - (_bus != null ? _bus.NoseBeyondAxle : 0f) - GateShort : float.MaxValue;
         }
 
-        /// <summary>Where the kerb is (a point on its edge, and the way across it): what lies beyond it is not looked at.</summary>
+        /// <summary>Where the kerb is: what lies beyond it is not looked at.</summary>
         public void Kerb(Vector3 point, Vector3 towards)
         {
             _kerb = true;
@@ -190,7 +176,6 @@ namespace RealLifeOverhaul
             _kerb = false;
         }
 
-        /// <summary>Stands where it is now.</summary>
         public void Stop()
         {
             Active = false;
@@ -199,7 +184,6 @@ namespace RealLifeOverhaul
             _blocked = false;
         }
 
-        /// <summary>The bus is no longer this driver's.</summary>
         public void Forget()
         {
             Stop();
@@ -207,7 +191,7 @@ namespace RealLifeOverhaul
             _kerb = false;
         }
 
-        // At rest where it is: the last pose stands, its wheels turned and its brake lights on (BusVehicle.Pose).
+        // At rest: the last pose stands, its brake lights on.
         private void Arrive()
         {
             Active = false;
@@ -255,7 +239,7 @@ namespace RealLifeOverhaul
                 Sense();
             }
 
-            // A pull-up point it can no longer stop short of with all it has is driven past.
+            // A pull-up point it can no longer stop short of is driven past.
             float gate = _gateAt;
             if (gate < float.MaxValue && (gate < _s - 0.05f || _speed * _speed > 2f * BusPath.BrakingMost * Mathf.Max(0.01f, gate - _s)))
             {
@@ -275,7 +259,7 @@ namespace RealLifeOverhaul
             float moved = Mathf.Min(_speed * dt, Mathf.Max(0f, room));
             _s += moved;
 
-            // Held up near the end of a route that allows it, where it is will do.
+            // Held up near the end of a route that allows it: where it is will do.
             bool held = _obstacle < gap + 1.5f && _speed < 0.3f;
             if (held && !_blocked)
             {
@@ -295,7 +279,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The front axle to its new place on the path, the rear drawn after it, the road under both, and the bus posed.
+        // The front axle to its new place, the rear drawn after it, the road under both.
         private void Move(float moved, float was, float dt)
         {
             _path.At(_s, out float fx, out float fy, out float fz, out float roadX, out float roadZ);
@@ -327,7 +311,7 @@ namespace RealLifeOverhaul
             _bus.Pose(front, rear, moved, steer, dt > 0f ? (_speed - was) / dt : 0f, turning, _speed, dt);
         }
 
-        // What is in its way along its path ahead of its nose, as far as it needs to stop in: one box each SenseBox metres.
+        // What is in its way ahead, as far as it needs to stop in.
         private void Sense()
         {
             _obstacle = float.MaxValue;

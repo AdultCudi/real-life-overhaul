@@ -1,28 +1,18 @@
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
-using BigAmbitions.InputSystem;
 using GleyTrafficSystem;
 using Helpers;
-using UI;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The player getting on a bus, riding it and getting off, seen. The game walks them to a door (PlayerController.SetGoal,
-    /// by a way its navigation can walk: <see cref="BusInside.BoardTries"/>), where the fare is taken; board_step takes them up
-    /// the step, and from then on the bus carries them as the game carries the player on a scooter (agent, capsule and
-    /// physics off, a navigation blocker on) but never parented to it, put each frame where they stand on its floor. Their
-    /// ThirdPersonCharacter is paused (its Update would stand the walk still) and the walk given by its own Move. Inside: the
-    /// validator (pay_tap), a seat (sit_bench, sit_wait) or on a full bus the strap (strap_hang), at
-    /// <see cref="BusInside"/>'s places. The doors close and they are seen riding until the bus has gone some way; then the
-    /// ride runs in real time (TransitDirector.Journey) or passes under the fade (<see cref="TransitRide"/>). At the far end
-    /// they stand, walk to a door and down onto the road. Until the doors close a move of their own gets them off again, the
-    /// fare back; every other way out ends it at once with the player on the ground (<see cref="Abort"/>). A save has them at
-    /// <see cref="SafeSpot"/>. Per frame only while a ride is on: the placing, the walk, the clips' steps and a few tests.
+    /// The player getting on a bus, riding it and getting off, seen: the game walks them to a door, board_step takes them up,
+    /// and from then on the bus carries them as the game carries the player on a scooter (agent, capsule and physics off) but
+    /// never parented to it, put each frame where they stand on its floor; the validator, a seat or the strap at
+    /// <see cref="BusInside"/>'s places; the ride; off at the far end. Every way out other than getting off puts the player on
+    /// the ground at once (<see cref="Abort"/>). Per frame only while a ride is on: the placing, the walk, the clips' steps.
     /// </summary>
     public sealed partial class BusRider
     {
@@ -81,53 +71,48 @@ namespace RealLifeOverhaul
             _director = director;
         }
 
-        /// <summary>From the walk to the door until they are on the road again at either end.</summary>
+        /// <summary>From the walk to the door until they are on the road again.</summary>
         public bool Active => _step != Step.None;
 
-        /// <summary>From the step up (the fare taken) until they are off; the game's events and the other scenes stand aside meanwhile.</summary>
+        /// <summary>From the step up (the fare taken) until they are off: the game's events and the other scenes stand aside.</summary>
         public bool Aboard => _step != Step.None && _step != Step.ToDoor;
 
-        /// <summary>True while the bus must stand for them: on their way to its door, getting on, sitting down, or getting off again.</summary>
+        /// <summary>True while the bus must stand for them, from the walk to its door until it has left with them.</summary>
         public bool HoldsBus => _bus != null && (_stage == BusInside.Stage.Walking || _stage == BusInside.Stage.Boarding || (_stage == BusInside.Stage.Aboard && !_departing));
 
-        /// <summary>True while this bus must stand for them: as <see cref="HoldsBus"/>, and while they get off it at the end of a ride.</summary>
+        /// <summary>The same for this bus, and while they get off it at the end of a ride.</summary>
         public bool Holds(TransitBus bus)
         {
             return bus != null && _bus == bus && (HoldsBus || _stage == BusInside.Stage.Arriving);
         }
 
-        /// <summary>Riding a bus through the city in real time (TransitDirector.Journey).</summary>
+        /// <summary>True while riding through the city in real time.</summary>
         public bool RidingThrough => _step == Step.Riding && _stage == BusInside.Stage.Riding;
 
-        /// <summary>The last stop the bus called at on the way, or null.</summary>
-        public TransitStop Passed => _passed;
+        public TransitStop Passed => _passed;   // the last stop the bus called at on the way, or null
 
-        /// <summary>True while the front door is theirs: nobody else sets off for it until they are past the validator.</summary>
+        /// <summary>True while the front door is theirs, until they are past the validator.</summary>
         public bool AtDoor => _step == Step.ToDoor || _step == Step.Squaring || _step == Step.Stepping || (_step == Step.Walking && _then == Then.Tap);
 
-        /// <summary>True once seated or holding on: the bus may close its doors and go (<see cref="Departing"/>).</summary>
+        /// <summary>True once seated or holding on: the bus may shut its doors and go.</summary>
         public bool WantsDeparture => !_departing && !_gotOff && _stage == BusInside.Stage.Aboard && ((_step == Step.Seated || _step == Step.Holding) && Time.time >= _until);
 
         public Step Now => _step;
         public BusInside.Stage Stage => _stage;
 
-        /// <summary>True when the last boarding came to nothing because the fare could not be paid (the game has said so).</summary>
+        /// <summary>True when the last boarding failed for the fare (the game has said so).</summary>
         public bool RefusedFare { get; private set; }
 
-        /// <summary>The bus that stands at the far end with them in it, while it does.</summary>
-        public TransitBus ArrivalBus => _stage == BusInside.Stage.Arriving ? _bus : null;
+        public TransitBus ArrivalBus => _stage == BusInside.Stage.Arriving ? _bus : null;   // the bus at the far end with them in it
 
-        /// <summary>Whether the clips this needs are there and the bus can be seen into (its modelled body with its inside).</summary>
+        /// <summary>Whether the clips this needs are there and the bus can be seen into.</summary>
         public static bool Possible(BusVehicle bus)
         {
             return bus != null && bus.HasInside && ClipLibrary.Ready && ActivityAnimators.Working && ClipLibrary.Has("board_step") && ClipLibrary.Has("sit_bench")
                    && ClipLibrary.Has("sit_wait") && ClipLibrary.Has("sit_bench_up") && ClipLibrary.Has("strap_hang");
         }
 
-        /// <summary>
-        /// Sets the player off for a door of the bus standing at the stop. False, with why, and nothing changed, if it cannot be
-        /// done: the caller then has the ride under a fade at the stop.
-        /// </summary>
+        /// <summary>Sets the player off for a door of the bus at the stop; false, with why and nothing changed, if it cannot be done.</summary>
         public bool Board(TransitBus bus, TransitStop from, TransitStop to, Vector3 door, bool full, out string why)
         {
             why = null;
@@ -174,8 +159,7 @@ namespace RealLifeOverhaul
             _passedCount = 0;
             _offChosen = false;
             _waitedOff = false;
-            // Where to walk to: the nearer door's place if there is a way to it and nothing stands there, else a little along
-            // the kerb, and only then the other door.
+            // The nearer door's place if it can be walked to and nothing stands there, else a little along the kerb, else the other door.
             int tried = ChooseApproach(bus.Vehicle, player.transform.position, door, out door, out _middleIn);
             if (tried < 0)
             {
@@ -211,7 +195,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The game's walk has brought them to the door: the fare, the blocker, and the last steps square to the door.
+        // At the door: the fare, the blocker, and the last steps square to the door.
         private void Reached()
         {
             _reached = true;
@@ -264,7 +248,7 @@ namespace RealLifeOverhaul
             {
                 if (_stage == BusInside.Stage.Riding)
                 {
-                    // Taken off the street on the way (traffic shut down, the city's own clean-up): the rest under the fade.
+                    // Taken off the street on the way: the rest under the fade.
                     Logger?.Info("Transit check (journey): the bus was taken off the street with the player riding it: the rest of the ride passes under the fade: PASS.");
                     Release(SafeSpot());
                     _step = Step.Fading;
@@ -274,7 +258,7 @@ namespace RealLifeOverhaul
                 }
                 if (_stage == BusInside.Stage.Leaving)
                 {
-                    // Taken off the street as it pulled away: the ride goes on all the same, from the stop they boarded at.
+                    // Taken off the street as it pulled away: the ride goes on from the stop they boarded at.
                     Logger?.Info("Transit check (ride): the bus was taken off the street as it pulled away with the player in it: the ride goes on under the fade from "
                                  + Name(_from) + ": PASS.");
                     Release(SafeSpot());
@@ -297,7 +281,7 @@ namespace RealLifeOverhaul
             switch (_step)
             {
                 case Step.ToDoor:
-                    // A click elsewhere replaces the game's walk with another, heading away from the door.
+                    // A click elsewhere replaces the game's walk with one away from the door.
                     if (!_reached && (!_player.hasOnGoalReachedAction || now > _until || _bus == null || _bus.State != TransitBus.Phase.Standing
                                       || Mathf.Sqrt(CitySpots.Flat(_player.transform.position - _door)) > _toDoor + 4f))
                     {
@@ -376,8 +360,7 @@ namespace RealLifeOverhaul
                 case Step.Fading:
                     if (!_director.RideRunning && now - _since > 3f)
                     {
-                        // The fade never began (another screen took it): no ride, the fare back unless the bus had called at
-                        // a stop on the way, and off at the stop.
+                        // The fade never began (another screen took it): no ride, and off at the stop.
                         float fare = BusInside.SaveFareBack(_stage == BusInside.Stage.Riding ? BusInside.Stage.Leaving : _stage, _passedCount) ? _fare : 0f;
                         _fare = 0f;
                         _director.RiderFareBack(fare, "the ride's fade did not begin");
@@ -387,7 +370,7 @@ namespace RealLifeOverhaul
                     break;
 
                 case Step.Riding:
-                    // Through the city in real time: a move of the player's own asks to get off at the next stop.
+                    // A move of the player's own asks to get off at the next stop.
                     if (WantsOff())
                     {
                         _director.JourneyGetOff("the player moved");
@@ -412,7 +395,7 @@ namespace RealLifeOverhaul
             if (_step != Step.None && _held && bus != null)
             {
                 Put(bus);
-                // From over the roof (the game's view from above) the roof is not drawn, so the player is seen in the bus.
+                // Seen from above the roof is not drawn, so the player is seen in the bus.
                 Camera camera = GameManager.GetMainCamera();
                 bus.ShowRoof(camera == null || camera.transform.position.y < bus.transform.position.y + 2.6f);
             }
@@ -423,7 +406,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The last centimetres on the road to where board_step begins, and the turn to face the door; then up the step.
+        // The last centimetres to where board_step begins, and the turn to the door; then up the step.
         private void Square(float delta, float now, BusVehicle bus)
         {
             if (bus == null || !bus.Out || _bus.State != TransitBus.Phase.Standing)
@@ -431,8 +414,7 @@ namespace RealLifeOverhaul
                 Abort("the bus left as they reached its door", put: false);
                 return;
             }
-            // Held from here: where board_step begins may be nearer the bus than the navigation mesh reaches (a close bay
-            // kerb), so the last steps are the game's walk given by hand, as on the bus's floor.
+            // Held from here: where board_step begins may be nearer the bus than the navigation mesh reaches.
             Hold();
             Transform place = _player.transform;
             BusInside.Spot from = _middleIn ? BusInside.MiddleBoardFrom : BusInside.BoardFrom;
@@ -463,7 +445,7 @@ namespace RealLifeOverhaul
             }
             if (_middleIn && _director.MiddleDoorBusy && now < _since + MiddleWaitMost)
             {
-                // Somebody is getting off by the middle door: the player waits beside it until they are off.
+                // Somebody is getting off by the middle door: the player waits for them.
                 if (!_waitedOff)
                 {
                     _waitedOff = true;
@@ -481,10 +463,10 @@ namespace RealLifeOverhaul
             }
             _step = Step.Stepping;
             _until = now + Length("board_step", 1.4f);
-            TransitDirector.DoorSound(place.position);
+            JobCast.DoorSound(place.position);
         }
 
-        // board_step has ended standing on the step: from here on the bus carries them.
+        // board_step has ended on the step: from here on the bus carries them.
         private void StepUp(BusVehicle bus)
         {
             Vector3 was = _player.transform.position;
@@ -551,7 +533,7 @@ namespace RealLifeOverhaul
             _step = Step.Turning;
         }
 
-        // Turned to where they were going: tap, sit, take the strap.
+        // Turned to where they were going: tap, sit or take the strap.
         private void Arrive(float now)
         {
             switch (_then)
@@ -596,7 +578,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Straight from wherever they stand to a place: the rare way round when a clip would not play.
+        // Straight from where they stand to a place, when a clip would not play.
         private void WalkFrom(BusInside.Spot at, BusInside.Place to)
         {
             _path.Clear();
@@ -605,7 +587,7 @@ namespace RealLifeOverhaul
             StartWalk(to == BusInside.Place.Strap ? Then.Strap : Then.Seat);
         }
 
-        // The game's own walking pace, held to what fits a bus's aisle.
+        // The game's walking pace, held to what fits a bus's aisle.
         private static float GamePace()
         {
             var references = InstanceBehavior<GlobalReferences>.Instance;

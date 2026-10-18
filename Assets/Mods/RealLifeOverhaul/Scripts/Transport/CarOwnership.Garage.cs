@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Text;
 using BigAmbitions.DayNightCycle;
 using BigAmbitions.Tags;
-using Helpers;
 using UI;
 using UI.Notification;
 using UnityEngine;
@@ -27,8 +26,7 @@ namespace RealLifeOverhaul
         {
             if (_stations == null)
             {
-                // From the city's own list of buildings, as the game finds them for a tow (Helpers.VehicleHelper); a search of
-                // the whole scene for them was a frame of over 100 ms.
+                // From the city's list of buildings, as the game finds them for a tow: a scene search was over 100 ms.
                 CityManager city = InstanceBehavior<CityManager>.Instance;
                 CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
                 _stationList.Clear();
@@ -51,7 +49,7 @@ namespace RealLifeOverhaul
             return _stations;
         }
 
-        // The car stands in a station's repair bay of its kind (the game has separate ones for trucks).
+        // A station's repair bay of the car's kind (the game has separate ones for trucks).
         private bool InBay()
         {
             if (_car.vehicleCollider == null)
@@ -96,7 +94,7 @@ namespace RealLifeOverhaul
             return record.RegisteredDay + year - TimeHelper.CurrentDay;
         }
 
-        // Makes sure the timer has looked at this car, which may have been got into a moment ago. True if it has a record.
+        // The timer has looked at this car, which may have been got into a moment ago. True if it has a record.
         private bool Tracks(VehicleController car)
         {
             if (_failed || !Settings.CarOwnership || car == null)
@@ -119,13 +117,12 @@ namespace RealLifeOverhaul
             return _car != null && ReferenceEquals(_car, car) && _record != null;
         }
 
-        /// <summary>True if this is a car of the player's that the service looks after.</summary>
+        /// <summary>True if this is a car of the player's the service looks after.</summary>
         public bool Looks(VehicleController car)
         {
             return Tracks(car);
         }
 
-        // What a service would do now and what it costs.
         private void Quote()
         {
             float since = _record.Km - _record.ServicedKm;
@@ -145,10 +142,7 @@ namespace RealLifeOverhaul
             return CarRules.Registration(_price) + (_registrationLeft < 0 ? CarRules.RegistrationLateFee : 0f);
         }
 
-        /// <summary>
-        /// The second line of the game's panel in a repair bay: what is due on this car and what it comes to; both null for a
-        /// car without a record. Builds strings, when the game shows its panel.
-        /// </summary>
+        /// <summary>The game's repair bay panel's second line: what is due and what it comes to; null for a car without a record.</summary>
         public void BayLine(VehicleController car, out string left, out string right)
         {
             left = null;
@@ -184,8 +178,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The same in plain words for Player.log.</summary>
-        public string DueWords(VehicleController car)
+        public string DueWords(VehicleController car)   // BayLine in plain words, for Player.log
         {
             if (!Tracks(car))
             {
@@ -195,7 +188,7 @@ namespace RealLifeOverhaul
             return _serviceItems == 0 ? "nothing due" : _serviceItems + " thing(s) due for " + _serviceTotal.ToString("F0") + (_record.Broken ? ", broken down" : string.Empty);
         }
 
-        /// <summary>The service's entry in the workshop's list: what would be done, each part's cost, the total and how long it takes.</summary>
+        /// <summary>The service's entry in the workshop's list: the work, each part's cost, the total and the time.</summary>
         public void ListEntry(GameUi.TravelList list, int id, VehicleController car)
         {
             if (!Tracks(car))
@@ -234,10 +227,7 @@ namespace RealLifeOverhaul
             return 25f + 15f * items;
         }
 
-        /// <summary>
-        /// Pays for and does everything due, the car standing in a repair bay. False, with nothing taken, if nothing is due,
-        /// the car is not in a bay, a service is under way or the money is short (the game says so).
-        /// </summary>
+        /// <summary>Pays for and does everything due in a repair bay. False, with nothing taken, if it cannot (the game says why).</summary>
         public bool OrderService(VehicleController car)
         {
             if (!Tracks(car) || _servicing)
@@ -258,7 +248,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The work is done behind a fade while the clock runs on: the mechanic has the car for most of an hour.
+        // The work is done behind a fade while the clock runs on: most of an hour.
         private IEnumerator Service(CarController car, CarRecord record, CarKind kind, float total, float minutes)
         {
             _servicing = true;

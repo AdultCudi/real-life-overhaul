@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Helpers;
 using UI.Notification;
 using UnityEngine;
 
@@ -116,7 +115,8 @@ namespace RealLifeOverhaul
                         _step = Step.Walking;
                         if (!Arrive())
                         {
-                            CarOwnership.Logger?.Info("Roadside: nobody could be put on the street near the car (no clear place beside it, or no way to it on foot); the job is done without the visit.");
+                            CarOwnership.Logger?.Info("Roadside: nobody could be put on the street near the car (no clear place beside it, or no way to it on foot); "
+                                                      + "the job is done without the visit.");
                             Complete();
                             Finish();
                         }

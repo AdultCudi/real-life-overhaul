@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using BAModAPI;
-using Helpers;
 using UI.Notification;
 using UnityEngine;
 using UnityEngine.AI;
@@ -51,26 +50,16 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The bus zones: at every stop with a bay, that length of the kerbside strip is the buses' alone. Made once the network
-    /// is laid out, put back as the game had it when the buses are switched off or the city is left; nothing is saved. The
-    /// game's parking box (ParkingLaneGenerator's trigger, where it lays its cars and counts parking legal) is shortened to
-    /// stop <see cref="BusBay.CarMargin"/> short of the zone, at once (nobody sees a parking box), so the game never parks
-    /// there again. Its parked cars in the zone are handed back the way the game takes them in, and a car of the player's
-    /// own moved to a free space, each once out of view; the made zones are looked at again every few seconds, as the game
-    /// regenerates its lanes. Street furniture in the strip, the parking meters along the bay's kerb and the plain furniture
-    /// on every stop's boarding strip (BusInside.BoardingStrips) are switched off whole, a stop's all in one frame once none
-    /// is in view; a piece whose hole in the navigation mesh turns out to be baked in is put back and stays, so nothing
-    /// invisible ever stops the player. A lane that is not a plain run along the kerb is never cut. Runs from the director's
-    /// timer, about a millisecond a tick, nothing per frame. In a Going Public session every machine lays out the same
-    /// network and cuts the same parking; another player's car is never moved (GoingPublic.MineVehicle).
+    /// The bus zones: at every stop with a bay, that length of the kerbside strip is the buses' alone. The game's parking box
+    /// is shortened to stop <see cref="BusBay.CarMargin"/> short of it, so the game never parks there again; its parked cars
+    /// there are handed back the way it takes them in and a car of the player's moved, each once out of view; the furniture in
+    /// the strip and on the boarding strips is switched off whole, unless its hole in the navigation mesh is baked in. All put
+    /// back when the buses are switched off or the city is left; nothing saved. On the director's timer, about a millisecond a
+    /// tick. Another player's car is never moved (GoingPublic.MineVehicle).
     /// </summary>
     public static partial class BusZones
     {
-        /// <summary>
-        /// Metres of parking beyond a zone that may be given up with it, where the zone is in the middle of a run: some four
-        /// spaces. The zone itself is some 48 m.
-        /// </summary>
-        public const float LossMost = 20f;
+        public const float LossMost = 20f;        // metres of parking beyond a zone in the middle of a run that may go with it: some four spaces
 
         private const float Margin = BusBay.CarMargin;   // metres of strip kept clear beyond each end of a zone
         private const float BoxLeast = 0.02f;     // metres left of a parking box wholly in a zone, at its end
@@ -153,27 +142,20 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Behind the loading screen (ScenePrewarm): lists the game's navigation obstacles for the street furniture switched off
-        /// at the stops, a search of the whole scene once a city. Kept until the city goes.
-        /// </summary>
+        /// <summary>Behind the loading screen: lists the game's navigation obstacles, a search of the whole scene once a city.</summary>
         public static bool Prewarm()
         {
             _obstacles = SceneFinds.All<NavMeshObstacle>("transit: the game's navigation obstacles being listed for the bus stops (a search of the whole scene, once a city)");
             return true;
         }
 
-        /// <summary>True for a piece of street furniture that must stay: its hole in the walkable ground is baked in, so switching it off would leave an unseen one.</summary>
+        /// <summary>True for a piece of street furniture whose hole in the mesh is baked in: switched off, it would stop the player unseen.</summary>
         public static bool MustStay(GameObject piece)
         {
             return piece != null && Stay.Contains(piece);
         }
 
-        /// <summary>
-        /// Whether the parking along a zone from <paramref name="from"/> to <paramref name="to"/> metres along the stop's lane can
-        /// be cut for it: null if so (or there is none), else why not, for the log. Nothing is changed: the cut is made with the
-        /// zone (<see cref="Step"/>).
-        /// </summary>
+        /// <summary>Why the parking along a zone cannot be cut for it, for the log, or null. Nothing is changed: the cut is made with the zone.</summary>
         public static string Plan(TransitStop stop, Vector3 right, float from, float to, BusZone zone)
         {
             int runs = Beside(stop, right, from - Margin, to + Margin, out string why);
@@ -201,8 +183,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // The parking lanes whose boxes reach into a stretch of the strip beside a stop, into Runs; returns how many. Why not, if
-        // one of them is not a plain run along the kerb (it is then never cut).
+        // The parking lanes whose boxes reach into a stretch of strip, into Runs; why not, if one is not a plain run (never cut).
         private static int Beside(TransitStop stop, Vector3 right, float from, float to, out string why)
         {
             why = null;
@@ -302,9 +283,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The piece of street furniture a collider belongs to, to be switched off whole: up from the collider while what is
-        /// above is the same thing (a bin's model, collider and obstacle in children of their own are one bin), never a row of
-        /// them. Null if it has more than models, colliders and the scripts the game puts on scenery (a door, a machine).
+        /// The piece of street furniture a collider belongs to, to switch off whole: up from it while what is above is the same
+        /// thing, never a row of them. Null if it has more than models, colliders and the game's scenery scripts (a door, a machine).
         /// </summary>
         public static GameObject PropOf(Collider collider)
         {
@@ -323,8 +303,7 @@ namespace RealLifeOverhaul
             return Plain(piece) ? piece.gameObject : null;
         }
 
-        // Whether a parent holds something solid besides the piece that stands elsewhere: another piece of furniture. A part
-        // whose colliders all stand within the piece's own is the same thing.
+        // Whether a parent holds something solid that stands elsewhere: another piece of furniture.
         private static bool HoldsMore(Transform above, Transform piece, Bounds own)
         {
             for (int i = 0; i < above.childCount; i++)
@@ -356,8 +335,7 @@ namespace RealLifeOverhaul
             return point.x >= box.min.x && point.x <= box.max.x && point.z >= box.min.z && point.z <= box.max.z && point.y >= box.min.y - 1f && point.y <= box.max.y + 1f;
         }
 
-        // Nothing but models, colliders and the scripts the game puts on scenery, and not a piece that switches itself back on:
-        // the game's CityMapHider does, as the city map closes and as the player comes out of a building.
+        // Nothing but models, colliders and scenery scripts, and not a piece that switches itself back on (the game's CityMapHider).
         private static bool Plain(Transform prop)
         {
             prop.GetComponentsInChildren(true, Parts);
@@ -372,7 +350,7 @@ namespace RealLifeOverhaul
             return plain;
         }
 
-        /// <summary>Makes the zones still to be made, a slice at a time, and keeps them made. From the director's timer while the network is laid out.</summary>
+        /// <summary>Makes the zones still to be made, a slice at a time, and keeps them made. From the director's timer.</summary>
         public static void Step()
         {
             if (!TransitMap.Ready)
@@ -431,9 +409,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Makes one stop's zone and clears its boarding strip; false if either must wait. All of the stop's furniture is switched
-        // off in one frame once none of it is in view, so the walkable ground is cut again once for the stop. The parking is
-        // cut at once.
+        // Makes one stop's zone and clears its boarding strip; false if either must wait. A stop's furniture goes in one frame
+        // once none of it is in view, so the walkable ground is cut once for the stop.
         private static bool Make(TransitStop stop)
         {
             bool unseen = !AnyInView(stop);
@@ -442,7 +419,6 @@ namespace RealLifeOverhaul
             return zone && boarding;
         }
 
-        // Whether any piece of the stop's still to be switched off is in view.
         private static bool AnyInView(TransitStop stop)
         {
             BusZone zone = stop.HasBay && stop.Zone != null && !stop.Zone.Made ? stop.Zone : null;
@@ -462,8 +438,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The game's street furniture on the stop's boarding strip (TransitMap.FindBoarding) is switched off whole, as a bay's
-        // is, and put back with it.
         private static bool ClearBoarding(TransitStop stop, bool unseen)
         {
             if (stop.BoardingMade || stop.Boarding.Count == 0)
@@ -485,8 +459,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Switches off every piece still to go when none of the stop's is in view (<paramref name="unseen"/>). True when none
-        // that is to go is left standing.
+        // Switches off every piece still to go when none of the stop's is in view; true when none is left standing.
         private static bool HideAll(List<GameObject> pieces, TransitStop stop, bool unseen)
         {
             bool all = true;
@@ -507,7 +480,7 @@ namespace RealLifeOverhaul
             return all;
         }
 
-        // Makes one stop's zone; false if something of it is in view, and it is asked again a second later.
+        // False if something of it is in view: it is asked again a second later.
         private static bool MakeZone(TransitStop stop, bool unseen)
         {
             BusZone zone = stop.Zone;
@@ -551,11 +524,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Puts the street back as the game had it: each lane's box and count of spots, the furniture and its obstacles; nothing
-        /// is touched while the city unloads. <see cref="Step"/> makes the zones again when the buses next run. The cars taken
-        /// in are the game's to lay again; a car of the player's that was moved stays where it was parked.
-        /// </summary>
+        /// <summary>Puts the street back as the game had it, except while the city unloads; <see cref="Step"/> makes the zones again.</summary>
         public static void Restore()
         {
             bool unloading = GameManager.isCitySceneBeingUnloaded;
@@ -627,7 +596,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>What was done for a stop's zone, in words for a log line.</summary>
+        /// <summary>What was done for a stop's zone, for a log line.</summary>
         public static string Describe(BusZone zone)
         {
             if (zone == null)

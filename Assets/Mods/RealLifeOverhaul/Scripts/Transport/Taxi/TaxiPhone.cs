@@ -2,7 +2,6 @@ using System;
 using BAModAPI;
 using Dialogs;
 using Entities;
-using Extensions;
 using Localizor;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;

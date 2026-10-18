@@ -4,7 +4,6 @@ using System.Globalization;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
-using Localizor;
 using Parking.UndergroundParking;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -15,15 +14,10 @@ using Vehicles.Taxis;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A taxi called from the phone. City Cabs (<see cref="TaxiPhone"/>) quotes a wait and a call-out; on "Send one" a taxi
-    /// of the game's traffic is put on the road out of view and driven to the caller (<see cref="TaxiRoads"/>,
-    /// <see cref="TaxiCab"/>); once it stands, the game's own click, map, fare and ride take over and this only watches how
-    /// the call ends: the ride (the call-out charged), nobody came (half), a cancel or the caller going another way (free
-    /// while it is far, half once close), or it cannot come (no charge). The ride's start is <c>TaxiSystem.IsTraveling</c>
-    /// while the last taxi the game's map had was this one; the map forgets its taxi as it closes, so it is noted from the
-    /// map's own event and on each tick while the map is open. Cost: one comparison a frame, a 0.25 s timer while a taxi is
-    /// out, and switched off otherwise; a call costs one pass over the lane points and the pool and one route search.
-    /// Nothing is saved. The rules and numbers are <see cref="TaxiRules"/>'s.
+    /// A taxi called from the phone (<see cref="TaxiPhone"/>): a taxi of the game's traffic is put on the road out of view and
+    /// driven to the caller (<see cref="TaxiRoads"/>, <see cref="TaxiCab"/>); once it stands, the game's own click, map, fare and
+    /// ride take over and this only watches how the call ends. Cost: one comparison a frame, a 0.25 s timer while a taxi is out,
+    /// switched off otherwise. Nothing is saved; the rules and numbers are <see cref="TaxiRules"/>'s.
     /// </summary>
     public sealed partial class TaxiDirector : MonoBehaviour
     {
@@ -148,8 +142,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A fault, on the timer or in something the game called (a reply, a test button): everything is let go and no call is
-        // taken for the rest of the session.
+        // A fault, on the timer or in something the game called: everything is let go and no call is taken this session.
         private void Fail(Exception e)
         {
             _failed = true;
@@ -164,7 +157,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The option was switched on or off: the contact is added at once; a taxi that is out goes on the next tick.</summary>
+        /// <summary>The option was switched: the contact is added at once; a taxi that is out goes on the next tick.</summary>
         public static void OptionChanged()
         {
             TaxiDirector director = Instance;
@@ -192,7 +185,7 @@ namespace RealLifeOverhaul
             {
                 NoteMapTaxi();
             }
-            // The game's ride has begun, with this taxi or another (one hailed in the street, the private driver).
+            // The game's ride has begun, with this taxi or another (hailed in the street, the private driver).
             if (InstanceBehavior<TaxiSystem>.IsInitialized && TaxiSystem.IsTraveling)
             {
                 if (_mapOurs)
@@ -251,7 +244,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Why the caller is no longer waiting in the street, or null. Each is the game's own flag or one static read.
+        // Why the caller is no longer waiting in the street, or null.
         private static string Away()
         {
             if (PlayerHelper.IsUsingVehicle && VehicleHelper.IsInsideVehicle())
@@ -279,7 +272,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Which taxi the game's map has now. The map opened plainly has none and leaves the note as it is.
+        // The map opened plainly has no taxi and leaves the note as it is.
         private void NoteMapTaxi()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -290,22 +283,19 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Whether a call would be taken now, from what costs nothing to ask. <paramref name="failed"/>: none is taken this session.</summary>
+        /// <summary>Whether a call would be taken now, from what costs nothing to ask.</summary>
         public TaxiRules.Refusal Check(out bool failed)
         {
             failed = _failed;
             bool riding = (InstanceBehavior<TaxiSystem>.IsInitialized && TaxiSystem.IsTraveling) || SubwaySystem.IsRiding || CasinoBoatManager.IsOnCasinoBoat
                           || (TaxiBridges.Riding != null && TaxiBridges.Riding());
             bool indoors = BuildingManager.IsInsideBuilding || UndergroundParkingManager.IsInsideParking || !TrafficTools.Street;
-            // A Going Public guest has the host's traffic, so no cab of it can be sent: the service is off.
+            // A Going Public guest has the host's traffic, so no cab can be sent.
             return TaxiRules.Refuse(Settings.TaxiCall && !_failed && !GoingPublic.TrafficMirrored, riding, TaxiBridges.Held != null && TaxiBridges.Held(), _step != Step.Idle,
                 PlayerHelper.IsUsingVehicle && VehicleHelper.IsInsideVehicle(), indoors);
         }
 
-        /// <summary>
-        /// What the dispatcher says: how long a taxi would take and the call-out. Looks for a taxi and plans its way, but puts
-        /// nothing on the road. False with why.
-        /// </summary>
+        /// <summary>What the dispatcher says: the wait and the call-out. Plans a taxi's way but puts nothing on the road. False with why.</summary>
         public bool Quote(out int minutes, out float fee, out TaxiRules.Refusal refusal, out bool failed)
         {
             minutes = 0;
@@ -363,7 +353,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>"Send one": the taxi that was quoted is put on the road. False if it cannot be done after all.</summary>
+        /// <summary>"Send one": the taxi quoted is put on the road. False if it cannot be done after all.</summary>
         public bool Dispatch(out int minutes)
         {
             minutes = _quoteMinutes;
@@ -398,8 +388,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Finds a taxi and its way and puts it on the road, leaving out a lane point traffic stands on and planning again.
-        // <paramref name="again"/>: the one new plan a taxi that got nowhere is given, not a new call.
+        // Finds a taxi and its way and puts it on the road, leaving out a lane point traffic stands on; again: a taxi's one new plan.
         private bool Bring(Vector3 caller, float least, float most, bool mayBeSeen, bool again, TaxiPlan ready, out string why)
         {
             why = null;
@@ -426,8 +415,8 @@ namespace RealLifeOverhaul
                 {
                     Say("route", plan.Route.Count + " lane points, " + plan.Metres.ToString("F0") + " m of road from a start " + plan.StartAway.ToString("F0") + " m off (band "
                                  + least.ToString("F0") + " to " + most.ToString("F0") + "), to a lane point " + plan.FromCaller.ToString("F1", CultureInfo.InvariantCulture) + " m from the caller; "
-                                 + plan.Starts
-                                 + " places to start from, " + plan.Goals + " to end at, " + plan.Steps + " search steps, " + plan.Milliseconds.ToString("F2", CultureInfo.InvariantCulture) + " ms: PASS");
+                                 + plan.Starts + " places to start from, " + plan.Goals + " to end at, " + plan.Steps + " search steps, "
+                                 + plan.Milliseconds.ToString("F2", CultureInfo.InvariantCulture) + " ms: PASS");
                 }
                 bool seen = CitySpots.InView(plan.StartAt) || StreetSpots.IsInView(plan.StartAt);
                 if (_cab.Send(plan, _roads, pick, idle, out why, out bool startTaken))
@@ -486,7 +475,7 @@ namespace RealLifeOverhaul
             return TaxiBridges.Wet != null && TaxiBridges.Wet();
         }
 
-        // A taxi that gets nowhere is planned again once, out of view, then given up (TaxiRules.Judge, the bus's rules).
+        // A taxi that gets nowhere is planned again once, out of view, then given up (TaxiRules.Judge).
         private void Watch(float now)
         {
             float still = _cab.NoProgressFor;
@@ -551,7 +540,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Asked before a log line is put together, so that with diagnostics off no text is made.
+        // Asked before a log line is put together, so no text is made with diagnostics off.
         private static bool Loud => Meta.Dev.Verbose;
 
         private static void Say(string step, string what)
@@ -559,7 +548,7 @@ namespace RealLifeOverhaul
             Logger?.Info("Taxi check (" + step + "): " + what + ".");
         }
 
-        /// <summary>Where the called taxi is, while one is out and the game's own marker is not on it already.</summary>
+        /// <summary>Where the called taxi is, while one is out and the game's own marker is not on it.</summary>
         public static bool Where(out Vector3 at)
         {
             TaxiDirector director = Instance;

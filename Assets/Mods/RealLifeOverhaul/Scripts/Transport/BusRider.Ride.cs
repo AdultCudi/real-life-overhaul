@@ -10,7 +10,7 @@ namespace RealLifeOverhaul
         private float _shutSince = -1f;
         private float _movingSince = -1f;
 
-        /// <summary>The director has closed the doors (TransitBus.Depart): no getting off now; the pull-away is watched.</summary>
+        /// <summary>The director has shut the doors: no getting off now; the pull-away is watched.</summary>
         public void Departing()
         {
             _departing = true;
@@ -21,7 +21,7 @@ namespace RealLifeOverhaul
             {
                 _step = Step.Leaving;
             }
-            // Still on their way to it, they sit down or take the strap as the bus moves off, and the watch begins then.
+            // Still on their way to it, they sit down or take the strap as the bus moves off.
         }
 
         private void Leave(float now, BusVehicle bus)
@@ -36,8 +36,7 @@ namespace RealLifeOverhaul
                 {
                     _shutSince = now;
                     _shutAt = bus.transform.position;
-                    // The doors shut on them seated or holding on: the ride in real time where the line can be driven to their
-                    // stop, else the bus is seen pulling away and the time passes.
+                    // The ride in real time where the line can be driven to their stop, else the bus is seen pulling away.
                     if (_director.JourneyBegins(_bus, _from, _to))
                     {
                         _step = Step.Riding;
@@ -63,7 +62,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Riding through the city: the bus has called at a stop on the way and left it. A save now has them there.</summary>
+        /// <summary>Riding through the city: the bus has called at a stop and left it, so a save now has them there.</summary>
         public void PassedStop(TransitStop stop)
         {
             if (_stage == BusInside.Stage.Riding && stop != null)
@@ -73,10 +72,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Riding through the city: the bus stands at their stop with its doors open, and they get up and off by the middle door.
-        /// False if they are not riding it.
-        /// </summary>
+        /// <summary>Riding through the city: the bus stands at their stop with its doors open, and they get off. False if not riding it.</summary>
         public bool GetOffHere(TransitBus bus, TransitStop stop)
         {
             if (!RidingThrough || bus == null || bus != _bus || stop == null || bus.Vehicle == null)
@@ -92,7 +88,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Riding through the city: the rest of the ride passes under the fade (TransitRide), from here.</summary>
+        /// <summary>Riding through the city: the rest of the ride passes under the fade from here.</summary>
         public void SkipRest()
         {
             if (_step == Step.Riding)
@@ -102,7 +98,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>TransitRide: the screen is black. They are taken off the moving bus and put at the stop they left, out of the world.</summary>
+        /// <summary>TransitRide: the screen is black; they are taken off the moving bus to the stop they left, out of the world.</summary>
         public void AtBlack()
         {
             if (_step != Step.Fading && _step != Step.Leaving && _step != Step.Riding)
@@ -115,9 +111,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// TransitRide at the far end, the screen still black and the player in the world again: a bus standing at the stop with
-        /// them in their seat or on the strap. False, with nothing changed, if no bus can stand there now: they are put down on
-        /// the pavement.
+        /// TransitRide at the far end, the screen still black: a bus standing at the stop with them in their seat or on the strap.
+        /// False, with nothing changed, if no bus can stand there now.
         /// </summary>
         public bool ArriveAboard(TransitBus bus, TransitStop to)
         {

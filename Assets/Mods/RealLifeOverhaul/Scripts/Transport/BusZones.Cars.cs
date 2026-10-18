@@ -13,9 +13,7 @@ namespace RealLifeOverhaul
         private static readonly List<Transform> Cars = new List<Transform>(16);
         private static bool _told;      // the player has been told a car of theirs was moved from a bay, once a session
 
-        // The cars in a zone and its margin: the game's parked cars handed back, the player's own moved, each once out of view.
-        // A lane that reaches into it again (the game made it afresh) is cut again first. True when none is left; sent: how
-        // many of the game's went.
+        // The cars in a zone and its margin, each once out of view; a lane come back whole is cut again first. True when none is left.
         private static bool Sweep(TransitStop stop, Vector3 right, out int sent)
         {
             BusZone zone = stop.Zone;
@@ -38,8 +36,7 @@ namespace RealLifeOverhaul
             return left == 0;
         }
 
-        // Shortens a lane's box to keepStart..keepEnd along the stop's lane, and its fixed count of spots with it. The box as the
-        // game had it is kept, once, to be put back. Returns the spots given up.
+        // Shortens a lane's box, and its fixed count of spots, to keepStart..keepEnd; the box as the game had it is kept once.
         private static int Shorten(Run run, float keepStart, float keepEnd)
         {
             BoxCollider box = run.Box;
@@ -76,8 +73,7 @@ namespace RealLifeOverhaul
             return lost;
         }
 
-        // The game's parked cars of a lane that stand in a zone, its margin, or beyond what is left of the lane: handed back to
-        // the game's store as the lane does itself, where nobody is looking. Returns how many; those in view count in left.
+        // The game's parked cars in a zone, its margin or beyond the lane's end, handed back out of view; those in view count in left.
         private static int SendAway(Run run, TransitStop stop, float keepStart, float keepEnd, ref int left)
         {
             ParkingLaneGenerator lane = run.Lane;
@@ -118,10 +114,8 @@ namespace RealLifeOverhaul
             return sent;
         }
 
-        // The player's own cars in the stop's zone or its margin, between the lane and the kerb: each one nobody is in, standing
-        // still and out of view, is moved to the nearest free space the game's auto-park would offer outside every zone
-        // (VehicleTow.ParkNearby), and the player is told once. Returns how many; those that must wait count in left. One with
-        // nowhere to go stays, parked illegally.
+        // The player's own cars in the zone, nobody in them, standing still and out of view: each moved to the nearest free space
+        // the game's auto-park would offer outside every zone, the player told once. One with nowhere to go stays, parked illegally.
         private static int MovePlayerCars(TransitStop stop, Vector3 right, ref int left)
         {
             List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
@@ -168,13 +162,12 @@ namespace RealLifeOverhaul
             return moved;
         }
 
-        // A space no car may be moved to: in view, or in any bus zone or within its margin.
+        // A space no car may be moved to: in view, or in any bus zone or its margin.
         private static bool Refused(Vector3 place)
         {
             return CitySpots.InView(place) || InAnyZone(place, 2.5f);
         }
 
-        // Whether a car of the given half length standing at a place would stand in a bus zone or its margin.
         private static bool InAnyZone(Vector3 place, float half)
         {
             for (int i = 0; i < TransitMap.Stops.Count; i++)
@@ -210,8 +203,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // One made zone after another, every few seconds: a lane that has come back whole is cut again and the cars in the zone
-        // go; where one of them is in view, the zone is made again from the timer's slices.
+        // One made zone after another, every few seconds: a lane come back whole is cut again and its cars go.
         private static void Watch()
         {
             int count = TransitMap.Stops.Count;

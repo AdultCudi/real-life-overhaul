@@ -1,10 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 using BAModAPI;
-using BigAmbitions.DayNightCycle;
 using BigAmbitions.Tags;
 using Extensions;
 using Helpers;
@@ -20,15 +17,10 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Owning a car, beyond what the game does (<see cref="CarRules"/> has every figure). For each car of the player's a
-    /// <see cref="CarRecord"/> is kept; while one is driven the distance is counted, the service comes due and tyres and
-    /// brakes wear, felt mildly through the wheels' grip and the brakes' torque, and fuel is used at the rate of the car's
-    /// kind. Everything changed on the car is recorded first and put back exactly on getting out, changing car, switching
-    /// the option off and unloading. A neglected service can end in a breakdown (no pedal through the car's own input hook,
-    /// hazards on) until roadside assistance, a tow or a garage has seen to it; a repair of crash damage is refunded for an
-    /// insured car. Once a game day: premiums, old claims, registrations. Cost: nothing a frame but one comparison; a timer
-    /// twice a second while a car is driven, once a second otherwise. A fault puts the car back as the game made it and
-    /// switches the feature off for the session.
+    /// Owning a car beyond what the game does (<see cref="CarRules"/> has every figure): distance, service, wearing tyres and
+    /// brakes, fuel by the car's kind, breakdowns and insurance, kept per car in a <see cref="CarRecord"/>. Everything changed
+    /// on the car is recorded first and put back exactly when it is left. Cost: one comparison a frame; a timer twice a second
+    /// while a car is driven, once a second otherwise. A fault puts the car back and switches the feature off for the session.
     /// </summary>
     public sealed partial class CarOwnership : MonoBehaviour
     {
@@ -42,10 +34,7 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static CarOwnership Instance { get; private set; }
 
-        /// <summary>
-        /// True while the panel over a broken-down or dry car has its button on the game's interact key, and in the frame that
-        /// button ran: the mod's own interact key does nothing else then.
-        /// </summary>
+        /// <summary>True while the panel over a broken-down car has its button on the game's interact key, and in the frame it ran.</summary>
         public static bool TakesInteractKey => Instance != null && (Instance._help.Showing || Instance._keyFrame == Time.frameCount);
 
         private readonly List<float> _stockSide = new List<float>(6);
@@ -279,7 +268,7 @@ namespace RealLifeOverhaul
             _helpKey = int.MinValue;
         }
 
-        /// <summary>Everything this put on the driven car comes off, exactly. Safe to call with no car.</summary>
+        // Everything this put on the driven car comes off, exactly. Safe with no car.
         private void Leave()
         {
             NwhVehicle vehicle = _vehicle;
@@ -337,10 +326,7 @@ namespace RealLifeOverhaul
             CarDash.Hide();
         }
 
-        /// <summary>
-        /// The city's potholes (Wiring/FaultLinks): whether the car's path since the last tick went over one, the share of tyre
-        /// life it takes and the jolt (m/s upwards). Null: no potholes.
-        /// </summary>
+        /// <summary>The city's potholes (Wiring/FaultLinks): whether the car went over one since the last tick, its wear and jolt. Null: none.</summary>
         public static RoadHitAsk RoadHit;
 
         public delegate bool RoadHitAsk(Vector3 from, Vector3 to, float speed, out float tyreWear, out float jolt);
@@ -350,7 +336,7 @@ namespace RealLifeOverhaul
         private Vector3 _wasAt;
         private bool _wasAtSet;
 
-        // Over a pothole since the last tick: the tyres worn (not on the easy setting) and the car jolted at its front wheels.
+        // Over a pothole: the tyres worn (not on the easy setting) and the car jolted at its front wheels.
         private void Pothole(float speed, bool easy)
         {
             Vector3 here = _body != null ? _body.position : _car.transform.position;
@@ -383,12 +369,12 @@ namespace RealLifeOverhaul
                 _record.Km += km;
                 if (!easy)
                 {
-                    // A build from the custom shop wears its tyres and brakes faster (0 for a stock car).
+                    // A custom shop build wears faster (0 for a stock car).
                     float worn = km * (1f + (_car.vehicleInstance != null ? GarageBridges.WearOf(_car.vehicleInstance.id) : 0f));
                     _record.Tyres = Mathf.Max(0f, _record.Tyres - worn / CarRules.TyreLife(_kind));
                     _record.Brakes = Mathf.Max(0f, _record.Brakes - worn / CarRules.BrakeLife(_kind));
                 }
-                // The game's own repair, at a station's garage, shows as the damage figure dropping.
+                // The game's own repair shows as the damage figure dropping.
                 if (_record.LastDamage >= 0f && damage < _record.LastDamage - 0.03f)
                 {
                     Repaired((_record.LastDamage - damage) * _price * 0.5f);
@@ -402,7 +388,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // One tick after getting in, so the car's own tuning has read the car as the game made it first.
+            // One tick after getting in, so the car's own tuning has read it as the game made it.
             if (now - _enteredAt >= DriveTick)
             {
                 ApplyWear(easy);
@@ -427,7 +413,6 @@ namespace RealLifeOverhaul
                 _vehicle.input.states.hazardLights = true;   // the lights' own toggle
             }
 
-            // The tank is the game's to show; what the car needs is one word beside it.
             bool fuelled = _fuel != null && _fuel.capacity > 0f && !save.gameVariables.disableVehicleFuel;
             float level = fuelled ? Mathf.Clamp01(_fuel.amount / _fuel.capacity) : 1f;
             string note = Note(easy);
@@ -451,8 +436,7 @@ namespace RealLifeOverhaul
                 _lowFuelTold = false;
             }
 
-            // Standing still with a breakdown or an empty tank outside a repair bay (whose own panel has the workshop): the
-            // panel over the car, with roadside assistance on the game's interact key.
+            // Standing still broken or dry outside a repair bay: the panel over the car, with roadside assistance.
             bool dry = fuelled && !easy && level <= 0.005f;
             bool still = (broken || dry) && speed < StoppedSpeed && !_servicing && _record != null && !_roadside.Active && !JobDirector.TakesInteractKey && !TransitDirector.TakesInteractKey
                          && (_help.Showing || !ThirdPersonCamera.IsUiOpen());
@@ -466,7 +450,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The wheels' grip and the brakes' torque for the wear there is, and the fuel system for the kind of car and the easy option.
+        // The wheels' grip and the brakes' torque for the wear, and the fuel system for the kind of car.
         private void ApplyWear(bool easy)
         {
             float grip = easy || _record == null ? 1f : CarRules.Grip(_record.Tyres);
@@ -523,7 +507,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Called by the car's input handler each frame while it is broken down: no pedal for the engine, the brakes still work.
+        // The car's input handler each frame while it is broken down: no pedal, the brakes still work.
         private void CutPedal()
         {
             NwhVehicle vehicle = _vehicle;

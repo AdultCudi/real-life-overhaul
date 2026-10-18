@@ -24,11 +24,7 @@ namespace RealLifeOverhaul
         public float LastDamage = -1f;   // the game's damage figure when last looked at; not saved
     }
 
-    /// <summary>
-    /// The rules of car ownership: prices, wear, odds. The game's own fuel, bodywork damage, dirt, tickets and towing are
-    /// left alone; this adds service intervals, tyres and brakes that wear, breakdowns, insurance and a yearly registration.
-    /// Prices are shares of the car's list price between a floor and a ceiling, so a supercar costs more to run.
-    /// </summary>
+    /// <summary>The rules of car ownership: prices as shares of the car's list price within bounds, wear and odds.</summary>
     public static class CarRules
     {
         public const float ServiceShare = 0.012f, ServiceLeast = 120f, ServiceMost = 900f;
@@ -39,7 +35,7 @@ namespace RealLifeOverhaul
         public const int RegistrationEarly = 30;      // days before it runs out that it can be renewed
         public const float PremiumShare = 0.006f, PremiumLeast = 40f, PremiumMost = 2500f;   // for four weeks of cover: a policy's is in proportion
         public const float PremiumPerClaim = 0.25f;   // each claim that still counts adds a quarter
-        /// <summary>A policy runs a month of the player's calendar.</summary>
+        /// <summary>Days of a policy: a month of the player's calendar.</summary>
         public static int PolicyDays => GameCalendar.MonthDays;
         private const float PremiumDays = 28f;        // the days the premium's figures are written for
         public const int ClaimForgottenAfter = 56;    // days without a claim after which one stops counting
@@ -74,14 +70,12 @@ namespace RealLifeOverhaul
             return Prices.At(Mathf.Round(Mathf.Clamp(price * PremiumShare, PremiumLeast, PremiumMost) * PolicyDays / PremiumDays * (1f + PremiumPerClaim * Mathf.Clamp(claims, 0, 6)) / 5f) * 5f);
         }
 
-        /// <summary>What the insurer pays towards a repair bill.</summary>
         public static float Payout(float bill)
         {
             return Mathf.Max(0f, Mathf.Round((bill - Excess) * Cover));
         }
 
-        /// <summary>Kilometres between services.</summary>
-        public static float ServiceEvery(CarKind kind)
+        public static float ServiceEvery(CarKind kind)   // kilometres
         {
             switch (kind)
             {
@@ -93,8 +87,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Kilometres a set of tyres lasts.</summary>
-        public static float TyreLife(CarKind kind)
+        public static float TyreLife(CarKind kind)       // kilometres
         {
             return kind == CarKind.Sports ? 120f : kind == CarKind.Truck || kind == CarKind.Van ? 200f : 180f;
         }
@@ -104,7 +97,7 @@ namespace RealLifeOverhaul
             return kind == CarKind.Sports ? 110f : kind == CarKind.Truck ? 120f : 150f;
         }
 
-        /// <summary>How thirsty a kind of car is beside the game's one figure for all of them.</summary>
+        /// <summary>How thirsty a kind of car is beside the game's one figure for all.</summary>
         public static float Thirst(CarKind kind)
         {
             switch (kind)
@@ -119,10 +112,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The chance of breaking down in the next kilometre: none until the service is overdue, 0.4% just after, 3% a whole
-        /// interval late; one per cent more with bodywork damage of 70% or worse.
-        /// </summary>
+        /// <summary>The chance of a breakdown in the next kilometre: none until the service is overdue; more with heavy damage.</summary>
         public static float BreakdownPerKm(float sinceService, float interval, float damage)
         {
             float odds = damage >= 0.7f ? 0.01f : 0f;
@@ -144,10 +134,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The records of the player's cars, in the save's modData under one key, by the game's vehicle instance id. A record
-    /// whose car the save no longer has is dropped when the save is read and whenever it is written.
-    /// </summary>
+    /// <summary>The records of the player's cars in the save's modData, by vehicle id; a car the save no longer has is dropped.</summary>
     public static class CarGarage
     {
         private const string Key = "reallife:garage";
@@ -228,7 +215,7 @@ namespace RealLifeOverhaul
             data[Key] = text.ToString();
         }
 
-        /// <summary>Drops the records of cars the save no longer has. Returns how many went.</summary>
+        /// <summary>Drops the records of cars the save no longer has; returns how many.</summary>
         public static int Prune(List<VehicleInstance> owned, List<VehicleInstance> lent)
         {
             Scratch.Clear();

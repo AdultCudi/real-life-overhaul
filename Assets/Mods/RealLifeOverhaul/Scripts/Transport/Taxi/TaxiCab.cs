@@ -6,21 +6,15 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The taxi that answers a call: one of the game's own taxis from the traffic pool (an idle one, else one driving out of
-    /// sight), nothing on it changed, so the game's outline, click, map, fare and ride work on it as on any taxi. It is put
-    /// on a lane point out of view with the game's TrafficManager.LoadVehicle and held as a bus is (ignored by the traffic
-    /// AI, an empty scripted route as the mark that it is ours, the standing-car check off), then driven by
-    /// <see cref="EmergencyDriver"/> in its lane, pulled up at red lights by <see cref="RouteGates"/>. The traffic system's
-    /// own scripted route would run its first red light (docs/features/transport.md, "Buses"). It stops at the caller's
-    /// lane point, pulled in to the kerb where <see cref="SceneParking.KerbRoom"/> finds free carriageway, and stands frozen
-    /// (the traffic springs have no damper). Ticked four times a second by the director while out; everything put on the
-    /// vehicle comes off in every way it ends (<see cref="Release"/>, <see cref="Abandon"/>).
+    /// The taxi that answers a call: one of the game's own taxis from the pool, unchanged, so its click, map, fare and ride
+    /// work. Held as a bus is and driven by <see cref="EmergencyDriver"/>, stopped at red lights by <see cref="RouteGates"/>
+    /// (the traffic's own scripted route runs its first). Ticked four times a second by the director while out.
     /// </summary>
     public sealed class TaxiCab
     {
         public enum Phase { Idle, Approaching, Standing }
 
-        /// <summary>How it is let go: taken off the road, handed back to the traffic AI, or whichever of the two nobody sees.</summary>
+        /// <summary>How it is let go: taken off the road, handed back to the traffic AI, or whichever nobody sees.</summary>
         public enum Leave { Remove, AsTraffic, Unseen }
 
         private const float Cruise = 11f;            // m/s, 40 km/h
@@ -56,45 +50,35 @@ namespace RealLifeOverhaul
 
         public VehicleComponent Car { get; private set; }
 
-        /// <summary>The game's own taxi on the vehicle: what the game's map holds while a destination is picked from it.</summary>
+        /// <summary>The game's own taxi on the vehicle, which the game's map holds while a destination is picked.</summary>
         public TaxiController Controller { get; private set; }
 
         public Phase State { get; private set; }
 
-        /// <summary>The lane point it stops at.</summary>
-        public Vector3 Stop { get; private set; }
-        /// <summary>The way the lane runs at its stop.</summary>
-        public Vector3 Along { get; private set; }
+        public Vector3 Stop { get; private set; }    // the lane point it stops at
+        public Vector3 Along { get; private set; }   // the way the lane runs there
 
-        /// <summary>What it is standing for on its way, if anything.</summary>
         public RoadHold Waiting { get; private set; }
         public float WaitingFor => Waiting == RoadHold.None ? 0f : Time.time - _heldSince;   // seconds
 
-        /// <summary>Seconds since it last got a metre nearer the end of its route.</summary>
         public float NoProgressFor => State == Phase.Approaching ? Time.time - _progressAt : 0f;
 
-        /// <summary>Metres of its route still to drive.</summary>
-        public float Remaining { get; private set; }
+        public float Remaining { get; private set; }     // metres of its route still to drive
 
-        /// <summary>Metres of road from where it was put to where it stops.</summary>
-        public float StartedBack { get; private set; }
+        public float StartedBack { get; private set; }   // metres of road from where it was put to where it stops
 
         /// <summary>Seconds since it was put on the road; standing, since it came to rest.</summary>
         public float Out => State == Phase.Idle ? 0f : Time.time - _since;
 
-        /// <summary>Seconds it took from being put on the road to standing.</summary>
-        public float Took { get; private set; }
+        public float Took { get; private set; }          // seconds from being put on the road to standing
 
-        /// <summary>True when it pulled in to the kerb to stand; false when it stands on the lane's line.</summary>
-        public bool AtKerb { get; private set; }
+        public bool AtKerb { get; private set; }         // it pulled in to the kerb to stand
 
-        /// <summary>Which vehicle it is and how it was come by, for the log.</summary>
-        public string Chassis { get; private set; }
+        public string Chassis { get; private set; }      // which vehicle it is and how it was come by, for the log
 
-        /// <summary>True while its vehicle is still the one it took and still ours (the pool hands vehicles out again).</summary>
+        /// <summary>True while its vehicle is still the one it took and still ours: the pool hands vehicles out again.</summary>
         public bool Held => Car != null && TrafficTools.IsHeld(Car) && Car.presetPath == _marker;
 
-        /// <summary>True while the vehicle is where the camera looks, by either of the mod's tests of that.</summary>
         public bool InView => Car != null && Seen(Car.transform.position);
 
         /// <summary>True once after the game or a scene took the vehicle from under it.</summary>
@@ -105,11 +89,7 @@ namespace RealLifeOverhaul
             return lost;
         }
 
-
-        /// <summary>
-        /// A taxi of the pool that can answer a call, or null: an idle one, else one driving out of sight (the caller takes it
-        /// off the road first). Never one somebody holds. One pass over the pool, when a call is made.
-        /// </summary>
+        /// <summary>A taxi of the pool that can answer, idle or driving out of sight, never one somebody holds; null if none.</summary>
         public static VehicleComponent Pick(out bool idle)
         {
             idle = false;
@@ -154,11 +134,7 @@ namespace RealLifeOverhaul
             return CitySpots.InView(place) || StreetSpots.IsInView(place);
         }
 
-
-        /// <summary>
-        /// Puts the taxi <see cref="Pick"/> gave in this same frame on the start of a plan, heading for the caller. False with
-        /// why; <paramref name="startTaken"/> says traffic stood on the start, so another plan may do.
-        /// </summary>
+        /// <summary>Puts the picked taxi on the start of a plan. False with why; <paramref name="startTaken"/>: traffic stood there.</summary>
         public bool Send(TaxiPlan plan, TaxiRoads roads, VehicleComponent pick, bool idle, out string refusal, out bool startTaken)
         {
             refusal = null;
@@ -218,8 +194,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Ours from here on: the traffic AI leaves it alone, and the empty scripted route keeps the game from taking it off the
-        // road by distance or for standing (the hold a bus and a response unit have).
+        // Ours from here on: the empty scripted route keeps the game from taking it off the road.
         private void Take(VehicleComponent car, TaxiController controller, string how)
         {
             Car = car;
@@ -243,7 +218,6 @@ namespace RealLifeOverhaul
             Chassis = "'" + TrafficTools.Name(car) + "' (" + how + ")";
         }
 
-        // The driver sets off along what is left of the route, its first place the next one ahead.
         private void Begin()
         {
             _gate = -1;
@@ -256,8 +230,6 @@ namespace RealLifeOverhaul
             _progressLeft = float.MaxValue;
         }
 
-
-        /// <summary>Four times a second while it is out.</summary>
         public void Tick(float now)
         {
             if (State == Phase.Idle)
@@ -266,7 +238,7 @@ namespace RealLifeOverhaul
             }
             if (!Held || !TrafficTools.Ready)
             {
-                // Taken by the game (traffic shut down for a building or a time skip, the pool reused it) or by a scene.
+                // Taken by the game (traffic shut down, the pool reused it) or by a scene.
                 Abandon();
                 _lost = true;
                 return;
@@ -288,7 +260,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // What the driver does not know of (red lights, closed roads), the roadside at the end, and how it is getting on.
+        // What the driver does not know of (red lights, closed roads), the kerb at the end, and progress.
         private void Drive(float now)
         {
             if (_braking)
@@ -298,7 +270,6 @@ namespace RealLifeOverhaul
             }
             if (_gate >= 0 && !_driver.Active)
             {
-                // Pulled up where it was told to.
                 if (!_parked)
                 {
                     Park();
@@ -373,7 +344,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The last metres: in to the kerb if it comes straight along the lane and the roadside is free carriageway. Asked once.
+        // In to the kerb for the last metres if it comes straight along the lane and the roadside is free.
         private void PullIn()
         {
             Vector3 forward = Car.transform.forward;
@@ -421,10 +392,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Where it came to rest against its stop: metres along the lane (past it positive), across it (towards the kerb
-        /// positive), and degrees off the lane's direction.
-        /// </summary>
+        /// <summary>Where it came to rest against its stop: metres along and across the lane, degrees off it.</summary>
         public void Measure(out float along, out float aside, out float angle)
         {
             along = aside = angle = 0f;
@@ -441,12 +409,7 @@ namespace RealLifeOverhaul
             angle = Vector3.Angle(forward, Along);
         }
 
-
-        /// <summary>
-        /// Every way out while the vehicle is ours. Handed back to the traffic AI it drives on as an ordinary taxi (always so
-        /// when the game's ride begins); taken off the road only out of view or when the city is closing. <paramref name="by"/>
-        /// is for the log.
-        /// </summary>
+        /// <summary>Every way out while ours: back to the traffic AI (always for the game's ride), or off the road out of view.</summary>
         public void Release(Leave how, string by)
         {
             if (State == Phase.Idle)
@@ -499,10 +462,9 @@ namespace RealLifeOverhaul
             Forget();
         }
 
-        /// <summary>True if the last release handed the vehicle back to traffic, for the log.</summary>
-        public bool LeftAsTraffic { get; private set; }
+        public bool LeftAsTraffic { get; private set; }  // the last release handed the vehicle back to traffic, for the log
 
-        // The vehicle is no longer ours (the pool reused it, traffic shut down): only what is still ours on it is undone.
+        // The vehicle is no longer ours: only what is still ours on it is undone.
         private void Abandon()
         {
             if (_driver != null)

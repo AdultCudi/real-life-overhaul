@@ -14,13 +14,12 @@ namespace RealLifeOverhaul
         private static int _propsMask = -1;
         private static NavMeshPath _way;
 
-        // A move of the player's own, with no screen in the way.
         private static bool WantsOff()
         {
             return !ThirdPersonCamera.IsUiOpen() && !GameManager.ShouldBlockKeyboardShortcuts() && PlayerAction.Move.Vector().sqrMagnitude > 0.25f;
         }
 
-        // Off again before the bus has left: the fare back, up from the seat if they sit, out by the nearest door.
+        // Off again before the bus has left: the fare back, up from the seat, out by the nearest door.
         private void GetOff(float now, string why)
         {
             if (_gotOff)
@@ -33,7 +32,6 @@ namespace RealLifeOverhaul
             Up(now);
         }
 
-        // Up from the seat if they sit, else straight to the way out.
         private void Up(float now)
         {
             _clips.StopOver(0.1f);
@@ -56,7 +54,7 @@ namespace RealLifeOverhaul
                 _clips.Stop(0.25f);
             }
             _frontWayOut = BusInside.WayOut(_at, _path);
-            // The place to step down to: one with a way from it onto the pavement, by the nearer door first.
+            // The place to step down to has a way from it onto the pavement, by the nearer door first.
             BusVehicle bus = _bus != null ? _bus.Vehicle : null;
             _offChosen = false;
             if (bus != null)
@@ -89,7 +87,7 @@ namespace RealLifeOverhaul
             StartWalk(Then.Off);
         }
 
-        // A place to step down to beside a door: on the walkable ground, nothing standing there, and a way from it to the waiting place.
+        // A place to step down to: walkable, nothing standing there, and a way from it to the waiting place.
         private bool OffAt(BusInside.Approach approach, BusVehicle bus, TransitStop stop, out Vector3 road)
         {
             BusInside.Spot at = approach.At;
@@ -100,7 +98,7 @@ namespace RealLifeOverhaul
             return stop == null || Reachable(road, stop.Wait);
         }
 
-        // At the threshold: down onto the road, walking, to the place beside the door found on the navigation mesh.
+        // From the threshold down onto the road, to the place found beside the door.
         private void StepDown(float now, BusVehicle bus)
         {
             if (bus == null)
@@ -149,9 +147,8 @@ namespace RealLifeOverhaul
             Clear();
         }
 
-        // The place to walk to, to get on: the first of BusInside.BoardTries (the director's place at the front door first) on
-        // the walkable ground, with nothing standing on it, that the game's navigation can walk to. Returns which was taken (0
-        // for the director's own place), or -1 for none.
+        // The place to walk to, to get on: the first of the tries that is walkable, free and reachable by the game's navigation.
+        // Returns which was taken (0 for the director's own place), or -1 for none.
         private int ChooseApproach(BusVehicle bus, Vector3 from, Vector3 door, out Vector3 at, out bool middle)
         {
             at = door;
@@ -198,7 +195,7 @@ namespace RealLifeOverhaul
             return door + (Mathf.Abs(a.Along) > 0.01f ? ", " + Mathf.Abs(a.Along).ToString("F1", CultureInfo.InvariantCulture) + " m along the kerb" : "");
         }
 
-        // A way on the walkable ground from one point to the other, all the way, by the game's own navigation mesh.
+        // A whole way on the game's navigation mesh from one point to the other.
         private static bool Reachable(Vector3 from, Vector3 to)
         {
             if (_way == null)
@@ -208,8 +205,7 @@ namespace RealLifeOverhaul
             return NavMesh.CalculatePath(from, to, NavMesh.AllAreas, _way) && _way.status == NavMeshPathStatus.PathComplete;
         }
 
-        // The stop's own pole (the mod's, on no layer the game's furniture is on) where a person would stand, or so near that the
-        // last steps to the door would walk into it or its timetable plate.
+        // The stop's own pole (on no layer the game's furniture is on) where a person would stand, or so near they would walk into it.
         private bool ByPole(Vector3 at)
         {
             if (_from == null)
@@ -220,7 +216,6 @@ namespace RealLifeOverhaul
             return CitySpots.Flat(at - _from.Sign) < reach * reach;
         }
 
-        // Street furniture standing where a person would: a pole, a bin, a bench.
         private static bool Furnished(Vector3 at)
         {
             if (_propsMask < 0)
