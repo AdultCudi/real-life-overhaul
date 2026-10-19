@@ -58,10 +58,7 @@ namespace RealLifeOverhaul
             if (save.Happiness < 35f) flags |= Need.Unhappy;
             flags |= hasVehicle ? Need.HasVehicle : Need.NoVehicle;
             if (OwnsBusiness(save)) flags |= Need.HasBusiness;
-            if (LifeBridges.HasHome != null && LifeBridges.HasHome())
-            {
-                flags |= Need.HasHome;
-            }
+            if (LifeAccounts.HasHome()) flags |= Need.HasHome;
             if (TimeHelper.CurrentDay - ModState.LastMomGiftDay >= 7) flags |= Need.MomGiftDue;
             if (PhoneContacts.Friend != null) flags |= Need.Friend;
             if (PhoneContacts.Mom != null) flags |= Need.Mom;

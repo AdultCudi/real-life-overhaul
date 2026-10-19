@@ -21,7 +21,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `LicenceLinks.cs` | `Licences.Law`, `Justice.Bridges.Licences`, and what Licences reports to the courts instead of fining |
 | `Scenes.cs` | `Wiring.Scenes`: the one question every street scene asks before it starts; `PlayerHeld` for panels |
 | `CivicLinks.cs` | `CivicBridges` (record, reputation, scenes, weather, news, city people; for running for office the economy's cycle, Standing's influence, recognition and integrity, a conviction or a case, a let building, Standing's notice, a summons); `Wiring.Paper.Print`: a finished story for the City Ledger |
-| `LifeLinks.cs` | `SocialLinks`, `CareerLinks`, `TravelBridges`, `Justice.Bridges.Social`, `GarageBridges.RoadIsWet`, `LifeBridges.HasHome` |
+| `LifeLinks.cs` | `SocialLinks`, `CareerLinks`, `TravelBridges`, `Justice.Bridges.Social`, `GarageBridges.RoadIsWet`, `LifeAccounts.Home` |
 | `Wiring.DrivingLinks.cs` | `DrivingBridges`: the custom shop's parts lifted off the driven car and laid back on top of its handling |
 | `EconomyLinks.cs` | `Economy.EconomyBridges` (the record the credit rating reads, the fines and court debts the Finance app lists), the Finance rows of the Planner, and the banks' own terms put back on unload |
 | `FamilyLinks.cs` | `FamilyBridges.Social`, `Home`, `Law` and `SocialLinks.PartnerChanged` |
@@ -152,7 +152,7 @@ The one theoretical overlap left is `SceneCordon.Recheck`, which looks at its ow
 | `DrivingBridges.LiftParts`, `LayParts` | `Wiring.DrivingLinks` | `GarageCar.LiftHandling` and `LayHandling`: the parts off before the handling changes a car, back on top after (nothing with no build) |
 | `HomeBridges.Sheltered` | `Wiring.LifeLinks` | up in a hotel room (`TravelState.InRoom`) counts as indoors for the rain and the cold it brings |
 | `HomeBridges.SleepingAway` | `Wiring.LifeLinks` | a night or a nap in a hotel room (`HotelStay.SleepingBed`) counts as sleep, in a bed of 50 plus the room's sleep bonus |
-| `LifeBridges.HasHome` | `Wiring.LifeLinks` | `HomeTidy.HasHome`: a residential building rented or owned by the player; a hotel or hostel booking does not count. No home when unwired or on a fault |
+| `LifeAccounts.Home` | `Wiring.LifeLinks` | `HomeTidy.HasHome`: a residential building rented or owned by the player; a hotel or hostel booking does not count. No home when unwired or on a fault |
 | `GarageBridges.WearOf`, `InsuranceOf` | `Transport/CarOwnership`, `CarPhone` | tyres and brakes wear `1 + WearOf` times as fast; the premium is `1 + InsuranceOf` times `CarRules.Premium`, on the bill and on the Garage page |
 | `GarageBridges.ValueAdded`, `GarageSummary.Lines` | nobody | Transport has no resale; `Lines` lists every car at once, the Garage page shows one (it needs a one-car form) |
 | `GarageBridges.HasMotorcycleLicence`; `Licences.Driving.TwoWheelerOf`, `OwnsMotorbike` | `Wiring.LicenceLinks` | the motorcycle class: held or not at the sale; a motorbike is the class and a bicycle none; a save that owns one is given the licence once |

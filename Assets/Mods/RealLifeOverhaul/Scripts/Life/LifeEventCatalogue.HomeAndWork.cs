@@ -26,7 +26,7 @@ namespace RealLifeOverhaul
             E("hm13", HasHome, Info()),
             E("hm14", HasHome, Warn().Money(-70, -30, "purchase")),
             C("hm15", HasHome, 15, "donation", Yes(Good().Feel(Mood.Generous)), No(Info().Down())),
-            E("hm16", None, Good().Up()),
+            E("hm16", HasHome, Good().Up()),
             E("hm17", None, Warn().Money(-50, -20, "purchase")),
             E("hm18", None, Good().Feel(Mood.Helped)),
             E("hm19", HasHome, Warn().Tire(5)).At(5, 9),
