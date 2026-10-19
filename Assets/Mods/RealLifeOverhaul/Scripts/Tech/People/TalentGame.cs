@@ -282,7 +282,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>The employee leaves of their own accord, as the game has one leave whose complaint went unanswered.</summary>
+        /// <summary>
+        /// The employee leaves of their own accord, as the game has one leave whose complaint went unanswered. A
+        /// rival's offer to them in the game's messages loses its buttons at once (Core/RivalOfferGuard).
+        /// </summary>
         public static void Resign(EmployeeInstance e)
         {
             Logger?.Info("Tech: " + NameOf(e) + " leaves (the game's own resignation).");
@@ -293,13 +296,15 @@ namespace RealLifeOverhaul.Tech
             {
                 e.Resign();
             }
+            RivalOfferGuard.Look("a tech employee's resignation");
         }
 
-        /// <summary>The employee is let go: the game's own firing.</summary>
+        /// <summary>The employee is let go: the game's own firing. A rival's offer to them loses its buttons.</summary>
         public static void Fire(EmployeeInstance e)
         {
             Logger?.Info("Tech: " + NameOf(e) + " is let go (the game's own firing).");
             e.RemoveEmployee();
+            RivalOfferGuard.Look("a tech employee let go");
         }
 
         /// <summary>A deductible cost of the business at its address, cents; wages in the salaries line; <paramref name="force"/> for what is owed whatever the cash.</summary>

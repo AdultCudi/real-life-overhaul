@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Flare
 {
-    /// <summary>The Flare app's frame: rail, header, list, side and sheet layer; made once, laid out again when its size changes.</summary>
+    /// <summary>The Flare app's frame: rail, header (its light and dark switch: FlareApp.Theme.cs), list, side and sheet layer; made once, laid out again when its size changes.</summary>
     public sealed partial class FlareApp
     {
         private const float RailWidth = 470f, SideWidth = 760f, ColumnMost = 1500f, Margin = 34f, HeaderHeight = 150f, NavHeight = 92f;   // canvas units
@@ -85,6 +85,7 @@ namespace RealLifeOverhaul.Flare
                 FlareKit.Stretch(_tabLabels[i].rectTransform, 0f, 0f, 0f, 10f);
                 _tabBars[i] = FlareKit.Box(_tabHits[i].transform, "Bar", Color.white, 3f);
             }
+            BuildTheme();
             _headerLine = FlareKit.Box(_header, "Line", Color.white);
             _list = new FlareList(_column, MakeCell, Estimate);
 
@@ -248,7 +249,8 @@ namespace RealLifeOverhaul.Flare
             float x = back ? 80f : 0f;
             FlareKit.Place(_backButton.rectTransform, 6f, 22f, 52f, 52f);
             float colW = _header.rect.width;
-            FlareKit.Place(_title.rectTransform, x, 6f, colW - x, 84f);
+            float themeW = WriteTheme(colW);
+            FlareKit.Place(_title.rectTransform, x, 6f, colW - x - themeW, 84f);
             FlareKit.Set(_title, title);
             int count = tabs != null ? tabs.Length : 0;
             float tabW = count > 0 ? Mathf.Min(320f, colW / count) : 0f;
