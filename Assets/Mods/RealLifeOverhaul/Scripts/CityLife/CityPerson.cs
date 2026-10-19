@@ -169,6 +169,35 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// Lays them on a bed as the game lays the player down to sleep (<c>ThirdPersonCharacter.LayOnBed</c>: the game's lying
+        /// pose, the body put on the place given, the navigation agent off). <see cref="Rise"/> stands them up again where they
+        /// stood. The bed is not marked taken, so the player can still lie down in it. False, and nothing changed, if they cannot.
+        /// </summary>
+        public bool Lie(EntityController bed, Transform at)
+        {
+            if (Lost || bed == null || at == null || _seat != null || !Character.animator.HasParameter(PermanentAnimationType.Laying.ToString()))
+            {
+                return false;
+            }
+            Idle(0.15f);
+            ClearPose();
+            StopOver(0.15f);
+            CityLifeDirector.StopFacing(this);
+            Stand();
+            _stoodAt = Character.transform.position;
+            _stoodFacing = Character.transform.rotation;
+            _seat = at;
+            NavMeshAgent agent = Character.navmeshAgent;
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+            }
+            agent.enabled = false;   // on the bed, off the mesh: as the game's SitOnChair does for a seat
+            Character.LayOnBed(bed, at);
+            return true;
+        }
+
+        /// <summary>
         /// Stands them up where they stood before they sat, by the game's own way off a seat (<c>ThirdPersonCharacter.Reset</c>:
         /// the agent on again, the seat told that it is free, the pose off). Safe at any time, seated or not; every way a
         /// person is moved, played or put away goes through it, so nobody is ever left sitting on nothing.

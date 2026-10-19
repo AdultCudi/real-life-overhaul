@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Family
             list.Add(new Choice(() => HomeLife.CanPlanDate, () => FamilyText.Say("reallife_family_do_date", Args.Us.Cost(FamilyBalance.DinnerCost)), "reallife_family_do_date_yes",
                 HomeLife.PlanDate));
             _cookAt = list.Count;
-            list.Add(new Choice(() => HomeLife.CanCook && InPerson, () => FamilyText.Say("reallife_family_do_cook"), "reallife_family_do_cook_yes", HomeLife.Cook));
+            list.Add(new Choice(() => HomeLife.CanCook && InPerson, () => FamilyText.Say(HomeLife.CookAsk), "reallife_family_do_cook_yes", HomeLife.Cook));
             list.Add(new Choice(() => HomeLife.CanWatch && InPerson, () => FamilyText.Say("reallife_family_do_watch"), "reallife_family_do_watch_yes", HomeLife.Watch));
             list.Add(new Choice(() => FamilyState.Together && !s().LivesIn,
                 () => FamilyText.Say("reallife_family_do_move_in"), "reallife_family_do_move_in_yes", () =>

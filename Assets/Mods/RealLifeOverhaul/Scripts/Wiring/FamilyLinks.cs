@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BigAmbitions.DayNightCycle;
+using Entities;
 using RealLifeOverhaul.Law;
 using FamilyApi = RealLifeOverhaul.Family.FamilyApi;
 using FamilyBridges = RealLifeOverhaul.Family.FamilyBridges;
@@ -212,6 +213,20 @@ namespace RealLifeOverhaul
                     }
                 }
 
+                public DialogEntry ChatInPerson(Func<DialogEntry> more, Action leave)
+                {
+                    try
+                    {
+                        SocialPerson p = PeopleOn ? SocialState.Partner : null;
+                        return p != null ? SocialFaceChat.Start(p, more, leave) : null;
+                    }
+                    catch (Exception e)
+                    {
+                        Fault("FamilyLinks.ChatInPerson", e);
+                        return null;
+                    }
+                }
+
                 public int ClosePeople(List<PersonInfo> into, int most)
                 {
                     int added = 0;
@@ -249,11 +264,97 @@ namespace RealLifeOverhaul
 
             private sealed class HomeForFamily : FamilyHomeBridge
             {
-                public bool CookTogether(string partner) => false;
+                public bool CookTogether(string partner, Action<bool> done)
+                {
+                    try
+                    {
+                        return CookingTogether.Start(done);
+                    }
+                    catch (Exception e)
+                    {
+                        Fault("FamilyLinks.CookTogether", e);
+                        return false;
+                    }
+                }
 
                 public bool WatchTogether(string partner) => false;
 
                 public bool HealthVisit(string reason) => false;
+
+                private static readonly List<PantryItem> Pantry = new List<PantryItem>(16);
+
+                public int FoodUnits
+                {
+                    get
+                    {
+                        try
+                        {
+                            if (!HomeState.Loaded || !Settings.HomeLife || !HomeTidy.AtHome())
+                            {
+                                return -1;
+                            }
+                            HomePlace.Scan(true);
+                            if (HomePlace.Fridges.Count == 0)
+                            {
+                                return -1;   // no fridge: nothing to fill
+                            }
+                            HomePlace.ReadPantry(Pantry);
+                            int units = Math.Max(0, HomeState.Leftovers);
+                            for (int i = 0; i < Pantry.Count; i++)
+                            {
+                                units += Pantry[i].Amount;
+                            }
+                            return units;
+                        }
+                        catch (Exception e)
+                        {
+                            Fault("FamilyLinks.FoodUnits", e);
+                            return -1;
+                        }
+                    }
+                }
+
+                public bool Tidied(float points)
+                {
+                    try
+                    {
+                        return Roommates.RoommateGame.Tidy(points);   // as a tidy roommate's cleaning: the game's own dirt off the floor
+                    }
+                    catch (Exception e)
+                    {
+                        Fault("FamilyLinks.Tidied", e);
+                        return false;
+                    }
+                }
+
+                public float Tidiness => HomeState.Loaded && Settings.HomeLife && Settings.HomeNeeds && HomeTidy.HasHome ? HomeState.Tidy : -1f;
+
+                public float Hygiene => HomeState.Loaded && Settings.HomeLife && Settings.HomeNeeds ? HomeState.Hygiene : -1f;
+
+                public float CarDirt
+                {
+                    get
+                    {
+                        float most = -1f;
+                        try
+                        {
+                            List<VehicleController> cars = Helpers.VehicleHelper.AllPlayerVehicles;
+                            for (int i = 0; cars != null && i < cars.Count; i++)
+                            {
+                                VehicleInstance car = cars[i] != null ? cars[i].vehicleInstance : null;
+                                if (car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle)
+                                {
+                                    most = Math.Max(most, car.dirtiness);
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Fault("FamilyLinks.CarDirt", e);
+                        }
+                        return most;
+                    }
+                }
 
                 public bool CareWhenSick(string partner)
                 {

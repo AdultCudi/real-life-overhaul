@@ -243,6 +243,8 @@ internal static partial class Program
         FamilyExpect(); // the partner expects a bigger home and more evenings out as the player gets richer (FamilyExpectChecks.cs)
         FamilyWork();   // the partner cuts back to half days once the player is well off (FamilyWorkChecks.cs)
         FamilyFixes();  // family life: a refused passage done at once, the player's own missed appointment booked again, counselling's threshold (FamilyFixChecks.cs)
+        FamilyHomeFixes();  // the partner at home: night texts kept for the morning, cooking and watching together, moving about, the chat face to face (FamilyHomeChecks.cs)
+        FamilyChores();  // household chores asked when really so and counted when really done (FamilyChoreChecks.cs)
         MetaFixes();    // the options page and Report a bug: Import without its backup, a report never left busy, the pages' search and dispatcher lines (MetaFixChecks.cs)
         MoodBuffs();    // the mod's moods: a cap from each catalogue entry, a load puts saved moods back as saved (never through Going Public's scaled add), a save past the cap trimmed once (MoodBuffChecks.cs)
         LaterLanguages(); // Dutch and Turkish: listed wherever the other languages are, as complete as the other translations, What's new numbered and marked (LaterLanguageChecks.cs)
