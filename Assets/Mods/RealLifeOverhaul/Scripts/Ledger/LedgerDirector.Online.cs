@@ -139,7 +139,8 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
-        // The morning's one notification: which titles are in, and what was paid for renewals this morning.
+        // The morning's one notification: which titles are in, and what was paid for renewals this morning. The round waits out
+        // a time skip, so after a night's sleep it comes as the player wakes: held for the morning line (Core/MorningNews).
         private void Told(int day)
         {
             if (_online.NotedDay >= day)
@@ -166,7 +167,7 @@ namespace RealLifeOverhaul.Ledger
             }
             string key = _paidNow > 0 ? (count == 1 ? "reallife_ledger_online_note_in_one_paid" : "reallife_ledger_online_note_in_paid")
                 : count == 1 ? "reallife_ledger_online_note_in_one" : "reallife_ledger_online_note_in";
-            Notifications.Show(NotificationType.Info, key, LedgerText.Data("count", count.ToString(), "titles", _names.ToString(), "paid", LedgerText.Money(_paidNow)), 8f);
+            MorningNews.Show(NotificationType.Info, key, LedgerText.Data("count", count.ToString(), "titles", _names.ToString(), "paid", LedgerText.Money(_paidNow)), 8f);
         }
 
         private bool PayOnline(int sub)

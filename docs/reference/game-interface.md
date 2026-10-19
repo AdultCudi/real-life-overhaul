@@ -94,6 +94,28 @@ With "Developer diagnostics" on, `Notice check (attach)` says how many kinds got
 - **Option and test.** "The mod's notifications carry their own picture and colour" (on by default; off, they look like the game's).
   Options > Tests: "One notification of each kind" shows the eleven, 1.2 s apart, kept in the list.
 
+### The night's news, held for the morning line (`Core/MorningNews`, `Core/MorningNewsRules`)
+
+The game's sleep runs its time skip with the game paused (`TimeMachine.StartTimeMachine` sets the game's speed to paused, `Time.timeScale` 0), so the parts of the mod that keep the city's hours on game time stand still until it ends and then catch up every hour at once: Civic's government and works (policies in force and ended, works finished next door), Events' weather and what is on, the Ledger's round of the morning's papers.
+Without a hold they all came in the minute the player woke, beside the morning line.
+
+- **Who sends through it.** `Events/Weather` (warnings, the forecast, power cuts), `Events/EventDirector.Tell` (what is on today and tomorrow), `Civic/CivicText` (every city toast, and a guest's copy of the host's), `Ledger/LedgerDirector.Online.Told` (the papers). None carries a click; each still calls `Notifications.Show` itself when nothing is held.
+- **When it holds.** From the player lying down (`HomeDirector.Sleep`, a sleep of the game's or a hotel night) to a moment after the wake: 1.5 s of game time, when every part on game time has looked again, or 6 s of real time at most. A newer notice with the game's duplicate id (the weather's) takes the held one's place; a dozen at most, more are shown at once.
+- **Where it goes.** With the morning line due, `HomeReport.Morning` takes it: each notice's own words, whole and in the order it came, packed by `MorningNewsRules.Pack` into the line's own notification ("{morning} While you slept: {news}") and as few more as fit ("Also while you slept: {news}"), 240 characters each in the player's language; a notice too long to share one goes out as it came. A part's colour is its strongest notice's, the line's own unless its news holds a warning. With no line due (a nap, told already today) each is shown as it came; the city unloading drops it.
+- **Option and test.** "The night's news in the morning summary" (on by default, under Needs and wellbeing; it needs "Morning summary after a night's sleep"); off, nothing is held. Options > Tests: "Wake up to the morning summary with three pieces of news". Nothing is sent over the network; a guest of Going Public holds its own copies of the host's city toasts.
+
+### Notices with a switch of their own
+
+Each only quiets its notification: what it tells of still happens and is still in its app.
+
+| switch | section | quiets | still there |
+| --- | --- | --- | --- |
+| A notification when the city asks something of you | Standing and reputation | `reallife_fame_note_request` | the Standing page in the Finance app |
+| Notifications about protests | Events and weather | a protest's what is on, start and end (`EventCalendar.Quiet`) | the street closed, the City Bulletin's line |
+| A notification for each contract offered | Working for yourself | `reallife_own_note_offer` | the Career app's Own work tab |
+| A notification for each client offer and tender | Tech sector | `reallife_tech_note_offer`, `reallife_tech_note_tender` | the Tech app's Contracts tab |
+| A notification when your credit rating rises | Credit rating and loans | `reallife_econ_note_grade_up` (a fall is always told) | the Finance app, its badge |
+
 ## On screen, everywhere: no canvas of the mod's but the options page
 
 The mod's shared layer (`Core/Hud`, `Jobs/JobHud` and each feature's own copy) is gone.

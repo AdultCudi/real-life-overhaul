@@ -322,16 +322,20 @@ namespace RealLifeOverhaul.Economy
                 bool up = now > was;
                 int score = CreditLedger.File != null ? CreditLedger.File.LastScore : 0;
                 bool shut = score < CreditCatalogue.LendingThreshold;
-                Notifications.Show(up ? NotificationType.Success : NotificationType.Warning,
-                    up ? "reallife_econ_note_grade_up" : shut ? "reallife_econ_note_grade_down_shut" : "reallife_econ_note_grade_down",
-                    new Dictionary<string, string>
-                    {
-                        { "score", score.ToString() }, { "grade", FinanceText.Grade(now) }, { "was", FinanceText.Grade(was) },
-                        { "threshold", CreditCatalogue.LendingThreshold.ToString() }
-                    }, 10f, null, Guard.Wrap(OpenCredit), true, false);
+                bool told = !up || Settings.EconomyGradeUpNotes;   // a better grade may go untold; a worse one is always told
+                if (told)
+                {
+                    Notifications.Show(up ? NotificationType.Success : NotificationType.Warning,
+                        up ? "reallife_econ_note_grade_up" : shut ? "reallife_econ_note_grade_down_shut" : "reallife_econ_note_grade_down",
+                        new Dictionary<string, string>
+                        {
+                            { "score", score.ToString() }, { "grade", FinanceText.Grade(now) }, { "was", FinanceText.Grade(was) },
+                            { "threshold", CreditCatalogue.LendingThreshold.ToString() }
+                        }, 10f, null, Guard.Wrap(OpenCredit), true, false);
+                }
                 if (Verbose)
                 {
-                    Logger?.Info("Economy: the grade changed from " + was + " to " + now + " at " + score + ".");
+                    Logger?.Info("Economy: the grade changed from " + was + " to " + now + " at " + score + (told ? "." : "; no notification: a better grade is switched off."));
                 }
                 Badge();
             }

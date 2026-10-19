@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using BAModAPI;
 using BigAmbitions.Items;
 using Extensions;
@@ -32,8 +33,10 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// Home life and health: once a second it reads what the player is doing off the game's activity panel and moves the
-    /// needs; on the hour and at midnight it settles mood, illness and diet; it offers the routines. Cost: idle, one time
-    /// compare a frame; a run is ticked four times a second. A fault switches the feature off for the session.
+    /// needs; on the hour and at midnight it settles mood, illness and diet; it offers the routines; on waking from a sleep
+    /// it sends the morning line, with the city's news held while the player slept (Home/WakeRules, Core/MorningNews).
+    /// Cost: idle, one time compare a frame; a run is ticked four times a second. A fault switches the feature off for
+    /// the session.
     /// </summary>
     public sealed partial class HomeDirector : MonoBehaviour
     {
@@ -74,7 +77,13 @@ namespace RealLifeOverhaul
         private float _lastMinutes = -1f;
         private int _lastHour = -1;
         private float _lastHunger;
-        private float _slept;
+        private float _laidAt = -1f;     // game minutes: the clock at the last look before the player was seen asleep (Home/WakeRules); -1 while awake
+        private float _endedAt = -1f;    // game minutes: when the game itself ended that sleep (its energy event from SleepActivity.Finish); -1 not yet
+        private bool _awayNight;         // that sleep is a hotel room's, which the room ends rather than the game
+        private float _wokeReal = -1f;   // real seconds: the wake whose morning line waits for the city's news (Core/MorningNewsRules.CaughtUp); -1 none
+        private float _wokeGame;         // game seconds (Time.time) at that wake
+        private float _wokeHours;        // that sleep's hours, for its line
+        private int _wokeHour;           // the hour it ended at, for its greeting
         private int _bedHour;
         private int _bedQuality;
         private bool _bedCar;
@@ -112,6 +121,7 @@ namespace RealLifeOverhaul
         {
             SaveHook.Drop(_onSave);
             GameEvent.onGameEventTriggered -= _onGameEvent;   // the wrapped handler that was put on
+            MorningNews.Drop();   // the city is going: news held for a morning line goes with it, unshown (before TakeBack would show it)
             TakeBack();
             HomeCookList.Remove();
             HomeNeedsBar.Remove();
@@ -270,6 +280,9 @@ namespace RealLifeOverhaul
                 _starting = null;
                 _plan = null;
                 _offersTold = false;
+                _laidAt = -1f;
+                _wokeReal = -1f;
+                MorningNews.Release();   // news held while asleep is shown as it came: no morning line will take it
                 HomeCookList.Close("home life was switched off or the city is unloading");
             }
             catch (Exception e)
@@ -310,6 +323,7 @@ namespace RealLifeOverhaul
             EventHold.Keep(ref GameEvent.onGameEventTriggered, _onGameEvent, ref _gameEventSeen);
 
             float minutesNow = TimeHelper.NowInMinutes();
+            float minutesBefore = _lastMinutes;   // the clock at the last look: a sleep first seen now began after it
             float minutes = minutesNow - _lastMinutes;
             _lastMinutes = minutesNow;
             if (minutes < 0f || minutes > 3f * 24f * 60f)
@@ -350,10 +364,11 @@ namespace RealLifeOverhaul
             {
                 doing = Doing.Sleeping;   // a hotel night: the time skip is sleep, though no bed of the game's is in use
             }
-            Sleep(doing, minutes, atHome, awayBed);
+            Sleep(doing, minutesNow, minutesBefore, atHome, awayBed);
             _doing = doing;
             HomeHealth.Advance(minutes, doing, atHome, onFootOutside, _run.Active ? _run.Boost : 1f);
             _lastHunger = save.Hunger;
+            MorningLine(now);
 
             int hour = TimeHelper.CurrentHour;
             if (hour != _lastHour)
@@ -439,13 +454,18 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void Sleep(Doing doing, float minutes, bool atHome, int awayBed)
+        // A sleep is counted from the last look before it was seen (the player lay down after it) to the minute the game ended
+        // it, or for a hotel night the look that finds it over (Home/WakeRules). Only that wake can bring the morning line.
+        private void Sleep(Doing doing, float minutesNow, float minutesBefore, bool atHome, int awayBed)
         {
             if (doing == Doing.Sleeping)
             {
                 if (_doing != Doing.Sleeping)
                 {
-                    _slept = 0f;
+                    _laidAt = minutesBefore;
+                    _endedAt = -1f;
+                    _awayNight = awayBed >= 0;
+                    MorningNews.Hold();   // the city's news waits for the morning line from now (Core/MorningNews)
                     _bedHour = TimeHelper.CurrentHour;
                     _bedCar = PlayerHelper.IsUsingVehicle;
                     _bedHome = atHome;
@@ -472,21 +492,69 @@ namespace RealLifeOverhaul
                         }
                     }
                 }
-                _slept += minutes;
                 return;
             }
-            if (_doing != Doing.Sleeping || !Settings.HomeSleep)
+            if (_doing != Doing.Sleeping)
             {
                 return;
             }
-            float hours = _slept / 60f;
-            _slept = 0f;
+            float laidAt = _laidAt;
+            bool ended = WakeRules.Ended(_awayNight, _endedAt, laidAt);
+            float roseAt = WakeRules.RoseAt(_endedAt, laidAt, minutesNow);
+            float hours = WakeRules.Hours(laidAt, roseAt);
+            _laidAt = -1f;
+            _endedAt = -1f;
+            if (!Settings.HomeSleep)
+            {
+                MorningNews.Release();
+                return;
+            }
             HomeHealth.Slept(hours, _bedQuality, _bedCar, _bedHour, _bedHome);
             int day = TimeHelper.CurrentDay;
-            if (hours >= 3f && Settings.HomeMorning && HomeState.MorningDay != day)
+            bool due = WakeRules.Due(Settings.HomeMorning, laidAt, ended, hours, day, HomeState.MorningDay);
+            if (Meta.Dev.Verbose)
             {
-                HomeState.MorningDay = day;
-                HomeReport.Morning(hours);
+                Logger?.Info("Home check (morning line): slept " + hours.ToString("F1", CultureInfo.InvariantCulture) + " h, from minute "
+                             + laidAt.ToString("F0", CultureInfo.InvariantCulture) + " to " + roseAt.ToString("F0", CultureInfo.InvariantCulture)
+                             + (_awayNight ? " (a hotel night)" : ended ? " (ended by the game's own sleep)" : " (never ended by the game's sleep)") + "; "
+                             + (due ? "the line goes out" + (MorningNews.Holding ? " with the city's news held meanwhile" : string.Empty)
+                                 : "no line: " + (!Settings.HomeMorning ? "the morning summary is off" : !ended ? "not a sleep the game ended"
+                                     : hours < WakeRules.NightAtLeast ? "a nap" : "told already today"))
+                             + ": PASS");
+            }
+            if (!due)
+            {
+                MorningNews.Release();   // no line to carry it: each held notice is shown as it came
+                return;
+            }
+            HomeState.MorningDay = day;
+            if (!MorningNews.Holding)
+            {
+                HomeReport.Morning(hours, TimeHelper.CurrentHour);
+                return;
+            }
+            _wokeHours = hours;
+            _wokeHour = TimeHelper.CurrentHour;
+            _wokeGame = Time.time;
+            _wokeReal = Time.unscaledTime;
+        }
+
+        // The morning line of a wake once the city's news it waits for has come in (Core/MorningNewsRules.CaughtUp), with that
+        // news in it; and news held for a summary whose option has since been switched off, shown as it came.
+        private void MorningLine(float now)
+        {
+            if (_wokeReal >= 0f)
+            {
+                if (MorningNewsRules.CaughtUp(Time.time, _wokeGame, now, _wokeReal))
+                {
+                    _wokeReal = -1f;
+                    HomeReport.Morning(_wokeHours, _wokeHour);
+                }
+                return;
+            }
+            if (MorningNews.Holding && !MorningNews.Wanted)
+            {
+                MorningNews.Release();
             }
         }
 
@@ -519,7 +587,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game says "food eaten" for anything that fills: what it was is told from where it was eaten.
+        // The game says "food eaten" for anything that fills: what it was is told from where it was eaten. It says "energy
+        // increased" from SleepActivity.Finish for a sleep under way (and from RestActivity's): the minute a sleep ended.
+        private const string FoodEaten = "ba:gameevent_foodeaten";
+        private const string EnergyIncreased = "ba:gameevent_playerenergyincreased";
         private Action<string> _onGameEvent;
         private Action<string> _gameEventSeen;
 
@@ -527,7 +598,16 @@ namespace RealLifeOverhaul
         private void OnGameEvent(string gameEvent)
         {
             using var hotSpot = HotSpots.Time(HotOnGameEvent);
-            if (gameEvent != "ba:gameevent_foodeaten" || !HomeState.Loaded || _broken)
+            if (!HomeState.Loaded || _broken)
+            {
+                return;
+            }
+            if (gameEvent == EnergyIncreased)
+            {
+                SleepEnded();
+                return;
+            }
+            if (gameEvent != FoodEaten)
             {
                 return;
             }
@@ -545,6 +625,28 @@ namespace RealLifeOverhaul
                 else if (rise >= HomeBalance.MealAtLeast)
                 {
                     HomeState.Ate(HomeTidy.AtHome() ? Meal.Plain : Meal.Junk);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // A sleep being counted has ended in the game's own Finish (the sleep is still the panel's activity as it raises the
+        // event, so a rest on a bench, which raises the same, is told apart): its minute is the sleep's end.
+        private void SleepEnded()
+        {
+            if (_laidAt < 0f)
+            {
+                return;
+            }
+            try
+            {
+                var uis = InstanceBehavior<UIs>.Instance;
+                if (uis != null && uis.playerActivityUI != null && uis.playerActivityUI.GetCurrentActivity is SleepActivity)
+                {
+                    _endedAt = TimeHelper.NowInMinutes();
                 }
             }
             catch (Exception e)

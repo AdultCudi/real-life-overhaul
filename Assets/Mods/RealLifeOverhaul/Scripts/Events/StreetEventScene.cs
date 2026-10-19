@@ -581,7 +581,10 @@ namespace RealLifeOverhaul.Events
                         _phase = Phase.Running;
                         _nextArrival = now + 2f;
                         _nextCue = now + 6f;
-                        Notifications.Show(NotificationType.Info, Open(), null, 8f);
+                        if (!EventCalendar.Quiet(_kind))
+                        {
+                            Notifications.Show(NotificationType.Info, Open(), null, 8f);
+                        }
                     }
                     break;
                 case Phase.Running:
@@ -1117,7 +1120,10 @@ namespace RealLifeOverhaul.Events
         {
             _phase = Phase.TakeDown;
             _phaseUntil = now + 9f;
-            Notifications.Show(NotificationType.Info, storm ? "reallife_event_called_off" : Closing(), null, 8f);
+            if (!EventCalendar.Quiet(_kind))
+            {
+                Notifications.Show(NotificationType.Info, storm ? "reallife_event_called_off" : Closing(), null, 8f);
+            }
             CityProps shelf = _director.People.Props.Shelf;
             _director.Sky.StopAll();
             for (int i = _count - 1; i >= 0; i--)

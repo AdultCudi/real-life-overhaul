@@ -107,6 +107,19 @@ namespace RealLifeOverhaul
                 List<int> inApp = lines.Where(l => l.Kind != LineKind.Test && !l.IsHeading && l.Section == placed.Tree).Select(l => l.Row).ToList();
                 Check(inApp.SequenceEqual(placed.Rows), "the rows of " + placed.Tree.Id + " are not in the Mods tab's order in the app");
             }
+            // The notices' own switches, each a switch of the app on its feature's tab and under its feature's heading.
+            var noticeTabs = new Dictionary<string, (string Group, string Section)>
+            {
+                { "home_morning_news", ("you", "needs") }, { "standing_request_notes", ("you", "standing") }, { "street_protest_notes", ("city", "events") },
+                { "careers_own_offer_notes", ("work", "ownwork") }, { "tech_offer_notes", ("business", "techsector") }, { "economy_grade_up_notes", ("money", "credit") }
+            };
+            foreach (KeyValuePair<string, (string Group, string Section)> notice in noticeTabs)
+            {
+                int row = built.FindIndex(r => r.Key == notice.Key);
+                SettingsLine line = row >= 0 ? lines.FirstOrDefault(l => l.Kind == LineKind.Option && l.Row == row) : null;
+                Check(line != null && built[row].Kind == PlanKind.Toggle && groups[line.Tab].Id == notice.Value.Group && line.Section != null && line.Section.Id == notice.Value.Section,
+                    "the switch " + notice.Key + " is not a switch on the " + notice.Value.Group + " tab under " + notice.Value.Section);
+            }
             int optionLines = lines.Count(l => l.Kind == LineKind.Option);
             Check(optionLines == built.Count(r => r.Kind != PlanKind.Button && r.Kind != PlanKind.Key), "the app has " + optionLines + " option lines for " + built.Count(r => r.Kind != PlanKind.Button && r.Kind != PlanKind.Key) + " options");
 

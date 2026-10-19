@@ -219,6 +219,16 @@ namespace RealLifeOverhaul
             Check(OptionsPlan.Blocker("nav_other_route", allBut("nav_gps")) == "nav_gps", "the other mod's route is not kept back by the GPS");
             Check(OptionsPlan.Blocker("leisure_chess", allBut("city_life")) == "city_life", "street chess is not kept back by street life");
             Check(OptionsPlan.Blocker("camera_sensitivity", allBut("camera_enabled")) == "camera_enabled", "mouse look sensitivity is not kept back by the camera, two steps away");
+            // The notices' own switches: each kept back by what makes its notices, and by nothing else.
+            Check(OptionsPlan.Blocker("home_morning_news", allBut("home_morning")) == "home_morning" && OptionsPlan.Blocker("home_morning_news", allBut("home_life")) == "home_life",
+                "the night's news in the morning summary is not kept back by the morning summary, or by home life");
+            Check(OptionsPlan.Blocker("standing_request_notes", allBut("standing")) == "standing", "the city's requests' notification is not kept back by Standing");
+            Check(OptionsPlan.Blocker("street_protest_notes", allBut("street_events")) == "street_events" && OptionsPlan.Blocker("street_protest_notes", allBut("weather_matters")) == null,
+                "the protests' notifications are not kept back by street events alone");
+            Check(OptionsPlan.Blocker("careers_own_offer_notes", allBut("careers_own")) == "careers_own", "the contract offers' notification is not kept back by working for yourself");
+            Check(OptionsPlan.Blocker("tech_offer_notes", allBut("tech_sector")) == "tech_sector", "the tech firms' offers' notification is not kept back by the tech sector");
+            Check(OptionsPlan.Blocker("economy_grade_up_notes", allBut("economy")) == "economy" && OptionsPlan.Blocker("economy_grade_up_notes", allBut("economy_banks")) == null,
+                "a better credit grade's notification is not kept back by the credit rating alone");
             Check(OptionsPlan.Blocker("no_such_option", _ => false) == null, "an unknown option is kept back");
             Check(OptionsPlan.NeedsOf(null).Length == 0 && OptionsPlan.NeedsOf("no_such_option").Length == 0, "an unknown option needs something");
             Check(OptionsPlan.NeededBy("economy").Count >= 10, "few rows need the credit rating: " + OptionsPlan.NeededBy("economy").Count);
@@ -332,6 +342,14 @@ namespace RealLifeOverhaul
             Check(Find("getting around").Count == OptionsTree.Group("around").Sections.Sum(s => s.Rows.Count), "a group's name does not find every row of the group, and only those");
             Check(Find("qqzzx").Count == 0, "nonsense finds something");
             Check(Find("x").Count == 0, "one letter finds something");
+            var noticeSwitches = new[] { "home_morning_news", "standing_request_notes", "street_protest_notes", "careers_own_offer_notes", "tech_offer_notes", "economy_grade_up_notes" };
+            List<TreeRow> notices = Find("notification");
+            Check(noticeSwitches.All(id => notices.Any(r => r.Id == id)), "'notification' does not find every notice's own switch: "
+                  + string.Join(", ", noticeSwitches.Where(id => !notices.Any(r => r.Id == id))));
+            Check(Find("fundraiser").Any(r => r.Id == "standing_request_notes") && Find("demonstration").Any(r => r.Id == "street_protest_notes")
+                  && Find("contract offer").Any(r => r.Id == "careers_own_offer_notes") && Find("credit rating rises").Any(r => r.Id == "economy_grade_up_notes")
+                  && Find("morning news").Any(r => r.Id == "home_morning_news"),
+                "the player's own words (fundraiser, demonstration, contract offer, credit rating rises, morning news) do not find their switches");
 
             // ---- the words on the page
             Console.WriteLine("\n== The options page: the words ==");

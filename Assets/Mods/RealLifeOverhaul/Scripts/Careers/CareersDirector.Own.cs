@@ -372,8 +372,11 @@ namespace RealLifeOverhaul.Careers
                 Stage = (int)ContractStep.Offered, Practice = w.Practice.Open
             };
             w.Contracts.Add(c2);
-            Tell2(NotificationType.Info, "reallife_own_note_offer", Data("client", c2.Client, "fee", CareersText.Money(Prices.At((int)c2.Fee)), "hours", hours.ToString()),
-                TabOwn, CareerApp.ContractRow + c2.Id);
+            if (Settings.CareersOwnOfferNotes)   // (off: the offer is on the Own work tab all the same, without a notification)
+            {
+                Tell2(NotificationType.Info, "reallife_own_note_offer", Data("client", c2.Client, "fee", CareersText.Money(Prices.At((int)c2.Fee)), "hours", hours.ToString()),
+                    TabOwn, CareerApp.ContractRow + c2.Id);
+            }
         }
 
         /// <summary>A business of the player's own where a profession's desk work can be done (an office, or the practice's own kind), or null.</summary>

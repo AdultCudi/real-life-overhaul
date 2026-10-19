@@ -151,6 +151,7 @@ Nothing runs while it is closed; rows and figures are made when it opens, when a
 - The game keeps at least seven days of transactions and drops older ones past 1,000; when the period reaches further back than the history, the app says from which day the history runs.
 - Repaying and changing a daily payment stay in EconoView; "Repay in EconoView" opens it (`FullMenu.ShowApp`).
 - The badge on the HUD button counts payments missed and a change of grade since the app was last opened.
+- A change of grade is a notification; a better grade's can be switched off ("A notification when your credit rating rises", under Credit rating and loans). A worse grade is always told, and the badge counts either.
 - **EconoView's loans page has no button of the mod's.** Its layout is a prefab the UI study has not read, and a button placed blind in a page of the game's is not clean.
   The Planner's row, the notifications and the app are the ways in.
 

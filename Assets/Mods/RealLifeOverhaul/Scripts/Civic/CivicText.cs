@@ -89,11 +89,14 @@ namespace RealLifeOverhaul
         /// <summary>Set while the host of a Going Public session runs the city's hours: every city toast is heard too, to be shown to the guests (Core/SharedCity, part N).</summary>
         public static Action<NotificationType, string, string[], float> Heard;
 
-        /// <summary>A toast with no names in it. Not kept in the save: the key would mean nothing without the mod.</summary>
+        /// <summary>
+        /// A toast with no names in it. Not kept in the save: the key would mean nothing without the mod. Every city toast
+        /// is held for the morning line while the player sleeps (Core/MorningNews): the city's hours catch up at the wake.
+        /// </summary>
         public static void Toast(NotificationType type, string key, float seconds = 9f)
         {
             Heard?.Invoke(type, key, null, seconds);
-            Notifications.Show(type, key, null, seconds, null, null, true, false);
+            MorningNews.Show(type, key, null, seconds, null, false);
         }
 
         public static void Toast(NotificationType type, string key, string name, string value, float seconds = 9f)
@@ -104,7 +107,7 @@ namespace RealLifeOverhaul
             }
             // A new dictionary each time: the game keeps hold of it for as long as the toast is listed.
             var data = new Dictionary<string, string>(1) { { name, value } };
-            Notifications.Show(type, key, data, seconds, null, null, true, false);
+            MorningNews.Show(type, key, data, seconds, null, false);
         }
 
         public static void Toast(NotificationType type, string key, string name, string value, string name2, string value2, float seconds = 9f)
@@ -114,7 +117,7 @@ namespace RealLifeOverhaul
                 Heard(type, key, new[] { name, value, name2, value2 }, seconds);
             }
             var data = new Dictionary<string, string>(2) { { name, value }, { name2, value2 } };
-            Notifications.Show(type, key, data, seconds, null, null, true, false);
+            MorningNews.Show(type, key, data, seconds, null, false);
         }
 
         public static void Toast(NotificationType type, string key, string name, string value, string name2, string value2, string name3, string value3, float seconds = 9f)
@@ -124,10 +127,10 @@ namespace RealLifeOverhaul
                 Heard(type, key, new[] { name, value, name2, value2, name3, value3 }, seconds);
             }
             var data = new Dictionary<string, string>(3) { { name, value }, { name2, value2 }, { name3, value3 } };
-            Notifications.Show(type, key, data, seconds, null, null, true, false);
+            MorningNews.Show(type, key, data, seconds, null, false);
         }
 
-        /// <summary>A toast of the host's, shown on a guest as the host's player saw it (names and values in pairs).</summary>
+        /// <summary>A toast of the host's, shown on a guest as the host's player saw it (names and values in pairs); held like the guest's own.</summary>
         public static void Show(NotificationType type, string key, string[] pairs, float seconds)
         {
             Dictionary<string, string> data = null;
@@ -139,7 +142,7 @@ namespace RealLifeOverhaul
                     data[pairs[i]] = pairs[i + 1] ?? string.Empty;
                 }
             }
-            Notifications.Show(type, key, data, seconds, null, null, true, false);
+            MorningNews.Show(type, key, data, seconds, null, false);
         }
     }
 }

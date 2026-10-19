@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("economy", "reallife_meta_title_economy")
                 .Group("reallife_econ_header")
                 .About("reallife_guide_economy_about").Help("reallife_guide_economy")
-                .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId)
+                .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId, Settings.EconomyGradeUpNotesId)
                 .Preset(Settings.EconomyLevelId, Economy.ProductCatalogue.Relaxed, Economy.ProductCatalogue.Realistic, Economy.ProductCatalogue.Hardcore)
                 .Data(Economy.CreditStore.Key)
                 .Contact(Economy.DebtPhone.ContactIds)
@@ -317,7 +317,7 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             Tech.TechGuide.AddSectorFacts(Features.Add("tech_sector", "reallife_meta_title_tech_sector")
                 .About("reallife_guide_tech_sector_about").Help("reallife_guide_tech_sector")
-                .Owns(Settings.TechSectorId)
+                .Owns(Settings.TechSectorId, Settings.TechOfferNotesId)
                 .Test("reallife_tech_test_offer", "reallife_tech_test_tender", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down", "reallife_infra_test_price_war")
                 .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)

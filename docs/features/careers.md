@@ -27,6 +27,8 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 | `AcademyType` | the player's own training academy, a business type of the game's (registered at the start, stripped for removal) |
 | `CareersBridges` | what it asks of the others (Wiring/CareersLinks fills them in) |
 
+Working for yourself: a client's freelance contract comes on the game's day (`CareersDirector.Own`, `OfferContract`) and waits on the Career app's Own work tab; its notification ("{client} offers a contract: ...") can be switched off with "A notification for each contract offered" (under Working for yourself), which leaves the offer itself as it is.
+
 ## How it talks to other features
 
 - The employers' optional doors are in `Jobs/CareerLinks.cs`. [`Wiring/LifeLinks.cs`](../reference/wiring.md) fills in the record on a CV and the sick note from Home; nobody fills in the social life's acquaintances (the social cast is a fixed eight).

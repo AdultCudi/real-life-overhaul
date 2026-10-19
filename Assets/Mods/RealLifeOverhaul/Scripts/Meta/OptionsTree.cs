@@ -206,8 +206,9 @@ namespace RealLifeOverhaul.Meta
                 S("help").Buttons("reallife_meta_bug_button").Also("bug report problem crash error broken discord log help")).Flat(),
 
             G("you",
-                S("needs").For("home").Main("home_life").Opts("home_needs", "home_strip", "home_easy", "home_sleep", "home_morning", "home_illness")
-                    .Also("health sick sleep stress hygiene tired"),
+                S("needs").For("home").Main("home_life").Opts("home_needs", "home_strip", "home_easy", "home_sleep", "home_morning")
+                    .Opt("home_morning_news", "home_morning").Opts("home_illness")
+                    .Also("health sick sleep stress hygiene tired").Also("home_morning_news", "notification notifications summary news weather wake"),
                 S("routines").Guide("home").Need("home_life").Opts("home_routines", "home_fitness", "home_body", "home_jog")
                     .Also("cooking cook food kitchen exercise gym run diet"),
                 S("looks").For("character").Opts("character_new_looks", "character_high_detail", "character_hair", "character_skin", "character_lighting")
@@ -230,8 +231,9 @@ namespace RealLifeOverhaul.Meta
                     .Also("social media app followers posts likes selfie influencer"),
                 S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
                     .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite"),
-                S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption")
-                    .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity"),
+                S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption", "standing_request_notes")
+                    .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity")
+                    .Also("standing_request_notes", "fundraiser fundraising donation sponsor request requests"),
                 S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks", "ledger_online").Opt("ledger_online_notes", "ledger_online")
                     .Also("newspaper paper news kiosk subscription delivery online newsstand internet phone"),
                 S("leisure").For("leisure").Main("leisure").Opt("leisure_chess", "city_life").Opts("leisure_fishing", "leisure_night_out", "leisure_sights", "leisure_cinema")
@@ -245,7 +247,8 @@ namespace RealLifeOverhaul.Meta
                 S("citylife").For("citylife").Main("city_life").Opts("city_density", "city_workers", "city_everyday", "city_interactions")
                     .Also("pedestrians passers-by pavement crowd"),
                 S("events").For("events").Opts("city_fires").Opt("fire_frequency", "city_fires").Opts("weather_matters").Opt("weather_frequency", "weather_matters")
-                    .Opts("street_events").Opt("street_event_frequency", "street_events").Also("rain storm market parade protest"),
+                    .Opts("street_events").Opt("street_event_frequency", "street_events").Opt("street_protest_notes", "street_events")
+                    .Also("rain storm market parade protest").Also("street_protest_notes", "demonstration demonstrations notification notifications"),
                 S("accidents").For("traffic", "ragdoll", "people").Opts("traffic_accidents").Opt("accident_frequency", "traffic_accidents")
                     .Opt("accident_notices", "traffic_accidents").Opt("accident_marker", "traffic_accidents").Opts("siren", "people",
                     "crash_consequences", "ragdolls").Opt("player_knockdown", "ragdolls").Opt("ped_incidents", "ragdolls")
@@ -302,12 +305,12 @@ namespace RealLifeOverhaul.Meta
                 S("worklife").For("careers_life").Opt("careers_life", "careers_jobs")
                     .Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire "
                         + "retirement options shares conflict interest"),
-                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs")
+                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own")
                     .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary calendar notes to do")),
 
             G("money",
-                S("credit").For("economy").Opts("economy").Also("bank borrow score finance"),
+                S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Also("bank borrow score finance"),
                 S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level")
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
@@ -339,7 +342,7 @@ namespace RealLifeOverhaul.Meta
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people")
                     .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
-                S("techsector").For("tech_sector").Opt("tech_sector", "tech_people")
+                S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector")
                     .Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector")
                     .Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),

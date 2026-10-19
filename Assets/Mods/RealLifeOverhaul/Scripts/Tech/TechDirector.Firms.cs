@@ -469,12 +469,18 @@ namespace RealLifeOverhaul.Tech
             string row = TechApp.ContractRow + w.Id;
             switch (note.Kind)
             {
-                case FirmsRules.NoteOffered:
-                    TellTech(NotificationType.Info, "reallife_tech_note_offer",
-                        Data("client", w.Client, "work", TechText.Work((WorkKind)w.Kind), "value", TechText.Cents(w.Value * Prices.Level / 1000)), TabContracts, row);
+                case FirmsRules.NoteOffered:   // an offer and a tender are on the Contracts tab either way; their notifications can be switched off
+                    if (Settings.TechOfferNotes)
+                    {
+                        TellTech(NotificationType.Info, "reallife_tech_note_offer",
+                            Data("client", w.Client, "work", TechText.Work((WorkKind)w.Kind), "value", TechText.Cents(w.Value * Prices.Level / 1000)), TabContracts, row);
+                    }
                     break;
                 case FirmsRules.NoteTender:
-                    TellTech(NotificationType.Info, "reallife_tech_note_tender", Data("value", TechText.Cents(w.Value * Prices.Level / 1000), "day", w.End.ToString()), TabContracts, row);
+                    if (Settings.TechOfferNotes)
+                    {
+                        TellTech(NotificationType.Info, "reallife_tech_note_tender", Data("value", TechText.Cents(w.Value * Prices.Level / 1000), "day", w.End.ToString()), TabContracts, row);
+                    }
                     break;
                 case FirmsRules.NoteWon:
                     TellTech(NotificationType.Success, "reallife_tech_note_tender_won", Data("value", TechText.Cents(w.Value)), TabContracts, row);

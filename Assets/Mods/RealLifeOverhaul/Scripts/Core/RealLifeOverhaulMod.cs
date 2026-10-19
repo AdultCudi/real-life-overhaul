@@ -309,6 +309,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_life_test_approach", () => Careers.CareersDirector.Instance?.TestApproach())
                 .AddToggle(Settings.CareersOwnId, "reallife_own_enabled", Settings.CareersOwn,
                     v => Settings.CareersOwn = v)
+                .AddToggle(Settings.CareersOwnOfferNotesId, "reallife_own_opt_offer_notes", Settings.CareersOwnOfferNotes,
+                    v => Settings.CareersOwnOfferNotes = v)
                 .AddButton("reallife_own_test_contract", () => Careers.CareersDirector.Instance?.TestContract())
                 .AddButton("reallife_own_test_found", () => Careers.CareersDirector.Instance?.TestFound())
                 .AddSplitter()
@@ -362,6 +364,8 @@ namespace RealLifeOverhaul
                     v => Settings.HomeSleep = v)
                 .AddToggle(Settings.HomeMorningId, "reallife_home_morning_option", Settings.HomeMorning,
                     v => Settings.HomeMorning = v)
+                .AddToggle(Settings.HomeMorningNewsId, "reallife_home_morning_news_option", Settings.HomeMorningNews,
+                    v => Settings.HomeMorningNews = v)
                 .AddToggle(Settings.HomeIllnessId, "reallife_home_illness", Settings.HomeIllness,
                     v => Settings.HomeIllness = v)
                 .AddToggle(Settings.HomeFitnessId, "reallife_home_fitness", Settings.HomeFitness,
@@ -371,6 +375,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.HomeJogId, "reallife_home_jog", Settings.HomeJog,
                     v => Settings.HomeJog = v)
                 .AddButton("reallife_test_home_page", () => HomeDirector.Instance?.TestPage())
+                .AddButton("reallife_test_home_morning", () => HomeDirector.Instance?.TestMorning())
                 .AddButton("reallife_home_test_cook_panel", () => HomeDirector.Instance?.TestRoutine(HomeWish.Cook))
                 .AddButton("reallife_test_home_cook", () => HomeDirector.Instance?.TestRoutine(HomeWish.CookFirst))
                 .AddButton("reallife_test_home_coffee", () => HomeDirector.Instance?.TestRoutine(HomeWish.Coffee))
@@ -500,6 +505,8 @@ namespace RealLifeOverhaul
                     v => Settings.StreetEvents = v)
                 .AddSlider(Settings.StreetEventFrequencyId, "reallife_events_street_frequency", 1, 10, Settings.StreetEventFrequency,
                     v => Settings.StreetEventFrequency = v, Meta.SettingsTable.SliderValue)
+                .AddToggle(Settings.StreetProtestNotesId, "reallife_events_protest_notes", Settings.StreetProtestNotes,
+                    v => Settings.StreetProtestNotes = v)
                 .AddButton("reallife_events_test_fire_car", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Car))
                 .AddButton("reallife_events_test_fire_bin", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Bin))
                 .AddButton("reallife_events_test_fire_building", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Building))
@@ -630,6 +637,8 @@ namespace RealLifeOverhaul
                     v => Settings.StandingPress = v)
                 .AddToggle(Settings.StandingCorruptionId, "reallife_fame_corruption", Settings.StandingCorruption,
                     v => Settings.StandingCorruption = v)
+                .AddToggle(Settings.StandingRequestNotesId, "reallife_fame_request_notes", Settings.StandingRequestNotes,
+                    v => Settings.StandingRequestNotes = v)
                 .AddButton("reallife_fame_test_day", () => Fame.FameDirector.Instance?.TestDay())
                 .AddButton("reallife_fame_test_street", () => Fame.FameDirector.Instance?.TestStreet())
                 .AddButton("reallife_fame_test_known", () => Fame.FameDirector.Instance?.TestKnown())
@@ -744,6 +753,8 @@ namespace RealLifeOverhaul
                 .AddHeader("reallife_econ_header")
                 .AddToggle(Settings.EconomyId, "reallife_econ_enabled", Settings.Economy,
                     v => Settings.Economy = v)
+                .AddToggle(Settings.EconomyGradeUpNotesId, "reallife_econ_opt_grade_up_notes", Settings.EconomyGradeUpNotes,
+                    v => Settings.EconomyGradeUpNotes = v)
                 .AddToggle(Settings.EconomyProductsId, "reallife_econ_products", Settings.EconomyProducts,
                     v => Settings.EconomyProducts = v)
                 .AddToggle(Settings.EconomySharkId, "reallife_econ_shark", Settings.EconomyShark,
@@ -925,6 +936,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
                 .AddToggle(Settings.TechSectorId, "reallife_tech_enabled", Settings.TechSector,
                     v => Settings.TechSector = v)
+                .AddToggle(Settings.TechOfferNotesId, "reallife_tech_opt_offer_notes", Settings.TechOfferNotes,
+                    v => Settings.TechOfferNotes = v)
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_tech_test_tender", () => Tech.TechDirector.Instance?.TestTender())
                 .AddButton("reallife_tech_test_move", () => Tech.TechDirector.Instance?.TestMove())
