@@ -105,7 +105,7 @@ See  [Arriving, and what holds a scene up](#arriving-and-what-holds-a-scene-up).
 | outing | where (the game's business types) | a head | inside | needs |
 |---|---|---|---|---|
 | coffee | coffee shop | 6 | 25 min; both come out with a cup (`cup_hold`, `sip`) | |
-| a meal | fast food restaurant | 24 | 70 min | |
+| a meal | fast food restaurant | 24 | 70 min; fills by the game's burger saturation (70, read from `ItemsGetter` through `OutingDef.MealItem`), capped at 100 | |
 | drinks | nightclub | 32 | 110 min; outside again, if it went well, a toast (`cheers`, a `wine_glass` each) | friend |
 | the cinema | cinema, theater | 18 | 130 min, rested as in the game's own cinema seat (its `RestActivity`): through the skip no walking drain and the bench's recovery at the default multiplier (`OutingDef.SeatedRest`, `OutingScene.Rest`), given back when the skip ends, when the outing ends and when the feature faults | |
 | a workout | gym | 15 | 60 min, -14 energy | |
@@ -172,6 +172,9 @@ They wait outside a door the player went through for as long as they would have 
 Whenever they give up or are cut off the player is told ("Dana saw you were busy and went on their way").
 
 There is no "bar", "restaurant" or "park" in the game's business types: drinks are at a nightclub, a meal at a fast food restaurant, and a walk is along the pavement wherever the player leads.
+
+`OutingScene.Food` runs once, at the settlement behind its `_settled` guard, whether the company went well or badly: Home is told a meal was eaten, and fullness rises by the item's saturation unless the game already reads the player full. A called-off plan, an aborted scene and a closed restaurant give no food. Hunger is set directly, because the game's food-eaten event would record the meal a second time. The saved plan is cleared at greeting (`Arrived`) and the scene is not saved, so a load can't serve it twice. Coffee and drinks keep their own effects. With Developer diagnostics on, one `Social check (meal)` line gives the hunger before and after.
+
 Indoors nobody sits: the game's chairs are there, where the cast does not go.
 
 On a walk the two can sit on a street bench (Family,  [Sitting](family.md#sitting-peopleseatingcs-the-partner-at-home-a-bench-on-a-walk)), in the game's own sitting pose; `sit_chat_a` / `_b` are made for a seat of the mod's own and are played by the living city's two friends on a bench (`BenchChatActivity`).
