@@ -25,6 +25,7 @@ A custom shop for cars in the game's repair bays (paint, finishes, fitted parts 
 | `BikeMount` | one scooter as a bicycle or motorbike: body, numbers, the rider's seat, hands and feet; LegIk |
 | `BikeBody` | the four models (BikeCatalogue) and their stand-in bodies built from tubes and rings (MeshMaker) |
 | `BikePlaces` | bike-share docks, bicycle racks, motorbike stands: where they go and what stands there |
+| `BikeClearRules` | where a bike may be left: what it may not be left in, the places tried round it, whose may be moved (game-free) |
 
 ## How it talks to other features
 
@@ -251,6 +252,8 @@ A bike handed over is therefore stood **along the pavement** from the place (2.6
 The last one matters: `Fits` asks whether a box touches anything, a wall is a skin of triangles, and a box wholly behind a shopfront touches nothing, so a spot indoors "fits" (v0.35.0 tried the sides first, without the line: a motorbike bought at a stand a step out from a dealership wall could be made behind that wall, the likeliest reason the first one bought was never seen).
 
 The test buttons and "Bring it here" use `BikePlaces.SpotAhead`: 2.2 m in front of the player on the ground under that point, side on, in their sight.
+
+**Where a bike is left.** The game holds a scooter nobody is on wherever its rider got off (`ScooterController.ExitVehicle` turns its physics off and freezes it), and asks nothing about room. A rider who comes off against a parking meter or a post (the step that stops the bike is the one its box went into the thing), or pulls up with the bars over a meter's head, left the bike in it; got on again, its boxes were inside the meter and it could not be ridden out (a player's report, 19 Oct 2026). So the moment a bike is got off (the game's own way off, a fall, the dock's return: all come through `TwoWheelers.Frame`) and the moment it is got on, `TwoWheelers.Unpin` asks `BikeMount.Pinned` whether its frame box or its bars box, each less a 3 cm skin, is in anything solid (`BikeClearRules.Pins`: street furniture, buildings, vehicles; never the ground, people or zones), leaving out its own colliders and the player. A bike of the player's own (`GoingPublic.MineVehicle`) found in something, out of doors, is stood upright, facing as it was, on the nearest of 40 places round it (`BikeClearRules.Place`: rings of 0.5 to 2.6 m, either side first) that is pavement level with it (else ground within a step), clear of solid things and people, with no wall between (`BikePlaces.Unwalled`). With none clear it stays, and "Bring it here" is the way out. Two box queries per getting off or on; NavCheck's BikeClearCheck checks the rules and when they are asked.
 
 - The game marks the player's cars on the map and, within 100 m, on the street (`CityMap.AddPoi`, set on `VehicleController.poi`); it leaves scooters out on purpose.
   `BikeMount.Mark` gives ours that same marker under their own name; the game hides it while it is ridden and destroys it with the vehicle.

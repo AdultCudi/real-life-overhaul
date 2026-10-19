@@ -257,6 +257,61 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static int _pinMask, _crowdMask, _wallMask;
+        private static bool _masksRead;
+
+        /// <summary>The layers a bike must never be left in (<see cref="BikeClearRules.Pins"/>), read from the engine's layer names once.</summary>
+        public static int PinMask
+        {
+            get
+            {
+                ReadMasks();
+                return _pinMask;
+            }
+        }
+
+        /// <summary>What a place a bike is moved to must be clear of: those layers and people's (<see cref="BikeClearRules.Crowds"/>).</summary>
+        public static int RoomMask
+        {
+            get
+            {
+                ReadMasks();
+                return _pinMask | _crowdMask;
+            }
+        }
+
+        private static void ReadMasks()
+        {
+            if (_masksRead)
+            {
+                return;
+            }
+            _masksRead = true;
+            _wallMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls");
+            for (int layer = 0; layer < 32; layer++)
+            {
+                string name = LayerMask.LayerToName(layer);
+                if (BikeClearRules.Pins(name))
+                {
+                    _pinMask |= 1 << layer;
+                }
+                if (BikeClearRules.Crowds(name))
+                {
+                    _crowdMask |= 1 << layer;
+                }
+            }
+        }
+
+        /// <summary>
+        /// True if no building's wall stands between two points of the street, looked along at a height above each: a bike
+        /// moved off something is never moved through a shopfront. Only walls count, so the post it stood in does not.
+        /// </summary>
+        public static bool Unwalled(Vector3 from, Vector3 to, float height)
+        {
+            ReadMasks();
+            return _wallMask == 0 || !Physics.Linecast(from + Vector3.up * height, to + Vector3.up * height, _wallMask, QueryTriggerInteraction.Ignore);
+        }
+
         /// <summary>
         /// True if nothing solid stands between two points of the street, looked along at a height above each.
         /// This is what keeps a two-wheeler out of the inside of a building: <see cref="Fits"/> asks whether a box
