@@ -241,6 +241,25 @@ namespace RealLifeOverhaul
         public static int GraceUntil(int day) => -(day + LoanGraceDays);
 
         /// <summary>
+        /// A person's age on game <paramref name="day"/> (1 the first): <paramref name="age"/> is what they were on the first
+        /// day, and each birthday after it (<paramref name="birthday"/>, a day of the year, read as SocialTalk.BirthdayIn reads
+        /// it) adds a year, so the age grows on the day the People page counts down to. The game ages its rivals from the
+        /// save's first day the same way (RivalsHelper.GetRivalAgeInYears). Nothing is saved: the age is worked out when shown.
+        /// </summary>
+        public static int AgeOn(int age, int birthday, int day, int daysPerYear)
+        {
+            int perYear = Math.Max(1, daysPerYear);
+            int today = Math.Max(1, day);
+            int first = ((birthday - 1) % perYear + perYear) % perYear + 1;   // the first day of the calendar that is their birthday
+            int passed = today >= first ? (today - first) / perYear + 1 : 0;
+            if (first == 1)
+            {
+                passed--;   // born on the first day: that day is the age they started with
+            }
+            return age + passed;
+        }
+
+        /// <summary>
         /// Whether a report made indoors names the player's own place: an interior's coordinates say nothing of the city, so it
         /// is moved to the building's door. Any other place (a parked car's break-in, a crash down the street) is in the city.
         /// </summary>
