@@ -19,8 +19,13 @@ namespace RealLifeOverhaul
         // Somebody new comes along while there is a free place and customers left in the shift.
         private void Arrivals(float now)
         {
-            if (now < _nextArrival || _came - _served - _lost >= LeftToServe)
+            if (now < _nextArrival)
             {
+                return;
+            }
+            if (_came - _served - _lost >= LeftToServe)
+            {
+                _arrivalSince = -1f;   // nobody is wanted: no attempt is failing
                 return;
             }
             int slot = _state[0] == Guest.None ? 0 : _state[1] == Guest.None ? 1 : -1;

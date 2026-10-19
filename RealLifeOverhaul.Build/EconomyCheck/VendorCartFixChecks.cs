@@ -9,7 +9,7 @@ internal static partial class Program
         string crossing = MemberText(placement, "private bool CrossingClear(");
         Check(crossing.Contains("Physics.OverlapBoxNonAlloc(") && crossing.Contains("Physics.AllLayers")
               && crossing.Contains("QueryTriggerInteraction.Collide") && crossing.Contains("hit.gameObject.layer == CrosswalkLayer")
-              && crossing.Contains("hit.CompareTag(\"Crosswalk\")") && crossing.Contains("hit.name == \"CrosswalkTrigger\"")
+              && crossing.Contains("hit.CompareTag(\"Crosswalk\")")
               && crossing.Contains("count < PitchOverlaps.Length") && crossing.Contains("PitchOverlaps[i] = null;"),
             "vendor cart: the whole setup refuses crossing layers, tags and triggers, including a full query buffer");
         Check(placement.Contains("LayerMask.NameToLayer(\"Crosswalk\")")
@@ -35,6 +35,10 @@ internal static partial class Program
               && verify.Contains("_pitchRetryAt = now + PitchSettle;") && verify.Contains("!PutPitch(now)")
               && verify.Contains("Finish(JobEnd.Interrupted);") && verify.Contains("Jobs check (cart solid)"),
             "vendor cart: a failed solid check takes the cart back, waits for the mesh and tries the next candidate or ends safely");
+        int due = verify.IndexOf("if (_solid.VerifyDue)", StringComparison.Ordinal);
+        int asked = verify.IndexOf("CitySpots.Reachable(_counter, _post)", StringComparison.Ordinal);
+        Check(due >= 0 && asked > verify.IndexOf("else", due, StringComparison.Ordinal) && verify.IndexOf("else", due, StringComparison.Ordinal) > due,
+            "vendor cart: while the cut settles a frame asks the mesh nothing (the way is asked once, by Verify or for a cart that cannot be cut)");
         string drop = MemberText(placement, "private void DropPitch(");
         Check(drop.Contains("_solid.Clear();") && drop.Contains("Ctx.Props.Return(_cart);") && drop.Contains("_cart = null;"),
             "vendor cart: a refused pitch leaves no cart or cut behind");
@@ -45,6 +49,11 @@ internal static partial class Program
         Check(timeout >= 0 && timeout < arrivals.IndexOf("CitySpots.PavementRing(", StringComparison.Ordinal)
               && arrivals.Contains("ArrivalFailed(now);") && arrivals.Contains("_arrivalSince = -1f;"),
             "vendor cart: no starting place, rejected routes and failed walk orders share a bounded arrival time");
+        int wanted = arrivals.IndexOf("_came - _served - _lost >= LeftToServe", StringComparison.Ordinal);
+        Check(wanted >= 0 && arrivals.IndexOf("_arrivalSince = -1f;", wanted, StringComparison.Ordinal) > wanted
+              && arrivals.IndexOf("_arrivalSince = -1f;", wanted, StringComparison.Ordinal) < arrivals.IndexOf("int slot", StringComparison.Ordinal)
+              && tick.IndexOf("_arrivalSince = -1f;", tick.IndexOf("_skip = null;", StringComparison.Ordinal) + 1, StringComparison.Ordinal) > 0,
+            "vendor cart: the arrival time restarts when nobody is wanted and after the clock's run, so neither counts as a failed attempt");
         string failed = MemberText(customers, "private void ArrivalFailed(");
         Check(failed.Contains("_came++;")
               && failed.Contains("CartQueueRules.Account(CartGuest.NoRoute, ref _came, ref _lost, ref _cantReach)")
@@ -62,7 +71,9 @@ internal static partial class Program
                                 "饮品推车会避开人行横道", "Getränkewagen hält Abstand zu Fußgängerüberwegen",
                                 "chariot à boissons reste à distance des passages piétons",
                                 "carrito de bebidas se mantiene lejos de los pasos de peatones",
-                                "тележка с напитками не ставится на пешеходных переходах"),
+                                "тележка с напитками не ставится на пешеходных переходах",
+                                "drankenkar blijft uit de buurt van oversteekplaatsen",
+                                "içecek arabası yaya geçitlerinden uzak duruyor"),
             "vendor cart: What's new describes the fix in every language");
     }
 }

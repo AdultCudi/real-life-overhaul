@@ -3,7 +3,11 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>The drinks cart: room for the whole setup, checked again after its cut in the pavement has settled.</summary>
+    /// <summary>
+    /// The drinks cart: room for the whole setup, checked again after its cut in the pavement has settled. The search (at most
+    /// twelve candidates, each a few mesh queries and one box overlap) runs at the start and once for each refused pitch;
+    /// while a pitch settles a frame costs a time comparison, and once it is ready one test of a flag.
+    /// </summary>
     public sealed partial class VendorJob
     {
         private const int PitchPicks = 12;            // six nearby places, each facing either side of the pavement
@@ -18,18 +22,19 @@ namespace RealLifeOverhaul
 
         private bool PutPitch(float now)
         {
-            while (FindPitch(Ctx.PlayerPosition))
+            if (!FindPitch(Ctx.PlayerPosition))
             {
-                _cart = Ctx.Props.Stand(CartProp, _cartAt, _outwards);
-                if (_cart == null)
-                {
-                    return false;
-                }
-                _solid.Fit(_cart, CartHalfLength, CartHalfDepth, Mathf.Min(VendorBack, CustomerOut));
-                _solid.Solid(true, now);
-                return true;
+                return false;
             }
-            return false;
+            _cart = Ctx.Props.Stand(CartProp, _cartAt, _outwards);
+            if (_cart == null)
+            {
+                return false;
+            }
+            // Solid from the start: the player stays beside it (a shift is given up after 25 s away), so the mesh is cut once.
+            _solid.Fit(_cart, CartHalfLength, CartHalfDepth, Mathf.Min(VendorBack, CustomerOut));
+            _solid.Solid(true, now);
+            return true;
         }
 
         // Along the pavement, counter to the side with room; each candidate is tried only once, even after a cut fails.
@@ -73,7 +78,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Include triggers on every layer: a crossing may be identified by its layer, tag or trigger's name.
+        // Triggers on every layer: the game's crossing is a trigger tagged "Crosswalk" (CrosswalkToTrafficLightLink), over road on the Crosswalk layer.
         private bool CrossingClear(Vector3 cart, Vector3 outwards)
         {
             float middle = (QueueOut - VendorBack) * 0.5f;
@@ -85,8 +90,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < count; i++)
             {
                 Collider hit = PitchOverlaps[i];
-                if (hit != null && (hit.gameObject.layer == CrosswalkLayer || hit.CompareTag("Crosswalk")
-                    || hit.name == "CrosswalkTrigger"))
+                if (hit != null && (hit.gameObject.layer == CrosswalkLayer || hit.CompareTag("Crosswalk")))
                 {
                     clear = false;
                 }
@@ -114,10 +118,17 @@ namespace RealLifeOverhaul
                 }
                 return false;
             }
-            bool cut = false, kept = true, way = CitySpots.Reachable(_counter, _post);
-            if (_solid.VerifyDue && !_solid.Verify(now, _post, _counter, out cut, out kept, out way))
+            bool cut = false, kept = true, way;
+            if (_solid.VerifyDue)
             {
-                return false;   // not settled yet; a cart that can't be cut is steered round and checked at once
+                if (!_solid.Verify(now, _post, _counter, out cut, out kept, out way))
+                {
+                    return false;   // not settled yet; until then a frame costs a time comparison
+                }
+            }
+            else
+            {
+                way = CitySpots.Reachable(_counter, _post);   // a cart that can't be cut is steered round and checked at once
             }
             bool queue = CitySpots.OnPavement(_queue, out _) && CitySpots.Reachable(_queue, _counter);
             _pitchReady = kept && way && queue;   // an uncut middle is only walked through; a lost place or way is a dead pitch

@@ -202,6 +202,7 @@ namespace RealLifeOverhaul
                 }
                 _skip.Close();   // over, or dropped by the game's panel: it settles nothing more
                 _skip = null;
+                _arrivalSince = -1f;   // the clock's run was no failed attempt to send anybody
                 _panelState = int.MinValue;
                 _cardState = int.MinValue;
             }
