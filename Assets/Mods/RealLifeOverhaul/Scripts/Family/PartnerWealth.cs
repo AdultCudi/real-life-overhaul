@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>How the partner leans: Social's traits when it keeps them, else the default partner's seed.</summary>
         public static int Leaning => Partner.Kept(out PersonInfo p) ? p.Leaning : PartnerWealthRules.LeaningOf(FamilyState.S.PSeed);
 
-        private static int Step => PartnerWealthRules.StepOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, Prices.Level);
+        private static int Step => PartnerWealthRules.StepOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, FamilyState.IncomeHeld, Prices.Level);
 
         /// <summary>Once a game hour in the day: a reaction at a new step of the cash, when the partner's texts allow (PartnerVoice).</summary>
         public static void Hourly(int day)

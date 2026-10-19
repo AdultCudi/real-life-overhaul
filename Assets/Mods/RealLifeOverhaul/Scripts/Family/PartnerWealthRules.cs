@@ -10,21 +10,24 @@ namespace RealLifeOverhaul.Family
     {
         public const int Neither = 0, Supportive = 1, Envious = 2;
 
-        /// <summary>The steps of the player's cash at the start's prices: Social's wealth steps.</summary>
-        public static readonly int[] Steps = { 10000, 50000, 250000, 1000000, 5000000 };
+        /// <summary>The steps of the player's prosperity at the start's prices: the cash in hand...</summary>
+        public static readonly int[] Steps = { 2500, 10000, 50000, 100000, 500000 };
 
-        public const int DriftFrom = 3;                 // the step (250,000) from which the gap is felt day to day
+        /// <summary>...and the daily income held all week with it (IncomeRules).</summary>
+        public static readonly int[] StepIncome = { 200, 800, 2500, 5000, 20000 };
+
+        public const int DriftFrom = 3;                 // the step (2,500 a day and 50,000) from which the gap is felt day to day
         public const float EnviousDrift = -0.15f;       // harmony a day for each step past the one before DriftFrom
         public const float SupportiveDrift = 0.1f;      // harmony a day, from DriftFrom on
         public const float MarriedShare = 0.5f;         // what the envious drift is once married: what is the player's is theirs too
 
-        /// <summary>How many steps the cash has reached, 0 to 5, with the steps at today's prices (level 1000 at the start's).</summary>
-        public static int StepOf(float cash, int level)
+        /// <summary>How many steps are reached, 0 to 5: the income held all week and the cash, at today's prices (level 1000 at the start's).</summary>
+        public static int StepOf(float cash, int held, int level)
         {
             int step = 0;
             for (int i = 0; i < Steps.Length; i++)
             {
-                if (cash >= Steps[i] * (level / 1000f))
+                if (IncomeRules.Reached(held, cash, (int)(StepIncome[i] * (level / 1000f)), (int)(Steps[i] * (level / 1000f))))
                 {
                     step = i + 1;
                 }
