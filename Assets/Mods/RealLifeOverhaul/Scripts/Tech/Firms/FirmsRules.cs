@@ -465,5 +465,37 @@ namespace RealLifeOverhaul.Tech
             firm.Revenue30 += takings - firm.Days[slot];
             firm.Days[slot] = takings;
         }
+
+        /// <summary>
+        /// A firm whose business is no longer the player's closes: its products go, the work it had under way fails on the day,
+        /// and its record goes. Returns the products taken out.
+        /// </summary>
+        public static int Close(FirmsFile f, Firm firm, int day)
+        {
+            if (f == null || firm == null)
+            {
+                return 0;
+            }
+            int gone = 0;
+            for (int i = f.Products.Count - 1; i >= 0; i--)
+            {
+                if (f.Products[i].Place == firm.Place)
+                {
+                    f.Products.RemoveAt(i);
+                    gone++;
+                }
+            }
+            for (int c = 0; c < f.Contracts.Count; c++)
+            {
+                Contract w = f.Contracts[c];
+                if (w.Place == firm.Place && w.Stage <= (int)WorkStage.Active)
+                {
+                    w.Stage = (int)WorkStage.Failed;
+                    w.End = day;
+                }
+            }
+            f.Firms.Remove(firm);
+            return gone;
+        }
     }
 }

@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Careers
             if (e is DeskPointer && _deskFit != null)
             {
                 FitDesk desk = _deskFit;
-                DeskGame.WalkTo(desk.Stand, () => DeskPanel(null, desk));
+                DeskGame.WalkTo(desk, () => DeskPanel(null, desk));
             }
             else if (_deskStation != null && ReferenceEquals(e, _deskStation))
             {

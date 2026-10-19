@@ -58,6 +58,8 @@ namespace RealLifeOverhaul.Tech
             }
             _hiring = file;
             _hiringOn = true;
+            CatchUpMoves(MoveRules.PartHiring);
+            FollowMoves();
             _rate = (role, points) => TalentGame.GameRate(role.GameSkill, points);
             HiringGame.Districts(_districts);
             HiringGame.Rivals(_rivals);

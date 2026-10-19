@@ -5,7 +5,8 @@ namespace RealLifeOverhaul.Tech
 {
     /// <summary>
     /// The professionals in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s format, a header (h) and
-    /// the files (p), fields in the order <see cref="Write"/> writes them; at most <see cref="PeopleMost"/> professionals.
+    /// the files (p) and the moves followed (m, which an older version of the mod passes over), fields in the order
+    /// <see cref="Write"/> writes them; at most <see cref="PeopleMost"/> professionals.
     /// </summary>
     public static class TalentStore
     {
@@ -28,6 +29,12 @@ namespace RealLifeOverhaul.Tech
                     .Add(p.CourseSkill).Add(p.CourseEnd).Add(p.Exam).Add(p.RaiseAsk).Add(p.RecognisedDay).Add(p.PoachDay).Add(p.PoachBp).Add(p.PoachBy).Place(p.Place)
                     .Add(p.Options).Add(p.Record).Add(p.Name).Add(p.Wage).Add(p.Female).Add(p.Age).Add(p.Sick).Add(p.AskEnd)
                     .Add(p.WorkDay).Add(p.WorkHours).Add(p.PrevDay).Add(p.PrevHours);
+            }
+            w.Part('m');
+            for (int i = 0; i < f.Moves.Count && i < MoveRules.RecordsMost; i++)
+            {
+                MoveRecord m = f.Moves[i];
+                w.Record().Place(m.From).Place(m.To).Add(m.Day).Add(m.Hour).Add(m.Parts).Add(m.Whole).Add(m.Replaced);
             }
             return w.ToString();
         }
@@ -91,6 +98,14 @@ namespace RealLifeOverhaul.Tech
                 if (p.Id.Length > 0 && f.Of(p.Id) == null && f.People.Count < PeopleMost)
                 {
                     f.People.Add(p);
+                }
+            }
+            foreach (Fields x in r.Records('m'))
+            {
+                var m = new MoveRecord { From = x.Place(), To = x.Place(), Day = x.Int(), Hour = x.Int(), Parts = x.Int() & MoveRules.PartsAll, Whole = x.Bool(), Replaced = x.Bool() };
+                if (m.From.Length > 0 && m.To.Length > 0 && m.From != m.To && f.Moves.Count < MoveRules.RecordsMost)
+                {
+                    f.Moves.Add(m);
                 }
             }
             return f;

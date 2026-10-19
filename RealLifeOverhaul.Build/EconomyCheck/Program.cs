@@ -210,10 +210,12 @@ internal static partial class Program
         RotaFixes();    // the staff rota planner: a choice kept, a job never stuck, raises in the stamp, a confirmed plan as confirmed, the goods, the ladder, the page (RotaFixChecks.cs)
         EconomyFixes2(); // the own bank, the city, the web shops, investors and the Finance app: days run while off, money paid short or twice, sums at the start's prices, state lost (EconomyFix2Checks.cs)
         BankingFixes(); // the player's banking: the student loan kept, an approval's interest once and on what is financed, a card paid early, a quest loan, loans priced again, the lender's fee (BankingFixChecks.cs)
-        SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast (SocialFixChecks.cs)
+        SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
+        PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         ClientHours();
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
+        TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)
         ClassCounts();  // a class, homework or exam being sat is never lost: settled once by its own record, the hourly pass asks the book, the clock's minutes, the school desk's keys (ClassCountChecks.cs)
@@ -224,6 +226,7 @@ internal static partial class Program
         LedgerFixes();  // the City Ledger: a kiosk copy never charged when the page cannot open, the subscription's lines (LedgerFixChecks.cs)
         FamilyFixes();  // family life: a refused passage done at once, the player's own missed appointment booked again, counselling's threshold (FamilyFixChecks.cs)
         MetaFixes();    // the options page and Report a bug: Import without its backup, a report never left busy, the pages' search and dispatcher lines (MetaFixChecks.cs)
+        MoodBuffs();    // the mod's moods: a cap from each catalogue entry, a load puts saved moods back as saved (never through Going Public's scaled add), a save past the cap trimmed once (MoodBuffChecks.cs)
         LaterLanguages(); // Dutch and Turkish: listed wherever the other languages are, as complete as the other translations, What's new numbered and marked (LaterLanguageChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;

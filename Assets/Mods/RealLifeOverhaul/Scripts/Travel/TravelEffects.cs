@@ -20,7 +20,7 @@ namespace RealLifeOverhaul
         private const float EnergyFloor = 15f;              // energy losses stop here, clear of fainting and the hospital
         private const float WorstEnergyMultiplier = 1.9f;   // the most the game multiplies energy spent by
 
-        private static readonly (string type, int amount, int hours)[] Modifiers =
+        internal static readonly (string type, int amount, int hours)[] Modifiers =
         {
             (Rested, 8, 72), (Comfort, 6, 24), (RoughNight, -5, 10), (Relaxed, 4, 6),
             (JetLag, -4, 36), (Burnout, -6, 6), (Together, 8, 48), (TradeFair, 4, 48)
@@ -36,19 +36,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                foreach ((string type, int amount, int hours) in Modifiers)
-                {
-                    if (registry.ContainsKey(type))
-                    {
-                        continue;
-                    }
-                    var modifier = ScriptableObject.CreateInstance<HappinessModifier>();
-                    modifier.type = type;
-                    modifier.amount = amount;
-                    modifier.hoursDuration = hours;
-                    modifier.maxHoursDuration = -1;
-                    registry[type] = modifier;
-                }
+                ModState.Enter(registry, Modifiers);   // each with the cap its length gives (Core/MoodRules)
             }
             catch (Exception e)
             {

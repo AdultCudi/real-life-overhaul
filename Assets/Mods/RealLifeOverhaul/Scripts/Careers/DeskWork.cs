@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Careers
                 yield break;
             }
             _orderFrame = Time.frameCount;
-            bool going = _station != null ? DeskGame.WalkTo(_station, Arrived) : _desk != null && DeskGame.WalkTo(_desk.Stand, Arrived);
+            bool going = _station != null ? DeskGame.WalkTo(_station, Arrived) : _desk != null && DeskGame.WalkTo(_desk, Arrived);
             if (!going)
             {
                 End(true, true);

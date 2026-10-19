@@ -75,6 +75,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WageRules.cs" Link="Mod\WageRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\DayRollRules.cs" Link="Mod\DayRollRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\MoodRules.cs" Link="Mod\MoodRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\GuideMarkRules.cs" Link="Mod\GuideMarkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EndScale.cs" Link="Mod\EndScale.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SaveLines.cs" Link="Mod\SaveLines.cs" />
@@ -311,6 +312,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsRules.Contracts.cs" Link="Mod\FirmsRules.Contracts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsStore.cs" Link="Mod\FirmsStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\CompetitorRules.cs" Link="Mod\CompetitorRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\MoveRules.cs" Link="Mod\MoveRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\VentureCatalogue.cs" Link="Mod\VentureCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\VentureModel.cs" Link="Mod\VentureModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\VentureRules.cs" Link="Mod\VentureRules.cs" />

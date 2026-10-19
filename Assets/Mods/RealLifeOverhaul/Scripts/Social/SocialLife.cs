@@ -525,23 +525,12 @@ namespace RealLifeOverhaul
             Logger?.Info("Social: the player stood " + person.Name + " up.");
         }
 
-        /// <summary>The next whole hour from a time at which an outing can be agreed with somebody; negative if none within two days.</summary>
+        /// <summary>The next whole hour from a time at which an outing can be agreed with somebody; negative if none within two days (SocialRules.FirstSlot).</summary>
         public static float NextSlot(SocialPerson person, PlanKind kind, float from)
         {
-            OutingDef def = SocialCatalogue.Outing(kind);
-            float start = Mathf.Ceil(from / 60f) * 60f;
-            for (int i = 0; i < 48; i++)
-            {
-                float at = start + i * 60f;
-                var stamp = new Timestamp(at);
-                int hour = stamp.Hour;
-                bool open = hour >= def.From && hour < def.To || (def.To > 24 && hour < def.To - 24);
-                if (open && person.FreeAt(hour, Weekend(stamp.Day)) && !person.Asleep(hour))
-                {
-                    return at;
-                }
-            }
-            return -1f;
+            return SocialRules.FirstSlot(person, SocialCatalogue.Outing(kind), from, WeekendOf);
         }
+
+        private static readonly Func<int, bool> WeekendOf = Weekend;   // (made once: NextSlot allocates nothing)
     }
 }

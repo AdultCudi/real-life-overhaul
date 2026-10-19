@@ -1,4 +1,10 @@
-0.40.3
+0.40.4
+
+New
+- The People contact shows each person's age, which goes up by a year on their birthday.
 
 Fixed
-- A bicycle or motorbike left against a post, a bin or a bench, or after a fall into one, could be stuck in it for good. When you get off or back on, it is now stood on clear pavement next to where it was.
+- A friend who suggests an outing on a call no longer turns it down when you say yes. Somebody with no free hour in the next two days, or on a rough day, says so as soon as you ask about plans.
+- The mod's moods, such as A nice moment and Did the right thing, no longer grow to hundreds of days each time a save is loaded, as happened in Going Public. Each mood now has a limit, and a save where one grew has it cut back once when it loads.
+- A tech firm moved to another building by a moving company lost its products, sales, contracts, staff and investors. They now move with it, and a save where they were left at the old building gets them back.
+- Your desk at work can always be walked to. A desk the office layout had boxed in, for example at an angle against the end of a long table, could not be reached when clicked; now another place by its chair or another desk is taken.
