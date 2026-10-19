@@ -32,7 +32,6 @@ namespace RealLifeOverhaul
         // The width also covers the optional onlooker 1.3 m to either side after the same snap and clearance.
         private static readonly Vector3 ChessHalf = new Vector3(2f, 1.5f, 1.85f);
         private static readonly Collider[] ChessOverlaps = new Collider[64];
-        private static readonly int CrosswalkLayer = LayerMask.NameToLayer("Crosswalk");
 
         /// <summary>Why places were refused since the counts were last cleared: for saying in the log why a test found no room.</summary>
         public static int OffPavement, Blocked, NearDoor, NoWall, Uneven;
@@ -43,6 +42,7 @@ namespace RealLifeOverhaul
         private static int _solidMask;
         private static int _doorMask;
         private static int _wallMask;
+        private static int _crosswalkLayer;   // the game's marked crossings' triggers (CrosswalkTrigger); -1 matches nothing
         private static bool _ready;
         private static bool _wallLogged;   // which layer shopfronts turned out to be on has been said this session
 
@@ -57,6 +57,7 @@ namespace RealLifeOverhaul
             _groundMask = LayerMask.GetMask("Roads", "Ground", "GroundUnplacable");
             _doorMask = LayerMask.GetMask("InteractiveItems", "InteractiveItemsOutlined");
             _wallMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls");
+            _crosswalkLayer = LayerMask.NameToLayer("Crosswalk");
             // Everything a person could be standing in: all layers but the ground itself and the ones that are only zones.
             _solidMask = ~(_groundMask | LayerMask.GetMask("UI", "Ignore Raycast", "AutoParkSpots", "ParkingArea", "TransparentFX", "Water"));
         }
@@ -170,25 +171,27 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool ChessClear(Vector3 table, Vector3 along)
         {
+            Setup();
             int count = Physics.OverlapBoxNonAlloc(table + Vector3.up * 0.5f, ChessHalf, ChessOverlaps,
                 Quaternion.LookRotation(along), Physics.AllLayers, QueryTriggerInteraction.Collide);
-            bool clear = count < ChessOverlaps.Length;   // a full buffer may hide a crossing: refuse this candidate
+            bool full = count >= ChessOverlaps.Length;   // a full buffer may hide a crossing: refuse this candidate
+            bool crossing = false;
             for (int i = 0; i < count; i++)
             {
                 Collider hit = ChessOverlaps[i];
-                if (hit != null && (hit.gameObject.layer == CrosswalkLayer || hit.CompareTag("Crosswalk")))
+                if (hit != null && (hit.gameObject.layer == _crosswalkLayer || hit.CompareTag("Crosswalk")))
                 {
-                    clear = false;
+                    crossing = true;
                 }
                 ChessOverlaps[i] = null;
             }
             if (Meta.Dev.Verbose)
             {
-                CityLifeDirector.Logger?.Info(clear
-                    ? "Chess check (crossing clearance): the whole setup misses crossings: PASS."
-                    : "Chess check (crossing clearance): candidate refused (crossing overlap or full query buffer): FAIL.");
+                CityLifeDirector.Logger?.Info(crossing ? "Chess check (crossing clearance): a crossing under the table, stools, approaches or onlookers, the place refused: PASS"
+                    : full ? "Chess check (crossing clearance): more colliders than the query holds, the place refused in case one is a crossing: PASS"
+                    : "Chess check (crossing clearance): no crossing under the table, stools, approaches or onlookers: PASS");
             }
-            return clear;
+            return !crossing && !full;
         }
 
         /// <summary>

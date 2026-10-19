@@ -37,6 +37,7 @@ People at work and about their day on the pavements near the player: sweepers, w
   One non-allocating box query includes triggers tagged Crosswalk or on the Crosswalk layer, regardless of the lights
   or traffic options. A full query buffer refuses the candidate too. The check runs only when choosing a place;
   normal walking can still cross roads. Developer diagnostics report the clearance result for each queried candidate.
+  The Crosswalk layer is in `GameContract.Layers`, so the mod names it in Player.log if a game update drops it; the tag still finds crossings then.
 
 ## Rules the living city keeps
 

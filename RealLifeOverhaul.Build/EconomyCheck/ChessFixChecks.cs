@@ -11,13 +11,13 @@ internal static partial class Program
               && clear.Contains("Physics.OverlapBoxNonAlloc(table + Vector3.up * 0.5f, ChessHalf, ChessOverlaps,")
               && clear.Contains("Quaternion.LookRotation(along)"),
             "chess fix: one oriented box covers the table, stools, approaches and either onlooker after pavement snapping");
-        Check(spots.Contains("LayerMask.NameToLayer(\"Crosswalk\")")
-              && clear.Contains("Physics.AllLayers, QueryTriggerInteraction.Collide")
-              && clear.Contains("hit.gameObject.layer == CrosswalkLayer || hit.CompareTag(\"Crosswalk\")"),
+        Check(MemberText(spots, "private static void Setup()").Contains("_crosswalkLayer = LayerMask.NameToLayer(\"Crosswalk\");")
+              && clear.Contains("Setup();") && clear.Contains("Physics.AllLayers, QueryTriggerInteraction.Collide")
+              && clear.Contains("hit.gameObject.layer == _crosswalkLayer || hit.CompareTag(\"Crosswalk\")"),
             "chess fix: crossings count by layer or tag on any layer, including triggers, without the traffic features");
         Check(spots.Contains("private static readonly Collider[] ChessOverlaps = new Collider[64];")
-              && clear.Contains("bool clear = count < ChessOverlaps.Length;") && clear.Contains("clear = false;")
-              && clear.Contains("ChessOverlaps[i] = null;") && clear.Contains("return clear;"),
+              && clear.Contains("bool full = count >= ChessOverlaps.Length;") && clear.Contains("crossing = true;")
+              && clear.Contains("ChessOverlaps[i] = null;") && clear.Contains("return !crossing && !full;"),
             "chess fix: the query reuses its buffer, releases collider references and refuses a full buffer");
 
         string leisure = ModSource(@"Leisure\Activities\ChessGame.cs");
@@ -37,15 +37,20 @@ internal static partial class Program
             "chess fix: ambient chess refuses an overlapping candidate before accepting the site or beginning the scene");
 
         Check(clear.Contains("if (Meta.Dev.Verbose)")
-              && clear.Contains("Chess check (crossing clearance): the whole setup misses crossings: PASS.")
-              && clear.Contains("candidate refused (crossing overlap or full query buffer): FAIL."),
-            "chess fix: diagnostics report crossing clearance only when choosing a place");
+              && clear.Contains("Chess check (crossing clearance): a crossing under the table, stools, approaches or onlookers, the place refused: PASS")
+              && clear.Contains("Chess check (crossing clearance): more colliders than the query holds, the place refused in case one is a crossing: PASS")
+              && clear.Contains("Chess check (crossing clearance): no crossing under the table, stools, approaches or onlookers: PASS"),
+            "chess fix: diagnostics say, only when choosing a place, whether a crossing or a full query refused it");
+        Check(MemberText(ModSource(@"Core\GameContract.cs"), "public static readonly string[] Layers =").Contains("\"Crosswalk\""),
+            "chess fix: the Crosswalk layer is in the game contract, so the guard names it in Player.log if the game drops it");
         Check(FixLineEverywhere("street chess tables no longer block pedestrian crossings",
                                 "mesas de xadrez na rua não bloqueiam mais as faixas de pedestres",
                                 "街头棋桌不会再挡住人行横道", "Schachtische auf der Straße blockieren keine Fußgängerüberwege mehr",
                                 "tables d'échecs dans la rue ne bloquent plus les passages piétons",
                                 "mesas de ajedrez en la calle ya no bloquean los pasos de peatones",
-                                "шахматные столы на улице больше не перекрывают пешеходные переходы"),
+                                "шахматные столы на улице больше не перекрывают пешеходные переходы",
+                                "schaaktafels op straat blokkeren geen zebrapaden meer",
+                                "sokaktaki satranç masaları artık yaya geçitlerini kapatmıyor"),
             "chess fix: What's new has the crossing line, with its fix mark, in some row of every language");
     }
 }
