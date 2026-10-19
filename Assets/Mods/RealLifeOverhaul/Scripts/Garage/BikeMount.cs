@@ -36,7 +36,9 @@ namespace RealLifeOverhaul
     /// drivetrain is let go and the rider pushes it (<see cref="BikeRules.Pedal"/>, once a physics step), against
     /// air drag that sets its cruising speed. Both lean with their speed (<see cref="BikeRules.LeanMost"/>).
     ///
-    /// Every value changed is recorded and <see cref="Detach"/> puts the scooter back exactly.
+    /// Every value changed is recorded and <see cref="Detach"/> puts the scooter back exactly. The body's centre of mass and
+    /// inertia are the game's, kept and written back only while the body is free to turn (<see cref="BikeRules.KeepMass"/>):
+    /// the game holds a scooter nobody is on frozen, and a frozen body reads an inertia of nothing.
     /// Costs nothing while parked: the per-frame and per-step work runs only while it is ridden (a force, a few
     /// comparisons and the legs' two bone turns each), and allocates nothing.
     /// </summary>
@@ -280,29 +282,75 @@ namespace RealLifeOverhaul
             return new Vector3(x * Mathf.Abs(own.x) / Mathf.Max(1e-4f, Mathf.Abs(scale.x)), y * Mathf.Abs(own.y) / Mathf.Max(1e-4f, Mathf.Abs(scale.y)), z * Mathf.Abs(own.z) / Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
         }
 
-        // The body's centre of mass and inertia are the game's (VariableCenterOfMass sets them); a collider changed on the body
-        // must not move them. Read once before the boxes are touched, written back after each change to the boxes.
+        // The body's centre of mass and inertia are the game's: VariableCenterOfMass writes them each time the game lets the
+        // scooter go (VehicleController.SetFreeze(false)). A collider changed on the body must not move them, so they are
+        // kept before the boxes change and written back after each change. Only ever from a body free to turn
+        // (BikeRules.KeepMass): the game holds a scooter nobody is on frozen, and the engine freezes a turn by setting its
+        // inertia to zero. Read from a bike dressed while it stands (every one is, after a save loads), the inertia is
+        // (0, 0, 0); written back as the bike is got on, the engine takes it as infinite, and the front wheel steers while
+        // the bike goes straight on. So it is kept when the mount is made if the body is free then (a bike just made), and
+        // each time it is got on, when the game has just let it go.
         private void KeepMass()
         {
             if (_rigidbody == null)
             {
                 return;
             }
+            Vector3 inertia = _rigidbody.inertiaTensor;
+            if (!BikeRules.KeepMass(TurnFree, inertia.x, inertia.y, inertia.z))
+            {
+                return;   // held frozen by the game, or no inertia it turns on: what was kept before stays
+            }
             _massCentre = _rigidbody.centerOfMass;
-            _inertia = _rigidbody.inertiaTensor;
+            _inertia = inertia;
             _inertiaTurn = _rigidbody.inertiaTensorRotation;
             _massKept = true;
         }
 
+        // Written back only into a body free to turn (BikeRules.PutMassBack): one the game holds frozen is given the game's
+        // own values by the game as it is let go, and a write would undo its hold.
         private void PutMassBack()
         {
-            if (!_massKept || _rigidbody == null)
+            if (_rigidbody == null || !BikeRules.PutMassBack(_massKept, TurnFree))
             {
                 return;
             }
             _rigidbody.centerOfMass = _massCentre;
             _rigidbody.inertiaTensor = _inertia;
             _rigidbody.inertiaTensorRotation = _inertiaTurn;
+        }
+
+        // True while no turn of the body is frozen: the game's hold on a scooter nobody is on freezes every constraint.
+        private bool TurnFree => _rigidbody != null && (_rigidbody.constraints & RigidbodyConstraints.FreezeRotation) == 0;
+
+        // The self-check of getting on: the body free to turn, on an inertia it turns on. A fault is always written (a bike
+        // that steers and goes straight on); a pass only with Developer diagnostics on. Once per getting on.
+        private void TurnCheck()
+        {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+            Vector3 inertia = _rigidbody.inertiaTensor;
+            bool free = TurnFree;
+            bool turns = BikeRules.Turns(inertia.x, inertia.y, inertia.z);
+            if (free && turns && !Meta.Dev.Verbose)
+            {
+                return;
+            }
+            string line = "Two-wheelers: turning check (got on): a " + Def.Kind + ", "
+                          + (free ? "free to turn" : "its turning frozen (" + _rigidbody.constraints + ")")
+                          + ", inertia " + inertia.ToString("F1", CultureInfo.InvariantCulture) + " kg m2 against at least "
+                          + BikeRules.LeastInertia.ToString("F3", CultureInfo.InvariantCulture) + " on each axis ("
+                          + (_massKept ? "the game's kept" : "none of the game's kept") + ")";
+            if (free && turns)
+            {
+                Logger?.Info(line + ": PASS");
+            }
+            else
+            {
+                Logger?.Warn(line + ": FAIL (its front wheel steers and it goes straight on)");
+            }
         }
 
         // The bars box on: solid on the layer the game gives a ridden scooter's box.
@@ -528,6 +576,8 @@ namespace RealLifeOverhaul
                    + $"scale {scale.ToString("F2", CultureInfo.InvariantCulture)}, collider {(collider != null ? "on " + LayerMask.LayerToName(collider.gameObject.layer) + (_frame != null ? " " + _frame.size.ToString("F2", CultureInfo.InvariantCulture) + " turned " + _frame.transform.localEulerAngles.ToString("F0") : " (the scooter's)") : "none")}"
                    + $", bars {(_bars != null ? (_bars.enabled ? "on " : "off ") + LayerMask.LayerToName(_bars.gameObject.layer) : "none")}, "
                    + (_rigidbody != null ? $"body {(_rigidbody.isKinematic ? "kinematic" : "dynamic")} {_rigidbody.constraints}, " : "no rigidbody, ")
+                   + (_rigidbody != null ? "inertia " + _rigidbody.inertiaTensor.ToString("F1", CultureInfo.InvariantCulture)
+                                           + (_massKept ? " (the game's kept), " : " (none kept), ") : string.Empty)
                    + $"physics {(_nwh != null && _nwh.enabled ? "running" : "at rest")}, map marker {(_poi != null ? "yes" : "no")}.";
         }
 
@@ -885,7 +935,9 @@ namespace RealLifeOverhaul
             _lastVelocity = _rigidbody != null ? _rigidbody.velocity : Vector3.zero;
             _lastPosition = transform.position;
             _steerShown = _front != null ? _front.SteerAngle : 0f;
+            KeepMass();       // the game has just let it go and written its own centre of mass and inertia
             BarsOn();         // as the game puts a ridden scooter's own box
+            TurnCheck();
             HookExit(true);   // off again inside the game's own getting off
             _animator = PlayerHelper.GetAnimator();
             float hip = 0.95f;

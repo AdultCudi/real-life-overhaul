@@ -29,8 +29,13 @@ namespace RealLifeOverhaul
     /// off the road for kerbs and narrow enough to stay off it at full lean (<see cref="LeanClearance"/>); the bars box
     /// is the bars and the rider's knees, the width of the grips.
     ///
+    /// THE MASS (<see cref="KeepMass"/>, <see cref="PutMassBack"/>, <see cref="Turns"/>). The body's centre of mass and
+    /// inertia are the game's, kept while the boxes change and written back after. The game holds a scooter nobody rides
+    /// frozen, and the engine freezes a body's turning by setting its inertia to nothing, which written onto a ridden bike
+    /// is one that steers and goes straight on: they are kept and written back only while the body is free to turn.
+    ///
     /// Everything here is a handful of multiplications, asked once a physics step or once a frame while a two-wheeler is
-    /// ridden, or once when one is made. Nothing is allocated.
+    /// ridden, or once when one is made or got on. Nothing is allocated.
     /// </summary>
     public static class BikeRules
     {
@@ -272,6 +277,43 @@ namespace RealLifeOverhaul
             sx = Math.Abs(m00) * x + Math.Abs(m01) * y + Math.Abs(m02) * z;
             sy = Math.Abs(m10) * x + Math.Abs(m11) * y + Math.Abs(m12) * z;
             sz = Math.Abs(m20) * x + Math.Abs(m21) * y + Math.Abs(m22) * z;
+        }
+
+        // ---------------------------------------------------------------- the mass
+
+        public const float LeastInertia = 0.001f;   // kg m2: a component at or under this is the engine's lock on a frozen turn, not a body's own
+
+        /// <summary>
+        /// True for an inertia a body turns on: every component finite and over <see cref="LeastInertia"/>. The engine takes
+        /// a zero component as an infinite inertia about that axis; it is how it freezes a body's turning.
+        /// </summary>
+        public static bool Turns(float x, float y, float z)
+        {
+            return Turning(x) && Turning(y) && Turning(z);
+        }
+
+        /// <summary>
+        /// Whether the body's centre of mass and inertia, read now, are kept as the game's: only while no turn of the body is
+        /// frozen (<paramref name="turnFree"/>), and only an inertia it turns on. The game holds every scooter nobody is on
+        /// frozen (VehicleController.SetFreeze), so a bike dressed while it stands reads an inertia of nothing.
+        /// </summary>
+        public static bool KeepMass(bool turnFree, float x, float y, float z)
+        {
+            return turnFree && Turns(x, y, z);
+        }
+
+        /// <summary>
+        /// Whether what was kept is written back: only something kept, and only into a body free to turn. A body the game
+        /// holds frozen gets the game's own values from the game as it is let go (VariableCenterOfMass).
+        /// </summary>
+        public static bool PutMassBack(bool kept, bool turnFree)
+        {
+            return kept && turnFree;
+        }
+
+        private static bool Turning(float value)
+        {
+            return value > LeastInertia && value < float.PositiveInfinity;   // (not a number fails both)
         }
 
         private static float Clamp01(float value)
