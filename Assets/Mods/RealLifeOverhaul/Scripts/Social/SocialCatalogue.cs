@@ -13,6 +13,7 @@ namespace RealLifeOverhaul
         public int Cost;               // per head
         public int Minutes;            // game minutes spent inside
         public bool SeatedRest;        // rested as in the game's own cinema seat through the time skip (before the settlement)
+        public string MealItem;        // the game's food item whose saturation fills the player after a completed outing
         public int From, To;           // hours of the day it can be agreed for (To may be past midnight: 27 = 3 in the morning)
         public float Energy;           // of the game's hundred, to the player
         public float Familiarity, Affection, Trust;   // points it is worth, before liking and how it went
@@ -277,6 +278,7 @@ namespace RealLifeOverhaul
             new OutingDef
             {
                 Kind = PlanKind.Meal, Name = "reallife_social_outing_meal", Offer = "reallife_social_offer_meal", Match = new[] { "restaurant" },
+                MealItem = "ba:itemname_burger",
                 Cost = 24, Minutes = 70, From = 11, To = 23, Energy = 10f, Familiarity = 8f, Affection = 7f, Trust = 3f,
                 Caption = "reallife_social_tm_meal", Transaction = "reallife_transaction_social_meal", Memory = MemoryCode.Meal,
                 After = new[] { "reallife_social_after_meal_1", "reallife_social_after_meal_2", "reallife_social_after_meal_3" }, Invite = "reallife_social_invite_meal"
