@@ -12,13 +12,17 @@ namespace RealLifeOverhaul
     /// knows the card, the model loaded and quick enough) and "Type what you say in calls" is on, a topic they raise is
     /// answered by the player's own words, typed in the game's text box (Core/GameUi/TextBox), in place of its two answers,
     /// and they answer in their own words, asked of the model off the game's thread (SocialLinks.AnswerTyped). The typed
-    /// words count as the warm answer (SocialComposerRules), settled the moment they are sent, so nothing depends on what
-    /// either side wrote; the answer only shows. Words that do not come within the hold, or fail the checks, are the warm
-    /// answer's written reaction; a call that ends meanwhile lets them go. Mom, a game without a pack, a pack of an older
-    /// data version, the option off, the model loading or slow: the two answers, exactly as without the composer. Plans,
-    /// favours, gifts, asking out and the rest of "Something else" stay buttons. With Developer diagnostics on, one
-    /// "Social check (composer)" line for each topic and each typed message.
-    /// COST: nothing per frame; on a click a few short strings, and one request of RLO Texts a typed message.
+    /// words are worth the warm answer (SocialComposerRules.TypedWarm), settled the moment they are sent, whatever they
+    /// say. What they say is read by the game's own rules (SocialComposerRules.Read and Heard: good news, bad news or not
+    /// clear, a bare yes or no as the topic's question takes it), and that picks their written answer: the topic's own line
+    /// for good news or for bad, a neutral line for anything not clear (SocialComposerRules.Reaction). The model's words
+    /// take its place when they come within the hold, pass the checks and do not read the other way (Against); otherwise,
+    /// or when they do not come, the written answer shows; a call that ends meanwhile lets them go. Mom, a game without a
+    /// pack, a pack of an older data version, the option off, the model loading or slow: the two answers, exactly as without
+    /// the composer. Plans, favours, gifts, asking out and the rest of "Something else" stay buttons. With Developer
+    /// diagnostics on, one "Social check (composer)" line for each topic and each typed message.
+    /// COST: nothing per frame; on a click a few short strings and one reading of the words, and one request of RLO Texts
+    /// a typed message, whose answer is read once when it comes.
     /// </summary>
     public sealed partial class PersonDialog
     {
@@ -28,7 +32,8 @@ namespace RealLifeOverhaul
         private SocialTopic _typing;                      // the topic the text box is open for; null once the call has moved on
         private Dictionary<string, string> _typingData;
         private bool _waiting;                            // typed words were sent, and their answer is awaited
-        private string _react;                            // ...the warm answer's written reaction, if no words come
+        private SocialRead _heard;                        // ...what they were heard as (SocialComposerRules.Heard)
+        private string _react;                            // ...their written answer for that, if no words come or they read the other way
         private Dictionary<string, string> _reactData;
         private string _counted;                          // what the typed words counted as, for the check line
         private Action<string> _onTyped;
@@ -88,7 +93,8 @@ namespace RealLifeOverhaul
             _typing = null;
         }
 
-        // The words sent: what they are worth is settled at once, they are shown as the player's, and the answer is asked.
+        // The words sent: what they are worth is settled at once, they are read for what they get back, shown as the player's,
+        // and the answer is asked.
         private void Typed(string text)
         {
             SocialTopic topic = _typing;
@@ -105,9 +111,13 @@ namespace RealLifeOverhaul
             }
             float familiarity = _p.Familiarity, affection = _p.Affection, trust = _p.Trust;
             SocialWorth want = SocialTalk.Worth(_p, topic, SocialComposerRules.TypedWarm, false, _topics == 0);
-            string react = Answered(topic, SocialComposerRules.TypedWarm);
-            _counted = "counted as the warm answer to topic " + topic.Id + ": " + Moved("familiarity", familiarity, _p.Familiarity, want.Familiarity)
-                       + ", " + Moved("affection", affection, _p.Affection, want.Affection) + ", " + Moved("trust", trust, _p.Trust, want.Trust);
+            Answered(topic, SocialComposerRules.TypedWarm);   // (worth the warm answer, whatever the words say)
+            SocialRead read = SocialComposerRules.Read(words);
+            _heard = SocialComposerRules.Heard(topic, read);
+            string react = SocialLines.Pick(SocialComposerRules.Reaction(topic, _heard));
+            _counted = "read as " + Said(read, _heard) + ", their written answer " + react + ", counted as the warm answer to topic " + topic.Id + ": "
+                       + Moved("familiarity", familiarity, _p.Familiarity, want.Familiarity) + ", " + Moved("affection", affection, _p.Affection, want.Affection)
+                       + ", " + Moved("trust", trust, _p.Trust, want.Trust);
             Show(Mine(words));
             SocialComposerRules.Keep(_lines, true, words);
             _react = react;
@@ -125,7 +135,8 @@ namespace RealLifeOverhaul
         // Asked by RLO Texts when the words come: false once the call has moved on or ended.
         private bool Wanted() => _waiting && Live;
 
-        // Their answer: the model's words, or the warm answer's written reaction; then the call goes on as after a choice.
+        // Their answer: the model's words, or the written answer for what the typed words were heard as when none come or they
+        // read the other way (good news answered as bad); then the call goes on as after a choice.
         private void AnswerCame(string words, string how)
         {
             if (!_waiting)
@@ -133,6 +144,11 @@ namespace RealLifeOverhaul
                 return;
             }
             _waiting = false;
+            if (words != null && SocialComposerRules.Against(_heard, words))
+            {
+                how = "the words read the other way from what was typed: \"" + words + "\"";
+                words = null;
+            }
             bool live = Live;
             if (live)
             {
@@ -161,6 +177,13 @@ namespace RealLifeOverhaul
             SocialLife.Said(_p, SocialLinks.WordsKey, data);
             TheySaid(words);
             return new DialogEntry { messageData = SocialLinks.WordsKey.Localize(data), OnCancel = PhoneContacts.HangUp };
+        }
+
+        // What typed words were read as, for the check line: "good news", "a bare yes, here good news".
+        private static string Said(SocialRead read, SocialRead heard)
+        {
+            string news = heard == SocialRead.Good ? "good news" : heard == SocialRead.Bad ? "bad news" : "nothing clear";
+            return read == SocialRead.Yes || read == SocialRead.No ? "a bare " + (read == SocialRead.Yes ? "yes" : "no") + ", here " + news : news;
         }
 
         // "affection +3.5" as measured against the rule's own figure; a figure held at the top of its scale is no fault.

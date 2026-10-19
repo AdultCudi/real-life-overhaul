@@ -4,10 +4,11 @@ using RealLifeOverhaul;
 using RealLifeOverhaul.Texts;
 
 // A call's composer (Social/PersonDialog.Composer, SocialComposerRules, Wiring/TextsCalls): with an RLO Texts pack that can
-// answer, a topic a friend raises on a call is answered by the player's typed words, which count as the warm answer, and
+// answer, a topic a friend raises on a call is answered by the player's typed words, which are worth the warm answer, and
 // they answer in the model's words. Checked: the two answers stay without a pack, with the option off, while the model is
 // not ready, for a pack of an older data version and for Mom; typed words are worth the warm answer and no more, with the
-// same limits a day; nothing a rule decides reads the words; typed words are one clean line within their length.
+// same limits a day; nothing a rule decides reads the model's words; typed words are one clean line within their length.
+// What the typed words say, and the written answer that picks, is TypedReadingChecks.cs.
 internal static partial class Program
 {
     private static void ComposerChecks()
