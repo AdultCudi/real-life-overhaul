@@ -9,13 +9,16 @@ internal static partial class Program
     private static void FamilyWish()
     {
         const int at = PartnerWishRules.AskAtCash, full = PartnerWorkRules.FullTime, half = PartnerWorkRules.PartTime;
-        Check(PartnerWishRules.Asks(true, true, full, false, false, at, at, 50, 0) && PartnerWishRules.Asks(true, true, half, false, false, at, at, 50, 0)
-              && !PartnerWishRules.Asks(true, true, full, false, false, at - 1, at, 50, 0),
+        Check(PartnerWishRules.AskAtCash == 100000 && PartnerWishRules.AskAtIncome == 5000 && PartnerWishRules.AskIncomeDays == 7
+              && !PartnerWishRules.Asks(true, true, full, false, false, at, at, 50, 0, 6) && PartnerWishRules.Streak(6, 5000f, 5000) == 7 && PartnerWishRules.Streak(6, 4999f, 5000) == 0,
+            "family wish: asked only after the daily income has held at 5,000 or more for seven days in a row, with 100,000 in cash");
+        Check(PartnerWishRules.Asks(true, true, full, false, false, at, at, 50, 0, 7) && PartnerWishRules.Asks(true, true, half, false, false, at, at, 50, 0, 7)
+              && !PartnerWishRules.Asks(true, true, full, false, false, at - 1, at, 50, 0, 7),
             "family wish: a partner who lives with the player and works, full or half days, asks once the cash reaches " + at);
-        Check(!PartnerWishRules.Asks(false, true, full, false, false, at, at, 50, 0) && !PartnerWishRules.Asks(true, false, full, false, false, at, at, 50, 0)
-              && !PartnerWishRules.Asks(true, true, PartnerWorkRules.Stopped, false, false, at, at, 50, 0) && !PartnerWishRules.Asks(true, true, PartnerWorkRules.Studying, false, false, at, at, 50, 0)
-              && !PartnerWishRules.Asks(true, true, full, true, false, at, at, 50, 0) && !PartnerWishRules.Asks(true, true, full, false, true, at, at, 50, 0)
-              && !PartnerWishRules.Asks(true, true, full, false, false, at, at, 50, 50 - PartnerWorkRules.AskAgainDays + 1),
+        Check(!PartnerWishRules.Asks(false, true, full, false, false, at, at, 50, 0, 7) && !PartnerWishRules.Asks(true, false, full, false, false, at, at, 50, 0, 7)
+              && !PartnerWishRules.Asks(true, true, PartnerWorkRules.Stopped, false, false, at, at, 50, 0, 7) && !PartnerWishRules.Asks(true, true, PartnerWorkRules.Studying, false, false, at, at, 50, 0, 7)
+              && !PartnerWishRules.Asks(true, true, full, true, false, at, at, 50, 0, 7) && !PartnerWishRules.Asks(true, true, full, false, true, at, at, 50, 0, 7)
+              && !PartnerWishRules.Asks(true, true, full, false, false, at, at, 50, 50 - PartnerWorkRules.AskAgainDays + 1, 7),
             "family wish: nothing is asked with the option off, of a partner not living with the player, once stopped or studying, once granted, while an ask waits, or within a month of a no");
         bool never = true;
         int stop = 0;
@@ -40,7 +43,7 @@ internal static partial class Program
             "family wish: asked to chip in for the rent they agree in a happy home, a quarter of a week's pay a week, and can be asked again only after a while");
         string wish = ModSource(@"Family\PartnerWish.cs"), work = ModSource(@"Family\PartnerWork.cs"), home = ModSource(@"Family\HomeLife.cs");
         Check(home.Contains("works = works && PartnerWorkRules.Works(PartnerWork.Work);") && work.Contains("PartnerWishRules.Studying(FamilyState.S.PRetrainUntil, TimeHelper.CurrentDay)")
-              && wish.Contains("Prices.At(PartnerWishRules.AskAtCash)") && wish.Contains("s.PWishGranted = true;")
+              && wish.Contains("Prices.At(PartnerWishRules.AskAtCash), day, s.PWishAskDay, s.PWishEarnDays)") && wish.Contains("PlayerHelper.CalculateDailyIncome()") && wish.Contains("s.PWishGranted = true;")
               && ModSource(@"Family\FamilyCalendar.cs").Contains("PartnerWish.Hourly(day);") && wish.Contains("s.PWorkAsk = false;") && work.Contains("&& !s.PWishAsk, s.PWork,")
               && wish.Contains("PartnerVoice.Ask(PartnerVoice.Wish, \"reallife_family_wish_text\", Args.Us);") && wish.Contains("!PartnerVoice.Asking(PartnerVoice.Wish)") && Occurs(ModSource(@"Family\Partner.cs"), "PartnerWish.Reset(s);") == 3,
             "family wish: the timetable and pay read stopping and studying through the switch, asked once a day at today's prices, afresh with every new partner");

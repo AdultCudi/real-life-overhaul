@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Family
             Relatives.Daily(day);
             HardTimes.Daily(day);
             FamilyState.RecordIncome();
+            PartnerWish.Daily();
             PartnerWish.Daily(day);
             bool warm = s.Harmony >= 40f;
             FamilyModifiers.Keep(FamilyModifiers.Married, FamilyState.Bond == Bond.Married && warm);

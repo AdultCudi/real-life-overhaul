@@ -210,6 +210,7 @@ namespace RealLifeOverhaul.Family
         public int PChipInUntil;     // chipping in for the rent from their savings until this day
         public int PChipInDay;       // the day of the last week's share
         public int PChipInAskDay;    // the day the player last asked them to chip in
+        public int PWishEarnDays;    // days in a row the player's daily income has been at PartnerWishRules.AskAtIncome or more
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

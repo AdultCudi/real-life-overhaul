@@ -9,18 +9,23 @@ namespace RealLifeOverhaul.Family
     public static class PartnerWishRules
     {
         public const int None = 0, Stop = 1, Retrain = 2;
-        public const int AskAtCash = 1000000;    // the player's cash at the start's prices (the fourth of Social's wealth steps)
+        public const int AskAtCash = 100000;     // the player's cash at the start's prices...
+        public const int AskAtIncome = 5000;     // ...after the game's daily income has been at least this a day (the start's prices)...
+        public const int AskIncomeDays = 7;      // ...for this many days in a row
         public const int RetrainDays = 20;       // days of study without pay before the new job
         public const float HarmonyYes = 8f;
         public const float HarmonyNo = -4f;
         public const float AffectionYes = 4f;
 
         /// <summary>Whether they ask today: the option on, living together, still working, the cash reached, the wish not yet granted and no recent no.</summary>
-        public static bool Asks(bool on, bool livesIn, int work, bool granted, bool asking, float cash, int atCash, int day, int lastAskDay)
+        public static bool Asks(bool on, bool livesIn, int work, bool granted, bool asking, float cash, int atCash, int day, int lastAskDay, int earnDays)
         {
-            return on && livesIn && (work == PartnerWorkRules.FullTime || work == PartnerWorkRules.PartTime) && !granted && !asking && cash >= atCash
-                   && (lastAskDay <= 0 || day - lastAskDay >= PartnerWorkRules.AskAgainDays);
+            return on && livesIn && (work == PartnerWorkRules.FullTime || work == PartnerWorkRules.PartTime) && !granted && !asking && earnDays >= AskIncomeDays
+                   && cash >= atCash && (lastAskDay <= 0 || day - lastAskDay >= PartnerWorkRules.AskAgainDays);
         }
+
+        /// <summary>Days in a row the daily income has been at least <paramref name="atIncome"/>: one more today, or none again.</summary>
+        public static int Streak(int days, float income, int atIncome) => income >= atIncome ? days + 1 : 0;
 
         /// <summary>What they wish for, from their seed: about half would stop, half would retrain.</summary>
         public static int WishOf(int seed) => ((seed >> 4) & 1) == 0 ? Stop : Retrain;
