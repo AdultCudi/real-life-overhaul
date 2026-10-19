@@ -14,16 +14,33 @@ namespace RealLifeOverhaul
     /// <summary>The drinks cart: customers coming, queueing, ordering and leaving.</summary>
     public sealed partial class VendorJob
     {
+        private float _arrivalSince = -1f;   // seconds: first attempt to send the next customer, even if no route could be used
+
         // Somebody new comes along while there is a free place and customers left in the shift.
         private void Arrivals(float now)
         {
-            if (now < _nextArrival || _came - _served - _lost >= LeftToServe)
+            if (now < _nextArrival)
             {
+                return;
+            }
+            if (_came - _served - _lost >= LeftToServe)
+            {
+                _arrivalSince = -1f;   // nobody is wanted: no attempt is failing
                 return;
             }
             int slot = _state[0] == Guest.None ? 0 : _state[1] == Guest.None ? 1 : -1;
             if (slot < 0)
             {
+                _arrivalSince = -1f;
+                return;
+            }
+            if (_arrivalSince < 0f)
+            {
+                _arrivalSince = now;
+            }
+            if (now - _arrivalSince >= CartQueueRules.WalkMost)
+            {
+                ArrivalFailed(now);
                 return;
             }
             if (_soon > 0)
@@ -63,6 +80,7 @@ namespace RealLifeOverhaul
                 Ctx.Cast.Release(person);
                 return;
             }
+            _arrivalSince = -1f;
             _who[slot] = person;
             _lease[slot] = person.Lease;
             _state[slot] = counterFree ? Guest.Stepping : Guest.Coming;
@@ -111,8 +129,13 @@ namespace RealLifeOverhaul
                     {
                         Withdraw(i, fate, now);   // taken off the street, or never got to the front and gives up
                     }
-                    else if (_front < 0 && person.MoveTo(_counter, Pace.Walk))
+                    else if (_front < 0)
                     {
+                        if (!person.MoveTo(_counter, Pace.Walk))
+                        {
+                            Withdraw(i, CartGuest.NoRoute, now);
+                            break;
+                        }
                         _front = i;
                         _state[i] = Guest.Stepping;
                         _until[i] = now + 15f;
@@ -183,6 +206,22 @@ namespace RealLifeOverhaul
                         Gone(i, true);
                     }
                     break;
+            }
+        }
+
+        // No unseen starting place, usable route or walker for a whole walk's time: count the failed attempt too.
+        private void ArrivalFailed(float now)
+        {
+            _came++;
+            bool shorter = CartQueueRules.Account(CartGuest.NoRoute, ref _came, ref _lost, ref _cantReach);
+            _arrivalSince = -1f;
+            _nextArrival = now + CartQueueRules.NextSoon;
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: vendor: no customer could set off for "
+                    + CartQueueRules.WalkMost.ToString("F0", CultureInfo.InvariantCulture)
+                    + " s; not a walk-off, " + (shorter ? "the shift is one shorter" : "the next starting place is tried soon")
+                    + "; " + LeftToServe + " still to come.");
             }
         }
 

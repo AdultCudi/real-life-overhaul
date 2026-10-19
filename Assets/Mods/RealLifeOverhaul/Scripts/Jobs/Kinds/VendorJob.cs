@@ -139,20 +139,11 @@ namespace RealLifeOverhaul
                 Ctx.Logger?.Info("Jobs: no vendor shift: the prop bundle has no cart.");
                 return false;
             }
-            if (!FindPitch(Ctx.PlayerPosition))
+            if (!PutPitch(now))
             {
                 Refusal = "reallife_job_vendor_no_room";
                 return false;
             }
-            _cart = Ctx.Props.Stand(CartProp, _cartAt, _outwards);
-            if (_cart == null)
-            {
-                Refusal = "reallife_job_no_here";
-                return false;
-            }
-            // Solid from the start: the player stays beside it (a shift is given up after 25 s away), so the mesh is cut once.
-            _solid.Fit(_cart, CartHalfLength, CartHalfDepth, Mathf.Min(VendorBack, CustomerOut));
-            _solid.Solid(true, now);
 
             for (int i = 0; i < JobKeys.Choices; i++)
             {
@@ -175,8 +166,6 @@ namespace RealLifeOverhaul
             _patienceWords = JobText.T("reallife_job_vendor_panel_patience");
             _title = JobText.T(Def.NameKey);
             _startMinutes = TimeHelper.NowInMinutes();
-            Ctx.Stand.Place(_post, _outwards, PostReach, IdleClip);
-            Mark(_post, _postLabel);
             ShiftCard card = Ctx.Card;
             if (card != null)
             {
@@ -192,55 +181,17 @@ namespace RealLifeOverhaul
                                  + JobSpots.Flat(_post, Ctx.PlayerPosition).ToString("F1", CultureInfo.InvariantCulture) + " m away (the zone that takes the player is "
                                  + PostReach.ToString("F1", CultureInfo.InvariantCulture)
                                  + " m round it); " + _customers + " customers; shown in the game's own interface: job panel "
-                                 + (card != null ? "copied" : "NOT copied (the panel over the cart is all there is)") + ", the game's guider points at the place.");
+                                 + (card != null ? "copied" : "NOT copied (the panel over the cart is all there is)")
+                                 + ", waiting for the solid check before the place is offered.");
             }
             return true;
         }
 
-        // Along the pavement, counter to the side with room: corners, places and queue on pavement, the counter reachable from the vendor.
-        private bool FindPitch(Vector3 near)
-        {
-            if (!CitySpots.Pavement(near, 8f, out Vector3 start))
-            {
-                return false;
-            }
-            for (int attempt = 0; attempt < 6; attempt++)
-            {
-                Vector3 place = attempt == 0 ? start : start + Quaternion.Euler(0f, attempt * 60f, 0f) * Vector3.forward * 3.5f;
-                if (!CitySpots.Stand(place, 1.1f, out Vector3 cart) || !CitySpots.Along(cart, out Vector3 along) || JobSpots.Flat(cart, near) < 1.6f)
-                {
-                    continue;
-                }
-                Vector3 across = Vector3.Cross(Vector3.up, along);
-                for (int side = 0; side < 2; side++)
-                {
-                    Vector3 outwards = side == 0 ? across : -across;
-                    if (CitySpots.OnPavement(cart + along * 0.85f + outwards * 0.5f, out _) && CitySpots.OnPavement(cart - along * 0.85f + outwards * 0.5f, out _)
-                        && CitySpots.OnPavement(cart + along * 0.85f - outwards * 0.5f, out _) && CitySpots.OnPavement(cart - along * 0.85f - outwards * 0.5f, out _)
-                        && CitySpots.Stand(cart - outwards * VendorBack, 0.35f, out _post)
-                        && CitySpots.Stand(cart + outwards * CustomerOut, 0.35f, out _counter)
-                        && CitySpots.Stand(cart + outwards * QueueOut, 0.35f, out _queue)
-                        && CitySpots.Reachable(_counter, _post))
-                    {
-                        _cartAt = cart;
-                        _outwards = outwards;
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
         public override void Tick(float now)
         {
-            if (_solid.VerifyDue && _solid.Verify(now, _post, _counter, out bool cut, out bool kept, out bool way))
+            if (!PitchReady(now))
             {
-                Ctx.Logger?.Info("Jobs check (cart solid): walker radius " + _solid.Radius.ToString("F2", CultureInfo.InvariantCulture) + " m, box "
-                                 + (CartHalfLength * 2f).ToString("F2", CultureInfo.InvariantCulture) + " x "
-                                 + (_solid.HalfDepth * 2f).ToString("F2", CultureInfo.InvariantCulture) + " m; cut out of the mesh: the cart's middle " + (cut ? "yes" : "no")
-                                 + "; still walkable: the vendor's place and the customer's place " + (kept ? "yes" : "no") + ", a way on foot from one to the other "
-                                 + (way ? "yes" : "no") + ": " + (cut && kept && way ? "PASS" : !kept || !way ? "FAIL (the cut is taken back: the cart is steered round, not solid)"
-                                     : "FAIL (the cart can be walked through)") + ".");
+                return;
             }
             if (_skip != null)
             {
@@ -251,6 +202,7 @@ namespace RealLifeOverhaul
                 }
                 _skip.Close();   // over, or dropped by the game's panel: it settles nothing more
                 _skip = null;
+                _arrivalSince = -1f;   // the clock's run was no failed attempt to send anybody
                 _panelState = int.MinValue;
                 _cardState = int.MinValue;
             }
