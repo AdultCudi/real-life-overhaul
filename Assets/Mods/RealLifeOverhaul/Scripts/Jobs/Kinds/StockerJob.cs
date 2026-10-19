@@ -117,7 +117,7 @@ namespace RealLifeOverhaul
             }
             _left = _boxes;
             _carry = new JobCarry(Ctx.Logger);
-            if (!JobSpots.RandomDoor(Ctx.PlayerPosition, ClientMin, ClientMax, null, 0f, out _client, JobSites.ShopClient, 96) || !StandPile())
+            if (!JobSites.RandomClient(Ctx, Def, _boxes, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.ShopClient, out _client) || !StandPile())
             {
                 Refusal = "reallife_job_no_client";
                 return false;
@@ -136,7 +136,8 @@ namespace RealLifeOverhaul
             BeginSpeed(now, _endsAt - now);
             _step = Step.ToPile;
             _figures = new ShiftFigures(Ctx, Def, "reallife_job_stocker_card_done");
-            _clock = new ShiftClock(Ctx, this, this, "stocker", "reallife_job_stocker_unit", "reallife_job_stocker_units", "reallife_job_stocker_slip");
+            _clock = new ShiftClock(Ctx, this, this, "stocker", "reallife_job_stocker_unit", "reallife_job_stocker_units", "reallife_job_stocker_slip", canWork: ClientOpen,
+                openFor: ClientOpenFor);
             Ctx.Logger?.Info("Jobs: stocking shelves at " + _clientName + " (" + _client.Name + "), " + _boxes + " boxes.");
             if (Meta.Dev.Verbose)
             {
@@ -181,6 +182,10 @@ namespace RealLifeOverhaul
 
         public override void Tick(float now)
         {
+            if (!ClientOpen())
+            {
+                return;
+            }
             if (_clock.Hold())
             {
                 Figures(now);   // the clock is working, or its offer is up with the game paused
@@ -337,9 +342,9 @@ namespace RealLifeOverhaul
             float now = Time.time;
             if (ReferenceEquals(action, ButtonEnter))
             {
-                if (_client.Building != null)
+                if (!ClientClosed(_client) && !JobSites.Enter(_client))
                 {
-                    _client.Building.Interact();
+                    ClientClosed(_client, true);
                 }
             }
             else if (ReferenceEquals(action, ButtonPick) && _step == Step.ToPile && _left > 0 && !PlayerHelper.IsHoldingItem)
@@ -496,6 +501,10 @@ namespace RealLifeOverhaul
         }
 
         protected override ShiftClock Clocked => _clock;
+
+        private bool ClientOpen() => !ClientClosed(_client);
+
+        private int ClientOpenFor() => JobSites.MinutesOpen(_client);
 
         private void OfferSkip()
         {

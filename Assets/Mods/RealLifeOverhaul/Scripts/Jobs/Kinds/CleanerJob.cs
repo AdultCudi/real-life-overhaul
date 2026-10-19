@@ -147,7 +147,7 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_no_daily";
                 return false;
             }
-            if (!JobSpots.RandomDoor(Ctx.PlayerPosition, ClientMin, ClientMax, null, 0f, out _client, JobSites.AnyClient, 96))
+            if (!JobSites.RandomClient(Ctx, Def, _units, ClientMin, ClientMax, Seconds, SecondsPerMetre, JobSites.AnyClient, out _client))
             {
                 Refusal = "reallife_job_no_client";
                 return false;
@@ -166,7 +166,8 @@ namespace RealLifeOverhaul
             _step = Step.ToClient;
             _mode = Mode.Undecided;
             _figures = new ShiftFigures(Ctx, Def, "reallife_job_cleaner_card_done");
-            _clock = new ShiftClock(Ctx, this, this, "cleaner", "reallife_job_cleaner_unit", "reallife_job_cleaner_units", "reallife_job_cleaner_slip");
+            _clock = new ShiftClock(Ctx, this, this, "cleaner", "reallife_job_cleaner_unit", "reallife_job_cleaner_units", "reallife_job_cleaner_slip", canWork: ClientOpen,
+                openFor: ClientOpenFor);
             SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // a save never carries the job's dirt or its mop
             Mark(_client.Front, _doorLabel);
             Hint(0);
@@ -199,6 +200,10 @@ namespace RealLifeOverhaul
 
         public override void Tick(float now)
         {
+            if (!ClientOpen())
+            {
+                return;
+            }
             if (_clock.Hold())
             {
                 Figures(now);   // the clock is working, or its offer is up with the game paused
@@ -443,9 +448,9 @@ namespace RealLifeOverhaul
             }
             if (ReferenceEquals(action, ButtonEnter))
             {
-                if (_client.Building != null)
+                if (!ClientClosed(_client) && !JobSites.Enter(_client))
                 {
-                    _client.Building.Interact();   // the game's own way in: it says so itself if the business has just shut
+                    ClientClosed(_client, true);
                 }
                 return;
             }
@@ -503,6 +508,10 @@ namespace RealLifeOverhaul
         }
 
         protected override ShiftClock Clocked => _clock;
+
+        private bool ClientOpen() => !ClientClosed(_client);
+
+        private int ClientOpenFor() => JobSites.MinutesOpen(_client);
 
         private void OfferSkip()
         {
