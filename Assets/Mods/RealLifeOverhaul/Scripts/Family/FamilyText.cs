@@ -122,15 +122,18 @@ namespace RealLifeOverhaul.Family
             string from = contact == FamilyPhone.PartnerContact ? "partner" : contact == PhoneContacts.Mom ? "mom" : contact == FamilyPhone.InLawContact ? "inlaws" : "family";
             if (HoldText == null || !HoldText(from, key, data, (k, d) => Send(contact, k, d)))
             {
-                contact.SendMessage(new TextMessage(key, data));
+                contact.SendMessage(new TextMessage(key, data), notify: true, sendNotificationInstantly: Now(contact));
             }
         }
+
+        // A text from the partner is told the moment it comes, as Social's own texts are; the game otherwise holds the notice back.
+        private static bool Now(Contact contact) => contact != null && contact == FamilyPhone.PartnerContact;
 
         private static void Send(Contact contact, string key, Dictionary<string, string> data)
         {
             try
             {
-                contact.SendMessage(new TextMessage(key, data));
+                contact.SendMessage(new TextMessage(key, data), notify: true, sendNotificationInstantly: Now(contact));
             }
             catch (System.Exception e)
             {
