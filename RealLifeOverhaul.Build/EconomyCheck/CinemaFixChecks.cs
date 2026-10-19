@@ -30,10 +30,11 @@ internal static partial class Program
               && MemberText(scene, "public override void End(SceneEnd why)").Contains("EndRestEffects();")
               && ModSource(@"Social\SocialDirector.cs").Contains("(_scene as OutingScene)?.EndRestEffects();"),
             "cinema fix: the rest begins with the skip and ends when it ends, when the outing ends and when the feature faults");
-        Check(FixLineEverywhere("a film at the cinema or the theatre with a friend now rests you", "um filme no cinema ou no teatro com um amigo agora descansa-te",
+        Check(FixLineEverywhere("a film at the cinema or the theatre with a friend now rests you", "um filme no cinema ou no teatro com um amigo agora faz você descansar",
                                 "和朋友去电影院或剧院看电影时，现在会像游戏自带的座位一样让你休息", "Ein Film mit Freunden im Kino oder Theater lässt dich jetzt ausruhen",
-                                "un film au cinéma ou au théâtre avec un ami te repose maintenant", "una película en el cine o el teatro con un amigo ahora te hace descansar",
-                                "фильм в кино или театре с другом теперь даёт отдых"),
+                                "un film au cinéma ou au théâtre avec un ami vous repose maintenant", "una película en el cine o el teatro con un amigo ahora te hace descansar",
+                                "фильм в кино или театре с другом теперь даёт отдых", "een film in de bioscoop of het theater met een vriend laat je nu uitrusten",
+                                "bir arkadaşla sinemada veya tiyatroda izlenen bir film artık sizi"),
             "cinema fix: What's new has the cinema line, with its fix mark, in some row of every language");
     }
 }
