@@ -159,6 +159,7 @@ internal static partial class Program
         FlareCrowd();    // Flare's city of four hundred and its influencers with no fixed most, Mom's and Alex's one look (FlareCrowdChecks.cs)
         StreetLook();   // somebody met in the street keeps the look the game gave them, through a save; a city person met on Flare their face; a card's age the face's (StreetLookChecks.cs)
         FlareFaceLoad();   // Flare's faces drawn ahead: the likely ones behind the loading screen within its budget, once per look, the textures and the folder bounded, each face the person's own (FlareFaceLoadChecks.cs)
+        FlareThemeSwitch();   // Flare's light and dark switch: the look by setting and hour, a press always the other look, its words, written and saved as the Settings app does, every open part painted again (FlareThemeChecks.cs)
         Shared();
         Fame();
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)

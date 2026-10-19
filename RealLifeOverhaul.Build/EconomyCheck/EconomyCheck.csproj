@@ -282,6 +282,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCityPhotoRules.cs" Link="Mod\FlareCityPhotoRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareBank.cs" Link="Mod\FlareBank.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareFaceAheadRules.cs" Link="Mod\FlareFaceAheadRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareThemeRules.cs" Link="Mod\FlareThemeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityShare.cs" Link="Mod\CityShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CivicCatalogue.cs" Link="Mod\CivicCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CivicState.cs" Link="Mod\CivicState.cs" />
