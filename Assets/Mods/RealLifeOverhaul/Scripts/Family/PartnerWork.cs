@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Family
         {
             FamilySave s = FamilyState.S;
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
-            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay))
+            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay))
             {
                 return;
             }
@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Family
                 FamilyState.Harmony(PartnerWorkRules.HarmonyYes);
                 Partner.Tell(FamilyEvent.SharedTime, PartnerWorkRules.AffectionYes);
                 FamilyDirector.Logger?.Info("Family: " + Partner.Name + " works half days from now on.");
+                PartnerGlad.Start(PartnerGlad.Work);
                 return FamilyTalk.Close("reallife_family_work_yes_done");
             }, "reallife_family_work_no", () =>
             {
@@ -73,6 +74,7 @@ namespace RealLifeOverhaul.Family
             s.PWork = PartnerWorkRules.FullTime;
             s.PWorkAsk = false;
             s.PWorkAskDay = 0;
+            s.PGlad = null;
         }
     }
 }

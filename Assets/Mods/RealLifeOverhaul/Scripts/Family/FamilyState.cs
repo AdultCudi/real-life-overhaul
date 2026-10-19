@@ -189,6 +189,10 @@ namespace RealLifeOverhaul.Family
         public int PWork;            // PartnerWorkRules.FullTime or PartTime
         public bool PWorkAsk;        // they have asked to cut back, and it waits to be talked over
         public int PWorkAskDay;      // the day they last asked, or last went back to full days
+
+        public string PJobKey;       // Social's partner's job in People (its locale key); null: the trade Family gave them (PJob)
+        public string PGlad;         // what the player said yes to, whose warm texts are still to come (PartnerGlad); null none
+        public int PGladDay;         // the day of that yes
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Family
             Relatives.Daily(day);
             HardTimes.Daily(day);
             PartnerWork.Daily(day);
+            PartnerGlad.Daily(day);
             bool warm = s.Harmony >= 40f;
             FamilyModifiers.Keep(FamilyModifiers.Married, FamilyState.Bond == Bond.Married && warm);
             FamilyModifiers.Keep(FamilyModifiers.Engaged, FamilyState.Bond == Bond.Engaged && warm);

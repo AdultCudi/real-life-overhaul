@@ -74,7 +74,8 @@ namespace RealLifeOverhaul
                     Trust = p.Trust,
                     Stage = (int)p.Stage,
                     DaysTogether = Math.Max(0, TimeHelper.CurrentDay - p.StageDay),  // since the stage they are in began
-                    LastContactDay = p.LastContactDay                                 // Social's calls, texts, outings and meetings
+                    LastContactDay = p.LastContactDay,                                 // Social's calls, texts, outings and meetings
+                    JobKey = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))]
                 };
             }
 

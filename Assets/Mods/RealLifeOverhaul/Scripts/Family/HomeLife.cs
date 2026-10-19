@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Family
                     break;
             }
             to = PartnerWorkRules.Until(from, to, PartnerWork.Work);   // half days once they have cut back (PartnerWork)
+            works = works && !Partner.Retired;   // retired in People: at home
             if (FamilyState.Care == Care.Partner && FamilyState.AnyUnder(FamilyBalance.SchoolFrom))
             {
                 to = Mathf.Min(to, from + 4);   // short days: they are the one at home with the children

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using IoPath = System.IO.Path;
+using RealLifeOverhaul.Family;
 
 // Faults found in Scripts/Family: a passage refused (another under way, the director off) after its money or errand was
 // taken left nothing to show for it; the player's own missed scan or class was said to be rebooked and was not; and the
@@ -15,6 +16,29 @@ internal static partial class Program
         FamilyRebooked();
         FamilyCounselLine();
         FamilyPartnerTexts();
+        FamilyPartnerJob();
+    }
+
+    // Social's partner had a trade of Family's own, rolled from their seed, whatever People said they did: a barista in the
+    // Family talk who was a cab driver in People. Their job is People's now, with the hours and pay of the nearest trade.
+    private static void FamilyPartnerJob()
+    {
+        bool all = true;
+        string social = MemberText(ModSource(@"Social\SocialCatalogue.cs"), "public static readonly string[] Jobs =");
+        var jobs = System.Text.RegularExpressions.Regex.Matches(social, "\"(reallife_social_job_[a-z]+)\"");
+        all &= jobs.Count > 10;
+        foreach (System.Text.RegularExpressions.Match m in jobs)
+        {
+            string key = m.Groups[1].Value;
+            all &= RealLifeOverhaul.Family.PartnerJobRules.Retired(key) || (RealLifeOverhaul.Family.PartnerJobRules.TradeOf(key, -1) >= 0 && PartnerJobRules.IncomeOf(key, -1) > 0);
+        }
+        Check(all && PartnerJobRules.IncomeOf(PartnerJobRules.RetiredKey, 200) == 0 && PartnerJobRules.TradeOf("reallife_social_job_nurse", -1) == 0
+              && PartnerJobRules.TradeOf("reallife_social_job_cook", -1) == 2 && PartnerJobRules.TradeOf("no such job", 7) == 7,
+            "family fix: every job in People has Family's hours and a day's pay, a nurse keeps a nurse's shifts, a cook a chef's evenings, and the retired bring in nothing");
+        string partner = ModSource(@"Family\Partner.cs"), home = ModSource(@"Family\HomeLife.cs"), links = ModSource(@"Wiring\FamilyLinks.cs");
+        Check(partner.Contains("s.PJobKey = p.JobKey;") && partner.Contains("public static int Income => Retired ? 0") && home.Contains("works = works && !Partner.Retired;")
+              && links.Contains("JobKey = SocialCatalogue.Jobs["),
+            "family fix: Social's partner's job, hours and pay come from People, and a retired partner stays at home");
     }
 
     // With the social life keeping the partner Family has no stand-in contact: their texts were notices on screen. They come

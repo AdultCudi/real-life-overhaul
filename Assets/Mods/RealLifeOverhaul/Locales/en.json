@@ -11740,7 +11740,7 @@
   "reallife_law_station_furniture": "Furnished police stations",
   "reallife_opt_tip_law_station_furniture": "Desks, lockers, a briefing room, a break room and the game's walls and floors, officers at work, and back offices on a large station's bare floor. Off, it is bare as before.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Once you are well off, a partner who lives with you may ask to cut back to half days at work. Say yes and they are home more and pay a smaller share of the rent; they can go back to full days from a family conversation. It has its own switch under Family. Fixed: with the social life on, your partner's texts about family life (being stood up, a missed appointment, an arrest) only showed as a notice; they now arrive as texts from them in People.",
+  "reallife_changes_next": "Once you are well off, a partner who lives with you may ask to cut back to half days at work. Say yes and they are home more and pay a smaller share of the rent; they can go back to full days from a family conversation. It has its own switch under Family. Fixed: with the social life on, your partner's texts about family life (being stood up, a missed appointment, an arrest) only showed as a notice; they now arrive as texts from them in People. Fixed: with the social life on, your partner's job at home and in family talks is the one People gives them, not a different one; a retired partner stays at home.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Each of the city's banks has its own app on the phone, under the game's name for it: your current account and statement, the loans you owe that bank with paying part or all of one, your card, what it offers you today and how it sees your rating. The banks' terms differ a little, so choosing one matters, and under a rating of 580 none of them lends. The mod's contacts have real pictures from the game: people show their faces, and services show a logo. Contacts has a search box at the top. Police stations are furnished with the game's own furniture: desks with computers, lockers, a water cooler, plants, a clock, lamps, and a toilet in the cell. Fixed: with all of the mod's apps on, the row of apps at the top of the full screen menu ran under the money and the date and off the screen; it now has pages, centred between the app's name and the money, turned with the wheel or the dots. Fixed: on the city map, a row of the mod's (Courthouse, Custom shops and the rest) could be unticked while its places stayed on the map; the places now follow the tick you see.",
   "reallife_rota_box_stock_ok": "Its goods keep up with the advised plan.",
@@ -19912,5 +19912,8 @@
   "reallife_family_test_work": "Partner asks to cut back",
   "reallife_family_no_lives_in": "Your partner has to live with you first.",
   "reallife_family_no_work_off": "Switch on Partner cuts back at work as you prosper first.",
-  "reallife_opt_sec_partner": "Your partner and your fortune"
+  "reallife_opt_sec_partner": "Your partner and your fortune",
+  "reallife_family_glad_work_1": "Woke up this morning and didn't have to rush out the door. I could get used to this. Thank you.",
+  "reallife_family_glad_work_2": "I've started on the flat with all this time. New plants, new cushions. It's beginning to feel like ours.",
+  "reallife_family_glad_work_3": "Thank you again for backing me on this. Coming home to you is my favourite part of the day."
 }

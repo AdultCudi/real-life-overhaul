@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Family
         public int Stage;            // 0 stranger, 1 acquaintance, 2 friend, 3 close friend, 4 dating, 5 partner
         public int DaysTogether;     // days since they began dating
         public int LastContactDay;   // the owner's last call, text, outing or meeting with them (0: none known)
+        public string JobKey;        // what they do for a living, the owner's locale key said after "a"; null if the owner keeps none
     }
 
     /// <summary>What family life tells the owner of relationships about. Each is sent once, when it happens.</summary>

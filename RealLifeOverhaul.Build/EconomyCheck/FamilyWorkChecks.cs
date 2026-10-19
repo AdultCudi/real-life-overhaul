@@ -31,5 +31,9 @@ internal static partial class Program
               && choices.Contains("PartnerWork.CanTalk") && choices.Contains("PartnerWork.CanReturn")
               && MemberText(work, "public static void Daily(int day)").Contains("Prices.At(PartnerWorkRules.AskAtCash)"),
             "family work: asked once a day at today's prices, talked over and undone from a family conversation, and started afresh with every new partner or none");
+        string glad = ModSource(@"Family\PartnerGlad.cs");
+        Check(work.Contains("PartnerGlad.Start(PartnerGlad.Work);") && work.Contains("FamilyState.Together && s.LivesIn && !Partner.Retired") && calendar.Contains("PartnerGlad.Daily(day);")
+              && glad.Contains("FamilyText.Message(FamilyPhone.PartnerContact, lines[i], Args.Us);") && glad.Contains("private static readonly int[] After = { 1, 3, 6 };"),
+            "family work: a yes is followed by three warm texts over the next days, and a retired partner is never asked to cut back");
     }
 }
