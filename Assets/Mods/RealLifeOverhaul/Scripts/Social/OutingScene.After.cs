@@ -260,11 +260,8 @@ namespace RealLifeOverhaul
             if (SocialLinks.Wellbeing != null)
             {
                 SocialLinks.Wellbeing.Stress(wentWell ? -12f : 4f);
-                if (_kind == PlanKind.Meal)
-                {
-                    SocialLinks.Wellbeing.Ate();
-                }
             }
+            Feed();
 
             string after = wentWell ? SocialLines.Pick(_def.After) : SocialLines.Pick(SocialCatalogue.WentBadly);
             Dictionary<string, string> data = SocialLife.Data(_who, "place", _venue.Name);
