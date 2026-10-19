@@ -9,7 +9,7 @@ using RealLifeOverhaul;
 // own numbers (read from Garage/BikeBody.cs); then, over the sources, that the boxes are put on and taken off as the
 // game does a ridden scooter's, that the drivetrain and the name are given back, that the bike's name is written where
 // the game writes the scooter's, that people are struck by a two-wheeler too, and that no page of the Guide still says
-// the game calls them electric scooters.
+// the game calls them electric scooters. Where one is left is BikeClearCheck.cs, its mass on getting on BikeTurnCheck.cs.
 internal static partial class Program
 {
     private const float BikeStep = 0.02f;          // s: the game's physics step
@@ -196,6 +196,7 @@ internal static partial class Program
             "bikes source: a two-wheeler's box is measured when it is got on and a few looks after, not twice a second all ride");
 
         BikeClear(scripts);   // where a bike is left: the rules and, over the sources, when they are asked (BikeClearCheck.cs)
+        BikeTurn(scripts, catalogue);   // a bike got on after a save loads turns on the game's own inertia (BikeTurnCheck.cs)
 
         // ---- no page of the Guide says the game calls a bicycle or a motorbike an electric scooter, in any language.
         string locales = Path.Combine(scripts, "..", "Locales");
