@@ -103,7 +103,8 @@ internal static partial class Program
         Check(FlareThemeRules.ChoiceKeys.Length == 3 && FlareThemeRules.ChoiceKey(FlareThemeRules.FollowsPhone) == "reallife_flare_theme_0"
               && FlareThemeRules.ChoiceKey(FlareThemeRules.Light) == "reallife_flare_theme_1" && FlareThemeRules.ChoiceKey(FlareThemeRules.Dark) == "reallife_flare_theme_2",
             "Flare look: each setting's words are the options page's choice for it");
-        Check(FlareThemeRules.ChoiceKey(-1) == "reallife_flare_theme_0" && FlareThemeRules.ChoiceKey(3) == "reallife_flare_theme_0" && FlareThemeRules.ChoiceKey(int.MaxValue) == "reallife_flare_theme_0",
+        Check(FlareThemeRules.ChoiceKey(-1) == "reallife_flare_theme_0" && FlareThemeRules.ChoiceKey(3) == "reallife_flare_theme_0"
+              && FlareThemeRules.ChoiceKey(int.MaxValue) == "reallife_flare_theme_0",
             "Flare look: a setting with no choice of its own has Follows the phone's words, as it follows the phone");
         bool named = true;
         foreach (int s in ThemeSettings)
@@ -160,10 +161,14 @@ internal static partial class Program
     // What's new's line for the switch in each language, as the locale files have it.
     private static readonly Dictionary<string, string> ThemeNextLines = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        { "en", "Flare has a light and dark switch on its top bar" }, { "pt", "O Flare tem um botão de claro e escuro na barra superior" },
-        { "zh-cn", "Flare顶栏新增浅色与深色切换按钮" }, { "de", "Flare hat in der oberen Leiste eine Taste für hell und dunkel" },
-        { "fr", "Flare a un bouton clair et sombre dans sa barre du haut" }, { "es", "Flare tiene un botón de claro y oscuro en su barra superior" },
-        { "ru", "На верхней панели Flare появилась кнопка светлого и тёмного вида" }, { "nl", "Flare heeft een knop voor licht en donker in de bovenbalk" },
+        { "en", "Flare has a light and dark switch on its top bar" },
+        { "pt", "O Flare tem um botão de claro e escuro na barra superior" },
+        { "zh-cn", "Flare顶栏新增浅色与深色切换按钮" },
+        { "de", "Flare hat in der oberen Leiste eine Taste für hell und dunkel" },
+        { "fr", "Flare a un bouton clair et sombre dans sa barre du haut" },
+        { "es", "Flare tiene un botón de claro y oscuro en su barra superior" },
+        { "ru", "На верхней панели Flare появилась кнопка светлого и тёмного вида" },
+        { "nl", "Flare heeft een knop voor licht en donker in de bovenbalk" },
         { "tr", "Flare'in üst çubuğunda açık ve koyu görünüm için bir düğme var" }
     };
 
@@ -206,7 +211,10 @@ internal static partial class Program
         Check(appSet.Contains("Settings.PrefsKey(row.Id)") && appSet.Contains("UnityEngine.PlayerPrefs.SetInt(key, value)") && appSet.Contains("dropdown.OnValueChanged?.Invoke(value)"),
             "Flare look: AppSet saves under the options page's own key and then calls the drop-down's handler, as the game's control does");
         string mod = ReviewSource("Core/RealLifeOverhaulMod.cs");
-        Check(Regex.IsMatch(mod, @"\.AddDropdown\(Settings\.FlareThemeId, ""reallife_flare_opt_theme"",\s*new\[\] \{ ""reallife_flare_theme_0"", ""reallife_flare_theme_1"", ""reallife_flare_theme_2"" \}, Settings\.FlareTheme,\s*v => Settings\.FlareTheme = v\)"),
+        string dropdown = @"\.AddDropdown\(Settings\.FlareThemeId, ""reallife_flare_opt_theme"",\s*"
+                          + @"new\[\] \{ ""reallife_flare_theme_0"", ""reallife_flare_theme_1"", ""reallife_flare_theme_2"" \}, "
+                          + @"Settings\.FlareTheme,\s*v => Settings\.FlareTheme = v\)";
+        Check(Regex.IsMatch(mod, dropdown),
             "Flare look: the options page's drop-down has the switch's three choices in the rule's order, and its handler sets Settings.FlareTheme");
         string settings = ReviewSource("Core/Settings.cs");
         Check(settings.Contains("FlareThemeId = \"flare_theme\"") && settings.Contains("FlareTheme = Int(modId, FlareThemeId, FlareTheme);"),
@@ -230,7 +238,8 @@ internal static partial class Program
             local &= !theme.Contains(net) && !rules.Contains(net);
         }
         Check(local, "Flare look: the switch is this machine's look only: nothing of it goes to the shared city or over Going Public");
-        Check(!Regex.IsMatch(theme, @"void\s+(Update|LateUpdate|FixedUpdate|OnGUI)\s*\(") && FlareMethod(ReviewSource("Social/Flare/FlareApp.Frame.cs"), "private void BuildFrame()").Contains("BuildTheme();")
+        string buildFrame = FlareMethod(ReviewSource("Social/Flare/FlareApp.Frame.cs"), "private void BuildFrame()");
+        Check(!Regex.IsMatch(theme, @"void\s+(Update|LateUpdate|FixedUpdate|OnGUI)\s*\(") && buildFrame.Contains("BuildTheme();")
               && FlareMethod(theme, "private void BuildTheme()").Contains("new Pill(_header, \"Theme\", ThemeClicked)"),
             "Flare look: the switch is Flare's own pill on the top bar, made once with the frame; it acts only when pressed, with nothing run each frame");
     }
@@ -261,7 +270,8 @@ internal static partial class Program
             "Flare look: the list paints the cards in view, those kept for later and any new one in the look, not only the next screen");
         string set = FlareMethod(list, "public void Set(List<FlareRow> rows, bool top)");
         Check(set.Contains("Free(_live[i]);") && set.Contains("Fill();"), "Flare look: the cards in view are bound again on a refresh, so their own colours follow the look");
-        Check(FlareMethod(frame, "private void WriteHeader(FlareFile file)").Contains("WriteTheme(colW)") && FlareMethod(theme, "private float WriteTheme(float width)").Contains("_theme.Show(_look,"),
+        Check(FlareMethod(frame, "private void WriteHeader(FlareFile file)").Contains("WriteTheme(colW)")
+              && FlareMethod(theme, "private float WriteTheme(float width)").Contains("_theme.Show(_look,"),
             "Flare look: the switch itself is written with the top bar in the look it shows, naming the other");
         Check(FlareMethod(ReviewSource("Social/Flare/FlareApp.Sheet.cs"), "private void WriteSheet()").Contains("if (_sheetKind == SheetNone)"),
             "Flare look: with no sheet open, writing the sheet again costs nothing");
