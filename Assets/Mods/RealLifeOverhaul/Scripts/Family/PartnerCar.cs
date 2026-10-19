@@ -21,7 +21,6 @@ namespace RealLifeOverhaul.Family
     /// </summary>
     internal static class PartnerCar
     {
-        private const string TowTo = "ba:towdestination_autorepairshop";
 
         /// <summary>The partner has a car of their own that is still in the save.</summary>
         public static bool Has => !string.IsNullOrEmpty(FamilyState.S.PCarId) && Economy.EstateGame.Vehicle(FamilyState.S.PCarId) != null;
@@ -138,14 +137,14 @@ namespace RealLifeOverhaul.Family
             Partner.Tell(FamilyEvent.SharedTime, PartnerExpectRules.AffectionCar);
         }
 
-        /// <summary>Asking for the car back: it hurts, and the game's tow service leaves it at a repair shop for the player.</summary>
+        /// <summary>Asking for the car back: it hurts, and it is left at the nearest repair shop for the player, as the game's tow would (Park).</summary>
         public static DialogEntry TakeBack()
         {
             return FamilyTalk.Either(FamilyText.Say("reallife_family_car_back_ask", Args.Us), "reallife_family_car_back_yes", () =>
             {
                 FamilySave s = FamilyState.S;
                 VehicleInstance v = Economy.EstateGame.Vehicle(s.PCarId);
-                Address shop = v != null ? VehicleHelper.TowVehicle(v, TowTo) : null;
+                Address shop = v != null ? Park(v) : null;
                 if (shop == null || shop.IsUndefined())
                 {
                     return FamilyTalk.Close("reallife_family_car_cannot");
@@ -157,6 +156,74 @@ namespace RealLifeOverhaul.Family
                 FamilyDirector.Logger?.Info("Family: the player took the car back from " + Partner.Name + "; towed to " + shop.ToFormattedString() + ".");
                 return FamilyTalk.Close("reallife_family_car_back_done", new Args { Name = Partner.Name, Place = shop.ToFormattedString() });
             }, "reallife_family_car_back_no", () => FamilyTalk.Close("reallife_family_car_back_kept"));
+        }
+
+        // A car of the partner's has no object in the city (EstateGame.Hide), so the game's tow, which moves the object, cannot
+        // take it: it is made again from its save entry at the nearest free repair bay, as the tow would leave it, without
+        // taking the player out of the home they are talking in. Null, with the car left theirs, when no bay is free.
+        private static Address Park(VehicleInstance v)
+        {
+            GameInstance save = SaveGameManager.Current;
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            PlayerController player = PlayerHelper.PlayerController;
+            if (save == null || city == null || v.VehicleType == null)
+            {
+                return null;
+            }
+            Vector3 from = BuildingManager.IsInsideBuilding && InstanceBehavior<BuildingManager>.Instance.cityBuildingController != null
+                ? InstanceBehavior<BuildingManager>.Instance.cityBuildingController.entranceDoors[0].doorTransform.position
+                : player != null ? player.transform.position : Vector3.zero;
+            bool truck = v.VehicleType.HasTag(BigAmbitions.Tags.TagRef.Vehicletag.istruck);
+            CityBuildingController best = null;
+            GasStationTrigger bay = null;
+            float near = float.MaxValue;
+            var hit = new Collider[1];
+            foreach (CityBuildingController shop in city.cityBuildingControllers)
+            {
+                if (shop == null || shop.building == null || shop.building.BuildingType != "ba:buildingtype_special" || shop.entranceDoors == null || shop.entranceDoors.Length == 0
+                    || !(shop.building.SpecialService?.settings is Buildings.GasStationSettings gs) || gs.truckOnly != truck)
+                {
+                    continue;
+                }
+                float d = (shop.entranceDoors[0].doorTransform.position - from).sqrMagnitude;
+                GasStationController station = shop.GetComponent<GasStationController>();
+                if (d >= near || station == null || station.repairStationTriggers == null)
+                {
+                    continue;
+                }
+                foreach (GasStationTrigger t in station.repairStationTriggers)
+                {
+                    Bounds b = t.stationCollider.bounds;
+                    if (Physics.OverlapBoxNonAlloc(b.center, b.extents, hit, Quaternion.identity, LayerHelper.vehicleAndHumanConflictMask) == 0)
+                    {
+                        best = shop;
+                        bay = t;
+                        near = d;
+                        break;
+                    }
+                }
+            }
+            if (bay == null)
+            {
+                return null;
+            }
+            save.VehicleInstances.Remove(v);   // CreateAndSpawnVehicle adds it to the list again
+            try
+            {
+                VehicleController car = VehicleHelper.CreateAndSpawnVehicle(v, bay.transform.position, Quaternion.LookRotation(bay.transform.up));
+                VehicleHelper.TeleportVehicleToGround(car, bay.transform.position, Quaternion.LookRotation(bay.transform.up));
+                car.SavePosition();
+            }
+            catch (Exception)
+            {
+                if (!save.VehicleInstances.Contains(v))
+                {
+                    save.VehicleInstances.Add(v);   // whatever happened, the car stays the player's
+                }
+                throw;
+            }
+            v.SetStreetData(string.Empty, 0);
+            return best.building.Address;
         }
 
         // The player's cars they could hand over: theirs, a motor car, not a dealer's stock, not the one they are in; dearest first.
