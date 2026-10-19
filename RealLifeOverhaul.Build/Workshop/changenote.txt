@@ -1,4 +1,7 @@
-0.40.0
+0.40.1
 
-New
-- The mod can now be read in Dutch and Turkish too: it follows the language the game is set to.
+Fixed
+- The drinks cart keeps clear of crossings and refuses places customers cannot reach; failed walks and arrivals are retried so the shift keeps moving.
+- A film at the cinema or the theatre with a friend now rests you like the game's own seats. You used to lose energy through the whole film.
+- News about your building, neighbours and home no longer reaches you when you have no home.
+- Street chess tables no longer block pedestrian crossings.
