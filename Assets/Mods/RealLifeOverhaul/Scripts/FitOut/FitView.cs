@@ -52,6 +52,8 @@ namespace RealLifeOverhaul.FitOut
         public const float HiddenBudgetMs = 28f;      // ...and of a frame behind the black screen
         private const int CutsPerFrame = 24;          // pieces cut out of the walkable floor a frame
         private const float WaitForDesign = 8f;       // seconds the reading of a design is waited for, at most
+        private const float CarveWait = 3f;           // real seconds the navigation system is waited for to cut what stands out of the walkable floor, at most
+        private const float CarveProbeLeast = 1.0f;   // metres a cut piece is across at least to tell by its middle that the floor is cut
         private const string ModProp = "rlo:";
 
         /// <summary>What a caller asks for: the room, the building's kind, what is there already and what to furnish from.</summary>
@@ -346,7 +348,8 @@ namespace RealLifeOverhaul.FitOut
                 }
             }
             Lap(watch);
-            // What stands cut out of the walkable floor, a few a frame.
+            // What stands cut out of the walkable floor, a few a frame; the navigation system cuts at its own next update.
+            bool probing = CarveProbe(r, out Vector3 probe);
             for (int k = 0; k < _cuts.Count; k++)
             {
                 if (_cuts[k] != null)
@@ -358,6 +361,18 @@ namespace RealLifeOverhaul.FitOut
                     _frames++;
                     yield return null;
                 }
+            }
+            // The seats are measured on the floor as it is cut: a place to stand under a desk is no place to walk to.
+            float carvedBy = Time.realtimeSinceStartup + CarveWait;
+            for (int after = 0; _cuts.Count > 0 && after < 2; after++)
+            {
+                _frames++;
+                yield return null;   // (the last few switched on: the navigation system's next updates)
+            }
+            while (probing && Time.realtimeSinceStartup < carvedBy && NavMesh.SamplePosition(probe, out _, 0.3f, NavMesh.AllAreas))
+            {
+                _frames++;
+                yield return null;
             }
             bool seated = Safely(() =>
             {
@@ -600,6 +615,7 @@ namespace RealLifeOverhaul.FitOut
                 cut.size = boxSize;
                 cut.carving = true;
                 cut.carveOnlyStationary = true;
+                cut.carvingTimeToStationary = 0f;   // (it never moves: cut at the navigation system's next update)
                 cut.enabled = false;   // (all of them switched on together once the room stands, a few a frame)
                 _cuts.Add(cut);
             }
@@ -640,31 +656,72 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // The player's desk among the seats at a desk with something on it, in the plan's order: the seed's pick (-1 for none, or none wanted).
+        // The player's desk among the seats at a desk with something on it, in the plan's order: the seed's pick if the
+        // player can walk to it from the door, otherwise the next one round that they can (-1 for none, or none wanted).
         private int PlayerSeat()
         {
             _desk = null;
+            _deskOf = _deskShift = 0;
             if (_deskSeed < 0)
             {
                 return -1;
             }
-            int count = 0;
+            _deskSeats.Clear();
             for (int i = 0; i < _seats.Count; i++)
             {
-                count += _seats[i].Use == FitUse.Desk && _seats[i].Desk != null ? 1 : 0;
+                if (_seats[i].Use == FitUse.Desk && _seats[i].Desk != null)
+                {
+                    _deskSeats.Add(i);
+                }
             }
-            int pick = FitDesks.Pick(count, _deskSeed);
-            for (int i = 0; i < _seats.Count && pick >= 0; i++)
+            _deskOf = _deskSeats.Count;
+            int pick = FitDesks.Pick(_deskSeats.Count, _deskSeed);
+            Request r = _request;
+            Vector3 from = r.Door + r.Inward * 0.6f;
+            Vector3 stand = Vector3.zero;
+            int chosen = DeskReach.First(pick, _deskSeats.Count, k =>
             {
-                if (_seats[i].Use != FitUse.Desk || _seats[i].Desk == null || pick-- > 0)
+                Seat s = _seats[_deskSeats[k]];
+                return FitReach.StandBy(s.At, s.Desk, from, r.Floor, out stand);
+            });
+            if (chosen < 0)
+            {
+                _deskShift = -1;
+                return -1;
+            }
+            _deskShift = (chosen - pick + _deskSeats.Count) % _deskSeats.Count;
+            int at = _deskSeats[chosen];
+            Seat mine = _seats[at];
+            mine.Stand = stand;
+            _seats[at] = mine;
+            _desk = new FitDesk { Seat = mine.At, Desk = mine.Desk, Chair = mine.Chair, Stand = stand, Place = _deskPlace, Kind = _request.Kind };
+            return at;
+        }
+
+        private readonly List<int> _deskSeats = new List<int>(32);
+        private int _deskOf, _deskShift;   // the floor's desks, and how far round from the seed's pick the player's is (-1: none can be walked to)
+
+        // The middle of the largest piece to be cut out of the floor, where it is walkable now: once it is not, the floor is cut.
+        private bool CarveProbe(Request r, out Vector3 probe)
+        {
+            probe = Vector3.zero;
+            float best = 0f;
+            for (int k = 0; k < _cuts.Count; k++)
+            {
+                NavMeshObstacle cut = _cuts[k];
+                if (cut == null || Mathf.Min(cut.size.x, cut.size.z) < CarveProbeLeast || cut.size.x * cut.size.z <= best)
                 {
                     continue;
                 }
-                Seat s = _seats[i];
-                _desk = new FitDesk { Seat = s.At, Desk = s.Desk, Chair = s.Chair, Stand = s.Stand, Place = _deskPlace, Kind = _request.Kind };
-                return i;
+                Vector3 middle = cut.transform.TransformPoint(cut.center);
+                middle.y = r.Floor;
+                if (NavMesh.SamplePosition(middle, out NavMeshHit hit, 0.3f, NavMesh.AllAreas))
+                {
+                    best = cut.size.x * cut.size.z;
+                    probe = hit.position;
+                }
             }
-            return -1;
+            return best > 0f;
         }
 
         private readonly List<FitCast.SeatPlace> _seatsView = new List<FitCast.SeatPlace>(64);
@@ -798,8 +855,14 @@ namespace RealLifeOverhaul.FitOut
             _said.Append("); ").Append(placed).Append(" pieces stand, ").Append(_cuts.Count).Append(" cut out of the floor; ")
                 .Append(_plan.BareAfter.ToString("F0")).Append(" of ").Append(_plan.FloorArea.ToString("F0")).Append(" square metres bare (")
                 .Append(_plan.BareBefore.ToString("F0")).Append(" before); ").Append(_seats.Count).Append(" seats, ").Append(_stopsView.Count).Append(" places to walk to; ")
-                .Append(_plan.Unreached == 0 && _plan.Pockets == 0 ? "every way open" : _plan.Unreached + " places not reached, " + _plan.Pockets + " closed off")
-                .Append("; built in ").Append(_frames).Append(" frames, ").Append(_workMs.ToString("F0")).Append(" ms of work");
+                .Append(_plan.Unreached == 0 && _plan.Pockets == 0 ? "every way open" : _plan.Unreached + " places not reached, " + _plan.Pockets + " closed off");
+            if (_deskSeed >= 0)
+            {
+                _said.Append("; the player's desk: ").Append(_desk == null
+                    ? "none of the " + _deskOf + " desks can be walked to from the door"
+                    : _deskShift == 0 ? "walked to from the door" : "the seed's own cannot be walked to from the door, so the " + _deskShift + " next round of " + _deskOf);
+            }
+            _said.Append("; built in ").Append(_frames).Append(" frames, ").Append(_workMs.ToString("F0")).Append(" ms of work");
         }
 
         /// <summary>The player has left (or the part is going): the people sent away, the pieces destroyed, the room's own look back. Safe at any time.</summary>

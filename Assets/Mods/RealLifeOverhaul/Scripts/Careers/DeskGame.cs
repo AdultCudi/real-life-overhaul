@@ -8,11 +8,13 @@ using Helpers;
 using Items.SpecialItems;
 using Player.HUD.ItemInfoOverlays;
 using PlayerActivity;
+using RealLifeOverhaul.FitOut;
 using UI.Elements;
 using UI.Guiders;
 using UI.Notification;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Careers
 {
@@ -89,7 +91,11 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The player's station: of the kinds asked for, the first the building has, the seed's pick in the order of ids; null if none.</summary>
+        /// <summary>
+        /// The player's station: of the kinds asked for, the first the building has, the seed's pick in the order of ids, or
+        /// the next one round if the player cannot walk to it (DeskReach.First, as the game asks before it walks them to a
+        /// station); null if none.
+        /// </summary>
         public static EmployeeStationController Choose(BuildingManager manager, StationKind[] kinds, int seed, int job, out StationKind kind, out int count)
         {
             kind = StationKind.None;
@@ -112,12 +118,27 @@ namespace RealLifeOverhaul.Careers
                 Found.Sort(ById);
                 kind = kinds[k];
                 count = Found.Count;
-                EmployeeStationController picked = Found[DeskRules.Pick(Found.Count, seed, job)];
+                PlayerController player = Player;
+                Vector3 from = player != null ? player.transform.position : Vector3.zero;
+                int at = DeskReach.First(DeskRules.Pick(Found.Count, seed, job), Found.Count, n => player == null || Reachable(Found[n], from));
+                EmployeeStationController picked = at >= 0 ? Found[at] : null;
                 Found.Clear();
-                return picked;
+                if (picked != null)
+                {
+                    return picked;
+                }
+                kind = StationKind.None;   // (none of this kind can be walked to: the next kind, or a preset fitted out)
+                count = 0;
             }
             Found.Clear();
             return null;
+        }
+
+        // True if the player can walk from a point to a station, as the game asks before it walks them to one (PlayerController.SetGoal with its route checked).
+        private static bool Reachable(EmployeeStationController station, Vector3 from)
+        {
+            Vector3 target = station.GetClosestNavMeshTargetPosition(from);
+            return target != Vector3.zero && FitReach.Walkable(from, target, DeskReach.SampleRadius, out _);
         }
 
         // A station the game would let somebody work at: standing, not for sale, not at a receptionist's desk of the game's.
@@ -437,7 +458,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The player walks to a station (or the home computer) and then the action runs, as the game's till does it.</summary>
+        /// <summary>
+        /// The player walks to a station (or the home computer) and then the action runs, as the game's till does it. A
+        /// player at the station already whom the game finds no way to walk to it is taken as there (DeskReach.AtDesk).
+        /// </summary>
         public static bool WalkTo(EntityController station, Action then)
         {
             PlayerController player = Player;
@@ -445,21 +469,55 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
+            Vector3 from = player.transform.position, target = station.GetClosestNavMeshTargetPosition(from);
+            if ((target == Vector3.zero || !player.ExistsRoute(target)) && DeskReach.AtDesk(Mathf.Sqrt(CitySpots.Flat(station.transform.position - from))))
+            {
+                CareersDirector.Logger?.Info("Careers: the game finds no way to the " + station.name + ", and the player is beside it: the work starts where they stand.");
+                then();
+                return true;
+            }
             station.MoveTowardsEntity(Guard.Listener(() => then()));
             return true;
         }
 
-        /// <summary>The player walks to a place on the floor (a fitted desk's chair) and then the action runs.</summary>
-        public static bool WalkTo(Vector3 place, Action then)
+        /// <summary>
+        /// The player walks to a fitted desk's place by its chair and then the action runs. If the game finds no way to that
+        /// place, another by the chair it does find a way to is taken (FitReach.StandBy), or, with none, the player beside
+        /// the desk already is taken as there; otherwise the game says it cannot reach it, as it does.
+        /// </summary>
+        public static bool WalkTo(FitDesk desk, Action then)
         {
             PlayerController player = Player;
-            if (player == null || !PlayerActivityUI.CanStartActivity() || !player.ExistsRoute(place, showErrorNotification: true))
+            if (player == null || desk == null || !PlayerActivityUI.CanStartActivity())
             {
                 return false;
             }
-            player.SetGoal(place, Guard.Listener(() => then()));
+            Vector3 from = player.transform.position;
+            if (!player.ExistsRoute(desk.Stand))
+            {
+                if (FitReach.StandBy(desk.Seat, desk.Desk, from, from.y, out Vector3 stand))
+                {
+                    CareersDirector.Logger?.Info("Careers: the game finds no way to the place by the player's desk; another by its chair it does: " + Where(desk.Stand) + " to " + Where(stand) + ".");
+                    desk.Stand = stand;
+                }
+                else if (desk.Seat != null && DeskReach.AtDesk(Mathf.Sqrt(CitySpots.Flat(desk.Seat.position - from)))
+                         && NavMesh.SamplePosition(from, out NavMeshHit here, 1f, PlayerController.navMeshQueryFilter))
+                {
+                    CareersDirector.Logger?.Info("Careers: the game finds no way to any place by the player's desk, and the player is beside it: they stand up where they stood.");
+                    desk.Stand = here.position;
+                    then();
+                    return true;
+                }
+            }
+            if (!player.ExistsRoute(desk.Stand, showErrorNotification: true))
+            {
+                return false;
+            }
+            player.SetGoal(desk.Stand, Guard.Listener(() => then()));
             return true;
         }
+
+        private static string Where(Vector3 at) => at.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>The work panel of the game's own on screen with an activity; false if the panel is busy.</summary>
         public static bool Show(IPlayerActivity activity)

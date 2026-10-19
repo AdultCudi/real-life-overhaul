@@ -61,6 +61,7 @@ internal static partial class Program
         FrontSigns();
         Fits();
         FitPresets();
+        DeskReaches();   // where the player stands to sit at their desk, a desk that cannot be walked to passed over (DeskReachCheck.cs)
         Cars();
         Frames();
         Memory();        // what a long session keeps: the session record's count of the mod's objects by holder and by kind (MemoryCheck.cs)
