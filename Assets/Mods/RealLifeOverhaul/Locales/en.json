@@ -19915,5 +19915,10 @@
   "reallife_opt_sec_partner": "Your partner and your fortune",
   "reallife_family_glad_work_1": "Woke up this morning and didn't have to rush out the door. I could get used to this. Thank you.",
   "reallife_family_glad_work_2": "I've started on the flat with all this time. New plants, new cushions. It's beginning to feel like ours.",
-  "reallife_family_glad_work_3": "Thank you again for backing me on this. Coming home to you is my favourite part of the day."
+  "reallife_family_glad_work_3": "Thank you again for backing me on this. Coming home to you is my favourite part of the day.",
+  "reallife_family_voice_notice": "{name}: {text}",
+  "reallife_family_ask_remind_1": "Don't forget, I'd like to talk when you're home.",
+  "reallife_family_ask_remind_2": "Still hoping we can talk tonight. It matters to me.",
+  "reallife_family_ask_lapsed": "Never mind. Forget I asked.",
+  "reallife_family_prompt_talk_ask": "{key}: {name} wants to talk"
 }

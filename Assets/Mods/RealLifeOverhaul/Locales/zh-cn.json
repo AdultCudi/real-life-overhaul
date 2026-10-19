@@ -19915,5 +19915,10 @@
   "reallife_opt_sec_partner": "伴侣与你的财富",
   "reallife_family_glad_work_1": "今天早上醒来不用急着出门。我能习惯这种日子。谢谢你。",
   "reallife_family_glad_work_2": "有了这么多时间，我开始布置我们的家了。新的植物，新的靠垫。越来越有我们自己的感觉了。",
-  "reallife_family_glad_work_3": "再次谢谢你支持我。回家见到你是我一天中最喜欢的时刻。"
+  "reallife_family_glad_work_3": "再次谢谢你支持我。回家见到你是我一天中最喜欢的时刻。",
+  "reallife_family_voice_notice": "{name}：{text}",
+  "reallife_family_ask_remind_1": "别忘了，你回家后我想和你聊聊。",
+  "reallife_family_ask_remind_2": "还是希望今晚我们能聊聊。这对我很重要。",
+  "reallife_family_ask_lapsed": "算了。就当我没说过。",
+  "reallife_family_prompt_talk_ask": "{key}：{name} 想和你聊聊"
 }

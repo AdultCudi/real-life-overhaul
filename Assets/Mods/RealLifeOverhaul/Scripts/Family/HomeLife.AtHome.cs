@@ -444,7 +444,8 @@ namespace RealLifeOverhaul.Family
             if (sqr < TalkReach * TalkReach && Mathf.Abs(offset.y) < 1.2f && controller != null
                 && Vector3.Dot(controller.Character.transform.forward, offset.normalized) > 0.45f)
             {
-                director.Prompt("reallife_family_prompt_talk", Partner.Name, TalkAction, _partner.Valid ? _partner.Character.transform : null);
+                director.Prompt(PartnerVoice.AnyAsk ? "reallife_family_prompt_talk_ask" : "reallife_family_prompt_talk", Partner.Name, TalkAction,
+                    _partner.Valid ? _partner.Character.transform : null);
                 return true;
             }
             return false;
@@ -534,7 +535,7 @@ namespace RealLifeOverhaul.Family
             director.Body.Hold();
             director.Body.Clip("talk_b");
             FamilyState.S.LastTalkDay = TimeHelper.CurrentDay;
-            if (!FamilyTalk.Open(() => FamilyPhone.PartnerMenu(true), EndTalk, _partner.Character))
+            if (!FamilyTalk.Open(() => PartnerVoice.OpenAsk() ?? FamilyPhone.PartnerMenu(true), EndTalk, _partner.Character))   // what they asked to talk over, first
             {
                 EndTalk();
             }

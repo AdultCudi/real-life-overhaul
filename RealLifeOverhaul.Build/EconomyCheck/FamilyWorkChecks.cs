@@ -27,13 +27,27 @@ internal static partial class Program
         Check(work.Contains("Settings.FamilyWork ? FamilyState.S.PWork : PartnerWorkRules.FullTime") && home.Contains("to = PartnerWorkRules.Until(from, to, PartnerWork.Work);")
               && partner.Contains("PartnerWorkRules.Income(") && partner.Contains("PartnerWork.Work);"),
             "family work: the timetable at home and the share of the rent read the work through the option, so off means full days as before");
-        Check(Occurs(partner, "PartnerWork.Reset(s);") == 3 && calendar.Contains("PartnerWork.Daily(day);")
+        Check(Occurs(partner, "PartnerWork.Reset(s);") == 3 && calendar.Contains("PartnerWork.Hourly(day);")
               && choices.Contains("PartnerWork.CanTalk") && choices.Contains("PartnerWork.CanReturn")
-              && MemberText(work, "public static void Daily(int day)").Contains("Prices.At(PartnerWorkRules.AskAtCash)"),
+              && MemberText(work, "public static void Hourly(int day)").Contains("Prices.At(PartnerWorkRules.AskAtCash)"),
             "family work: asked once a day at today's prices, talked over and undone from a family conversation, and started afresh with every new partner or none");
         string glad = ModSource(@"Family\PartnerGlad.cs");
-        Check(work.Contains("PartnerGlad.Start(PartnerGlad.Work);") && work.Contains("FamilyState.Together && s.LivesIn && !Partner.Retired") && calendar.Contains("PartnerGlad.Daily(day);")
-              && glad.Contains("FamilyText.Message(FamilyPhone.PartnerContact, lines[i], Args.Us);") && glad.Contains("private static readonly int[] After = { 1, 3, 6 };"),
-            "family work: a yes is followed by three warm texts over the next days, and a retired partner is never asked to cut back");
+        Check(work.Contains("PartnerGlad.Start(PartnerGlad.Work);") && work.Contains("FamilyState.Together && s.LivesIn && !Partner.Retired") && calendar.Contains("PartnerGlad.Hourly(day);")
+              && glad.Contains("PartnerVoice.Warm(lines[s.PGladNext], Args.Us);") && work.Contains("if (!PartnerVoice.Free)")
+              && work.Contains("PartnerVoice.Ask(PartnerVoice.Work,") && Occurs(work, "PartnerVoice.Answered(PartnerVoice.Work);") == 2
+              && ModSource(@"Family\HomeLife.AtHome.cs").Contains("PartnerVoice.OpenAsk() ?? FamilyPhone.PartnerMenu(true)") && glad.Contains("private static readonly int[] After = { 1, 3, 6 };"),
+            "family work: a yes is followed by three warm texts, the ask is raised when the partner's voice allows and talked over face to face first, and a retired partner is never asked to cut back");
+        Check(!PartnerVoiceRules.Free(20, 15, 0, 7) && PartnerVoiceRules.Settle(7, 15) >= PartnerVoiceRules.SettleLeast && PartnerVoiceRules.Settle(7, 15) <= PartnerVoiceRules.SettleMost
+              && PartnerVoiceRules.Free(15 + PartnerVoiceRules.SettleMost, 15, 0, 7) && !PartnerVoiceRules.Free(100, 15, 100 - PartnerVoiceRules.GapLeast + 1, 7)
+              && PartnerVoiceRules.Free(100, 15, 100 - PartnerVoiceRules.GapMost, 7)
+              && PartnerVoiceRules.Reminder(4, 0) < 0 && PartnerVoiceRules.Reminder(5, 0) == 0 && PartnerVoiceRules.Reminder(6, 1) == 1 && PartnerVoiceRules.Reminder(6, 2) < 0,
+            "family voice: nothing raised for 7 to 12 days after moving in, then 5 to 10 days between words, and an open ask reminded on its fifth and sixth day");
+        bool spread = true;
+        for (int seed = 1; seed < 400; seed++)
+        {
+            int g = PartnerVoiceRules.Gap(seed * 7919, seed), st = PartnerVoiceRules.Settle(seed * 104729, seed);
+            spread &= g >= PartnerVoiceRules.GapLeast && g <= PartnerVoiceRules.GapMost && st >= PartnerVoiceRules.SettleLeast && st <= PartnerVoiceRules.SettleMost;
+        }
+        Check(spread, "family voice: every gap and every settling-in stays within its days");
     }
 }

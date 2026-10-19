@@ -83,9 +83,10 @@ namespace RealLifeOverhaul.Family
                     return;
                 }
                 PartnerWork.Reset(s);
-                s.PWorkAsk = true;
                 s.PWorkAskDay = TimeHelper.CurrentDay;
-                FamilyText.Message(FamilyPhone.PartnerContact, "reallife_family_work_text", Args.Us);
+                s.PAsk = null;
+                s.PWorkAsk = true;
+                PartnerVoice.Ask(PartnerVoice.Work, "reallife_family_work_text", Args.Us.With(FamilyText.T(Partner.JobKey)));
                 Logger?.Info("Family work test: " + Partner.Name + " asks to cut back to half days; talk it over from the Family contact.");
             });
         }

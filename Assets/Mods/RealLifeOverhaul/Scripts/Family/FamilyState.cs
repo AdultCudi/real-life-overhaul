@@ -193,6 +193,11 @@ namespace RealLifeOverhaul.Family
         public string PJobKey;       // Social's partner's job in People (its locale key); null: the trade Family gave them (PJob)
         public string PGlad;         // what the player said yes to, whose warm texts are still to come (PartnerGlad); null none
         public int PGladDay;         // the day of that yes
+        public int PGladNext;        // which of its texts comes next
+        public int PVoiceDay;        // the day of the partner's last word about the player's fortune (PartnerVoice)
+        public string PAsk;          // the kind of ask open now (PartnerVoice.Work and others); null none
+        public int PAskDay;          // the day it was asked
+        public int PAskReminded;     // reminders of it sent
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

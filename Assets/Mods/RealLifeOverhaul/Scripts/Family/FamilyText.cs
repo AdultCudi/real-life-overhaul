@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Family
         public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
 
         /// <summary>A text message from one of the phone's contacts; without the contact, said on screen instead.</summary>
-        public static void Message(Contact contact, string key, in Args a)
+        public static void Message(Contact contact, string key, in Args a, bool notify = true)
         {
             if (contact == null)
             {
@@ -120,20 +120,20 @@ namespace RealLifeOverhaul.Family
             }
             Dictionary<string, string> data = Data(a);
             string from = contact == FamilyPhone.PartnerContact ? "partner" : contact == PhoneContacts.Mom ? "mom" : contact == FamilyPhone.InLawContact ? "inlaws" : "family";
-            if (HoldText == null || !HoldText(from, key, data, (k, d) => Send(contact, k, d)))
+            if (HoldText == null || !HoldText(from, key, data, (k, d) => Send(contact, k, d, notify)))
             {
-                contact.SendMessage(new TextMessage(key, data), notify: true, sendNotificationInstantly: Now(contact));
+                contact.SendMessage(new TextMessage(key, data), notify: notify, sendNotificationInstantly: Now(contact));
             }
         }
 
         // A text from the partner is told the moment it comes, as Social's own texts are; the game otherwise holds the notice back.
         private static bool Now(Contact contact) => contact != null && contact == FamilyPhone.PartnerContact;
 
-        private static void Send(Contact contact, string key, Dictionary<string, string> data)
+        private static void Send(Contact contact, string key, Dictionary<string, string> data, bool notify)
         {
             try
             {
-                contact.SendMessage(new TextMessage(key, data), notify: true, sendNotificationInstantly: Now(contact));
+                contact.SendMessage(new TextMessage(key, data), notify: notify, sendNotificationInstantly: Now(contact));
             }
             catch (System.Exception e)
             {

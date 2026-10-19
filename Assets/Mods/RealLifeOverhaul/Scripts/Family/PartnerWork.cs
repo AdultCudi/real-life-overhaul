@@ -4,8 +4,8 @@ using Entities;
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// The partner's work as the player's fortune grows (PartnerWorkRules): once a day, whether they would like to cut back to
-    /// half days, said by a text and talked over in a family conversation; a yes shortens their working day at home and
+    /// The partner's work as the player's fortune grows (PartnerWorkRules): whether they would like to cut back to half days,
+    /// raised by a text when the partner's voice allows (PartnerVoice) and talked over face to face at home within the week; a yes shortens their working day at home and
     /// halves their pay and so their share of the rent. With the option off nothing is asked and their days are full, as
     /// before. Cost: nothing per frame; a few comparisons once a game day.
     /// </summary>
@@ -15,23 +15,34 @@ namespace RealLifeOverhaul.Family
         public static int Work => Settings.FamilyWork ? FamilyState.S.PWork : PartnerWorkRules.FullTime;
 
         /// <summary>The cut back is waiting to be talked over in a family conversation.</summary>
-        public static bool CanTalk => Settings.FamilyWork && FamilyState.Together && FamilyState.S.LivesIn && FamilyState.S.PWorkAsk;
+        public static bool CanTalk => Settings.FamilyWork && FamilyState.Together && FamilyState.S.LivesIn && FamilyState.S.PWorkAsk && PartnerVoice.Asking(PartnerVoice.Work);
 
         /// <summary>They are on half days and could go back to full ones.</summary>
         public static bool CanReturn => Settings.FamilyWork && FamilyState.Together && FamilyState.S.LivesIn && FamilyState.S.PWork == PartnerWorkRules.PartTime;
 
-        /// <summary>Once a day: whether they ask, by a text; an ask left unanswered stands until it is talked over.</summary>
-        public static void Daily(int day)
+        /// <summary>Once a game hour in the day: whether they ask, by a text; an ask left unanswered stands until it is talked over.</summary>
+        public static void Hourly(int day)
         {
             FamilySave s = FamilyState.S;
+            if (s.PWorkAsk && !PartnerVoice.Asking(PartnerVoice.Work))
+            {
+                s.PWorkAsk = false;   // the week went by without the talk: as a no
+                s.PWorkAskDay = day;
+                FamilyState.Harmony(PartnerWorkRules.HarmonyNo);
+                return;
+            }
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
             if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay))
             {
                 return;
             }
+            if (!PartnerVoice.Free)
+            {
+                return;   // (asked on a later day: one thing at a time, PartnerVoice)
+            }
             s.PWorkAsk = true;
             s.PWorkAskDay = day;
-            FamilyText.Message(FamilyPhone.PartnerContact, "reallife_family_work_text", Args.Us.With(FamilyText.T(Partner.JobKey)));
+            PartnerVoice.Ask(PartnerVoice.Work, "reallife_family_work_text", Args.Us.With(FamilyText.T(Partner.JobKey)));
             FamilyDirector.Logger?.Info("Family: " + Partner.Name + " would like to cut back to half days at work.");
         }
 
@@ -42,6 +53,7 @@ namespace RealLifeOverhaul.Family
             {
                 FamilySave s = FamilyState.S;
                 s.PWorkAsk = false;
+                PartnerVoice.Answered(PartnerVoice.Work);
                 s.PWork = PartnerWorkRules.PartTime;
                 FamilyState.Harmony(PartnerWorkRules.HarmonyYes);
                 Partner.Tell(FamilyEvent.SharedTime, PartnerWorkRules.AffectionYes);
@@ -52,6 +64,7 @@ namespace RealLifeOverhaul.Family
             {
                 FamilySave s = FamilyState.S;
                 s.PWorkAsk = false;
+                PartnerVoice.Answered(PartnerVoice.Work);
                 s.PWorkAskDay = TimeHelper.CurrentDay;
                 FamilyState.Harmony(PartnerWorkRules.HarmonyNo);
                 return FamilyTalk.Close("reallife_family_work_no_done");
