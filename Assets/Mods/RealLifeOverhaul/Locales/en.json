@@ -19972,5 +19972,11 @@
   "reallife_family_allowance_placeholder": "Weekly allowance in dollars",
   "reallife_family_allowance_set_button": "Set",
   "reallife_family_allowance_bad": "That isn't an amount. Type a number, like 500.",
-  "reallife_family_no_expect_more": "Every wish of the second level has been said already."
+  "reallife_family_no_expect_more": "Every wish of the second level has been said already.",
+  "reallife_family_allowance_react_same": "{amount} a week, then. Same as before.",
+  "reallife_family_allowance_react_up": "{amount} a week? You didn't have to. Thank you, really.",
+  "reallife_family_allowance_react_up_short": "{amount} a week. It's a start, I suppose.",
+  "reallife_family_allowance_react_down": "Down to {amount} a week? Fine. I'll manage.",
+  "reallife_family_allowance_react_down_short": "Only {amount} a week now? That's less than I need, and you know it.",
+  "reallife_family_allowance_react_stopped": "Nothing at all? Right. Good to know where I stand."
 }

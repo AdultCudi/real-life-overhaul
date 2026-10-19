@@ -140,8 +140,7 @@ namespace RealLifeOverhaul.Family
         private static void Week(int day, int level, bool speak)
         {
             FamilySave s = FamilyState.S;
-            int expected = Prices.At(PartnerExpectRules.AllowanceExpected(level, Spend, Partner.Income <= 0, PartnerWork.Work == PartnerWorkRules.PartTime,
-                FamilyState.Bond == Bond.Married, Children(), FamilyState.Care == Care.Nursery || FamilyState.Care == Care.Nanny));
+            int expected = Expected(level);
             if (speak)
             {
                 if (level > s.PAllowanceWishLevel && expected > 0
@@ -168,6 +167,13 @@ namespace RealLifeOverhaul.Family
             {
                 Partner.Tell(FamilyEvent.SharedTime, closer);
             }
+        }
+
+        // What they expect a week at a level, at today's prices.
+        private static int Expected(int level)
+        {
+            return Prices.At(PartnerExpectRules.AllowanceExpected(level, Spend, Partner.Income <= 0, PartnerWork.Work == PartnerWorkRules.PartTime,
+                FamilyState.Bond == Bond.Married, Children(), FamilyState.Care == Care.Nursery || FamilyState.Care == Care.Nanny));
         }
 
         /// <summary>Their ask for an allowance, talked over: what it is now, to change in the game's text box, or back to the rest.</summary>
@@ -197,10 +203,27 @@ namespace RealLifeOverhaul.Family
                 FamilyText.Toast(NotificationType.Warning, "reallife_family_allowance_bad", Args.Us);
                 return;
             }
+            int was = Allowance, expected = Expected(Level);
             FamilyState.S.PAllowance = amount;
-            FamilyText.Toast(NotificationType.Success, "reallife_family_allowance_set", new Args { Name = Partner.Name, Amount = FamilyText.Money(amount) });
-            FamilyDirector.Logger?.Info("Family: " + Partner.Name + "'s allowance is " + amount + " a week.");
+            FamilyState.Harmony(PartnerExpectRules.AllowanceReactionHarmony(was, amount, expected));
+            int react = PartnerExpectRules.AllowanceReaction(was, amount, expected);
+            FamilyDirector.Logger?.Info("Family: " + Partner.Name + "'s allowance is " + amount + " a week (was " + was + ", they expect " + expected + "): reaction " + react + ".");
+            var a = new Args { Name = Partner.Name, Amount = FamilyText.Money(amount) };
+            if (DialogController.current == null)
+            {
+                FamilyText.Toast(NotificationType.Success, "reallife_family_allowance_set", a);
+                return;
+            }
+            // Their answer in the conversation that is still open, and the amount as it is now: to change again, or back to the rest.
+            DialogController.current.ShowEntry(Guard.Entry(FamilyTalk.Either(FamilyText.Say(Reactions[react], a),
+                "reallife_family_allowance_change", TypeAllowance, "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0))));
         }
+
+        private static readonly string[] Reactions =
+        {
+            "reallife_family_allowance_react_same", "reallife_family_allowance_react_up", "reallife_family_allowance_react_up_short",
+            "reallife_family_allowance_react_down", "reallife_family_allowance_react_down_short", "reallife_family_allowance_react_stopped"
+        };
 
         // The player's homes: residential buildings of theirs.
         private static int Homes()

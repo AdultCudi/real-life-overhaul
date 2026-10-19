@@ -19901,5 +19901,11 @@
   "reallife_family_sms_new_home": "Burayı yeni yuvamız yapalım",
   "reallife_family_sms_new_home_sent": "Gel de şu yere bir bak. Burayı yuvamız yapalım.",
   "reallife_family_sms_new_home_yes": "Demek artık yuvamız burası? Bayıldım. Yatağın hangi tarafı benim?",
-  "reallife_family_sms_new_home_small": "Çok isterdim ama hepimiz için fazla küçük: iki kişi için 30 metrekare, her çocuk için 15 metrekare daha lazım."
+  "reallife_family_sms_new_home_small": "Çok isterdim ama hepimiz için fazla küçük: iki kişi için 30 metrekare, her çocuk için 15 metrekare daha lazım.",
+  "reallife_family_allowance_react_same": "O zaman haftada {amount}. Eskisi gibi.",
+  "reallife_family_allowance_react_up": "Haftada {amount} mı? Gerek yoktu. Gerçekten teşekkür ederim.",
+  "reallife_family_allowance_react_up_short": "Haftada {amount}. Bir başlangıç sayılır herhalde.",
+  "reallife_family_allowance_react_down": "Haftada {amount}'a mı düştü? Peki. Ben idare ederim.",
+  "reallife_family_allowance_react_down_short": "Artık sadece haftada {amount} mı? Bu ihtiyacımdan az ve sen bunu biliyorsun.",
+  "reallife_family_allowance_react_stopped": "Hiç mi yok? Peki. Nerede durduğumu öğrenmiş oldum."
 }

@@ -19972,5 +19972,11 @@
   "reallife_family_allowance_placeholder": "每周零花钱（美元）",
   "reallife_family_allowance_set_button": "确定",
   "reallife_family_allowance_bad": "这不是一个金额。请输入数字，例如 500。",
-  "reallife_family_no_expect_more": "第二级的所有心愿都已经说过了。"
+  "reallife_family_no_expect_more": "第二级的所有心愿都已经说过了。",
+  "reallife_family_allowance_react_same": "那就每周{amount}，和以前一样。",
+  "reallife_family_allowance_react_up": "每周{amount}？你不必这样的。真的谢谢你。",
+  "reallife_family_allowance_react_up_short": "每周{amount}。算是个开始吧。",
+  "reallife_family_allowance_react_down": "降到每周{amount}了？好吧，我会想办法的。",
+  "reallife_family_allowance_react_down_short": "现在每周只有{amount}？这比我需要的少，你心里清楚。",
+  "reallife_family_allowance_react_stopped": "一分都没有了？好吧，我知道自己在你心里的位置了。"
 }

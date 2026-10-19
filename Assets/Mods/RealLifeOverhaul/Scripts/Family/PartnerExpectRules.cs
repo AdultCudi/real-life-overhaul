@@ -102,6 +102,45 @@ namespace RealLifeOverhaul.Family
         public static int SpendOfTraits(bool careful, bool envious, bool generous) => envious ? Lavish : careful ? Thrifty : generous ? Giving : Usual;
 
         /// <summary>The home's harmony for a week's allowance: nothing while nothing is expected.</summary>
+        public const int ReactSame = 0, ReactUpMet = 1, ReactUpShort = 2, ReactDownMet = 3, ReactDownShort = 4, ReactStopped = 5;
+        public const float AllowanceRaised = 1f;    // harmony the moment it is raised to what they expect or more, from less
+        public const float AllowanceCut = -1.5f;    // harmony the moment it is cut to less than they expect
+
+        /// <summary>
+        /// How they take an allowance changed from <paramref name="was"/> to <paramref name="now"/> a week, against what they
+        /// expect: stopped altogether, cut (still enough, or short), raised (now enough, or still short), or the same.
+        /// </summary>
+        public static int AllowanceReaction(int was, int now, int expected)
+        {
+            if (now == was)
+            {
+                return ReactSame;
+            }
+            if (now <= 0)
+            {
+                return ReactStopped;
+            }
+            if (now < was)
+            {
+                return now >= expected ? ReactDownMet : ReactDownShort;
+            }
+            return now >= expected ? ReactUpMet : ReactUpShort;
+        }
+
+        /// <summary>The harmony that comes with the reaction at once: a raise to enough from less, a cut below enough from at least it.</summary>
+        public static float AllowanceReactionHarmony(int was, int now, int expected)
+        {
+            if (expected <= 0)
+            {
+                return 0f;
+            }
+            if (now >= expected && was < expected)
+            {
+                return AllowanceRaised;
+            }
+            return now < expected && was >= expected ? AllowanceCut : 0f;
+        }
+
         public static float AllowanceWeek(int paid, int expected, bool married) => expected <= 0 ? 0f : paid >= expected ? AllowanceMet : married ? AllowanceShort / 2f : AllowanceShort;
 
         /// <summary>How much closer a week's allowance brings them: a little when it is enough, more when it is generous (half as much again).</summary>

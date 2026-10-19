@@ -19807,5 +19807,11 @@
   "reallife_family_sms_new_home": "Сделаем это нашим домом",
   "reallife_family_sms_new_home_sent": "Приходи посмотреть на это место. Давай сделаем его нашим домом.",
   "reallife_family_sms_new_home_yes": "Значит, теперь наш дом здесь? Мне очень нравится. Какая сторона кровати моя?",
-  "reallife_family_sms_new_home_small": "Я бы с радостью, но здесь слишком тесно для всех нас: нужно 30 квадратных метров на двоих и ещё 15 на каждого ребёнка."
+  "reallife_family_sms_new_home_small": "Я бы с радостью, но здесь слишком тесно для всех нас: нужно 30 квадратных метров на двоих и ещё 15 на каждого ребёнка.",
+  "reallife_family_allowance_react_same": "Значит, {amount} в неделю. Как раньше.",
+  "reallife_family_allowance_react_up": "{amount} в неделю? Не стоило. Спасибо, правда.",
+  "reallife_family_allowance_react_up_short": "{amount} в неделю. Уже начало, наверное.",
+  "reallife_family_allowance_react_down": "Урезал до {amount} в неделю? Ладно. Справлюсь.",
+  "reallife_family_allowance_react_down_short": "Теперь всего {amount} в неделю? Это меньше, чем мне нужно, и ты это знаешь.",
+  "reallife_family_allowance_react_stopped": "Совсем ничего? Ясно. Теперь я знаю, чего стою."
 }

@@ -19972,5 +19972,11 @@
   "reallife_family_allowance_placeholder": "Mesada semanal em dólares",
   "reallife_family_allowance_set_button": "Definir",
   "reallife_family_allowance_bad": "Isso não é um valor. Digite um número, como 500.",
-  "reallife_family_no_expect_more": "Todos os desejos do segundo nível já foram ditos."
+  "reallife_family_no_expect_more": "Todos os desejos do segundo nível já foram ditos.",
+  "reallife_family_allowance_react_same": "{amount} por semana, então. Igual a antes.",
+  "reallife_family_allowance_react_up": "{amount} por semana? Você não precisava. Obrigada, de verdade.",
+  "reallife_family_allowance_react_up_short": "{amount} por semana. Já é um começo, acho.",
+  "reallife_family_allowance_react_down": "Caiu para {amount} por semana? Tudo bem. Eu me viro.",
+  "reallife_family_allowance_react_down_short": "Só {amount} por semana agora? É menos do que eu preciso, e você sabe disso.",
+  "reallife_family_allowance_react_stopped": "Nada? Certo. Bom saber onde eu fico."
 }

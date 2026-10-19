@@ -19807,5 +19807,11 @@
   "reallife_family_sms_new_home": "Hagamos de esto nuestro hogar",
   "reallife_family_sms_new_home_sent": "Ven a ver este sitio. Hagamos de él nuestro hogar.",
   "reallife_family_sms_new_home_yes": "¿Así que ahora este es nuestro hogar? Me encanta. ¿Qué lado de la cama es el mío?",
-  "reallife_family_sms_new_home_small": "Me encantaría, pero es demasiado pequeño para todos: necesitamos 30 metros cuadrados para dos y 15 más por cada hijo."
+  "reallife_family_sms_new_home_small": "Me encantaría, pero es demasiado pequeño para todos: necesitamos 30 metros cuadrados para dos y 15 más por cada hijo.",
+  "reallife_family_allowance_react_same": "{amount} a la semana, entonces. Como antes.",
+  "reallife_family_allowance_react_up": "¿{amount} a la semana? No tenías por qué. Gracias, de verdad.",
+  "reallife_family_allowance_react_up_short": "{amount} a la semana. Es un comienzo, supongo.",
+  "reallife_family_allowance_react_down": "¿Bajas a {amount} a la semana? Vale. Me las arreglaré.",
+  "reallife_family_allowance_react_down_short": "¿Solo {amount} a la semana ahora? Es menos de lo que necesito, y lo sabes.",
+  "reallife_family_allowance_react_stopped": "¿Nada de nada? Bien. Ya sé dónde estoy."
 }

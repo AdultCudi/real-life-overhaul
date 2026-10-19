@@ -19807,5 +19807,11 @@
   "reallife_family_sms_new_home": "Faisons-en notre foyer",
   "reallife_family_sms_new_home_sent": "Viens voir cet endroit. Faisons-en notre chez-nous.",
   "reallife_family_sms_new_home_yes": "Alors c'est chez nous maintenant ? J'adore. Quel côté du lit est le mien ?",
-  "reallife_family_sms_new_home_small": "J'aimerais bien, mais c'est trop petit pour nous tous : il faut 30 mètres carrés pour deux et 15 de plus par enfant."
+  "reallife_family_sms_new_home_small": "J'aimerais bien, mais c'est trop petit pour nous tous : il faut 30 mètres carrés pour deux et 15 de plus par enfant.",
+  "reallife_family_allowance_react_same": "{amount} par semaine, alors. Comme avant.",
+  "reallife_family_allowance_react_up": "{amount} par semaine ? Tu n'étais pas obligé. Merci, vraiment.",
+  "reallife_family_allowance_react_up_short": "{amount} par semaine. C'est un début, j'imagine.",
+  "reallife_family_allowance_react_down": "Plus que {amount} par semaine ? Bon. Je me débrouillerai.",
+  "reallife_family_allowance_react_down_short": "Seulement {amount} par semaine maintenant ? C'est moins que ce qu'il me faut, et tu le sais.",
+  "reallife_family_allowance_react_stopped": "Plus rien du tout ? D'accord. Je sais où j'en suis."
 }

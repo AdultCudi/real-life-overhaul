@@ -19901,5 +19901,11 @@
   "reallife_family_sms_new_home": "Maak dit ons nieuwe thuis",
   "reallife_family_sms_new_home_sent": "Kom deze plek eens bekijken. Laten we hier ons thuis van maken.",
   "reallife_family_sms_new_home_yes": "Dus dit is nu ons thuis? Ik vind het geweldig. Welke kant van het bed is van mij?",
-  "reallife_family_sms_new_home_small": "Graag, maar het is te klein voor ons allemaal: we hebben 30 vierkante meter nodig voor twee en 15 meer per kind."
+  "reallife_family_sms_new_home_small": "Graag, maar het is te klein voor ons allemaal: we hebben 30 vierkante meter nodig voor twee en 15 meer per kind.",
+  "reallife_family_allowance_react_same": "Dan {amount} per week. Net als eerst.",
+  "reallife_family_allowance_react_up": "{amount} per week? Dat hoefde niet. Dank je, echt.",
+  "reallife_family_allowance_react_up_short": "{amount} per week. Het is een begin, denk ik.",
+  "reallife_family_allowance_react_down": "Omlaag naar {amount} per week? Prima. Ik red me wel.",
+  "reallife_family_allowance_react_down_short": "Nog maar {amount} per week? Dat is minder dan ik nodig heb, en dat weet je.",
+  "reallife_family_allowance_react_stopped": "Helemaal niets? Goed. Dan weet ik waar ik sta."
 }

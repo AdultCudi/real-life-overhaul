@@ -6,8 +6,26 @@ using RealLifeOverhaul.Family;
 // its use in the game's side in its source.
 internal static partial class Program
 {
+    // A new allowance was only a notice, and the conversation still said the old one: they now answer in it, with the new
+    // amount, thanked for a raise, put out by a cut below what they need, hurt when it stops.
+    private static void FamilyAllowanceAnswer()
+    {
+        bool rule = PartnerExpectRules.AllowanceReaction(500, 500, 400) == PartnerExpectRules.ReactSame
+                    && PartnerExpectRules.AllowanceReaction(500, 0, 400) == PartnerExpectRules.ReactStopped
+                    && PartnerExpectRules.AllowanceReaction(500, 450, 400) == PartnerExpectRules.ReactDownMet
+                    && PartnerExpectRules.AllowanceReaction(500, 300, 400) == PartnerExpectRules.ReactDownShort
+                    && PartnerExpectRules.AllowanceReaction(300, 450, 400) == PartnerExpectRules.ReactUpMet
+                    && PartnerExpectRules.AllowanceReaction(100, 300, 400) == PartnerExpectRules.ReactUpShort
+                    && PartnerExpectRules.AllowanceReactionHarmony(300, 450, 400) > 0f && PartnerExpectRules.AllowanceReactionHarmony(450, 300, 400) < 0f
+                    && PartnerExpectRules.AllowanceReactionHarmony(450, 600, 400) == 0f && PartnerExpectRules.AllowanceReactionHarmony(450, 300, 0) == 0f;
+        string typed = MemberText(ModSource(@"Family\PartnerExpect.cs"), "private static void Typed(string text)");
+        Check(rule && typed.Contains("DialogController.current.ShowEntry(") && typed.Contains("Reactions[react]") && typed.Contains("AllowanceReactionHarmony(was, amount, expected)"),
+            "family expectations: a changed allowance is answered in the conversation with the new amount (thanks, put out, hurt), with a little harmony only when it crosses what they expect");
+    }
+
     private static void FamilyExpect()
     {
+        FamilyAllowanceAnswer();
         Check(PartnerExpectRules.LevelOf(249999f, 1000) == 0 && PartnerExpectRules.LevelOf(250000f, 1000) == 1 && PartnerExpectRules.LevelOf(5000000f, 1000) == 3
               && PartnerExpectRules.LevelOf(250000f, 1100) == 0,
             "family expectations: the levels are 250,000, a million and five million in cash, at today's prices");
