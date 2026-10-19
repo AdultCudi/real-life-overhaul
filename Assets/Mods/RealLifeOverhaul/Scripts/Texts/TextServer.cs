@@ -114,7 +114,7 @@ namespace RealLifeOverhaul.Texts
         Off,
         Loading,     // the server is starting and reading the model
         Ready,
-        Failed       // it would not start, or stopped: the written lines are used until the pack is switched off and on
+        Failed       // it would not start, or stopped answering past its restarts (TextHang): the written lines are used until the pack is switched off and on
     }
 
     /// <summary>The GPU driver's shader cache at the first reply, as the start's line names it.</summary>
@@ -141,6 +141,7 @@ namespace RealLifeOverhaul.Texts
         public string Cache;         // a folder for the cached head's state (the server's slot file); null: no prompt cache
         public string SpeedFor;      // what a speed test is for (pack, device, threads)
         public TextSpeedResult Known; // a speed measured before for the same: no test this time
+        public double ProbeSeconds;  // the most a probe after a missed reply waits for the slot (0: by the speed measured, TextHang.ProbeSeconds)
     }
 
     /// <summary>
@@ -183,6 +184,11 @@ namespace RealLifeOverhaul.Texts
     ///              <see cref="TextSpeed.TestSeconds"/> s, measures reading and writing (<see cref="Speed"/>)
     ///   requests   one at a time, each with a time-out of the request's own deadline and at most <see cref="TimeOut"/>
     ///              (<see cref="TimeOutGpu"/> on a GPU); nothing on the game's thread but handing words over
+    ///   recovery   a reply that did not come in its time is followed by a probe of the server's slot (TextHang): a slot
+    ///              that comes free was a slow moment, and nothing changes; a slot still at work, or no answer, is a hung
+    ///              server, which the worker kills and starts again in the background (the stages above but the speed
+    ///              test), as it does a server that stopped by itself, at most TextHang.RestartsMost times a session; the
+    ///              written lines meanwhile, and for the rest of the session past that
     ///   stop       the server is killed, the worker ends; the game closing, the option off, the pack switched
     ///
     /// Game-free (no Unity types): the integration check runs it with the Lite model (EconomyCheck, TextsChecks.cs).
@@ -216,7 +222,8 @@ namespace RealLifeOverhaul.Texts
         private string _detail;   // what the stage under way adds to its log line (the first reply's timings), or null
         private bool _headSaved;
         private string _headFile;
-        private readonly TextStartWatch _watch = new TextStartWatch();
+        private volatile TextStartWatch _watch = new TextStartWatch();   // (a fresh one each start: a restart's stages are watched as the first start's)
+        private int _restarts;
         private readonly object _failing = new object();
         private Timer _dog;
         private TcpClient _socket;   // the request under way (the worker's), closed by the watchdog or a stop to end its wait
@@ -251,6 +258,9 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>Requests the model failed on (a time-out, an error).</summary>
         public int Failed => _missed;
+
+        /// <summary>Times the server was started again this session, hung or stopped by itself (at most TextHang.RestartsMost).</summary>
+        public int Restarts => _restarts;
 
         /// <summary>The game is quiet enough for the background (set by the game's thread, read by the worker).</summary>
         public bool Quiet
@@ -308,27 +318,20 @@ namespace RealLifeOverhaul.Texts
         {
             try
             {
-                _dog = new Timer(Watchdog, null, DogMs, DogMs);
-                bool ready = Stage(TextStartStage.Launch, LaunchSeconds, Launch) && Stage(TextStartStage.Load, _start.LoadSeconds, WaitReady)
-                             && Stage(TextStartStage.WarmUp, WarmLimit(_start), WarmUp) && Stage(TextStartStage.Head, _start.WarmSeconds + SaveSeconds, KeepHead)
-                             && Stage(TextStartStage.Speed, TextSpeed.TestSeconds + RestoreSeconds, SpeedTest);
-                Interlocked.Exchange(ref _dog, null)?.Dispose();
-                if (!ready)
+                if (!Begin(true))
                 {
-                    Kill();
-                    _state = TextServerState.Failed;
-                    _queue.Clear();
                     return;
                 }
-                _state = TextServerState.Ready;
                 while (!_stop)
                 {
-                    if (_process == null || _process.HasExited)
+                    Process p = _process;
+                    if (p == null || p.HasExited)
                     {
-                        Fail("the server stopped by itself (exit code " + Exit() + ")");
-                        Kill();
-                        _queue.Clear();
-                        return;
+                        if (_stop || !Recover("stopped by itself (exit code " + Exit() + ")"))
+                        {
+                            return;
+                        }
+                        continue;
                     }
                     TextJob job = _queue.Take(TextClock.Now, _quiet);
                     if (job == null)
@@ -336,7 +339,10 @@ namespace RealLifeOverhaul.Texts
                         _wake.WaitOne(WakeMs);
                         continue;
                     }
-                    Write(job);
+                    if (Write(job) && Hung() && !Recover("did not answer"))
+                    {
+                        return;
+                    }
                 }
             }
             catch (Exception e)
@@ -346,6 +352,102 @@ namespace RealLifeOverhaul.Texts
                 Kill();
                 _queue.Clear();
             }
+        }
+
+        // The start's stages, timed and watched, with a fresh watch and its watchdog: the speed test only at the first start (a
+        // restart keeps the speed measured). False when the server would not start: it is killed and the waiting requests dropped.
+        private bool Begin(bool first)
+        {
+            _watch = new TextStartWatch();
+            _dog = new Timer(Watchdog, null, DogMs, DogMs);
+            bool ready = Stage(TextStartStage.Launch, LaunchSeconds, Launch) && Stage(TextStartStage.Load, _start.LoadSeconds, WaitReady)
+                         && Stage(TextStartStage.WarmUp, WarmLimit(_start), WarmUp) && Stage(TextStartStage.Head, _start.WarmSeconds + SaveSeconds, KeepHead)
+                         && (!first || Stage(TextStartStage.Speed, TextSpeed.TestSeconds + RestoreSeconds, SpeedTest));
+            Interlocked.Exchange(ref _dog, null)?.Dispose();
+            if (!ready)
+            {
+                Kill();
+                _state = TextServerState.Failed;
+                _queue.Clear();
+                return false;
+            }
+            _state = TextServerState.Ready;
+            return true;
+        }
+
+        // After a reply that did not come in its time: the server's slot looked at until it is free, or the probe's time is up
+        // (TextHang). True when the server is hung: its slot still at work, or no answer. A slot that comes free was a slow
+        // moment of a well server (the request cancelled when its connection closed), and nothing changes.
+        private bool Hung()
+        {
+            double begun = TextClock.Now;
+            double limit = _start.ProbeSeconds > 0.0 ? _start.ProbeSeconds : TextHang.ProbeSeconds(Speed);
+            double until = begun + limit;
+            TextSlotLook look = TextSlotLook.Silent;
+            while (!_stop)
+            {
+                Process p = _process;
+                double left = until - TextClock.Now;
+                if (p == null || p.HasExited || left <= 0.05)
+                {
+                    break;   // (a server gone is no slower than a hung one; the time up: the last look decides)
+                }
+                try
+                {
+                    string slots = Get("/slots", Ms(left));
+                    look = slots != null ? TextHang.Read(slots) : TextSlotLook.Unreadable;   // (an answer other than 200: the server's loop answered)
+                }
+                catch (Exception)
+                {
+                    look = TextSlotLook.Silent;   // (no answer in the time left, or no connection)
+                }
+                if (TextHang.Settled(look))
+                {
+                    break;
+                }
+                _wake.WaitOne(Ms(TextHang.LookEvery));
+            }
+            bool hung = !_stop && TextHang.Hung(look);
+            Check("Texts check (server answers): a reply did not come in its time; then " + TextHang.Name(look) + " after "
+                  + (TextClock.Now - begun).ToString("0.0", CultureInfo.InvariantCulture) + " s of the probe's " + limit.ToString("0.0", CultureInfo.InvariantCulture) + " s: "
+                  + (hung ? "FAIL (the server is hung: started again)" : "PASS (a slow moment, not a hang: nothing restarted)"));
+            return hung;
+        }
+
+        // A hung server, or one that stopped by itself, killed and started again by the worker (the written lines meanwhile), at
+        // most TextHang.RestartsMost times a session; past that the runner stops for the session. False when it is not running.
+        private bool Recover(string why)
+        {
+            if (_stop)
+            {
+                return false;
+            }
+            if (!TextHang.MayRestart(_restarts))
+            {
+                Check("Texts check (server restarts): the server " + why + " after " + _restarts + " restart(s) this session, the most is " + TextHang.RestartsMost
+                      + "; the written lines stay until the pack is switched off and on: FAIL");
+                Fail("the server stopped answering " + (_restarts + 1) + " times this session");
+                Kill();
+                _queue.Clear();
+                return false;
+            }
+            _restarts++;
+            _state = TextServerState.Loading;
+            _log?.Invoke("RLO Texts: the server " + why + "; it is started again in the background (" + _restarts + " of " + TextHang.RestartsMost
+                         + " this session); the written lines are used meanwhile.");
+            Kill();
+            double begun = TextClock.Now;
+            bool ok = Begin(false);
+            Check("Texts check (server restart): started again in " + (TextClock.Now - begun).ToString("0.0", CultureInfo.InvariantCulture) + " s, "
+                  + (ok ? "the head " + (_headSaved ? "kept" : "read with each request") + ", " + _restarts + " of " + TextHang.RestartsMost + " restarts used: PASS"
+                        : "it would not start (" + Why + "): FAIL"));
+            return ok;
+        }
+
+        // A self-check line, as the mod's others ("... check (...): ...: PASS"); the log writes it with Developer diagnostics on.
+        private void Check(string line)
+        {
+            _log?.Invoke(line);
         }
 
         // One stage of the start, timed and watched: its own limit first, the watchdog's a little past it. Logged with its time when
@@ -389,11 +491,13 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        private void Write(TextJob job)
+        // One request asked of the server. True when the server did not answer it in its time (the probe follows: Hung).
+        private bool Write(TextJob job)
         {
             double begun = TextClock.Now;
             double limit = Math.Min(job.Deadline - begun, _start.Device != null ? TimeOutGpu : TimeOut);
             string why = null, words = null;
+            bool late = false;
             if (limit <= 0.05)
             {
                 why = "its time ran out before it started";
@@ -413,7 +517,8 @@ namespace RealLifeOverhaul.Texts
                 }
                 catch (Exception e)
                 {
-                    why = e is SocketException || e is IOException ? "it took longer than " + limit.ToString("0.0", CultureInfo.InvariantCulture) + " s" : e.GetType().Name + ": " + e.Message;
+                    late = e is SocketException || e is IOException;
+                    why = late ? "it took longer than " + limit.ToString("0.0", CultureInfo.InvariantCulture) + " s" : e.GetType().Name + ": " + e.Message;
                 }
             }
             double took = TextClock.Now - begun;
@@ -427,6 +532,7 @@ namespace RealLifeOverhaul.Texts
                 Interlocked.Increment(ref _missed);
             }
             _queue.Done(job, words, took, why);
+            return late && !_stop;
         }
 
         // ---------------------------------------------------------------- the server
