@@ -58,6 +58,7 @@ Everything is in `Scripts/Business`: `BusinessCatalogue` (every kind, every numb
   The player sees it: the promotion figure on the business's page moves.
 
 - *Closure*: `BuildingRegistration.TemporarilyClose`, the switch on the business's own page; the reopening hour is remembered and done by the mod.
+  Only a building of the player's is closed. A closure on a building the player has let go since is dropped as the save is read and each hour (`BusinessState.DropWhere`), and the switch it set is cleared while nobody rents the building, so it never passes to the next tenant or is opened as the player's.
   Removing the mod mid-closure leaves the business closed until the player unticks it.
 - *Theft by an employee*: added to `stolenItemsCost`, which the game books as Theft in the statement and clears each night.
   No cash moves.

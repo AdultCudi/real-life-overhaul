@@ -2,7 +2,7 @@
 
 Real Life Overhaul is a mod for [Big Ambitions](https://store.steampowered.com/app/1331550/Big_Ambitions/) that adds everyday life to the game's city: a camera behind your character, accidents with an emergency response, crime, police and courts, buses and driving, a home, a family and friends, courses and careers, credit, a city economy and a stock market, and much more for the player's businesses. Every part can be switched off by itself.
 
-It is one C# library (netstandard2.1) built against the game's own DLLs, with texts in seven languages and three asset bundles. It runs on Windows, on the game's current build on Steam's public branch. This page gets you building; [the documentation index](../docs/README.md) has everything else.
+It is one C# library (netstandard2.1) built against the game's own DLLs, with texts in nine languages and three asset bundles. It runs on Windows, on the game's current build on Steam's public branch. This page gets you building; [the documentation index](../docs/README.md) has everything else.
 
 ## Where the code is
 

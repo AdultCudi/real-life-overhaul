@@ -699,7 +699,8 @@ namespace RealLifeOverhaul
             // The time is that of the frame before this one: work named in this very frame is not what made it long.
             int frame = Time.frameCount - 1;
             float began = Time.unscaledTime - took;
-            bool marked = Marks.Get(0, out string mark, out int markFrame, out _, out long markSpent) && frame - markFrame >= 0 && frame - markFrame < MarkLastsFrames;
+            int pick = Marks.Costliest(frame);   // the costliest piece closed in that frame, else the newest (Core/WorkRings)
+            bool marked = Marks.Get(pick, out string mark, out int markFrame, out _, out long markSpent) && frame - markFrame >= 0 && frame - markFrame < MarkLastsFrames;
             _line.Length = 0;
             _line.Append("Session: a frame of ").Append((took * 1000f).ToString("F0")).Append(" ms; ");
             if (marked)
@@ -713,6 +714,10 @@ namespace RealLifeOverhaul
                 else if (markSpent < 0)
                 {
                     _line.Append(" (not timed)");
+                }
+                if (pick > 0 && Marks.Get(0, out string newest, out _, out _, out _))
+                {
+                    _line.Append(" (the newest piece of work then: ").Append(newest).Append(')');   // so both are seen
                 }
             }
             else

@@ -1,4 +1,4 @@
-0.39.0
+0.40.0
 
 New
-- Cars handle with weight: the car you drive rides softly on long springs, bounces and settles after a kerb, leans in bends and dips its nose as you brake. Steering is quick at walking pace and calmer at speed, the tyres give near their limit and slide, and the brakes build without locking. The custom shop's parts work on top. The Car handling option sets Light, Full, Heavy or Off.
+- The mod can now be read in Dutch and Turkish too: it follows the language the game is set to.
