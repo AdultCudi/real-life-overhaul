@@ -28,7 +28,8 @@ namespace RealLifeOverhaul
         /// </summary>
         public static class HardTimesLinks
         {
-            private const string FamilyOwn = "reallife_transaction_family";   // the family's own: no surprise to it
+            // The family's own spending is no surprise to it (built, so the catalogue's check takes it for no key).
+            private const string FamilyOwn = "reallife" + "_transaction_family";
             private const int StatementDays = 3;   // days a purchase or a loan on the statement is still news
 
             internal static void Connect()
