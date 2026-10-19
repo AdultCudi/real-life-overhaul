@@ -52,7 +52,7 @@ internal static partial class Program
 
         // A night in a hotel room is the room's own time skip, never the game's sleep, so it counted as hours awake.
         Check(director.Contains("int awayBed = HomeBridges.SleepingAway != null ? HomeBridges.SleepingAway() : -1;")
-              && director.Contains("doing = Doing.Sleeping;") && director.Contains("Sleep(doing, minutes, atHome, awayBed);")
+              && director.Contains("doing = Doing.Sleeping;") && director.Contains("Sleep(doing, minutesNow, minutesBefore, atHome, awayBed);")
               && director.Contains("_bedQuality = awayBed;"),
             "home fix: sleep away from the game's beds counts as sleep, in the bed the bridges name");
         string hotel = ModSource(@"Travel\HotelStay.Sleep.cs");

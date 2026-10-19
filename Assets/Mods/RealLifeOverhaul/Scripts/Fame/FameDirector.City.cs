@@ -61,10 +61,15 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
+        // A request of the city's: on the Standing page either way, and a notification unless the player has switched those off.
         private void Requested(FameRequest r)
         {
-            Logger?.Info("Standing: a request (" + r.Kind + ", " + r.Amount + (r.District != null ? ", " + r.District : string.Empty) + "), to be answered by day " + r.Until + ".");
-            Tell(NotificationType.Info, "reallife_fame_note_request", _openPage, "what", FameText.RequestTitle(r), "day", FameText.N(r.Until));
+            Logger?.Info("Standing: a request (" + r.Kind + ", " + r.Amount + (r.District != null ? ", " + r.District : string.Empty) + "), to be answered by day " + r.Until + "."
+                         + (Settings.StandingRequestNotes ? string.Empty : " No notification: they are switched off."));
+            if (Settings.StandingRequestNotes)
+            {
+                Tell(NotificationType.Info, "reallife_fame_note_request", _openPage, "what", FameText.RequestTitle(r), "day", FameText.N(r.Until));
+            }
         }
 
         /// <summary>The player answers a request on the Standing page; an accepted one is paid for first.</summary>

@@ -266,7 +266,7 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictBridges.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictView.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarTuning.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/VehicleTow.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventDirector.cs	2
+RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventDirector.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireEffects.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	2

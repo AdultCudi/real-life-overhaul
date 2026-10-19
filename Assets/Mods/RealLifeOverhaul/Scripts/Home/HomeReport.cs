@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using UI.Notification;
@@ -82,15 +83,98 @@ namespace RealLifeOverhaul
             });
         }
 
-        /// <summary>The morning's summary, once a day, after a real night's sleep.</summary>
-        public static void Morning(float hours)
+        private const float MorningSeconds = 12f;   // seconds the morning line stays up, and each further part of its summary
+        private const string HeadKey = "reallife_home_morning_news";   // "{morning} While you slept: {news}"
+        private const string MoreKey = "reallife_home_morning_more";   // "Also while you slept: {news}"
+
+        // The summary's working lists, kept: it is built once a morning at most.
+        private static readonly List<MorningNews.Notice> News = new List<MorningNews.Notice>(MorningNewsRules.MostHeld);
+        private static readonly List<string> NewsWords = new List<string>(MorningNewsRules.MostHeld);
+        private static readonly List<int> NewsLengths = new List<int>(MorningNewsRules.MostHeld);
+        private static readonly List<int> NewsWeights = new List<int>(MorningNewsRules.MostHeld);
+        private static readonly List<NewsPart> Parts = new List<NewsPart>(4);
+        private static readonly StringBuilder Joined = new StringBuilder(MorningNewsRules.Most);
+
+        /// <summary>
+        /// The line on waking, once a day after a real sleep (Home/WakeRules), greeted by the hour it ended at, with the city's
+        /// news held while the player slept (Core/MorningNews) in the same notification, or as few more as it fits in
+        /// (Core/MorningNewsRules.Pack). Builds strings: once a morning.
+        /// </summary>
+        public static void Morning(float hours, int hour)
         {
             var data = new Dictionary<string, string>(3)
             {
                 { "slept", hours.ToString("F1") }, { "quality", JobText.T(SleepWord) }, { "tip", JobText.T(Tip()) }
             };
             NotificationType type = HomeState.SleepQuality == 3 ? NotificationType.Success : HomeState.SleepQuality == 1 ? NotificationType.Warning : NotificationType.Info;
-            Notifications.Show(type, "reallife_home_morning", data, 12f);
+            string key = WakeRules.Greets(hour) ? "reallife_home_morning" : "reallife_home_woke";
+            News.Clear();
+            int count = MorningNews.Take(News);
+            if (count == 0)
+            {
+                Notifications.Show(type, key, data, MorningSeconds);
+                return;
+            }
+            string morning = MorningNews.Words(new MorningNews.Notice { Key = key, Data = data });
+            NewsWords.Clear();
+            NewsLengths.Clear();
+            NewsWeights.Clear();
+            for (int i = 0; i < count; i++)
+            {
+                string words = MorningNews.Words(News[i]);
+                NewsWords.Add(words);
+                NewsLengths.Add(words.Length);
+                NewsWeights.Add(MorningNews.Weight(News[i].Type));
+            }
+            int headExtra = MorningNewsRules.Extra(HeadKey.GetLocalization(), "{morning}", "{news}");
+            int moreExtra = MorningNewsRules.Extra(MoreKey.GetLocalization(), "{news}", null);
+            MorningNewsRules.Pack(morning.Length, headExtra, moreExtra, NewsLengths, count, Parts);
+            int longest = 0;
+            for (int p = 0; p < Parts.Count; p++)
+            {
+                NewsPart part = Parts[p];
+                int length = MorningNewsRules.Length(part, morning.Length, headExtra, moreExtra, NewsLengths);
+                longest = Mathf.Max(longest, part.Alone ? 0 : length);
+                if (part.Alone)
+                {
+                    MorningNews.ShowAsCame(News[part.From]);
+                }
+                else if (part.Head && part.Count == 0)
+                {
+                    Notifications.Show(type, key, data, MorningSeconds);
+                }
+                else if (part.Head)
+                {
+                    int weight = MorningNewsRules.HeadWeight(MorningNews.Weight(type), MorningNewsRules.Strongest(NewsWeights, part.From, part.Count, -1));
+                    Notifications.Show(MorningNews.OfWeight(weight), HeadKey, new Dictionary<string, string>(2) { { "morning", morning }, { "news", Join(part) } }, MorningSeconds);
+                }
+                else
+                {
+                    int weight = MorningNewsRules.Strongest(NewsWeights, part.From, part.Count, 0);
+                    Notifications.Show(MorningNews.OfWeight(weight), MoreKey, new Dictionary<string, string>(1) { { "news", Join(part) } }, MorningSeconds);
+                }
+            }
+            if (Meta.Dev.Verbose)
+            {
+                HomeDirector.Logger?.Info("Home check (morning news): " + count + " notice(s) held while asleep went out with the morning line in " + Parts.Count
+                                          + " notification(s), the longest " + longest + " characters against " + MorningNewsRules.Most + ": "
+                                          + (longest <= MorningNewsRules.Most ? "PASS" : "FAIL, a part is over the limit"));
+            }
+        }
+
+        // The held notices' words a part carries, in the order they came, a space between.
+        private static string Join(NewsPart part)
+        {
+            Joined.Length = 0;
+            for (int i = part.From; i < part.From + part.Count && i < NewsWords.Count; i++)
+            {
+                if (i > part.From)
+                {
+                    Joined.Append(' ');
+                }
+                Joined.Append(NewsWords[i]);
+            }
+            return Joined.ToString();
         }
     }
 }

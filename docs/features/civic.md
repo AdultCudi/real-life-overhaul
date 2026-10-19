@@ -50,6 +50,8 @@ Log lines with diagnostics on: `Civic check (prompt panel)`, `Civic check (shift
 
 Not seen in the game.
 
+**The night's toasts.** Every city toast (`CivicText.Toast`, and a guest's copy of the host's in `CivicText.Show`) goes through `Core/MorningNews`: while the player sleeps it is held for the morning summary. The director runs on game time, which the game's sleep pauses, so the hours a night skips (a policy ending at midnight, a site handed over in the afternoon) catch up in the minute the player wakes; held, they come with the morning line instead. Going Public's relay of the host's toasts to its guests (`CivicText.Heard`) is as before.
+
 ## What the game lets a mod change, and what is done instead
 
 | | in the game | what a policy does |

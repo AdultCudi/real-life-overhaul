@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
@@ -95,6 +96,29 @@ namespace RealLifeOverhaul
                 return;
             }
             HomePhone.OpenInPerson();
+        }
+
+        /// <summary>
+        /// "Wake up to the morning summary": the morning line of the last sleep, with three of the city's notices that come
+        /// on waking (a storm warning, the forecast, a street market) held as a night holds them, through the summary's own
+        /// path (Core/MorningNews, HomeReport.Morning). With its news switched off they come on their own, as they would.
+        /// </summary>
+        public void TestMorning()
+        {
+            if (!Ready("morning"))
+            {
+                return;
+            }
+            if (!Settings.HomeSleep || !Settings.HomeMorning)
+            {
+                TestRefusals.Tell(Logger, "Home morning", TestRefusal.FeatureOff);
+                return;
+            }
+            MorningNews.Hold();
+            MorningNews.Show(NotificationType.Warning, "reallife_weather_warning_storm", null, 8f, "rlo-weather");
+            MorningNews.Show(NotificationType.Info, "reallife_weather_forecast_rain", null, 9f);
+            MorningNews.Show(NotificationType.Info, "reallife_event_today_market", new Dictionary<string, string>(2) { { "from", 10.GetFormattedTime() }, { "to", 16.GetFormattedTime() } }, 10f);
+            HomeReport.Morning(HomeState.LastSleepHours >= WakeRules.NightAtLeast ? HomeState.LastSleepHours : 8f, TimeHelper.CurrentHour);
         }
 
         private bool Ready(string test)

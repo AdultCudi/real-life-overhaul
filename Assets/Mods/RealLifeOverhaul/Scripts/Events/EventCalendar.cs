@@ -154,5 +154,11 @@ namespace RealLifeOverhaul.Events
                 default: return "reallife_event_today_fireworks";
             }
         }
+
+        /// <summary>
+        /// Whether a kind of event goes without its notifications (what is on, its start and its end): protests while their
+        /// own switch is off. The event, the street it closes and its line from the City Bulletin are the same either way.
+        /// </summary>
+        public static bool Quiet(EventKind kind) => kind == EventKind.Protest && !Settings.StreetProtestNotes;
     }
 }

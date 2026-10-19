@@ -117,6 +117,7 @@ namespace RealLifeOverhaul
         public const string PlannerRemindersId = "planner_reminders";
         public const string PlannerMorningId = "planner_morning";
         public const string EconomyId = "economy";
+        public const string EconomyGradeUpNotesId = "economy_grade_up_notes";
         public const string EconomyProductsId = "economy_products";
         public const string EconomySharkId = "economy_shark";
         public const string EconomyConsequencesId = "economy_consequences";
@@ -152,6 +153,7 @@ namespace RealLifeOverhaul
         public const string TechPeopleId = "tech_people";
         public const string TechJobsId = "tech_jobs";
         public const string TechSectorId = "tech_sector";
+        public const string TechOfferNotesId = "tech_offer_notes";
         public const string TechStartupsId = "tech_startups";
         public const string TechSiteRoomsId = "tech_site_rooms";
         public const string TechSiteHqId = "tech_site_hq";
@@ -192,6 +194,7 @@ namespace RealLifeOverhaul
         public const string HomeBodyId = "home_body";
         public const string HomeJogId = "home_jog";
         public const string HomeMorningId = "home_morning";
+        public const string HomeMorningNewsId = "home_morning_news";
         public const string HomeStripId = "home_strip";
         public const string HomeEasyId = "home_easy";
         public const string LawPrecinctsId = "law_precincts";
@@ -229,6 +232,7 @@ namespace RealLifeOverhaul
         public const string WeatherFrequencyId = "weather_frequency";
         public const string StreetEventsId = "street_events";
         public const string StreetEventFrequencyId = "street_event_frequency";
+        public const string StreetProtestNotesId = "street_protest_notes";
         public const string SocialId = "social";
         public const string SocialMeetingsId = "social_meetings";
         public const string SocialRelationshipsId = "social_relationships";
@@ -254,6 +258,7 @@ namespace RealLifeOverhaul
         public const string StandingStreetId = "standing_street";
         public const string StandingPressId = "standing_press";
         public const string StandingCorruptionId = "standing_corruption";
+        public const string StandingRequestNotesId = "standing_request_notes";
         public const string RivalsId = "rivals";
         public const string RivalsStrengthId = "rivals_strength";
         public const string LedgerKiosksId = "ledger_kiosks";
@@ -268,6 +273,7 @@ namespace RealLifeOverhaul
         public const string CareersJobsId = "careers_jobs";
         public const string CareersLifeId = "careers_life";
         public const string CareersOwnId = "careers_own";
+        public const string CareersOwnOfferNotesId = "careers_own_offer_notes";
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
         public const string CareersClassStartId = "careers_class_start";
@@ -410,6 +416,7 @@ namespace RealLifeOverhaul
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
         public static bool PlannerMorning = true;        // ...and one line of the day on waking: how many entries, the first and when to leave for it (off: none)
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
+        public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade (off: only a fall is told; the Finance app shows the rating either way)
         public static bool EconomyProducts = true;       // more kinds of credit: an overdraft, a card, a business loan, car finance, a mortgage, consolidation (off: nothing new is opened or drawn; what is owed stays owed)
         public static bool EconomyShark = true;          // the lender of last resort (off: it lends nothing and does nothing; a debt to it can still be paid)
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
@@ -444,6 +451,7 @@ namespace RealLifeOverhaul
         public static bool TechPeople = true;            // professionals: roles, levels and skills of their own for the player's professional staff, reviews, promotions, courses, notice and severance, rivals' offers, in the Open Roles app (off: the game's own staff alone; files are kept) (Scripts/Tech/People)
         public static bool TechJobs = true;              // the jobs board and the labour market: ads in the Open Roles app, applicants from the city's job seekers, interviews, offers, executive search, and more candidates from the recruitment office (off: the game's own hiring alone) (Scripts/Tech/Hiring)
         public static bool TechSector = true;            // the tech sector: software studios, game studios, IT consultancies, cybersecurity firms and AI labs of the player's, products with customers and recurring revenue, client contracts and tenders, outages and breaches, in the Tech app (off: those businesses earn nothing of their own; their files are kept) (Scripts/Tech/Firms)
+        public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender (off: they still come, on the Tech app's Contracts tab)
         public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside: rows of racks by its tier and the racks bought, cooling, power, trays, a raised floor, status lights, technicians; amber and dim in an outage (Scripts/Tech/Sites)
         public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters: its name on the map, the GPS and the card, a furnished lobby and the rest of its floor fitted out (Scripts/FitOut), and the jobs there (Scripts/Tech/Sites)
         public static bool TechSiteCloud = true;         // the player's data centres signed outside with the cloud's name, with a security booth and a barrier where there is room, and on the map as "Your cloud" (Scripts/Tech/Sites)
@@ -504,6 +512,7 @@ namespace RealLifeOverhaul
         public static bool HomeBody = true;              // the body slowly changes with exercise and food (on waking)
         public static bool HomeJog = true;               // going for a run out of doors
         public static bool HomeMorning = true;           // the morning summary
+        public static bool HomeMorningNews = true;       // ...with the city's news held while the player slept in it, one notification or few (Core/MorningNews; off: each notice comes on its own)
         public static bool HomeStrip = true;             // the small needs strip on screen
         public static bool HomeEasy = false;             // needs wear down half as fast, illness is half as likely
         public static bool LawPrecincts = true;          // a police precinct in each district: sign, patrol cars, officers at the door, a marker on the map
@@ -541,6 +550,7 @@ namespace RealLifeOverhaul
         public static int WeatherFrequency = 5;          // how often a summer day is a heat wave and a winter day a cold snap: 1 = hardly ever, 10 = nearly half of them
         public static bool StreetEvents = true;          // markets, parades, protests, fun runs, film shoots, fireworks: on the calendar, announced the day before
         public static int StreetEventFrequency = 4;      // 1 = one day in twelve has one, 10 = four in five (the Saturday market and the fireworks nights are fixed)
+        public static bool StreetProtestNotes = true;    // the notifications of a protest: planned, begun, over (off: it still happens and closes its street; the City Bulletin still lists it)
         public static bool Social = true;                // the people in the player's life: Mom, Alex and whoever is met; their contacts and the People page
         public static bool SocialMeetings = true;        // new people walk up to the player (after the gym, a shift, a coffee, a good turn)
         public static bool SocialRelationships = true;   // relationships wear down with neglect and can be damaged; off: nothing is ever lost
@@ -567,6 +577,7 @@ namespace RealLifeOverhaul
         public static bool Rivals = true;                // rival tycoons: two or three named fortunes with holdings on the stock market who grow with the player and move against them in the late game (off: they stand still and do nothing; the save keeps them) (Scripts/Rivals)
         public static int RivalsStrength = 1;            // how hard they push: 0 Gentle, 1 Normal, 2 Hard, 3 Ruthless (Rivals/RivalCatalogue)
         public static bool StandingCorruption = true;    // ...officials who offer to speed things up for a bribe, and what comes of it
+        public static bool StandingRequestNotes = true;  // ...a notification when the city asks something of the player (off: the requests still come, on the Standing page)
         public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks (Scripts/Ledger)
         public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
         public static bool LedgerOnline = true;          // Newsstand: the City Ledger and three other titles read on the phone by subscription, over the home's internet
@@ -584,6 +595,7 @@ namespace RealLifeOverhaul
         public static bool CareersRejectReason = true;   // an employer's no says how many points of score the application was short, or that it was close (off: the no alone)
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office (off: none; the registration ends all the same)
         public static bool CareersOwn = true;            // working for oneself: leaving a profession to found a company or open a practice, former colleagues, restraint clauses and claims, freelance contracts and side work (off: no contracts come; a practice is kept) (Scripts/Careers)
+        public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers (off: the offers still come, on the Career app's Own work tab)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
         public static bool BusinessEasy = false;         // "easy business": only the opportunities are left
@@ -744,6 +756,7 @@ namespace RealLifeOverhaul
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
             PlannerMorning = Bool(modId, PlannerMorningId, PlannerMorning);
             Economy = Bool(modId, EconomyId, Economy);
+            EconomyGradeUpNotes = Bool(modId, EconomyGradeUpNotesId, EconomyGradeUpNotes);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
             EconomyShark = Bool(modId, EconomySharkId, EconomyShark);
             EconomyConsequences = Bool(modId, EconomyConsequencesId, EconomyConsequences);
@@ -779,6 +792,7 @@ namespace RealLifeOverhaul
             TechPeople = Bool(modId, TechPeopleId, TechPeople);
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSector = Bool(modId, TechSectorId, TechSector);
+            TechOfferNotes = Bool(modId, TechOfferNotesId, TechOfferNotes);
             TechStartups = Bool(modId, TechStartupsId, TechStartups);
             TechSiteRooms = Bool(modId, TechSiteRoomsId, TechSiteRooms);
             TechSiteHq = Bool(modId, TechSiteHqId, TechSiteHq);
@@ -819,6 +833,7 @@ namespace RealLifeOverhaul
             HomeBody = Bool(modId, HomeBodyId, HomeBody);
             HomeJog = Bool(modId, HomeJogId, HomeJog);
             HomeMorning = Bool(modId, HomeMorningId, HomeMorning);
+            HomeMorningNews = Bool(modId, HomeMorningNewsId, HomeMorningNews);
             HomeStrip = Bool(modId, HomeStripId, HomeStrip);
             HomeEasy = Bool(modId, HomeEasyId, HomeEasy);
             LawPrecincts = Bool(modId, LawPrecinctsId, LawPrecincts);
@@ -856,6 +871,7 @@ namespace RealLifeOverhaul
             WeatherFrequency = Int(modId, WeatherFrequencyId, WeatherFrequency);
             StreetEvents = Bool(modId, StreetEventsId, StreetEvents);
             StreetEventFrequency = Int(modId, StreetEventFrequencyId, StreetEventFrequency);
+            StreetProtestNotes = Bool(modId, StreetProtestNotesId, StreetProtestNotes);
             Social = Bool(modId, SocialId, Social);
             SocialMeetings = Bool(modId, SocialMeetingsId, SocialMeetings);
             SocialRelationships = Bool(modId, SocialRelationshipsId, SocialRelationships);
@@ -881,6 +897,7 @@ namespace RealLifeOverhaul
             StandingStreet = Bool(modId, StandingStreetId, StandingStreet);
             StandingPress = Bool(modId, StandingPressId, StandingPress);
             StandingCorruption = Bool(modId, StandingCorruptionId, StandingCorruption);
+            StandingRequestNotes = Bool(modId, StandingRequestNotesId, StandingRequestNotes);
             Rivals = Bool(modId, RivalsId, Rivals);
             RivalsStrength = Int(modId, RivalsStrengthId, RivalsStrength);
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
@@ -895,6 +912,7 @@ namespace RealLifeOverhaul
             CareersJobs = Bool(modId, CareersJobsId, CareersJobs);
             CareersLife = Bool(modId, CareersLifeId, CareersLife);
             CareersOwn = Bool(modId, CareersOwnId, CareersOwn);
+            CareersOwnOfferNotes = Bool(modId, CareersOwnOfferNotesId, CareersOwnOfferNotes);
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
             CareersClassStart = Bool(modId, CareersClassStartId, CareersClassStart);

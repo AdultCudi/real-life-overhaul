@@ -507,7 +507,10 @@ namespace RealLifeOverhaul.Events
                     _doneDay = TimeHelper.CurrentDay;
                     _stageFailures = 0;
                     Begin(_street, 50f);
-                    Notifications.Show(NotificationType.Info, EventCalendar.Today(plan.Kind), new Dictionary<string, string>(2) { { "from", Clock(plan.From) }, { "to", Clock(plan.To) } }, 9f);
+                    if (!EventCalendar.Quiet(plan.Kind))
+                    {
+                        Notifications.Show(NotificationType.Info, EventCalendar.Today(plan.Kind), new Dictionary<string, string>(2) { { "from", Clock(plan.From) }, { "to", Clock(plan.To) } }, 9f);
+                    }
                 }
                 else if (_street.Costly && ++_stageFailures >= 3)
                 {
@@ -570,10 +573,15 @@ namespace RealLifeOverhaul.Events
             }
         }
 
+        // What is on: a notification (held for the morning line while the player sleeps, Core/MorningNews; none for a kind
+        // whose notices are switched off, EventCalendar.Quiet), and the City Bulletin's line either way.
         private void Tell(string key, PlannedEvent plan)
         {
             var data = new Dictionary<string, string>(2) { { "from", Clock(plan.From) }, { "to", Clock(plan.To) } };
-            Notifications.Show(NotificationType.Info, key, data, 10f);
+            if (!EventCalendar.Quiet(plan.Kind))
+            {
+                MorningNews.Show(NotificationType.Info, key, data, 10f);
+            }
             Bulletin(key, new Dictionary<string, string>(data));   // the game keeps hold of each dictionary it is given
         }
 
@@ -780,7 +788,11 @@ namespace RealLifeOverhaul.Events
                     if (_street.Stage(kind, Ahead(player, 16f + attempt * 12f), true, 24, Time.time))
                     {
                         Begin(_street, 50f);
-                        Notifications.Show(NotificationType.Info, EventCalendar.Today(kind), new Dictionary<string, string>(2) { { "from", Clock(TimeHelper.CurrentHour) }, { "to", Clock(TimeHelper.CurrentHour + 3) } }, 8f);
+                        if (!EventCalendar.Quiet(kind))
+                        {
+                            var data = new Dictionary<string, string>(2) { { "from", Clock(TimeHelper.CurrentHour) }, { "to", Clock(TimeHelper.CurrentHour + 3) } };
+                            Notifications.Show(NotificationType.Info, EventCalendar.Today(kind), data, 8f);
+                        }
                         return;
                     }
                 }

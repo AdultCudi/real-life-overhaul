@@ -96,6 +96,7 @@ It narrows each pooled traffic vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (
 
 It spends 1 to 2 energy an hour out of doors in heat (11 to 19 h) and cold (never below 15; `Weather.Wardrobe`, if anybody sets it, says whether a coat is worn).
 It gives the morning forecast (toast and City Bulletin) and a warning when the weather turns.
+While the player sleeps its toasts are held for the morning summary (`Core/MorningNews`): the director runs on game time, which the game's sleep pauses, so they would all come in the minute the player wakes.
 
 *Not done, by design:* slipping on ice (nothing tasteful to be had from the knockdown system without editing it); a power cut is a notification only (the game has no safe way to switch a district's shops off); sight is exposed, not applied (see Hooks).
 
@@ -105,7 +106,8 @@ On the calendar (`EventCalendar`): fireworks 21 to 24 h on the last day of the y
 A farmers' market 8 to 13 h every Saturday.
 Otherwise a day has an event if its roll is under 0.08 x the slider: market 10 to 16, parade 12 to 15, protest 11 to 15, fun run 8 to 11, film shoot 9 to 17.
 
-Announced at 18 h the day before and at 7 h on the day (toast and City Bulletin).
+Announced at 18 h the day before and at 7 h on the day (toast and City Bulletin); while the player sleeps the toast is held for the morning summary.
+With "Notifications about protests" off, a protest has no toast at all (what is on, the start, the end: `EventCalendar.Quiet`); it is held as ever, closes its street, and the City Bulletin still lists it.
 It is held once, on a plain stretch of road 55 to 110 m from wherever the player is when it is due and they are out of doors, out of view; 20 to 32 m of road is closed with the cordon's tape and barriers; staff walk in, then the crowd.
 
 At closing time (or in a thunderstorm) the crowd leaves, the staff pack and walk off, the tape comes down, and the props go once nobody is looking.

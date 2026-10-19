@@ -29,7 +29,8 @@ Scripts/Home/
   HomePlace      cookers, coffee machines, fridges and the food in them, a clear piece of floor
   HomeActivity   the mod's routines as activities on the game's own panel; the routines: CookActivity (a dish from the cooking list), CoffeeActivity, TidyActivity, ExerciseActivity (floor exercises), WaitingRoomActivity (the doctor's waiting room)
   JogRun         going for a run: a loop of six checkpoints
-  HomeReport     the "How am I doing" page and the morning's summary
+  WakeRules      when the morning line is due after a sleep, its hours (lying down to the game's own end of the sleep) and its greeting (game-free)
+  HomeReport     the "How am I doing" page and the morning's summary, with the city's news held while the player slept (Core/MorningNews)
   HomePhone      the "Wellbeing" contact and its call (WellbeingDialog)
   DoctorVisit    the doctor's consultation (ClinicDialog)
   HomeNeedsBar   hygiene, stress and home as three more of the game's bars, in a tab under its top bar
@@ -75,7 +76,13 @@ The director looks at the game's own panel once a second (`ReadDoing`) and takes
   68 and up is Well rested (+6, 10 h), under 45 Groggy (-5, 6 h).
   Sleep debt: 7.5 h a day is owed, an hour asleep pays off 0.7 to 1.3 h by quality.
 
-  A morning summary once a day after three hours or more.
+  A morning summary once a day after three hours or more of a sleep the game itself ended or a hotel night (`WakeRules`).
+  Only those count: the game's sleep in a bed, a car or a boat (`SleepActivity` while Started or Running) and a hotel room's night through its time skip; not the day rolling over, a load, or any other time skip, the mod's or another mod's.
+  Its hours run from the last look before the player was seen asleep (once a second) to the minute the game ended the sleep, which `SleepActivity.Finish` marks with its event `ba:gameevent_playerenergyincreased` whether the sleep ran to its time, was stopped or had its time skip cancelled at speed; the sum of the looks lost that last look's minutes on a cancel.
+  The game fixes a sleep's end when Start is pressed (the slider runs from 5 minutes to 24 hours and is remembered), so the walk to the bed comes off it: a full slider and a twelve-minute walk is 23.8 hours.
+  It says "Good morning" from 04:00 to 11:59 and the same line without it at any other hour.
+  With "The night's news in the morning summary" on, the city's news that came while the player slept (the weather, what is on, the city government and the works next door, the morning's papers) comes in it, in one notification or as few more as fit, 240 characters each; see [the night's news](../reference/game-interface.md#the-nights-news-held-for-the-morning-line-coremorningnews-coremorningnewsrules).
+  Options > Tests: "Wake up to the morning summary with three pieces of news".
 
 - **Routines on the game's panel** (`HomeActivity`: the player walks there, a short watched sequence, then the game's own time skip indoors for anything longer than 14 minutes; the stop button, running out of energy and a click elsewhere on the way all end it cleanly): *a dish* chosen on the cooking list, from the food in the home's fridges (see [Cooking](#cooking)).
 

@@ -432,8 +432,9 @@ namespace RealLifeOverhaul.Events
             }
             if (Weather.Sky == Sky.Storm && Random.value < 0.12f)
             {
-                // A power cut is only news: the game has no safe way to switch a district's shops off.
-                Notifications.Show(NotificationType.Warning, Random.value < 0.5f ? "reallife_weather_power_cut_a" : "reallife_weather_power_cut_b", null, 9f);
+                // A power cut is only news: the game has no safe way to switch a district's shops off. Held for the morning line
+                // while the player sleeps (Core/MorningNews), as is the weather's every notice.
+                MorningNews.Show(NotificationType.Warning, Random.value < 0.5f ? "reallife_weather_power_cut_a" : "reallife_weather_power_cut_b", null, 9f);
             }
         }
 
@@ -443,7 +444,7 @@ namespace RealLifeOverhaul.Events
             string key = spell == Spell.HeatWave ? "reallife_weather_forecast_heat" : spell == Spell.ColdSnap ? "reallife_weather_forecast_cold" : spell == Spell.Ice ? "reallife_weather_forecast_ice"
                 : Weather.Sky == Sky.Storm ? "reallife_weather_forecast_storm" : Weather.Sky == Sky.Rain ? "reallife_weather_forecast_rain" : Weather.Sky == Sky.Mist ? "reallife_weather_forecast_mist"
                 : SeasonLine(Weather.SeasonOf(day), day);
-            Notifications.Show(NotificationType.Info, key, null, 9f);
+            MorningNews.Show(NotificationType.Info, key, null, 9f);
             director.Bulletin(key, null);
         }
 
@@ -471,7 +472,7 @@ namespace RealLifeOverhaul.Events
                 : Weather.Spell == Spell.HeatWave ? "reallife_weather_warning_heat" : Weather.Spell == Spell.ColdSnap ? "reallife_weather_warning_cold" : null;
             if (key != null)
             {
-                Notifications.Show(Weather.Sky == Sky.Storm || Weather.Spell == Spell.Ice ? NotificationType.Warning : NotificationType.Info, key, null, 8f, "rlo-weather");
+                MorningNews.Show(Weather.Sky == Sky.Storm || Weather.Spell == Spell.Ice ? NotificationType.Warning : NotificationType.Info, key, null, 8f, "rlo-weather");
             }
         }
     }
