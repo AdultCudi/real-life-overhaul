@@ -73,7 +73,8 @@ namespace RealLifeOverhaul
                     Affection = p.Affection,
                     Trust = p.Trust,
                     Stage = (int)p.Stage,
-                    DaysTogether = Math.Max(0, TimeHelper.CurrentDay - p.StageDay)   // since the stage they are in began
+                    DaysTogether = Math.Max(0, TimeHelper.CurrentDay - p.StageDay),  // since the stage they are in began
+                    LastContactDay = p.LastContactDay                                 // Social's calls, texts, outings and meetings
                 };
             }
 
