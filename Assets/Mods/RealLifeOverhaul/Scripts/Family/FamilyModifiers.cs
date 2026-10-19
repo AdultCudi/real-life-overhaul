@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Helpers;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Family
 {
@@ -17,7 +16,7 @@ namespace RealLifeOverhaul.Family
         public const string Heartache = "reallife_happinessmodifier_heartache";
         public const string Honeymoon = "reallife_happinessmodifier_honeymoon";
 
-        private static readonly (string type, int amount, int hours)[] Defs =
+        internal static readonly (string type, int amount, int hours)[] Defs =
         {
             (Together, 5, 72), (Engaged, 8, 72), (Married, 10, 72), (Joy, 6, 12), (NewParent, 8, 72), (Tired, -4, 10), (Heartache, -8, 48), (Honeymoon, 12, 96)
         };
@@ -37,19 +36,7 @@ namespace RealLifeOverhaul.Family
                 {
                     return;   // not loaded yet: asked again when the save is ready
                 }
-                foreach ((string type, int amount, int hours) in Defs)
-                {
-                    if (registry.ContainsKey(type))
-                    {
-                        continue;
-                    }
-                    var modifier = ScriptableObject.CreateInstance<HappinessModifier>();
-                    modifier.type = type;
-                    modifier.amount = amount;
-                    modifier.hoursDuration = hours;
-                    modifier.maxHoursDuration = -1;
-                    registry[type] = modifier;
-                }
+                ModState.Enter(registry, Defs);   // each with the cap its length gives (Core/MoodRules)
                 _registered = true;
             }
             catch (Exception e)
