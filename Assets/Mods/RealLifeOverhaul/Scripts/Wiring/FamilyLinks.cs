@@ -155,6 +155,23 @@ namespace RealLifeOverhaul
 
                 public bool StartOuting(string kind, Action<bool> done) => false;
 
+                public Entities.Contact PartnerContact
+                {
+                    get
+                    {
+                        try
+                        {
+                            SocialPerson p = PeopleOn ? SocialState.Partner : null;
+                            return p != null && p.Met ? SocialPhone.ContactOf(p) : null;
+                        }
+                        catch (Exception e)
+                        {
+                            Fault("FamilyLinks.PartnerContact", e);
+                            return null;
+                        }
+                    }
+                }
+
                 public int ClosePeople(List<PersonInfo> into, int most)
                 {
                     int added = 0;

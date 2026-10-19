@@ -27,7 +27,13 @@ namespace RealLifeOverhaul.Family
         private static int _lastTopic = -1;
 
         public static Contact FamilyContact { get; private set; }
-        public static Contact PartnerContact { get; private set; }
+        private static Contact _partnerContact;   // the stand-in contact, made only while Social does not keep the partner
+
+        /// <summary>
+        /// Who the partner's texts come from: Family's stand-in contact, or while Social keeps the partner their own contact in
+        /// People, so that a text from them is a text in their thread and not a notice on screen.
+        /// </summary>
+        public static Contact PartnerContact => _partnerContact ?? (Partner.Kept(out _) ? FamilyBridges.Social.PartnerContact : null);
         public static Contact InLawContact { get; private set; }
 
         /// <summary>The family's badge: the Family contact's picture, and the icon of a wedding in the open on the city map.</summary>
@@ -36,7 +42,7 @@ namespace RealLifeOverhaul.Family
         public static void Setup()
         {
             FamilyContact = null;
-            PartnerContact = null;
+            _partnerContact = null;
             InLawContact = null;
             if (!Settings.PhoneContacts || !Settings.Family)
             {
@@ -48,7 +54,7 @@ namespace RealLifeOverhaul.Family
                     "reallife_text_family_welcome");
                 if (!Partner.UsesSocial)
                 {
-                    PartnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
+                    _partnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
                         "reallife_text_partner_welcome");
                 }
                 else if (SaveGameManager.Current != null && SaveGameManager.Current.Contacts.Exists(c => c != null && c.id == PartnerId))

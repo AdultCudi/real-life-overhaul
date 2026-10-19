@@ -317,6 +317,7 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
 ## The phone
 
 - **Family**: five short pages (household, the family, coming up, memories, budget) and "things to do", one at a time with "do it", "something else" and leaving, which is every decision above.
+- **The partner's texts** come from Family's stand-in partner contact while Social does not keep the partner, and from the partner's own contact in People while it does (`FamilyPhone.PartnerContact`, through `ISocialBridge.PartnerContact`), so they are always a text in a thread and never only a notice.
 - **Someone special** (only while Social does not keep the partner): ask a friend to introduce you to someone, and from then on ring them: a chat a day, an evening out, and the same things to do.
 - **The in-laws**: a chat, advice, or the favour they asked.
   With the phone contacts option off, "Test: open the Family page" opens the same page face to face.

@@ -41,6 +41,8 @@ namespace RealLifeOverhaul.Family
         bool StartOuting(string kind, Action<bool> done);
         /// <summary>Fills the list with the people close enough to ask to a wedding, family first, at most so many; returns how many.</summary>
         int ClosePeople(List<PersonInfo> into, int most);
+        /// <summary>The partner's own contact in the phone, which Family's texts from the partner come from; null if there is none.</summary>
+        Entities.Contact PartnerContact { get; }
     }
 
     /// <summary>What Home implements. Each call is true if Home did it its own way; false and Family does a short default (a few lines and a mood).</summary>

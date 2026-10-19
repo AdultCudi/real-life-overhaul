@@ -14,6 +14,17 @@ internal static partial class Program
         FamilyPassages();
         FamilyRebooked();
         FamilyCounselLine();
+        FamilyPartnerTexts();
+    }
+
+    // With the social life keeping the partner Family has no stand-in contact: their texts were notices on screen. They come
+    // from the partner's own contact in People now, and the stand-in is still the one used without the social life.
+    private static void FamilyPartnerTexts()
+    {
+        string phone = ModSource(@"Family\FamilyPhone.cs"), links = ModSource(@"Wiring\FamilyLinks.cs");
+        Check(phone.Contains("PartnerContact => _partnerContact ?? (Partner.Kept(out _) ? FamilyBridges.Social.PartnerContact : null)")
+              && phone.Contains("_partnerContact = Register(PartnerId,") && links.Contains("SocialPhone.ContactOf(p)"),
+            "family fix: the partner's texts come from their own contact in People while the social life keeps them, else from Family's stand-in");
     }
 
     private static void FamilyPassages()
