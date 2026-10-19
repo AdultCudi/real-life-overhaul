@@ -1,10 +1,11 @@
-0.40.4
+0.40.5
 
 New
-- The People contact shows each person's age, which goes up by a year on their birthday.
+- Flare has a light and dark switch on its top bar; the option can still make it follow the phone.
 
 Fixed
-- A friend who suggests an outing on a call no longer turns it down when you say yes. Somebody with no free hour in the next two days, or on a rough day, says so as soon as you ask about plans.
-- The mod's moods, such as A nice moment and Did the right thing, no longer grow to hundreds of days each time a save is loaded, as happened in Going Public. Each mood now has a limit, and a save where one grew has it cut back once when it loads.
-- A tech firm moved to another building by a moving company lost its products, sales, contracts, staff and investors. They now move with it, and a save where they were left at the old building gets them back.
-- Your desk at work can always be walked to. A desk the office layout had boxed in, for example at an angle against the end of a long table, could not be reached when clicked; now another place by its chair or another desk is taken.
+- A meal out with a friend now fills you.
+- Cleaning and shelf-stocking jobs only choose clients with time for the walk and all the work; a client closing calls the job off without a strike and pays what was earned.
+- A rival's offer to an employee who has already left no longer keeps its Accept and Decline buttons. Business events now say an employee has left for the rival only once they really have.
+- Cars handle much closer to the game's own again, with only a little added weight and roll. Turning no longer sends the car off the road, and the ride no longer floats after a bump.
+- An employee the mod lets go now leaves once, with one wage and one notice, and nobody gets two rivals' offers at once: one in their messages takes the place of one in the Company or Open Roles app.
