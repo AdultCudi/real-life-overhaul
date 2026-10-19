@@ -230,6 +230,7 @@ internal static partial class Program
         MoodBuffs();    // the mod's moods: a cap from each catalogue entry, a load puts saved moods back as saved (never through Going Public's scaled add), a save past the cap trimmed once (MoodBuffChecks.cs)
         LaterLanguages(); // Dutch and Turkish: listed wherever the other languages are, as complete as the other translations, What's new numbered and marked (LaterLanguageChecks.cs)
         RivalOffers();  // a rival's offer whose employee has left loses its buttons, every way of leaving, an older save (RivalOfferChecks.cs)
+        StaffLeaving(); // an employee the mod lets go leaves once, with one wage and one notice; one rival's offer to an employee at a time (StaffLeaveChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }
