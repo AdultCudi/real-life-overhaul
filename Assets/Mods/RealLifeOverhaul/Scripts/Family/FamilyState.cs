@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Family
         public int LastArgueDay;
         public List<int> SeenArguments = new List<int>();
         public int LastArgument = -1;
+        public string Hard;             // the difficult moments' memory (HardMemory's line); null from an older save
         public int LowDays;
         public int LastChoreDay;
         public int LastSupportDay;
