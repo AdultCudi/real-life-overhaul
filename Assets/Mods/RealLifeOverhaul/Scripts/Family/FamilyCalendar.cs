@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Family
             HomeLife.Chore(day, hour);
             HomeLife.Support(day, hour);
             WeddingPlanner.Eve(day, hour);
+            HardTimesWatch.Hourly(day, hour);
         }
     }
 }

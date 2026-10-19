@@ -19,6 +19,8 @@ namespace RealLifeOverhaul
     ///     LifeLinks       careers, social life, travel, the garage and the weather with each other
     ///     DrivingLinks    the driven car's handling with the custom shop's parts on top of it
     ///     FamilyLinks     family life with social life, home life and the law
+    ///     HardTimesLinks  family life's difficult moments with what home life, careers, the social life, travel and the
+    ///                     economy know of the player's days
     ///     NavLinks        the minimap and the GPS with the scenes that take the screen, and the police stations
     ///     TaxiLinks       the taxi called from the phone with the holds, the weather, the GPS's roads and the minimap
     ///     EconomyLinks    the credit rating with the legal record and the fines; the Finance rows in the Planner
@@ -96,6 +98,7 @@ namespace RealLifeOverhaul
             Step("everyday life", LifeLinks.Connect);
             Step("the driven car's handling and the custom shop's parts", DrivingLinks.Connect);
             Step("family life", FamilyLinks.Connect);
+            Step("family life's difficult moments", HardTimesLinks.Connect);
             Step("the minimap and the GPS", NavLinks.Connect);
             Step("the taxi by phone", TaxiLinks.Connect);
             Step("the economy", EconomyLinks.Connect);
@@ -172,6 +175,7 @@ namespace RealLifeOverhaul
             Step("the stock market", MarketLinks.Disconnect);
             Step("investors", VenturesLinks.Disconnect);
             Step("the minimap and the GPS", NavLinks.Disconnect);
+            Step("family life's difficult moments", HardTimesLinks.Disconnect);
             Step("family life", FamilyLinks.Disconnect);
             Step("the driven car's handling and the custom shop's parts", DrivingLinks.Disconnect);
             Step("everyday life", LifeLinks.Disconnect);
