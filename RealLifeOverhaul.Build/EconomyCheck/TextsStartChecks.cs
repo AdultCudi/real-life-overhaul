@@ -45,6 +45,34 @@ internal static partial class Program
 
     // Windows' Application Control (Smart App Control) refuses to start an unsigned program with no reputation, such as a
     // checker just built: error 4551. Only that is a skip; any other failure to start stays a failure of the check.
+    // The pretend servers of this run: processes of this build's own EconomyCheck.exe, told by its path. Another worktree's
+    // gate running the same checks at the same time starts pretend servers of the same name, and they are never this run's
+    // (a check that counted every EconomyCheck process failed now and then while several gates ran, 19 Oct 2026).
+    private static HashSet<int> PretendServers()
+    {
+        string exe = System.IO.Path.Combine(AppContext.BaseDirectory, "EconomyCheck.exe");
+        var ids = new HashSet<int>();
+        foreach (Process p in Process.GetProcessesByName("EconomyCheck"))
+        {
+            try
+            {
+                if (!p.HasExited && string.Equals(p.MainModule?.FileName, exe, StringComparison.OrdinalIgnoreCase))
+                {
+                    ids.Add(p.Id);
+                }
+            }
+            catch (Exception)
+            {
+                // (ended while being read, or not this user's to read: not one of this run's)
+            }
+            finally
+            {
+                p.Dispose();
+            }
+        }
+        return ids;
+    }
+
     private static bool Blocked(string exe)
     {
         try
@@ -77,11 +105,7 @@ internal static partial class Program
         }
         string model = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rlo-pretend-" + mode + "-" + Process.GetCurrentProcess().Id + ".gguf");
         File.WriteAllText(model, mode);
-        var before = new HashSet<int>();
-        foreach (Process p in Process.GetProcessesByName("EconomyCheck"))
-        {
-            before.Add(p.Id);
-        }
+        var before = PretendServers();
         var log = new List<string>();
         var q = new TextQueue();
         var sw = Stopwatch.StartNew();
@@ -109,9 +133,9 @@ internal static partial class Program
         for (int i = 0; i < 60 && !gone; i++)
         {
             gone = true;
-            foreach (Process p in Process.GetProcessesByName("EconomyCheck"))
+            foreach (int id in PretendServers())
             {
-                gone &= before.Contains(p.Id);
+                gone &= before.Contains(id);
             }
             if (!gone)
             {
