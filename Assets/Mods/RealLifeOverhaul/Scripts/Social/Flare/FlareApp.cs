@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The city is unloading or Flare stops: every picture's texture goes.</summary>
         public void Dispose()
         {
+            SaveTheme();
             _pictures.Clear();
             _avatars.Clear();
             FlareFacePainter.AppShowing = false;
@@ -112,6 +113,7 @@ namespace RealLifeOverhaul.Flare
             _pictures.Closed();   // kept for the next opening
             _avatars.Closed();
             CloseSheet();
+            SaveTheme();
         }
 
         public void Want(int tab, string pick)
@@ -258,12 +260,17 @@ namespace RealLifeOverhaul.Flare
                 FlareFile file = _director.File;
                 int hour = SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 12;
                 FlareLook look = FlareLook.Now(hour);
-                if (look != _look || all)
+                bool painted = look != _look || all;
+                if (painted)
                 {
                     _look = look;
                     Paint();
                 }
                 Lay();
+                if (painted)
+                {
+                    WriteSheet();   // an open sheet's chips and words take their colours as they are written: written again in the look
+                }
                 _avatars.Refresh(all);
                 WriteRail(file);
                 WriteSide(file);
