@@ -107,7 +107,7 @@ See  [Arriving, and what holds a scene up](#arriving-and-what-holds-a-scene-up).
 | coffee | coffee shop | 6 | 25 min; both come out with a cup (`cup_hold`, `sip`) | |
 | a meal | fast food restaurant | 24 | 70 min | |
 | drinks | nightclub | 32 | 110 min; outside again, if it went well, a toast (`cheers`, a `wine_glass` each) | friend |
-| the cinema | cinema, theater | 18 | 130 min | |
+| the cinema | cinema, theater | 18 | 130 min, rested as in the game's own cinema seat (its `RestActivity`): through the skip no walking drain and the bench's recovery at the default multiplier (`OutingDef.SeatedRest`, `OutingScene.Rest`), given back when the skip ends, when the outing ends and when the feature faults | |
 | a workout | gym | 15 | 60 min, -14 energy | |
 | a look round your business | a business the player rents | | 30 min | friend |
 | a walk | outside any business | | 160 m walked with them beside the player; twice on the way they talk as they walk (`walk_talk` / `walk_talk_l` by the side they are on, upper body over the game's walk); by one of the game's street benches the panel offers "Sit down", once a walk, and a rest counts as 40 m (Family,  [Sitting](family.md#sitting-peopleseatingcs-the-partner-at-home-a-bench-on-a-walk)) | |

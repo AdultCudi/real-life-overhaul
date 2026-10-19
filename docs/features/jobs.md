@@ -242,6 +242,10 @@ The player's motion is `JobClip.Hail` over the working pose; no sound is played 
 
 **The cart is solid** (`Core/SolidFootprint`, shared with the living city's two carts): see [What cuts the navigation mesh](../reference/performance.md#what-cuts-the-navigation-mesh-and-when).
 
+`VendorJob.Placement` checks the whole cart, vendor and queue against crossing colliders, including triggers, before putting it down. The player can take their place only after the cart's cut has settled and the vendor, counter and queue are still reachable. A failed check takes the cart back and tries the next candidate after the mesh closes; with none left, the shift ends without a penalty.
+
+`CartQueueRules` releases a customer with a failed route, no progress for six seconds or a walk longer than forty seconds, without counting a walk-off. A failed step from the queue to the counter also releases them. `VendorJob.Customers` bounds attempts to send a customer from an unseen starting place to forty seconds too, including refused routes and failed walk orders. Each failure puts the customer back among those to come; after four failures in a row the shift is one shorter. These recoveries are logged with Developer diagnostics on.
+
 Log lines with "Developer diagnostics" on: `Jobs: vendor cart put down ...`, `Jobs check (cart solid): ... PASS`, `Jobs: stand entered ...`, `Jobs: uniform on (Vendor, ...; worn before: ...)`, `Jobs check (cart panel): ... PASS`, `Jobs: vendor: customer served by hand (...) in 2.8 s, tip 3 ...`, `Jobs: vendor: called out. Chances: ...`, `Jobs: vendor: the rest of the shift is left to the clock: ...`, `Jobs: vendor: shift skipped by the clock: 3.0 game hours ..., pay ..., energy ... -> ...`, `Jobs: stand left (...)`, `Jobs: uniform off ...`, `Jobs: pay slip shown as one of the game's notifications ...` or `Careers: payslip shown as ...`.
 
 Not verified (the game could not be run): everything that is seen.
