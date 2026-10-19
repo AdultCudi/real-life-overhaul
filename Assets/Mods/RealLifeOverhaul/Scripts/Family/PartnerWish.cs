@@ -1,6 +1,5 @@
 using Dialogs;
 using Entities;
-using Helpers;
 
 namespace RealLifeOverhaul.Family
 {
@@ -22,13 +21,6 @@ namespace RealLifeOverhaul.Family
 
         /// <summary>They retrained for the job they wanted: it is theirs now, whatever People said they did before.</summary>
         public static bool OwnJob => FamilyState.S.PWishGranted && PartnerWishRules.WishOf(FamilyState.S.PSeed) == PartnerWishRules.Retrain;
-
-        /// <summary>Once a day: the days in a row the player's income (the game's daily figure) has held at the wish's level, at today's prices.</summary>
-        public static void Daily()
-        {
-            float income = SaveGameManager.Current != null ? PlayerHelper.CalculateDailyIncome() : 0f;
-            FamilyState.S.PWishEarnDays = PartnerWishRules.Streak(FamilyState.S.PWishEarnDays, income, Prices.At(PartnerWishRules.AskAtIncome));
-        }
 
         /// <summary>Once a game hour in the day: the end of their studies, else whether they ask (raised when the partner's voice allows, talked over face to face within the week: PartnerVoice).</summary>
         public static void Hourly(int day)
@@ -52,7 +44,8 @@ namespace RealLifeOverhaul.Family
             }
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
             if (!PartnerWishRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired, PartnerWork.Work, s.PWishGranted, s.PWishAsk, cash,
-                    Prices.At(PartnerWishRules.AskAtCash), day, s.PWishAskDay, s.PWishEarnDays) || !PartnerVoice.Free)
+                    Prices.At(PartnerWishRules.AskAtCash), day, s.PWishAskDay,
+                    FamilyState.IncomeHeld, Prices.At(PartnerWishRules.AskAtIncome)) || !PartnerVoice.Free)
             {
                 return;
             }
