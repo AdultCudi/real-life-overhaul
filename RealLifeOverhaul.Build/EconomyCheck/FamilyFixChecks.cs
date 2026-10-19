@@ -19,6 +19,26 @@ internal static partial class Program
         FamilyPartnerJob();
         FamilyPromptButtons();
         FamilyFaceToFace();
+        FamilyOneDay();
+    }
+
+    // People's night owl slept to ten while the family sent the partner to work at eight, and a call at nine went to
+    // voicemail. The partner the social life keeps has People's day: its sleep and its working stretch by their traits and
+    // free hours, shortened on half days and gone when they stop; People reads back from it when they are free.
+    private static void FamilyOneDay()
+    {
+        PartnerJobRules.Work(17, 23, false, out int f0, out int t0);
+        PartnerJobRules.Work(14, 22, false, out int f1, out int t1);
+        PartnerJobRules.Work(11, 18, true, out int f2, out int t2);
+        Check(f0 == 8 && t0 == 17 && f1 == 8 && t1 == 14 && f2 == 18 && t2 == 26 && PartnerJobRules.Within(1, 18, 26) && !PartnerJobRules.Within(3, 18, 26)
+              && PartnerJobRules.Asleep(9, true) && !PartnerJobRules.Asleep(9, false) && PartnerJobRules.Asleep(1, false) && !PartnerJobRules.Asleep(1, true),
+            "family fix: People's day for the partner: office hours 8 to 17, an afternoon shift 8 to 14, a night owl 18 to 2 and asleep 2 to 10, as People has them");
+        string model = ModSource(@"Social\SocialModel.cs"), home = ModSource(@"Family\HomeLife.cs"), asleep = MemberText(model, "public bool Asleep(int hour)");
+        bool same = asleep.Contains("hour >= 2 && hour < 10") && asleep.Contains("hour >= 23 || hour < 8");
+        Check(same && MemberText(model, "public bool FreeAt(int hour, bool weekend)").Contains("FreeOf?.Invoke(this, hour, weekend)")
+              && home.Contains("PartnerJobRules.Asleep(hour, s.PNightOwl)") && home.Contains("to = PartnerWorkRules.Until(from, to, PartnerWork.Work);")
+              && ModSource(@"Wiring\FamilyLinks.cs").Contains("p == SocialState.Partner ? FamilyApi.PartnerAsleep") == false,
+            "family fix: the family's day for People's partner sleeps and works by People's hours, and People asks the family when they are free");
     }
 
     // With the social life keeping the partner the Family contact is left out, and nothing it offered is lost: talking at home
@@ -33,9 +53,10 @@ internal static partial class Program
               && phone.Contains("Contacts.RemoveAll(c => c != null && c.id == FamilyId)") && director.Contains("FamilyPhone.Hides != _hides"),
             "family face to face: no Family contact while Social keeps the partner and the fridge's board is there; an earlier one is taken off, and switching either brings it back");
         string[] call = { "HardTimes.Book)))", "HardTimes.CallApart)))", "HardTimes.ComeHome)))", "HardTimes.EndAsk)))", "Relatives.GoToMoms)))", "Relatives.InLawFavour)))" };
-        Check(Array.TrueForAll(call, choices.Contains) && Regex.Matches(choices, @"list\.Add\(Call\(").Count == call.Length
+        Check(Array.TrueForAll(call, choices.Contains) && Regex.Matches(choices, @"list\.Add\(Call\(").Count == call.Length + 1
+              && choices.Contains("list.Add(Call(new Choice(() => FamilyState.Together && s().LivesIn && BuildingManager.IsInsideBuilding")
               && person.Contains("case \"family\":") && links.Contains("p == SocialState.Partner && FamilyPhone.HasCallMatters"),
-            "family face to face: the partner's People call has Family matters: counselling, time apart (call, come home, part) and the in-laws, and nothing else");
+            "family face to face: the partner's People call has Family matters: a new home where the player stands, counselling, time apart (call, come home, part) and the in-laws, and nothing else");
         Check(choices.Contains("HomeLife.Present && !AtBoard;") && fridge.Contains("FamilyShown != null && FamilyShown()") && links.Contains("HomeFridgeButton.FamilyClicked = FamilyPhone.Board;"),
             "family face to face: the fridge's Family button opens the family's page and list, without what needs the partner in the room");
         int save = director.IndexOf("FamilySms.BeforeSave();", StringComparison.Ordinal), write = director.IndexOf("FamilyState.Write();", StringComparison.Ordinal);

@@ -89,6 +89,8 @@ namespace RealLifeOverhaul.Family
             s.PJob = Random.Range(0, Trades.Length);
             s.PIncome = JobIncome[s.PJob];
             s.PJobKey = null;
+            s.PFreeFrom = s.PFreeTo = 0;
+            s.PNightOwl = false;
             s.PWantsChildren = Random.value < 0.8f;
             PartnerWork.Reset(s);
             s.Interest = interest;
@@ -137,6 +139,13 @@ namespace RealLifeOverhaul.Family
                     s.PJob = PartnerJobRules.TradeOf(p.JobKey, s.PJob);
                     s.PIncome = PartnerJobRules.IncomeOf(p.JobKey, JobIncome[Mathf.Clamp(s.PJob, 0, JobIncome.Length - 1)]);
                 }
+                // ...and their day is People's: when they are free, and a night owl's late hours (HomeLife.Where).
+                if (s.PName == p.Name)
+                {
+                    s.PFreeFrom = p.FreeFrom;
+                    s.PFreeTo = p.FreeTo;
+                    s.PNightOwl = p.NightOwl;
+                }
             }
             else if (FamilyState.Bond == Bond.Dating && !s.LivesIn)
             {
@@ -175,6 +184,8 @@ namespace RealLifeOverhaul.Family
             s.InLaws = false;
             s.PName = null;
             s.PJobKey = null;
+            s.PFreeFrom = s.PFreeTo = 0;
+            s.PNightOwl = false;
             s.PSeed = 0;
             s.PAffection = 0f;
             PartnerWork.Reset(s);

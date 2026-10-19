@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Family
                     string why = HomeLife.MoveIn(false);
                     return FamilyTalk.Close(why ?? "reallife_family_move_in_yes");
                 }));
-            list.Add(new Choice(() => FamilyState.Together && s().LivesIn && BuildingManager.IsInsideBuilding && !FamilyPlaces.AtHome() && InOwnHome(),
+            list.Add(Call(new Choice(() => FamilyState.Together && s().LivesIn && BuildingManager.IsInsideBuilding && !FamilyPlaces.AtHome() && InOwnHome(),
                 () => FamilyText.Say("reallife_family_do_new_home"), "reallife_family_do_new_home_yes", () =>
                 {
                     BuildingRegistration here = InstanceBehavior<BuildingManager>.Instance.buildingRegistration;
@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Family
                     }
                     FamilyPlaces.MakeHome(here);
                     return FamilyTalk.Close("reallife_family_new_home_done");
-                }));
+                })));
 
             list.Add(new Choice(() => bond() == Bond.Dating && s().Ring == 0 && Courtship.Ready() && Settings.FamilyWedding,
                 () => FamilyText.Say("reallife_family_do_jeweller"), "reallife_family_do_show_way",

@@ -198,6 +198,9 @@ namespace RealLifeOverhaul.Family
         public string PAsk;          // the kind of ask open now (PartnerVoice.Work and others); null none
         public int PAskDay;          // the day it was asked
         public int PAskReminded;     // reminders of it sent
+        public int PFreeFrom;        // People's partner: the hours they are free on a weekday (PFreeTo 0: Family's own trades' hours)
+        public int PFreeTo;
+        public bool PNightOwl;       // ...and whether they keep late hours
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

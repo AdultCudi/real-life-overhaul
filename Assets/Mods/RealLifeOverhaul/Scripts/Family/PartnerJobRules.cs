@@ -34,6 +34,32 @@ namespace RealLifeOverhaul.Family
         }
 
         /// <summary>What a day of the job brings in: nothing retired, <paramref name="fallback"/> for a job it does not know.</summary>
+        /// <summary>Asleep at that hour by People's own hours: a night owl from two to ten, anyone else from eleven to eight (SocialPerson.Asleep).</summary>
+        public static bool Asleep(int hour, bool nightOwl) => nightOwl ? hour >= 2 && hour < 10 : hour >= 23 || hour < 8;
+
+        /// <summary>
+        /// The working stretch of a weekday from People's free hours: the longer of the busy hours between waking and being free
+        /// and those between being free and going to sleep. Office hours (free 17 to 23) are 8 to 17; a night owl free 11 to 18
+        /// works 18 to 2 (26: past midnight runs on).
+        /// </summary>
+        public static void Work(int freeFrom, int freeTo, bool nightOwl, out int from, out int to)
+        {
+            int wake = nightOwl ? 10 : 8, sleep = nightOwl ? 26 : 23;
+            if (freeFrom - wake >= sleep - freeTo)
+            {
+                from = wake;
+                to = freeFrom;
+            }
+            else
+            {
+                from = freeTo;
+                to = sleep;
+            }
+        }
+
+        /// <summary>Whether the hour is in a stretch that may run past midnight (to over 24).</summary>
+        public static bool Within(int hour, int from, int to) => (hour >= from && hour < to) || (hour + 24 >= from && hour + 24 < to);
+
         public static int IncomeOf(string key, int fallback)
         {
             if (Retired(key))

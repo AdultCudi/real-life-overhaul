@@ -49,11 +49,25 @@ namespace RealLifeOverhaul.Family
         /// <summary>Whether the fridge's panel shows the Family button (Home/HomeFridgeButton, through Wiring/FamilyLinks).</summary>
         public static bool BoardShown => Settings.Family && FamilyState.Loaded && Hides;
 
-        /// <summary>The fridge's Family button: the family's page, then everything that can be done from it.</summary>
+        /// <summary>The fridge's Family button: the family's page, then everything that can be done from it, once the fridge's panel has gone.</summary>
         public static void Board()
         {
-            AtBoard = true;
-            FamilyTalk.Open(() => FamilyPageDialog.Guard(() => FamilyPage.Page(0)), () => AtBoard = false);
+            FamilyDirector.Instance?.WhenFree(() =>
+            {
+                AtBoard = true;
+                FamilyTalk.Open(() => FamilyPageDialog.Guard(() => FamilyPage.Page(0)), BoardClosed);
+            });
+        }
+
+        // The board closed: face to face again, and (with diagnostics) whether anything still stands in the way of the partner's prompt.
+        private static void BoardClosed()
+        {
+            AtBoard = false;
+            if (Meta.Dev.Verbose)
+            {
+                FamilyDirector.Instance?.WhenFree(() => FamilyDirector.Logger?.Info("Family check (board): closed; then the game's screens open: " + ThirdPersonCamera.IsUiOpen()
+                    + ", the family may act: " + FamilyDirector.CanAct() + ", the partner here: " + HomeLife.Present + "."));
+            }
         }
 
         /// <summary>Whether the partner's People call offers "Family matters": time apart or the in-laws, with something to say.</summary>

@@ -34,5 +34,8 @@ namespace RealLifeOverhaul.Family
         {
             return work == PartTime ? fullDay / 2 : fullDay;
         }
+
+        /// <summary>Whether they go to work at all: not once they have stopped, nor while they are studying.</summary>
+        public static bool Works(int work) => work == FullTime || work == PartTime;
     }
 }

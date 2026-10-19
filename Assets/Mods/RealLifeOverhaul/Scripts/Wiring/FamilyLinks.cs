@@ -42,6 +42,7 @@ namespace RealLifeOverhaul
                 FamilyBridges.Home = new HomeForFamily();
                 FamilyBridges.Law = new LawForFamily();
                 SocialLinks.PartnerChanged = TellFamily;
+                SocialPerson.FreeOf = (p, hour, weekend) => p != null && PeopleOn && p == SocialState.Partner ? FamilyApi.PartnerFree(hour, weekend) : null;
                 SocialPhone.HasFamilyMatters = p => p != null && PeopleOn && p == SocialState.Partner && FamilyPhone.HasCallMatters;
                 SocialPhone.FamilyMatters = FamilyPhone.CallMatters;
                 HomeFridgeButton.FamilyShown = () => FamilyPhone.BoardShown;
@@ -51,6 +52,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 SocialLinks.PartnerChanged = null;
+                SocialPerson.FreeOf = null;
                 SocialPhone.HasFamilyMatters = null;
                 SocialPhone.FamilyMatters = null;
                 HomeFridgeButton.FamilyShown = null;
@@ -86,7 +88,10 @@ namespace RealLifeOverhaul
                     Stage = (int)p.Stage,
                     DaysTogether = Math.Max(0, TimeHelper.CurrentDay - p.StageDay),  // since the stage they are in began
                     LastContactDay = p.LastContactDay,                                 // Social's calls, texts, outings and meetings
-                    JobKey = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))]
+                    JobKey = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))],
+                    FreeFrom = p.FreeFrom,
+                    FreeTo = p.FreeTo,
+                    NightOwl = p.Has(SocialTrait.NightOwl)
                 };
             }
 
