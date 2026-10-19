@@ -1,7 +1,4 @@
-0.40.1
+0.40.2
 
 Fixed
-- The drinks cart keeps clear of crossings and refuses places customers cannot reach; failed walks and arrivals are retried so the shift keeps moving.
-- A film at the cinema or the theatre with a friend now rests you like the game's own seats. You used to lose energy through the whole film.
-- News about your building, neighbours and home no longer reaches you when you have no home.
-- Street chess tables no longer block pedestrian crossings.
+- When the RLO Texts model stops answering or closes, it is started again in the background and its words come back by themselves. Messages use their written lines meanwhile.
