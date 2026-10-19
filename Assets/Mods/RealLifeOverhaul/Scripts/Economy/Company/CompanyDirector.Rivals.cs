@@ -23,7 +23,12 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < _state.Staff.Count; i++)
             {
                 StaffFile f = _state.Staff[i];
-                if (ShopIndex(f.Place) >= 0 && StaffRules.RivalMay(f, _level, Save.Day) && (best == null || f.Skill > best.Skill))
+                if (ShopIndex(f.Place) < 0)
+                {
+                    continue;
+                }
+                CompanyGame.Offers(f);   // the game's own offer and the tech sector's, as they stand now: one rival's offer at a time
+                if (StaffRules.RivalMay(f, _level, Save.Day) && (best == null || f.Skill > best.Skill))
                 {
                     best = f;
                 }

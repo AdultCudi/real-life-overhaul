@@ -145,11 +145,15 @@ namespace RealLifeOverhaul.Economy
             f.AskRest = day + CompanyCatalogue.RaiseRestDays;
         }
 
+        /// <summary>
+        /// Whether one of the company's own rivals would want somebody today: skilled, underpaid enough, nothing waiting, past
+        /// the rest after an answer, and no other rival's offer to them open or departure in hand (<see cref="Free"/>).
+        /// </summary>
         public static bool Wanted(StaffFile f, int level, int day)
         {
             return CompanyCatalogue.PoachChance[CompanyCatalogue.Level(level)] > 0 && f.Skill >= CompanyCatalogue.PoachSkill && f.Going > 0
                    && Gap(f.Going, f.Paid) >= CompanyCatalogue.PoachGap && f.PoachDay == 0 && f.LeaveDay == 0 && f.AskDay == 0
-                   && day >= f.PoachRest;
+                   && day >= f.PoachRest && Free(f);
         }
 
         /// <summary>
@@ -159,7 +163,34 @@ namespace RealLifeOverhaul.Economy
         public static bool RivalMay(StaffFile f, int level, int day)
         {
             return CompanyCatalogue.PoachChance[CompanyCatalogue.Level(level)] > 0 && f.Going > 0 && f.PoachDay == 0 && f.LeaveDay == 0 && f.AskDay == 0
-                   && day >= f.PoachRest;
+                   && day >= f.PoachRest && Free(f);
+        }
+
+        /// <summary>
+        /// One rival's offer to an employee at a time: the company makes none while the game's own offer to them is open
+        /// (EmployeeInstance.PoachByRival) or the tech sector has its own offer or a departure in hand for them.
+        /// </summary>
+        public static bool Free(StaffFile f)
+        {
+            return !f.GameOffer && !f.Held;
+        }
+
+        /// <summary>
+        /// Whether the company's own offer to somebody gives way: the game's own rival offer to them has opened (its special
+        /// rivals choose whom they want, and the mod cannot stop them) while the company's offer waits or the notice after
+        /// it runs. The game's offer, in their messages, then decides alone whether they stay.
+        /// </summary>
+        public static bool GivesWay(StaffFile f)
+        {
+            return f.GameOffer && (f.PoachDay > 0 || f.LeaveDay > 0);
+        }
+
+        /// <summary>The company's offer and the notice after it called off, as if never made; no new offer while the rest after an answer runs.</summary>
+        public static void GiveWay(StaffFile f, int day)
+        {
+            f.PoachDay = f.PoachOffer = 0;
+            f.LeaveDay = 0;
+            f.PoachRest = Math.Max(f.PoachRest, day + CompanyCatalogue.PoachRestDays);
         }
 
         public static bool Approach(int seed, int age, int level)

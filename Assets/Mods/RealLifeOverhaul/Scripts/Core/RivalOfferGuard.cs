@@ -26,8 +26,9 @@ namespace RealLifeOverhaul
     ///     ("ba:gameevent_rivaldefeated", raised once its giving-up messages are sent);
     ///   - after the game's own firing: MyEmployees and its mass action raise GameEvent with no name once it is done;
     ///   - once a save has loaded, for an offer an older save kept;
-    ///   - right after this mod lets an employee go (<see cref="Look"/>: business pressure's leaving, which the
-    ///     company's staff leave by too; the tech sector's resignation and dismissal; a business sold with its staff);
+    ///   - right after this mod lets an employee go (<see cref="Look"/>: Core/StaffLeave, by which business pressure's
+    ///     dismissal, the company's departures and the tech sector's resignations go; the tech sector's dismissal; a
+    ///     business sold with its staff);
     ///   - and as the Contacts app picks a chat, that chat alone, before the game draws it
     ///     (<see cref="RivalOfferWatch"/>).
     /// A chat on screen whose offer loses its buttons is drawn again through the game's own call
@@ -122,9 +123,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Called by this mod right after it lets an employee go (business pressure's leaving, which the company's
-        /// staff leave by too; the tech sector's resignation and dismissal; a business sold with its staff): a rival's
-        /// offer to them loses its buttons now, not at the next hour. Never throws.
+        /// Called by this mod right after it lets an employee go (Core/StaffLeave, by which business pressure's
+        /// dismissal, the company's departures and the tech sector's resignations go; the tech sector's dismissal; a
+        /// business sold with its staff): a rival's offer to them loses its buttons now, not at the next hour. Never throws.
         /// </summary>
         public static void Look(string why)
         {
@@ -187,6 +188,21 @@ namespace RealLifeOverhaul
             }
             bool sameName = name == null || SameName(e, name);
             return RivalOfferRules.Standing(Employed(e, staff), sameName, e.isBeingReplaced, e.satisfaction);
+        }
+
+        /// <summary>
+        /// True while the game's own offer to an employee is open (EmployeeInstance.PoachByRival, made by the game's special
+        /// rivals or by business pressure), by <see cref="RivalOfferRules.Open"/>: the company's and the tech sector's own
+        /// offers wait for it and give way to it. A few field reads; asked on the hour, the day and a press, never per frame.
+        /// </summary>
+        public static bool OfferOpen(EmployeeInstance e)
+        {
+            if (e == null || string.IsNullOrEmpty(e.poachedByRivalId))
+            {
+                return false;   // (nearly everybody: no rival named, no field read)
+            }
+            bool known = DeadlineField != null;
+            return RivalOfferRules.Open(e.poachedByRivalId, known, known ? (int)DeadlineField.GetValue(e) : 0);
         }
 
         // Every chat of the player's: the rival messages with buttons are judged, and those the rule takes lose them.

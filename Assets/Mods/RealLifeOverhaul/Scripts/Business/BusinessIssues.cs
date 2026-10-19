@@ -160,6 +160,9 @@ namespace RealLifeOverhaul
             }
         }
 
+        // The best of a business's staff the game would let a rival approach (IsPoachable: not within 20 days of the last
+        // offer) with no offer of the game's named and no complaint open. Never one the company or the tech sector has its
+        // own rival's offer or a departure in hand for (BusinessDirector.Held): one rival's offer to an employee at a time.
         private static EmployeeInstance Poachable(BuildingRegistration reg)
         {
             List<EmployeeInstance> staff = BusinessGame.Staff(reg);
@@ -167,7 +170,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < staff.Count; i++)
             {
                 EmployeeInstance e = staff[i];
-                if (e.IsPoachable && string.IsNullOrEmpty(e.poachedByRivalId) && !e.complaintData.isComplaining
+                if (e.IsPoachable && string.IsNullOrEmpty(e.poachedByRivalId) && !e.complaintData.isComplaining && !BusinessDirector.HeldElsewhere(e.id)
                     && (best == null || e.characterData.skills[0].value > best.characterData.skills[0].value))
                 {
                     best = e;
@@ -766,8 +769,7 @@ namespace RealLifeOverhaul
                     }
                     if (option == 0)
                     {
-                        BusinessGame.Leave(e);
-                        return Done(issue, "reallife_biz_stafftheft_dismissed");
+                        return Done(issue, BusinessGame.Leave(e) ? "reallife_biz_stafftheft_dismissed" : "reallife_biz_staff_gone");
                     }
                     if (option == 1)
                     {

@@ -28,7 +28,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `RoommateLinks.cs` | `RoommateBridges`: whether the partner lives in, the friends who could move in |
 | `DebtLinks.cs` | the credit desk and the private lender: a lender's claim as one of Justice's civil suits, whether the player is held, a free stretch of kerb |
 | `CityLinks.cs` | `CityBridges`: the season and weather, business pressure's footfall, copycat rivals and morning roll |
-| `CompanyLinks.cs` | `CompanyBridges`: business pressure's footfall, closures, disputes, rivals, resignations, audits and inspections; a tax case with Justice |
+| `CompanyLinks.cs` | `CompanyBridges`: business pressure's footfall, closures, disputes, rivals, resignations (once, `Core/StaffLeave`), audits and inspections; a tax case with Justice; one rival's offer to an employee at a time: `CompanyBridges.Held` (the tech sector's offers and notices) and `BusinessDirector.Held` (the company's and the tech sector's, for business pressure's poaching) |
 | `BrandLinks.cs` | `BrandsBridges`: business pressure's footfall |
 | `EstateLinks.cs` | `EstateBridges`: the council's rent policy |
 | `OnlineLinks.cs` | `OnlineBridges`: the company's campaigns |
@@ -39,7 +39,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `OwnBankLinks.cs` | the player's own bank: Standing's integrity, the council's levers, the courts, the market's quotes |
 | `UtilityLinks.cs` | `UtilitiesBridges`: the credit grade, the household, closures, the home's taps and screens, the Finance app |
 | `CareersLinks.cs` | `CareersBridges`: home internet, a driving refresher, Standing, the economy's vacancies, the record, the student loan, the council's grants, restraint claims, the tech labour market |
-| `TechLinks.cs` | `TechBridges`: Standing as an employer, the game's rivals |
+| `TechLinks.cs` | `TechBridges`: Standing as an employer, the game's rivals, the company's own offers and notices (`TechBridges.Held`); the tech sector's own for the others (`TechLinks.Holds`) |
 | `EndScaleLinks.cs` | the end game at scale's two tests, reaching the ventures it scales |
 | `DistrictLinks.cs` | `DistrictBridges`: one reading per district from the economy, Standing, Utilities and Civic |
 | `InteriorLinks.cs` | interiors and decor: footfall, cleaning, the district's income, and every reader of its scores |

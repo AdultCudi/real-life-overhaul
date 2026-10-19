@@ -548,6 +548,36 @@ namespace RealLifeOverhaul.Tech
             return p.PoachBp > 0 && day <= p.PoachDay;
         }
 
+        /// <summary>
+        /// Whether the tech sector's own rival's offer to somebody gives way: the game's own rival offer to them has opened
+        /// (its special rivals choose whom they want, and the mod cannot stop them) while the sector's offer is in hand
+        /// (waiting, or unanswered on its last day) or the notice they work after one runs. One rival's offer to an employee
+        /// at a time: the game's, in their messages, then decides alone whether they stay. A notice the player gave, or one
+        /// for burning out, is not an offer's and stands.
+        /// </summary>
+        public static bool GivesWay(Profile p, bool gameOffer)
+        {
+            return gameOffer && (p.PoachBp > 0 || (p.NoticeEnd > 0 && p.Leaving == (int)LeaveKind.Poached));
+        }
+
+        /// <summary>True while the sector has a rival's offer in hand for somebody (waiting, or unanswered on its last day) or a departure (any notice).</summary>
+        public static bool Holds(Profile p)
+        {
+            return p.PoachBp > 0 || p.NoticeEnd > 0;
+        }
+
+        /// <summary>The sector's offer and the notice after it called off, as if never made; no new approach while this one is fresh.</summary>
+        public static void GiveWay(Profile p, int day)
+        {
+            p.PoachBp = 0;
+            p.PoachDay = Math.Max(p.PoachDay, day + TalentCatalogue.PoachRestDays);
+            if (p.Leaving == (int)LeaveKind.Poached)
+            {
+                p.Leaving = (int)LeaveKind.None;
+                p.NoticeEnd = 0;
+            }
+        }
+
         /// <summary>The rival's offer answered: matched with a rise, or not and they hand in their notice.</summary>
         public static void Answer(Profile p, bool match, int day, int year)
         {

@@ -25,7 +25,11 @@ namespace RealLifeOverhaul
         ///   IssueFootfall what one of business pressure's own issues changes a business's footfall by on a day (read
         ///                 only: the staff rota planner's forecast of the days ahead)
         ///   Rival         the name of one of the game's rivals, as business pressure picks one
-        ///   Leave         the game's own resignation, as business pressure has an employee leave
+        ///   Leave         the game's own resignation, once, as business pressure has an employee leave (Core/StaffLeave)
+        ///   Held          one rival's offer to an employee at a time: the company asks whether the tech sector has its own
+        ///                 offer or a departure in hand for somebody (TechLinks.Holds), the tech sector asks the company's
+        ///                 (<see cref="Holds"/>), and business pressure, whose poaching makes the game's own offer, asks both
+        ///                 (BusinessDirector.Held)
         ///   losses        a fire's repair bill (Events/FireLosses), a break-in's stock and repair (Crime/BreakIns) and
         ///                 an inspector's fine (Business/BusinessEvents) are told to the company, which opens a claim
         ///                 if a policy covers it. The loss is the other feature's own and is not changed
@@ -86,6 +90,8 @@ namespace RealLifeOverhaul
                 CompanyBridges.Dispute = Dispute;
                 CompanyBridges.Rival = Rival;
                 CompanyBridges.Leave = Leave;
+                CompanyBridges.Held = TechLinks.Holds;
+                BusinessDirector.Held = Offered;
                 CompanyBridges.Audit = Audit;
                 CompanyBridges.TaxCase = TaxCases.File;
                 CompanyBridges.Inspect = Inspect;
@@ -103,6 +109,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 CompanyBridges.Reset();
+                BusinessDirector.Held = null;
                 FireLosses.Billed -= FireLoss;
                 BreakIns.Happened -= BreakIn;
                 BusinessEvents.Fined -= Fined;
@@ -180,16 +187,43 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static void Leave(EmployeeInstance employee)
+            private static bool Leave(EmployeeInstance employee)
             {
                 try
                 {
-                    BusinessGame.Leave(employee);
+                    return StaffLeave.Resign(employee, "the company, for a rival");
                 }
                 catch (Exception e)
                 {
                     Fault("CompanyLinks.Leave", e);
+                    return false;
                 }
+            }
+
+            /// <summary>
+            /// The company's own rival's offer waiting for an employee (the game's id), or the notice they work after one: the
+            /// tech sector (Tech/TechBridges.Held) and business pressure make no rival's offer to them then.
+            /// </summary>
+            internal static bool Holds(string id)
+            {
+                try
+                {
+                    CompanyDirector company = CompanyDirector.Instance;
+                    StaffFile f = company != null && company.Running && company.State != null ? company.State.Employee(id) : null;
+                    return f != null && (f.PoachDay > 0 || f.LeaveDay > 0);
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.Holds", e);
+                    return false;
+                }
+            }
+
+            // Business pressure's poaching makes the game's own offer: never to somebody the company or the tech sector has
+            // its own rival's offer or a departure in hand for.
+            private static bool Offered(string id)
+            {
+                return Holds(id) || TechLinks.Holds(id);
             }
 
 

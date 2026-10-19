@@ -68,13 +68,18 @@ Everything is in `Scripts/Business`: `BusinessCatalogue` (every kind, every numb
 - *Theft by an employee*: added to `stolenItemsCost`, which the game books as Theft in the statement and clears each night.
   No cash moves.
 - *Wages*: `EmployeeInstance.hourlyWage`, as the game's own poach counter-offer writes it.
-  *Leaving*: the game's own resignation path (what an ignored complaint does).
+  *Leaving*: the game's own resignation path (what an ignored complaint does), once (`Core/StaffLeave`): the game's
+  steps (`EmployeeInstance.ComplaintResign`: no satisfaction, the headhunter's replacement where the plan takes it,
+  otherwise `Resign`), then the employee taken off the game's list at once, as its hour (`EmployeeHelper.RunHourly`)
+  takes off one who resigned in it. One wage, one notice, nothing for the game's own check for no satisfaction to resign
+  again. The company's and the tech sector's departures go the same way; made in the game's day event, where the count
+  still holds the day its night has just paid, that count is cleared first.
   *Deliveries*: `DeliveryContract.nextDeliveryDay`.
 
 | kind | when | what it does | choices | caps |
 |---|---|---|---|---|
 | Competitor undercuts | has a promotion figure; no active game rival | -10 % customers, 5 days | marketing push (0.6 of a day, 80 to 1200: +4 % for 3 days) / match prices (0.3, 40 to 600: dip halved) / quality (cleanliness 80 and satisfaction 60: over in 2 days) / ride it out | -10 % |
-| A rival wants your staff | a poachable employee, a rival with businesses | the game's own offer, +12 %, 3 days | answered in the employee's messages: match or let go | one employee |
+| A rival wants your staff | a poachable employee (never one the company or the tech sector has its own rival's offer or a departure in hand for), a rival with businesses | the game's own offer, +12 %, 3 days | answered in the employee's messages: match or let go | one employee |
 | Smear in the paper | has a promotion figure | -6 %, 4 days | right of reply (0.4, 60 to 800: ends) / lawyer (0.25, 50 to 500: 55 % ends it and +3 % for 2 days) / ignore | -6 % |
 | Protection racket | takes 150 a day or more | see below | pay / refuse / police / security | weekly 60 to 600; repair 80 to 900; closed 4 h |
 | Health inspection | food business | tomorrow 10:00, on the game's cleanliness figure | book a contract clean (0.2, 40 to 400: dirt to a third) or clean it yourself | 75 passes (+4 % for 3 days); 50 to 74 a warning and a second visit in 2 days; under 50 a fine (0.5, 100 to 1500); under 30 or unpaid: closed 6 h |

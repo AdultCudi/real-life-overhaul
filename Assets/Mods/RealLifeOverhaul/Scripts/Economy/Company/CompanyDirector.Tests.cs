@@ -59,14 +59,15 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        private StaffFile TestEmployee(string test)
+        // The first employee with nothing waiting; for an offer, also with no other rival's offer open to them (StaffRules.Free).
+        private StaffFile TestEmployee(string test, bool offer = false)
         {
             int gone;
             ReadPeople(out gone);
             for (int i = 0; i < _state.Staff.Count; i++)
             {
                 StaffFile f = _state.Staff[i];
-                if (f.AskDay == 0 && f.PoachDay == 0 && f.LeaveDay == 0)
+                if (f.AskDay == 0 && f.PoachDay == 0 && f.LeaveDay == 0 && (!offer || StaffRules.Free(f)))
                 {
                     return f;
                 }
@@ -108,7 +109,7 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>A rival's offer to the first employee with nothing waiting, at least a little over their pay.</summary>
+        /// <summary>A rival's offer to the first employee with nothing waiting and no other rival's offer open, at least a little over their pay.</summary>
         public void TestOffer()
         {
             if (!TestReady("Company offer", CompanyPart.Staff))
@@ -117,7 +118,7 @@ namespace RealLifeOverhaul.Economy
             }
             TestGuard("offer", () =>
             {
-                StaffFile f = TestEmployee("Company offer");
+                StaffFile f = TestEmployee("Company offer", true);
                 if (f == null)
                 {
                     return;

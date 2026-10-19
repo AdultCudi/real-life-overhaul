@@ -121,6 +121,18 @@ namespace RealLifeOverhaul
             return f.MessageDay == f.OfferDay ? State.Live : State.Older;
         }
 
+        /// <summary>
+        /// Whether the game's own offer to an employee is open now: a rival named (poachedByRivalId, cleared when it is
+        /// matched) and days left on it (poachDeadlineDays, nothing once it is answered, has run out or the rival gave up).
+        /// Without the days (<paramref name="known"/> false: a newer game), while a rival is named; a rival who gave up
+        /// then still counts, which only keeps the mod's own offers waiting. The company's and the tech sector's own
+        /// offers ask it: one rival's offer to an employee at a time, and the game's, which the mod cannot stop, comes first.
+        /// </summary>
+        public static bool Open(string rivalId, bool known, int deadlineDays)
+        {
+            return !string.IsNullOrEmpty(rivalId) && (!known || deadlineDays > 0);
+        }
+
         /// <summary>True when the employee is no longer the player's: business pressure says they have left.</summary>
         public static bool Lost(State state)
         {

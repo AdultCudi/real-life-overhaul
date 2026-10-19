@@ -64,7 +64,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>The app has opened: everyone is read again so it shows today.</summary>
+        /// <summary>
+        /// The app has opened: everyone is read again so it shows today, and an offer of the sector's whose employee the
+        /// game's own rival offer has reached since gives way before it is drawn.
+        /// </summary>
         internal bool RolesOpened()
         {
             if (_broken || Save == null || !_peopleOn)
@@ -74,6 +77,10 @@ namespace RealLifeOverhaul.Tech
             try
             {
                 ReadPeople(Save.Day);
+                if (GiveWayAll(Save.Day))
+                {
+                    Changed();
+                }
                 RolesBadge();
                 return true;
             }
@@ -252,6 +259,12 @@ namespace RealLifeOverhaul.Tech
             Person person = PersonOf(id);
             if (person == null || Save == null || !TalentRules.OfferOpen(person.File, Save.Day))
             {
+                return;
+            }
+            if (person.Game != null && TalentRules.GivesWay(person.File, TalentGame.GameOffer(person.Game)))
+            {
+                GaveWay(person, Save.Day);   // the game's own offer came while this page was open: it is the one to answer
+                Changed();
                 return;
             }
             if (match)

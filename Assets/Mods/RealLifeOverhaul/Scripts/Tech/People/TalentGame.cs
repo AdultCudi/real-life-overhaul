@@ -283,23 +283,24 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
-        /// The employee leaves of their own accord, as the game has one leave whose complaint went unanswered. A
-        /// rival's offer to them in the game's messages loses its buttons at once (Core/RivalOfferGuard).
+        /// The employee leaves of their own accord, as the game has one leave whose complaint went unanswered: once, with
+        /// one wage and one notice, off the game's list at once (Core/StaffLeave). A rival's offer to them in the game's
+        /// messages loses its buttons at once (Core/RivalOfferGuard). False, with nothing changed, for somebody who is not
+        /// the player's to let go now.
         /// </summary>
-        public static void Resign(EmployeeInstance e)
+        public static bool Resign(EmployeeInstance e)
         {
-            Logger?.Info("Tech: " + NameOf(e) + " leaves (the game's own resignation).");
-            e.poached = false;
-            e.complaintData.isComplaining = false;
-            e.satisfaction = 0f;
-            if (!e.ReplaceAutomaticallyOnResign())
-            {
-                e.Resign();
-            }
-            RivalOfferGuard.Look("a tech employee's resignation");
+            return StaffLeave.Resign(e, "the tech sector");
         }
 
-        /// <summary>The employee is let go: the game's own firing. A rival's offer to them loses its buttons.</summary>
+        /// <summary>True while the game's own rival offer to the employee is open (Core/RivalOfferGuard): the sector's own offer waits for it, or gives way.</summary>
+        public static bool GameOffer(EmployeeInstance e) => RivalOfferGuard.OfferOpen(e);
+
+        /// <summary>
+        /// The employee is let go: the game's own firing (MyEmployees: RemoveEmployee, which takes them off the list at once
+        /// and pays nothing, as the game's firing does; the day before was paid by the game's night, when the sector's day
+        /// lets them go). A rival's offer to them loses its buttons.
+        /// </summary>
         public static void Fire(EmployeeInstance e)
         {
             Logger?.Info("Tech: " + NameOf(e) + " is let go (the game's own firing).");

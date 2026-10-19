@@ -5,7 +5,9 @@ namespace RealLifeOverhaul.Tech
     /// <summary>The test tools of the options page: each starts one thing now on the player's own people, for real.</summary>
     public sealed partial class TechDirector
     {
-        private Person TestPerson(bool senior)
+        // The most senior (or junior) professional with no notice running; for a rival's offer, also with no other rival's
+        // offer open to them (the game's own, or the company's): one at a time.
+        private Person TestPerson(bool senior, bool offer = false)
         {
             if (!_peopleOn || Save == null)
             {
@@ -17,6 +19,10 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _people.Count; i++)
             {
                 Person p = _people[i];
+                if (offer && (Held(p.File) || (p.Game != null && TalentGame.GameOffer(p.Game))))
+                {
+                    continue;
+                }
                 if (p.File.NoticeEnd == 0 && (best == null || (senior ? p.File.Level > best.File.Level : p.File.Level < best.File.Level)))
                 {
                     best = p;
@@ -44,10 +50,10 @@ namespace RealLifeOverhaul.Tech
             Changed();
         }
 
-        /// <summary>A rival comes for the most senior professional, whatever their level.</summary>
+        /// <summary>A rival comes for the most senior professional with no other rival's offer open to them, whatever their level.</summary>
         public void TestOffer()
         {
-            Person p = TestPerson(true);
+            Person p = TestPerson(true, true);
             if (p == null)
             {
                 return;

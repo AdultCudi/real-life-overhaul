@@ -99,6 +99,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart ChatFilter = ContractBook.Part("chat_filter", "flare", "Steam's own filter of what other players of a Going Public session type on Flare (the mod's own word list without it)");
         public static readonly GamePart PhotoHolds = ContractBook.Part("photo_holds", "photos", "the Camera telling its own hold on the player from the game's, and putting the world's clicks back as they were (the mop's floor)");
         public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
+        public static readonly GamePart StaffLeaving = ContractBook.Part("staff_leaving", null, "paying an employee the mod lets go at the turn of a day only once");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -167,9 +168,13 @@ namespace RealLifeOverhaul
         public static readonly GameMember OverlayDetailed = Field(CardGuard, Game, "Player.HUD.ItemInfoOverlays.OverlayManager", "detailedOverlay", "DetailedOverlay");
 
         // Core/RivalOfferGuard: a rival's open offer told from one that is over; without them only the employee is
-        // judged (gone, replaced or resigned)
+        // judged (gone, replaced or resigned), and the company's and the tech sector's own offers wait while a rival is named
         public static readonly GameMember OfferDeadline = Optional(Field(RivalOffers, Game, "Entities.EmployeeInstance", "poachDeadlineDays", "Int32"));
         public static readonly GameMember OfferDay = Optional(Field(RivalOffers, Game, "Entities.EmployeeInstance", "lastPoachDay", "Int32"));
+
+        // Core/StaffLeave: which day an employee's count of hours is of; without it a count at the first hour of a day is
+        // taken for the day before, which the game's night has paid
+        public static readonly GameMember LastWorkedDay = Optional(Field(StaffLeaving, Game, "Entities.EmployeeInstance", "lastWorkedDay", "Int32"));
 
         // Core/Keys: the player's bindings as the game has them now; without them the game's defaults are warned about
         public static readonly GameMember PlayerInput = Optional(StaticField(KeyClash, Game, "Helpers.InputHelper", "playerInput", "PlayerInput"));
