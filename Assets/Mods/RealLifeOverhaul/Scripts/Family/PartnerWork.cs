@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Family
     internal static class PartnerWork
     {
         /// <summary>Their working day as the option and their choice make it: full days with the option off.</summary>
-        public static int Work => Settings.FamilyWork ? FamilyState.S.PWork : PartnerWorkRules.FullTime;
+        public static int Work => !Settings.FamilyWork ? PartnerWorkRules.FullTime
+            : PartnerWishRules.Studying(FamilyState.S.PRetrainUntil, TimeHelper.CurrentDay) ? PartnerWorkRules.Studying : FamilyState.S.PWork;
 
         /// <summary>The cut back is waiting to be talked over in a family conversation.</summary>
         public static bool CanTalk => Settings.FamilyWork && FamilyState.Together && FamilyState.S.LivesIn && FamilyState.S.PWorkAsk && PartnerVoice.Asking(PartnerVoice.Work);
@@ -32,7 +33,7 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
-            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay,
+            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired && !s.PWishAsk, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay,
                     FamilyState.IncomeHeld, Prices.At(PartnerWorkRules.AskAtIncome)))
             {
                 return;

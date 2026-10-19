@@ -42,6 +42,9 @@ namespace RealLifeOverhaul.Family
         public static string JobKey => !string.IsNullOrEmpty(FamilyState.S.PJobKey) ? FamilyState.S.PJobKey : Trades[Mathf.Clamp(FamilyState.S.PJob, 0, Trades.Length - 1)];
         /// <summary>Retired in People: they do not work and bring in nothing.</summary>
         public static bool Retired => PartnerJobRules.Retired(FamilyState.S.PJobKey);
+        public static int TradeCount => Trades.Length;
+        public static string KeyOf(int job) => Trades[Mathf.Clamp(job, 0, Trades.Length - 1)];
+        public static int IncomeOf(int job) => JobIncome[Mathf.Clamp(job, 0, JobIncome.Length - 1)];
         public static int Income => Retired ? 0 : PartnerWorkRules.Income(FamilyState.S.PIncome > 0 ? FamilyState.S.PIncome : JobIncome[Mathf.Clamp(FamilyState.S.PJob, 0, JobIncome.Length - 1)],
             PartnerWork.Work);
 
@@ -93,6 +96,7 @@ namespace RealLifeOverhaul.Family
             s.PNightOwl = false;
             s.PWantsChildren = Random.value < 0.8f;
             PartnerWork.Reset(s);
+            PartnerWish.Reset(s);
             s.Interest = interest;
             s.Harmony = FamilyBalance.HarmonyStart;
             FamilyState.Bond = Bond.Dating;
@@ -127,13 +131,14 @@ namespace RealLifeOverhaul.Family
                     s.PIncome = JobIncome[s.PJob];
                     s.PWantsChildren = (s.PSeed & 7) != 0;
                     PartnerWork.Reset(s);
+                    PartnerWish.Reset(s);
                     s.PMetDay = TimeHelper.CurrentDay - Mathf.Max(0, p.DaysTogether);
                     s.SinceDay = s.PMetDay;
                     s.Harmony = FamilyBalance.HarmonyStart;
                     FamilyState.Bond = Bond.Dating;
                 }
                 // What they do for a living is what People says they do: the text, the hours and the pay.
-                if (!string.IsNullOrEmpty(p.JobKey) && p.JobKey != s.PJobKey && s.PName == p.Name)
+                if (!string.IsNullOrEmpty(p.JobKey) && p.JobKey != s.PJobKey && s.PName == p.Name && !PartnerWish.OwnJob)
                 {
                     s.PJobKey = p.JobKey;
                     s.PJob = PartnerJobRules.TradeOf(p.JobKey, s.PJob);
@@ -189,6 +194,7 @@ namespace RealLifeOverhaul.Family
             s.PSeed = 0;
             s.PAffection = 0f;
             PartnerWork.Reset(s);
+            PartnerWish.Reset(s);
         }
     }
 }

@@ -1085,6 +1085,7 @@ namespace RealLifeOverhaul
                     v => Settings.FamilyYearWeeks = v, Meta.SettingsTable.SliderValue)
                 .AddButton("reallife_family_test_move_in", () => Family.FamilyDirector.Instance?.TestMoveIn())
                 .AddButton("reallife_family_test_work", () => Family.FamilyDirector.Instance?.TestWork())
+                .AddButton("reallife_family_test_wish", () => Family.FamilyDirector.Instance?.TestWish())
                 .AddButton("reallife_family_test_propose", () => Family.FamilyDirector.Instance?.TestPropose())
                 .AddButton("reallife_family_test_plan", () => Family.FamilyDirector.Instance?.TestPlanWedding())
                 .AddButton("reallife_family_test_wedding", () => Family.FamilyDirector.Instance?.TestWedding())

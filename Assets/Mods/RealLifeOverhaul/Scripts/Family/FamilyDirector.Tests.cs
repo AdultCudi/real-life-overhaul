@@ -91,6 +91,37 @@ namespace RealLifeOverhaul.Family
             });
         }
 
+        // The bigger wish about work asked for now, whatever the player's cash: the text, then the talk in a family conversation.
+        public void TestWish()
+        {
+            if (!TestReady("Family wish", false, false) || !TestPartner("Family wish"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                FamilySave s = FamilyState.S;
+                if (!s.LivesIn)
+                {
+                    Refuse("Family wish", "reallife_family_no_lives_in");
+                    return;
+                }
+                if (!Settings.FamilyWork)
+                {
+                    Refuse("Family wish", "reallife_family_no_work_off");
+                    return;
+                }
+                PartnerWish.Reset(s);
+                s.PWork = PartnerWorkRules.FullTime;
+                s.PWishAsk = true;
+                s.PWishAskDay = TimeHelper.CurrentDay;
+                s.PWorkAsk = false;
+                s.PAsk = null;
+                PartnerVoice.Ask(PartnerVoice.Wish, "reallife_family_wish_text", Args.Us);
+                Logger?.Info("Family wish test: " + Partner.Name + " has a wish about work; talk to them at home.");
+            });
+        }
+
         public void TestPropose()
         {
             if (!TestReady("Family proposal", false, true) || !TestPartner("Family proposal"))

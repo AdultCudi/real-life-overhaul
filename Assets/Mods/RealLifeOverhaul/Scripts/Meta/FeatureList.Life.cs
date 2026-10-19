@@ -512,6 +512,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("family_dinner", () => Guide.Money(Family.FamilyBalance.DinnerCost))
                 .Fact("family_work_cash", () => Guide.Money(Prices.At(Family.PartnerWorkRules.AskAtCash)))
                 .Fact("family_work_income", () => Guide.Money(Prices.At(Family.PartnerWorkRules.AskAtIncome)))
+                .Fact("family_wish_cash", () => Guide.Money(Prices.At(Family.PartnerWishRules.AskAtCash)))
                 .Fact("family_move_in_days", () => Family.FamilyBalance.MoveInDaysTogether.ToString(CultureInfo.InvariantCulture))
                 .Fact("family_sqm", () => Family.FamilyBalance.SqmForTwo.ToString(CultureInfo.InvariantCulture))
                 .Fact("family_sqm_child", () => Family.FamilyBalance.SqmPerChild.ToString(CultureInfo.InvariantCulture))
