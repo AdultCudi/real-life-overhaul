@@ -97,6 +97,8 @@ ba:itemname_whisky
 ba:jobdemand_fulltime
 ba:messagetype_dialog_moving_service_done
 ba:messagetype_dialog_moving_service_done_items_sold
+ba:messagetype_rivals_poach_employee_offer
+ba:messagetype_rivals_poach_employee_rival_surrender
 ba:neighborhood_garmentdistrict
 ba:neighborhood_global
 ba:neighborhood_hellskitchen

@@ -33,6 +33,11 @@ A "special rival" per neighbourhood sends a message once the player has one reve
 Rent never changes after signing and there is no landlord behaviour, so "a rival buys your building" is not added.
 The mod's rival moves therefore fill the early game: they are not started in a neighbourhood whose special rival is active, and the mod's one poaching *is* the game's own offer, made to a single employee at +12 %.
 
+The game takes an offer's buttons away only when one is pressed, and draws them on the newest message of the employee's chat whatever has happened since; most ways an employee leaves send nothing there.
+`Core/RivalOfferGuard` empties the buttons of any rival's offer (and of the rival's giving up) once it is no longer the player's to answer, by one rule (`Core/RivalOfferRules`): the employee off the list, replaced by the headhunter under another name, or resigned, or the offer matched, run out or given up.
+It looks after every game hour, after a firing, once a save loads, right after this mod lets an employee go (`BusinessGame.Leave`, the tech sector's resignation and dismissal, a sale with its staff), and as the Contacts app picks a chat (`Core/RivalOfferWatch`).
+The poaching issue's watch reads the same rule: it says the employee has left for the rival only when the buttons would go, and that they stay once the offer was matched.
+
 Everything is in `Scripts/Business`: `BusinessCatalogue` (every kind, every number; game-free), `BusinessState` (one line, `reallife:business`, in modData; game-free), `BusinessGame` (the only code that touches the game's business fields), `BusinessIssues` (what each kind does), `BusinessDirector` (the clock, the morning roll, the off switch, the tests), `BusinessDesk` (the phone contact), `BusinessVisit` (somebody who comes into the shop).
 
 **Rules for all of it** (`BusinessCatalogue`):

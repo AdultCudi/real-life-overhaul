@@ -1225,7 +1225,13 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- watching
 
-        /// <summary>Once a game hour for each open issue: the ones that end by something the game does.</summary>
+        /// <summary>
+        /// Once a game hour for each open issue: the ones that end by something the game does. The poaching ends as
+        /// lost when the employee is no longer the player's by the same rule that takes the offer's buttons
+        /// (Core/RivalOfferRules: gone, replaced by the headhunter under another name, or resigned), so the notice and
+        /// the buttons always agree; one who is only unassigned is still the player's, and their offer still open. It
+        /// ends as kept once the offer was matched.
+        /// </summary>
         public static void Watch(BusinessIssue issue, BuildingRegistration reg)
         {
             if (issue.Kind != BusinessCatalogue.Poach)
@@ -1233,12 +1239,13 @@ namespace RealLifeOverhaul
                 return;
             }
             EmployeeInstance e = BusinessGame.Employee(RefId(issue));
+            RivalOfferRules.State standing = BusinessGame.Standing(e, RefName(issue));
             Dictionary<string, string> data = Data(issue, reg);
-            if (e == null || e.assignedAddress == null || e.satisfaction <= 0f)
+            if (RivalOfferRules.Lost(standing))
             {
                 Director.Tell(NotificationType.Warning, Done(issue, "reallife_biz_poach_lost"), data);
             }
-            else if (string.IsNullOrEmpty(e.poachedByRivalId))
+            else if (e != null && RivalOfferRules.Kept(standing, e.poachedByRivalId))
             {
                 Director.Tell(NotificationType.Success, Done(issue, "reallife_biz_poach_kept"), data);
             }

@@ -1246,6 +1246,8 @@ namespace RealLifeOverhaul
             Guard.Step("GameUi.GuideMarkWatch", () => Guard.Add<GameUi.GuideMarkWatch>(_root));   // the mod's marks on the game's destination guider taken off once their owner is gone, stopped or past its time (Core/GameUi/GuideMarkWatch): one time comparison a frame
             Guard.Step("DayRollGuard", () => DayRollGuard.Logger = context.Logger);
             Guard.Step("DayRollGuard", () => Guard.Add<DayRollGuard>(_root));   // the game's night kept whole: goods of a mod that is not loaded taken out of the market before its rivals' step throws on them, and hours a stopped night left uncleared put right before the wages (Core/DayRollRules): no Update, one comparison a game hour
+            Guard.Step("RivalOfferGuard", () => RivalOfferGuard.Logger = context.Logger);
+            Guard.Step("RivalOfferGuard", () => Guard.Add<RivalOfferGuard>(_root));   // a rival's offer that is over loses its buttons (Core/RivalOfferRules): no Update
             Guard.Step("SpecialNames", () => Guard.Add<SpecialNames>(_root));   // the special buildings' own names on the game's card, guiders, headline and map search (Core/SpecialBuildings): one reference comparison a frame while some building is named
             Guard.Step("ClickWatch", () => Guard.Add<ClickWatch>(_root));     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
             Guard.Step("ThirdPersonCamera", () => Guard.Add<ThirdPersonCamera>(_root));
