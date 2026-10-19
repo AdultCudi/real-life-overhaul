@@ -370,6 +370,14 @@ namespace RealLifeOverhaul.Family
             }
         }
 
+        // While Social supplies the partner, its calls, texts, outings and meetings with them count as talking too: they never
+        // reach this file's own last talk. 0 when Social is off or has no partner.
+        private static int SocialContactDay()
+        {
+            ISocialBridge social = FamilyBridges.Social;
+            return social != null && social.Active && social.TryGetPartner(out PersonInfo partner) ? partner.LastContactDay : 0;
+        }
+
         /// <summary>Once a day: a home is kept warm by time spent in it, and cools without.</summary>
         public static void Daily(int day)
         {
@@ -378,7 +386,7 @@ namespace RealLifeOverhaul.Family
             {
                 return;
             }
-            int quiet = day - Mathf.Max(s.LastTalkDay, s.LastSharedDay);
+            int quiet = day - TalkRules.LastTalked(s.LastTalkDay, s.LastSharedDay, SocialContactDay());
             if (quiet <= 1)
             {
                 FamilyState.Harmony(0.8f);

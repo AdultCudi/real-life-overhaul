@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Family
         public float Trust;          // 0..100
         public int Stage;            // 0 stranger, 1 acquaintance, 2 friend, 3 close friend, 4 dating, 5 partner
         public int DaysTogether;     // days since they began dating
+        public int LastContactDay;   // the owner's last call, text, outing or meeting with them (0: none known)
     }
 
     /// <summary>What family life tells the owner of relationships about. Each is sent once, when it happens.</summary>
