@@ -152,18 +152,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            if (data.TryGetValue(KeyModifiers, out string stashed) && !string.IsNullOrEmpty(stashed))
-            {
-                foreach (string entry in stashed.Split(';'))
-                {
-                    string[] parts = entry.Split('=');
-                    if (parts.Length == 2 && int.TryParse(parts[1], out int hours) && hours > 0
-                        && !save.happinessModifiers.Exists(m => m.type == parts[0]))
-                    {
-                        AddModifier(parts[0], hours);
-                    }
-                }
-            }
+            RestoreModifiers(save, data.TryGetValue(KeyModifiers, out string stashed) ? stashed : null);
             Loaded = true;
             Logger?.Info($"State loaded. sick={IsSick} modifiers={ModifiersReady} seenEvents={SeenEvents.Count}/{LifeEventCatalogue.All.Length}");
         }
@@ -279,7 +268,7 @@ namespace RealLifeOverhaul
                     SocialHooks.Helped();   // somebody the player helped may come and say so (Scripts/Social)
                     if (hours < 0)
                     {
-                        Law.Reputation.GoodDeed();   // (not when a saved modifier is put back on load: those come with their hours)
+                        Law.Reputation.GoodDeed();   // (a deed of its own length only; a saved mood is put back without coming here, RestoreModifiers)
                         HelpedNow?.Invoke();
                     }
                 }
@@ -306,37 +295,139 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game has no public way to add a happiness modifier type, so they go into its private registry.
+        /// <summary>
+        /// Puts the moods a save carried back into the game's list, each with the hours it was saved with: written there as the
+        /// game's AddModifier writes a new one, never through it. AddModifier is what Going Public scales (a positive mood's hours
+        /// times its morale factor, on every add), so putting them back through it multiplied them again on every load; it also
+        /// played the "happier" face and told Social the player had just helped somebody. A mood over its cap (a save from
+        /// before the cap) is trimmed to it here, once, with a check line. Cost: once a load, a few operations a mood.
+        /// </summary>
+        private static void RestoreModifiers(GameInstance save, string stashed)
+        {
+            if (!ModifiersReady || save.gameVariables == null || save.gameVariables.disableHappiness)
+            {
+                return;   // as the game's AddModifier: no moods with happiness switched off
+            }
+            if (save.happinessModifiers == null)
+            {
+                save.happinessModifiers = new List<HappinessModifierData>();
+            }
+            Dictionary<string, HappinessModifier> registry = Registry();
+            if (registry == null)
+            {
+                return;
+            }
+            List<HappinessModifierData> list = save.happinessModifiers;
+            int restored = 0, trimmed = 0;
+            // Any of the mod's moods the save's own list already holds (none, as BeforeSave takes them out): held to the cap too.
+            for (int i = 0; i < list.Count; i++)
+            {
+                HappinessModifierData held = list[i];
+                if (held != null && IsModModifier(held.type) && registry.TryGetValue(held.type, out HappinessModifier known))
+                {
+                    trimmed += Trim(held, held.hoursLeft, known.maxHoursDuration, "in the save's list");
+                }
+            }
+            if (!string.IsNullOrEmpty(stashed))
+            {
+                foreach (string entry in stashed.Split(';'))
+                {
+                    if (!MoodRules.TryRead(entry, out string type, out int hours) || !registry.TryGetValue(type, out HappinessModifier modifier)
+                        || Holds(list, type))
+                    {
+                        continue;   // not a mood, none left, a type this session has not registered, or one the list already has
+                    }
+                    var data = new HappinessModifierData { type = type, hideDuration = modifier.hideDuration };
+                    trimmed += Trim(data, hours, modifier.maxHoursDuration, "saved");
+                    list.Add(data);
+                    restored++;
+                }
+            }
+            if (restored > 0 || trimmed > 0)
+            {
+                HappinessHelper.UpdateHappiness();
+            }
+            if (Meta.Dev.Verbose || trimmed > 0)
+            {
+                Logger?.Info("Moods check (load): " + restored + " saved mood(s) put back with their saved hours, " + trimmed + " trimmed to their cap: "
+                             + (trimmed == 0 ? "PASS" : "a save from before the cap, put right once"));
+            }
+        }
+
+        // Sets a mood's hours to what it had, trimmed to its cap; 1 if it had to be trimmed (and says so), else 0.
+        private static int Trim(HappinessModifierData data, int hours, int cap, string where)
+        {
+            int kept = MoodRules.Kept(hours, cap);
+            data.hoursLeft = kept;
+            if (kept == hours)
+            {
+                return 0;
+            }
+            Logger?.Info("Moods check (load): " + data.type + " " + where + " with " + hours + " h left, over its cap of " + cap + " h: trimmed to " + kept + " h");
+            return 1;
+        }
+
+        private static bool Holds(List<HappinessModifierData> list, string type)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] != null && list[i].type == type)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // The game has no public way to add a happiness modifier type, so they go into its private registry. Family's and
+        // travel's moods go in with the mod's others here, so a save's moods always find their types when they are put back.
         private static void RegisterModifiers()
         {
             ModifiersReady = false;
             try
             {
-                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
-                var registry = field?.GetValue(null) as Dictionary<string, HappinessModifier>;
+                Dictionary<string, HappinessModifier> registry = Registry();
                 if (registry == null)
                 {
                     Logger?.Warn("Happiness modifier registry not found; mood effects are disabled.");
                     return;
                 }
-                foreach ((string type, int amount, int hours) in ModifierDefs)
-                {
-                    if (registry.ContainsKey(type))
-                    {
-                        continue;
-                    }
-                    var modifier = ScriptableObject.CreateInstance<HappinessModifier>();
-                    modifier.type = type;
-                    modifier.amount = amount;
-                    modifier.hoursDuration = hours;
-                    modifier.maxHoursDuration = -1;
-                    registry[type] = modifier;
-                }
+                Enter(registry, ModifierDefs);
+                Enter(registry, RealLifeOverhaul.Family.FamilyModifiers.Defs);
+                Enter(registry, TravelEffects.Modifiers);
                 ModifiersReady = true;
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
+            }
+        }
+
+        private static Dictionary<string, HappinessModifier> Registry()
+        {
+            FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
+            return field?.GetValue(null) as Dictionary<string, HappinessModifier>;
+        }
+
+        /// <summary>
+        /// Puts one table of the mod's moods into the game's registry (Core/ModState, Family/FamilyModifiers, Travel/TravelEffects
+        /// all register through here). Each has the cap its own length gives (Core/MoodRules.Cap), which the game's AddModifier
+        /// holds every add to, Going Public's scaled ones included. A type already there is left as it is.
+        /// </summary>
+        internal static void Enter(Dictionary<string, HappinessModifier> registry, (string type, int amount, int hours)[] defs)
+        {
+            foreach ((string type, int amount, int hours) in defs)
+            {
+                if (registry.ContainsKey(type))
+                {
+                    continue;
+                }
+                var modifier = ScriptableObject.CreateInstance<HappinessModifier>();
+                modifier.type = type;
+                modifier.amount = amount;
+                modifier.hoursDuration = hours;
+                modifier.maxHoursDuration = MoodRules.Cap(hours);
+                registry[type] = modifier;
             }
         }
 
@@ -354,10 +445,15 @@ namespace RealLifeOverhaul
             return type != null && type.StartsWith(ModifierPrefix, StringComparison.Ordinal);
         }
 
-        /// <summary>True for a modifier type this version of the mod registers.</summary>
+        /// <summary>True for a modifier type this version of the mod registers: its own, family's and travel's.</summary>
         public static bool KnowsModifier(string type)
         {
-            foreach ((string known, int _, int _) in ModifierDefs)
+            return InTable(ModifierDefs, type) || InTable(RealLifeOverhaul.Family.FamilyModifiers.Defs, type) || InTable(TravelEffects.Modifiers, type);
+        }
+
+        private static bool InTable((string type, int amount, int hours)[] defs, string type)
+        {
+            foreach ((string known, int _, int _) in defs)
             {
                 if (known == type)
                 {
