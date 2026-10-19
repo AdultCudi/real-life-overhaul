@@ -37,9 +37,9 @@ internal static partial class Program
     {
         FamilyAllowanceAnswer();
         FamilyWishesTalked();
-        Check(PartnerExpectRules.LevelOf(249999f, 1000) == 0 && PartnerExpectRules.LevelOf(250000f, 1000) == 1 && PartnerExpectRules.LevelOf(5000000f, 1000) == 3
-              && PartnerExpectRules.LevelOf(250000f, 1100) == 0,
-            "family expectations: the levels are 250,000, a million and five million in cash, at today's prices");
+        Check(PartnerExpectRules.LevelOf(24999f, 2000, 1000) == 0 && PartnerExpectRules.LevelOf(25000f, 2000, 1000) == 1 && PartnerExpectRules.LevelOf(25000f, 1999, 1000) == 0
+              && PartnerExpectRules.LevelOf(500000f, 20000, 1000) == 3 && PartnerExpectRules.LevelOf(5000000f, 5000, 1000) == 2 && PartnerExpectRules.LevelOf(25000f, 2000, 1100) == 0,
+            "family expectations: the levels want the daily income held all week and the cash: 2,000 and 25,000, 5,000 and 100,000, 20,000 and 500,000, at today's prices");
         Check(PartnerExpectRules.HomeWanted(0) == 0 && PartnerExpectRules.HomeWanted(1) < PartnerExpectRules.HomeWanted(2) && PartnerExpectRules.HomeWanted(2) < PartnerExpectRules.HomeWanted(3)
               && PartnerExpectRules.HomeWanted(9) == PartnerExpectRules.HomeWanted(3),
             "family expectations: a bigger home at each level, and nothing below the first");
@@ -90,7 +90,7 @@ internal static partial class Program
               && expect.Contains("FamilyTalk.Move(-paid, \"reallife_transaction_family_allowance\")") && expect.Contains("day - s.PAllowanceDay < 7"),
             "family expectations: only the player's own homes count, and the allowance is paid once a week");
         Check(MemberText(expect, "public static void Check(int day, int level, bool speak)").Contains("!Settings.FamilyExpect")
-              && expect.Contains("if (!PartnerVoice.Free)") && ModSource(@"Family\FamilyCalendar.cs").Contains("PartnerExpect.Hourly(day);") && expect.Contains("PartnerExpectRules.LevelOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, Prices.Level)")
+              && expect.Contains("if (!PartnerVoice.Free)") && ModSource(@"Family\FamilyCalendar.cs").Contains("PartnerExpect.Hourly(day);") && expect.Contains("PartnerExpectRules.LevelOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, FamilyState.IncomeHeld, Prices.Level)")
               && ModSource(@"Family\FamilyCalendar.cs").Contains("PartnerExpect.Daily(day);") && Occurs(ModSource(@"Family\Partner.cs"), "PartnerExpect.Reset(s);") == 3,
             "family expectations: looked at once a day behind its option, at today's prices, and afresh with every new partner");
     }

@@ -12,8 +12,11 @@ namespace RealLifeOverhaul.Family
     /// </summary>
     public static class PartnerExpectRules
     {
-        /// <summary>The player's cash at the start's prices for each level: 250,000, a million, five million.</summary>
-        public static readonly int[] Levels = { 250000, 1000000, 5000000 };
+        /// <summary>The player's cash at the start's prices for each level: 25,000, 100,000, 500,000...</summary>
+        public static readonly int[] Levels = { 25000, 100000, 500000 };
+
+        /// <summary>...and the daily income held all week with it (IncomeRules): 2,000, 5,000, 20,000.</summary>
+        public static readonly int[] LevelIncome = { 2000, 5000, 20000 };
 
         /// <summary>Square metres of home they expect at each level (0 at none).</summary>
         public static readonly int[] HomeSqm = { 0, 60, 100, 160 };
@@ -27,12 +30,12 @@ namespace RealLifeOverhaul.Family
         public const float HomeFound = 5f;          // harmony once, when a home big enough is found
 
         /// <summary>The level the cash has reached, 0 to 3, with the levels at today's prices (level 1000 at the start's).</summary>
-        public static int LevelOf(float cash, int priceLevel)
+        public static int LevelOf(float cash, int held, int priceLevel)
         {
             int level = 0;
             for (int i = 0; i < Levels.Length; i++)
             {
-                if (cash >= Levels[i] * (priceLevel / 1000f))
+                if (IncomeRules.Reached(held, cash, (int)(LevelIncome[i] * (priceLevel / 1000f)), (int)(Levels[i] * (priceLevel / 1000f))))
                 {
                     level = i + 1;
                 }

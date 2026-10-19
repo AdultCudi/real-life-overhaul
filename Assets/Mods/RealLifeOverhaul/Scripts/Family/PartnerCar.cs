@@ -260,7 +260,7 @@ namespace RealLifeOverhaul.Family
         private static int Level()
         {
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
-            return PartnerExpectRules.LevelOf(cash, Prices.Level);
+            return PartnerExpectRules.LevelOf(cash, FamilyState.IncomeHeld, Prices.Level);
         }
 
         private static string Model(VehicleInstance v) => v != null ? Model(v.vehicleTypeName) : string.Empty;

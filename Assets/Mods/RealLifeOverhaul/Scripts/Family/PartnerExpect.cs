@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>The allowance can be chosen from a family conversation.</summary>
         public static bool CanSetAllowance => Settings.FamilyExpect && FamilyState.Together && FamilyState.S.LivesIn;
 
-        private static int Level => PartnerExpectRules.LevelOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, Prices.Level);
+        private static int Level => PartnerExpectRules.LevelOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, FamilyState.IncomeHeld, Prices.Level);
 
         /// <summary>Once a day: what goes without is held against the player, and the week's allowance.</summary>
         public static void Daily(int day)
