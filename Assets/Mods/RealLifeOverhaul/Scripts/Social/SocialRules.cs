@@ -14,6 +14,9 @@ namespace RealLifeOverhaul
         public const float WarmReply = 1.5f, BluntReply = -2f;
         public const float TextReply = 1f;
         public const int CallTopics = 2;              // topics talked over in one call before the goodbye (PersonDialog)
+        public const float PlanLead = 45f;            // game minutes from now before the earliest hour an outing is agreed for (PersonDialog)
+        public const int PlanLookHours = 48;          // hours looked ahead for one they are free at: past that, "ask me again"
+        public const float PlanMoodNo = 0.5f;         // the chance that somebody on a rough day (mood -2) will not make plans the player asks for
         public const float SelfieFamiliarity = 1f, SelfieAffection = 2f;   // a selfie together on an outing, once an outing
         public const float SelfieWithin = 3f;                               // metres from the player the friend stands in
         public const float OnTimeTrust = 2f;
@@ -314,6 +317,37 @@ namespace RealLifeOverhaul
         /// first topic of this one is "we covered everything" and worth nothing (a chat face to face is not counted here).
         /// </summary>
         public static bool ChatHad(int topicsThisCall, int lastCallDay, int day) => topicsThisCall == 0 && lastCallDay == day;
+
+        /// <summary>
+        /// The first whole hour from a time (game minutes) at which an outing can be agreed with somebody: the outing's hours,
+        /// their free hours that day and not their sleep; negative if none within <see cref="PlanLookHours"/>. The day and hour
+        /// are read from the minutes as the game's own Timestamp reads them. Asked once when an outing is put forward, and that
+        /// hour is the one then agreed, so what is offered is never turned down a step later. At most 48 small steps, on a step
+        /// of a call, never per frame; nothing allocated.
+        /// </summary>
+        public static float FirstSlot(SocialPerson person, OutingDef def, float from, Func<int, bool> weekend)
+        {
+            float start = (float)Math.Ceiling(from / 60f) * 60f;
+            for (int i = 0; i < PlanLookHours; i++)
+            {
+                float at = start + i * 60f;
+                int day = (int)Math.Floor(at / 60f / 24f);
+                int hour = (int)Math.Floor((at - day * 60f * 24f) / 60f);
+                bool open = hour >= def.From && hour < def.To || (def.To > 24 && hour < def.To - 24);
+                if (open && person.FreeAt(hour, weekend(day)) && !person.Asleep(hour))
+                {
+                    return at;
+                }
+            }
+            return -1f;
+        }
+
+        /// <summary>
+        /// Whether somebody will not make plans the player asks for: only on a rough day (mood -2), and only by the one draw
+        /// (0 to 1) made for the whole call, so the answer is given before anything is put forward and never changes within it.
+        /// Their own invitation always stands.
+        /// </summary>
+        public static bool MoodSaysNo(int mood, bool theirIdea, float roll) => !theirIdea && mood <= -2 && roll < PlanMoodNo;
     }
 
     /// <summary>What something done together is worth, in points of 0 to 100 (<see cref="SocialRules.Chat"/>).</summary>

@@ -19,6 +19,7 @@ namespace RealLifeOverhaul
         private readonly SocialPerson _p;
         private readonly List<string> _actions = new List<string>(8);
         private int _topics;
+        private float _moodRoll = -1f;   // the call's one draw of whether a rough day says no to plans (SocialRules.MoodSaysNo); -1 until plans come up
 
         public PersonDialog(int index)
         {
@@ -251,8 +252,10 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The one they would like first, then the rest in order; only what can be done from here.
-        private DialogEntry Plans(int at, int tried)
+        // The one they would like first, then the rest in order; only what can be done from here, at an hour they are free
+        // (found now and kept: what they put forward is what they agree to). Whether they will not make plans at all is said
+        // here, before anything is put forward; noHour says some outing was left out for want of a free hour.
+        private DialogEntry Plans(int at, int tried, bool noHour = false)
         {
             SocialPlan plan = SocialState.Plan;
             if (plan.Active)
@@ -266,46 +269,55 @@ namespace RealLifeOverhaul
             {
                 return Close("reallife_social_plan_off");
             }
+            if (_moodRoll < 0f)
+            {
+                _moodRoll = Random.value;
+            }
+            if (SocialRules.MoodSaysNo(_p.Mood, false, _moodRoll))
+            {
+                return Close(SocialLines.Pick(SocialCatalogue.PlanMood));
+            }
             const int kinds = (int)PlanKind.Business + 1;
             if (tried >= kinds)
             {
-                return Close("reallife_social_plan_nowhere");
+                return noHour ? Close(SocialLines.Pick(SocialCatalogue.PlanBusy)) : Close("reallife_social_plan_nowhere");
             }
             var kind = (PlanKind)(((int)_p.Wants + at) % kinds);
             OutingDef def = SocialCatalogue.Outing(kind);
             if (_p.Stage < def.Needs && !_p.IsFamily)
             {
-                return Plans(at + 1, tried + 1);
+                return Plans(at + 1, tried + 1, noHour);
             }
             if (kind == PlanKind.Workout && !_p.Has(SocialTrait.Sporty) && _p.Stage < SocialStage.Friend)
             {
-                return Plans(at + 1, tried + 1);
+                return Plans(at + 1, tried + 1, noHour);
             }
             if (kind == PlanKind.Drive && JobDirector.NearestCar(250f) == null)
             {
-                return Plans(at + 1, tried + 1);
+                return Plans(at + 1, tried + 1, noHour);
+            }
+            float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + SocialRules.PlanLead);
+            if (first < 0f)
+            {
+                return Plans(at + 1, tried + 1, true);
             }
             if (!SocialPlaces.Find(kind, SocialDirector.Where(), 40f, 1800f, out Venue venue))
             {
-                return Plans(at + 1, tried + 1);
+                return Plans(at + 1, tried + 1, noHour);
             }
             Dictionary<string, string> data = SocialLife.Data(_p, "place", venue.Name);
             data["cost"] = SocialLife.Money(def.Cost);
             DialogEntry entry = Line(def.Offer, data);
             entry.ConfirmTextOverride = "reallife_social_btn_lets".Localize();
-            entry.OnConfirm = () => When(kind, venue, false);
+            entry.OnConfirm = () => When(kind, venue, first, false);
             entry.SecondOptionTextOverride = "reallife_social_btn_other_idea";
             entry.OnSecondOption = () => Plans(at + 1, 0);
             return entry;
         }
 
-        private DialogEntry When(PlanKind kind, Venue venue, bool theirIdea)
+        // The hour found when the outing was put forward, and a later one if they have it: no refusal is left at this step.
+        private DialogEntry When(PlanKind kind, Venue venue, float first, bool theirIdea)
         {
-            float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + 45f);
-            if (first < 0f)
-            {
-                return Close(SocialLines.Pick(SocialCatalogue.PlanBusy));
-            }
             float second = SocialLife.NextSlot(_p, kind, first + 180f);
             Dictionary<string, string> data = SocialLife.Data(_p, "a", SocialLife.Clock(first));
             data["b"] = second > 0f ? SocialLife.Clock(second) : string.Empty;
@@ -322,10 +334,6 @@ namespace RealLifeOverhaul
 
         private DialogEntry Agree(PlanKind kind, Venue venue, float time, bool theirIdea)
         {
-            if (!theirIdea && _p.Mood <= -2 && Random.value < 0.5f)
-            {
-                return Close(SocialLines.Pick(SocialCatalogue.PlanMood));
-            }
             if (!SocialLife.MakePlan(_p, kind, time, venue, theirIdea, out string reason))
             {
                 return Close(reason ?? "reallife_social_plan_nowhere");
@@ -425,7 +433,8 @@ namespace RealLifeOverhaul
             }
             if (kind == PlanKind.Moving)
             {
-                if (!SocialPlaces.Find(kind, player, 60f, 700f, out Venue old) || !SocialPlaces.Find(kind, old.Front, 22f, 75f, out Venue fresh, old.Building))
+                float time = SocialLife.NextSlot(_p, PlanKind.Walk, SocialLife.Now + SocialRules.PlanLead);
+                if (time < 0f || !SocialPlaces.Find(kind, player, 60f, 700f, out Venue old) || !SocialPlaces.Find(kind, old.Front, 22f, 75f, out Venue fresh, old.Building))
                 {
                     SocialState.Offer.Clear();
                     return Close("reallife_social_asked_sorted");
@@ -437,8 +446,7 @@ namespace RealLifeOverhaul
                 moving.OnConfirm = () =>
                 {
                     SocialState.Offer.Clear();
-                    float time = SocialLife.NextSlot(_p, PlanKind.Walk, SocialLife.Now + 45f);
-                    if (time < 0f || !SocialLife.MakePlan(_p, kind, time, old, true, out string reason))
+                    if (!SocialLife.MakePlan(_p, kind, time, old, true, out string reason))
                     {
                         return Close("reallife_social_asked_sorted");
                     }
@@ -452,11 +460,18 @@ namespace RealLifeOverhaul
                 return moving;
             }
 
-            // An invitation: the place is found now, near the player.
+            // An invitation: the place and the hour are found now, near the player, before it is put to them; no free hour
+            // in the days ahead is said now, not after the player says yes.
             if (!Settings.SocialOutings || !SocialPlaces.Find(kind, player, 40f, 1800f, out Venue venue))
             {
                 SocialState.Offer.Clear();
                 return Close("reallife_social_plan_nowhere");
+            }
+            float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + SocialRules.PlanLead);
+            if (first < 0f)
+            {
+                SocialState.Offer.Clear();
+                return Close(SocialLines.Pick(SocialCatalogue.PlanBusy));
             }
             Dictionary<string, string> invite = SocialLife.Data(_p, "place", venue.Name);
             invite["cost"] = SocialLife.Money(def.Cost);
@@ -465,7 +480,7 @@ namespace RealLifeOverhaul
             entry.OnConfirm = () =>
             {
                 SocialState.Offer.Clear();
-                return When(kind, venue, true);
+                return When(kind, venue, first, true);
             };
             entry.SecondOptionTextOverride = "reallife_social_btn_not_this_time";
             entry.OnSecondOption = () =>

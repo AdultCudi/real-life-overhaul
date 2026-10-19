@@ -4,7 +4,8 @@ using RealLifeOverhaul;
 // The social life (Scripts/Social): the faults found when the folder was cleaned up, each checked against what the old
 // code did wrong. A friend who cannot pay a loan back on the day has the few more days they ask for; a report made
 // indoors moves to the building's door only when it was made where the player stands; a favour asked by a call nobody
-// answered lapses at no cost when no text could follow; a new cast has one personal trainer at the most.
+// answered lapses at no cost when no text could follow; a new cast has one personal trainer at the most; an outing put
+// forward on a call is never turned down a step later.
 internal static partial class Program
 {
     private static void SocialFixes()
@@ -13,6 +14,7 @@ internal static partial class Program
         SocialReportPlace();
         SocialMissedCall();
         SocialOneTrainer();
+        SocialPlanKept();
     }
 
     // Lent on day 10 to be paid back on day 15; the excuse on day 15 asks for a few more days, and nothing is asked in them.
@@ -98,5 +100,82 @@ internal static partial class Program
         Check(apart, "social, the cast: no two people of a new cast share a job, the gym's personal trainer included (3000 seeds)");
         Check(same && gymTrainers > seeds / 4 && gymTrainers < seeds * 5 / 12,
             "social, the cast: the same seed deals the same cast, and the gym's person trains people about one time in three (" + gymTrainers + " of " + seeds + ")");
+    }
+
+    // A player's call (19 Oct 2026): a friend put forward drinks, the player said yes, and the friend said the week was
+    // impossible. The offer looked only at the outing and the place; the free hour was looked for after the yes (the
+    // friend free 11 to 18 on weekdays, drinks from 19). Now the hour is found before anything is put forward and kept,
+    // and a rough day's no is drawn once a call, before the offer.
+    private static void SocialPlanKept()
+    {
+        Func<int, bool> weekend = d => d % 7 == 5 || d % 7 == 6;   // (days 5 and 6 of each week here: the mod asks the game's own calendar)
+        OutingDef drinks = SocialCatalogue.Outing(PlanKind.Drinks), coffee = SocialCatalogue.Outing(PlanKind.Coffee);
+        var day = new SocialPerson { FreeFrom = 11, FreeTo = 18 };      // the call's friend: free in the day on weekdays
+        var evening = new SocialPerson { FreeFrom = 17, FreeTo = 23 };
+        var owl = new SocialPerson { FreeFrom = 17, FreeTo = 23, Traits = SocialTrait.NightOwl };
+        const float monday9 = 9f * 60f;                                 // day 0, 09:00
+        float sat = SocialRules.FirstSlot(day, drinks, 4f * 1440f + 9f * 60f, weekend);
+        Check(SocialRules.FirstSlot(day, drinks, monday9, weekend) < 0f && SocialRules.FirstSlot(day, drinks, monday9 + 1440f, weekend) < 0f
+              && Math.Abs(sat - (5f * 1440f + 19f * 60f)) < 0.01f,
+            "social, plans: somebody free 11 to 18 on weekdays has no hour for drinks (19 on) in the two days ahead, and has one on the weekend's evening (" + sat + ")");
+        float c = SocialRules.FirstSlot(day, coffee, monday9 + SocialRules.PlanLead, weekend);
+        float e = SocialRules.FirstSlot(evening, drinks, monday9, weekend), o = SocialRules.FirstSlot(owl, drinks, monday9, weekend);
+        Check(Math.Abs(c - 11f * 60f) < 0.01f && Math.Abs(e - 19f * 60f) < 0.01f && Math.Abs(o - 19f * 60f) < 0.01f,
+            "social, plans: coffee with the same friend is at 11 that morning, drinks with somebody free in the evening at 19 (" + c + ", " + e + ", " + o + ")");
+        Check(Math.Abs(SocialRules.FirstSlot(evening, coffee, 17f * 60f, weekend) - 17f * 60f) < 0.01f && Math.Abs(SocialRules.FirstSlot(evening, coffee, 17f * 60f + 1f, weekend) - 18f * 60f) < 0.01f
+              && Math.Abs(SocialRules.FirstSlot(evening, coffee, 19f * 60f, weekend) - (1440f + 17f * 60f)) < 0.01f,
+            "social, plans: an hour is a whole one from the time asked, that hour itself when on it, and past the outing's hours the next day's");
+        var late = new SocialPerson { FreeFrom = 22, FreeTo = 2 };
+        float wrap = SocialRules.FirstSlot(late, drinks, monday9, weekend);
+        Check(Math.Abs(wrap - 22f * 60f) < 0.01f && SocialRules.FirstSlot(new SocialPerson { FreeFrom = 0, FreeTo = 7 }, drinks, monday9, weekend) < 0f,
+            "social, plans: free hours over midnight and an outing past midnight meet before their bed at 23, and somebody free only while asleep is never asked out (" + wrap + ")");
+
+        // Nothing left to chance between the steps: the same person, outing and time give the same hour each time, and a
+        // rough day's no is the call's one draw.
+        bool same = true;
+        var cast = new SocialPerson[SocialRules.CastSize];
+        for (int seed = 1; seed <= 200; seed++)
+        {
+            SocialCatalogue.MakeCast(cast, seed, 0, 112, 9);
+            for (int i = 0; i < cast.Length; i++)
+            {
+                for (int k = 0; k <= (int)PlanKind.Business; k++)
+                {
+                    float from = seed * 97f + i * 61f + k * 13f;
+                    float a = SocialRules.FirstSlot(cast[i], SocialCatalogue.Outing((PlanKind)k), from, weekend);
+                    same &= a == SocialRules.FirstSlot(cast[i], SocialCatalogue.Outing((PlanKind)k), from, weekend) && (a < 0f || a >= from);
+                }
+            }
+        }
+        Check(same, "social, plans: the free hour is the same each time it is asked (200 casts, every outing), never before the time asked");
+        Check(SocialRules.MoodSaysNo(-2, false, 0.2f) && !SocialRules.MoodSaysNo(-2, false, 0.8f) && !SocialRules.MoodSaysNo(-1, false, 0f) && !SocialRules.MoodSaysNo(-2, true, 0f),
+            "social, plans: only a rough day says no, by the call's draw, and never to their own invitation");
+
+        string dialog = ModSource(@"Social\PersonDialog.cs");
+        string plans = MemberText(dialog, "private DialogEntry Plans(int at, int tried, bool noHour = false)");
+        string when = MemberText(dialog, "private DialogEntry When(PlanKind kind, Venue venue, float first, bool theirIdea)");
+        string agree = MemberText(dialog, "private DialogEntry Agree(PlanKind kind, Venue venue, float time, bool theirIdea)");
+        string asked = MemberText(dialog, "private DialogEntry Asked()");
+        int slot = plans.IndexOf("float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + SocialRules.PlanLead);", StringComparison.Ordinal);
+        int offer = plans.IndexOf("Line(def.Offer, data)", StringComparison.Ordinal);
+        int mood = plans.IndexOf("SocialRules.MoodSaysNo(_p.Mood, false, _moodRoll)", StringComparison.Ordinal);
+        Check(plans.Length > 0 && slot > 0 && offer > slot && mood > 0 && mood < slot && plans.Contains("Plans(at + 1, tried + 1, true)")
+              && plans.Contains("When(kind, venue, first, false)") && plans.Contains("noHour ? Close(SocialLines.Pick(SocialCatalogue.PlanBusy))")
+              && plans.Contains("if (_moodRoll < 0f)") && Occurs(dialog, "_moodRoll = Random.value;") == 1,
+            "social, plans: asked for plans, they say no (a rough day, by the call's one draw) or that they are busy before anything is put forward, and put forward only an outing they have the hour for");
+        Check(when.Length > 0 && agree.Length > 0 && !when.Contains("Close(") && !when.Contains("PlanBusy") && !when.Contains("SocialLife.Now") && !agree.Contains("Random")
+              && !agree.Contains("PlanMood") && agree.Contains("SocialLife.MakePlan(_p, kind, time, venue, theirIdea, out string reason)"),
+            "social, plans: after the player's yes nothing turns it down: the hour put forward is the one offered, and the plan is made at it");
+        int invited = asked.IndexOf("float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + SocialRules.PlanLead);", StringComparison.Ordinal);
+        int moving = asked.IndexOf("float time = SocialLife.NextSlot(_p, PlanKind.Walk, SocialLife.Now + SocialRules.PlanLead);", StringComparison.Ordinal);
+        Check(invited > 0 && invited < asked.IndexOf("Line(def.Offer, invite)", StringComparison.Ordinal) && asked.Contains("When(kind, venue, first, true)")
+              && moving > 0 && moving < asked.IndexOf("DialogEntry moving = Line(def.Offer, data);", StringComparison.Ordinal) && Occurs(asked, "NextSlot(") == 2,
+            "social, plans: their own invitation and a move they ask help with find the hour before they put it, and keep it after the yes");
+        string invite = MemberText(ModSource(@"Social\SocialDirector.Contact.cs"), "private void Invite(SocialPerson person, float real)");
+        string life = ModSource(@"Social\SocialLife.cs");
+        int free = invite.IndexOf("SocialLife.NextSlot(person, kind, SocialLife.Now + SocialRules.PlanLead) < 0f", StringComparison.Ordinal);
+        Check(free > 0 && free < invite.IndexOf("offer.Person = person.Index;", StringComparison.Ordinal)
+              && MemberText(life, "public static float NextSlot(").Contains("SocialRules.FirstSlot(person, SocialCatalogue.Outing(kind), from, WeekendOf)") && !life.Contains("new Timestamp(at)"),
+            "social, plans: nobody texts an invitation they have no free hour for, and every hour is found by the one rule");
     }
 }
