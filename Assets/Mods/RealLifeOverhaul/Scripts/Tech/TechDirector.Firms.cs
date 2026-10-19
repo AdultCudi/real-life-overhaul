@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Tech
             }
             _firmsFile = file;
             _firmsOn = true;
+            CatchUpMoves(MoveRules.PartFirms);
             ReadFirms(save.Day);
             StartInfra();
             Logger?.Info("Tech: firms " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _firms.Count + " firm(s), " + _firmsFile.Products.Count
@@ -85,9 +86,13 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>Ties each firm to its business: a new business is a new firm, and one no longer the player's is closed with its work.</summary>
+        /// <summary>
+        /// Ties each firm to its business: a new business is a new firm, and one no longer the player's is closed with its work.
+        /// A business the moving company moved is followed first (FollowMoves), so its firm is not taken for one that closed.
+        /// </summary>
         private void ReadFirms(int day)
         {
+            FollowMoves();
             FirmsGame.Firms(_firmRegs);
             _firms.Clear();
             for (int i = 0; i < _firmsFile.Firms.Count; i++)
@@ -117,17 +122,8 @@ namespace RealLifeOverhaul.Tech
                 {
                     continue;
                 }
-                _firmsFile.Products.RemoveAll(p => p.Place == f.Place);
-                for (int c = 0; c < _firmsFile.Contracts.Count; c++)
-                {
-                    Contract w = _firmsFile.Contracts[c];
-                    if (w.Place == f.Place && w.Stage <= (int)WorkStage.Active)
-                    {
-                        w.Stage = (int)WorkStage.Failed;
-                        w.End = day;
-                    }
-                }
-                _firmsFile.Firms.RemoveAt(i);
+                int products = FirmsRules.Close(_firmsFile, f, day);
+                Logger?.Info("Tech: the firm at " + Where(f.Place) + " has no business of the player's there any more and no move took it elsewhere; closed with " + products + " product(s).");
             }
         }
 

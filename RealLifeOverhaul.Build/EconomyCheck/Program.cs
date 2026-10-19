@@ -208,6 +208,7 @@ internal static partial class Program
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
+        TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)
         ClassCounts();  // a class, homework or exam being sat is never lost: settled once by its own record, the hourly pass asks the book, the clock's minutes, the school desk's keys (ClassCountChecks.cs)

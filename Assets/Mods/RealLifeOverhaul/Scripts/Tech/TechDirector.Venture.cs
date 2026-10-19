@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Tech
             }
             _venture = file;
             _ventureOn = true;
+            CatchUpMoves(MoveRules.PartVenture);
+            FollowMoves();
             if (_pitch == null)
             {
                 _pitch = new VentureMeeting(this);

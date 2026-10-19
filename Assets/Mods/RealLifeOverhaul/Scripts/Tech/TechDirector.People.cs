@@ -60,6 +60,9 @@ namespace RealLifeOverhaul.Tech
             }
             _talent = file;
             _peopleOn = true;
+            _moveAsked.Clear();
+            _movesBooked = MovesGame.Booked();
+            FollowMoves();
             int made = ReadPeople(save.Day);
             MendWages();
             Logger?.Info("Tech: professionals " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _people.Count + " professional(s)"

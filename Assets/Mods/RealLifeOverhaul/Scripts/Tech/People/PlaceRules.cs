@@ -11,6 +11,27 @@ namespace RealLifeOverhaul.Tech
             return Uri.EscapeDataString(street ?? string.Empty) + "~" + number.ToString(CultureInfo.InvariantCulture);
         }
 
+        /// <summary>The street of a place key as the game names it (the escaping undone); false for a key it cannot read.</summary>
+        public static bool Street(string place, out string street)
+        {
+            street = null;
+            int at = place != null ? place.LastIndexOf('~') : -1;
+            if (at <= 0)
+            {
+                return false;
+            }
+            try
+            {
+                street = Uri.UnescapeDataString(place.Substring(0, at));
+                return street.Length > 0;
+            }
+            catch (Exception)
+            {
+                street = null;
+                return false;
+            }
+        }
+
         /// <summary>The number after a place key's last '~', as <see cref="Key"/> writes it; false for a key it cannot read. No string is made.</summary>
         public static bool Number(string place, out int number)
         {
