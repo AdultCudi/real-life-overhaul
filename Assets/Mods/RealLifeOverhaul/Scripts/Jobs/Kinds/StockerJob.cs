@@ -136,7 +136,8 @@ namespace RealLifeOverhaul
             BeginSpeed(now, _endsAt - now);
             _step = Step.ToPile;
             _figures = new ShiftFigures(Ctx, Def, "reallife_job_stocker_card_done");
-            _clock = new ShiftClock(Ctx, this, this, "stocker", "reallife_job_stocker_unit", "reallife_job_stocker_units", "reallife_job_stocker_slip", canWork: ClientOpen);
+            _clock = new ShiftClock(Ctx, this, this, "stocker", "reallife_job_stocker_unit", "reallife_job_stocker_units", "reallife_job_stocker_slip", canWork: ClientOpen,
+                openFor: ClientOpenFor);
             Ctx.Logger?.Info("Jobs: stocking shelves at " + _clientName + " (" + _client.Name + "), " + _boxes + " boxes.");
             if (Meta.Dev.Verbose)
             {
@@ -502,6 +503,8 @@ namespace RealLifeOverhaul
         protected override ShiftClock Clocked => _clock;
 
         private bool ClientOpen() => !ClientClosed(_client);
+
+        private int ClientOpenFor() => JobSites.MinutesOpen(_client);
 
         private void OfferSkip()
         {

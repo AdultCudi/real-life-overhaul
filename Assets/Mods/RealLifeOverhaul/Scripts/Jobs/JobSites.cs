@@ -92,6 +92,19 @@ namespace RealLifeOverhaul
         /// <summary>The client's current opening state and the game's entry restrictions, also checked while the player works inside.</summary>
         public static bool Available(in DoorSpot spot) => IsClient(spot.Building);
 
+        /// <summary>Whole game minutes the client stays open from now by the game's schedule; 0 if it is shut or unknown. Asked when the clock starts.</summary>
+        public static int MinutesOpen(in DoorSpot spot)
+        {
+            try
+            {
+                return spot.Building != null ? Mathf.FloorToInt(OpenMinutes(spot.Building.buildingRegistration)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;   // a building the game has no data for is nobody's client
+            }
+        }
+
         /// <summary>Uses the game's door and verifies that entry began; Interact's return value also means a refused door.</summary>
         public static bool Enter(in DoorSpot spot)
         {

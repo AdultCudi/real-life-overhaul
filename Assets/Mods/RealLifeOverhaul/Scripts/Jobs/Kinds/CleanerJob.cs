@@ -166,7 +166,8 @@ namespace RealLifeOverhaul
             _step = Step.ToClient;
             _mode = Mode.Undecided;
             _figures = new ShiftFigures(Ctx, Def, "reallife_job_cleaner_card_done");
-            _clock = new ShiftClock(Ctx, this, this, "cleaner", "reallife_job_cleaner_unit", "reallife_job_cleaner_units", "reallife_job_cleaner_slip", canWork: ClientOpen);
+            _clock = new ShiftClock(Ctx, this, this, "cleaner", "reallife_job_cleaner_unit", "reallife_job_cleaner_units", "reallife_job_cleaner_slip", canWork: ClientOpen,
+                openFor: ClientOpenFor);
             SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // a save never carries the job's dirt or its mop
             Mark(_client.Front, _doorLabel);
             Hint(0);
@@ -509,6 +510,8 @@ namespace RealLifeOverhaul
         protected override ShiftClock Clocked => _clock;
 
         private bool ClientOpen() => !ClientClosed(_client);
+
+        private int ClientOpenFor() => JobSites.MinutesOpen(_client);
 
         private void OfferSkip()
         {

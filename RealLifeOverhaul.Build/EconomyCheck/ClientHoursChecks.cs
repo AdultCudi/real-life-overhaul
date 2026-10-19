@@ -51,7 +51,9 @@ internal static partial class Program
             Check(act.Contains("if (!ClientClosed(_client) && !JobSites.Enter(_client))") && act.Contains("ClientClosed(_client, true);"),
                 "client hours: " + kind + " calls a refused door off too");
             string end = MemberText(source, "public override void End(");
-            Check(end.Contains(kind == "Cleaner" ? "ReadClean();\n                Pay();" : "Settle(false);") && end.Contains("_clock?.Close();"),
+            int read = end.IndexOf("ReadClean();", StringComparison.Ordinal);   // by position, never by line ending: a Windows checkout has CRLF
+            bool settles = kind == "Cleaner" ? read >= 0 && end.IndexOf("Pay();", read, StringComparison.Ordinal) > read : end.Contains("Settle(false);");
+            Check(settles && end.Contains("_clock?.Close();"),
                 "client hours: " + kind + " keeps its usual earned hand pay and cleanup on interruption");
         }
         string job = File.ReadAllText(FilePath.Combine(jobs, "Job.cs"));
@@ -62,9 +64,31 @@ internal static partial class Program
             "client hours: a closure settles the clock, says why and ends once as Interrupted");
         string clock = File.ReadAllText(FilePath.Combine(jobs, "ShiftClock.cs"));
         string worked = MemberText(clock, "void ISkippableShift.SkipWorked(");
-        int canWork = worked.IndexOf("!_canWork()", StringComparison.Ordinal);
-        Check(canWork >= 0 && worked.IndexOf("_done =", StringComparison.Ordinal) > canWork,
-            "client hours: a time skip checks the client before counting more work, without waiting for a street tick");
+        int counted = worked.IndexOf("_done = ClockRules.Units(minutes, false, _left, _each, _open);", StringComparison.Ordinal);
+        Check(counted >= 0 && worked.IndexOf("_canWork?.Invoke();", StringComparison.Ordinal) > counted,
+            "client hours: a time skip counts the work up to the client's closing, then asks the client, without waiting for a street tick");
+        Check(MemberText(clock, "void ISkippableShift.SkipStarted(").Contains("_open = _openFor != null ? _openFor() : int.MaxValue;")
+              && MemberText(clock, "void ISkippableShift.SkipEnded(").Contains("int count = ClockRules.Units(minutes, whole, _left, _each, _open);")
+              && sites.Contains("public static int MinutesOpen(in DoorSpot spot)")
+              && MemberText(sites, "public static int MinutesOpen(").Contains("OpenMinutes(spot.Building.buildingRegistration)"),
+            "client hours: the clock learns the client's open minutes when it starts, and pays nothing done after the doors shut");
+        foreach (string kind in new[] { "Cleaner", "Stocker" })
+        {
+            string source = File.ReadAllText(FilePath.Combine(jobs, "Kinds", kind + "Job.cs"));
+            Check(MemberText(source, "protected override bool OnBegin(").Contains("openFor: ClientOpenFor")
+                  && source.Contains("private int ClientOpenFor() => JobSites.MinutesOpen(_client);"),
+                "client hours: " + kind + " tells its clock how long the client stays open");
+        }
+        // A run of 7 units of 30 minutes (210): open throughout, the count is as before; shut part of the way, nothing after it.
+        Check(RealLifeOverhaul.ClockRules.Units(95, false, 7, 30, int.MaxValue) == 3 && RealLifeOverhaul.ClockRules.Units(210, true, 7, 30, int.MaxValue) == 7
+              && RealLifeOverhaul.ClockRules.Units(210, true, 7, 30, 210) == 7 && RealLifeOverhaul.ClockRules.Units(500, false, 7, 30, 1000) == 7,
+            "client hours: a client open for the whole run leaves the clock's count as it was");
+        Check(RealLifeOverhaul.ClockRules.Units(210, true, 7, 30, 100) == 3 && RealLifeOverhaul.ClockRules.Units(210, false, 7, 30, 100) == 3
+              && RealLifeOverhaul.ClockRules.Units(120, false, 7, 30, 89) == 2 && RealLifeOverhaul.ClockRules.Units(210, true, 7, 30, 0) == 0
+              && RealLifeOverhaul.ClockRules.Units(210, true, 7, 30, -5) == 0 && RealLifeOverhaul.ClockRules.Units(60, false, 7, 30, 59) == 1,
+            "client hours: a run reported after the client closed counts only the units done before it shut (the time machine reports once, at the end)");
+        Check(RealLifeOverhaul.ClockRules.Units(50, false, 7, 0, int.MaxValue) == 7 && RealLifeOverhaul.ClockRules.Units(3, false, 7, 0, 2) == 2,
+            "client hours: a unit of no length is counted as a minute, never divided by");
         string stop = MemberText(clock, "public void Stop(");
         Check(stop.Contains("if (!_closed && Working)") && stop.Contains("SkipEnded(_done * _each, false);")
               && stop.IndexOf("Close();", StringComparison.Ordinal) > stop.IndexOf("SkipEnded(", StringComparison.Ordinal),

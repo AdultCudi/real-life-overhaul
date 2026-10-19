@@ -33,16 +33,21 @@ namespace RealLifeOverhaul
         private readonly string _slipKey;
         private readonly bool _asTips;
         private readonly Func<bool> _canWork;
+        private readonly Func<int> _openFor;
         private readonly int _each;
         private ShiftSkip _skip;
         private int _left;
         private int _done;
+        private int _open;   // game minutes the place of work stays open from the run's start
         private float _startedAt;
         private bool _closed;
 
         /// <param name="name">What the log calls the job ("flyers").</param>
         /// <param name="asTips">The clock's pay goes on the slip as tips (a busker lives on the hat), not as base pay.</param>
-        public ShiftClock(JobContext ctx, Job job, IClockedShift shift, string name, string unitKey, string unitsKey, string slipKey, bool asTips = false, Func<bool> canWork = null)
+        /// <param name="canWork">Asked while the clock runs: false once the place of work has closed (the job then calls the work off).</param>
+        /// <param name="openFor">Game minutes the place of work stays open from now; no unit finished after that counts. None: no closing.</param>
+        public ShiftClock(JobContext ctx, Job job, IClockedShift shift, string name, string unitKey, string unitsKey, string slipKey, bool asTips = false,
+            Func<bool> canWork = null, Func<int> openFor = null)
         {
             _ctx = ctx;
             _job = job;
@@ -53,6 +58,7 @@ namespace RealLifeOverhaul
             _slipKey = slipKey;
             _asTips = asTips;
             _canWork = canWork;
+            _openFor = openFor;
             _each = ShiftRates.Minutes(job.Def);
         }
 
@@ -155,6 +161,7 @@ namespace RealLifeOverhaul
         {
             _left = _shift.ClockLeft;
             _done = 0;
+            _open = _openFor != null ? _openFor() : int.MaxValue;
             _startedAt = Time.time;
             if (!_ctx.Stand.Standing)
             {
@@ -171,11 +178,10 @@ namespace RealLifeOverhaul
 
         void ISkippableShift.SkipWorked(int minutes)
         {
-            if (_canWork != null && !_canWork())
-            {
-                return;   // a client can close during a time skip, before the job's next street tick
-            }
-            _done = Mathf.Min(_left, minutes / _each);
+            // Counted before the client is asked: the game's time machine reports its minutes once, at the end, so a client
+            // found shut then is still paid for the units done before it closed, and none after.
+            _done = ClockRules.Units(minutes, false, _left, _each, _open);
+            _canWork?.Invoke();   // a client can close during a time skip, before the job's next street tick: the job then calls it off
         }
 
         void ISkippableShift.SkipEnded(int minutes, bool whole)
@@ -184,7 +190,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            int count = whole ? _left : Mathf.Min(_left, minutes / _each);
+            int count = ClockRules.Units(minutes, whole, _left, _each, _open);
             _done = 0;
             if (!_ctx.Stand.Standing)
             {
@@ -202,7 +208,8 @@ namespace RealLifeOverhaul
                               + JobText.T(_unitsKey) + " at " + ShiftRates.Percent + "%: pay " + pay + ", no tips, no bonus; energy " + energyBefore.ToString("F1", CultureInfo.InvariantCulture)
                               + " -> "
                               + energyAfter.ToString("F1", CultureInfo.InvariantCulture) + "; "
-                              + (whole ? "to the end of the shift" : "stopped early: " + _shift.ClockLeft + " are left to do by hand") + ".");
+                              + (count >= _left ? "to the end of the shift" : (minutes > _open ? "the client closed " + _open + " min in: " : "stopped early: ")
+                                 + _shift.ClockLeft + " are left to do by hand") + ".");
         }
     }
 }
