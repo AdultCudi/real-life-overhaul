@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Family
         private int _lastHour = -1;
         private bool _started;
         private bool _failed;
+        private bool _hides;                // whether the Family contact was left out then (FamilyPhone.Hides)
         private bool _social;               // whether Social supplied the partner when the phone contacts were last set up
 
         private void Awake()
@@ -124,6 +125,7 @@ namespace RealLifeOverhaul.Family
                     FamilyState.Load();
                     FamilyModifiers.Register();
                     _social = Partner.UsesSocial;
+                    _hides = FamilyPhone.Hides;
                     FamilyPhone.Setup();
                     Partner.Resync();
                     _lastHour = TimeHelper.CurrentHour;
@@ -135,9 +137,10 @@ namespace RealLifeOverhaul.Family
                 _started = true;
 
                 // The social life was switched on or off: who the partner is, and their contact, follow.
-                if (Partner.UsesSocial != _social)
+                if (Partner.UsesSocial != _social || FamilyPhone.Hides != _hides)
                 {
                     _social = Partner.UsesSocial;
+                    _hides = FamilyPhone.Hides;
                     FamilyPhone.Setup();
                     Partner.Resync();
                 }
@@ -191,6 +194,7 @@ namespace RealLifeOverhaul.Family
             Body.Tick(now);
             _promptWanted = false;
             _objectiveWanted = false;
+            FamilySms.Tick();
 
             if (!Busy && _questions.Count > 0 && LifeEvents.IsSafeForEvent() && !HudConfirm.isOpen)
             {
@@ -250,6 +254,7 @@ namespace RealLifeOverhaul.Family
                 Props.ReturnAll();
                 Body.Release();
                 FamilyPlaces.Unguide();
+                FamilySms.Reset();
                 _questions.Clear();
                 ClearPrompt();
                 _card?.Show(false);
@@ -269,6 +274,7 @@ namespace RealLifeOverhaul.Family
         {
             try
             {
+                FamilySms.BeforeSave();   // the text button's click is the mod's: never in a save
                 FamilyState.Write();
             }
             catch (Exception e)

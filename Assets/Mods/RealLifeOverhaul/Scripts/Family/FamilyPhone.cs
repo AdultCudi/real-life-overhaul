@@ -36,6 +36,47 @@ namespace RealLifeOverhaul.Family
         public static Contact PartnerContact => _partnerContact ?? (Partner.Kept(out _) ? FamilyBridges.Social.PartnerContact : null);
         public static Contact InLawContact { get; private set; }
 
+        /// <summary>
+        /// While the social life keeps the partner and the home's fridge can show the family's board, there is no Family contact:
+        /// what it offered is face to face at home, on the fridge's Family button (Board), in the partner's People call (CallMatters:
+        /// time apart and the in-laws) and, for a new home, a text to the partner (FamilySms). The family's own texts are notices then.
+        /// </summary>
+        public static bool Hides => Partner.UsesSocial && Settings.HomeLife && Settings.HomeRoutines;
+
+        /// <summary>True while the fridge's board is open: nothing that needs the partner face to face is offered from it.</summary>
+        internal static bool AtBoard;
+
+        /// <summary>Whether the fridge's panel shows the Family button (Home/HomeFridgeButton, through Wiring/FamilyLinks).</summary>
+        public static bool BoardShown => Settings.Family && FamilyState.Loaded && Hides;
+
+        /// <summary>The fridge's Family button: the family's page, then everything that can be done from it.</summary>
+        public static void Board()
+        {
+            AtBoard = true;
+            FamilyTalk.Open(() => FamilyPageDialog.Guard(() => FamilyPage.Page(0)), () => AtBoard = false);
+        }
+
+        /// <summary>Whether the partner's People call offers "Family matters": time apart or the in-laws, with something to say.</summary>
+        public static bool HasCallMatters
+        {
+            get
+            {
+                if (!Settings.Family || !FamilyState.Loaded || !Hides)
+                {
+                    return false;
+                }
+                Choices();
+                return _callChoices.Exists(c => c.When == null || c.When());
+            }
+        }
+
+        /// <summary>"Family matters" in the partner's People call.</summary>
+        public static DialogEntry CallMatters()
+        {
+            Choices();
+            return FamilyPageDialog.Guard(() => FamilyTalk.Menu(_callChoices, 0));
+        }
+
         /// <summary>The family's badge: the Family contact's picture, and the icon of a wedding in the open on the city map.</summary>
         public static Sprite Icon => Disc(FamilyId, new Color(0.93f, 0.42f, 0.55f));
 
@@ -50,8 +91,15 @@ namespace RealLifeOverhaul.Family
             }
             try
             {
-                FamilyContact = Register(FamilyId, "reallife_contact_family_desc", "reallife_family_calldialogtype", () => new FamilyPageDialog(),
-                    "reallife_text_family_welcome");
+                if (Hides)
+                {
+                    SaveGameManager.Current?.Contacts.RemoveAll(c => c != null && c.id == FamilyId);   // an earlier session's, made again when it is wanted
+                }
+                else
+                {
+                    FamilyContact = Register(FamilyId, "reallife_contact_family_desc", "reallife_family_calldialogtype", () => new FamilyPageDialog(),
+                        "reallife_text_family_welcome");
+                }
                 if (!Partner.UsesSocial)
                 {
                     _partnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),

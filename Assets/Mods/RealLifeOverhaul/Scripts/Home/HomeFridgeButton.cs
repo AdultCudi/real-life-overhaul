@@ -10,11 +10,17 @@ namespace RealLifeOverhaul
     /// <summary>
     /// "Cook a meal" as a button in the game's own fridge panel: a copy of its ChangeClothesButton, made once per city. This
     /// component sits on the panel, which leaves children it does not know alone, and shows the button at each opening for
-    /// a fridge of the player's home. Nothing runs per frame.
+    /// a fridge of the player's home. A second copy, "Family", opens the family's board while there is no Family contact
+    /// (Family/FamilyPhone.Hides, through Wiring/FamilyLinks). Nothing runs per frame.
     /// </summary>
     public sealed class HomeFridgeButton : MonoBehaviour
     {
         public const string TextKey = "reallife_home_fridge_cook";
+        public const string FamilyKey = "reallife_home_fridge_family";
+
+        /// <summary>Set by Wiring/FamilyLinks: whether the Family button shows, and what it opens.</summary>
+        public static Func<bool> FamilyShown;
+        public static Action FamilyClicked;
 
         public static IModLogger Logger;
 
@@ -23,6 +29,7 @@ namespace RealLifeOverhaul
 
         private DecorativeItemHolderOverlay _panel;
         private GameObject _button;
+        private GameObject _family;
 
         /// <summary>Puts the button in the game's fridge panel, once per city. False if the panel is not built as expected (said once in Player.log).</summary>
         public static bool Install()
@@ -52,19 +59,14 @@ namespace RealLifeOverhaul
                     return false;
                 }
                 using var piece = SessionWatch.Piece("game UI: the fridge panel's cooking button being copied from the game's own");
-                Transform holder = UiClone.Dormant(list, "RealLifeOverhaul Cook Holder");
-                GameObject copy = UiClone.Asleep(original.gameObject, holder, "RealLifeOverhaul Cook");
-                UiClone.Rewire(copy.transform, Clicked);
-                UiClone.Key(copy.GetComponentInChildren<TMPro.TMP_Text>(true), TextKey);
-                copy.SetActive(false);
-                copy.transform.SetParent(list, false);
                 Transform items = list.Find("ConsumeButtons");
-                copy.transform.SetSiblingIndex(items != null ? items.GetSiblingIndex() + 1 : 0);
-                DestroyImmediate(holder.gameObject);
+                GameObject copy = Copy(original, list, "RealLifeOverhaul Cook", TextKey, Clicked, items != null ? items.GetSiblingIndex() + 1 : 0);
+                GameObject family = Copy(original, list, "RealLifeOverhaul Family", FamilyKey, FamilyPressed, copy.transform.GetSiblingIndex() + 1);
 
                 _instance = panel.gameObject.AddComponent<HomeFridgeButton>();
                 _instance._panel = panel;
                 _instance._button = copy;
+                _instance._family = family;
                 _instance.Decide();
                 if (Meta.Dev.Verbose)
                 {
@@ -90,6 +92,10 @@ namespace RealLifeOverhaul
                     if (_instance._button != null)
                     {
                         Destroy(_instance._button);
+                    }
+                    if (_instance._family != null)
+                    {
+                        Destroy(_instance._family);
                     }
                     Destroy(_instance);
                 }
@@ -117,11 +123,16 @@ namespace RealLifeOverhaul
                     return;
                 }
                 var fridge = _panel.linkedController as FridgeController;
-                bool show = fridge != null && Settings.HomeLife && Settings.HomeRoutines && HomeDirector.Instance != null && HomeTidy.AtHome()
-                            && HomePlace.Fridges.Contains(fridge);
+                bool home = fridge != null && HomeDirector.Instance != null && HomeTidy.AtHome() && HomePlace.Fridges.Contains(fridge);
+                bool show = home && Settings.HomeLife && Settings.HomeRoutines;
                 if (_button.activeSelf != show)
                 {
                     _button.SetActive(show);
+                }
+                bool family = home && FamilyShown != null && FamilyShown();
+                if (_family != null && _family.activeSelf != family)
+                {
+                    _family.SetActive(family);
                 }
             }
             catch (Exception e)
@@ -137,6 +148,30 @@ namespace RealLifeOverhaul
             {
                 _instance = null;
             }
+        }
+
+        // A copy of the game's button, asleep until it is wired, put in the panel's list at the place given.
+        private static GameObject Copy(Transform original, Transform list, string name, string key, Action click, int at)
+        {
+            Transform holder = UiClone.Dormant(list, name + " Holder");
+            GameObject copy = UiClone.Asleep(original.gameObject, holder, name);
+            UiClone.Rewire(copy.transform, click);
+            UiClone.Key(copy.GetComponentInChildren<TMPro.TMP_Text>(true), key);
+            copy.SetActive(false);
+            copy.transform.SetParent(list, false);
+            copy.transform.SetSiblingIndex(at);
+            DestroyImmediate(holder.gameObject);
+            return copy;
+        }
+
+        private static void FamilyPressed()
+        {
+            OverlayManager overlays = InstanceBehavior<OverlayManager>.Instance;
+            if (overlays != null)
+            {
+                overlays.HideDetailedOverlay();
+            }
+            FamilyClicked?.Invoke();
         }
 
         private static void Clicked()

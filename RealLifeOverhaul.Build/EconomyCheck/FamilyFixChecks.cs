@@ -18,6 +18,31 @@ internal static partial class Program
         FamilyPartnerTexts();
         FamilyPartnerJob();
         FamilyPromptButtons();
+        FamilyFaceToFace();
+    }
+
+    // With the social life keeping the partner the Family contact is left out, and nothing it offered is lost: talking at home
+    // has the whole list, the fridge's Family button the list without what needs the partner there, the partner's People call
+    // the phone's part (counselling, time apart, the in-laws), and a new home is a text whose button is never saved.
+    private static void FamilyFaceToFace()
+    {
+        string phone = ModSource(@"Family\FamilyPhone.cs"), choices = ModSource(@"Family\FamilyPhone.Choices.cs"), sms = ModSource(@"Family\FamilySms.cs");
+        string director = ModSource(@"Family\FamilyDirector.cs"), person = ModSource(@"Social\PersonDialog.cs"), fridge = ModSource(@"Home\HomeFridgeButton.cs");
+        string links = ModSource(@"Wiring\FamilyLinks.cs");
+        Check(phone.Contains("public static bool Hides => Partner.UsesSocial && Settings.HomeLife && Settings.HomeRoutines;")
+              && phone.Contains("Contacts.RemoveAll(c => c != null && c.id == FamilyId)") && director.Contains("FamilyPhone.Hides != _hides"),
+            "family face to face: no Family contact while Social keeps the partner and the fridge's board is there; an earlier one is taken off, and switching either brings it back");
+        string[] call = { "HardTimes.Book)))", "HardTimes.CallApart)))", "HardTimes.ComeHome)))", "HardTimes.EndAsk)))", "Relatives.GoToMoms)))", "Relatives.InLawFavour)))" };
+        Check(Array.TrueForAll(call, choices.Contains) && Regex.Matches(choices, @"list\.Add\(Call\(").Count == call.Length
+              && person.Contains("case \"family\":") && links.Contains("p == SocialState.Partner && FamilyPhone.HasCallMatters"),
+            "family face to face: the partner's People call has Family matters: counselling, time apart (call, come home, part) and the in-laws, and nothing else");
+        Check(choices.Contains("HomeLife.Present && !AtBoard;") && fridge.Contains("FamilyShown != null && FamilyShown()") && links.Contains("HomeFridgeButton.FamilyClicked = FamilyPhone.Board;"),
+            "family face to face: the fridge's Family button opens the family's page and list, without what needs the partner in the room");
+        int save = director.IndexOf("FamilySms.BeforeSave();", StringComparison.Ordinal), write = director.IndexOf("FamilyState.Write();", StringComparison.Ordinal);
+        Check(save > 0 && write > save && director.Contains("FamilySms.Tick();") && director.Contains("FamilySms.Reset();")
+              && sms.Contains("_quietUntil = Time.unscaledTime + AfterSave;") && sms.Contains("buttons.RemoveAll(b => b.key == NewHomeKey);")
+              && sms.Contains("!FamilyPlaces.AtHome() && FamilyPhone.InOwnHome()"),
+            "family face to face: the new-home text button is on only in another home of the player's, taken off before every save and back after it");
     }
 
     // The panel's button is named after the prompt (_prompt_ to _button_): the ask's prompt had no button text, and the

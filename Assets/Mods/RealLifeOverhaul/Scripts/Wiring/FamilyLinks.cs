@@ -7,6 +7,7 @@ using FamilyBridges = RealLifeOverhaul.Family.FamilyBridges;
 using FamilyEvent = RealLifeOverhaul.Family.FamilyEvent;
 using FamilyHomeBridge = RealLifeOverhaul.Family.IHomeBridge;
 using FamilyLawBridge = RealLifeOverhaul.Family.ILawBridge;
+using FamilyPhone = RealLifeOverhaul.Family.FamilyPhone;
 using FamilySocialBridge = RealLifeOverhaul.Family.ISocialBridge;
 using PersonInfo = RealLifeOverhaul.Family.PersonInfo;
 
@@ -22,6 +23,8 @@ namespace RealLifeOverhaul
         ///   FamilyBridges.Home       a partner who looks after the player when ill shortens the illness; a baby's broken night is owed sleep
         ///   FamilyBridges.Law        whether the player is locked up (a cell or a prison term): family life waits
         ///   SocialLinks.PartnerChanged   a break-up or a new partner in Social reaches the family at once
+        ///   SocialPhone.FamilyMatters    the partner's People call has time apart and the in-laws while there is no Family contact
+        ///   HomeFridgeButton.Family*     the fridge's Family button opens the family's board then
         ///
         /// An arrest is told to the family from <see cref="Arrests"/>, once, as it happens.
         ///
@@ -39,11 +42,19 @@ namespace RealLifeOverhaul
                 FamilyBridges.Home = new HomeForFamily();
                 FamilyBridges.Law = new LawForFamily();
                 SocialLinks.PartnerChanged = TellFamily;
+                SocialPhone.HasFamilyMatters = p => p != null && PeopleOn && p == SocialState.Partner && FamilyPhone.HasCallMatters;
+                SocialPhone.FamilyMatters = FamilyPhone.CallMatters;
+                HomeFridgeButton.FamilyShown = () => FamilyPhone.BoardShown;
+                HomeFridgeButton.FamilyClicked = FamilyPhone.Board;
             }
 
             internal static void Disconnect()
             {
                 SocialLinks.PartnerChanged = null;
+                SocialPhone.HasFamilyMatters = null;
+                SocialPhone.FamilyMatters = null;
+                HomeFridgeButton.FamilyShown = null;
+                HomeFridgeButton.FamilyClicked = null;
                 FamilyBridges.Reset();
             }
 

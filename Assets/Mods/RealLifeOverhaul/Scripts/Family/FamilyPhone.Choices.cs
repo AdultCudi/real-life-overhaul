@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Family
     public static partial class FamilyPhone
     {
         private static List<Choice> _choices;
+        private static List<Choice> _callChoices;   // the ones also offered in the partner's People call (CallMatters)
         private static int _chatAt, _cookAt;   // where the partner's chat and the evening's routines begin
 
         private static List<Choice> Choices()
@@ -21,6 +22,12 @@ namespace RealLifeOverhaul.Family
                 return _choices;
             }
             var list = new List<Choice>(40);
+            var call = new List<Choice>(8);
+            Choice Call(Choice c)
+            {
+                call.Add(c);
+                return c;
+            }
             Func<Bond> bond = () => FamilyState.Bond;
             Func<FamilySave> s = () => FamilyState.S;
 
@@ -126,21 +133,22 @@ namespace RealLifeOverhaul.Family
             list.Add(new Choice(() => PartnerWork.CanTalk && InPerson, () => FamilyText.Say("reallife_family_do_work"), "reallife_family_do_work_yes", PartnerWork.Talk));
             list.Add(new Choice(() => PartnerWork.CanReturn, () => FamilyText.Say("reallife_family_do_work_return"), "reallife_family_do_work_return_yes", PartnerWork.Return));
 
-            list.Add(new Choice(() => Relatives.CanGoToMoms, () => FamilyText.Say("reallife_family_do_moms"), "reallife_family_do_moms_yes", Relatives.GoToMoms));
-            list.Add(new Choice(() => Relatives.InLawFavourOpen, () => FamilyText.Say("reallife_family_do_favour"), "reallife_family_do_favour_yes", Relatives.InLawFavour));
+            list.Add(Call(new Choice(() => Relatives.CanGoToMoms, () => FamilyText.Say("reallife_family_do_moms"), "reallife_family_do_moms_yes", Relatives.GoToMoms)));
+            list.Add(Call(new Choice(() => Relatives.InLawFavourOpen, () => FamilyText.Say("reallife_family_do_favour"), "reallife_family_do_favour_yes", Relatives.InLawFavour)));
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_kin", Args.Us.With(Relatives.NextOfKin())), "reallife_family_kin_change", Relatives.NextOfKinStep));
 
-            list.Add(new Choice(() => HardTimes.CanCounsel && Settings.FamilyFriction, () => FamilyText.Say("reallife_family_do_counselling", Args.Us.Cost(FamilyBalance.CounsellingCost)),
-                "reallife_family_do_counselling_yes", HardTimes.Book));
-            list.Add(new Choice(() => HardTimes.CanCallApart, () => FamilyText.Say("reallife_family_do_call_apart"), "reallife_family_do_chat_yes", HardTimes.CallApart));
-            list.Add(new Choice(() => HardTimes.CanComeHome, () => FamilyText.Say("reallife_family_do_come_home"), "reallife_family_do_come_home_yes", HardTimes.ComeHome));
+            list.Add(Call(new Choice(() => HardTimes.CanCounsel && Settings.FamilyFriction, () => FamilyText.Say("reallife_family_do_counselling", Args.Us.Cost(FamilyBalance.CounsellingCost)),
+                "reallife_family_do_counselling_yes", HardTimes.Book)));
+            list.Add(Call(new Choice(() => HardTimes.CanCallApart, () => FamilyText.Say("reallife_family_do_call_apart"), "reallife_family_do_chat_yes", HardTimes.CallApart)));
+            list.Add(Call(new Choice(() => HardTimes.CanComeHome, () => FamilyText.Say("reallife_family_do_come_home"), "reallife_family_do_come_home_yes", HardTimes.ComeHome)));
             list.Add(new Choice(() => FamilyState.Together && s().Harmony < 50f && Settings.FamilyFriction, () => FamilyText.Say("reallife_family_do_apart"), "reallife_family_do_apart_yes",
                 HardTimes.AskApart));
-            list.Add(new Choice(() => HardTimes.CanEnd, () => FamilyText.Say((Bond)s().BondBefore == Bond.Married ? "reallife_family_do_divorce" : "reallife_family_do_part"),
-                "reallife_family_do_end_yes", HardTimes.EndAsk));
+            list.Add(Call(new Choice(() => HardTimes.CanEnd, () => FamilyText.Say((Bond)s().BondBefore == Bond.Married ? "reallife_family_do_divorce" : "reallife_family_do_part"),
+                "reallife_family_do_end_yes", HardTimes.EndAsk)));
 
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_page"), "reallife_family_do_page_yes", () => FamilyPage.Page(0)));
             _choices = list;
+            _callChoices = call;
             return _choices;
         }
 
@@ -163,14 +171,14 @@ namespace RealLifeOverhaul.Family
             });
         }
 
-        private static bool InPerson => DialogController.current != null && DialogController.current.dialogType != DialogType.PhoneCall && HomeLife.Present;
+        private static bool InPerson => DialogController.current != null && DialogController.current.dialogType != DialogType.PhoneCall && HomeLife.Present && !AtBoard;
 
         private static bool Has(int child)
         {
             return child < FamilyState.S.Children.Count && !FamilyState.S.Children[child].Grown;
         }
 
-        private static bool InOwnHome()
+        internal static bool InOwnHome()
         {
             var manager = InstanceBehavior<BuildingManager>.Instance;
             return manager != null && manager.building != null && GoingPublic.Mine(manager.buildingRegistration) && manager.building.BuildingType == FamilyPlaces.Residential;

@@ -31,6 +31,10 @@ namespace RealLifeOverhaul
         /// <summary>Set by Wiring/LedgerLinks; null while the desk is shut.</summary>
         public static Func<DialogEntry> LedgerDesk;
 
+        /// <summary>Set by Wiring/FamilyLinks: whether this person's call offers "Family matters" (the partner's: time apart, the in-laws), and what it opens.</summary>
+        public static Func<SocialPerson, bool> HasFamilyMatters;
+        public static Func<DialogEntry> FamilyMatters;
+
         public static string IdOf(SocialPerson person)
         {
             return person.Origin == SocialOrigin.Family ? MomId : person.Origin == SocialOrigin.OldFriend ? FriendId : person.Name;
