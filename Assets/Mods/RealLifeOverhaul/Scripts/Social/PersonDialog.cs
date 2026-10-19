@@ -16,13 +16,22 @@ namespace RealLifeOverhaul
         private static int GiftPrice => Prices.At(60);
         private const int AskOutGapDays = 5;
 
+        /// <summary>
+        /// A test's topic for the first chat of the next call with this person (SocialDirector.TestComposer); the next call to
+        /// open, with anybody, clears it. -1 for none.
+        /// </summary>
+        internal static int TestTopic = -1, TestTopicFor = -1;
+
         private readonly SocialPerson _p;
         private readonly List<string> _actions = new List<string>(8);
         private int _topics;
         private float _moodRoll = -1f;   // the call's one draw of whether a rough day says no to plans (SocialRules.MoodSaysNo); -1 until plans come up
+        private int _testTopic;          // a test's topic for this call's first chat; -1 for the topic by what happened
 
         public PersonDialog(int index)
         {
+            _testTopic = TestTopicFor == index ? TestTopic : -1;
+            TestTopic = TestTopicFor = -1;
             _p = SocialState.Get(index);
             bool incoming = SocialPhone.Incoming == index;
             SocialPhone.Incoming = -1;
@@ -109,7 +118,8 @@ namespace RealLifeOverhaul
                 again.OnConfirm = () => Menu(0);
                 return again;
             }
-            SocialTopic topic = SocialTalk.Pick(_p, out Dictionary<string, string> data);
+            SocialTopic topic = SocialTalk.Pick(_p, out Dictionary<string, string> data, _testTopic);
+            _testTopic = -1;
             DialogEntry entry = Line(SocialLines.Pick(topic.Open), data);
             if (Composing(topic, data, entry))
             {

@@ -11,7 +11,7 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 
 | File | What it is |
 | --- | --- |
-| `FamilyDirector` | the one component: a tick a second; its parts `.Prompt` (the key prompt, the objective, questions), `.Sequences` (fade, time skip, the photograph, scenes) and `.Tests` (the test buttons) |
+| `FamilyDirector` | the one component: a tick a second; its parts `.Prompt` (the key prompt, the objective, questions), `.Sequences` (fade, time skip, the photograph, scenes), `.Tests` (the test buttons) and `.HardTimes` (the difficult moment's test button) |
 | `FamilyScene`, `FamilyModifiers` | the base of a staged scene; the moods in the game's happiness registry |
 | `FamilyState` | per-save state as one JSON string in modData |
 | `FamilyBalance` | every cost, threshold and time scale |
@@ -26,7 +26,11 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 | `Children` | deciding, pregnancy and adoption, the nursery, the day and the week, costs; `.Arrival` (appointments, birth, adoption), `.Growing` (milestones, school starting, birthdays), `.School` (school events, parties), `.Tests` |
 | `WalkScene` | the pushchair walk |
 | `Relatives` | Mom and the in-laws, the four family dinners of the game's year, next of kin |
-| `HardTimes` | arguments (a no-repeat pool with two answers), counselling, time apart, coming home, divorce and custody |
+| `HardTimes` | the difficult moments (ten questions with two answers, asked as they always were), counselling, time apart, coming home, divorce and custody |
+| `HardTimesWatch` | when a difficult moment comes and which: what is going on, read once a game hour and once a game day, handed to the rules; the optional line it keeps in the save |
+| `HardTimesGame` | the one place the difficult moments read the game: the money and its last seven midnights, the player's own places, the home's address, inside a business of their own |
+| `HardTimesRules` | game-free (EconomyCheck, `HardTimesChecks.cs`): each cause's level, each moment's causes, the hour, the days between, how long a cause must last, the rest, the save's line |
+| `HardTimesBridges` | `IHardTimesBridge`: what home life, careers, the social life, travel and the economy know of the player's days |
 | `FamilyPhone` | the Family, Someone special and in-laws contacts and their calls; `.Choices` (everything that can be done from a conversation) |
 | `FamilyPage` | the Family page's five pages |
 | `FamilyTalk / FamilyText / FamilyCalendar` | conversations and menus, text and its fillers, what happens by the hour and the day |
@@ -34,6 +38,7 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 ## How it talks to other features
 
 - `Wiring/FamilyLinks.cs` fills in Social (the partner is Social's person), Home (care when ill, broken nights) and Law (whether the player is locked up); see [The bridges](#the-bridges-familybridges-familyapi).
+- `Wiring/Wiring.HardTimesLinks.cs` fills in `HardTimesBridges.Life`: what home life, careers, the social life, travel and the economy know of the player's days, for the difficult moments.
 - Travel and Leisure have no matching door, so they stay at their defaults.
 
 A partner who moves in, an engagement and a wedding, children, the wider family, and the hard times (`Scripts/Family`).
@@ -101,7 +106,7 @@ At home they are there when the player walks in, or come in at the door when it 
 - **Conversation**: a chat about what has really happened (the player ill, a shift worked today and what it paid, the baby, rain, a low mood, the wedding or the birth being days away), cooking together and an evening in front of the television (Home bridge; default a few lines, a meal and a mood), an evening out.
 - **Money**: every evening at 18:00 their share comes in as its own income line: the smaller of half the day's rent and 35 % of their day's pay, never more than 600 (in a home with no rent: a fifth of their pay, at most 60).
   Halved while they work short days for the children.
-- **Chores** (about three days in ten, a question with two answers), **neglect** (four days with not a word and the home cools, with a text every third day), **broken promises** (standing them up, missing an appointment), and **arrests** (`FamilyApi.PlayerArrested`, told by `Wiring.Arrests.FamilyHears` once as it happens; only with a partner) all move "harmony", the one figure for how things are at home (0..100, shown on the Family page in words).
+- **Chores** (about three days in ten, a question with two answers), **neglect** (four days with not a word and the home cools, with a text every third day; while Social supplies the partner, its calls, texts, outings and meetings with them count as a word too, through the bridge's `PersonInfo.LastContactDay` and `TalkRules.LastTalked`), **broken promises** (standing them up, missing an appointment), and **arrests** (`FamilyApi.PlayerArrested`, told by `Wiring.Arrests.FamilyHears` once as it happens; only with a partner) all move "harmony", the one figure for how things are at home (0..100, shown on the Family page in words).
 - **Support**: ill and at home in the evening, they look after the player (Home bridge; default eight hours off the illness and a mood); after a bad day (happiness under 35) they say something that helps.
 - **Evenings out**: Leisure bridge, else Social's outing, else dinner at the nearest real restaurant: the game's destination marker, a key prompt at its door, the bill (90), two hours skipped, and a line.
   Not turning up is noticed.
@@ -274,7 +279,31 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
 - Four family dinners a year on the game's own calendar (at 22, 47, 72 and 97 % of its year): Mom writes the day before; with a household it is at home (120 for the food, three hours), otherwise at Mom's (four hours, from the Family contact).
   Missing one costs nothing but the dinner.
 - Next of kin is a line on the Family page (the partner once married, Mom otherwise; it can be changed) and nothing else.
-- Arguments are questions with two answers from a pool of ten that never repeats until all have come up; which answer is the better one differs.
+- **Difficult moments** are questions with two answers, ten of them, asked in the game's question box as they always were; which answer is the better one differs.
+  Each comes of what is going on in the player's life (`HardTimesWatch`, `HardTimesRules`), read once a game hour (the evening at ten, the small hours, the household, home life, careers, the social life, travel) and once a game day (the money), never at random:
+
+  | the moment | what brings it |
+  |---|---|
+  | "home by seven, it is past ten" | evenings not home at ten while the partner was (two or more in a week, tonight one of them), nights away, long hours; a new child makes it worse; only for two who live together |
+  | "where do you go?" | days without a call, a text, a visit or a word at home (three living together, four apart), stress at home life's "Stressed", sleep owed past "Short of sleep", long hours (home life's hours on a job, careers' burnout), nights away |
+  | "you forgot what today was" | the partner's birthday (the social life) or the anniversary (the wedding day, else the day they began, each of the game's years) with no word by six in the evening; a date, an appointment, counselling, the birth or the wedding missed, or an outing of the social life stood up or kept waiting, and no time together since |
+  | "the bank statement" | a purchase of a quarter or more of the money in hand (a building, a car, shares, anything that is not a running cost or the family's own), in the red at midnight and still, owing more than is owned, a loan of 5,000 or more this week, or most of the week's money gone; for two who live together, are engaged or married |
+  | "your mother rang me" | meals skipped or a poor diet (home life's), with Mom in the phone; for two who live together |
+  | "a wet towel on the bed" | a messy home, a new child, stress or too little sleep; and with nothing wrong at all, now and then: about one day in forty, three weeks after the last moment at the least |
+  | "you always say sorry" | two or more quick sorries in a row within a fortnight, while something is still wrong |
+  | "the shop gets the best of you" | evenings and nights at the player's own business (living at it); for two who live apart, a business owner who is never seen |
+  | "we were supposed to leave" | an hour late for a child's school play, parents' evening or party, or for a holiday dinner at Mom's |
+  | "the plan for the new place, another one" | a new place taken besides the one they have, or the home moved, within five days |
+
+  When: a lasting cause must have lasted (a strong one at once or a day later, a middling one a day or two, a mild one two or three; a day sooner in a tense home, under 40, a day later in a warm one, from 70), each moment has its hour of the day (the evening; ten or eleven for coming home late; at once for an outing), and two moments are two days apart at the least, three in a home that is so so and five in a warm one (two for a strong cause).
+  A moment airs everything wrong at the time: those troubles rest a week to nine days and come back together if they are still there, while something new can come up sooner.
+  Which of the fitting moments comes, and its hour, vary a little with the partner and the day; the same state gives the same moment on every machine.
+  A cause gone by its hour (they talked, made up with time together, the money came back) brings nothing.
+
+  None comes on the wedding day, and a trip the partner came along on is time together.
+  The options: "Arguments, time apart and divorce" off (as the Relaxed preset sets it) and nothing is read and no moment comes; relatives off, no call from Mom; children off, no new child; a part of home life off, none of its figures count; the social life off, family life's own last word and the anniversary only.
+  Saved: one optional line in the family's state (`FamilySave.Hard`: the evenings and nights out, when each cause began and last aired, the places counted, the broken promises, the sorries); a save without it starts with nothing remembered, which brings no moment.
+  In a Going Public session: the local player's own family, money and buildings only (`GoingPublic.Mine`); nothing is sent.
   Counselling (180 a session at a clinic, an hour) is offered from the Family contact while harmony is under 60 (`FamilyBalance.HarmonyCounsel`, "a little tense" and lower) or the two are apart, and mends the most the first times.
   Harmony under 15 for five days and they move out; time apart can also be asked for.
 
@@ -303,6 +332,7 @@ All calls are from the main thread.
 | `ITravelBridge` | `Honeymoon(partner, days, done)` | 2,500, three days skipped, a mood |
 | `ILeisureBridge` | `DateNight(partner, done)`, `FamilyOuting("school_play" or "birthday", child, done)` | dinner at a restaurant's door; the play and the party as an errand and a skip |
 | `ILawBridge` | `InCustody` (a cell or a prison term; family life waits) | nothing is known; arrests are told with `FamilyApi.PlayerArrested(severity 1..3)`, which `Wiring.Arrests.FamilyHears` calls once for each arrest (1 a night in the cells, 2 when a case is open for it) and each prison sentence (3), only with a partner |
+| `IHardTimesBridge` (`HardTimesBridges.Life`) | `Days(ref HardSigns, partner)`, once a game hour: home life's hours on a job, stress, sleep owed, meals skipped and diet, how tidy the home is (each while its part is on); careers' burnout; the social life's last call, text or meeting with the partner, their last outing, the last stand-up or lateness, their birthday; travel's trip with the partner. `Money(ref HardSigns)`, once a game day: net worth as the Finance app shows it, the businesses, and from the game's transactions of the last three days the largest purchase and what was borrowed | unknown, and no moment comes of it; family life's own records and the game's money (in hand, its last seven midnights) still count |
 
 `Wiring/FamilyLinks.cs` fills in Social, Home and Law.
 Social: the partner is Social's person who is dating or with the player; `Active` is Social's option, `Ready` is "its people are read" (Family waits for that before reading who the partner is); `StartOuting` answers false, so Family runs its own evening, because Social's outings are planned with a venue and a time by its people.
@@ -320,6 +350,7 @@ A partner who is engaged, married or living in and is not Social's person stays 
 Nothing per frame while nobody of the family's is out and no prompt is up beyond a few comparisons.
 One tick a second (five a second during a staged scene): the hour and the day compared, the home looked at only while the player is inside a building, the errand list only while it has entries.
 The home's furniture is read once on walking in.
+The difficult moments: once a game hour a few dozen field reads, one pass over the city's building registrations and the save's line rebuilt; once a game day the economy's walk over the game's last days of transactions.
 
 Looking for the nearest building of a kind is one pass over the city's buildings when a conversation asks or an errand becomes due.
 A fault in any tick is logged once and switches family life off for the session; the save is left as it was.
@@ -336,6 +367,7 @@ A button that does nothing says why.
 - Start an adoption / move it on a step.
 - Add a year to the children's ages.
 - Pushchair walk now (needs a child under three).
+- A difficult moment from what is going on: the one that fits best now, whatever its hour and the days since the last (its cause is in Player.log); with nothing wrong between the two, a notice says so.
 - Open the Family page.
 - Clear all family state.
 
@@ -368,6 +400,7 @@ Turning the player's body to face the partner at the altar (set once on the char
 The three-day time skip of the default honeymoon.
 The photograph with the game's HUD objects switched off for two frames; the plain-shape stand-ins' materials indoors.
 Which of the game's business types a given save actually has (a kind the city lacks is said so, and the conversation offers what there is).
+The difficult moments' readings in play: the evening read at ten (or the first game hour after it, past a time skip) and the night in the small hours, the partner's hours, a move seen from the home's address, the social life's partner matched by name; built and checked offline only.
 
 ## Clashes looked for, and what was done
 

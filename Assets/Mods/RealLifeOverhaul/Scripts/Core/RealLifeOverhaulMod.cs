@@ -1076,6 +1076,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_family_test_adopt", () => Family.FamilyDirector.Instance?.TestChild(true))
                 .AddButton("reallife_family_test_year", () => Family.FamilyDirector.Instance?.TestYear())
                 .AddButton("reallife_family_test_walk", () => Family.FamilyDirector.Instance?.TestWalk())
+                .AddButton("reallife_family_test_argue", () => Family.FamilyDirector.Instance?.TestArgue())
                 .AddButton("reallife_family_test_page", () => Family.FamilyDirector.Instance?.TestPage())
                 .AddButton("reallife_family_test_clear", () => Family.FamilyDirector.Instance?.TestClear())
                 .AddSplitter()

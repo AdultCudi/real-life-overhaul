@@ -25,7 +25,10 @@ namespace RealLifeOverhaul
         public string Invite;          // the text they send when it is their idea
     }
 
-    /// <summary>Something to talk about: their openers, the player's two answers (the first the warm one) and what each gets back.</summary>
+    /// <summary>
+    /// Something to talk about: their openers, the player's two answers (the first the warm one) and what each gets back; and
+    /// what they say to an answer the player types (a call's composer), by what it is read as (SocialComposerRules.Read).
+    /// </summary>
     public sealed class SocialTopic
     {
         public int Id;
@@ -33,6 +36,10 @@ namespace RealLifeOverhaul
         public string ReplyA, ReplyB;
         public string ReactA, ReactB;
         public bool BothFine;          // the second answer is a joke, not a slight
+        public string[] TypedGood;     // their answer to typed words read as good news: its own line where one fits, else the glad lines
+        public string[] TypedBad;      // ...as bad news: its own line where one fits, else the sorry or the neutral lines
+        public SocialRead YesIs;       // what a bare yes means to its question: good news, bad news, or not clear
+        public SocialRead NoIs;        // ...and a bare no
     }
 
     /// <summary>The social life's data: names, outings, every line. Free of game types; every key in full, for the catalogue check.</summary>
@@ -403,6 +410,12 @@ namespace RealLifeOverhaul
         public static readonly string[] BorrowYes = { "reallife_social_borrow_yes_1", "reallife_social_borrow_yes_2" };
         public static readonly string[] BorrowNo = { "reallife_social_borrow_no_1", "reallife_social_borrow_no_2" };
 
+        // What they say to typed words where a topic has no line of its own for what they were read as (SocialComposerRules.Reaction):
+        // glad for good news, sorry for bad, and a neutral line for anything not clear. Before Topics, which names them.
+        public static readonly string[] TypedGlad = { "reallife_social_typed_glad_1", "reallife_social_typed_glad_2" };
+        public static readonly string[] TypedSorry = { "reallife_social_typed_sorry_1", "reallife_social_typed_sorry_2" };
+        public static readonly string[] TypedNeutral = { "reallife_social_typed_neutral_1", "reallife_social_typed_neutral_2", "reallife_social_typed_neutral_3" };
+
         // Which can come up is decided by what really happened (SocialTalk), by these ids.
         public const int TopicCrash = 0, TopicArrest = 1, TopicAccident = 2, TopicCrime = 3, TopicShopGood = 4, TopicShopBad = 5, TopicWork = 6,
             TopicGoodDay = 7, TopicBadDay = 8, TopicTheirJob = 9, TopicRain = 10, TopicFine = 11, TopicMemory = 12, TopicBirthday = 13, TopicRich = 14,
@@ -412,64 +425,84 @@ namespace RealLifeOverhaul
         {
             new SocialTopic { Id = TopicCrash, Open = new[] { "reallife_social_topic_crash_1", "reallife_social_topic_crash_2" },
                 ReplyA = "reallife_social_topic_crash_a", ReplyB = "reallife_social_topic_crash_b",
-                ReactA = "reallife_social_topic_crash_ra", ReactB = "reallife_social_topic_crash_rb", BothFine = true },
+                ReactA = "reallife_social_topic_crash_ra", ReactB = "reallife_social_topic_crash_rb", BothFine = true,
+                TypedGood = new[] { "reallife_social_topic_crash_ra" }, TypedBad = TypedSorry, YesIs = SocialRead.Good, NoIs = SocialRead.Bad },
             new SocialTopic { Id = TopicArrest, Open = new[] { "reallife_social_topic_arrest_1", "reallife_social_topic_arrest_2" },
                 ReplyA = "reallife_social_topic_arrest_a", ReplyB = "reallife_social_topic_arrest_b",
-                ReactA = "reallife_social_topic_arrest_ra", ReactB = "reallife_social_topic_arrest_rb" },
+                ReactA = "reallife_social_topic_arrest_ra", ReactB = "reallife_social_topic_arrest_rb",
+                TypedGood = TypedGlad, TypedBad = new[] { "reallife_social_topic_arrest_ra" }, YesIs = SocialRead.Bad, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicAccident, Open = new[] { "reallife_social_topic_accident_1", "reallife_social_topic_accident_2" },
                 ReplyA = "reallife_social_topic_accident_a", ReplyB = "reallife_social_topic_accident_b",
-                ReactA = "reallife_social_topic_accident_ra", ReactB = "reallife_social_topic_accident_rb", BothFine = true },
+                ReactA = "reallife_social_topic_accident_ra", ReactB = "reallife_social_topic_accident_rb", BothFine = true,
+                TypedGood = TypedNeutral, TypedBad = TypedNeutral, YesIs = SocialRead.Unclear, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicCrime, Open = new[] { "reallife_social_topic_crime_1", "reallife_social_topic_crime_2" },
                 ReplyA = "reallife_social_topic_crime_a", ReplyB = "reallife_social_topic_crime_b",
-                ReactA = "reallife_social_topic_crime_ra", ReactB = "reallife_social_topic_crime_rb", BothFine = true },
+                ReactA = "reallife_social_topic_crime_ra", ReactB = "reallife_social_topic_crime_rb", BothFine = true,
+                TypedGood = TypedNeutral, TypedBad = new[] { "reallife_social_topic_crime_rb" }, YesIs = SocialRead.Bad, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicShopGood, Open = new[] { "reallife_social_topic_shopgood_1", "reallife_social_topic_shopgood_2" },
                 ReplyA = "reallife_social_topic_shopgood_a", ReplyB = "reallife_social_topic_shopgood_b",
-                ReactA = "reallife_social_topic_shopgood_ra", ReactB = "reallife_social_topic_shopgood_rb" },
+                ReactA = "reallife_social_topic_shopgood_ra", ReactB = "reallife_social_topic_shopgood_rb",
+                TypedGood = new[] { "reallife_social_topic_shopgood_ra" }, TypedBad = new[] { "reallife_social_topic_shopbad_ra" }, YesIs = SocialRead.Good, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicShopBad, Open = new[] { "reallife_social_topic_shopbad_1", "reallife_social_topic_shopbad_2" },
                 ReplyA = "reallife_social_topic_shopbad_a", ReplyB = "reallife_social_topic_shopbad_b",
-                ReactA = "reallife_social_topic_shopbad_ra", ReactB = "reallife_social_topic_shopbad_rb" },
+                ReactA = "reallife_social_topic_shopbad_ra", ReactB = "reallife_social_topic_shopbad_rb",
+                TypedGood = TypedGlad, TypedBad = new[] { "reallife_social_topic_shopbad_ra" }, YesIs = SocialRead.Good, NoIs = SocialRead.Bad },
             new SocialTopic { Id = TopicWork, Open = new[] { "reallife_social_topic_work_1", "reallife_social_topic_work_2" },
                 ReplyA = "reallife_social_topic_work_a", ReplyB = "reallife_social_topic_work_b",
-                ReactA = "reallife_social_topic_work_ra", ReactB = "reallife_social_topic_work_rb", BothFine = true },
+                ReactA = "reallife_social_topic_work_ra", ReactB = "reallife_social_topic_work_rb", BothFine = true,
+                TypedGood = new[] { "reallife_social_topic_work_ra" }, TypedBad = new[] { "reallife_social_topic_work_ra" }, YesIs = SocialRead.Good, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicGoodDay, Open = new[] { "reallife_social_topic_goodday_1", "reallife_social_topic_goodday_2", "reallife_social_topic_goodday_3" },
                 ReplyA = "reallife_social_topic_goodday_a", ReplyB = "reallife_social_topic_goodday_b",
-                ReactA = "reallife_social_topic_goodday_ra", ReactB = "reallife_social_topic_goodday_rb" },
+                ReactA = "reallife_social_topic_goodday_ra", ReactB = "reallife_social_topic_goodday_rb",
+                TypedGood = new[] { "reallife_social_topic_goodday_ra" }, TypedBad = TypedNeutral, YesIs = SocialRead.Good, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicBadDay, Open = new[] { "reallife_social_topic_badday_1", "reallife_social_topic_badday_2", "reallife_social_topic_badday_3" },
                 ReplyA = "reallife_social_topic_badday_a", ReplyB = "reallife_social_topic_badday_b",
-                ReactA = "reallife_social_topic_badday_ra", ReactB = "reallife_social_topic_badday_rb" },
+                ReactA = "reallife_social_topic_badday_ra", ReactB = "reallife_social_topic_badday_rb",
+                TypedGood = new[] { "reallife_social_topic_badday_ra" }, TypedBad = new[] { "reallife_social_topic_badday_ra" }, YesIs = SocialRead.Unclear, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicTheirJob, Open = new[] { "reallife_social_topic_theirjob_1", "reallife_social_topic_theirjob_2" },
                 ReplyA = "reallife_social_topic_theirjob_a", ReplyB = "reallife_social_topic_theirjob_b",
-                ReactA = "reallife_social_topic_theirjob_ra", ReactB = "reallife_social_topic_theirjob_rb" },
+                ReactA = "reallife_social_topic_theirjob_ra", ReactB = "reallife_social_topic_theirjob_rb",
+                TypedGood = new[] { "reallife_social_topic_theirjob_ra" }, TypedBad = TypedNeutral, YesIs = SocialRead.Good, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicRain, Open = new[] { "reallife_social_topic_rain_1", "reallife_social_topic_rain_2" },
                 ReplyA = "reallife_social_topic_rain_a", ReplyB = "reallife_social_topic_rain_b",
-                ReactA = "reallife_social_topic_rain_ra", ReactB = "reallife_social_topic_rain_rb", BothFine = true },
+                ReactA = "reallife_social_topic_rain_ra", ReactB = "reallife_social_topic_rain_rb", BothFine = true,
+                TypedGood = new[] { "reallife_social_topic_rain_rb" }, TypedBad = new[] { "reallife_social_topic_rain_ra" }, YesIs = SocialRead.Unclear, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicFine, Open = new[] { "reallife_social_topic_fine_1", "reallife_social_topic_fine_2" },
                 ReplyA = "reallife_social_topic_fine_a", ReplyB = "reallife_social_topic_fine_b",
-                ReactA = "reallife_social_topic_fine_ra", ReactB = "reallife_social_topic_fine_rb", BothFine = true },
+                ReactA = "reallife_social_topic_fine_ra", ReactB = "reallife_social_topic_fine_rb", BothFine = true,
+                TypedGood = new[] { "reallife_social_topic_fine_ra" }, TypedBad = new[] { "reallife_social_topic_fine_rb" }, YesIs = SocialRead.Good, NoIs = SocialRead.Bad },
             new SocialTopic { Id = TopicMemory, Open = new[] { "reallife_social_topic_memory_1", "reallife_social_topic_memory_2" },
                 ReplyA = "reallife_social_topic_memory_a", ReplyB = "reallife_social_topic_memory_b",
-                ReactA = "reallife_social_topic_memory_ra", ReactB = "reallife_social_topic_memory_rb" },
+                ReactA = "reallife_social_topic_memory_ra", ReactB = "reallife_social_topic_memory_rb",
+                TypedGood = new[] { "reallife_social_topic_memory_ra" }, TypedBad = TypedNeutral, YesIs = SocialRead.Good, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicBirthday, Open = new[] { "reallife_social_topic_birthday_1", "reallife_social_topic_birthday_2" },
                 ReplyA = "reallife_social_topic_birthday_a", ReplyB = "reallife_social_topic_birthday_b",
-                ReactA = "reallife_social_topic_birthday_ra", ReactB = "reallife_social_topic_birthday_rb" },
+                ReactA = "reallife_social_topic_birthday_ra", ReactB = "reallife_social_topic_birthday_rb",
+                TypedGood = new[] { "reallife_social_topic_birthday_ra" }, TypedBad = TypedNeutral, YesIs = SocialRead.Good, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicRich, Open = new[] { "reallife_social_topic_rich_1", "reallife_social_topic_rich_2" },
                 ReplyA = "reallife_social_topic_rich_a", ReplyB = "reallife_social_topic_rich_b",
-                ReactA = "reallife_social_topic_rich_ra", ReactB = "reallife_social_topic_rich_rb" },
+                ReactA = "reallife_social_topic_rich_ra", ReactB = "reallife_social_topic_rich_rb",
+                TypedGood = TypedGlad, TypedBad = TypedSorry, YesIs = SocialRead.Good, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicSick, Open = new[] { "reallife_social_topic_sick_1", "reallife_social_topic_sick_2" },
                 ReplyA = "reallife_social_topic_sick_a", ReplyB = "reallife_social_topic_sick_b",
-                ReactA = "reallife_social_topic_sick_ra", ReactB = "reallife_social_topic_sick_rb", BothFine = true },
+                ReactA = "reallife_social_topic_sick_ra", ReactB = "reallife_social_topic_sick_rb", BothFine = true,
+                TypedGood = new[] { "reallife_social_topic_sick_rb" }, TypedBad = TypedSorry, YesIs = SocialRead.Bad, NoIs = SocialRead.Good },
             new SocialTopic { Id = TopicBreakIn, Open = new[] { "reallife_social_topic_breakin_1", "reallife_social_topic_breakin_2" },
                 ReplyA = "reallife_social_topic_breakin_a", ReplyB = "reallife_social_topic_breakin_b",
-                ReactA = "reallife_social_topic_breakin_ra", ReactB = "reallife_social_topic_breakin_rb", BothFine = true },
+                ReactA = "reallife_social_topic_breakin_ra", ReactB = "reallife_social_topic_breakin_rb", BothFine = true,
+                TypedGood = new[] { "reallife_social_topic_breakin_ra" }, TypedBad = TypedSorry, YesIs = SocialRead.Bad, NoIs = SocialRead.Good },
             new SocialTopic { Id = TopicKnocked, Open = new[] { "reallife_social_topic_knocked_1", "reallife_social_topic_knocked_2" },
                 ReplyA = "reallife_social_topic_knocked_a", ReplyB = "reallife_social_topic_knocked_b",
-                ReactA = "reallife_social_topic_knocked_ra", ReactB = "reallife_social_topic_knocked_rb", BothFine = true },
+                ReactA = "reallife_social_topic_knocked_ra", ReactB = "reallife_social_topic_knocked_rb", BothFine = true,
+                TypedGood = new[] { "reallife_social_topic_knocked_ra" }, TypedBad = TypedSorry, YesIs = SocialRead.Bad, NoIs = SocialRead.Good },
             new SocialTopic { Id = TopicDistrict, Open = new[] { "reallife_social_topic_district_1", "reallife_social_topic_district_2" },
                 ReplyA = "reallife_social_topic_district_a", ReplyB = "reallife_social_topic_district_b",
-                ReactA = "reallife_social_topic_district_ra", ReactB = "reallife_social_topic_district_rb", BothFine = true },
+                ReactA = "reallife_social_topic_district_ra", ReactB = "reallife_social_topic_district_rb", BothFine = true,
+                TypedGood = new[] { "reallife_social_topic_district_ra" }, TypedBad = TypedNeutral, YesIs = SocialRead.Good, NoIs = SocialRead.Unclear },
             new SocialTopic { Id = TopicQuiet, Open = new[] { "reallife_social_topic_quiet_1", "reallife_social_topic_quiet_2", "reallife_social_topic_quiet_3" },
                 ReplyA = "reallife_social_topic_quiet_a", ReplyB = "reallife_social_topic_quiet_b",
-                ReactA = "reallife_social_topic_quiet_ra", ReactB = "reallife_social_topic_quiet_rb", BothFine = true }
+                ReactA = "reallife_social_topic_quiet_ra", ReactB = "reallife_social_topic_quiet_rb", BothFine = true,
+                TypedGood = TypedGlad, TypedBad = TypedSorry, YesIs = SocialRead.Unclear, NoIs = SocialRead.Unclear }
         };
 
         public static readonly string[] GreetAcquaintance = { "reallife_social_greet_acq_1", "reallife_social_greet_acq_2", "reallife_social_greet_acq_3" };

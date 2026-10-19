@@ -2,7 +2,6 @@ using Entities;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
@@ -75,39 +74,22 @@ namespace RealLifeOverhaul.Family
             {
                 return;   // nobody argues through the bars
             }
-            float chance = s.Harmony >= 70f ? 0.04f : s.Harmony >= 40f ? 0.10f : 0.20f;
-            if (!s.LivesIn)
-            {
-                chance *= 0.5f;
-            }
-            if (day - s.LastArgueDay >= 2 && Random.value < chance && !FamilyDirector.Instance.HasQuestions)
-            {
-                Argue(day);
-            }
+            HardTimesWatch.Daily(day);   // what is going on: a moment comes of it at its hour (HardTimesWatch.Hourly)
         }
 
-        private static void Argue(int day)
+        /// <summary>
+        /// A difficult moment: the one HardTimesWatch chose from what is going on (HardTimesRules), asked as a question
+        /// with two answers.
+        /// </summary>
+        internal static void Argue(int day, int pick)
         {
             FamilySave s = FamilyState.S;
-            // Dealt like the life events: none comes round again until all have, and never the same one twice running.
+            pick = Mathf.Clamp(pick, 0, Arguments.Length - 1);
+            // Those had lately are passed over while another fits as well (HardTimesRules.Choose); the round starts
+            // again once all have come.
             if (s.SeenArguments.Count >= Arguments.Length)
             {
                 s.SeenArguments.Clear();
-            }
-            int pick = -1;
-            int start = Random.Range(0, Arguments.Length);
-            for (int i = 0; i < Arguments.Length; i++)
-            {
-                int k = (start + i) % Arguments.Length;
-                if (!s.SeenArguments.Contains(k) && k != s.LastArgument)
-                {
-                    pick = k;
-                    break;
-                }
-            }
-            if (pick < 0)
-            {
-                pick = (s.LastArgument + 1) % Arguments.Length;
             }
             s.SeenArguments.Add(pick);
             s.LastArgument = pick;
@@ -119,6 +101,7 @@ namespace RealLifeOverhaul.Family
 
         private static void Answered(float gain, string line)
         {
+            HardTimesWatch.Answered(SaidSorry(line));
             FamilyState.Harmony(gain);
             FamilyState.S.LastTalkDay = TimeHelper.CurrentDay;
             if (gain >= 0f)
@@ -131,6 +114,20 @@ namespace RealLifeOverhaul.Family
                 Partner.Tell(FamilyEvent.Argued, gain * 0.5f, gain * 0.3f);
                 FamilyText.Toast(NotificationType.Warning, line, Args.Us, 10f);
             }
+        }
+
+        // Whether an answer's line is a "Say sorry": a run of them is what one moment is about (HardTimesWatch).
+        private static bool SaidSorry(string line)
+        {
+            for (int i = 0; i < Arguments.Length; i++)
+            {
+                Row r = Arguments[i];
+                if ((r.Yes == Sorry && r.YesLine == line) || (r.No == Sorry && r.NoLine == line))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static void Arrest(int severity)
