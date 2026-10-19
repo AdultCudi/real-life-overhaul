@@ -203,15 +203,10 @@ namespace RealLifeOverhaul.Flare
             ChipText = C(220, 224, 228), Shade = new Color(0f, 0f, 0f, 0.6f), Good = C(60, 200, 140), Bad = C(255, 90, 95), Dark = true
         };
 
-        /// <summary>The look for now: the option or, following the phone, dark from 19:00 to 07:00 of the game's clock.</summary>
+        /// <summary>The look for now: the option's, which the switch on Flare's top bar sets too (<see cref="FlareThemeRules.IsDark"/>).</summary>
         public static FlareLook Now(int hour)
         {
-            switch (Settings.FlareTheme)
-            {
-                case 1: return Light;
-                case 2: return Night;
-                default: return hour >= 19 || hour < 7 ? Night : Light;
-            }
+            return FlareThemeRules.IsDark(Settings.FlareTheme, hour) ? Night : Light;
         }
 
         private static readonly Color[] Avatars =

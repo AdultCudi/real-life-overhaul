@@ -125,12 +125,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("throttle_fall", () => Guide.Number(CarModel.ThrottleFall))
                 .Fact("gentle_throttle", () => Guide.Percent(CarModel.GentleThrottle))
                 .Preset(Settings.HandlingId, (int)HandlingLevel.Light, (int)HandlingLevel.Full, (int)HandlingLevel.Heavy)
-                .Fact("handling_mass_least", () => Guide.Number(HandlingRules.Target(CarKind.Economy, HandlingLevel.Full, HandlingTuning.Neutral).Mass))
-                .Fact("handling_mass_most", () => Guide.Number(HandlingRules.Target(CarKind.Truck, HandlingLevel.Full, HandlingTuning.Neutral).Mass))
+                .Fact("handling_mass_most", () => Guide.Number(HandlingRules.LevelMass(CarKind.Truck, HandlingLevel.Full, HandlingRules.GameMass) - HandlingRules.GameMass))
                 .Fact("handling_brake_rise", () => Guide.Number(HandlingRules.Target(CarKind.Saloon, HandlingLevel.Full, HandlingTuning.Neutral).BrakeRise))
-                .Fact("handling_kerb", () => Guide.Number(HandlingModel.Kerb * 100f))
-                .Fact("handling_stop", () => Guide.Number(HandlingModel.KindStop(CarKind.Saloon, CarTuning.BrakeOnset)))
-                .Fact("handling_pedal", () => Guide.Number(HandlingModel.KindPedalStop(CarKind.Saloon)))
                 .Test("reallife_handling_test_say", CarTuning.TestHandling)
                 .Cleanup(CarTuning.PutBack);
 
