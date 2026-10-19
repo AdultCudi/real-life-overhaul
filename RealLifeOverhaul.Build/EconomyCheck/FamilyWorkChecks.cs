@@ -35,7 +35,7 @@ internal static partial class Program
         Check(work.Contains("PartnerGlad.Start(PartnerGlad.Work);") && work.Contains("FamilyState.Together && s.LivesIn && !Partner.Retired") && calendar.Contains("PartnerGlad.Hourly(day);")
               && glad.Contains("PartnerVoice.Warm(lines[s.PGladNext], Args.Us);") && work.Contains("if (!PartnerVoice.Free)")
               && work.Contains("PartnerVoice.Ask(PartnerVoice.Work,") && Occurs(work, "PartnerVoice.Answered(PartnerVoice.Work);") == 2
-              && ModSource(@"Family\HomeLife.AtHome.cs").Contains("PartnerVoice.OpenAsk() ?? FamilyPhone.PartnerMenu(true)") && glad.Contains("private static readonly int[] After = { 1, 3, 6 };"),
+              && ModSource(@"Family\HomeLife.AtHome.cs").Contains("FamilyTalk.Open(() => PartnerVoice.OpenAsk() ?? ") && glad.Contains("private static readonly int[] After = { 1, 3, 6 };"),
             "family work: a yes is followed by three warm texts, the ask is raised when the partner's voice allows and talked over face to face first, and a retired partner is never asked to cut back");
         Check(!PartnerVoiceRules.Free(20, 15, 0, 7) && PartnerVoiceRules.Settle(7, 15) >= PartnerVoiceRules.SettleLeast && PartnerVoiceRules.Settle(7, 15) <= PartnerVoiceRules.SettleMost
               && PartnerVoiceRules.Free(15 + PartnerVoiceRules.SettleMost, 15, 0, 7) && !PartnerVoiceRules.Free(100, 15, 100 - PartnerVoiceRules.GapLeast + 1, 7)
