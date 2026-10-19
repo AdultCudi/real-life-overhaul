@@ -7,6 +7,8 @@ The car the player drives: performance and handling by kind of car, the eased th
 - `CarCatalogue.cs`: every vehicle type's targets (game-free).
 - `CarModel.cs`: the physics model that meets a target (game-free).
 - `CarTuning.cs`: applies it to the driven car and puts it all back.
+- `HandlingRules.cs`, `HandlingModel.cs`, `HandlingTurn.cs`, `CurveKeys.cs`: the handling's levels and its model, built on the car's own game values (game-free).
+- `CarHandling.cs`: reads the driven car's own values, puts the handling on and puts it back.
 
 ## Documentation
 

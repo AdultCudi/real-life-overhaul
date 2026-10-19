@@ -682,7 +682,8 @@ namespace RealLifeOverhaul
             _wheels.Clear();
             float grip = wet ? m.WetGrip : m.Grip;
             float stiffness = m.Stiffness > 0.1f ? m.Stiffness : 1f;
-            float damping = Mathf.Sqrt(m.Stiffness > 0.1f ? m.Stiffness : 1f);   // dampers matched to the springs: the car keeps its damping ratio
+            float weight = m.Mass > 0.1f ? m.Mass : 1f;
+            float damping = Mathf.Sqrt(stiffness * weight);   // dampers matched to the springs and the weight: the car keeps its damping ratio
             foreach (WheelComponent component in nwh.powertrain.wheels)
             {
                 WheelUAPI wheel = component != null ? component.wheelUAPI : null;
@@ -701,13 +702,12 @@ namespace RealLifeOverhaul
                 if (wheel.SpringMaxLength > 0.05f && wheel.SpringMaxForce > 1f)
                 {
                     // Stiffer by the part and standing as much higher or lower at rest as it says, on whatever spring the car
-                    // has (the game's own or the driven car's handling), never lowered into the travel a kerb needs: the
-                    // rule NavCheck runs with every build on every car (Driving/HandlingModel.FitSpring). The roll centre
-                    // moves with the body.
-                    float load = WheelLoad(nwh, wheel, body) * m.Mass;
-                    float rest = HandlingModel.RestCompression(CurveOf(wheel), wheel.SpringMaxForce, load);
-                    HandlingModel.FitSpring(wheel.SpringMaxForce, wheel.SpringMaxLength, rest, stiffness, m.Ride, GarageCatalogue.MaxLower, GarageCatalogue.MaxRaise,
-                        out float force, out float length, out float change);
+                    // has (the game's own or the driven car's handling) and on that spring's own curve; a lighter car's springs
+                    // carry it at the same height and frequency; never lowered into the travel a kerb needs: the rule NavCheck
+                    // runs with every build on every car (Driving/HandlingModel.FitSpring). The roll centre moves with the body.
+                    float load = WheelLoad(nwh, wheel, body);   // before the weight part, which the fit carries
+                    HandlingModel.FitSpring(CurveOf(wheel), wheel.SpringMaxForce, wheel.SpringMaxLength, load, weight, stiffness, m.Ride, GarageCatalogue.MaxLower,
+                        GarageCatalogue.MaxRaise, out float force, out float length, out float change);
                     float rollCentre = wheel.ForceApplicationPointDistance * wheel.SpringMaxLength + change;
                     wheel.SpringMaxForce = force;
                     wheel.SpringMaxLength = length;

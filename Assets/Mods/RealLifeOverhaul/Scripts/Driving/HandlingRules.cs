@@ -1,12 +1,12 @@
 namespace RealLifeOverhaul
 {
-    /// <summary>The handling option's choices: how much of the weight, the soft ride and the sliding the driven car is given.</summary>
+    /// <summary>The handling option's choices: how much weight, roll and give the driven car is given on top of the game's own handling.</summary>
     public enum HandlingLevel
     {
         Off = 0,     // the game's own handling, untouched
-        Light = 1,   // lighter: half the extra weight, firmer and grippier (the Relaxed preset)
-        Full = 2,    // the whole feel (the default and the Realistic preset)
-        Heavy = 3    // heavier and slidier (the Hardcore preset)
+        Light = 1,   // almost exactly the game's own: a touch of weight, smooth brakes that never lock (the Relaxed preset)
+        Full = 2,    // the game's own with a little weight, roll, dive and give (the default and the Realistic preset)
+        Heavy = 3    // more weight, roll and give, still never off the road or over on a city turn (the Hardcore preset)
     }
 
     /// <summary>
@@ -21,7 +21,7 @@ namespace RealLifeOverhaul
         public readonly int Softness;   // the spring rate is divided by it: 150 is two thirds the rate, a softer ride
         public readonly int Bounce;     // the damping is divided by it: 150 is two thirds the damping, more bounce
         public readonly int Roll;       // body roll per g, times it
-        public readonly int Grip;       // the tyres' grip to the side and along, times it
+        public readonly int Grip;       // the tyres' grip to the side, times it
         public readonly int Steering;   // how far the steering reaches at speed, times it (the lock at walking pace stays)
         public readonly int Brakes;     // how quickly the brakes build: 150 builds in two thirds of the time
 
@@ -47,45 +47,37 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// What the handling aims for on one kind of car at one level, as physical figures. <see cref="HandlingModel.Design"/>
-    /// turns them into the game's spring, damper, anti-roll bar, tyre, steering and brake values for one car's own
-    /// geometry.
+    /// What the handling does to one car at one level, each figure against the game's own for that very car (read when the
+    /// player gets in): <see cref="HandlingModel.Design"/> keeps the game's grip, steering, springs, bars and centre of
+    /// mass and adds these on top. The sliders' factors are folded in.
     /// </summary>
     public struct HandlingTarget
     {
-        public float Mass;            // kg the car weighs at this level
-        public float MassShare;       // of the way from the game's mass to Mass (the Light level goes half way)
-        public float ComHeight;       // m: the least height of the centre of mass above the road at rest
-        public float ComShare;        // of the way the centre of mass is raised towards ComHeight when the game's is lower
-        public float RideHz;          // the body's natural frequency on its springs (heave), Hz
-        public float Damping;         // damping ratio, the mean of bump and rebound
-        public float RollPerG;        // degrees of body roll per g of cornering
-        public float DivePerG;        // degrees of nose dive per g of braking (and of squat per g of pull)
-        public float RollCentre;      // m above the road where the tyres' side force acts on the body
-        public float SideGrip;        // the front tyres' peak grip to the side, in g
-        public float RearSurplus;     // how much more the rear tyres hold: the car runs wide at the limit, not round
-        public float AlongGrip;       // the tyres' peak grip along, in g (braking and pulling away)
-        public float PeakSlip;        // degrees of slip angle at which the front tyres give their most
-        public float RearPeakFactor;  // the rear tyres' peak slip angle against the front's (later: they let go gently)
-        public float Plateau;         // share of the peak a tyre keeps well past it: high, so no snap
-        public float BrakeShare;      // the full pedal's deceleration as a share of the tyres' grip along
-        public float BrakeRise;       // s from nothing to the full pedal, held down
-        public float SteerReach;      // at speed, the full steering is this many times the front tyres' peak slip angle past the bend's own angle
-        public float SteerSmoothing;  // s: how gently the wheels follow the key at 180 km/h (the game's own is 0.05 s at a standstill)
-        public float RollingShare;    // the tyres' rolling resistance as a share of the load on them
+        public float Mass;           // kg a car of the kind weighs
+        public float MassShare;      // of the way from the game's weight to it, never lighter than the game made the car
+        public float KneeDegrees;    // degrees of front slip angle past which the tyres hold no more: the give at the very limit
+        public float Damping;        // the damping ratio the body's swings die away at, at most; 0 keeps the game's own dampers
+        public float DamperScale;    // the dampers' rates, times it (the bounce slider)
+        public float RollAdd;        // degrees of body roll per g on top of the game's own
+        public float RollScale;      // the body roll per g, times it (the roll slider)
+        public float DiveScale;      // the game's own nose dive per g of braking, times it (and its squat per g of pull)
+        public float Softness;       // the spring rate is divided by it (the softness slider): 1 is the game's own rate for the weight
+        public float Grip;           // the tyres' grip to the side, times it (the grip slider)
+        public float Steering;       // the steering's reach at speed, times it (the steering slider): 1 is the game's own curve
+        public float BrakeFactor;    // the full pedal's deceleration against the game's own brakes on this car
+        public float BrakeRise;      // s from nothing to the full pedal, held down
     }
 
     /// <summary>
-    /// The handling of the driven car by kind of car (<see cref="CarCatalogue"/>) and by level: the figures each kind is
-    /// built to, from what such cars weigh and how they ride, with the game's soft, heavy, rolling and sliding feel
-    /// asked for (docs/features/driving.md, "Handling"). Game-free: NavCheck compiles this file.
+    /// The handling's levels (docs/features/driving.md, "Handling"): the game's own car, read when the player gets in, with a
+    /// little weight, roll, nose dive, smooth brakes that never lock and a little give past the very limit added, more of
+    /// each at Heavy and almost none at Light. Also the eased brake pedal. Game-free: NavCheck compiles this file.
     /// </summary>
     public static class HandlingRules
     {
+        public const float GameMass = 1400f;        // kg: what the game's own cars weigh (the Vord Pony 1200), for the Guide
         public const float BrakeFall = 0.12f;       // s for the brake pedal to come back up from full
         public const float PedalDeadZone = 0.06f;   // just over the 0.05 the game's gearbox reads as "no pedal"
-        private const float LightBrakes = 8f / 7f;  // Light's full pedal against the whole feel's, as a share of the tyres' grip
-        private const float HeavyBrakes = 13f / 14f;   // and Heavy's
 
         /// <summary>The level a choice of the option stands for; anything else is the default.</summary>
         public static HandlingLevel Level(int choice)
@@ -93,101 +85,68 @@ namespace RealLifeOverhaul
             return choice >= (int)HandlingLevel.Off && choice <= (int)HandlingLevel.Heavy ? (HandlingLevel)choice : HandlingLevel.Full;
         }
 
-        /// <summary>The figures one kind of car is built to at one level, with the tuning sliders applied. Untouched kinds get none.</summary>
+        /// <summary>What a kind of car weighs, kg: where its weight heads, a share of the way from the game's own.</summary>
+        public static float KindMass(CarKind kind)
+        {
+            switch (kind)
+            {
+                case CarKind.Economy: return 1250f;   // small hatchback
+                case CarKind.Luxury: return 2050f;    // big saloons and the limousine
+                case CarKind.Utility: return 2350f;   // SUVs and pickups
+                case CarKind.Van: return 2400f;
+                case CarKind.Truck: return 3000f;     // box and freight trucks, lightly laden
+                default: return 1550f;                // saloons and sports cars
+            }
+        }
+
+        /// <summary>The figures one kind of car is given at one level, with the tuning sliders folded in. Untouched kinds get none.</summary>
         public static HandlingTarget Target(CarKind kind, HandlingLevel level, in HandlingTuning tuning)
         {
-            HandlingTarget t = Full(kind);
+            var t = new HandlingTarget { Mass = KindMass(kind), DamperScale = 1f, RollScale = 1f, DiveScale = 1f, Softness = 1f, Grip = 1f, Steering = 1f, BrakeFactor = 1f };
             switch (level)
             {
                 case HandlingLevel.Light:
-                    t.MassShare = 0.5f;          // half the extra weight
-                    t.ComShare = 0.5f;           // the centre of mass raised half the way
-                    t.RideHz *= 1.12f;           // firmer springs
-                    t.Damping = t.Damping + 0.03f < 0.27f ? t.Damping + 0.03f : 0.27f;   // a swing less, still inside the band with the Garage's lightest build
-                    t.RollPerG *= 0.65f;
-                    t.DivePerG *= 0.65f;
-                    t.SideGrip *= 1.12f;         // nearer the game's own grip (and the tallest van still never tips on the grippiest tyres)
-                    t.AlongGrip *= 1.1f;
-                    t.RearSurplus = 0.08f;       // the tail stays put unless the handbrake swings it
-                    t.PeakSlip *= 0.9f;          // the tyres bite sooner
-                    t.Plateau = 0.95f;
-                    t.BrakeShare = t.BrakeShare * LightBrakes < HandlingModel.MostUse ? t.BrakeShare * LightBrakes : HandlingModel.MostUse;   // a seventh more of grippier tyres
-                    t.BrakeRise = 0.4f;
-                    t.SteerReach = 1.0f;
-                    t.SteerSmoothing = 0.15f;
+                    t.MassShare = 0.1f;        // a touch of the kind's weight
+                    t.KneeDegrees = 28f;       // the game's own tyres until the car is well sideways
+                    t.Damping = 0f;            // the game's own dampers
+                    t.RollAdd = 0.15f;
+                    t.DiveScale = 1.05f;
+                    t.BrakeRise = 0.15f;
                     break;
                 case HandlingLevel.Heavy:
-                    t.Mass *= 1.08f;             // heavier still
-                    t.RideHz *= 0.96f;
-                    t.Damping = t.Damping - 0.03f > 0.21f ? t.Damping - 0.03f : 0.21f;   // a swing more, still settling within two seconds
-                    t.RollPerG *= 1.1f;
-                    t.DivePerG *= 1.1f;
-                    t.SideGrip *= 0.92f;         // slidier
-                    t.AlongGrip *= 0.95f;
-                    t.RearSurplus = 0.015f;      // the tail comes round when the weight leaves it
-                    t.PeakSlip *= 1.12f;
-                    t.Plateau = 0.91f;
-                    t.BrakeShare *= HeavyBrakes;   // a fourteenth less of slidier tyres
-                    t.BrakeRise = 0.6f;
-                    t.SteerReach = 1.2f;
-                    t.SteerSmoothing = 0.24f;
+                    t.MassShare = 0.5f;        // half the way to the kind's weight
+                    t.KneeDegrees = 16f;       // the tyres give sooner past a hard turn
+                    t.Damping = 0.42f;         // a swing anyone sees after a kerb, then still
+                    t.RollAdd = 0.8f;
+                    t.DiveScale = 1.4f;        // as a share: on stiff springs a little more dive is a long arm, and the game's brakes are strong
+                    t.BrakeFactor = 0.92f;     // a little less bite at the full pedal
+                    t.BrakeRise = 0.4f;
+                    break;
+                default:
+                    t.MassShare = 0.25f;       // a quarter of the way to the kind's weight
+                    t.KneeDegrees = 20f;       // past the most slip the game's own car uses with the key held, at any speed
+                    t.Damping = 0.55f;         // one small swing after a kerb, then still
+                    t.RollAdd = 0.4f;
+                    t.DiveScale = 1.2f;
+                    t.BrakeRise = 0.25f;
                     break;
             }
 
             // The owner's sliders, around the level's own figures.
-            t.RideHz *= Sqrt(100f / tuning.Softness);   // the rate is divided by the slider, the frequency by its root
-            t.Damping *= 100f / tuning.Bounce;
-            t.RollPerG *= tuning.Roll / 100f;
-            t.SideGrip *= tuning.Grip / 100f;
-            t.AlongGrip *= tuning.Grip / 100f;
-            t.SteerReach *= tuning.Steering / 100f;
+            t.Softness = tuning.Softness / 100f;
+            t.DamperScale = 100f / tuning.Bounce;
+            t.RollScale = tuning.Roll / 100f;
+            t.Grip = tuning.Grip / 100f;
+            t.Steering = tuning.Steering / 100f;
             t.BrakeRise *= 100f / tuning.Brakes;
             return t;
         }
 
-        // The whole feel for each kind: what such cars weigh, how high their weight sits, how they ride and grip.
-        private static HandlingTarget Full(CarKind kind)
+        /// <summary>The weight a car of a kind and of the game's own weight carries at a level, kg (for the Guide: the game's cars).</summary>
+        public static float LevelMass(CarKind kind, HandlingLevel level, float gameMass)
         {
-            //                         kg    com h  ride Hz  zeta   roll  dive  centre  side   along  peak deg  brakes g
-            switch (kind)
-            {
-                case CarKind.Economy: return Make(1250f, 0.50f, 1.25f, 0.24f, 6.5f, 2.4f, 0.05f, 0.95f, 1.00f, 12f, 0.86f);   // small hatchback
-                case CarKind.Saloon: return Make(1550f, 0.52f, 1.20f, 0.24f, 6.0f, 2.4f, 0.06f, 1.00f, 1.00f, 12f, 0.88f);    // family and full-size saloons
-                case CarKind.Luxury: return Make(2050f, 0.52f, 1.05f, 0.23f, 6.5f, 2.6f, 0.08f, 1.00f, 1.00f, 13f, 0.88f);    // big, soft and floating
-                case CarKind.Sports: return Make(1550f, 0.45f, 1.45f, 0.26f, 4.5f, 1.8f, 0.05f, 1.12f, 1.10f, 10f, 0.92f);    // low, firm, wide tyres
-                case CarKind.Utility: return Make(2350f, 0.62f, 1.15f, 0.24f, 7.5f, 2.6f, 0.14f, 0.90f, 0.95f, 14f, 0.85f);   // SUVs and pickups: a live rear axle sits its roll centre higher
-                case CarKind.Van: return Make(2400f, 0.75f, 1.20f, 0.24f, 7.0f, 2.6f, 0.25f, 0.85f, 0.95f, 14f, 0.75f);       // tall and heavy, on a beam axle
-                case CarKind.Truck: return Make(3000f, 0.80f, 1.25f, 0.24f, 6.5f, 2.2f, 0.22f, 0.80f, 0.85f, 15f, 0.65f);     // box and freight trucks, lightly laden, on beam axles
-                default: return Make(1550f, 0.52f, 1.20f, 0.24f, 6.0f, 2.4f, 0.06f, 1.00f, 1.00f, 12f, 0.88f);
-            }
-        }
-
-        private static HandlingTarget Make(float mass, float comHeight, float rideHz, float damping, float roll, float dive, float rollCentre,
-            float side, float along, float peakSlip, float brakes)
-        {
-            return new HandlingTarget
-            {
-                Mass = mass,
-                MassShare = 1f,
-                ComHeight = comHeight,
-                ComShare = 1f,
-                RideHz = rideHz,
-                Damping = damping,
-                RollPerG = roll,
-                DivePerG = dive,
-                RollCentre = rollCentre,
-                SideGrip = side,
-                RearSurplus = 0.04f,       // a little more at the rear: the car runs wide when pushed, and lifting off brings the tail round
-                AlongGrip = along,
-                PeakSlip = peakSlip,
-                RearPeakFactor = 1.1f,
-                Plateau = 0.93f,
-                BrakeShare = brakes / along,   // the full pedal's deceleration: firm, inside the tyres (HandlingModel.MostUse), the ABS for the wet
-                BrakeRise = 0.5f,
-                SteerReach = 1.1f,         // a little past the front tyres' peak: pushed too hard, the car runs wide
-                SteerSmoothing = 0.2f,
-                RollingShare = 0.012f      // a road tyre's rolling resistance: the car carries its speed
-            };
+            HandlingTarget t = Target(kind, level, HandlingTuning.Neutral);
+            return gameMass + t.MassShare * (t.Mass > gameMass ? t.Mass - gameMass : 0f);
         }
 
         /// <summary>
@@ -209,11 +168,6 @@ namespace RealLifeOverhaul
             }
             float back = current - dt / BrakeFall;
             return back < asked ? asked : back;
-        }
-
-        private static float Sqrt(float value)
-        {
-            return (float)System.Math.Sqrt(value);
         }
     }
 }
