@@ -1,4 +1,4 @@
-0.40.2
+0.40.3
 
 Fixed
-- When the RLO Texts model stops answering or closes, it is started again in the background and its words come back by themselves. Messages use their written lines meanwhile.
+- A bicycle or motorbike left against a post, a bin or a bench, or after a fall into one, could be stuck in it for good. When you get off or back on, it is now stood on clear pavement next to where it was.
