@@ -180,6 +180,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\IncomeRules.cs" Link="Mod\IncomeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\PartnerVoiceRules.cs" Link="Mod\PartnerVoiceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\PartnerJobRules.cs" Link="Mod\PartnerJobRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\PartnerExpectRules.cs" Link="Mod\PartnerExpectRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialComposerRules.cs" Link="Mod\SocialComposerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialComposerRules.Reading.cs" Link="Mod\SocialComposerRules.Reading.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialComposerRules.Words.cs" Link="Mod\SocialComposerRules.Words.cs" />

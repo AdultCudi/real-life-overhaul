@@ -120,7 +120,8 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        private static VehicleController Controller(string id)
+        /// <summary>The object of the player's car with this id in the city; null while it has none (out on hire, or the partner's).</summary>
+        internal static VehicleController Controller(string id)
         {
             List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
             for (int i = 0; i < all.Count; i++)
@@ -233,8 +234,8 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        // The traffic is told the collider is gone, as the game tells it.
-        private static void Hide(VehicleController controller)
+        /// <summary>A car taken out of the city: the traffic is told the collider is gone, as the game tells it, and its object goes. Also for the partner's car (Family/PartnerCar).</summary>
+        internal static void Hide(VehicleController controller)
         {
             if (controller.vehicleCollider != null)
             {

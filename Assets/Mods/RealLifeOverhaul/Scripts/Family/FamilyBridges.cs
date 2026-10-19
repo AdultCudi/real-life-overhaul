@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Family
         public int Stage;            // 0 stranger, 1 acquaintance, 2 friend, 3 close friend, 4 dating, 5 partner
         public int DaysTogether;     // days since they began dating
         public int LastContactDay;   // the owner's last call, text, outing or meeting with them (0: none known)
+        public int Spend;            // how they are with money, a per cent of the usual allowance they expect (PartnerExpectRules); 0 unknown
         public string JobKey;        // what they do for a living, the owner's locale key said after "a"; null if the owner keeps none
         public int FreeFrom;         // the hours of a weekday they are free (0 and 0: the owner keeps none)
         public int FreeTo;

@@ -256,7 +256,8 @@ namespace RealLifeOverhaul
                 _body != null ? _body.mass : 1400f);
             _kind = CarCatalogue.For(car.vehicleType.vehicleTypeName, traits).Kind;
             bool owned = car.vehicleInstance != null && save.VehicleInstances != null && save.VehicleInstances.Contains(car.vehicleInstance)
-                         && !Dealerships.Stock(car.vehicleInstance);   // a dealership's stock car is on its trade plates
+                         && !Dealerships.Stock(car.vehicleInstance)    // a dealership's stock car is on its trade plates
+                         && !Family.PartnerCar.Is(car.vehicleInstance); // the partner's car is theirs to keep
             _record = owned ? CarGarage.For(car.vehicleInstance.id, TimeHelper.CurrentDay) : null;   // a hired or borrowed car has no record
             if (_record != null)
             {
@@ -581,7 +582,7 @@ namespace RealLifeOverhaul
                 {
                     continue;   // a car gets its record the first time it is driven or looked up on the Garage page
                 }
-                if (Dealerships.Stock(instance))
+                if (Dealerships.Stock(instance) || Family.PartnerCar.Is(instance))
                 {
                     continue;   // a dealership's stock car driven before this mod knew it was: no premium, no reminder
                 }

@@ -169,7 +169,7 @@ namespace RealLifeOverhaul.Economy
             {
                 VehicleInstance v = vehicles[i];
                 VehicleType type = v != null && !_owned.Contains(v.id) && !v.zeroSellingPrice ? v.VehicleType : null;
-                if (type == null || !type.IsMotorVehicle || Dealerships.Stock(v))
+                if (type == null || !type.IsMotorVehicle || Dealerships.Stock(v) || Family.PartnerCar.Is(v))
                 {
                     continue;   // a hand truck, a vehicle lent and not the player's to sell, or a dealership's stock (Core/Dealerships)
                 }
