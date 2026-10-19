@@ -97,7 +97,7 @@ Small, self-contained kinds of work that teach you how the mod is put together. 
 - **A text that reads badly.** Find a sentence in the game that is unclear, too long or breaks [the style sheet](../../RealLifeOverhaul.Build/Workshop/STYLE.md), and mend its key in `en.json`. See [Texts and translation](texts-and-translation.md).
 - **A translation.** Check or improve a language you speak natively, key by key.
 - **A living city activity.** One person working alone on the pavement is one catalogue entry; see [Adding an activity](adding-things.md#adding-an-activity-to-the-living-city).
-- **A life event.** One more entry in the life events' catalogue (`Scripts/Life/LifeEventCatalogue*.cs`), with its texts.
+- **A life event.** One more entry in the life events' catalogue (`Scripts/Life/LifeEventCatalogue*.cs`), with its texts. An event whose text speaks of the player's home, building, neighbours or landlord needs `HasHome`, so it never reaches a player with no home; EconomyCheck (`LifeFixChecks.cs`) holds every event to that.
 - **An offline check.** A rule in a `*Rules.cs` file that no checker covers yet: add the check, and make it fail once to prove it runs.
 - **A wish-list asset.** A prop, clip or sound a feature already asks for by id; the feature pages list them, and the asset pipelines' READMEs say how to make one.
 - **A page of these docs** that is wrong or hard to follow.

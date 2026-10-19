@@ -41,7 +41,8 @@ namespace RealLifeOverhaul
         CanPrompt = 1 << 26,     // no confirm box open already
         EnergyReserve = 1 << 27, // enough energy that losing some can't knock the player out
         Newcomer = 1 << 28,      // first week in the city
-        Veteran = 1 << 29        // day 15 onwards
+        Veteran = 1 << 29,       // day 15 onwards
+        HasHome = 1 << 30        // a residential building rented or owned by the player
     }
 
     internal enum Tone { Good, Info, Warn, Bad }

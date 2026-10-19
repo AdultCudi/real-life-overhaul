@@ -21,6 +21,7 @@ namespace RealLifeOverhaul
         ///   GarageBridges.RoadIsWet    wet in the rain of Events/Weather as well as the game's
         ///   HomeBridges.Sheltered      up in a hotel room is indoors: no rain, no cold from it
         ///   HomeBridges.SleepingAway   a night or a nap in a hotel room is sleep, in the room's bed
+        ///   LifeAccounts.Home          Home's residential lookup: a home of the player's, wherever they stand
         ///
         /// Left at their defaults, each because the other side has nothing to answer with (see the list in docs/reference/wiring.md):
         /// CareerLinks.Social, TravelBridges.Transport and Leisure, Justice.Bridges.Transport,
@@ -47,6 +48,7 @@ namespace RealLifeOverhaul
                 GarageBridges.RoadIsWet = () => RainHelper.AreRainDropsFalling || Events.Weather.Sky >= Events.Sky.Rain;
                 HomeBridges.Sheltered = () => TravelState.InRoom;
                 HomeBridges.SleepingAway = () => HotelStay.SleepingBed;
+                LifeAccounts.Home = HasHome;
             }
 
             internal static void Disconnect()
@@ -62,6 +64,20 @@ namespace RealLifeOverhaul
                 GarageBridges.RoadIsWet = null;
                 HomeBridges.Sheltered = null;
                 HomeBridges.SleepingAway = null;
+                LifeAccounts.Home = null;
+            }
+
+            private static bool HasHome()
+            {
+                try
+                {
+                    return HomeTidy.HasHome;
+                }
+                catch (Exception e)
+                {
+                    Fault("LifeLinks.HasHome", e);
+                    return false;
+                }
             }
 
             private static bool NeedsOn => HomeState.Loaded && Settings.HomeLife && Settings.HomeNeeds;
