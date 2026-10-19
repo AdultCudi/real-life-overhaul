@@ -201,10 +201,10 @@ internal static partial class Program
         return sum;
     }
 
-    private static readonly string[] LetGoMarks = { "Fixed: ", "Corrigido: ", "已修复：", "Behoben: ", "Corrigé : ", "Corregido: ", "Исправлено: " };
-    private static readonly string[] LetGoCodes = { "en", "pt", "zh-cn", "de", "fr", "es", "ru" };
+    private static readonly string[] LetGoMarks = { "Fixed: ", "Corrigido: ", "已修复：", "Behoben: ", "Corrigé : ", "Corregido: ", "Исправлено: ", "Opgelost: ", "Düzeltildi: " };
+    private static readonly string[] LetGoCodes = { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr" };
 
-    // What's new has the fix's line in all seven languages, each with its own fix mark, in some reallife_changes_ row
+    // What's new has the fix's line in all nine languages, each with its own fix mark, in some reallife_changes_ row
     // (never only the next one: the release numbers it).
     private static void LetGoWords()
     {
@@ -239,6 +239,8 @@ internal static partial class Program
             case "fr": return row.Contains("Corrigé : un bâtiment qui n'est plus à vous");
             case "es": return row.Contains("Corregido: un edificio que ya no es tuyo");
             case "ru": return row.Contains("Исправлено: здание, которое вам больше не принадлежит");
+            case "nl": return row.Contains("Opgelost: een gebouw dat niet meer van jou is");
+            case "tr": return row.Contains("Düzeltildi: artık size ait olmayan bir bina");
             default: return false;
         }
     }

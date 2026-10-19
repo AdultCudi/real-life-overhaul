@@ -7,8 +7,8 @@
 #                                English texts, so that those two are never short of a key; what it filled is listed as still
 #                                English until somebody translates it.
 #
-# The mod has seven languages (LANGUAGES). en, pt and zh-cn (REQUIRED) must be there with every key. German, French, Spanish
-# and Russian are checked as soon as their file is there, and may lack keys: a language without a file, or a key its file
+# The mod has nine languages (LANGUAGES). en, pt and zh-cn (REQUIRED) must be there with every key. German, French, Spanish,
+# Russian, Dutch and Turkish are checked as soon as their file is there, and may lack keys: a language without a file, or a key its file
 # lacks, is read in English. The game looks a key up in the player's language and then in its fallback language, English
 # (Localizor.LocalizorManager.GetLocalization; LocalizorSettings.fallbackLanguage is "en"), and it reads a mod's
 # Locales/<code>.json for both (ContractCheck's LanguageChecks holds the game to this). What they lack is translated later
@@ -20,8 +20,8 @@
 # empty, has a dash or has more exclamation marks than the English; a notification (a key the sources raise with a
 # NotificationType, as CatalogueCheck's NoticeCheck finds them) is at most 240 characters; What's new's empty next row is that
 # language's NOTHING text, and its fixes are marked with that language's FIXED as often as the English marks them; and a text
-# is in the language's own words: Chinese and Russian texts must hold their own script, and a German, French, Spanish or
-# Portuguese text of four words or more may not be the English unchanged, unless its key is on ENGLISH_OK (texts that are only
+# is in the language's own words: Chinese and Russian texts must hold their own script, and a German, French, Spanish,
+# Portuguese, Dutch or Turkish text of four words or more may not be the English unchanged, unless its key is on ENGLISH_OK (texts that are only
 # names, kept in Latin letters). not-in-repo/translate/merge.py imports this file and refuses a translation by the same rules.
 import io
 import json
@@ -35,14 +35,14 @@ LOC = os.path.join(MOD, 'Locales')
 FILL = '--fill' in sys.argv
 # The mod's languages: the game's code (the file name), the language's name in English. English is the source.
 LANGUAGES = (('en', 'English'), ('pt', 'Brazilian Portuguese'), ('zh-cn', 'Simplified Chinese'), ('de', 'German'),
-             ('fr', 'French'), ('es', 'Spanish'), ('ru', 'Russian'))
+             ('fr', 'French'), ('es', 'Spanish'), ('ru', 'Russian'), ('nl', 'Dutch'), ('tr', 'Turkish'))
 REQUIRED = ('en', 'pt', 'zh-cn')
 # What's new's next row when nothing is in it yet; the release scripts (make_version.py, next_join.py, next_dedupe.py) know these.
 NOTHING = {'en': 'Nothing yet.', 'pt': 'Nada ainda.', 'zh-cn': '还没有。', 'de': 'Noch nichts.', 'fr': "Rien pour l'instant.",
-           'es': 'Nada todavía.', 'ru': 'Пока ничего.'}
+           'es': 'Nada todavía.', 'ru': 'Пока ничего.', 'nl': 'Nog niets.', 'tr': 'Henüz yok.'}
 # What's new: each fix begins with this (the change note and next_dedupe.py split on it). zh-cn's rows before 0.9 have none.
 FIXED = {'en': 'Fixed: ', 'pt': 'Corrigido: ', 'zh-cn': '已修复：', 'de': 'Behoben: ', 'fr': 'Corrigé : ', 'es': 'Corregido: ',
-         'ru': 'Исправлено: '}
+         'ru': 'Исправлено: ', 'nl': 'Opgelost: ', 'tr': 'Düzeltildi: '}
 CHANGES = re.compile(r'reallife_changes_\d{3}_\d+$')
 SCRIPT = {'zh-cn': '[一-鿿]', 'ru': '[А-Яа-яЁё]'}   # a text in these languages must hold their own script
 SCRIPT_WORDS = {'zh-cn': 1, 'ru': 3}               # ... once it has this many Latin words (fewer: a name or a unit, as "Mbps")
