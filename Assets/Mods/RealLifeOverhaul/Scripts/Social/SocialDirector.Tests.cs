@@ -121,8 +121,9 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// A call opened now with somebody whose chat the player types (the chosen person first, then anybody else met whose
-        /// chat today is still to come); says why not: the option off, no pack running, nobody it can be. Records nothing
-        /// beyond what the call itself does.
+        /// chat today is still to come), its first topic the shop's loss, whose answer the reading turns on (good news gets a
+        /// glad line, bad news the sorry one); says why not: the option off, no pack running, nobody it can be. Records
+        /// nothing beyond what the call itself does.
         /// </summary>
         public void TestComposer()
         {
@@ -172,9 +173,15 @@ namespace RealLifeOverhaul
                     noPack ?? (chatted ? "everybody it could be has had today's chat" : "nobody but Mom is known, and no pack answers her yet"));
                 return;
             }
+            PersonDialog.TestTopic = SocialCatalogue.TopicShopBad;
+            PersonDialog.TestTopicFor = person.Index;
             bool opened = SocialPhone.Call(person);
+            if (!opened)
+            {
+                PersonDialog.TestTopic = PersonDialog.TestTopicFor = -1;
+            }
             Logger?.Info("Social check (composer test): a call with " + person.Name
-                         + (opened ? " opened; press Chat and type an answer to the topic: PASS" : ": FAIL, the phone could not open the call"));
+                         + (opened ? " opened; press Chat: they ask how the shop is holding up; type good or bad news: PASS" : ": FAIL, the phone could not open the call"));
             if (!opened)
             {
                 TestRefusals.Tell(Logger, test, TestRefusal.ScreenBusy, 0, "the phone could not open the call");
