@@ -399,15 +399,17 @@ internal static partial class Program
     // ---------------------------------------------------------------- the report, and every way of leaving
 
     // The report's case. Ann has the rival's offer of day 170; on day 172 she leaves another way (the company's own
-    // offer to her lapsed, and business pressure's leaving had her resign): nothing came to her chat, so the offer is
-    // its newest message and the chat draws its two buttons. Without the guard, Decline sends her to the rival again.
+    // offer to her lapsed, and business pressure's leaving had her resign and took her off the list, Core/StaffLeave):
+    // nothing came to her chat, so the offer is its newest message and the chat draws its two buttons. Without the guard,
+    // Decline sends her to the rival again.
     private static void RivalOfferReport()
     {
         OfferWorld before = OfferSetup(out OfferPerson ann, out OfferChat chat);
         before.NextDay();
         before.NextDay();
-        ann.Satisfaction = 0f;                            // BusinessGame.Leave
+        ann.Satisfaction = 0f;                            // Core/StaffLeave: resigned and off the list at once
         before.Resign(ann);
+        before.Staff.Remove(ann);
         int paid = before.WagesPaid, copies = before.RivalCopies, own = before.RivalOwnStaff;
         OfferMessage drawn = OfferWorld.Drawn(chat);
         Check(drawn != null && drawn.Key == RivalOfferRules.OfferKey && drawn.Buttons.Count == 2,
@@ -424,7 +426,8 @@ internal static partial class Program
         after.NextDay();
         ann.Satisfaction = 0f;
         after.Resign(ann);
-        int taken = after.Guard();                        // RivalOfferGuard.Look, from BusinessGame.Leave
+        after.Staff.Remove(ann);
+        int taken = after.Guard();                        // RivalOfferGuard.Look, from Core/StaffLeave
         paid = after.WagesPaid;
         copies = after.RivalCopies;
         own = after.RivalOwnStaff;
@@ -433,7 +436,6 @@ internal static partial class Program
               && after.RivalOwnStaff == own && after.WagesPaid == paid && after.Resignations == 1,
             "rival offers, the report: with the guard her offer loses its buttons as she resigns; nothing is drawn to"
             + " press, and nobody is moved, paid or resigned again");
-        after.Staff.Remove(ann);                          // the game's hour takes her off the list
         after.NextDay();
         Check(after.Guard() == 0 && OfferWorld.Drawn(chat) == null && after.RivalCopies == copies,
             "rival offers, the report: her offer stays without buttons after she has gone, and her deadline then moves"
@@ -449,7 +451,12 @@ internal static partial class Program
             new OfferWay { Name = "fired in MyEmployees (RemoveEmployee, no message)", Leave = (w, p) => w.Staff.Remove(p) },
             new OfferWay
             {
-                Name = "let go by business pressure or the company (BusinessGame.Leave: resigned until the hour)",
+                Name = "let go by business pressure, the company or the tech sector (Core/StaffLeave: resigned and off the list at once)",
+                Leave = (w, p) => { p.Satisfaction = 0f; w.Resign(p); w.Staff.Remove(p); }
+            },
+            new OfferWay
+            {
+                Name = "resigned at no satisfaction, still on the list (a save made by an older version between its leaving and the game's hour)",
                 Leave = (w, p) => { p.Satisfaction = 0f; w.Resign(p); }
             },
             new OfferWay
@@ -710,12 +717,14 @@ internal static partial class Program
         string business = ModSource(@"Business\BusinessGame.cs");
         string tech = ModSource(@"Tech\People\TalentGame.cs");
         string sale = ModSource(@"Economy\Services\ServicesGame.Sale.cs");
-        Check(MemberText(business, "public static void Leave(EmployeeInstance e)").Contains("RivalOfferGuard.Look(")
-              && MemberText(tech, "public static void Resign(EmployeeInstance e)").Contains("RivalOfferGuard.Look(")
+        string leaving = ModSource(@"Core\StaffLeave.cs");
+        Check(MemberText(business, "public static bool Leave(EmployeeInstance e)").Contains("StaffLeave.Resign(")
+              && MemberText(tech, "public static bool Resign(EmployeeInstance e)").Contains("StaffLeave.Resign(")
+              && MemberText(leaving, "public static bool Resign(EmployeeInstance e, string who)").Contains("RivalOfferGuard.Look(")
               && MemberText(tech, "public static void Fire(EmployeeInstance e)").Contains("RivalOfferGuard.Look(")
               && MemberText(sale, "public static SaleAfter Complete(").Contains("RivalOfferGuard.Look("),
-            "rival offers: business pressure's leaving (the company's too), the tech sector's resignation and dismissal,"
-            + " and a sale with its staff each ask the guard at once");
+            "rival offers: business pressure's leaving (the company's too) and the tech sector's resignation, which go by"
+            + " Core/StaffLeave, the tech sector's dismissal and a sale with its staff each ask the guard at once");
         int sites = 0, asked = 0;
         string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory,
                                                                         @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
@@ -731,7 +740,7 @@ internal static partial class Program
                     : 0;
             }
         }
-        Check(sites >= 4 && asked == sites,
+        Check(sites >= 3 && asked == sites,
             "rival offers: each of the mod's " + sites + " calls that have a game employee resign or removed is followed"
             + " in its method by the guard's look (" + asked + ")");
 

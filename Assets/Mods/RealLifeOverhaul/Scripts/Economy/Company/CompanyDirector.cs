@@ -460,7 +460,10 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The app has opened: the staff are read again, so a wage changed in the game's own app since the morning shows.</summary>
+        /// <summary>
+        /// The app has opened: the staff are read again, so a wage changed in the game's own app since the morning shows, and
+        /// an offer of the company's whose employee the game's own rival offer has reached since gives way before it is drawn.
+        /// </summary>
         public bool AppOpened()
         {
             if (!_running || _broken || Save == null)
@@ -471,6 +474,10 @@ namespace RealLifeOverhaul.Economy
             {
                 int gone;
                 ReadPeople(out gone);
+                if (On(CompanyPart.Staff))
+                {
+                    GiveWayAll(Save.Day);
+                }
                 RotaRead();
                 Badge();
                 return true;

@@ -33,8 +33,23 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A rival's name to put to an offer; null for none.</summary>
         public static Func<BuildingRegistration, string> Rival;
 
-        /// <summary>An employee leaves by the game's own resignation, as business pressure has them leave.</summary>
-        public static Action<EmployeeInstance> Leave;
+        /// <summary>An employee leaves by the game's own resignation, once, as business pressure has them leave; false if they could not be let go.</summary>
+        public static Func<EmployeeInstance, bool> Leave;
+
+        /// <summary>True while the tech sector has its own rival's offer or a departure in hand for an employee (the game's id): the company makes no offer then.</summary>
+        public static Func<string, bool> Held;
+
+        internal static bool HeldAt(string id)
+        {
+            try
+            {
+                return Held != null && !string.IsNullOrEmpty(id) && Held(id);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
 
         /// <summary>Files a criminal case for tax kept back; the court's number, or 0 with no court.</summary>
         public static Func<int, int> TaxCase;
@@ -102,6 +117,7 @@ namespace RealLifeOverhaul.Economy
             Dispute = null;
             Rival = null;
             Leave = null;
+            Held = null;
             TaxCase = null;
             IssueFootfall = null;
             OtherIncome = null;
@@ -515,6 +531,8 @@ namespace RealLifeOverhaul.Economy
                 int days = e.assignedWeeklyDays != null ? e.assignedWeeklyDays.Count : 0;
                 f.DayHours = days > 0 && e.assignedWeeklyHours > 0 ? e.assignedWeeklyHours * 100 / days : 0;
                 f.Going = StaffRules.Going(Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(skill) * 100f), StaffRules.Market(index, cycle, shop.Income));
+                f.GameOffer = RivalOfferGuard.OfferOpen(e);
+                f.Held = CompanyBridges.HeldAt(e.id);
                 shop.Sick += f.Sick ? 1 : 0;
             }
             for (int i = staff.Count - 1; i >= 0; i--)
@@ -557,6 +575,18 @@ namespace RealLifeOverhaul.Economy
         public static EmployeeInstance Employee(string id)
         {
             return string.IsNullOrEmpty(id) ? null : EmployeeHelper.GetEmployeeById(id, false);
+        }
+
+        /// <summary>
+        /// One employee's other offers read again, as they stand now: whether the game's own rival offer to them is open
+        /// (Core/RivalOfferGuard) and whether the tech sector has an offer or a departure in hand for them. The game's offer
+        /// can come at any hour (its special rivals' planned moves), so a decision on an offer reads them first.
+        /// </summary>
+        public static void Offers(StaffFile f)
+        {
+            EmployeeInstance e = Employee(f.Id);
+            f.GameOffer = e != null && RivalOfferGuard.OfferOpen(e);
+            f.Held = CompanyBridges.HeldAt(f.Id);
         }
 
         private static EmployeeInstance Self()

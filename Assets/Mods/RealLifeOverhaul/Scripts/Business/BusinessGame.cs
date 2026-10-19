@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
     ///   closure      BuildingRegistration.TemporarilyClose, the switch on the business's own page;
     ///   theft        stolenItemsCost, which the game books as Theft and clears each night;
     ///   wages        EmployeeInstance.hourlyWage, as the game's own poach counter-offer writes it;
-    ///   leaving      the game's own resignation path (what a complaint that is ignored does);
+    ///   leaving      the game's own resignation path (what a complaint that is ignored does), once (Core/StaffLeave);
     ///   deliveries   DeliveryContract.nextDeliveryDay.
     /// Nothing here runs on a timer of its own.
     /// </summary>
@@ -649,21 +649,13 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The employee leaves the way the game has an employee leave whose complaint went unanswered. A rival's offer
-        /// to them loses its buttons at once (Core/RivalOfferGuard): the game sends nothing to their chat until their
-        /// next hour.
+        /// The employee leaves the way the game has an employee leave whose complaint went unanswered, once, with one wage
+        /// and one notice, and off the game's list at once (Core/StaffLeave); a rival's offer to them loses its buttons at
+        /// once (Core/RivalOfferGuard). False, with nothing changed, for somebody who is not the player's to let go now.
         /// </summary>
-        public static void Leave(EmployeeInstance e)
+        public static bool Leave(EmployeeInstance e)
         {
-            Logger?.Info("Business: " + NameOf(e) + " leaves the company (the game's own resignation).");
-            e.poached = false;
-            e.complaintData.isComplaining = false;
-            e.satisfaction = 0f;
-            if (!e.ReplaceAutomaticallyOnResign())
-            {
-                e.Resign();
-            }
-            RivalOfferGuard.Look("an employee let go by the game's own resignation");
+            return StaffLeave.Resign(e, "business pressure");
         }
 
         /// <summary>

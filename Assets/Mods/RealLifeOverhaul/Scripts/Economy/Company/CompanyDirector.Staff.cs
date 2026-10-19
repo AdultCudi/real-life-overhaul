@@ -45,6 +45,10 @@ namespace RealLifeOverhaul.Economy
                     _raisePay[at] += StaffRules.Pay(f.Raise, f.Hours);
                 }
                 f.Hours = 0;
+                if (StaffRules.GivesWay(f))
+                {
+                    GaveWay(f, day);   // the game's own rival offer to them opened overnight: theirs decides, not the company's
+                }
                 // The game picks the new day's absences after its day event, so this is still the day that has ended.
                 if (f.Sick)
                 {
@@ -188,9 +192,12 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // A strike morning: business pressure's own closure shuts the doors for some hours and reopens them itself.
+        // Each hour, the company's offers and notices give way to an offer of the game's that has opened since (its special
+        // rivals' planned moves come at any hour). A strike morning: business pressure's own closure shuts the doors for
+        // some hours and reopens them itself.
         partial void StaffHour(int day, int hour)
         {
+            GiveWayAll(day);
             if (hour != CompanyCatalogue.StrikeHour)
             {
                 return;
@@ -257,22 +264,61 @@ namespace RealLifeOverhaul.Economy
             Cost(amount, key, shop, shop.Name, CostKind.Wages, day, how, true);
         }
 
-        // They go by the game's own resignation, and their file with them; with nothing to leave by, they stay.
+        // They go by the game's own resignation, once, and their file with them; with nothing to leave by, they stay.
         private void Leave(StaffFile f)
         {
             EmployeeInstance e = CompanyGame.Employee(f.Id);
-            if (e == null || CompanyBridges.Leave == null)
+            if (e == null || CompanyBridges.Leave == null || !CompanyBridges.Leave(e))
             {
                 f.LeaveDay = 0;
                 Logger?.Info("Company: " + f.Name + " was to leave today and stays: "
-                             + (e == null ? "the game no longer has them." : "there is nothing to have them leave by."));
+                             + (e == null ? "the game no longer has them." : CompanyBridges.Leave == null ? "there is nothing to have them leave by." : "they are not the player's to let go."));
                 return;
             }
-            CompanyBridges.Leave(e);
             _state.Staff.Remove(f);
             Tell(NotificationType.Warning, "reallife_co_note_left", new Dictionary<string, string> { { "name", f.Name }, { "business", ShopName(f.Place) } }, TabStaff, null);
             Logger?.Info("Company: " + f.Name + " has left " + ShopName(f.Place) + " for a rival by the game's own resignation; the agreed raise of " + f.Raise
                          + " went with them.");
+        }
+
+        // The company's offers, and the notices worked after them, whose employee the game's own rival offer has reached
+        // since: each gives way at once. Once a game hour: a pass over the files, the game read only for the few with an
+        // offer or a notice of the company's.
+        private void GiveWayAll(int day)
+        {
+            bool any = false;
+            for (int i = 0; i < _state.Staff.Count; i++)
+            {
+                StaffFile f = _state.Staff[i];
+                if (f.PoachDay == 0 && f.LeaveDay == 0)
+                {
+                    continue;
+                }
+                CompanyGame.Offers(f);
+                if (StaffRules.GivesWay(f))
+                {
+                    GaveWay(f, day);
+                    any = true;
+                }
+            }
+            if (any)
+            {
+                Changed();
+            }
+        }
+
+        // One rival's offer to an employee at a time. The game's has come, and the mod cannot stop the game making it, so
+        // the company's offer to them, or the notice they work after one, is called off as if never made: no buttons of the
+        // company's are left to answer, and they leave, if they do, only by the game's offer. The player is told once.
+        private void GaveWay(StaffFile f, int day)
+        {
+            string rival = f.Rival;
+            bool notice = f.LeaveDay > 0;
+            StaffRules.GiveWay(f, day);
+            Tell(NotificationType.Warning, "reallife_staff_offer_gave_way", new Dictionary<string, string> { { "name", f.Name }, { "rival", rival } }, TabStaff,
+                "emp:" + f.Id);
+            Logger?.Info("Company: " + f.Name + " has the game's own rival offer in their messages, so " + (notice ? "their notice for " + rival + " is" : rival + "'s offer is")
+                         + " called off on day " + day + ": one rival's offer to an employee at a time, and the game's decides.");
         }
 
         private void EndStrike(CompanyShop shop, StrikeAnswer how, int day)
@@ -398,6 +444,13 @@ namespace RealLifeOverhaul.Economy
             StaffFile f = On(CompanyPart.Staff) ? _state.Employee(id) : null;
             if (f == null || f.PoachDay == 0)
             {
+                return;
+            }
+            CompanyGame.Offers(f);
+            if (StaffRules.GivesWay(f))
+            {
+                GaveWay(f, Save.Day);   // the game's own offer came while this page was open: it is the one to answer
+                Changed();
                 return;
             }
             int offer = f.PoachOffer;

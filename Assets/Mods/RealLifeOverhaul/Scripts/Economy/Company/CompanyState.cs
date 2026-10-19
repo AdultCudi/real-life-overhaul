@@ -32,6 +32,8 @@ namespace RealLifeOverhaul.Economy
         public int Mood;                // the game's satisfaction, 0 to 100
         public bool Sick;               // off sick: on the day's pass, the day that has ended
         public bool Seen;               // found in the game on the last read
+        public bool GameOffer;          // the game's own rival offer to them is open (EmployeeInstance.PoachByRival), as last read
+        public bool Held;               // the tech sector has its own rival's offer or a departure in hand for them, as last read
 
         /// <summary>What they are paid an hour, hundredths: the game's wage and the agreed raise.</summary>
         public int Paid => Wage + Raise;

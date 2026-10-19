@@ -97,6 +97,16 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>
+        /// True while the tech sector has its own rival's offer open to an employee (the game's id) or a departure in hand
+        /// for them (any notice): the company and business pressure then make no rival's offer to them (Wiring/CompanyLinks).
+        /// One dictionary look; false while the people part is off.
+        /// </summary>
+        internal bool Holds(string id)
+        {
+            return _peopleOn && Save != null && !string.IsNullOrEmpty(id) && _fileOf.TryGetValue(id, out Profile p) && p != null && TalentRules.Holds(p);
+        }
+
         private void WritePeople(Dictionary<string, string> data)
         {
             if (_talent != null)
@@ -316,6 +326,8 @@ namespace RealLifeOverhaul.Tech
         // Counts on each file who works this hour: on a shift of the game's at a business that is open. The game adds the
         // hour to its own figure after this event; at midnight that figure still holds the day before, which stands in
         // for a day the count missed. A professional hired since the last read is read first, so their first shift counts.
+        // And the sector's offers and notices give way to an offer of the game's that has opened since (its special rivals'
+        // planned moves come at any hour): the game is read only for the few with one in hand.
         private void PeopleHour()
         {
             int day = Save.Day;
@@ -344,6 +356,40 @@ namespace RealLifeOverhaul.Tech
                     person.File.WorkHours = Math.Min(24, person.File.WorkHours + 1);
                 }
             }
+            if (GiveWayAll(day))
+            {
+                Changed();
+            }
+        }
+
+        // The sector's offers, and the notices worked after them, whose employee the game's own rival offer has reached
+        // since: each gives way at once. The game is read only for the few with one in hand. True if any did.
+        private bool GiveWayAll(int day)
+        {
+            bool gave = false;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Person person = _people[i];
+                if (person.Game != null && TalentRules.Holds(person.File) && TalentRules.GivesWay(person.File, TalentGame.GameOffer(person.Game)))
+                {
+                    GaveWay(person, day);
+                    gave = true;
+                }
+            }
+            return gave;
+        }
+
+        // One rival's offer to an employee at a time. The game's has come, and the mod cannot stop the game making it, so
+        // the sector's offer to them, or the notice they work after one, is called off as if never made: no buttons of the
+        // sector's are left to answer, and they leave, if they do, only by the game's offer. The player is told once.
+        private void GaveWay(Person person, int day)
+        {
+            Profile p = person.File;
+            bool notice = p.PoachBp == 0;
+            TalentRules.GiveWay(p, day);
+            Tell(NotificationType.Warning, "reallife_staff_offer_gave_way", Data("name", person.Name, "rival", p.PoachBy), TabTeam, Row(p));
+            Logger?.Info("Tech: " + person.Name + " has the game's own rival offer in their messages, so " + (notice ? "their notice for " + p.PoachBy + " is" : p.PoachBy + "'s offer is")
+                         + " called off on day " + day + ": one rival's offer to an employee at a time, and the game's decides.");
         }
 
         // The hours worked the day before: as counted on the hour, or a plain working day for the mod's own payroll.
@@ -440,6 +486,11 @@ namespace RealLifeOverhaul.Tech
                         p.RaiseAsk > 0 ? "reallife_talent_note_review_ask" : promote ? "reallife_talent_note_review_promote" : "reallife_talent_note_review",
                         Data("name", person.Name, "rating", rating.ToString(), "percent", (p.RaiseAsk / 100).ToString()), TabTeam, Row(p));
                 }
+                bool gameOffer = person.Game != null && TalentGame.GameOffer(person.Game);
+                if (TalentRules.GivesWay(p, gameOffer))
+                {
+                    GaveWay(person, day);   // the game's own rival offer to them opened overnight: theirs decides, not the sector's
+                }
                 if (TalentRules.BurnsOut(Seed, p, day))
                 {
                     TalentRules.Notice(p, day, year, LeaveKind.BurntOut);
@@ -450,7 +501,7 @@ namespace RealLifeOverhaul.Tech
                     TalentRules.Answer(p, false, day, year);   // not answered in time: they take it
                     Tell(NotificationType.Warning, "reallife_talent_note_poach_gone", Data("name", person.Name, "rival", p.PoachBy, "day", p.NoticeEnd.ToString()), TabTeam, Row(p));
                 }
-                else if (TalentRules.Approached(Seed, p, day, Shortage(p.Def.Family), esteem, p.GameWage, p.Going) && !Held(p))
+                else if (TalentRules.Approached(Seed, p, day, Shortage(p.Def.Family), esteem, p.GameWage, p.Going) && !Held(p) && !gameOffer)
                 {
                     approached++;
                     string rival = TechBridges.Rival != null && person.At != null ? TechBridges.Rival(person.At) : null;

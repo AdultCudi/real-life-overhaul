@@ -76,6 +76,26 @@ namespace RealLifeOverhaul
         /// <summary>The cleanliness a health inspector judges, from the game's own figure (Scripts/Interiors: a worn place looks dirtier). Default: the game's figure.</summary>
         public static Func<BuildingRegistration, int, int> Inspected;
 
+        /// <summary>
+        /// True while the company or the tech sector has its own rival's offer or a departure in hand for an employee (the
+        /// game's id; Wiring/CompanyLinks): business pressure's poaching, which makes the game's own offer, then goes to
+        /// somebody else. One rival's offer to an employee at a time. Default: nobody.
+        /// </summary>
+        public static Func<string, bool> Held;
+
+        /// <summary><see cref="Held"/> asked: false with no answer, or if the other feature faults.</summary>
+        public static bool HeldElsewhere(string id)
+        {
+            try
+            {
+                return Held != null && !string.IsNullOrEmpty(id) && Held(id);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         private readonly BusinessVisit _visit = new BusinessVisit();
         private readonly List<BuildingRegistration> _shops = new List<BuildingRegistration>(8);
         private readonly List<string> _opening = new List<string>(8);   // the businesses whose last closure of the mod's has just ended

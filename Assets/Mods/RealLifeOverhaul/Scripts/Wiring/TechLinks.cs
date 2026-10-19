@@ -14,7 +14,9 @@ namespace RealLifeOverhaul
         ///
         ///   Esteem     the player's standing as an employer, -10 to 10: Standing's workers (FamePress.Esteem), as the company reads it
         ///   Rival      a rival of the game's own with businesses to its name, to put a name to an approach (BusinessGame.AnyRival)
-        ///   Held       the company's own rival offers and departures (CompanyState.Employee): nobody is approached twice at once
+        ///   Held       the company's own rival offers and departures (CompanyLinks.Holds): nobody is approached twice at once;
+        ///              the tech sector's own, the other way, are <see cref="Holds"/>, which the company and business
+        ///              pressure ask (Wiring/CompanyLinks)
         ///   Standing   a lay-off, a rise refused or a promotion moves the workers' part of Standing by a point (FameDirector.Moved)
         ///   Books      the economy's books made again for a day once the firms have booked their takings (GameBooks.Refresh)
         ///   Stock      news of a listed company (a product overtaking its rival's, the rival shipping) moves its price (the
@@ -39,7 +41,7 @@ namespace RealLifeOverhaul
                 TechBridges.Esteem = Esteem;
                 TechBridges.Rival = Rival;
                 TechBridges.Standing = Standing;
-                TechBridges.Held = Held;
+                TechBridges.Held = CompanyLinks.Holds;
                 TechBridges.Books = Books;
                 TechBridges.Stock = Stock;
                 TechBridges.Prosecute = TaxCases.FileDataProtection;
@@ -86,17 +88,20 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static bool Held(string id)
+            /// <summary>
+            /// The tech sector's own rival's offer open to an employee (the game's id), or a departure in hand for them
+            /// (TechDirector.Holds): the company and business pressure make no rival's offer to them then.
+            /// </summary>
+            internal static bool Holds(string id)
             {
                 try
                 {
-                    Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
-                    Economy.StaffFile f = company != null && company.Running && company.State != null ? company.State.Employee(id) : null;
-                    return f != null && (f.PoachDay > 0 || f.LeaveDay > 0);
+                    TechDirector director = TechDirector.Instance;
+                    return director != null && director.Holds(id);
                 }
                 catch (Exception e)
                 {
-                    Fault("TechLinks.Held", e);
+                    Fault("TechLinks.Holds", e);
                     return false;
                 }
             }
