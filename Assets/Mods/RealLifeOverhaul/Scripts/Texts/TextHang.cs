@@ -12,11 +12,11 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// When a server that did not answer is taken as hung, and how often it is started again. llama.cpp b11662 can hang
-    /// on one request and stay hung: its loop never finishes the request and takes no other, and every later request
-    /// times out (the v6 pilot: one request of 200 with both Qwen 3.5 0.8B models, on the processor and on a GPU; a
-    /// restart answered it at once). A slow machine looks alike for one reply, so a reply that does not come is never a
-    /// hang by itself:
+    /// When a server that did not answer is taken as hung, and how often it is started again. A server whose loop is stuck
+    /// finishes no request and takes no other, so every later request times out, and a server that stopped by itself
+    /// answers nothing; either way the written lines stayed for the rest of the session until 0.40.2 (the v6 pilot's one
+    /// hang was its test harness, which never read the server's log pipe; the mod's own server did not hang on the same
+    /// requests). A slow machine looks alike for one reply, so a reply that does not come is never a hang by itself:
     ///
     ///   probe     after a reply that did not come in its time, the worker asks the server for its slot (GET /slots) until
     ///             <see cref="ProbeSeconds"/>. A well server has cancelled the request within a second of the mod closing

@@ -8,9 +8,9 @@ using System.Text;
 using System.Threading;
 using RealLifeOverhaul.Texts;
 
-// RLO Texts' server that stops answering is started again (the fault: llama.cpp b11662 hung on one request of 200 in the v6
-// pilot, with both Qwen 3.5 0.8B models, on the processor and a GPU, and stayed hung; the mod gave every later request the
-// written line and never started the server again, so no model words came for the rest of the session). Now a reply that
+// RLO Texts' server that stops answering is started again (the fault: a server whose loop was stuck, or that had stopped
+// by itself, was never started again, so every later request got the written line and no model words came for the rest
+// of the session; the v6 pilot's one hang was its test harness, which never read the server's log pipe). Now a reply that
 // does not come is followed by a probe of the server's slot (TextHang): a slot that comes free is a slow moment and nothing
 // changes; a slot still at work, or no answer, is a hang, and the worker starts the server again in the background, as it
 // does a server that stopped by itself, at most three times a session. The rules game-free, then the real runner (TextServer)
