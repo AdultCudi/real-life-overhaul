@@ -180,6 +180,10 @@ If the game's dirt cannot be had (no floor cells, no floor object under the play
 Pay is the fee (units times the unit's pay) times the share of the dirt taken off, the whole fee at 100 %, half or more is a shift done; the clock cleans the rest at 85 % and sets that share of the dirt to nothing through the game's call.
 Log lines: `Jobs: cleaner: the game's own dirt is down at ...`, `Jobs: cleaner: the floor reads 62% clean (was 55%) ...`, `Jobs: cleaner: pay slip: ...`.
 
+The cleaner and shelf stocker choose somebody else's open business within 15 to 260 metres. `JobSites.RandomClient` also checks the game's opening schedule for enough continuous open time: the walk (0.5 seconds a metre) plus the longer of the hand-played limit (330 seconds for cleaning, 300 for stocking) or the whole offer left to the clock (30 game minutes a floor unit, 40 a box), converted at the game's clock speed, plus 15 game minutes clear of closing. A shift that mixes the two fits inside that, and a client that closes anyway ends the shift without a strike (below). Adjoining slots and midnight are allowed; any closed hour stops the available time.
+
+Both jobs check the game's current entry restrictions before working, before entering and during each step of a time skip. A client that closes or refuses entry calls the shift off as `JobEnd.Interrupted`, with no strike. Completed clock units are paid before the activity is cancelled; the usual end pays the hand work and gives back the dirt, mop and boxes. The client is named in a short notification. Diagnostics say which pick lacked open time and which client called a shift off. `EconomyCheck --client-hours` checks these paths and the texts in all nine languages offline.
+
 ## The drinks cart: the model of a shift in the game's own interface (`Kinds/VendorJob`)
 
 The cart shift (an employee's rota shift at Uncle Lou's, or the gig) shows nothing of the mod's own.

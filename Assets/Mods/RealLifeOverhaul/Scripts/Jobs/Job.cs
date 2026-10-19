@@ -228,6 +228,25 @@ namespace RealLifeOverhaul
             Outcome = outcome;
         }
 
+        /// <summary>A closed or refused client calls the work off without a strike; the clock settles before the job's usual end settles the hand work.</summary>
+        protected bool ClientClosed(in DoorSpot client, bool refused = false)
+        {
+            if (Over)
+            {
+                return true;
+            }
+            if (!refused && JobSites.Available(client))
+            {
+                return false;
+            }
+            Clocked?.Stop();
+            string name = JobSites.NameOf(client);
+            Ctx.Logger?.Info("Jobs: '" + Def.Id + "' client " + name + " (" + client.Name + ") has closed or refused entry; the shift ends as Interrupted, with earned work paid and no strike.");
+            JobText.Toast(UI.Notification.NotificationType.Info, "reallife_job_client_closed", "place", name, 8f);
+            Finish(JobEnd.Interrupted);
+            return true;
+        }
+
         protected void Show(string objective)
         {
             Objective = objective;

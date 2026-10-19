@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using RealLifeOverhaul.GameUi;
 using UI.Elements;
@@ -31,6 +32,7 @@ namespace RealLifeOverhaul
         private readonly string _unitsKey;
         private readonly string _slipKey;
         private readonly bool _asTips;
+        private readonly Func<bool> _canWork;
         private readonly int _each;
         private ShiftSkip _skip;
         private int _left;
@@ -40,7 +42,7 @@ namespace RealLifeOverhaul
 
         /// <param name="name">What the log calls the job ("flyers").</param>
         /// <param name="asTips">The clock's pay goes on the slip as tips (a busker lives on the hat), not as base pay.</param>
-        public ShiftClock(JobContext ctx, Job job, IClockedShift shift, string name, string unitKey, string unitsKey, string slipKey, bool asTips = false)
+        public ShiftClock(JobContext ctx, Job job, IClockedShift shift, string name, string unitKey, string unitsKey, string slipKey, bool asTips = false, Func<bool> canWork = null)
         {
             _ctx = ctx;
             _job = job;
@@ -50,6 +52,7 @@ namespace RealLifeOverhaul
             _unitsKey = unitsKey;
             _slipKey = slipKey;
             _asTips = asTips;
+            _canWork = canWork;
             _each = ShiftRates.Minutes(job.Def);
         }
 
@@ -115,6 +118,16 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>Calls the work off, paying the clock's completed units once before cancelling the activity and its time skip.</summary>
+        public void Stop()
+        {
+            if (!_closed && Working)
+            {
+                ((ISkippableShift)this).SkipEnded(_done * _each, false);
+            }
+            Close();
+        }
+
         string ISkippableShift.SkipTitle => _ctx.Shift != null
             ? JobText.T("reallife_career_shift_title", "title", JobText.T(_ctx.Shift.Rank.TitleKey), "employer", JobText.T(_ctx.Shift.Employer.NameKey))
             : JobText.T(_job.Def.NameKey);
@@ -158,6 +171,10 @@ namespace RealLifeOverhaul
 
         void ISkippableShift.SkipWorked(int minutes)
         {
+            if (_canWork != null && !_canWork())
+            {
+                return;   // a client can close during a time skip, before the job's next street tick
+            }
             _done = Mathf.Min(_left, minutes / _each);
         }
 
