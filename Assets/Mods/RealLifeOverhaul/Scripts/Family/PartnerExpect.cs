@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Family
                 FamilyState.Harmony(PartnerExpectRules.HomeFound);
                 Partner.Tell(FamilyEvent.SharedTime, PartnerExpectRules.AffectionHome);
             }
-            if (speak && level > s.PDateWishLevel && PartnerExpectRules.DateDays[level] > 0 && Speak("reallife_family_expect_dates", Args.Us, null))
+            if (speak && level > s.PDateWishLevel && PartnerExpectRules.DateDays[level] > 0 && Speak("reallife_family_expect_dates", Args.Us, PartnerVoice.Date))
             {
                 s.PDateWishLevel = level;
             }
@@ -174,6 +174,18 @@ namespace RealLifeOverhaul.Family
         {
             return Prices.At(PartnerExpectRules.AllowanceExpected(level, Spend, Partner.Income <= 0, PartnerWork.Work == PartnerWorkRules.PartTime,
                 FamilyState.Bond == Bond.Married, Children(), FamilyState.Care == Care.Nursery || FamilyState.Care == Care.Nanny));
+        }
+
+        /// <summary>Their wish for evenings out, talked over at home: a dinner date planned there and then, or the rest.</summary>
+        public static DialogEntry DateTalk()
+        {
+            PartnerVoice.Answered(PartnerVoice.Date);
+            if (!HomeLife.CanPlanDate)
+            {
+                return FamilyPhone.FamilyMenu(0);
+            }
+            return FamilyTalk.Either(FamilyText.Say("reallife_family_do_date", Args.Us.Cost(FamilyBalance.DinnerCost)), "reallife_family_do_date_yes", HomeLife.PlanDate,
+                "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0));
         }
 
         /// <summary>Their ask for an allowance, talked over: what it is now, to change in the game's text box, or back to the rest.</summary>

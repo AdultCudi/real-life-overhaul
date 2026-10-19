@@ -8,6 +8,16 @@ internal static partial class Program
 {
     // A new allowance was only a notice, and the conversation still said the old one: they now answer in it, with the new
     // amount, thanked for a raise, put out by a cut below what they need, hurt when it stops.
+    // The car and the evenings out were said by text with nothing to answer: both are asks talked over at home now (the
+    // "wants to talk" prompt), the evenings out with a dinner date planned there and then.
+    private static void FamilyWishesTalked()
+    {
+        string expect = ModSource(@"Family\PartnerExpect.cs"), voice = ModSource(@"Family\PartnerVoice.cs");
+        Check(expect.Contains("Speak(\"reallife_family_expect_dates\", Args.Us, PartnerVoice.Date)") && voice.Contains("case Date: return PartnerExpect.DateTalk;")
+              && voice.Contains("case Car: return PartnerCar.Offer;") && MemberText(expect, "public static DialogEntry DateTalk()").Contains("HomeLife.PlanDate"),
+            "family expectations: the car and the evenings out are asked for by text and talked over at home, the evenings out with a date planned there and then");
+    }
+
     private static void FamilyAllowanceAnswer()
     {
         bool rule = PartnerExpectRules.AllowanceReaction(500, 500, 400) == PartnerExpectRules.ReactSame
@@ -26,6 +36,7 @@ internal static partial class Program
     private static void FamilyExpect()
     {
         FamilyAllowanceAnswer();
+        FamilyWishesTalked();
         Check(PartnerExpectRules.LevelOf(249999f, 1000) == 0 && PartnerExpectRules.LevelOf(250000f, 1000) == 1 && PartnerExpectRules.LevelOf(5000000f, 1000) == 3
               && PartnerExpectRules.LevelOf(250000f, 1100) == 0,
             "family expectations: the levels are 250,000, a million and five million in cash, at today's prices");

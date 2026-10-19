@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Family
         public const string Work = "work";   // the kinds of ask, saved by name
         public const string Car = "car";
         public const string Allowance = "allowance";
+        public const string Date = "date";
 
         /// <summary>For a test button: the next word may come now, whatever the days since the last (one word, then it is spent).</summary>
         internal static bool ForceOne;
@@ -115,6 +116,7 @@ namespace RealLifeOverhaul.Family
                 case Work: return PartnerWork.Talk;
                 case Car: return PartnerCar.Offer;
                 case Allowance: return PartnerExpect.AllowanceTalk;
+                case Date: return PartnerExpect.DateTalk;
                 default: return null;
             }
         }
