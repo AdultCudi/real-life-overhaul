@@ -104,6 +104,7 @@ namespace RealLifeOverhaul
         public const string FamilyRelativesId = "family_relatives";
         public const string FamilyFrictionId = "family_friction";
         public const string FamilyWorkId = "family_work";
+        public const string FamilyWealthMoodId = "family_wealth_mood";
         public const string FamilyInterestId = "family_interest";
         public const string FamilyYearWeeksId = "family_year_weeks";
         public const string CivicId = "civic";
@@ -403,6 +404,7 @@ namespace RealLifeOverhaul
         public static bool FamilyChildren = true;        // deciding to have children, pregnancy and adoption, growing up
         public static bool FamilyRelatives = true;       // Mom and the in-laws react, visit, invite to holiday dinners
         public static bool FamilyFriction = true;        // chores, arguments, separation and divorce (off: the home only ever gets warmer)
+        public static bool FamilyWealthMood = true;      // the partner reacts to the player's wealth by how they lean, proud or envious (off: it is never mentioned)
         public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off (off: always full days)
         public static int FamilyInterest = 0;            // who the default "Someone special" introduces: 0 anyone, 1 women, 2 men
         public static int FamilyYearWeeks = 4;           // in-game weeks per year of a child's age
@@ -745,6 +747,7 @@ namespace RealLifeOverhaul
             FamilyRelatives = Bool(modId, FamilyRelativesId, FamilyRelatives);
             FamilyFriction = Bool(modId, FamilyFrictionId, FamilyFriction);
             FamilyWork = Bool(modId, FamilyWorkId, FamilyWork);
+            FamilyWealthMood = Bool(modId, FamilyWealthMoodId, FamilyWealthMood);
             FamilyInterest = Int(modId, FamilyInterestId, FamilyInterest);
             FamilyYearWeeks = Int(modId, FamilyYearWeeksId, FamilyYearWeeks);
             Civic = Bool(modId, CivicId, Civic);

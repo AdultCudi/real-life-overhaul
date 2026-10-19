@@ -228,6 +228,7 @@ internal static partial class Program
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)
         LedgerFixes();  // the City Ledger: a kiosk copy never charged when the page cannot open, the subscription's lines (LedgerFixChecks.cs)
+        FamilyWealth(); // the partner takes the player's money by how they lean (FamilyWealthChecks.cs)
         FamilyWork();   // the partner cuts back to half days once the player is well off (FamilyWorkChecks.cs)
         FamilyFixes();  // family life: a refused passage done at once, the player's own missed appointment booked again, counselling's threshold (FamilyFixChecks.cs)
         MetaFixes();    // the options page and Report a bug: Import without its backup, a report never left busy, the pages' search and dispatcher lines (MetaFixChecks.cs)

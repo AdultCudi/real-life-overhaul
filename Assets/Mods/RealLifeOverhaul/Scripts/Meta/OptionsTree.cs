@@ -223,7 +223,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("power water electricity bills utility office deposit"),
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
-                S("partner").Guide("family").Opts("family_work").Also("partner money rich wealth job work half days part time"),
+                S("partner").Guide("family").Opts("family_work", "family_wealth_mood").Also("partner money rich wealth job work half days part time"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people").Also("friends dating date people calls typing"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),

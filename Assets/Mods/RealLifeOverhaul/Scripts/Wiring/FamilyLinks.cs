@@ -91,7 +91,8 @@ namespace RealLifeOverhaul
                     JobKey = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))],
                     FreeFrom = p.FreeFrom,
                     FreeTo = p.FreeTo,
-                    NightOwl = p.Has(SocialTrait.NightOwl)
+                    NightOwl = p.Has(SocialTrait.NightOwl),
+                    Leaning = Family.PartnerWealthRules.LeaningOfTraits(p.Has(SocialTrait.Supportive), p.Has(SocialTrait.Envious))
                 };
             }
 
