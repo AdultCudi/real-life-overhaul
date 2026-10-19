@@ -95,7 +95,14 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
-                    if (!SocialPlaces.Find(a.Kind, SocialDirector.Where(), PlaceFrom, PlaceTo, out Venue venue) || string.IsNullOrEmpty(venue.Street))
+                    // The place and the hour together: a place open for the whole outing at one of their free hours (SocialLife.PlaceAndHour).
+                    PlanFind found = SocialLife.PlaceAndHour(p, a.Kind, SocialDirector.Where(), PlaceFrom, PlaceTo, a.From, out Venue venue, out float time);
+                    if (found == PlanFind.NoHour)
+                    {
+                        a.NoSlot = true;
+                        return;
+                    }
+                    if (found != PlanFind.Found || string.IsNullOrEmpty(venue.Street))
                     {
                         a.NoPlace = true;
                         return;
@@ -103,12 +110,6 @@ namespace RealLifeOverhaul
                     a.Place = venue.Name;
                     a.Street = venue.Street;
                     a.Number = venue.Number;
-                    float time = SocialLife.NextSlot(p, a.Kind, a.From);
-                    if (time < 0f)
-                    {
-                        a.NoSlot = true;
-                        return;
-                    }
                     a.PlanAt = (long)time;
                     a.When = When(time);
                     a.CardWhen = CardWhen(time);
