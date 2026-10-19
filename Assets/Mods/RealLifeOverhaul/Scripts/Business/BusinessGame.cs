@@ -648,7 +648,11 @@ namespace RealLifeOverhaul
             Logger?.Info("Business: " + NameOf(e) + "'s satisfaction " + before.ToString("F0") + " -> " + e.satisfaction.ToString("F0") + ".");
         }
 
-        /// <summary>The employee leaves the way the game has an employee leave whose complaint went unanswered.</summary>
+        /// <summary>
+        /// The employee leaves the way the game has an employee leave whose complaint went unanswered. A rival's offer
+        /// to them loses its buttons at once (Core/RivalOfferGuard): the game sends nothing to their chat until their
+        /// next hour.
+        /// </summary>
         public static void Leave(EmployeeInstance e)
         {
             Logger?.Info("Business: " + NameOf(e) + " leaves the company (the game's own resignation).");
@@ -659,6 +663,16 @@ namespace RealLifeOverhaul
             {
                 e.Resign();
             }
+            RivalOfferGuard.Look("an employee let go by the game's own resignation");
+        }
+
+        /// <summary>
+        /// Whether the employee an offer was made to is still the player's to keep, by the rule that takes a rival
+        /// offer's buttons (Core/RivalOfferRules.Standing): gone, replaced by the headhunter, resigned, or theirs.
+        /// </summary>
+        public static RivalOfferRules.State Standing(EmployeeInstance e, string name)
+        {
+            return RivalOfferGuard.Standing(e, name);
         }
 
         // ---------------------------------------------------------------- rivals

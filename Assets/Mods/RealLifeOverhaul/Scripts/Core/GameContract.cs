@@ -98,6 +98,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart StartCompetitors = ContractBook.Part("start_competitors", "tech_sector", "the competitors in the city on BizMan's start screen, for the mod's own kinds of business");
         public static readonly GamePart ChatFilter = ContractBook.Part("chat_filter", "flare", "Steam's own filter of what other players of a Going Public session type on Flare (the mod's own word list without it)");
         public static readonly GamePart PhotoHolds = ContractBook.Part("photo_holds", "photos", "the Camera telling its own hold on the player from the game's, and putting the world's clicks back as they were (the mop's floor)");
+        public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -164,6 +165,11 @@ namespace RealLifeOverhaul
         // Core/OverlayGuard
         public static readonly GameMember OverlaySimple = Field(CardGuard, Game, "Player.HUD.ItemInfoOverlays.OverlayManager", "simpleOverlay", "SimpleOverlay");
         public static readonly GameMember OverlayDetailed = Field(CardGuard, Game, "Player.HUD.ItemInfoOverlays.OverlayManager", "detailedOverlay", "DetailedOverlay");
+
+        // Core/RivalOfferGuard: a rival's open offer told from one that is over; without them only the employee is
+        // judged (gone, replaced or resigned)
+        public static readonly GameMember OfferDeadline = Optional(Field(RivalOffers, Game, "Entities.EmployeeInstance", "poachDeadlineDays", "Int32"));
+        public static readonly GameMember OfferDay = Optional(Field(RivalOffers, Game, "Entities.EmployeeInstance", "lastPoachDay", "Int32"));
 
         // Core/Keys: the player's bindings as the game has them now; without them the game's defaults are warned about
         public static readonly GameMember PlayerInput = Optional(StaticField(KeyClash, Game, "Helpers.InputHelper", "playerInput", "PlayerInput"));

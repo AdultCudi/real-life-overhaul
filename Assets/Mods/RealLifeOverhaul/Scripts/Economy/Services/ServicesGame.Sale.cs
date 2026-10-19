@@ -185,6 +185,10 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             Staff.Clear();
+            if (staffGone > 0)
+            {
+                RivalOfferGuard.Look("staff gone with a business sold");   // a rival's offer to them goes now
+            }
 
             // The game's own shut-down, and the logo it made for the name (as BizManSettings.ShutdownBusiness).
             try
