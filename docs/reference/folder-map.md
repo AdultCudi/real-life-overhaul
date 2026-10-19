@@ -10,7 +10,7 @@ This is the mod, and the single source of truth: the Unity project and the comma
 | --- | --- |
 | `ModManifest.asset` | id, version, what the Mod Builder packages (it names no asset bundle: the bundles are built by the three asset pipelines) |
 | `RealLifeOverhaul.asmdef` | assembly definition and references |
-| `Locales/en.json` | every player-facing string, flat keys prefixed reallife_; beside it `pt.json`, `zh-cn.json`, `de.json`, `fr.json`, `es.json` and `ru.json`, see [Texts and translation](../contributing/texts-and-translation.md) |
+| `Locales/en.json` | every player-facing string, flat keys prefixed reallife_; beside it `pt.json`, `zh-cn.json`, `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json` and `tr.json`, see [Texts and translation](../contributing/texts-and-translation.md) |
 | `Bundles/reallife_character` | meshes and textures for the player's new looks (built by `CharacterAssets`) |
 | `Bundles/reallife_props` | the modelled street props and their texture atlas (built by `PropAssets`) |
 | `Bundles/reallife_anim` | the mod's own Humanoid animation clips and how each tool sits in the hand (built by `CityAssets`) |
@@ -96,7 +96,7 @@ The command-line build and checks.
 | `EconomyCheck/` | checks the economy's game-free parts: the rating, the terms, the fee, the credit file and its line in the save, the loans (see [the economy pages](../features/README.md#economy)), and every other feature's game-free rules |
 | `ContractCheck/` | checks the mod against a version of the game on disk: the game contract, the compiled references, the game's keys (see [After a game update](../contributing/after-a-game-update.md)) |
 | `StandardCheck/` | the rules of the engineering standard (`docs/standards`) that a program can check, against its `baseline.txt` (see [Checks](../contributing/checks.md)) |
-| `Shared/ModLanguages.cs` | the mod's seven languages by the game's codes (en, pt, zh-cn, de, fr, es, ru), linked into the checkers; de, fr, es and ru may lack keys, which the game reads in English (its fallback language) |
+| `Shared/ModLanguages.cs` | the mod's nine languages by the game's codes (en, pt, zh-cn, de, fr, es, ru, nl, tr), linked into the checkers; de, fr, es, ru, nl and tr may lack keys, which the game reads in English (its fallback language) |
 | `Workshop/locales.py` | the locale check of every language that is there (the gate's "LOCALES OK") |
 | `Workshop/` | the Workshop page's texts, [the style sheet](../../RealLifeOverhaul.Build/Workshop/STYLE.md), `check.pl` and the upload steps (`UPLOAD.md`) |
 | `Installer/` | the installer for players without the Workshop: `build-installer.ps1` and `RealLifeOverhaul.iss` |

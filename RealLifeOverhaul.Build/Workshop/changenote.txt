@@ -1,4 +1,4 @@
-0.39.2
+0.40.0
 
-Fixed
-- A building that is no longer yours is let go within the hour. Its power and water get their last bill, and the mod never closes it or bills it again. An underground car park that another mod sells as a business gets no power or water bills, and anything billed for one is written off.
+New
+- The mod can now be read in Dutch and Turkish too: it follows the language the game is set to.

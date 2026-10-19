@@ -25,10 +25,12 @@ internal static partial class Program
         }
         Check(said, "ledger fix: the kiosk's notice is in en, pt and zh-cn, at most 240 characters");
         Check(FixLineEverywhere("delivered to your door no longer gives free mornings", "não dá mais manhãs de graça", "不再白送早晨的报纸", "verschenkt nach einer Zeit ohne Zuhause",
-                                "n'offre plus de matins gratuits", "ya no regala mañanas", "больше не дарит утра"),
+                                "n'offre plus de matins gratuits", "ya no regala mañanas", "больше не дарит утра",
+                                "geeft geen gratis ochtenden meer", "artık ücretsiz sabahlar vermiyor"),
             "ledger fix: What's new has the subscription's line, with its fix mark, in some row of every language");
         Check(FixLineEverywhere("kiosk no longer charges for today's paper", "banca não cobra mais", "报亭不再收取", "Kiosk berechnet die heutige Zeitung nicht mehr",
-                                "kiosque ne fait plus payer", "quiosco ya no cobra", "киоск больше не берёт плату"),
+                                "kiosque ne fait plus payer", "quiosco ya no cobra", "киоск больше не берёт плату",
+                                "brengt geen kosten meer in rekening voor de krant van vandaag", "büfe artık bugünün gazetesi için ücret almıyor"),
             "ledger fix: What's new has the kiosk's line, with its fix mark, in some row of every language");
     }
 }

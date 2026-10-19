@@ -84,7 +84,7 @@ internal static partial class Program
             next &= words[l].TryGetValue("reallife_campus_on_next", out string w) && w.Contains("{day}") && w.Contains("{hour}");
         }
         Check(next, "next class: the Campus app's line for it is in every language, with its day and hour");
-        // Filled with the game's own day ("Day 8", "Dia 8", "第 8 天", "Tag 8", "Jour 8", "Día 8", "День 8"): the word for day is not said again before it.
+        // Filled with the game's own day ("Day 8", "Dia 8", "第 8 天", "Tag 8", "Jour 8", "Día 8", "День 8", "Dag 8", "Gün 8"): the word for day is not said again before it.
         string[,] dated =
         {
             { "reallife_campus_on_mode", "start" }, { "reallife_campus_on_exam", "from" }, { "reallife_campus_on_exam", "to" },
@@ -116,18 +116,21 @@ internal static partial class Program
         Check(doubled.Count == 0, "next class: dates filled with the game's own day say no second word for day (" + string.Join(", ", doubled) + ")");
         Check(Doubled("since day {start}.", "{start}", "en") && Doubled("desde o dia {start}.", "{start}", "pt") && Doubled("自第{start}天起。", "{start}", "zh-cn")
               && Doubled("seit Tag {start}.", "{start}", "de") && Doubled("depuis le jour {start}.", "{start}", "fr") && Doubled("desde el día {start}.", "{start}", "es")
-              && Doubled("с дня {start}.", "{start}", "ru")
+              && Doubled("с дня {start}.", "{start}", "ru") && Doubled("sinds dag {start}.", "{start}", "nl") && Doubled("Gün {start} tarihinden beri.", "{start}", "tr")
+              && Doubled("{start} gününden beri.", "{start}", "tr")
               && !Doubled("since {start}.", "{start}", "en") && !Doubled("desde o {start}.", "{start}", "pt") && !Doubled("自{start}起。", "{start}", "zh-cn")
               && !Doubled("seit {start}.", "{start}", "de") && !Doubled("depuis {start}.", "{start}", "fr") && !Doubled("desde el {start}.", "{start}", "es")
-              && !Doubled("с {start}.", "{start}", "ru"),
+              && !Doubled("с {start}.", "{start}", "ru") && !Doubled("sinds {start}.", "{start}", "nl") && !Doubled("{start} tarihinden beri.", "{start}", "tr"),
             "next class: the doubled day is found in each language, and the fixed wording passes");
     }
 
-    // The word for day in each Latin or Cyrillic language, as it may stand straight before a day (Chinese is "第...天" around it).
+    // The word for day in each Latin or Cyrillic language, as it may stand straight before a day (Chinese is "第...天" around it;
+    // Turkish may also put it straight after, "{day} gününde").
     private static readonly Dictionary<string, string[]> DayWords = new Dictionary<string, string[]>
     {
         { "en", new[] { "day", "days" } }, { "pt", new[] { "dia", "dias" } }, { "de", new[] { "tag", "tage", "tages", "tagen" } },
-        { "fr", new[] { "jour", "jours" } }, { "es", new[] { "día", "días", "dia" } }, { "ru", new[] { "день", "дня", "дню", "днём", "дни", "дней" } }
+        { "fr", new[] { "jour", "jours" } }, { "es", new[] { "día", "días", "dia" } }, { "ru", new[] { "день", "дня", "дню", "днём", "дни", "дней" } },
+        { "nl", new[] { "dag", "dagen" } }, { "tr", new[] { "gün", "günü", "günler" } }
     };
 
     // True if the word for day stands straight before (or, in Chinese, around) a slot filled with an already written day.
@@ -147,6 +150,10 @@ internal static partial class Program
                         return true;
                     }
                 }
+            }
+            if (lang == "tr" && after.StartsWith("gün", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
             }
             if (lang == "zh-cn" && before.EndsWith("第", StringComparison.Ordinal) && after.StartsWith("天", StringComparison.Ordinal))
             {
