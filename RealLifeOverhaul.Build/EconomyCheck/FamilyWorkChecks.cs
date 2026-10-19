@@ -10,13 +10,17 @@ internal static partial class Program
     private static void FamilyWork()
     {
         const int at = PartnerWorkRules.AskAtCash, full = PartnerWorkRules.FullTime, part = PartnerWorkRules.PartTime;
-        Check(PartnerWorkRules.Asks(true, true, full, false, at, at, 40, 0) && !PartnerWorkRules.Asks(true, true, full, false, at - 1, at, 40, 0),
+        Check(PartnerWorkRules.Asks(true, true, full, false, at, at, 40, 0, 7) && !PartnerWorkRules.Asks(true, true, full, false, at - 1, at, 40, 0, 7),
             "family work: a partner who lives with the player asks once the player's cash reaches " + at + ", and not a dollar before");
-        Check(!PartnerWorkRules.Asks(false, true, full, false, at, at, 40, 0) && !PartnerWorkRules.Asks(true, false, full, false, at, at, 40, 0)
-              && !PartnerWorkRules.Asks(true, true, part, false, at, at, 40, 0) && !PartnerWorkRules.Asks(true, true, full, true, at, at, 40, 0),
+        Check(!PartnerWorkRules.Asks(true, true, full, false, at, at, 40, 0, PartnerWorkRules.AskIncomeDays - 1) && PartnerWorkRules.AskAtCash == 10000
+              && PartnerWorkRules.AskAtIncome == 800 && PartnerWorkRules.AskIncomeDays == 7
+              && PartnerWorkRules.Streak(6, 800f, 800) == 7 && PartnerWorkRules.Streak(6, 799f, 800) == 0 && PartnerWorkRules.Streak(0, 900f, 800) == 1,
+            "family work: they ask only after the daily income has held at 800 or more for seven days in a row (a day under starts again), with 10,000 in cash");
+        Check(!PartnerWorkRules.Asks(false, true, full, false, at, at, 40, 0, 7) && !PartnerWorkRules.Asks(true, false, full, false, at, at, 40, 0, 7)
+              && !PartnerWorkRules.Asks(true, true, part, false, at, at, 40, 0, 7) && !PartnerWorkRules.Asks(true, true, full, true, at, at, 40, 0, 7),
             "family work: nothing is asked with the option off, of a partner who does not live with the player, on half days already, or while an ask waits");
         int again = PartnerWorkRules.AskAgainDays;
-        Check(!PartnerWorkRules.Asks(true, true, full, false, at, at, 10 + again - 1, 10) && PartnerWorkRules.Asks(true, true, full, false, at, at, 10 + again, 10),
+        Check(!PartnerWorkRules.Asks(true, true, full, false, at, at, 10 + again - 1, 10, 7) && PartnerWorkRules.Asks(true, true, full, false, at, at, 10 + again, 10, 7),
             "family work: after a no they ask again " + again + " days later, not sooner");
         Check(PartnerWorkRules.Until(8, 17, part) == 12 && PartnerWorkRules.Until(8, 17, full) == 17 && PartnerWorkRules.Until(14, 16, part) == 16
               && PartnerWorkRules.Income(210, part) == 105 && PartnerWorkRules.Income(210, full) == 210,
@@ -29,7 +33,8 @@ internal static partial class Program
             "family work: the timetable at home and the share of the rent read the work through the option, so off means full days as before");
         Check(Occurs(partner, "PartnerWork.Reset(s);") == 3 && calendar.Contains("PartnerWork.Hourly(day);")
               && choices.Contains("PartnerWork.CanTalk") && choices.Contains("PartnerWork.CanReturn")
-              && MemberText(work, "public static void Hourly(int day)").Contains("Prices.At(PartnerWorkRules.AskAtCash)"),
+              && MemberText(work, "public static void Hourly(int day)").Contains("Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay, s.PWorkEarnDays)")
+              && MemberText(work, "public static void Daily()").Contains("PlayerHelper.CalculateDailyIncome()") && calendar.Contains("PartnerWork.Daily();"),
             "family work: asked once a day at today's prices, talked over and undone from a family conversation, and started afresh with every new partner or none");
         string glad = ModSource(@"Family\PartnerGlad.cs");
         Check(work.Contains("PartnerGlad.Start(PartnerGlad.Work);") && work.Contains("FamilyState.Together && s.LivesIn && !Partner.Retired") && calendar.Contains("PartnerGlad.Hourly(day);")

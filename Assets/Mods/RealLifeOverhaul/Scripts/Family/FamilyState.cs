@@ -201,6 +201,7 @@ namespace RealLifeOverhaul.Family
         public int PFreeFrom;        // People's partner: the hours they are free on a weekday (PFreeTo 0: Family's own trades' hours)
         public int PFreeTo;
         public bool PNightOwl;       // ...and whether they keep late hours
+        public int PWorkEarnDays;    // days in a row the player's daily income has been at PartnerWorkRules.AskAtIncome or more
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

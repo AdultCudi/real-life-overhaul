@@ -10,18 +10,24 @@ namespace RealLifeOverhaul.Family
     public static class PartnerWorkRules
     {
         public const int FullTime = 0, PartTime = 1;
-        public const int AskAtCash = 250000;     // the player's cash at the start's prices when the partner first asks (the third of Social's wealth steps)
+        public const int AskAtCash = 10000;      // the player's cash at the start's prices when the partner first asks...
+        public const int AskAtIncome = 800;      // ...after the game's daily income has been at least this a day (the start's prices)...
+        public const int AskIncomeDays = 7;      // ...for this many days in a row
         public const int AskAgainDays = 30;      // days after a no before they ask again
         public const int PartTimeHours = 4;      // hours of a working day on half days
         public const float HarmonyYes = 6f;      // the home, when the player says yes
         public const float HarmonyNo = -3f;      // ...and when they say not yet
         public const float AffectionYes = 3f;
 
-        /// <summary>Whether the partner asks today: the option on, living together, on full days, the cash reached and no recent no.</summary>
-        public static bool Asks(bool on, bool livesIn, int work, bool asking, float cash, int atCash, int day, int lastAskDay)
+        /// <summary>Whether the partner asks today: the option on, living together, on full days, the income held for a week, the cash reached and no recent no.</summary>
+        public static bool Asks(bool on, bool livesIn, int work, bool asking, float cash, int atCash, int day, int lastAskDay, int earnDays)
         {
-            return on && livesIn && work == FullTime && !asking && cash >= atCash && (lastAskDay <= 0 || day - lastAskDay >= AskAgainDays);
+            return on && livesIn && work == FullTime && !asking && earnDays >= AskIncomeDays && cash >= atCash
+                   && (lastAskDay <= 0 || day - lastAskDay >= AskAgainDays);
         }
+
+        /// <summary>Days in a row the daily income has been at least <paramref name="atIncome"/>: one more today, or none again.</summary>
+        public static int Streak(int days, float income, int atIncome) => income >= atIncome ? days + 1 : 0;
 
         /// <summary>The hour a working day ends: on half days four hours after it begins, else as it was.</summary>
         public static int Until(int from, int to, int work)
