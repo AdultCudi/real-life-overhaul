@@ -927,6 +927,7 @@ namespace RealLifeOverhaul
                     v => Settings.TechSector = v)
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_tech_test_tender", () => Tech.TechDirector.Instance?.TestTender())
+                .AddButton("reallife_tech_test_move", () => Tech.TechDirector.Instance?.TestMove())
                 .AddButton("reallife_tech_test_outage", () => Tech.TechDirector.Instance?.TestOutage())
                 .AddButton("reallife_tech_test_breach", () => Tech.TechDirector.Instance?.TestBreach())
                 .AddButton("reallife_infra_test_down", () => Tech.TechDirector.Instance?.TestCentreDown())

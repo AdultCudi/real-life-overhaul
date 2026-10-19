@@ -70,6 +70,16 @@ namespace RealLifeOverhaul.Tech
         }
     }
 
+    /// <summary>A move of one of the player's businesses to another building that the Tech parts followed: a part not running then follows it when it starts. Game-free.</summary>
+    public sealed class MoveRecord
+    {
+        public string From = string.Empty, To = string.Empty;   // place keys
+        public int Day, Hour;                                   // when the game's moving company moved it
+        public int Parts;                                       // the parts that have followed it, MoveRules.Part*
+        public bool Whole;      // the firm's own record went with it (its cap table then takes the place of one at the new building)
+        public bool Replaced;   // a firm of the player's at the new building was closed, its business replaced by the move
+    }
+
     /// <summary>Everything the people part keeps in a save: the professionals' files and the numbers it hands out. Game-free.</summary>
     public sealed class TalentFile
     {
@@ -78,6 +88,7 @@ namespace RealLifeOverhaul.Tech
         public int LastDay = -1;         // the last day worked through
         public int NextPro = 1;          // the next id of the mod's own payroll
         public readonly List<Profile> People = new List<Profile>(64);
+        public readonly List<MoveRecord> Moves = new List<MoveRecord>(4);   // businesses the moving company moved, and which parts have followed (MoveRules)
 
         public Profile Of(string id)
         {

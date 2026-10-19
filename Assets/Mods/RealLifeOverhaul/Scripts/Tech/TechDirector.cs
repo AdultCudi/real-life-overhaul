@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Tech
             TalentGame.Logger = Logger;
             HiringGame.Logger = Logger;
             FirmsGame.Logger = Logger;
+            MovesGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
@@ -168,6 +169,7 @@ namespace RealLifeOverhaul.Tech
             {
                 if (_peopleOn)
                 {
+                    MovesHour();
                     PeopleHour();
                 }
             }
@@ -188,6 +190,10 @@ namespace RealLifeOverhaul.Tech
             try
             {
                 float started = Time.realtimeSinceStartup;
+                if (_peopleOn)
+                {
+                    FollowMoves();   // a move made since the last read is followed before the day is worked
+                }
                 if (_hiringOn)
                 {
                     HiringDay(Save.Day);

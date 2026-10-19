@@ -11740,7 +11740,7 @@
   "reallife_law_station_furniture": "Gemeubileerde politiebureaus",
   "reallife_opt_tip_law_station_furniture": "Bureaus, kluisjes, een briefingruimte, een pauzeruimte en de muren en vloeren van het spel, agenten aan het werk en backoffices op de kale vloer van een groot station. Uitgeschakeld is het kaal als voorheen.",
   "reallife_changes_next_title": "Volgende versie",
-  "reallife_changes_next": "Nog niets.",
+  "reallife_changes_next": "Opgelost: een techbedrijf dat een verhuisbedrijf naar een ander gebouw bracht, verloor zijn producten, verkopen, contracten, personeel en investeerders. Die verhuizen nu mee, en een opslag waarin ze in het oude gebouw achterbleven, krijgt ze terug.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Elke bank van de stad heeft zijn eigen app op de telefoon, onder de naam van het spel: je betaalrekening en afschrift, de leningen die je aan die bank schuldig bent met de optie om een deel of alles van één terug te betalen, je kaart, wat de bank je vandaag aanbiedt en hoe deze je kredietwaardigheid ziet. De voorwaarden van de banken verschillen een beetje, dus de keuze is belangrijk, en bij een kredietwaardigheid onder de 580 leent geen van hen. De contacten van de mod hebben echte foto's uit het spel: mensen tonen hun gezicht en diensten tonen een logo. Contacten heeft nu een zoekvak bovenaan. Politiebureaus zijn ingericht met het eigen meubilair van het spel: bureaus met computers, kluisjes, een waterkoeler, planten, een klok, lampen en een toilet in de cel. Opgelost: wanneer alle apps van de mod aanstonden, liep de rij apps bovenaan het schermmenu onder het geld en de datum en buiten het scherm; er zijn nu pagina's, gecentreerd tussen de naam van de app en het geld, te bedienen met het wiel of de puntjes. Opgelost: op de stadskaart kon een rij van de mod (Strafrechtbank, Custom shops en de rest) worden uitgevinkt terwijl de locaties op de kaart bleven; de locaties volgen nu het vinkje dat je ziet.",
   "reallife_rota_box_stock_ok": "De goederen houden stap met het geadviseerde plan.",
@@ -19856,5 +19856,7 @@
   "reallife_changes_040_1_title": "0.40.1",
   "reallife_changes_040_1": "Opgelost: de drankenkar blijft uit de buurt van oversteekplaatsen en weigert plekken die klanten niet kunnen bereiken; mislukte looproutes en aankomsten worden opnieuw geprobeerd, zodat de shift doorgaat. Opgelost: een film in de bioscoop of het theater met een vriend laat je nu uitrusten zoals de stoelen van het spel zelf. Voorheen verloor je de hele film lang energie. Opgelost: nieuws over je gebouw, je buren en je huis bereikt je niet meer als je geen woning hebt. Opgelost: schaaktafels op straat blokkeren geen zebrapaden meer.",
   "reallife_changes_040_2_title": "0.40.2",
-  "reallife_changes_040_2": "Opgelost: als het model van RLO Texts niet meer antwoordt of afsluit, wordt het op de achtergrond opnieuw gestart en komen de teksten vanzelf terug. Intussen gebruiken berichten de geschreven tekst."
+  "reallife_changes_040_2": "Opgelost: als het model van RLO Texts niet meer antwoordt of afsluit, wordt het op de achtergrond opnieuw gestart en komen de teksten vanzelf terug. Intussen gebruiken berichten de geschreven tekst.",
+  "reallife_tech_test_move": "Het verhuisbedrijf voert mijn geboekte verhuizing nu uit",
+  "reallife_tech_test_no_move": "Niet gestart: boek eerst bij een verhuisbedrijf de verhuizing van een van je bedrijven."
 }
