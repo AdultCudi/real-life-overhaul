@@ -116,11 +116,7 @@ internal static partial class Program
         string cache = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rlo-pretend-cache-" + mode + "-" + Process.GetCurrentProcess().Id);
         File.WriteAllText(model, mode);
         Directory.CreateDirectory(cache);
-        var before = new HashSet<int>();
-        foreach (Process p in Process.GetProcessesByName("EconomyCheck"))
-        {
-            before.Add(p.Id);
-        }
+        var before = PretendServers();
         var log = new List<string>();
         var q = new TextQueue();
         q.Expected(0.05);   // (the pretend server answers at once: a request's short deadline is not refused for the start's guess)
@@ -194,9 +190,9 @@ internal static partial class Program
         }
         bool ended = HangWait(() =>
         {
-            foreach (Process p in Process.GetProcessesByName("EconomyCheck"))
+            foreach (int id in PretendServers())
             {
-                if (!before.Contains(p.Id))
+                if (!before.Contains(id))
                 {
                     return false;
                 }
