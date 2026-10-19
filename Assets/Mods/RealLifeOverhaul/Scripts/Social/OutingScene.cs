@@ -434,6 +434,7 @@ namespace RealLifeOverhaul
                 D.Body.Hold();
                 _skipping = true;
                 _skipFrom = now;
+                BeginRestEffects();
                 uis.timeMachine.StartTimeMachine(new Timestamp(SocialLife.Now + _def.Minutes), true, _def.Caption, true, false);
                 SocialDirector.Logger?.Info("Social: " + _def.Kind + " with " + _who.Name + " at " + _venue.Name + ": " + _def.Minutes + " game minutes pass.");
             }
@@ -446,6 +447,10 @@ namespace RealLifeOverhaul
             var uis = InstanceBehavior<UI.UIs>.Instance;
             if (_skipping)
             {
+                if (uis == null || uis.timeMachine == null || !uis.timeMachine.isRunning)
+                {
+                    EndRestEffects();   // the film is over: no resting while the street comes back
+                }
                 if (uis != null && uis.timeMachine != null && (uis.timeMachine.isRunning || uis.timeMachine.isBlockingUi || now - _skipFrom < 1.5f))
                 {
                     return;
@@ -496,6 +501,7 @@ namespace RealLifeOverhaul
 
         public override void End(SceneEnd why)
         {
+            EndRestEffects();
             LeaveBench("the outing ended");
             SocialDirector.Talk = null;
             string reason = WhyText(_cut);

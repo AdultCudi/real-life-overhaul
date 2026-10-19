@@ -62,7 +62,7 @@ namespace RealLifeOverhaul
             E("wx06", OnFoot | Rain, Good().Up()),
             E("wx07", OnFoot | Dry, Warn().Tire(6)).At(11, 16),
             E("wx08", OnFoot | Dry, Good().Rest(6).Up()).At(6, 10),
-            E("wx09", Rain, Bad().Money(-90, -30, "repair")),
+            E("wx09", Rain | HasHome, Bad().Money(-90, -30, "repair")),
             E("wx10", OnFoot | Rain, Warn().Money(-15, -5, "purchase")),
             E("wx11", OnFoot | Dry, Good().Up()).At(19, 23),
             C("wx12", OnFoot | Rain, Yes(Good().Up()), No(Warn().Tire(4))),

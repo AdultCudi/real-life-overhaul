@@ -112,6 +112,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
+                (_scene as OutingScene)?.EndRestEffects();   // a seated outing's recovery is never left on
                 enabled = false;   // its feature was switched off after its faults (Core/Guard)
                 return;
             }

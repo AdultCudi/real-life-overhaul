@@ -65,7 +65,7 @@ namespace RealLifeOverhaul
             E("fm18", None, Mum()),
             E("fm19", HasBusiness, Mum()),
             E("fm20", None, Mum()).At(22, 2),
-            C("fm21", Mom, Yes(Mum().Feel(Mood.Family)), No(Mum()))
+            C("fm21", Mom | HasHome, Yes(Mum().Feel(Mood.Family)), No(Mum()))
         };
     }
 }

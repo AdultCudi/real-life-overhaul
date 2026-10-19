@@ -5,42 +5,41 @@ namespace RealLifeOverhaul
     // The apartment building, the neighbours and running a business. Texts are in Locales\en.json.
     internal static partial class LifeEventCatalogue
     {
-        // The mod can't tell whose building the player is standing in, so home events are worded
-        // as news that reaches the player wherever they are.
+        // Home news reaches the player wherever they are, provided they have a home.
         private static LifeEvent[] Home() => new[]
         {
-            E("hm01", None, Warn().Tire(6).Down()).At(6, 10),
-            E("hm02", None, Bad().Money(-140, -60, "repair")),
-            C("hm03", None,
+            E("hm01", HasHome, Warn().Tire(6).Down()).At(6, 10),
+            E("hm02", HasHome, Bad().Money(-140, -60, "repair")),
+            C("hm03", HasHome,
                 Yes(Good().Tire(3).Feel(Mood.Helped).Chance(6), Good().Money(30, 30, "gift").Feel(Mood.Helped).Chance(4)),
                 No(Info())),
-            E("hm04", None, Good().Feed(12).Up()),
-            E("hm05", None, Bad().Money(-110, -50, "repair")),
-            E("hm06", None, Warn().Down()),
-            C("hm07", None, Yes(Good().Tire(4).Feel(Mood.Helped)), No()),
-            E("hm08", None, Warn().Money(-60, -25, "purchase")),
+            E("hm04", HasHome, Good().Feed(12).Up()),
+            E("hm05", HasHome, Bad().Money(-110, -50, "repair")),
+            E("hm06", HasHome, Warn().Down()),
+            C("hm07", HasHome, Yes(Good().Tire(4).Feel(Mood.Helped)), No()),
+            E("hm08", HasHome, Warn().Money(-60, -25, "purchase")),
             E("hm09", None, Good().Money(10, 40, "found_money")),
-            E("hm10", None, Warn().Tire(3)).At(21, 6),
-            C("hm11", None,
+            E("hm10", HasHome, Warn().Tire(3)).At(21, 6),
+            C("hm11", HasHome,
                 Yes(Good().Tire(6).Feed(8).Up()), No(Info().Chance(1), Good().Rest(4).Chance(1))).At(20, 2),
-            E("hm12", None, Bad().Money(-220, -120, "repair").DownBig()),
-            E("hm13", None, Info()),
-            E("hm14", None, Warn().Money(-70, -30, "purchase")),
-            C("hm15", None, 15, "donation", Yes(Good().Feel(Mood.Generous)), No(Info().Down())),
-            E("hm16", None, Good().Up()),
+            E("hm12", HasHome, Bad().Money(-220, -120, "repair").DownBig()),
+            E("hm13", HasHome, Info()),
+            E("hm14", HasHome, Warn().Money(-70, -30, "purchase")),
+            C("hm15", HasHome, 15, "donation", Yes(Good().Feel(Mood.Generous)), No(Info().Down())),
+            E("hm16", HasHome, Good().Up()),
             E("hm17", None, Warn().Money(-50, -20, "purchase")),
             E("hm18", None, Good().Feel(Mood.Helped)),
-            E("hm19", None, Warn().Tire(5)).At(5, 9),
-            C("hm20", OnFoot,
+            E("hm19", HasHome, Warn().Tire(5)).At(5, 9),
+            C("hm20", HasHome | OnFoot,
                 Yes(Good().Tire(8).Up().Chance(60), Good().Tire(8).Money(15, 45, "found_money").Chance(25),
                     Bad().Tire(8).Money(-60, -30, "repair").Down().Chance(15)),
                 No()),
             E("hm21", None, Bad().Money(-95, -40, "repair")),
-            E("hm22", None, Info().Up()),
+            E("hm22", HasHome, Info().Up()),
             E("hm23", Indoors, Warn()),
             E("hm24", Indoors, Good().Rest(4)),
-            C("hm25", None, 40, "repair", Yes(Good().Up()), No(Info().Chance(1), Warn().Down().Chance(1))),
-            C("hm26", None, Yes(Good().Feed(6).Feel(Mood.Helped).Chance(7), Warn().Down().Chance(3)), No())
+            C("hm25", HasHome, 40, "repair", Yes(Good().Up()), No(Info().Chance(1), Warn().Down().Chance(1))),
+            C("hm26", HasHome, Yes(Good().Feed(6).Feel(Mood.Helped).Chance(7), Warn().Down().Chance(3)), No())
         };
 
         private static LifeEvent[] Business() => new[]
