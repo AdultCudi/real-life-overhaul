@@ -11740,7 +11740,7 @@
   "reallife_law_station_furniture": "Delegacias mobiliadas",
   "reallife_opt_tip_law_station_furniture": "Mesas, armários, sala de reunião, sala de descanso, paredes e piso do jogo, policiais trabalhando e escritórios no piso vazio de uma delegacia grande. Desligado, fica vazia como antes.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Corrigido: um momento difícil em casa agora vem do que está acontecendo de verdade, como noites longas no trabalho, problemas de dinheiro ou não ligar, em vez de vir ao acaso.",
+  "reallife_changes_next": "Corrigido: uma resposta que você digita numa ligação agora é entendida do jeito certo: uma boa notícia não é mais recebida com pesar, e uma resposta vaga recebe uma resposta neutra. Corrigido: um momento difícil em casa agora vem do que está acontecendo de verdade, como noites longas no trabalho, problemas de dinheiro ou não ligar, em vez de vir ao acaso.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada banco da cidade tem seu próprio app no celular, com o nome que o jogo dá a ele: sua conta corrente e o extrato, os empréstimos que você deve àquele banco, podendo pagar parte ou tudo, seu cartão, o que ele oferece a você hoje e como ele vê sua pontuação. As condições dos bancos diferem um pouco, então escolher um faz diferença, e abaixo de uma pontuação de 580 nenhum deles empresta. Os contatos do mod têm fotos de verdade do jogo: as pessoas mostram o rosto e os serviços mostram um logotipo. Contatos tem uma caixa de busca no alto. As delegacias são mobiliadas com os móveis do próprio jogo: mesas com computadores, armários, um bebedouro, plantas, um relógio, luminárias e um vaso sanitário na cela. Corrigido: com todos os apps do mod, a fileira de apps no alto do menu de tela cheia passava por baixo do dinheiro e da data e saía da tela; agora ela tem páginas, centralizadas entre o nome do app e o dinheiro, viradas com a roda do mouse ou com os pontos. Corrigido: no mapa da cidade, uma linha do mod (Tribunal, Oficinas de personalização e as outras) podia ficar desmarcada enquanto os seus lugares continuavam no mapa; agora os lugares seguem a marcação que você vê.",
   "reallife_rota_box_stock_ok": "As mercadorias dão conta do plano recomendado.",
@@ -19869,6 +19869,13 @@
   "reallife_staff_offer_gave_way": "{name} recebeu a oferta de outro rival nas mensagens (Contatos). Ela substitui a de {rival}: iguale a oferta lá ou deixe ir.",
   "reallife_changes_040_5_title": "0.40.5",
   "reallife_changes_040_5": "O Flare tem um botão de claro e escuro na barra superior; a opção ainda pode fazê-lo seguir o celular. Corrigido: uma refeição fora com um amigo agora sacia sua fome. Corrigido: os trabalhos de limpeza e reposição só escolhem clientes com tempo para o trajeto e todo o serviço; se o cliente fechar, o trabalho é cancelado sem falta e o que foi feito é pago. Corrigido: a oferta de um rival a um funcionário que já saiu não fica mais com os botões Aceitar e Recusar. Os Eventos de empresa agora só dizem que um funcionário saiu para o rival quando ele realmente saiu. Corrigido: os carros voltam a se comportar bem mais como os do próprio jogo, com só um pouco de peso e inclinação a mais. Fazer curvas não joga mais o carro para fora da rua, e a suspensão não flutua mais depois de um buraco. Corrigido: um funcionário que o mod dispensa agora sai uma só vez, com um salário e um aviso, e ninguém mais recebe duas ofertas de rivais ao mesmo tempo: a oferta nas mensagens substitui a do app Empresa ou Cargos abertos.",
+  "reallife_social_typed_glad_1": "Que bom. Fico feliz em saber.",
+  "reallife_social_typed_glad_2": "Que bom ouvir isso. De verdade.",
+  "reallife_social_typed_sorry_1": "Poxa. Sinto muito em saber disso.",
+  "reallife_social_typed_sorry_2": "Isso não parece nada bom. Sinto muito.",
+  "reallife_social_typed_neutral_1": "Hum. Entendo.",
+  "reallife_social_typed_neutral_2": "Justo. De qualquer forma, é bom ouvir sua voz.",
+  "reallife_social_typed_neutral_3": "Certo. Bom, você sabe onde me encontrar.",
   "reallife_family_test_argue": "Um momento difícil a partir do que está acontecendo",
   "reallife_family_no_argue_cause": "Não há nada de errado entre você e {name} agora, então nenhum momento difícil acontece."
 }

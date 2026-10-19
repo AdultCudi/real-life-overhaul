@@ -15,8 +15,21 @@ namespace RealLifeOverhaul
         private static readonly List<SocialTopic> Fitting = new List<SocialTopic>(20);
         private static readonly List<float> Weights = new List<float>(20);
 
-        /// <summary>A topic that fits, never the one this person talked about last, with what its lines need filled in.</summary>
-        public static SocialTopic Pick(SocialPerson person, out Dictionary<string, string> data)
+        /// <summary>
+        /// A topic that fits, never the one this person talked about last, with what its lines need filled in; or the topic
+        /// a test asks for (<paramref name="tested"/>, a topic's id; -1 for none), whatever has happened.
+        /// </summary>
+        public static SocialTopic Pick(SocialPerson person, out Dictionary<string, string> data, int tested = -1)
+        {
+            SocialTopic picked = tested >= 0 && tested < SocialCatalogue.Topics.Length ? SocialCatalogue.Topics[tested] : Fitted(person);
+            person.LastTopic = picked.Id;
+            data = SocialLife.Data(person);
+            Fill(picked.Id, person, data);
+            return picked;
+        }
+
+        // A topic by what really happened, weighted, never the one this person talked about last; quiet if nothing fits.
+        private static SocialTopic Fitted(SocialPerson person)
         {
             Fitting.Clear();
             Weights.Clear();
@@ -47,9 +60,6 @@ namespace RealLifeOverhaul
                     break;
                 }
             }
-            person.LastTopic = picked.Id;
-            data = SocialLife.Data(person);
-            Fill(picked.Id, person, data);
             return picked;
         }
 
