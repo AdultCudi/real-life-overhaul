@@ -242,7 +242,7 @@ The player's motion is `JobClip.Hail` over the working pose; no sound is played 
 
 **The cart is solid** (`Core/SolidFootprint`, shared with the living city's two carts): see [What cuts the navigation mesh](../reference/performance.md#what-cuts-the-navigation-mesh-and-when).
 
-`VendorJob.Placement` checks the whole cart, vendor and queue against crossing colliders, including triggers, before putting it down. The player can take their place only after the cart's cut has settled and the vendor, counter and queue are still reachable. A failed check takes the cart back and tries the next candidate after the mesh closes; with none left, the shift ends without a penalty.
+`VendorJob.Placement` checks the whole cart, vendor and queue against crossing colliders, including triggers, before putting it down, through the same `CitySpots.ClearOfCrossings` the chess scenes use. The player can take their place only after the cart's cut has settled and the vendor, counter and queue are still reachable. A failed check takes the cart back and tries the next candidate after the mesh closes; with none left, the shift ends without a penalty.
 
 `CartQueueRules` releases a customer with a failed route, no progress for six seconds or a walk longer than forty seconds, without counting a walk-off. A failed step from the queue to the counter also releases them. `VendorJob.Customers` bounds attempts to send a customer from an unseen starting place to forty seconds too, including refused routes and failed walk orders. Each failure puts the customer back among those to come; after four failures in a row the shift is one shorter. These recoveries are logged with Developer diagnostics on.
 

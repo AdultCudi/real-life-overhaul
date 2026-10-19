@@ -117,7 +117,8 @@ namespace RealLifeOverhaul.Leisure
             Vector3 theirs = table - along * LeisureReach.StoolOut;
             if (!CitySpots.OnPavement(mine, out _) || !CitySpots.OnPavement(theirs, out _)
                 || !CitySpots.OnPavement(table + along * 1.2f, out Vector3 approach) || !CitySpots.OnPavement(table - along * 1.2f, out _)
-                || !CitySpots.ClearQuietly(approach, 0.3f))
+                || !CitySpots.ClearQuietly(approach, 0.3f)
+                || !CitySpots.ChessClear(table, along))
             {
                 return false;
             }

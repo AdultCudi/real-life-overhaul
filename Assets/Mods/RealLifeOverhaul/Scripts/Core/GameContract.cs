@@ -398,7 +398,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public static readonly string[] Layers =
         {
-            "AiVehicles", "AutoParkSpots", "BuildingWalls", "Buildings", "BuildingsOutlined", "Default", "Ground", "GroundUnplacable", "Human",
+            "AiVehicles", "AutoParkSpots", "BuildingWalls", "Buildings", "BuildingsOutlined", "Crosswalk", "Default", "Ground", "GroundUnplacable", "Human",
             "Ignore Raycast", "InteractiveItems", "InteractiveItemsOutlined", "ParkedVehicles", "ParkingArea", "Player", "PlayerVehicles", "Roads",
             "StreetProps", "TransparentFX", "UI", "Vehicles", "Water",
         };

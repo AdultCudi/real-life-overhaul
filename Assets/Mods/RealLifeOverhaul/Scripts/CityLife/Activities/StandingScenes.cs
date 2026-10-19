@@ -30,7 +30,8 @@ namespace RealLifeOverhaul
             }
             // The stools are the table's own +Z and -Z; the players sit along the pavement, out of the way of people passing.
             if (!CitySpots.OnPavement(_table + along * StoolOut, out _first) || !CitySpots.OnPavement(_table - along * StoolOut, out _second)
-                || !CitySpots.OnPavement(_table + along * 1.2f, out _) || !CitySpots.OnPavement(_table - along * 1.2f, out _))
+                || !CitySpots.OnPavement(_table + along * 1.2f, out _) || !CitySpots.OnPavement(_table - along * 1.2f, out _)
+                || !CitySpots.ChessClear(_table, along))
             {
                 return false;
             }
