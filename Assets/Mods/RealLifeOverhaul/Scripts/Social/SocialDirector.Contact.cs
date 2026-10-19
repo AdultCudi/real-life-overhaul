@@ -149,6 +149,7 @@ namespace RealLifeOverhaul
             return 1f + p.Closeness / 25f + (p.Together ? 3f : 0f);
         }
 
+        // Only what they have a free hour for in the days ahead (the call that answers it looks again, PersonDialog.Asked).
         private void Invite(SocialPerson person, float real)
         {
             PlanKind kind = person.Wants;
@@ -157,6 +158,10 @@ namespace RealLifeOverhaul
             {
                 kind = PlanKind.Coffee;
                 def = SocialCatalogue.Outing(kind);
+            }
+            if (SocialLife.NextSlot(person, kind, SocialLife.Now + SocialRules.PlanLead) < 0f)
+            {
+                return;
             }
             SocialOffer offer = SocialState.Offer;
             offer.Person = person.Index;
