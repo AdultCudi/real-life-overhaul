@@ -7,13 +7,14 @@ internal static partial class Program
         string vendor = ModSource(@"Jobs\Kinds\VendorJob.cs");
         string placement = ModSource(@"Jobs\Kinds\VendorJob.Placement.cs");
         string crossing = MemberText(placement, "private bool CrossingClear(");
-        Check(crossing.Contains("Physics.OverlapBoxNonAlloc(") && crossing.Contains("Physics.AllLayers")
-              && crossing.Contains("QueryTriggerInteraction.Collide") && crossing.Contains("hit.gameObject.layer == CrosswalkLayer")
-              && crossing.Contains("hit.CompareTag(\"Crosswalk\")")
-              && crossing.Contains("count < PitchOverlaps.Length") && crossing.Contains("PitchOverlaps[i] = null;"),
+        string shared = MemberText(ModSource(@"CityLife\CitySpots.cs"), "public static bool ClearOfCrossings(");
+        Check(crossing.Contains("CitySpots.ClearOfCrossings(cart + outwards * middle + Vector3.up * 0.5f, half, Quaternion.LookRotation(outwards), out _)")
+              && shared.Contains("Physics.OverlapBoxNonAlloc(") && shared.Contains("Physics.AllLayers")
+              && shared.Contains("QueryTriggerInteraction.Collide") && shared.Contains("hit.gameObject.layer == _crosswalkLayer")
+              && shared.Contains("hit.CompareTag(\"Crosswalk\")")
+              && shared.Contains("full = count >= CrossingOverlaps.Length;") && shared.Contains("CrossingOverlaps[i] = null;"),
             "vendor cart: the whole setup refuses crossing layers, tags and triggers, including a full query buffer");
-        Check(placement.Contains("LayerMask.NameToLayer(\"Crosswalk\")")
-              && crossing.Contains("CartHalfLength + CrossingMargin")
+        Check(crossing.Contains("CartHalfLength + CrossingMargin")
               && crossing.Contains("(QueueOut + VendorBack) * 0.5f + CrossingMargin"),
             "vendor cart: crossing clearance covers the cart, vendor and queue with room round them");
 

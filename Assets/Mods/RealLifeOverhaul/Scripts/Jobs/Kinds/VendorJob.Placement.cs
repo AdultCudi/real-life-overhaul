@@ -13,8 +13,6 @@ namespace RealLifeOverhaul
         private const int PitchPicks = 12;            // six nearby places, each facing either side of the pavement
         private const float PitchSettle = 1.6f;      // seconds for the mesh to close after a refused cart is taken away
         private const float CrossingMargin = 0.4f;   // metres round the cart, vendor and queue, including their approaches
-        private static readonly int CrosswalkLayer = LayerMask.NameToLayer("Crosswalk");
-        private static readonly Collider[] PitchOverlaps = new Collider[64];
         private Vector3 _pitchStart;
         private int _pitchPick;
         private bool _pitchReady;
@@ -78,24 +76,13 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Triggers on every layer: the game's crossing is a trigger tagged "Crosswalk" (CrosswalkToTrafficLightLink), over road on the Crosswalk layer.
+        // The cart, the vendor behind it and the queue in front, with room round them, in one box (CitySpots.ClearOfCrossings).
         private bool CrossingClear(Vector3 cart, Vector3 outwards)
         {
             float middle = (QueueOut - VendorBack) * 0.5f;
             var half = new Vector3(CartHalfLength + CrossingMargin, 1f,
                 (QueueOut + VendorBack) * 0.5f + CrossingMargin);
-            int count = Physics.OverlapBoxNonAlloc(cart + outwards * middle + Vector3.up * 0.5f, half,
-                PitchOverlaps, Quaternion.LookRotation(outwards), Physics.AllLayers, QueryTriggerInteraction.Collide);
-            bool clear = count < PitchOverlaps.Length;   // a full buffer may conceal a crossing
-            for (int i = 0; i < count; i++)
-            {
-                Collider hit = PitchOverlaps[i];
-                if (hit != null && (hit.gameObject.layer == CrosswalkLayer || hit.CompareTag("Crosswalk")))
-                {
-                    clear = false;
-                }
-                PitchOverlaps[i] = null;
-            }
+            bool clear = CitySpots.ClearOfCrossings(cart + outwards * middle + Vector3.up * 0.5f, half, Quaternion.LookRotation(outwards), out _);
             if (!clear && Meta.Dev.Verbose)
             {
                 Ctx.Logger?.Info("Jobs check (cart crossing clearance): candidate refused (crossing overlap or full query buffer): FAIL.");

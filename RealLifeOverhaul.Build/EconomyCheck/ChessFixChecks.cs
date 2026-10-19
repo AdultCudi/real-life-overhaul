@@ -1,24 +1,27 @@
 using System;
 
-// Crossing clearance is a placement query, so these checks hold its shape, trigger handling and both callers as text.
+// Crossing clearance is a placement query, so these checks hold its shape, trigger handling and every caller as text.
 internal static partial class Program
 {
     private static void ChessFixes()
     {
         string spots = ModSource(@"CityLife\CitySpots.cs");
         string clear = MemberText(spots, "public static bool ChessClear(Vector3 table, Vector3 along)");
+        string crossings = MemberText(spots, "public static bool ClearOfCrossings(Vector3 centre, Vector3 halfExtents, Quaternion rotation, out bool full)");
         Check(spots.Contains("private static readonly Vector3 ChessHalf = new Vector3(2f, 1.5f, 1.85f);")
-              && clear.Contains("Physics.OverlapBoxNonAlloc(table + Vector3.up * 0.5f, ChessHalf, ChessOverlaps,")
-              && clear.Contains("Quaternion.LookRotation(along)"),
+              && clear.Contains("ClearOfCrossings(table + Vector3.up * 0.5f, ChessHalf, Quaternion.LookRotation(along), out bool full)"),
             "chess fix: one oriented box covers the table, stools, approaches and either onlooker after pavement snapping");
         Check(MemberText(spots, "private static void Setup()").Contains("_crosswalkLayer = LayerMask.NameToLayer(\"Crosswalk\");")
-              && clear.Contains("Setup();") && clear.Contains("Physics.AllLayers, QueryTriggerInteraction.Collide")
-              && clear.Contains("hit.gameObject.layer == _crosswalkLayer || hit.CompareTag(\"Crosswalk\")"),
-            "chess fix: crossings count by layer or tag on any layer, including triggers, without the traffic features");
-        Check(spots.Contains("private static readonly Collider[] ChessOverlaps = new Collider[64];")
-              && clear.Contains("bool full = count >= ChessOverlaps.Length;") && clear.Contains("crossing = true;")
-              && clear.Contains("ChessOverlaps[i] = null;") && clear.Contains("return !crossing && !full;"),
-            "chess fix: the query reuses its buffer, releases collider references and refuses a full buffer");
+              && crossings.Contains("Setup();") && crossings.Contains("Physics.OverlapBoxNonAlloc(centre, halfExtents, CrossingOverlaps, rotation, Physics.AllLayers, QueryTriggerInteraction.Collide)")
+              && crossings.Contains("hit.gameObject.layer == _crosswalkLayer || hit.CompareTag(\"Crosswalk\")"),
+            "crossing clearance: crossings count by layer or tag on any layer, including triggers, without the traffic features");
+        Check(spots.Contains("private static readonly Collider[] CrossingOverlaps = new Collider[64];")
+              && crossings.Contains("full = count >= CrossingOverlaps.Length;") && crossings.Contains("crossing = true;")
+              && crossings.Contains("CrossingOverlaps[i] = null;") && crossings.Contains("return !crossing && !full;"),
+            "crossing clearance: the query reuses its buffer, releases collider references and refuses a full buffer");
+        Check(Occurs(spots, "Physics.OverlapBoxNonAlloc(") == 1 && Occurs(spots, "CompareTag(\"Crosswalk\")") == 1
+              && !ModSource(@"Jobs\Kinds\VendorJob.Placement.cs").Contains("CompareTag(\"Crosswalk\")"),
+            "crossing clearance: one test in CitySpots, which the chess scenes and the drinks cart share");
 
         string leisure = ModSource(@"Leisure\Activities\ChessGame.cs");
         string put = MemberText(leisure, "public bool PutOut(Vector3 anchor, Vector3 player, out TestRefusal why)");

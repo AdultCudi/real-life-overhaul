@@ -34,8 +34,8 @@ People at work and about their day on the pavements near the player: sweepers, w
 - Other features play clips through `Animation/ActivityAnimator` and find room with `CitySpots`; civic life asks how many of the eight are out (`Wiring/CivicLinks.cs`).
 - Both chess scenes (Leisure's corner and the living city's) ask `CitySpots.ChessClear`.
   They refuse a candidate whose table, stools, approaches or possible onlooker places overlap a crossing.
-  One non-allocating box query includes triggers tagged Crosswalk or on the Crosswalk layer, regardless of the lights
-  or traffic options. A full query buffer refuses the candidate too. The check runs only when choosing a place;
+  It asks `CitySpots.ClearOfCrossings`, the one crossing test the drinks cart shares: one non-allocating box query that
+  includes triggers tagged Crosswalk or on the Crosswalk layer, regardless of the lights or traffic options. A full query buffer refuses the candidate too. The check runs only when choosing a place;
   normal walking can still cross roads. Developer diagnostics report the clearance result for each queried candidate.
   The Crosswalk layer is in `GameContract.Layers`, so the mod names it in Player.log if a game update drops it; the tag still finds crossings then.
 

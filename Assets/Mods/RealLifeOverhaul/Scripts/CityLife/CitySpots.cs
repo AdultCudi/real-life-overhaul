@@ -31,7 +31,7 @@ namespace RealLifeOverhaul
         // Metres: table, stools and approaches, including a 0.35 m pavement snap and 0.3 m of room for a person.
         // The width also covers the optional onlooker 1.3 m to either side after the same snap and clearance.
         private static readonly Vector3 ChessHalf = new Vector3(2f, 1.5f, 1.85f);
-        private static readonly Collider[] ChessOverlaps = new Collider[64];
+        private static readonly Collider[] CrossingOverlaps = new Collider[64];   // one buffer for every crossing test: they run one at a time, on the main thread
 
         /// <summary>Why places were refused since the counts were last cleared: for saying in the log why a test found no room.</summary>
         public static int OffPavement, Blocked, NearDoor, NoWall, Uneven;
@@ -166,32 +166,44 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True if the whole chess setup misses crossings, including its approaches and possible onlookers.
-        /// One non-allocating box query when choosing a place; independent of the traffic features and the lights.
+        /// True if a box, turned by rotation, touches no marked crossing: the game's crossing is a trigger tagged "Crosswalk"
+        /// (CrosswalkToTrafficLightLink) on the Crosswalk layer, so triggers on every layer count, and either the layer or the
+        /// tag is enough. Full is true when more colliders met the box than the buffer holds; that refuses too, since one left
+        /// out may be a crossing. One non-allocating box query, asked when a place is chosen, never per frame; it does not
+        /// depend on the traffic features or the lights.
         /// </summary>
-        public static bool ChessClear(Vector3 table, Vector3 along)
+        public static bool ClearOfCrossings(Vector3 centre, Vector3 halfExtents, Quaternion rotation, out bool full)
         {
             Setup();
-            int count = Physics.OverlapBoxNonAlloc(table + Vector3.up * 0.5f, ChessHalf, ChessOverlaps,
-                Quaternion.LookRotation(along), Physics.AllLayers, QueryTriggerInteraction.Collide);
-            bool full = count >= ChessOverlaps.Length;   // a full buffer may hide a crossing: refuse this candidate
+            int count = Physics.OverlapBoxNonAlloc(centre, halfExtents, CrossingOverlaps, rotation, Physics.AllLayers, QueryTriggerInteraction.Collide);
+            full = count >= CrossingOverlaps.Length;
             bool crossing = false;
             for (int i = 0; i < count; i++)
             {
-                Collider hit = ChessOverlaps[i];
+                Collider hit = CrossingOverlaps[i];
                 if (hit != null && (hit.gameObject.layer == _crosswalkLayer || hit.CompareTag("Crosswalk")))
                 {
                     crossing = true;
                 }
-                ChessOverlaps[i] = null;
-            }
-            if (Meta.Dev.Verbose)
-            {
-                CityLifeDirector.Logger?.Info(crossing ? "Chess check (crossing clearance): a crossing under the table, stools, approaches or onlookers, the place refused: PASS"
-                    : full ? "Chess check (crossing clearance): more colliders than the query holds, the place refused in case one is a crossing: PASS"
-                    : "Chess check (crossing clearance): no crossing under the table, stools, approaches or onlookers: PASS");
+                CrossingOverlaps[i] = null;   // no collider is held past the query
             }
             return !crossing && !full;
+        }
+
+        /// <summary>
+        /// True if the whole chess setup misses crossings, including its approaches and possible onlookers.
+        /// One box query through <see cref="ClearOfCrossings"/>, when choosing a place.
+        /// </summary>
+        public static bool ChessClear(Vector3 table, Vector3 along)
+        {
+            bool clear = ClearOfCrossings(table + Vector3.up * 0.5f, ChessHalf, Quaternion.LookRotation(along), out bool full);
+            if (Meta.Dev.Verbose)
+            {
+                CityLifeDirector.Logger?.Info(clear ? "Chess check (crossing clearance): no crossing under the table, stools, approaches or onlookers: PASS"
+                    : full ? "Chess check (crossing clearance): more colliders than the query holds, the place refused in case one is a crossing: PASS"
+                    : "Chess check (crossing clearance): a crossing under the table, stools, approaches or onlookers, the place refused: PASS");
+            }
+            return clear;
         }
 
         /// <summary>
