@@ -202,6 +202,7 @@ namespace RealLifeOverhaul
                 }
                 p.LastContactDay = day;
                 p.StageDay = day;
+                p.AgeDay = day;   // the rolled age is their age today, in a save that took the mod up late too
                 FixLook(p);   // after the rolls, so the rest of the cast is dealt the same for a seed
                 people[i] = p;
             }

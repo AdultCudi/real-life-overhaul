@@ -54,7 +54,8 @@ namespace RealLifeOverhaul
         public int Index;
         public string Name;
         public bool Female;
-        public int Age;              // years
+        public int Age;              // years on AgeDay, as their look has it; today's is SocialRules.AgeOn, a year more each birthday
+        public int AgeDay = 1;       // the game day Age is true on: the day the cast was made, or an older save's first load with it
         public int Seed;             // of their look; a kept look's own (People/PersonLook.SeedOf)
         public SocialOrigin Origin;
         public SocialTrait Traits;

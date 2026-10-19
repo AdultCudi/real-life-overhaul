@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
         {
             SocialPerson p = _known[at % _known.Count];
             Dictionary<string, string> data = SocialLife.Data(p);
+            data["age"] = SocialTalk.AgeOf(p).ToString();
             data["stage"] = SocialLife.StageName(p);
             data["mood"] = SocialLife.MoodName(p);
             data["closeness"] = p.Closeness.ToString();

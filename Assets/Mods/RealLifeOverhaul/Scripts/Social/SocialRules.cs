@@ -241,6 +241,26 @@ namespace RealLifeOverhaul
         public static int GraceUntil(int day) => -(day + LoanGraceDays);
 
         /// <summary>
+        /// A person's age on game <paramref name="day"/> (1 the first): <paramref name="age"/> is what they were on
+        /// <paramref name="ageDay"/> (SocialPerson.AgeDay: the day the cast was made, or an older save's first load with it),
+        /// and each birthday after that day (<paramref name="birthday"/>, a day of the year, read as SocialTalk.BirthdayIn
+        /// reads it) adds a year, so the age grows on the day the People page counts down to. Never less than
+        /// <paramref name="age"/>. Worked out when shown, from saved numbers only: the same on every machine.
+        /// </summary>
+        public static int AgeOn(int age, int ageDay, int birthday, int day, int daysPerYear)
+        {
+            int perYear = Math.Max(1, daysPerYear);
+            int first = ((birthday - 1) % perYear + perYear) % perYear + 1;   // the first day of the calendar that is their birthday
+            return age + Math.Max(0, BirthdaysBy(day, first, perYear) - BirthdaysBy(ageDay, first, perYear));
+        }
+
+        // How many of the calendar's days 1 to day are the birthday that first falls on day first.
+        private static int BirthdaysBy(int day, int first, int perYear)
+        {
+            return day >= first ? (day - first) / perYear + 1 : 0;
+        }
+
+        /// <summary>
         /// Whether a report made indoors names the player's own place: an interior's coordinates say nothing of the city, so it
         /// is moved to the building's door. Any other place (a parked car's break-in, a crash down the street) is in the city.
         /// </summary>
