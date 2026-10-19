@@ -43,10 +43,14 @@ namespace RealLifeOverhaul.Utilities
             return Uri.EscapeDataString(reg.StreetName ?? string.Empty) + "~" + reg.StreetNumber.ToString(CultureInfo.InvariantCulture);
         }
 
-        /// <summary>The player's places today: every home and business they rent or own.</summary>
-        public static void Places(List<PlaceInfo> into)
+        /// <summary>
+        /// The player's places today: every home and business they rent or own, but an underground car park, which the
+        /// utilities never supply (UtilitiesRules.Serves); those go to <paramref name="unserved"/> when it is given.
+        /// </summary>
+        public static void Places(List<PlaceInfo> into, List<BuildingRegistration> unserved = null)
         {
             into.Clear();
+            unserved?.Clear();
             GameInstance save = Save;
             if (save == null || save.BuildingRegistrations == null)
             {
@@ -61,6 +65,11 @@ namespace RealLifeOverhaul.Utilities
                 Building building = BuildingHelper.GetBuilding(reg.Address);
                 if (building == null)
                 {
+                    continue;
+                }
+                if (!UtilitiesRules.Serves(reg.StreetName, building.BuildingSize))
+                {
+                    unserved?.Add(reg);
                     continue;
                 }
                 bool home = building.BuildingType == Residential;

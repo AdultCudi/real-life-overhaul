@@ -79,6 +79,7 @@ namespace RealLifeOverhaul
         private readonly BusinessVisit _visit = new BusinessVisit();
         private readonly List<BuildingRegistration> _shops = new List<BuildingRegistration>(8);
         private readonly List<string> _opening = new List<string>(8);   // the businesses whose last closure of the mod's has just ended
+        private readonly List<string> _letGo = new List<string>(2);     // the businesses let go by the player whose closures were just dropped
         private readonly List<IssueDef> _deal = new List<IssueDef>(BusinessCatalogue.All.Length);
         private readonly int[] _testAt = new int[8];
         private float _nextSlow;
@@ -187,6 +188,7 @@ namespace RealLifeOverhaul
                 BusinessState.Load(save.modData, day);
                 BusinessDesk.Setup();
                 Unstick(save);
+                DropLetGo();   // (a closure kept in the save on a building given up while the mod was away)
                 _lastHour = hour;   // nothing is decided in the first hour of a session
                 _lastDay = day;
                 Logger?.Info("Business pressure: ready. " + BusinessState.Issues.Count + " open issue(s), " + BusinessState.Effects.Count + " footfall change(s), "
@@ -210,6 +212,7 @@ namespace RealLifeOverhaul
             // on its hour, and the utilities' all end once the utilities are off.
             if (turned)
             {
+                DropLetGo();
                 BusinessState.EndDue(day, hour, _opening);
                 ReopenListed();
             }
@@ -246,19 +249,50 @@ namespace RealLifeOverhaul
         }
 
         // The businesses listed as having no closure of the mod's left on them, opened again; the list emptied, whatever happens.
+        // One the player has let go since is not theirs to open: the mod's switch on it is cleared for whoever has it next.
         private void ReopenListed()
         {
             try
             {
                 for (int i = 0; i < _opening.Count; i++)
                 {
-                    BusinessGame.Reopen(BusinessGame.Held(_opening[i]));   // (Held, not Find: the utilities close a headquarters too, which takes no money)
+                    BuildingRegistration reg = BusinessGame.Held(_opening[i]);   // (Held, not Find: the utilities close a headquarters too, which takes no money)
+                    if (reg != null)
+                    {
+                        BusinessGame.Reopen(reg);
+                    }
+                    else
+                    {
+                        BusinessGame.Freed(_opening[i]);
+                    }
                 }
             }
             finally
             {
                 _opening.Clear();
             }
+        }
+
+        private static readonly Predicate<string> StillHeld = place => BusinessGame.Held(place) != null;
+
+        // Each closure on a building the player no longer holds (its lease ended, it was sold with it, shut down and handed
+        // back) dropped now rather than on its hour, and the switch it set cleared, so that nothing of the mod closes the
+        // building again, keeps it closed for its next tenant, or opens it as the player's. One line with Developer
+        // diagnostics on, for each building.
+        private void DropLetGo()
+        {
+            _letGo.Clear();
+            BusinessState.DropWhere(StillHeld, _letGo);
+            for (int i = 0; i < _letGo.Count; i++)
+            {
+                bool freed = BusinessGame.Freed(_letGo[i]);
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Business check (a building let go): " + _letGo[i] + " is no longer the player's: the mod's closure on it dropped"
+                                 + (freed ? " and the game's switch it set cleared" : string.Empty) + "; it is not closed or opened by the mod again: PASS");
+                }
+            }
+            _letGo.Clear();
         }
 
         private void OnSaveGame()
@@ -571,9 +605,9 @@ namespace RealLifeOverhaul
         internal bool CloseFor(BuildingRegistration reg, int hours, ClosureSource source = ClosureSource.Issue)
         {
             hours = Mathf.Clamp(hours, 1, BusinessCatalogue.MostClosedHours);
-            if (_broken || !BusinessState.Loaded || reg == null)
+            if (_broken || !BusinessState.Loaded || reg == null || !GoingPublic.Mine(reg))
             {
-                return false;
+                return false;   // (a building the player has let go is never closed, nor kept closed, by the mod)
             }
             string place = BusinessGame.Place(reg);
             int hour = TimeHelper.CurrentHour + hours, day = TimeHelper.CurrentDay + hour / 24;

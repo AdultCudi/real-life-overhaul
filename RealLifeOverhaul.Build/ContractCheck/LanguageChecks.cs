@@ -19,7 +19,7 @@ internal static partial class Program
     private static readonly Dictionary<string, string> GameLanguageNames = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         { "en", "English" }, { "pt", "Portuguese (BR)" }, { "zh-cn", "Chinese (Simplified)" }, { "de", "German" }, { "fr", "French" },
-        { "es", "Spanish" }, { "ru", "Russian" }
+        { "es", "Spanish" }, { "ru", "Russian" }, { "nl", "Dutch" }, { "tr", "Turkish" }
     };
 
     private static void Languages(string managed, string root)

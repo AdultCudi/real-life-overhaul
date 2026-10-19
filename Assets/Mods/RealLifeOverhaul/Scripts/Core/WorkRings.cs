@@ -67,6 +67,27 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>
+        /// Which piece explains a long frame, as <see cref="Get"/>'s back: the costliest closed piece that began in
+        /// <paramref name="frame"/>, the newest of equals; the newest (0) when none closed in that frame; -1 when the ring
+        /// is empty.
+        /// </summary>
+        public int Costliest(int frame)
+        {
+            int pick = -1;
+            long most = -1;
+            for (int back = 0; back < Count; back++)
+            {
+                int slot = (_last - back) % Kept;
+                if (_frame[slot] == frame && _spent[slot] >= 0 && _spent[slot] > most)
+                {
+                    most = _spent[slot];
+                    pick = back;
+                }
+            }
+            return pick >= 0 ? pick : Count > 0 ? 0 : -1;
+        }
+
         /// <summary>Ticks spent in the closed pieces that began in a frame: the mod's named share of that frame.</summary>
         public long SpentIn(int frame)
         {
