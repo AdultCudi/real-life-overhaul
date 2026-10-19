@@ -122,6 +122,7 @@ internal static partial class Program
                 "bikes: at full lean and more a " + kind + "'s boxes stay off the road (lowest " + BikeRules.LowestAt(frame, 38f).ToString("F3") + " m)");
             Check(bars.HalfWidth >= gripX + 0.05f && bars.Top >= gripY && bars.Bottom < gripY && bars.Front >= gripZ && bars.Back <= seatZ,
                 "bikes: a " + kind + "'s bars box takes the grips and the hands on them, from the saddle forward");
+            BikeClearBoxes(kind, frame, bars);   // a bike left over a post (BikeClearCheck.cs)
         }
 
         // ---- over the sources: the boxes, the drivetrain, the lean and the name put on and given back.
@@ -193,6 +194,8 @@ internal static partial class Program
         string lookup = Body(strikes, "private void Lookup(");
         Check(lookup.Contains("_measureAgain > 0") && lookup.Contains("_measureAgain--") && lookup.Contains("_measureAgain = MeasureLooks"),
             "bikes source: a two-wheeler's box is measured when it is got on and a few looks after, not twice a second all ride");
+
+        BikeClear(scripts);   // where a bike is left: the rules and, over the sources, when they are asked (BikeClearCheck.cs)
 
         // ---- no page of the Guide says the game calls a bicycle or a motorbike an electric scooter, in any language.
         string locales = Path.Combine(scripts, "..", "Locales");

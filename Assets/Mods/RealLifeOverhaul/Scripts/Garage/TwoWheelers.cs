@@ -34,6 +34,9 @@ namespace RealLifeOverhaul
     /// game's interact key: hire, return, or browse. Browsing opens the game's list (<see cref="GarageList"/>)
     /// with what is for sale. A two-wheeler just handed over or asked for is marked with the game's own
     /// destination marker (GameUi.GuideMark). No key is read here.
+    ///
+    /// Where one is left: the moment it is got off or on, a bike of the player's own standing in a meter, a post or
+    /// anything else solid is stood on the nearest clear pavement round it (<see cref="Unpin"/>, <see cref="BikeClearRules"/>).
     /// </summary>
     public sealed class TwoWheelers
     {
@@ -142,6 +145,7 @@ namespace RealLifeOverhaul
                 if (_riding != null)
                 {
                     _riding.Dismounted();
+                    Unpin(_riding, gm, "left");   // every way off (the game's own, a fall, the stand's return) comes through here
                 }
                 _riding = selected != null ? selected.GetComponent<BikeMount>() : null;
                 _tired = false;
@@ -149,6 +153,7 @@ namespace RealLifeOverhaul
                 {
                     _riding.Effort = 1f;
                     _riding.Mounted(gm.playerController);
+                    Unpin(_riding, gm, "got on");   // one left in something before this check, or by a save of an older version
                 }
                 _names.Ride(_riding);
                 return;
@@ -370,14 +375,7 @@ namespace RealLifeOverhaul
             }
             if (mount != null)
             {
-                // It keeps the height above the ground it stood at (the game has it at rest, and at rest it does not settle).
-                float lift = 0.02f;
-                if (BikePlaces.StandHeight(was, out float under, out _) && was.y - under > -0.1f && was.y - under < 0.4f
-                    && Vector3.Angle(scooter.transform.up, Vector3.up) < 20f)
-                {
-                    lift = Mathf.Max(0f, was.y - under);
-                }
-                spot.y += lift;
+                spot.y += Lift(scooter, was);
                 Place(scooter, spot, facing);
                 record.Position = spot;
                 record.Heading = facing.eulerAngles.y;
@@ -448,6 +446,112 @@ namespace RealLifeOverhaul
             Physics.SyncTransforms();
             scooter.SavePosition();
             scooter.UpdateNavMeshTargets();
+        }
+
+        // How high over the ground a scooter moved from a place is stood: the height it stood at over the ground there (the
+        // game has it at rest, and at rest it does not settle), or just off the ground if it was lying over or off it.
+        private static float Lift(ScooterController scooter, Vector3 was)
+        {
+            if (BikePlaces.StandHeight(was, out float under, out _) && was.y - under > -0.1f && was.y - under < 0.4f
+                && Vector3.Angle(scooter.transform.up, Vector3.up) < 20f)
+            {
+                return Mathf.Max(0f, was.y - under);
+            }
+            return 0.02f;
+        }
+
+        // ---------------------------------------------------------------- where it is left
+
+        /// <summary>
+        /// The moment a bike is got off, and the moment it is got on: if its frame or its bars are in something solid (a
+        /// parking meter, a post, a bench, a wall, a car; <see cref="BikeClearRules"/>), a bike of the player's own is stood,
+        /// upright and facing as it was, on the nearest clear place round it (<see cref="ClearSpot"/>). The game holds a bike
+        /// nobody is on wherever it was left, so one left in a meter stays in it, and got on again cannot be ridden out.
+        /// Two box queries when nothing is wrong; at most a few dozen more, once, when something is. Never per frame.
+        /// </summary>
+        private void Unpin(BikeMount mount, GameManager gm, string when)
+        {
+            try
+            {
+                if (mount == null || mount.Scooter == null || mount.Record == null || GarageState.Bike(mount.Record.Id) != mount.Record)
+                {
+                    return;   // gone, or being taken away (handed back at a dock)
+                }
+                Transform bike = mount.transform;
+                Transform player = gm.playerController != null ? gm.playerController.transform : null;
+                bool pinned = mount.Pinned(bike.position, bike.rotation, BikePlaces.PinMask, player);
+                string what = pinned && BikeMount.PinnedBy != null ? BikeMount.PinnedBy.name + " (" + LayerMask.LayerToName(BikeMount.PinnedBy.gameObject.layer) + ")" : null;
+                bool mine = pinned && GoingPublic.MineVehicle(mount.Scooter);
+                if (!BikeClearRules.Move(pinned, mine, BuildingManager.IsInsideBuilding))
+                {
+                    if (pinned)
+                    {
+                        Logger?.Info("Two-wheelers: clear-place check (" + when + "): it stands in " + what + "; not moved (" + (mine ? "the player is indoors" : "not the player's own") + ").");
+                    }
+                    else if (Meta.Dev.Verbose)
+                    {
+                        Logger?.Info("Two-wheelers: clear-place check (" + when + "): nothing solid in its frame or its bars at "
+                                     + bike.position.ToString("F1", CultureInfo.InvariantCulture) + ". PASS");
+                    }
+                    return;
+                }
+                Vector3 was = bike.position;
+                if (!ClearSpot(mount, player, out Vector3 spot, out Quaternion facing))
+                {
+                    Logger?.Warn("Two-wheelers: clear-place check (" + when + "): it stands in " + what + " and nothing within "
+                                 + BikeClearRules.MostShift.ToString("F1", CultureInfo.InvariantCulture)
+                                 + " m is clear; it stays where it is (\"Bring it here\" stands it in front of the player): " + mount.Report());
+                    return;
+                }
+                Place(mount.Scooter, spot, facing);
+                mount.Record.Position = spot;
+                mount.Record.Heading = facing.eulerAngles.y;
+                if (!mount.Ridden)
+                {
+                    Watch(mount, spot, facing);   // the look two seconds on: has it stayed there?
+                }
+                Logger?.Info("Two-wheelers: clear-place check (" + when + "): it stood in " + what + "; moved "
+                             + Mathf.Sqrt(CitySpots.Flat(spot - was)).ToString("F2", CultureInfo.InvariantCulture) + " m to clear ground: " + mount.Report());
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Two-wheelers: the clear-place check could not be made; the bike stays where it is. " + e.Message);
+            }
+        }
+
+        /// <summary>
+        /// The nearest place round a bike, of those <see cref="BikeClearRules.Place"/> tries in its own frame, where it can
+        /// stand upright facing the way it faces: on pavement and level with where it is, else on any ground within a step of
+        /// it; its boxes there in nothing solid and on nobody but the player; no building's wall between. False if none is.
+        /// </summary>
+        private static bool ClearSpot(BikeMount mount, Transform player, out Vector3 spot, out Quaternion facing)
+        {
+            Transform bike = mount.transform;
+            Vector3 from = bike.position;
+            facing = Quaternion.Euler(0f, bike.eulerAngles.y, 0f);
+            float lift = Lift(mount.Scooter, from);
+            float level = BikePlaces.StandHeight(from, out float under, out _) ? under : from.y;
+            int room = BikePlaces.RoomMask;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = 0; i < BikeClearRules.Places; i++)
+                {
+                    BikeClearRules.Place(i, out float across, out float along);
+                    Vector3 at = from + facing * new Vector3(across, 0f, along);
+                    if (!BikePlaces.StandHeight(at, out float height, out bool pavement) || (pass == 0 && !pavement)
+                        || Mathf.Abs(height - level) > (pass == 0 ? 0.6f : 0.3f))
+                    {
+                        continue;
+                    }
+                    spot = new Vector3(at.x, height + lift, at.z);
+                    if (!mount.Pinned(spot, facing, room, player) && BikePlaces.Unwalled(from, spot, 1.2f))
+                    {
+                        return true;
+                    }
+                }
+            }
+            spot = default;
+            return false;
         }
 
         // A second look at one just made or moved, two seconds on: the log line that says whether it stayed.

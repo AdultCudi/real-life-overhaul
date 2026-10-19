@@ -353,6 +353,53 @@ namespace RealLifeOverhaul
             _exitHooked = on;
         }
 
+        /// <summary>The last thing <see cref="Pinned"/> found a box of a bike in, for the log line that says so. Null if none yet.</summary>
+        public static Collider PinnedBy { get; private set; }
+
+        /// <summary>
+        /// True if this bike, stood at a place and turned so, would have its frame box or its bars box (as they are while
+        /// it is ridden, switched on or not) in something on the given layers: each box less a skin
+        /// (<see cref="BikeClearRules.Skin"/>), so that a resting touch is not being in it. The bike's own colliders and
+        /// whatever is under <paramref name="also"/> (the player, who has just got off and is still standing in its
+        /// middle) are not counted. Two box queries into one shared buffer: asked when a bike is got off or on, never per frame.
+        /// </summary>
+        public bool Pinned(Vector3 position, Quaternion rotation, int mask, Transform also)
+        {
+            BoxCollider frame = _frame != null ? _frame : _scooter != null ? _scooter.vehicleCollider as BoxCollider : null;
+            return Boxed(frame, position, rotation, mask, also) || Boxed(_bars, position, rotation, mask, also);
+        }
+
+        private static readonly Collider[] Touching = new Collider[24];   // one buffer: the queries run one at a time, on the main thread
+
+        // One box of the bike, moved with the bike from where it is now to the place asked about.
+        private bool Boxed(BoxCollider box, Vector3 position, Quaternion rotation, int mask, Transform also)
+        {
+            if (box == null || mask == 0)
+            {
+                return false;
+            }
+            Transform space = box.transform;
+            Vector3 centre = Vector3.Scale(transform.InverseTransformPoint(space.TransformPoint(box.center)), transform.lossyScale);   // from the bike's origin, in its axes
+            Quaternion turn = rotation * (Quaternion.Inverse(transform.rotation) * space.rotation);
+            Vector3 scale = space.lossyScale;
+            var half = new Vector3(BikeClearRules.Inner(Mathf.Abs(box.size.x * scale.x) * 0.5f), BikeClearRules.Inner(Mathf.Abs(box.size.y * scale.y) * 0.5f),
+                BikeClearRules.Inner(Mathf.Abs(box.size.z * scale.z) * 0.5f));
+            int count = Physics.OverlapBoxNonAlloc(position + rotation * centre, half, Touching, turn, mask, QueryTriggerInteraction.Ignore);
+            bool found = false;
+            for (int i = 0; i < count; i++)
+            {
+                Collider other = Touching[i];
+                Touching[i] = null;
+                if (found || other == null || other.transform.IsChildOf(transform) || (also != null && other.transform.IsChildOf(also)))
+                {
+                    continue;
+                }
+                PinnedBy = other;
+                found = true;
+            }
+            return found;
+        }
+
         // The game destroying the scooter (or the scene going) with the box on: traffic is told it has gone.
         private void OnDestroy()
         {
