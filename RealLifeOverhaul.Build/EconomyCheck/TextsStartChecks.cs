@@ -130,7 +130,8 @@ internal static partial class Program
 
     /// <summary>
     /// This checker as a pretend llama-server, started by TextServer with llama.cpp's arguments: "silent" takes every connection
-    /// and never answers; "loads" answers /health and never the first reply. Ends by itself after two minutes at the latest.
+    /// and never answers; "loads" answers /health and never the first reply; the modes of TextsHangChecks.cs answer as
+    /// llama.cpp does until a card asks them to hang, be slow or stop. Ends by itself after two minutes at the latest.
     /// </summary>
     private static int PretendLlama(string[] args)
     {
@@ -142,6 +143,10 @@ internal static partial class Program
             {
                 int.TryParse(args[i + 1], out port);
             }
+        }
+        if (PretendServes(mode))
+        {
+            return PretendServe(args[1], port);   // (a server that answers as llama.cpp does, then hangs, is slow or stops: TextsHangChecks.cs)
         }
         var listener = new TcpListener(IPAddress.Loopback, port);
         listener.Start();

@@ -757,7 +757,7 @@ internal static partial class Program
     {
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts", "Texts"));
         var gameFree = new[] { "TextCard.cs", "TextFaces.cs", "TextIntents.cs", "TextWords.cs", "TextCheck.cs", "TextQueue.cs", "TextJson.cs", "TextServer.cs", "TextPacks.cs",
-            "TextSpeed.cs", "TextsStore.cs", "TextsShare.cs", "TextsHub.cs", "TextsMapRules.cs" };
+            "TextSpeed.cs", "TextsStore.cs", "TextsShare.cs", "TextsHub.cs", "TextsMapRules.cs", "TextHang.cs" };
         var problems = new List<string>();
         foreach (string file in gameFree)
         {
