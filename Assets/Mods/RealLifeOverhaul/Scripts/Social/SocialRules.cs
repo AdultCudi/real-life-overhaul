@@ -241,22 +241,23 @@ namespace RealLifeOverhaul
         public static int GraceUntil(int day) => -(day + LoanGraceDays);
 
         /// <summary>
-        /// A person's age on game <paramref name="day"/> (1 the first): <paramref name="age"/> is what they were on the first
-        /// day, and each birthday after it (<paramref name="birthday"/>, a day of the year, read as SocialTalk.BirthdayIn reads
-        /// it) adds a year, so the age grows on the day the People page counts down to. The game ages its rivals from the
-        /// save's first day the same way (RivalsHelper.GetRivalAgeInYears). Nothing is saved: the age is worked out when shown.
+        /// A person's age on game <paramref name="day"/> (1 the first): <paramref name="age"/> is what they were on
+        /// <paramref name="ageDay"/> (SocialPerson.AgeDay: the day the cast was made, or an older save's first load with it),
+        /// and each birthday after that day (<paramref name="birthday"/>, a day of the year, read as SocialTalk.BirthdayIn
+        /// reads it) adds a year, so the age grows on the day the People page counts down to. Never less than
+        /// <paramref name="age"/>. Worked out when shown, from saved numbers only: the same on every machine.
         /// </summary>
-        public static int AgeOn(int age, int birthday, int day, int daysPerYear)
+        public static int AgeOn(int age, int ageDay, int birthday, int day, int daysPerYear)
         {
             int perYear = Math.Max(1, daysPerYear);
-            int today = Math.Max(1, day);
             int first = ((birthday - 1) % perYear + perYear) % perYear + 1;   // the first day of the calendar that is their birthday
-            int passed = today >= first ? (today - first) / perYear + 1 : 0;
-            if (first == 1)
-            {
-                passed--;   // born on the first day: that day is the age they started with
-            }
-            return age + passed;
+            return age + Math.Max(0, BirthdaysBy(day, first, perYear) - BirthdaysBy(ageDay, first, perYear));
+        }
+
+        // How many of the calendar's days 1 to day are the birthday that first falls on day first.
+        private static int BirthdaysBy(int day, int first, int perYear)
+        {
+            return day >= first ? (day - first) / perYear + 1 : 0;
         }
 
         /// <summary>

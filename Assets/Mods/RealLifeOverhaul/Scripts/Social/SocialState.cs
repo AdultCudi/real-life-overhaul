@@ -112,7 +112,7 @@ namespace RealLifeOverhaul
             bool read = false;
             try
             {
-                read = Read(data);
+                read = Read(data, day);
             }
             catch (Exception)
             {
@@ -183,8 +183,10 @@ namespace RealLifeOverhaul
                     }
                     text.Append((int)p.Memories[m].Code).Append(':').Append(p.Memories[m].Day);
                 }
-                // The look last: a version that reads 41 fields leaves it; its text holds no '|' or line break.
+                // The look: a version that reads 41 fields leaves it; its text holds no '|' or line break.
                 text.Append(Field).Append(p.Look ?? string.Empty);
+                // The day their age is true on, last: a version that reads 42 fields leaves it.
+                text.Append(Field).Append(p.AgeDay);
             }
             data[KeyPeople] = text.ToString();
 
@@ -258,6 +260,13 @@ namespace RealLifeOverhaul
             return p.Stage >= SocialStage.Stranger && p.Stage <= SocialStage.Partner && p.Wants >= PlanKind.Coffee && p.Wants <= PlanKind.Business;
         }
 
+        // Field 42, the day their stored age is true on. A record from before it was kept: the day of this load, so the stored age is
+        // their age now and grows from here (the day the cast was made was never saved).
+        private static int AgeDayOf(string[] f, int day)
+        {
+            return f.Length >= 43 && f[42].Length > 0 ? Int(f[42]) : day;
+        }
+
         // Field 41, the look kept from the street, gives them its seed; one that cannot be read is let go.
         private static void ReadLook(SocialPerson p, string[] f)
         {
@@ -273,7 +282,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static bool Read(Dictionary<string, string> data)
+        private static bool Read(Dictionary<string, string> data, int day)
         {
             if (data == null || !data.TryGetValue(KeyMain, out string main) || string.IsNullOrEmpty(main)
                 || !data.TryGetValue(KeyPeople, out string people) || string.IsNullOrEmpty(people))
@@ -325,6 +334,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 ReadLook(p, f);
+                p.AgeDay = AgeDayOf(f, day);
                 SocialCatalogue.FixLook(p);   // before a later version's origin is read as an old friend below
                 if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
                 {

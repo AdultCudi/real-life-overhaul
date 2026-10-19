@@ -212,10 +212,10 @@ namespace RealLifeOverhaul
             return ((person.Birthday - today) % perYear + perYear) % perYear;
         }
 
-        /// <summary>Their age today: a year more at each birthday since the game's first day (SocialRules.AgeOn).</summary>
+        /// <summary>Their age today: a year more at each birthday since the day their stored age is true on (SocialRules.AgeOn).</summary>
         public static int AgeOf(SocialPerson person)
         {
-            return SocialRules.AgeOn(person.Age, person.Birthday, SocialLife.Day, SocialPlaces.DaysPerYear);
+            return SocialRules.AgeOn(person.Age, person.AgeDay, person.Birthday, SocialLife.Day, SocialPlaces.DaysPerYear);
         }
 
         /// <summary>What the answer and the first exchange of the day are worth, more face to face. Returns their reply's key.</summary>

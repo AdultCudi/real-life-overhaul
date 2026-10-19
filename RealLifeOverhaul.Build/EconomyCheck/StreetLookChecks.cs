@@ -140,8 +140,8 @@ internal static partial class Program
             }
         }
         string[] f = record != null ? record.Split('|') : new string[0];
-        Check(f.Length == 42 && f[41] == text && f[4] == seed.ToString() && f[1] == "Rosa Lindqvist",
-            "street look: the look is saved at the end of the person's record, after the 41 fields an older RLO reads (which then has the look of the seed)");
+        Check(f.Length == 43 && f[41] == text && f[4] == seed.ToString() && f[1] == "Rosa Lindqvist",
+            "street look: the look is saved in field 41 of the person's record, after the 41 fields an older RLO reads (which then has the look of the seed), with only the age's day after it");
         Check(seatSeed != seed, "street look: the person met has the look's seed, not the seat's");
 
         SocialState.Load(data, 3, 112, 9, 999);   // (a load: the state reset, the looks forgotten, then read)
@@ -171,7 +171,7 @@ internal static partial class Program
         string[] records = old["reallife:social_people"].Split('\n');
         for (int i = 0; i < records.Length; i++)
         {
-            records[i] = records[i].Substring(0, records[i].LastIndexOf('|'));
+            records[i] = records[i].Substring(0, records[i].LastIndexOf('|', records[i].LastIndexOf('|') - 1));   // the look and the age's day
         }
         old["reallife:social_people"] = string.Join("\n", records);
         SocialState.Load(old, 3, 112, 9, 999);

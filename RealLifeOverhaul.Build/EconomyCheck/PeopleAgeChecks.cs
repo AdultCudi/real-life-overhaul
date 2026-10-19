@@ -4,8 +4,10 @@ using RealLifeOverhaul;
 
 // The People contact's page shows each person's age (a player's question). The stored age never changed, so a person
 // stayed the age they were rolled with however many birthdays the page counted down to. Their age is now worked out when
-// shown: the age on the game's first day and a year more at each birthday after it (SocialRules.AgeOn), as the game ages
-// its rivals from the save's first day. The page says it in every language, and the Guide names People as a contact.
+// shown: the stored age is true on the person's AgeDay (the day the cast was made, or an older save's first load with this
+// version), and each birthday after that day adds a year (SocialRules.AgeOn). AgeDay is saved at the end of each person's
+// record, after the look, so an older version reads the record as before. The page says it in every language, and the
+// Guide names People as a contact.
 internal static partial class Program
 {
     // The page's first line in each language of ModLanguages.All: the name, the age as each language says a person's, the stage.
@@ -22,52 +24,140 @@ internal static partial class Program
         "del contacto <b>Gente</b>", "в контакте <b>Люди</b>", "in het contact <b>Mensen</b>", "<b>Kişiler</b> kişisindeki"
     };
 
+    private const int AgeYear = 28;   // days in a year for the save checks below; any length works
+
     private static void PeopleAge()
     {
         PeopleAgeGrows();
+        PeopleAgeSaved();
         PeopleAgeShown();
     }
 
-    // Over three years of 28-day years, 4-day years and 1-day years, for every birthday: the age is the first day's on day 1,
-    // and it goes up by one on exactly the days the page says are their birthday (SocialTalk.BirthdayIn is 0), and on no other.
+    // Whether game day is the birthday, with the day of the year as SocialTalk.BirthdayIn has it.
+    private static bool IsBirthday(int birthday, int day, int perYear)
+    {
+        int today = (Math.Max(1, day) - 1) % perYear + 1;
+        return ((birthday - today) % perYear + perYear) % perYear == 0;
+    }
+
+    // Over years of 28, 4 and 1 days, for every birthday and for an age true on day 1 and on later days: the stored age on and
+    // before that day, and a year more on exactly the birthdays after it the page counts down to (SocialTalk.BirthdayIn is 0).
     private static void PeopleAgeGrows()
     {
         bool steps = true, start = true;
         string fault = string.Empty;
         foreach (int perYear in new[] { 28, 4, 1 })
         {
-            for (int birthday = 1; birthday <= perYear; birthday++)
+            foreach (int ageDay in new[] { 1, perYear * 2 + 1, perYear * 3 })
             {
-                start &= SocialRules.AgeOn(30, birthday, 1, perYear) == 30;
-                for (int day = 2; day <= perYear * 3 + 1; day++)
+                for (int birthday = 1; birthday <= perYear; birthday++)
                 {
-                    int today = (day - 1) % perYear + 1;
-                    bool isBirthday = ((birthday - today) % perYear + perYear) % perYear == 0;
-                    int grew = SocialRules.AgeOn(30, birthday, day, perYear) - SocialRules.AgeOn(30, birthday, day - 1, perYear);
-                    if (grew != (isBirthday ? 1 : 0) && fault.Length == 0)
+                    for (int day = 1; day <= ageDay; day++)
                     {
-                        fault = "a year of " + perYear + ", birthday " + birthday + ", day " + day + ": grew " + grew;
+                        start &= SocialRules.AgeOn(30, ageDay, birthday, day, perYear) == 30;
                     }
-                    steps &= grew == (isBirthday ? 1 : 0);
+                    for (int day = ageDay + 1; day <= ageDay + perYear * 3; day++)
+                    {
+                        bool isBirthday = IsBirthday(birthday, day, perYear);
+                        int grew = SocialRules.AgeOn(30, ageDay, birthday, day, perYear) - SocialRules.AgeOn(30, ageDay, birthday, day - 1, perYear);
+                        if (grew != (isBirthday ? 1 : 0) && fault.Length == 0)
+                        {
+                            fault = "a year of " + perYear + ", age true on day " + ageDay + ", birthday " + birthday + ", day " + day + ": grew " + grew;
+                        }
+                        steps &= grew == (isBirthday ? 1 : 0);
+                    }
                 }
             }
         }
-        Check(start, "people's age: on the game's first day a person is the age they were rolled with, whatever their birthday");
-        Check(steps, "people's age: it goes up by one on each birthday the page counts down to, and on no other day (" + fault + ")");
-        Check(SocialRules.AgeOn(40, 10, 28 * 5 + 9, 28) == 45 && SocialRules.AgeOn(40, 10, 28 * 5 + 10, 28) == 46 && SocialRules.AgeOn(58, 28, 28 * 10, 28) == 68,
-            "people's age: in the sixth year of 28 days, a person is five years older the day before their birthday and six on it; ten birthdays make ten years");
-        Check(SocialRules.AgeOn(30, 0, 28, 28) == SocialRules.AgeOn(30, 28, 28, 28) && SocialRules.AgeOn(30, 31, 3, 28) == SocialRules.AgeOn(30, 3, 3, 28)
-              && SocialRules.AgeOn(30, 5, 0, 28) == 30 && SocialRules.AgeOn(30, 5, -9, 28) == 30 && SocialRules.AgeOn(30, 5, 9, 0) >= 30,
-            "people's age: a birthday outside the year is read as the birthday countdown reads it, and no day or year length makes them younger");
+        Check(start, "people's age: on the day their age is true on, and before it, a person is their stored age, whatever their birthday");
+        Check(steps, "people's age: it goes up by one on each birthday after that day the page counts down to, and on no other day (" + fault + ")");
+        Check(SocialRules.AgeOn(40, 1, 10, AgeYear * 5 + 9, AgeYear) == 45 && SocialRules.AgeOn(40, 1, 10, AgeYear * 5 + 10, AgeYear) == 46
+              && SocialRules.AgeOn(25, 1000, 10, 1000, AgeYear) == 25 && SocialRules.AgeOn(25, 1000, 10, 1000 + AgeYear * 2, AgeYear) == 27,
+            "people's age: in the sixth year one rolled on day 1 is five years older the day before their birthday and six on it; one rolled on day 1,000 is their rolled age that day, not 35 years more");
+        Check(SocialRules.AgeOn(30, 1, 0, 28, 28) == SocialRules.AgeOn(30, 1, 28, 28, 28) && SocialRules.AgeOn(30, 1, 31, 3, 28) == SocialRules.AgeOn(30, 1, 3, 3, 28)
+              && SocialRules.AgeOn(30, 1, 5, 0, 28) == 30 && SocialRules.AgeOn(30, 1, 5, -9, 28) == 30 && SocialRules.AgeOn(30, 1, 5, 9, 0) >= 30
+              && SocialRules.AgeOn(30, 400, 5, 9, 28) == 30 && SocialRules.AgeOn(30, -5, 5, 9, 28) == 31,
+            "people's age: a birthday outside the year is read as the birthday countdown reads it, and no day, anchor or year length makes them younger");
 
-        // The page puts it in; the stored age is left as the first day's, so the look and the save stay as they were.
         string page = MemberText(ModSource(@"Social\PeopleDialog.cs"), "private DialogEntry Page(int at)");
         string talk = MemberText(ModSource(@"Social\SocialTalk.cs"), "public static int AgeOf(SocialPerson person)");
         Check(page.Contains("data[\"age\"] = SocialTalk.AgeOf(p).ToString();") && page.Contains("\"reallife_social_people_page\".Localize(data)")
-              && talk.Contains("SocialRules.AgeOn(person.Age, person.Birthday, SocialLife.Day, SocialPlaces.DaysPerYear)"),
-            "people's age: the People page shows today's age, worked out from the first day's age, the birthday and today");
-        Check(!ModSource(@"Social\SocialState.cs").Contains("AgeOn") && !ModSource(@"Social\SocialState.cs").Contains("AgeOf"),
-            "people's age: nothing about it is saved; the save's record is as it was");
+              && talk.Contains("SocialRules.AgeOn(person.Age, person.AgeDay, person.Birthday, SocialLife.Day, SocialPlaces.DaysPerYear)"),
+            "people's age: the People page shows today's age, worked out from the stored age, the day it is true on, the birthday and today");
+    }
+
+    // A cast made late, the anchor through a save and a load, a record from before the anchor, and an older version's reading.
+    private static void PeopleAgeSaved()
+    {
+        // A save that took the social life up on day 500: everybody is their rolled age that day.
+        var data = new Dictionary<string, string>();
+        SocialState.Load(data, 500, AgeYear, 9, 5150);
+        bool rolled = true;
+        var ages = new int[SocialRules.CastSize];
+        var birthdays = new int[SocialRules.CastSize];
+        for (int i = 0; i < SocialRules.CastSize; i++)
+        {
+            SocialPerson p = SocialState.Get(i);
+            rolled &= p != null && p.AgeDay == 500 && SocialRules.AgeOn(p.Age, p.AgeDay, p.Birthday, 500, AgeYear) == p.Age;
+            ages[i] = p?.Age ?? 0;
+            birthdays[i] = p?.Birthday ?? 0;
+        }
+        Check(rolled, "people's age: a cast made on day 500 shows the ages it was rolled with on day 500");
+
+        // Saved and loaded on day 900: the anchor is kept, and the age is the rolled one plus the birthdays from day 501 to 900.
+        SocialState.Save(data);
+        string saved = data["reallife:social_people"];
+        SocialState.Load(data, 900, AgeYear, 9, 1);
+        bool kept = true;
+        for (int i = 0; i < SocialRules.CastSize; i++)
+        {
+            SocialPerson p = SocialState.Get(i);
+            int birthdaysSince = 0;
+            for (int day = 501; day <= 900; day++)
+            {
+                birthdaysSince += IsBirthday(birthdays[i], day, AgeYear) ? 1 : 0;
+            }
+            kept &= p != null && p.AgeDay == 500 && p.Age == ages[i] && SocialRules.AgeOn(p.Age, p.AgeDay, p.Birthday, 900, AgeYear) == ages[i] + birthdaysSince;
+        }
+        Check(kept, "people's age: the day their age is true on survives a save and a load, and the age grows only by the birthdays since");
+
+        // The record: field 41 is still the look and the anchor comes after it, so a version that reads 41 or 42 fields reads all it did.
+        string[] records = saved.Split('\n');
+        bool shape = records.Length == SocialRules.CastSize;
+        foreach (string record in records)
+        {
+            string[] f = record.Split('|');
+            shape &= f.Length == 43 && f[42] == "500" && int.TryParse(f[0], out int index) && index >= 0 && index < SocialRules.CastSize
+                     && f[41] == (SocialState.Get(index)?.Look ?? string.Empty);
+        }
+        Check(shape, "people's age: the day is saved last in each person's record, after the look, so an older version still reads the look and the rest");
+
+        // A save from before the anchor (records of 42 fields), first loaded with it on day 300: the stored age is their age that
+        // day, and one more at the next birthday after it.
+        var trimmed = new string[records.Length];
+        for (int i = 0; i < records.Length; i++)
+        {
+            trimmed[i] = records[i].Substring(0, records[i].LastIndexOf('|'));
+        }
+        data["reallife:social_people"] = string.Join("\n", trimmed);
+        SocialState.Load(data, 300, AgeYear, 9, 2);
+        bool older = true;
+        for (int i = 0; i < SocialRules.CastSize; i++)
+        {
+            SocialPerson p = SocialState.Get(i);
+            int next = 301;
+            while (!IsBirthday(birthdays[i], next, AgeYear))
+            {
+                next++;
+            }
+            older &= p != null && p.AgeDay == 300 && p.Age == ages[i] && SocialRules.AgeOn(p.Age, p.AgeDay, p.Birthday, 300, AgeYear) == ages[i]
+                     && SocialRules.AgeOn(p.Age, p.AgeDay, p.Birthday, next - 1, AgeYear) == ages[i] && SocialRules.AgeOn(p.Age, p.AgeDay, p.Birthday, next, AgeYear) == ages[i] + 1;
+        }
+        Check(older, "people's age: a save from before, first loaded on day 300, shows the stored age that day and one more at the next birthday after it");
+        var resaved = new Dictionary<string, string>();
+        SocialState.Save(resaved);
+        string[] first = resaved.TryGetValue("reallife:social_people", out string again) ? again.Split('\n')[0].Split('|') : new string[0];
+        Check(first.Length == 43 && first[42] == "300", "people's age: and that first load's day is saved, so the age goes on from there");
     }
 
     // Every language's own file has the page with the age on its first line, in that language's words, and the Guide's
