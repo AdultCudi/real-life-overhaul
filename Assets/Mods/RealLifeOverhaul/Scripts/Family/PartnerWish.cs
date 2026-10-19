@@ -110,7 +110,8 @@ namespace RealLifeOverhaul.Family
             && (FamilyState.S.PWork == PartnerWorkRules.Stopped || Partner.Retired)
             && PartnerWishRules.CanAskChipIn(TimeHelper.CurrentDay, FamilyState.S.PChipInUntil, FamilyState.S.PChipInAskDay);
 
-        private static int ChipInWeek => Prices.At(PartnerWishRules.ChipInWeek(Partner.IncomeOf(FamilyState.S.PJob)));
+        // A quarter of a week of the pay they had (People's job, when the social life keeps them), from their savings.
+        private static int ChipInWeek => Prices.At(PartnerWishRules.ChipInWeek(FamilyState.S.PIncome > 0 ? FamilyState.S.PIncome : Partner.IncomeOf(FamilyState.S.PJob)));
 
         /// <summary>Asking them to chip in: yes in a happy enough home, a quarter of a week's pay a week for a month from their savings.</summary>
         public static DialogEntry AskChipIn()
@@ -147,6 +148,7 @@ namespace RealLifeOverhaul.Family
         public static DialogEntry Resume()
         {
             FamilyState.S.PWork = PartnerWorkRules.FullTime;
+            FamilyState.S.PChipInUntil = 0;   // earning again: their share of the rent is their pay's, not their savings'
             FamilyDirector.Logger?.Info("Family: " + Partner.Name + " goes back to work.");
             return FamilyTalk.Close("reallife_family_wish_resume_done");
         }

@@ -43,7 +43,8 @@ internal static partial class Program
             "family wish: asked to chip in for the rent they agree in a happy home, a quarter of a week's pay a week, and can be asked again only after a while");
         string wish = ModSource(@"Family\PartnerWish.cs"), work = ModSource(@"Family\PartnerWork.cs"), home = ModSource(@"Family\HomeLife.cs");
         Check(home.Contains("works = works && PartnerWorkRules.Works(PartnerWork.Work);") && work.Contains("PartnerWishRules.Studying(FamilyState.S.PRetrainUntil, TimeHelper.CurrentDay)")
-              && wish.Contains("Prices.At(PartnerWishRules.AskAtCash), day, s.PWishAskDay, s.PWishEarnDays)") && wish.Contains("PlayerHelper.CalculateDailyIncome()") && wish.Contains("s.PWishGranted = true;")
+              && wish.Contains("Prices.At(PartnerWishRules.AskAtCash), day, s.PWishAskDay, s.PWishEarnDays)") && wish.Contains("PlayerHelper.CalculateDailyIncome()")
+              && MemberText(wish, "public static DialogEntry Resume()").Contains("PChipInUntil = 0;") && wish.Contains("FamilyState.S.PIncome > 0 ? FamilyState.S.PIncome") && wish.Contains("s.PWishGranted = true;")
               && ModSource(@"Family\FamilyCalendar.cs").Contains("PartnerWish.Hourly(day);") && wish.Contains("s.PWorkAsk = false;") && work.Contains("&& !s.PWishAsk, s.PWork,")
               && wish.Contains("PartnerVoice.Ask(PartnerVoice.Wish, \"reallife_family_wish_text\", Args.Us);") && wish.Contains("!PartnerVoice.Asking(PartnerVoice.Wish)") && Occurs(ModSource(@"Family\Partner.cs"), "PartnerWish.Reset(s);") == 3,
             "family wish: the timetable and pay read stopping and studying through the switch, asked once a day at today's prices, afresh with every new partner");
