@@ -17,6 +17,31 @@ internal static partial class Program
         FamilyCounselLine();
         FamilyPartnerTexts();
         FamilyPartnerJob();
+        FamilyPromptButtons();
+    }
+
+    // The panel's button is named after the prompt (_prompt_ to _button_): the ask's prompt had no button text, and the
+    // button showed its bare key. Every family prompt in the source has its button's words in the three languages.
+    private static void FamilyPromptButtons()
+    {
+        string mod = IoPath.GetFullPath(IoPath.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul"));
+        string folder = IoPath.Combine(mod, "Locales");
+        var langs = new[] { LoadWords(IoPath.Combine(folder, "en.json")), LoadWords(IoPath.Combine(folder, "pt.json")), LoadWords(IoPath.Combine(folder, "zh-cn.json")) };
+        string bare = null;
+        int prompts = 0;
+        foreach (string path in Directory.GetFiles(IoPath.Combine(mod, "Scripts"), "*.cs", SearchOption.AllDirectories))
+        {
+            foreach (Match m in Regex.Matches(File.ReadAllText(path), "\"(reallife_family_prompt_[a-z_]+)\""))
+            {
+                prompts++;
+                string button = m.Groups[1].Value.Replace("_prompt_", "_button_");
+                if (Array.Exists(langs, w => w == null || !w.TryGetValue(button, out string words) || words.Length == 0))
+                {
+                    bare = button;
+                }
+            }
+        }
+        Check(prompts > 10 && bare == null, "family fix: every family prompt's button has its words in English, Portuguese and Chinese" + (bare != null ? " (" + bare + ")" : string.Empty));
     }
 
     // Social's partner had a trade of Family's own, rolled from their seed, whatever People said they did: a barista in the

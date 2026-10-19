@@ -19920,5 +19920,6 @@
   "reallife_family_ask_remind_1": "Não esquece, quero conversar quando você chegar em casa.",
   "reallife_family_ask_remind_2": "Ainda espero que a gente converse hoje à noite. É importante para mim.",
   "reallife_family_ask_lapsed": "Deixa para lá. Esquece que eu pedi.",
-  "reallife_family_prompt_talk_ask": "{key}: {name} quer conversar"
+  "reallife_family_prompt_talk_ask": "{key}: {name} quer conversar",
+  "reallife_family_button_talk_ask": "Conversar"
 }

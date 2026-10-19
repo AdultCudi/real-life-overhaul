@@ -19920,5 +19920,6 @@
   "reallife_family_ask_remind_1": "Don't forget, I'd like to talk when you're home.",
   "reallife_family_ask_remind_2": "Still hoping we can talk tonight. It matters to me.",
   "reallife_family_ask_lapsed": "Never mind. Forget I asked.",
-  "reallife_family_prompt_talk_ask": "{key}: {name} wants to talk"
+  "reallife_family_prompt_talk_ask": "{key}: {name} wants to talk",
+  "reallife_family_button_talk_ask": "Talk"
 }

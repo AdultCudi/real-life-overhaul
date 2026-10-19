@@ -19920,5 +19920,6 @@
   "reallife_family_ask_remind_1": "别忘了，你回家后我想和你聊聊。",
   "reallife_family_ask_remind_2": "还是希望今晚我们能聊聊。这对我很重要。",
   "reallife_family_ask_lapsed": "算了。就当我没说过。",
-  "reallife_family_prompt_talk_ask": "{key}：{name} 想和你聊聊"
+  "reallife_family_prompt_talk_ask": "{key}：{name} 想和你聊聊",
+  "reallife_family_button_talk_ask": "交谈"
 }
