@@ -29,7 +29,7 @@ internal static partial class Program
         string catalogue = ModSource(@"Life\LifeEventCatalogue.cs");
         Check(catalogue.Contains("HasHome = 1 << 30"), "life fix: HasHome uses the next free Need bit");
         string runner = MemberText(ModSource(@"Life\LifeEventRunner.cs"), "public static LifeContext ReadContext()");
-        Check(runner.Contains("if (LifeAccounts.HasHome()) flags |= Need.HasHome;"),
+        Check(runner.Contains("if (LifeAccounts.HasHome())") && runner.Contains("flags |= Need.HasHome;"),
             "life fix: the context sets HasHome only when a wired home answers yes");
         string accounts = ModSource(@"Life\LifeEventCatalogue.Accounts.cs");
         Check(accounts.Contains("public static Func<bool> Home;") && accounts.Contains("public static bool HasHome() => Has(Home);"),
