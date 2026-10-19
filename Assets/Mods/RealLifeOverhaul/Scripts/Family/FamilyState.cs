@@ -201,12 +201,25 @@ namespace RealLifeOverhaul.Family
         public int PFreeFrom;        // People's partner: the hours they are free on a weekday (PFreeTo 0: Family's own trades' hours)
         public int PFreeTo;
         public bool PNightOwl;       // ...and whether they keep late hours
-        public int PWorkEarnDays;    // days in a row the player's daily income has been at PartnerWorkRules.AskAtIncome or more
+        public List<int> IncomeWeek = new List<int>();   // the player's daily income on each of the last days, newest last (IncomeRules)
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>
     public static class FamilyState
     {
+        /// <summary>The player's daily income held all week (IncomeRules): what the partner's steps of prosperity go by, with the cash.</summary>
+        public static int IncomeHeld => IncomeRules.Held(S.IncomeWeek);
+
+        /// <summary>Once a day: the game's own figure for a day's income into the week.</summary>
+        public static void RecordIncome()
+        {
+            if (S.IncomeWeek == null)
+            {
+                S.IncomeWeek = new List<int>();
+            }
+            IncomeRules.Record(S.IncomeWeek, SaveGameManager.Current != null ? Helpers.PlayerHelper.CalculateDailyIncome() : 0f);
+        }
+
         private const string Key = "reallife:family";
         private const int MostMemories = 80;
 

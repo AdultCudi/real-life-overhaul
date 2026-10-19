@@ -1,6 +1,5 @@
 using Dialogs;
 using Entities;
-using Helpers;
 
 namespace RealLifeOverhaul.Family
 {
@@ -21,13 +20,6 @@ namespace RealLifeOverhaul.Family
         /// <summary>They are on half days and could go back to full ones.</summary>
         public static bool CanReturn => Settings.FamilyWork && FamilyState.Together && FamilyState.S.LivesIn && FamilyState.S.PWork == PartnerWorkRules.PartTime;
 
-        /// <summary>Once a day: the days in a row the player's income (the game's daily figure) has held at the asking level, at today's prices.</summary>
-        public static void Daily()
-        {
-            float income = SaveGameManager.Current != null ? PlayerHelper.CalculateDailyIncome() : 0f;
-            FamilyState.S.PWorkEarnDays = PartnerWorkRules.Streak(FamilyState.S.PWorkEarnDays, income, Prices.At(PartnerWorkRules.AskAtIncome));
-        }
-
         /// <summary>Once a game hour in the day: whether they ask, by a text; an ask left unanswered stands until it is talked over.</summary>
         public static void Hourly(int day)
         {
@@ -40,7 +32,8 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
-            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay, s.PWorkEarnDays))
+            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay,
+                    FamilyState.IncomeHeld, Prices.At(PartnerWorkRules.AskAtIncome)))
             {
                 return;
             }
