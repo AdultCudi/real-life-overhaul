@@ -221,7 +221,7 @@ namespace RealLifeOverhaul.Meta
                 S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
                 S("utilities").For("utilities").Main("utilities")
                     .Also("power water electricity bills utility office deposit"),
-                S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
+                S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction", "family_work",
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people").Also("friends dating date people calls typing"),

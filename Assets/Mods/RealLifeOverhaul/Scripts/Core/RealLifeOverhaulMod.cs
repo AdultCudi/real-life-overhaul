@@ -1076,12 +1076,15 @@ namespace RealLifeOverhaul
                     v => Settings.FamilyRelatives = v)
                 .AddToggle(Settings.FamilyFrictionId, "reallife_family_friction", Settings.FamilyFriction,
                     v => Settings.FamilyFriction = v)
+                .AddToggle(Settings.FamilyWorkId, "reallife_family_work_opt", Settings.FamilyWork,
+                    v => Settings.FamilyWork = v)
                 .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
                     new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
                     v => Settings.FamilyInterest = v)
                 .AddSlider(Settings.FamilyYearWeeksId, "reallife_family_year_weeks", 1, 12, Settings.FamilyYearWeeks,
                     v => Settings.FamilyYearWeeks = v, Meta.SettingsTable.SliderValue)
                 .AddButton("reallife_family_test_move_in", () => Family.FamilyDirector.Instance?.TestMoveIn())
+                .AddButton("reallife_family_test_work", () => Family.FamilyDirector.Instance?.TestWork())
                 .AddButton("reallife_family_test_propose", () => Family.FamilyDirector.Instance?.TestPropose())
                 .AddButton("reallife_family_test_plan", () => Family.FamilyDirector.Instance?.TestPlanWedding())
                 .AddButton("reallife_family_test_wedding", () => Family.FamilyDirector.Instance?.TestWedding())

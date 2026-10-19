@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Family
         public static int Seed => FamilyState.S.PSeed;
         public static bool Female => FamilyState.S.PFemale;
         public static string JobKey => Trades[Mathf.Clamp(FamilyState.S.PJob, 0, Trades.Length - 1)];
-        public static int Income => FamilyState.S.PIncome > 0 ? FamilyState.S.PIncome : JobIncome[Mathf.Clamp(FamilyState.S.PJob, 0, JobIncome.Length - 1)];
+        public static int Income => PartnerWorkRules.Income(FamilyState.S.PIncome > 0 ? FamilyState.S.PIncome : JobIncome[Mathf.Clamp(FamilyState.S.PJob, 0, JobIncome.Length - 1)],
+            PartnerWork.Work);
 
         /// <summary>How fond they are, 0 to 100: Social's figure when it keeps them, else the default record's.</summary>
         public static float Affection
@@ -85,6 +86,7 @@ namespace RealLifeOverhaul.Family
             s.PJob = Random.Range(0, Trades.Length);
             s.PIncome = JobIncome[s.PJob];
             s.PWantsChildren = Random.value < 0.8f;
+            PartnerWork.Reset(s);
             s.Interest = interest;
             s.Harmony = FamilyBalance.HarmonyStart;
             FamilyState.Bond = Bond.Dating;
@@ -118,6 +120,7 @@ namespace RealLifeOverhaul.Family
                     s.PJob = (s.PSeed & 0x7fffffff) % Trades.Length;
                     s.PIncome = JobIncome[s.PJob];
                     s.PWantsChildren = (s.PSeed & 7) != 0;
+                    PartnerWork.Reset(s);
                     s.PMetDay = TimeHelper.CurrentDay - Mathf.Max(0, p.DaysTogether);
                     s.SinceDay = s.PMetDay;
                     s.Harmony = FamilyBalance.HarmonyStart;
@@ -162,6 +165,7 @@ namespace RealLifeOverhaul.Family
             s.PName = null;
             s.PSeed = 0;
             s.PAffection = 0f;
+            PartnerWork.Reset(s);
         }
     }
 }

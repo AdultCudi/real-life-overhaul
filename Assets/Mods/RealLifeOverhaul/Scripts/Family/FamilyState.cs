@@ -184,6 +184,11 @@ namespace RealLifeOverhaul.Family
         public string ExName;
         public int FreeDay;          // the day the last relationship ended
         public int Interest;         // who the player asked to meet: 0 anyone, 1 women, 2 men (the options page sets the default)
+
+        // The partner's work as the player's fortune grows (PartnerWork).
+        public int PWork;            // PartnerWorkRules.FullTime or PartTime
+        public bool PWorkAsk;        // they have asked to cut back, and it waits to be talked over
+        public int PWorkAskDay;      // the day they last asked, or last went back to full days
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

@@ -123,6 +123,9 @@ namespace RealLifeOverhaul.Family
                 return errand != null ? Way(Errands.PlacesOf(errand.Kind), "reallife_family_way_shop") : FamilyTalk.Close("reallife_family_menu_nothing");
             }));
 
+            list.Add(new Choice(() => PartnerWork.CanTalk, () => FamilyText.Say("reallife_family_do_work"), "reallife_family_do_work_yes", PartnerWork.Talk));
+            list.Add(new Choice(() => PartnerWork.CanReturn, () => FamilyText.Say("reallife_family_do_work_return"), "reallife_family_do_work_return_yes", PartnerWork.Return));
+
             list.Add(new Choice(() => Relatives.CanGoToMoms, () => FamilyText.Say("reallife_family_do_moms"), "reallife_family_do_moms_yes", Relatives.GoToMoms));
             list.Add(new Choice(() => Relatives.InLawFavourOpen, () => FamilyText.Say("reallife_family_do_favour"), "reallife_family_do_favour_yes", Relatives.InLawFavour));
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_kin", Args.Us.With(Relatives.NextOfKin())), "reallife_family_kin_change", Relatives.NextOfKinStep));

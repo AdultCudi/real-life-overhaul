@@ -62,6 +62,34 @@ namespace RealLifeOverhaul.Family
             });
         }
 
+        // The cut back at work asked for now, whatever the player's cash: the text, then the talk in a family conversation.
+        public void TestWork()
+        {
+            if (!TestReady("Family work", false, false) || !TestPartner("Family work"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                FamilySave s = FamilyState.S;
+                if (!s.LivesIn)
+                {
+                    Refuse("Family work", "reallife_family_no_lives_in");
+                    return;
+                }
+                if (!Settings.FamilyWork)
+                {
+                    Refuse("Family work", "reallife_family_no_work_off");
+                    return;
+                }
+                PartnerWork.Reset(s);
+                s.PWorkAsk = true;
+                s.PWorkAskDay = TimeHelper.CurrentDay;
+                FamilyText.Message(FamilyPhone.PartnerContact, "reallife_family_work_text", Args.Us);
+                Logger?.Info("Family work test: " + Partner.Name + " asks to cut back to half days; talk it over from the Family contact.");
+            });
+        }
+
         public void TestPropose()
         {
             if (!TestReady("Family proposal", false, true) || !TestPartner("Family proposal"))

@@ -92,6 +92,7 @@ At home they are there when the player walks in, or come in at the door when it 
 
 - **Moving in** needs the two of you close enough for long enough (default bridge: affection 60 and seven days together; Social: its own "partner" stage) and a home of the player's own (a rented residential building) with floor for the household: 30 m2 for two and 15 more per child (`Building.totalSqm`; a home whose size the game does not give counts as big enough).
 - **Timetable** by what the partner does for a living (`HomeLife.Where`): office hours for most, earlies and lates for a nurse or a paramedic, evenings for a chef, mornings for a barista.
+- **Half days** as the player prospers (`PartnerWork`, rules in `PartnerWorkRules`, its own switch "Partner cuts back at work as you prosper"): once the player has $250,000 in cash at the start's prices, a partner who lives with them texts to ask to cut back, and the talk waits in the Family contact. A yes makes their working day four hours from its start and halves their pay, so their share of the rent; a no is asked again 30 days later; "back to full days" undoes it. Every new partner, or none, starts on full days. Off, nothing is asked and their days are full.
   An evening out of their own about one day in five.
   Asleep 23:00 to 06:00.
   At home for three days after a child arrives.
@@ -360,6 +361,7 @@ A fault in any tick is logged once and switches family life off for the session;
 A button that does nothing says why.
 
 - Partner moves in now (needs a rented home; with Social absent a partner is made up on the spot).
+- Partner asks to cut back now (needs a partner who lives with you and the switch on): the text, then the talk in the Family contact.
 - Propose here (a ring is supplied; the answer is a real roll at 90 % or better).
 - Start wedding planning (engaged at once if need be).
 - Hold the wedding here, now (a classic wedding with everything, out of doors; free: no bill is charged and no presents come in, `WeddingScene.Free`).
