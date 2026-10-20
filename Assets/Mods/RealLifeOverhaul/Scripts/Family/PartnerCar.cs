@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Dialogs;
 using BAModAPI;
+using Dialogs;
 using Entities;
 using Extensions;
 using Helpers;
