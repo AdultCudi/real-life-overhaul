@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Family
         private static TextMessage _on;        // the message the button is on; null while it is not on any
         private static bool _madeData;         // the message had no additional data before the button
         private static float _quietUntil;
-        private static readonly UnityEngine.Events.UnityAction Click = Clicked;
+        private static readonly UnityEngine.Events.UnityAction Click = Guard.Listener(Clicked);   // the game's button calls it: behind the guard, made once
 
         /// <summary>The director's tick: the button on while the player stands in another home of theirs, off otherwise.</summary>
         public static void Tick()
