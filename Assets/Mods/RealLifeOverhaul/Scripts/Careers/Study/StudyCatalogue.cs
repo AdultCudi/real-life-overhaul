@@ -6,9 +6,9 @@ namespace RealLifeOverhaul.Careers
     public enum CourseKind
     {
         Short = 0,        // a day or two at the school: first aid, a forklift ticket, a refresher
-        Vocational = 1,   // a diploma in a trade or in care, a term at the school
-        Degree = 2,       // a bachelor's degree at the university
-        Postgrad = 3,     // a master's or a professional course after a degree
+        Vocational = 1,   // a diploma in a trade or in care at the school, two to three weeks
+        Degree = 2,       // a bachelor's degree at the university, three to four weeks
+        Postgrad = 3,     // a master's or a professional course after a degree, two to three weeks
         Certificate = 4   // a professional certificate: study at home, an exam at the school
     }
 
@@ -103,7 +103,10 @@ namespace RealLifeOverhaul.Careers
 
     /// <summary>
     /// Every course of the city's schools and every figure of studying, game-free (the checkers compile it). The game's own
-    /// seven courses stay as they are. One game hour is a minute of play; a degree is about two dozen classes, three a week.
+    /// seven courses stay as they are. One game hour is a minute of play; a degree is nine to twelve classes, three a week,
+    /// so three to four weeks with its exam (it was two dozen, eight weeks or more: most of a year in the game's own year
+    /// of 60 days, against gigs that reach their top level in three days). A course keeps its weeks whatever the year's
+    /// length: its classes are on the days of the week.
     /// </summary>
     public static class StudyCatalogue
     {
@@ -131,43 +134,43 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(Forklift, "forklift", CourseKind.Short, Campus.School, 2, 0, 3, Mon | Wed, 9, 250, Skills.Handling, 30, Skills.Driving, 5),
             new CourseDef(SecurityLicence, "security_licence", CourseKind.Short, Campus.School, 3, 1, 3, Tue | Thu, 9, 300, Skills.Guarding, 30, TalentCatalogue.Relationships, 5),
             new CourseDef(DrivingRefresher, "driving_refresher", CourseKind.Short, Campus.School, 1, 0, 3, Sat, 10, 90, Skills.Driving, 15, Skills.FirstAid, 2),
-            new CourseDef(CodingBootcamp, "coding_bootcamp", CourseKind.Short, Campus.Online, 10, 6, 3, Mon | Wed | Fri, 18, 2500, TalentCatalogue.Coding, 25, TalentCatalogue.Frontend, 15, Bootcamp),
+            new CourseDef(CodingBootcamp, "coding_bootcamp", CourseKind.Short, Campus.Online, 6, 4, 3, Mon | Wed | Fri, 18, 2500, TalentCatalogue.Coding, 25, TalentCatalogue.Frontend, 15, Bootcamp),
             new CourseDef(Bookkeeping, "bookkeeping", CourseKind.Short, Campus.School, 4, 2, 3, Tue | Thu, 13, 400, TalentCatalogue.Accounting, 20, TalentCatalogue.Analysis, 5),
             new CourseDef(CustomerService, "customer_service", CourseKind.Short, Campus.School, 2, 0, 3, Wed | Fri, 10, 120, TalentCatalogue.Relationships, 15, TalentCatalogue.Selling, 10),
-            new CourseDef(DigitalMarketing, "digital_marketing", CourseKind.Short, Campus.Online, 5, 2, 3, Tue | Thu, 19, 600, TalentCatalogue.Marketing, 20, TalentCatalogue.Analysis, 5),
+            new CourseDef(DigitalMarketing, "digital_marketing", CourseKind.Short, Campus.Online, 4, 2, 3, Tue | Thu, 19, 600, TalentCatalogue.Marketing, 20, TalentCatalogue.Analysis, 5),
 
             // vocational diplomas at the school
-            new CourseDef(Electrician, "electrician", CourseKind.Vocational, Campus.School, 14, 4, 4, Mon | Wed | Fri, 9, 3200, Skills.Electrical, 45, TalentCatalogue.Troubleshooting, 10, Diploma),
-            new CourseDef(Plumber, "plumber", CourseKind.Vocational, Campus.School, 14, 4, 4, Tue | Thu | Sat, 9, 3000, Skills.Plumbing, 45, TalentCatalogue.Troubleshooting, 10, Diploma),
-            new CourseDef(Carpenter, "carpenter", CourseKind.Vocational, Campus.School, 14, 4, 4, Mon | Wed | Fri, 13, 2800, Skills.Joinery, 45, TalentCatalogue.Structures, 5, Diploma),
-            new CourseDef(Chef, "chef", CourseKind.Vocational, Campus.School, 12, 4, 4, Tue | Thu | Sat, 10, 2600, Skills.Cooking, 45, Skills.Hospitality, 10, Diploma),
-            new CourseDef(Hairdresser, "hairdresser", CourseKind.Vocational, Campus.School, 12, 4, 4, Mon | Thu, 10, 2200, Skills.Hair, 45, TalentCatalogue.Relationships, 10, Diploma),
-            new CourseDef(Beautician, "beautician", CourseKind.Vocational, Campus.School, 12, 4, 4, Wed | Fri, 10, 2200, Skills.Beauty, 45, TalentCatalogue.Relationships, 10, Diploma),
-            new CourseDef(CareWorker, "care_worker", CourseKind.Vocational, Campus.School, 10, 4, 4, Mon | Wed, 13, 1800, Skills.Care, 40, Skills.Clinical, 10, Diploma),
-            new CourseDef(ItSupport, "it_support", CourseKind.Vocational, Campus.School, 10, 4, 4, Tue | Thu, 13, 2400, TalentCatalogue.Troubleshooting, 35, TalentCatalogue.Networking, 20, Diploma, -1, true),
+            new CourseDef(Electrician, "electrician", CourseKind.Vocational, Campus.School, 7, 3, 4, Mon | Wed | Fri, 9, 3200, Skills.Electrical, 45, TalentCatalogue.Troubleshooting, 10, Diploma),
+            new CourseDef(Plumber, "plumber", CourseKind.Vocational, Campus.School, 7, 3, 4, Tue | Thu | Sat, 9, 3000, Skills.Plumbing, 45, TalentCatalogue.Troubleshooting, 10, Diploma),
+            new CourseDef(Carpenter, "carpenter", CourseKind.Vocational, Campus.School, 7, 3, 4, Mon | Wed | Fri, 13, 2800, Skills.Joinery, 45, TalentCatalogue.Structures, 5, Diploma),
+            new CourseDef(Chef, "chef", CourseKind.Vocational, Campus.School, 6, 3, 4, Tue | Thu | Sat, 10, 2600, Skills.Cooking, 45, Skills.Hospitality, 10, Diploma),
+            new CourseDef(Hairdresser, "hairdresser", CourseKind.Vocational, Campus.School, 6, 3, 4, Mon | Thu, 10, 2200, Skills.Hair, 45, TalentCatalogue.Relationships, 10, Diploma),
+            new CourseDef(Beautician, "beautician", CourseKind.Vocational, Campus.School, 6, 3, 4, Wed | Fri, 10, 2200, Skills.Beauty, 45, TalentCatalogue.Relationships, 10, Diploma),
+            new CourseDef(CareWorker, "care_worker", CourseKind.Vocational, Campus.School, 5, 3, 4, Mon | Wed, 13, 1800, Skills.Care, 40, Skills.Clinical, 10, Diploma),
+            new CourseDef(ItSupport, "it_support", CourseKind.Vocational, Campus.School, 5, 3, 4, Tue | Thu, 13, 2400, TalentCatalogue.Troubleshooting, 35, TalentCatalogue.Networking, 20, Diploma, -1, true),
 
             // degrees at the university
-            new CourseDef(ComputerScience, "computer_science", CourseKind.Degree, Campus.University, 24, 10, 4, Mon | Wed | Fri, 10, 9000, TalentCatalogue.Coding, 35, TalentCatalogue.SystemDesign, 25, Bachelor, -1, true),
-            new CourseDef(SoftwareEngineering, "software_engineering", CourseKind.Degree, Campus.University, 24, 10, 4, Tue | Thu | Fri, 10, 9000, TalentCatalogue.Coding, 35, TalentCatalogue.Backend, 25, Bachelor, -1, true),
-            new CourseDef(DataScience, "data_science", CourseKind.Degree, Campus.University, 24, 10, 4, Mon | Wed | Fri, 14, 9000, TalentCatalogue.Statistics, 35, TalentCatalogue.Learning, 25, Bachelor, -1, true),
-            new CourseDef(Cybersecurity, "cybersecurity", CourseKind.Degree, Campus.University, 24, 10, 4, Tue | Thu | Fri, 14, 9000, TalentCatalogue.SecurityOps, 40, TalentCatalogue.Networking, 20, Bachelor, -1, true),
-            new CourseDef(Business, "business", CourseKind.Degree, Campus.University, 22, 10, 4, Mon | Wed | Thu, 10, 8500, TalentCatalogue.Leadership, 25, TalentCatalogue.Delivery, 25, Bachelor, -1, true),
-            new CourseDef(Accounting, "accounting", CourseKind.Degree, Campus.University, 22, 10, 4, Tue | Thu | Fri, 10, 8500, TalentCatalogue.Accounting, 40, TalentCatalogue.Analysis, 20, Bachelor, -1, true),
-            new CourseDef(Finance, "finance", CourseKind.Degree, Campus.University, 22, 10, 4, Mon | Wed | Fri, 14, 8800, TalentCatalogue.Analysis, 40, TalentCatalogue.Accounting, 20, Bachelor, -1, true),
-            new CourseDef(Law, "law", CourseKind.Degree, Campus.University, 26, 12, 4, Mon | Tue | Thu, 10, 9500, TalentCatalogue.Law, 40, TalentCatalogue.Writing, 20, Bachelor),
-            new CourseDef(Marketing, "marketing", CourseKind.Degree, Campus.University, 22, 10, 4, Tue | Wed | Fri, 14, 8500, TalentCatalogue.Marketing, 40, TalentCatalogue.Selling, 15, Bachelor, -1, true),
-            new CourseDef(Architecture, "architecture", CourseKind.Degree, Campus.University, 30, 14, 4, Mon | Wed | Fri, 10, 11000, TalentCatalogue.Structures, 35, TalentCatalogue.Planning, 30, Bachelor),
-            new CourseDef(CivilEngineering, "civil_engineering", CourseKind.Degree, Campus.University, 28, 12, 4, Tue | Thu | Fri, 10, 10500, TalentCatalogue.Structures, 40, TalentCatalogue.Planning, 25, Bachelor),
-            new CourseDef(Nursing, "nursing", CourseKind.Degree, Campus.Hospital, 28, 10, 4, Mon | Tue | Thu, 8, 9000, Skills.Clinical, 45, Skills.Care, 25, Bachelor),
-            new CourseDef(Teaching, "teaching", CourseKind.Degree, Campus.University, 24, 10, 4, Mon | Wed | Thu, 14, 8500, Skills.Teaching, 45, TalentCatalogue.Writing, 15, Bachelor),
-            new CourseDef(Design, "design", CourseKind.Degree, Campus.University, 22, 10, 4, Tue | Wed | Fri, 10, 8500, TalentCatalogue.Visual, 40, TalentCatalogue.Research, 20, Bachelor, -1, true),
+            new CourseDef(ComputerScience, "computer_science", CourseKind.Degree, Campus.University, 9, 4, 4, Mon | Wed | Fri, 10, 9000, TalentCatalogue.Coding, 35, TalentCatalogue.SystemDesign, 25, Bachelor, -1, true),
+            new CourseDef(SoftwareEngineering, "software_engineering", CourseKind.Degree, Campus.University, 9, 4, 4, Tue | Thu | Fri, 10, 9000, TalentCatalogue.Coding, 35, TalentCatalogue.Backend, 25, Bachelor, -1, true),
+            new CourseDef(DataScience, "data_science", CourseKind.Degree, Campus.University, 9, 4, 4, Mon | Wed | Fri, 14, 9000, TalentCatalogue.Statistics, 35, TalentCatalogue.Learning, 25, Bachelor, -1, true),
+            new CourseDef(Cybersecurity, "cybersecurity", CourseKind.Degree, Campus.University, 9, 4, 4, Tue | Thu | Fri, 14, 9000, TalentCatalogue.SecurityOps, 40, TalentCatalogue.Networking, 20, Bachelor, -1, true),
+            new CourseDef(Business, "business", CourseKind.Degree, Campus.University, 9, 4, 4, Mon | Wed | Thu, 10, 8500, TalentCatalogue.Leadership, 25, TalentCatalogue.Delivery, 25, Bachelor, -1, true),
+            new CourseDef(Accounting, "accounting", CourseKind.Degree, Campus.University, 9, 4, 4, Tue | Thu | Fri, 10, 8500, TalentCatalogue.Accounting, 40, TalentCatalogue.Analysis, 20, Bachelor, -1, true),
+            new CourseDef(Finance, "finance", CourseKind.Degree, Campus.University, 9, 4, 4, Mon | Wed | Fri, 14, 8800, TalentCatalogue.Analysis, 40, TalentCatalogue.Accounting, 20, Bachelor, -1, true),
+            new CourseDef(Law, "law", CourseKind.Degree, Campus.University, 10, 5, 4, Mon | Tue | Thu, 10, 9500, TalentCatalogue.Law, 40, TalentCatalogue.Writing, 20, Bachelor),
+            new CourseDef(Marketing, "marketing", CourseKind.Degree, Campus.University, 9, 4, 4, Tue | Wed | Fri, 14, 8500, TalentCatalogue.Marketing, 40, TalentCatalogue.Selling, 15, Bachelor, -1, true),
+            new CourseDef(Architecture, "architecture", CourseKind.Degree, Campus.University, 12, 6, 4, Mon | Wed | Fri, 10, 11000, TalentCatalogue.Structures, 35, TalentCatalogue.Planning, 30, Bachelor),
+            new CourseDef(CivilEngineering, "civil_engineering", CourseKind.Degree, Campus.University, 11, 5, 4, Tue | Thu | Fri, 10, 10500, TalentCatalogue.Structures, 40, TalentCatalogue.Planning, 25, Bachelor),
+            new CourseDef(Nursing, "nursing", CourseKind.Degree, Campus.Hospital, 11, 4, 4, Mon | Tue | Thu, 8, 9000, Skills.Clinical, 45, Skills.Care, 25, Bachelor),
+            new CourseDef(Teaching, "teaching", CourseKind.Degree, Campus.University, 9, 4, 4, Mon | Wed | Thu, 14, 8500, Skills.Teaching, 45, TalentCatalogue.Writing, 15, Bachelor),
+            new CourseDef(Design, "design", CourseKind.Degree, Campus.University, 9, 4, 4, Tue | Wed | Fri, 10, 8500, TalentCatalogue.Visual, 40, TalentCatalogue.Research, 20, Bachelor, -1, true),
 
             // after a degree
-            new CourseDef(Mba, "mba", CourseKind.Postgrad, Campus.University, 14, 6, 4, Tue | Thu, 18, 18000, TalentCatalogue.Leadership, 25, TalentCatalogue.Delivery, 20, Master, -1, true, null, true),
-            new CourseDef(MscComputing, "msc_computing", CourseKind.Postgrad, Campus.University, 14, 6, 4, Mon | Wed, 18, 12000, TalentCatalogue.Learning, 25, TalentCatalogue.SystemDesign, 20, Master, -1, true,
+            new CourseDef(Mba, "mba", CourseKind.Postgrad, Campus.University, 6, 3, 4, Tue | Thu, 18, 18000, TalentCatalogue.Leadership, 25, TalentCatalogue.Delivery, 20, Master, -1, true, null, true),
+            new CourseDef(MscComputing, "msc_computing", CourseKind.Postgrad, Campus.University, 6, 3, 4, Mon | Wed, 18, 12000, TalentCatalogue.Learning, 25, TalentCatalogue.SystemDesign, 20, Master, -1, true,
                 new[] { ComputerScience, SoftwareEngineering, DataScience, Cybersecurity }),
-            new CourseDef(LegalPractice, "legal_practice", CourseKind.Postgrad, Campus.University, 12, 6, 4, Mon | Wed | Fri, 14, 12000, TalentCatalogue.Law, 25, TalentCatalogue.Writing, 10, Master, -1, false, new[] { Law }),
-            new CourseDef(Pgce, "pgce", CourseKind.Postgrad, Campus.University, 10, 4, 4, Tue | Thu, 14, 7000, Skills.Teaching, 30, TalentCatalogue.Leadership, 5, Master, -1, false, null, true),
+            new CourseDef(LegalPractice, "legal_practice", CourseKind.Postgrad, Campus.University, 6, 3, 4, Mon | Wed | Fri, 14, 12000, TalentCatalogue.Law, 25, TalentCatalogue.Writing, 10, Master, -1, false, new[] { Law }),
+            new CourseDef(Pgce, "pgce", CourseKind.Postgrad, Campus.University, 5, 2, 4, Tue | Thu, 14, 7000, Skills.Teaching, 30, TalentCatalogue.Leadership, 5, Master, -1, false, null, true),
 
             // professional certificates: the same twelve the professions' staff sit (TalentCatalogue.Certs)
             new CourseDef(CloudAssociate, "cloud_associate", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 450, TalentCatalogue.Automation, 10, TalentCatalogue.SystemDesign, 5, -1, 0),
@@ -212,7 +215,9 @@ namespace RealLifeOverhaul.Careers
 
         public const int GainAtTop = 500;             // thousandths of a class's gain that is still learnt at 100 points (less the nearer the top)
         public const int HomeworkShare = 500;         // thousandths of a class's gain a piece of homework teaches
-        public const int WorkLearn = 12;              // thousandths of a point of each of a job's two skills an hour of work, at 0 points
+        // A working day teaches about a point at 20 points and half one at 60, so the skills a rung asks come with the time
+        // it asks at the rank below (it was 12: a point in two months of work, and the ladders stopped at the first rungs).
+        public const int WorkLearn = 150;             // thousandths of a point of each of a job's two skills an hour of work, at 0 points
         public const int FadeAfterDays = 21;          // days a skill can go unused before it fades
         public const int FadePerDay = 40;             // thousandths of a point it fades a day after that
         public const int FadeFloor = 600;             // thousandths of the best it ever reached that it never fades below

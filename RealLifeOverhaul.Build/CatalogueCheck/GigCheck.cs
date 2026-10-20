@@ -55,7 +55,42 @@ namespace RealLifeOverhaul
             double cartNet = CareerCatalogue.CartTakings - CareerCatalogue.CartStock;
             double vendorUnit = JobCatalogue.Find(JobCatalogue.Vendor).UnitPay;
             Console.WriteLine($"  own cart nets {cartNet:0.0} a customer against the gig's {vendorUnit:0.0}; rent {CareerCatalogue.CartRent}");
-            if (cartNet < vendorUnit || cartNet > vendorUnit * 1.4) fail("the own cart's net per customer is not about the gig's pay");
+            // The licensed cart is a promotion: a shift's takings less stock and the day's rent come to more than the cart
+            // vendor's piece pay and basic wage, at every level (a player was "raised to 0 an hour": the licence paid less
+            // than half the rank below, at 165 rent against 30 a customer).
+            Employer food = CareerCatalogue.Find(CareerCatalogue.Food);
+            CareerRank vendorRank = food.Ranks[0], cartRank = food.Ranks[1];
+            int customers = JobCatalogue.Find(JobCatalogue.Vendor).ShiftUnits + cartRank.ExtraUnits;
+            for (int level = 1; level <= JobCatalogue.MaxLevel; level++)
+            {
+                double factor = JobCatalogue.PayFactor(level);
+                double vendorShift = customers * vendorUnit * factor + CareerCatalogue.ShiftHours * vendorRank.Hourly;
+                double cartShift = customers * cartNet * factor * CareerCatalogue.PieceWith(cartRank, 0) - CareerCatalogue.CartRent;
+                Console.WriteLine($"  level {level}: the cart vendor's shift {vendorShift:0}, the licensed cart's {cartShift:0} ({cartShift / vendorShift:0.00} times)");
+                if (cartShift < vendorShift * 1.15 || cartShift > vendorShift * 1.45) fail($"level {level}: the licensed cart's shift ({cartShift:0}) is not a fifth to two fifths more than the cart vendor's ({vendorShift:0})");
+            }
+            Employer cabs = CareerCatalogue.Find(CareerCatalogue.Cab);
+            JobDef taxi = JobCatalogue.Find(JobCatalogue.Taxi);
+            double fare = taxi.UnitPay + taxi.PayPerMetre * 600.0;
+            double premium = CareerCatalogue.CabShiftFares * fare * cabs.Ranks[1].Piece + CareerCatalogue.ShiftHours * cabs.Ranks[1].Hourly;
+            double owner = CareerCatalogue.CabShiftFares * fare * CareerCatalogue.PieceWith(cabs.Ranks[2], 0);
+            Console.WriteLine($"  a premium driver's shift {premium:0}, the owner-operator's {owner:0}");
+            if (owner < premium * 1.1) fail("the owner-operator's shift is not a tenth more than the premium driver's");
+            // A rank paid by what it takes is the only kind with no basic wage; a raise there is a bigger share.
+            foreach (Employer employer in CareerCatalogue.All)
+                foreach (CareerRank rank in employer.Ranks)
+                {
+                    if (rank.Own != (rank.Hourly <= 0f)) fail($"{employer.Id}: a rank's own pay is not its having no basic wage");
+                    if (rank.Own && !(rank.Has(CareerPerk.OwnCart) || employer.Id == CareerCatalogue.Cab)) fail($"{employer.Id}: a rank with no basic wage that is neither the cart nor the cab");
+                    float raised = CareerCatalogue.PieceWith(rank, CareerCatalogue.MaxRaises);
+                    if (rank.Own ? Math.Abs(raised - rank.Piece * (1f + CareerCatalogue.RaiseShare * CareerCatalogue.MaxRaises)) > 1e-4f : raised != rank.Piece)
+                        fail($"{employer.Id}: raises change the share of a rank with a basic wage, or not of one without");
+                    if (CareerCatalogue.PieceWith(rank, 99) != CareerCatalogue.PieceWith(rank, CareerCatalogue.MaxRaises) || CareerCatalogue.PieceWith(rank, -1) != CareerCatalogue.PieceWith(rank, 0))
+                        fail($"{employer.Id}: raises outside 0 to the most are not held to them");
+                    string skip = CareerCatalogue.SkipWageKey(rank), slip = CareerCatalogue.SlipKey(rank, true);
+                    if (!locale.ContainsKey(skip) || !locale.ContainsKey(slip) || (rank.Own ? skip != "reallife_job_skip_info_own" || slip != "reallife_career_slip_note_own" : skip != "reallife_job_skip_info_wage"))
+                        fail($"{employer.Id}: the skip panel's and the payslip's words do not follow the rank's basic wage");
+                }
             if (CareerCatalogue.CartRent > cartNet * JobCatalogue.Find(JobCatalogue.Vendor).ShiftUnits) fail("the cart's daily rent is more than a shift of customers nets");
 
             Console.WriteLine("\n== Gigs: the day's board ==");
@@ -203,6 +238,19 @@ namespace RealLifeOverhaul
             int busy = startGig.IndexOf("reallife_job_no_busy", StringComparison.Ordinal);
             if (off < 0 || busy < off || startGig.IndexOf("_job != null", StringComparison.Ordinal) < off)
                 fail("refusals: a booked set with jobs off, faulted or not loaded is not refused as off, as a job and a rota shift are (JobDirector.StartGig)");
+            // A rank paid by what it takes: its share with the raises reaches the shift, and every word of the boss says what is kept, never "0 an hour".
+            string career = File.ReadAllText(Path.Combine(jobs, "CareerDirector.cs"));
+            string state = File.ReadAllText(Path.Combine(jobs, "CareerState.cs"));
+            string dialog = File.ReadAllText(Path.Combine(jobs, "CareerDialog.cs"));
+            if (!career.Contains("CareerState.Hourly, CareerState.Piece, late, true") || !career.Contains("_shift.Piece = piece;") || !career.Contains("CareerCatalogue.SlipKey(shift.Rank, shift.Late)")
+                || !director.Contains("(shift != null ? shift.Piece : 1f)"))
+                fail("own pay: the raised share of a rank with no basic wage does not reach the shift's pay, or the payslip does not follow the rank (CareerDirector, JobDirector)");
+            if (state.Contains("&& CurrentRank != null && CurrentRank.Hourly > 0f") || !state.Contains("CareerCatalogue.PieceWith(CurrentRank, Raises)"))
+                fail("own pay: a good review at a rank with no basic wage still cannot bring a raise (CareerState.Review)");
+            foreach (string key in new[] { "reallife_career_status_own", "reallife_career_review_promoted_own", "reallife_career_review_raise_own" })
+                if (!dialog.Contains("\"" + key + "\"") || !locale.ContainsKey(key)) fail("own pay: the boss's words for a rank with no basic wage are missing: " + key);
+            foreach (string key in new[] { "reallife_career_status_own", "reallife_career_review_promoted_own", "reallife_career_review_raise_own", "reallife_career_slip_note_own", "reallife_job_skip_info_own" })
+                if (locale.TryGetValue(key, out string words) && (words.Contains("{wage}") || words.Contains("{rate}"))) fail("own pay: " + key + " still names a basic wage");
             string tests = File.ReadAllText(Path.Combine(jobs, "JobDirector.Tests.cs"));
             if (!tests.Contains("CareerCatalogue.FirstRotaOn(TimeHelper.CurrentDay + 1)"))
                 fail("test rota: the sign-on test does not take the first rota that works tomorrow (JobDirector.Tests.cs)");

@@ -59,8 +59,11 @@ own box (1350 wide, ending 100 from the bar's right edge: as wide as the money, 
 between two and the game's own seven. It is worked out at the first opening and again only when the bar's width
 changes (`RowBarWatch` on `Topbar`): 6 tiles on 16:9 at 100%, 5 on 16:10, 2 on 4:3. (Until 0.26.x the room was
 measured to the money's words at every opening, so the count and the row's length changed.) The game's own apps come
-first in the game's order, then the mod's and other mods' in the order they stand (others' buttons standing among the
-game's are moved after them). A full page stands centred in that room (`PagerRules.PageStart`, worked out with the
+first in the game's order, then the mod's in one fixed order (`PagerRules.ModOrder`: the day, work and study, money,
+business, then the Guide and the options; the bank apps together in the banks' order), then other mods' in the order
+they stand (`PagerRules.Arrange`; buttons standing among the game's, or the mod's out of their order, are moved after
+them in it). Each feature puts its app on when it is ready, so the mod's apps once stood in a different order after
+each load; ContractCheck fails if an app of the mod's has no place in the table. A full page stands centred in that room (`PagerRules.PageStart`, worked out with the
 count): 75 either side at 16:9, 3 at 16:10, 75 at 4:3. The pages fill in order, the apps and the More apps button on the last tile, only the
 last page shorter; every page starts where the game's own row starts (the row's left padding, alignment upper left), so
 the button never moves. The button is a copy of the template app button with the game's scripts that make it an app taken off (only
@@ -523,6 +526,13 @@ target off (it is looked at, never clicked), gives the copy a canvas of its own 
 itself, so it stands where the game's panel stands; while the game's own panel is showing the copy moves 476 down.
 The lines are in capitals because the game's are. The game hides `playerHUD` during its time machine, and the copy
 with it.
+
+The game's notifications (`NotificationsUI/Container`, 237 below the top) stand in the same corner as its job panel
+(200 below the top): the game has no rule for the two. While a copy shows, the notifications start 16 units under its
+foot (`GameUi.NoticeRoom`, the arithmetic in `NoticeRoomRules`, checked in NavCheck's PolishCheck), and they are back at
+the game's own place as soon as none shows. A `NoticeRoomMark` on each copy says when it comes on, goes off (its own
+`SetActive`, the HUD hidden with the time machine or the map) or steps under the game's panel; nothing runs per frame.
+With Developer diagnostics on, each move writes one `Notice check (room)` line.
 
 Proven: every object, size and member named in sections 13 and 14. Inferred: how the copies look.
 ## 15. A button in the panel the game opens on an object (`Home/HomeFridgeButton`)

@@ -54,8 +54,11 @@ internal static partial class Program
             "life: the rating's bands");
         Check(LifeRules.RiseFor(5, 0) == LifeRules.RiseBp * 2 && LifeRules.RiseFor(4, 0) == LifeRules.RiseBp && LifeRules.RiseFor(3, 0) == LifeRules.RiseBp / 2 && LifeRules.RiseFor(2, 0) == 0
               && LifeRules.RiseFor(5, LifeRules.RaisesMost) == 0, "life: rises by rating, none after a rank's last");
-        Check(LifeRules.BonusWeeks(5) == LifeRules.BonusWeeks5 && LifeRules.BonusWeeks(4) == LifeRules.BonusWeeks4 && LifeRules.BonusWeeks(3) == 0, "life: bonuses for a 4 and a 5");
-        Check(LifeRules.ReviewEvery(365) == LifeRules.ReviewDays && LifeRules.ReviewEvery(60) == 30, "life: two reviews a year, of the game's year");
+        Check(LifeRules.BonusDays(5) == LifeRules.BonusDays5 && LifeRules.BonusDays(4) == LifeRules.BonusDays4 && LifeRules.BonusDays(3) == 0 && LifeRules.BonusDays5 > LifeRules.BonusDays4,
+            "life: bonuses of days' pay for a 4 and a 5");
+        Check(LifeRules.DayPay(j) == (long)j.Pay * 8, "life: a day's pay is the rate by the working day");
+        Check(LifeRules.ReviewEvery(60) == 14 && LifeRules.ReviewEvery(90) == 21 && LifeRules.ReviewEvery(120) == 28 && LifeRules.ReviewEvery(365) == 28,
+            "life: a review every two weeks in the game's own year of 60 days, every four at most in a longer one");
         Check(LifeRules.WeekPay(j) == (long)j.Pay * 8 * 5, "life: a week's pay is the rate by the working week");
         Check(LifeRules.AskRiseChance(5) > LifeRules.AskRiseChance(4) && LifeRules.AskRiseChance(4) > LifeRules.AskRiseChance(3) && LifeRules.AskRiseChance(1) > 0, "life: asking works better after a good review");
     }
@@ -67,7 +70,7 @@ internal static partial class Program
         StudyRules.Learn(f, TalentCatalogue.Coding, 45000, 1);
         StudyRules.Learn(f, TalentCatalogue.SystemDesign, 35000, 1);
         Job j = LifeJob(ProCatalogue.Developer, 0);
-        int days = TalentCatalogue.Scaled(ProCatalogue.Find(ProCatalogue.Developer).Ranks[1].Days, 60);
+        int days = LifeRules.Paced(ProCatalogue.Find(ProCatalogue.Developer).Ranks[1].Days, 60);
         Check(!LifeRules.CanPromote(f, j, 4, 1 + days - 1, 60), "life: not before the time at the rank");
         Check(LifeRules.CanPromote(f, j, 4, 1 + days, 60) && !LifeRules.CanPromote(f, j, 3, 1 + days, 60), "life: a 4 and the time brings a promotion; a 3 does not");
         Job top = LifeJob(ProCatalogue.Developer, 6);

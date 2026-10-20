@@ -100,6 +100,11 @@ namespace RealLifeOverhaul.Careers
             box.Section("reallife_ibox_sec_pay");
             box.Row("reallife_career_col_pay", CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(o.Pay))));
             box.Row("reallife_career_col_hours", CareersText.Week(p));
+            WorkFit fit = StudyRules.Fit(f, p, out int classDays, out int leaveAt, out int course);
+            if (course >= 0 || fit != WorkFit.Fits)
+            {
+                box.Row("reallife_career_col_classes", CareersText.FitsClasses(fit, classDays, leaveAt, course), CareersText.FitTone(fit));   // against the courses being followed
+            }
             box.Row("reallife_career_col_mode", CareersText.WorkWay(o.Work));
             box.Row("reallife_ibox_employer_kind", CareersText.Kind((EmployerKind)o.Kind));
 

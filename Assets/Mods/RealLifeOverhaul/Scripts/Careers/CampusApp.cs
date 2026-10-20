@@ -369,6 +369,13 @@ namespace RealLifeOverhaul.Careers
                 box.Row("reallife_ibox_class_length", CareersText.T("reallife_ibox_hours", "hours", c.Hours.ToString()));
                 box.Row("reallife_campus_col_length", CareersText.Weeks(StudyRules.Length(c, mode)));
                 box.Row("reallife_campus_col_where", _director.PlaceOf(c, mode));
+                Job job = _director.Work != null ? _director.Work.Job : null;
+                if (job != null && job.Def != null)
+                {
+                    // Against the job's working days: when the class counts and may be left for work, or a clash, before enrolling.
+                    WorkFit fit = StudyRules.Fit(c, mode, job.Def, out int days, out int leaveAt);
+                    box.Row("reallife_campus_col_work", CareersText.FitsWork(fit, days, leaveAt), CareersText.FitTone(fit));
+                }
             }
             else
             {

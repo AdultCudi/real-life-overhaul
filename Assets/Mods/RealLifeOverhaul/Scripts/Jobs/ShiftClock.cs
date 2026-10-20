@@ -153,7 +153,7 @@ namespace RealLifeOverhaul
             var pay = new LabelInfo(JobText.T(_asTips ? "reallife_job_skip_info_unit_tips" : "reallife_job_skip_info_unit_pay", "share", ShiftRates.Percent.ToString(), "thing", thing)
                 .Replace("{amount}", amount), white, false);
             return _ctx.Shift != null
-                ? new[] { time, pay, new LabelInfo("reallife_job_skip_info_wage", null, white) }
+                ? new[] { time, pay, new LabelInfo(CareerCatalogue.SkipWageKey(_ctx.Shift.Rank), null, white) }
                 : new[] { time, pay };
         }
 

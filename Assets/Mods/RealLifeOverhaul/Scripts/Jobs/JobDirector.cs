@@ -407,7 +407,7 @@ namespace RealLifeOverhaul
             // A freelance gig is worked as the Gig Line quoted it; the rest at the table's figures.
             bool freelance = shift == null && gig == null && !test;
             _context.Offer = freelance ? GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky()) : GigOffer.Table(def);
-            _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Rank.Piece : 1f) * _context.Offer.Fee;
+            _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Piece : 1f) * _context.Offer.Fee;
             if (shift != null)
             {
                 shift.Hourly *= scale;

@@ -69,8 +69,9 @@ internal static partial class Program
         Check(a == Skills.Clinical && b == Skills.Care, "work: a nurse is judged on clinical care and care");
         long week = (long)ProCatalogue.Find(ProCatalogue.Developer).Ranks[2].Pay * 40 / 100;
         long top = (long)ProCatalogue.Find(ProCatalogue.Manager).Ranks[6].Pay * 40 / 100;
-        Check(week >= 2500 && week <= 4000 && top >= 8000 && top <= 12000, "work: a senior developer's week is about 3,200, a chief executive's about 10,000 (" + week + ", " + top + ")");
-        Check(ProCatalogue.Find(ProCatalogue.BarStaff).Ranks[0].Pay < 2500 * 1 + 100, "work: the first rung of a bar is about the game's cashier");
+        Check(week >= 9000 && week <= 11000 && top >= 34000 && top <= 42000, "work: a senior developer's week is about 10,000, a chief executive's about 38,000 (" + week + ", " + top + ")");
+        int bar = ProCatalogue.Find(ProCatalogue.BarStaff).Ranks[0].Pay;
+        Check(bar >= 6500 && bar <= 8000, "work: the first rung of a bar, after the barista's short course, is about the drinks cart's best hour (" + bar + " cents)");
     }
 
     private static void WorkAsks()
@@ -190,7 +191,8 @@ internal static partial class Program
         int good, poor;
         ProRules.References(w, out good, out poor);
         Check(good == 0 && poor == 1 && w.History[0].To == 70, "work: references are counted from the CV");
-        Check(ProRules.Experience(w, ProCatalogue.Developer, 100, 365) == 60 && ProRules.Experience(w, ProCatalogue.Developer, 100, 60) == 60 * 365 / 60, "work: experience is in years of 365 days");
+        Check(ProRules.Experience(w, ProCatalogue.Developer, 100, 365) == 60 * 365 / LifeRules.PaceYearMost && ProRules.Experience(w, ProCatalogue.Developer, 100, 60) == 60 * 365 / 60,
+            "work: experience is in days of a 365-day year, at the careers' pace (a year of 60 to " + LifeRules.PaceYearMost + " days)");
         for (int i = 0; i < WorkFile.HistoryMost + 5; i++)
         {
             w.Remember(new Spell { Prof = 0 });

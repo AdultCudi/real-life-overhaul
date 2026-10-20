@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Careers
             CourseDef c = e.Def;
             return new Sitting(this, SittingKind.Class, c.Id, minutes, CareersText.Course(c.Id), true,
                 CareersText.T("reallife_study_skip_class", "number", (e.Seen + 1).ToString(), "of", c.Sessions.ToString()),
-                CareersText.T("reallife_study_skip_until", "time", CareersText.Minutes(minutes)));
+                CareersText.ClassRuns(minutes));
         }
 
         /// <summary>A piece of homework (or revision, once the set homework is done) as one of the game's activities.</summary>

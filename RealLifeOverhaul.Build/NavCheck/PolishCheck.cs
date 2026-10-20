@@ -8,6 +8,7 @@ using RealLifeOverhaul.GameUi;
 //   Core/GameUi/BarRule.cs          when a bar of the game's is written again, and a zone cut off at the bar's ends
 //   Camera/CameraWatch.cs           the counting behind "another mod has the camera": when to stand down, when to come back
 //   Core/OtherModName.cs            whether a loaded assembly's name is a known mod's
+//   Core/GameUi/NoticeRoomRules.cs  how far the game's notifications go down to start under the mod's panel in the top right
 //
 // What is not here: anything of the game. Where the two boxes really are on the screen, whether the bar looks like the
 // game's and whether another mod's camera is seen are for the game to show, in the "Panel check", "Gauge check" and
@@ -24,6 +25,7 @@ internal static partial class Program
         BarSteps();
         CameraCounting();
         ModNames();
+        NoticeRoomChecks();
         PolishTiming();
     }
 
@@ -326,6 +328,27 @@ internal static partial class Program
         Check(OtherModName.Is("EmpireMotors", "EmpireMotors") && OtherModName.Is("EmpireMustangGT", "EmpireMustangGT") && OtherModName.Is("empirebmwg82", "empirebmwg82")
               && !OtherModName.Is("EmpireMustangGT", "EmpireMotors") && !OtherModName.Is("EmpireBank", "EmpireMotors") && !OtherModName.Is("EmpireMotorsExtras", "EmpireMotors"),
             "other mods: Empire Motors and its two car add-ons are known each by its own assembly, and not by the author's other mods");
+    }
+
+    // The game's notifications under the mod's info panel in the top right (a shift, a lesson, a test): the HUD's canvas of
+    // 2160 high on a screen of 1080 (half a pixel a unit), the job panel's copy 200 under the top and 336 high, the
+    // notifications 237 under the top on their own canvas.
+    private static void NoticeRoomChecks()
+    {
+        const float scale = 0.5f, top = ScreenH - 237f * scale, foot = ScreenH - (200f + 336f) * scale;
+        float drop = NoticeRoomRules.Drop(top, foot, scale);
+        Check(Near(top - drop * scale, foot - NoticeRoomRules.Gap * scale), "notices: with a panel showing, the notifications start a gap under its foot (" + drop + " units down)");
+        Check(NoticeRoomRules.Drop(top, float.NaN, scale) == 0f, "notices: with no panel showing they are at the game's own place");
+        Check(NoticeRoomRules.Drop(top, top + 200f, scale) == 0f && NoticeRoomRules.Drop(top, top + NoticeRoomRules.Gap * scale, scale) == 0f,
+            "notices: a panel whose foot is above them, or a gap above them, moves nothing");
+        float under = NoticeRoomRules.Drop(top, ScreenH - (200f + 460f + 16f + 336f) * scale, scale);
+        Check(under > drop && Near(top - under * scale, ScreenH - (200f + 460f + 16f + 336f) * scale - NoticeRoomRules.Gap * scale),
+            "notices: a panel stepped under the game's own job panel takes them further down, under it");
+        Check(NoticeRoomRules.Drop(top, foot, 1f) * 1f > NoticeRoomRules.Drop(top, foot, 0.5f) * 0.5f - 1e-3f && NoticeRoomRules.Drop(top, foot, 0f) == 0f,
+            "notices: the drop is in the stack's own canvas units, and no scale moves nothing");
+        float lowest = NoticeRoomRules.Lowest(NoticeRoomRules.Lowest(float.NaN, 700f), 500f);
+        Check(lowest == 500f && NoticeRoomRules.Lowest(lowest, 650f) == 500f && float.IsNaN(NoticeRoomRules.Lowest(float.NaN, float.NaN)), "notices: of two panels the lower foot counts");
+        Check(!NoticeRoomRules.Moves(drop, drop + 0.4f) && NoticeRoomRules.Moves(drop, drop + 0.6f) && NoticeRoomRules.Moves(drop, 0f), "notices: moved again only by a visible step");
     }
 
     private static void PolishTiming()

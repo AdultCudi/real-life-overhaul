@@ -394,7 +394,10 @@ namespace RealLifeOverhaul.Careers
             };
         }
 
-        /// <summary>Days worked in a profession before, from the CV (and the job now, if it is one), in days of a 365-day year.</summary>
+        /// <summary>
+        /// Days worked in a profession before, from the CV (and the job now, if it is one), in days of a 365-day year at the
+        /// careers' pace (LifeRules.PaceYear), so that they weigh as the time at a rank does.
+        /// </summary>
         public static int Experience(WorkFile w, int prof, int today, int year)
         {
             long days = 0;
@@ -409,7 +412,7 @@ namespace RealLifeOverhaul.Careers
             {
                 days += today - w.Job.Hired;
             }
-            return (int)(days * 365 / Math.Max(60, year));
+            return (int)(days * 365 / LifeRules.PaceYear(year));
         }
 
         /// <summary>References on the CV: good ones and poor ones.</summary>

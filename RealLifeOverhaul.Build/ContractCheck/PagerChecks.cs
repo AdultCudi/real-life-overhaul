@@ -31,6 +31,7 @@ internal static partial class Program
         PagerOnce();
         PagerCentre();
         PagerGameFirst();
+        PagerModOrder();
         PagerFilling();
         PagerButton();
         PagerEdges();
@@ -273,6 +274,53 @@ internal static partial class Program
                           + " before them; a seventh tile would need " + (RowPitch - atFull).ToString("0") + " more.");
     }
 
+    // The mod's apps in one fixed order on both phones, whatever order their features put them on in; the game's first,
+    // other mods' last in the order they stand.
+    private static void PagerModOrder()
+    {
+        string[] names = PagerRules.ModOrder;
+        Check(names.Distinct().Count() == names.Length && names.All(n => n.StartsWith("RealLife", StringComparison.Ordinal)), "the mod's order names each of its apps once");
+        bool ranks = true;
+        for (int i = 0; i < names.Length; i++)
+        {
+            ranks &= PagerRules.ModRank(names[i]) == i * 100 && (i == 0 || PagerRules.ModRank(names[i]) > PagerRules.ModRank(names[i - 1]));
+        }
+        Check(ranks, "each app's place is its place in the table");
+        int bank = Array.IndexOf(names, PagerRules.BankPrefix) * 100;
+        Check(PagerRules.ModRank("RealLifeBank1") == bank + 1 && PagerRules.ModRank("RealLifeBank12") == bank + 12 && PagerRules.ModRank("RealLifeBank") == bank
+              && PagerRules.ModRank("RealLifeBank1x") == -1 && PagerRules.ModRank("RealLifeBank123") == -1
+              && PagerRules.ModRank("RealLifeBank1") < PagerRules.ModRank("RealLifeOwnBank") && PagerRules.ModRank("RealLifeFinance") < PagerRules.ModRank("RealLifeBank2"),
+            "the bank apps stand together in the banks' order, between Finance and the player's own bank");
+        Check(PagerRules.ModRank("Persona") == -1 && PagerRules.ModRank("GoingPublicHub") == -1 && PagerRules.ModRank(null) == -1 && PagerRules.ModRank(string.Empty) == -1,
+            "the game's names and other mods' have no place among the mod's");
+        // Every order the same apps could be put on in comes out the same.
+        var random = new Random(20102026);
+        string[] mixed = { "BizMan", "Persona", "RealLifeSettings", "RealLifeBank2", "OtherModHub", "RealLifePlanner", "RealLifeBank1", "RealLifeStocks", "OtherModChat", "RealLifeFlare", "RealLifeGuide" };
+        bool[] gameOf = mixed.Select(n => n == "BizMan" || n == "Persona").ToArray();
+        string want = null;
+        int faults = 0;
+        for (int round = 0; round < 400; round++)
+        {
+            int[] at = Enumerable.Range(0, mixed.Length).OrderBy(_ => random.Next()).ToArray();
+            // the game's own keep their order among themselves, as the game makes them first; the rest come in any order
+            var standing = at.Where(i => gameOf[i]).OrderBy(i => i).Concat(at.Where(i => !gameOf[i])).ToArray();
+            var game = standing.Select(i => gameOf[i]).ToArray();
+            var rank = standing.Select(i => gameOf[i] ? -1 : PagerRules.ModRank(mixed[i])).ToArray();
+            var order = new int[standing.Length];
+            int games = PagerRules.Arrange(game, rank, standing.Length, order);
+            var mods = order.Skip(games).Select(o => mixed[standing[o]]).Where(n => n.StartsWith("RealLife", StringComparison.Ordinal));
+            string got = string.Join(",", order.Take(games).Select(o => mixed[standing[o]])) + "|" + string.Join(",", mods);
+            want ??= got;
+            faults += got == want && order.Distinct().Count() == order.Length && games == 2
+                      && order.Skip(games).Select(o => mixed[standing[o]]).SkipWhile(n => n.StartsWith("RealLife", StringComparison.Ordinal)).All(n => n.StartsWith("OtherMod", StringComparison.Ordinal)) ? 0 : 1;
+        }
+        Check(faults == 0 && want == "BizMan,Persona|RealLifePlanner,RealLifeFlare,RealLifeBank1,RealLifeBank2,RealLifeStocks,RealLifeGuide,RealLifeSettings",
+            "400 orders of putting on: the game's first, the mod's always Planner, Flare, the banks in order, Stocks, Guide, options, other mods' last (" + want + "; " + faults + " wrong)");
+        var two = new int[3];
+        Check(PagerRules.Arrange(new[] { false, false, false }, new[] { 300, 300, -1 }, 3, two) == 0 && two.SequenceEqual(new[] { 0, 1, 2 }), "equal places keep the order they stand in");
+        Check(PagerRules.Arrange(new[] { true, false }, null, 2, two) == 1, "with no places it is the game's first, the rest as they stand");
+    }
+
     // The game's own apps first, in their order, then the others in theirs; stable.
     private static void PagerGameFirst()
     {
@@ -507,9 +555,21 @@ internal static partial class Program
         Check(pager.Contains("public sealed class RowBarWatch") && Body(pager, "private void OnRectTransformDimensionsChange()") != null && pager.Contains("watch.Pager = pager;"),
             "a change of the bar's width (resolution, shape, scale) has the row looked at again");
         string first = Body(pager, "private void GameFirst()");
-        Check(Body(pager, "private void Collect()")?.Contains("GameFirst();") == true && first != null && first.Contains("PagerRules.GameFirst(_isGame, count, _order)")
-              && first.Contains("_apps[i].SetAsLastSibling()") && first.Contains("if (_gameApps < 0)"),
-            "the game's own apps are put first in their order, found once, and others' buttons standing among them are moved after them");
+        Check(Body(pager, "private void Collect()")?.Contains("GameFirst();") == true && first != null && first.Contains("PagerRules.Arrange(_isGame, _rank, count, _order)")
+              && first.Contains("_apps[i].SetAsLastSibling()") && first.Contains("if (_gameApps < 0)") && first.Contains("PagerRules.ModRank(found.name)")
+              && first.Contains("(at < lastGame || at < before)"),
+            "the game's own apps are put first in their order, found once, the mod's in their fixed order, and buttons standing among the game's or out of that order are moved after them in it");
+        // Every app of the mod's that puts buttons on the phones has its place in the fixed order.
+        var ids = new List<string>();
+        foreach (string file in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
+        {
+            foreach (Match m in Regex.Matches(File.ReadAllText(file), "const string \\w*AppId(?:Prefix)? = \"(RealLife\\w+)\""))
+            {
+                ids.Add(m.Groups[1].Value);
+            }
+        }
+        var unplaced = ids.Where(id => !PagerRules.ModOrder.Contains(id)).ToList();
+        Check(ids.Count >= 20 && unplaced.Count == 0, "every app of the mod's has its place in the one order of the phones (" + ids.Count + " apps; not placed: " + string.Join(", ", unplaced) + ")");
         Check(Regex.Matches(pager, @"RightLimit\(").Count == 2 && Body(pager, "private void StripCheck()")?.Contains("RightLimit(strip)") == true,
             "the money's edge is read only for the line in Player.log (StripCheck), never for the count");
         Check(Regex.Matches(pager, @"_tiles = ").Count == 1 && Regex.Matches(pager, @"Enum\.TryParse").Count == 1, "the row's count is set in one place, and the game's own apps are found in one place");

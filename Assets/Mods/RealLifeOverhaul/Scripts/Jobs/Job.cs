@@ -97,6 +97,7 @@ namespace RealLifeOverhaul
         public Employer Employer;
         public CareerRank Rank;
         public float Hourly;          // per hour: raises, pay option and owner's factor included
+        public float Piece = 1f;      // factor on what the work pays: the rank's, with the raises at a rank paid only by what it takes (CareerState.Piece)
         public bool Late;
         public float StartMinutes;    // game minutes
         public Vector3 Depot;         // where the employer is: desk and lead shifts are worked there

@@ -45,7 +45,7 @@ namespace RealLifeOverhaul
                 share = Mathf.RoundToInt(ShiftRates.Share * 100f), amount = JobText.Money(Mathf.RoundToInt(left * PayEach * ShiftRates.Share))
             }, white);
             return Ctx.Shift != null
-                ? new[] { time, pay, new LabelInfo("reallife_job_skip_info_wage", null, white) }
+                ? new[] { time, pay, new LabelInfo(CareerCatalogue.SkipWageKey(Ctx.Shift.Rank), null, white) }
                 : new[] { time, pay };
         }
 

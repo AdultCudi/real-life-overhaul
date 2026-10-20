@@ -115,7 +115,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     CanAttend(live, out int minutes);
                     panel.Lines(CareersText.Course(c.Id), CareersText.T("reallife_study_skip_class", "number", (live.Seen + 1).ToString(), "of", c.Sessions.ToString()),
-                        CareersText.T("reallife_study_skip_until", "time", CareersText.Minutes(minutes)), WorldPanel.White());
+                        CareersText.ClassRuns(minutes), WorldPanel.White());
                 }
                 panel.Button(0, exam ? "reallife_study_prompt_exam" : "reallife_study_prompt_attend", CourseArgs(c.Id), _onClassDoor, true, true);
                 panel.Button(1, null, null, false, false);
