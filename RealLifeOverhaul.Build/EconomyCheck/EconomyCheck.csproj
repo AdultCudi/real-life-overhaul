@@ -373,6 +373,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusInside.cs" Link="Mod\BusInside.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\RideRules.cs" Link="Mod\RideRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusDetour.cs" Link="Mod\BusDetour.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.cs" Link="Mod\TransitPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Journeys.cs" Link="Mod\TransitPlan.Journeys.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitEta.cs" Link="Mod\TransitEta.cs" />

@@ -155,6 +155,7 @@ namespace RealLifeOverhaul
         public const string EstateHireId = "economy_estate_hire";
         public const string EstateRentId = "economy_estate_rent";
         public const string EconomyOnlineId = "economy_online";
+        public const string EconomyOnlineWaitNotesId = "economy_online_wait_notes";
         public const string TechPeopleId = "tech_people";
         public const string TechJobsId = "tech_jobs";
         public const string TechSectorId = "tech_sector";
@@ -468,6 +469,7 @@ namespace RealLifeOverhaul
         public static bool TechSiteOffices = true;       // a few tech fittings (a server closet, a developer's desk, a whiteboard) in an office a tech firm of the player's runs in, where there is room (Scripts/Tech/Sites)
         public static bool TechStartups = true;          // startups and venture capital: the city's startups that grow, raise, fail or are bought, their pitches to the player, an angel portfolio and a fund, and the player's own tech firms raising from venture firms with a board and share options (off: no startup is founded or pitches; holdings are kept) (Scripts/Tech/Venture)
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
+        public static bool EconomyOnlineWaitNotes = true; // ...a notification after three opening hours of orders nobody is on shift to pick (off: the Planner still says so)
         public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
         public static bool EconomyDealerFloor = true;    // visitors on the Car Showroom's floor: the hour's customers seen walking round the showroom the player stands in, looking at the cars, a salesperson going to some (off: the floor is empty; the hour is worked as before) (Scripts/Economy/Dealer/Floor)
         public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
@@ -804,6 +806,7 @@ namespace RealLifeOverhaul
             EstateHire = Bool(modId, EstateHireId, EstateHire);
             EstateRent = Int(modId, EstateRentId, EstateRent);
             EconomyOnline = Bool(modId, EconomyOnlineId, EconomyOnline);
+            EconomyOnlineWaitNotes = Bool(modId, EconomyOnlineWaitNotesId, EconomyOnlineWaitNotes);
             TechPeople = Bool(modId, TechPeopleId, TechPeople);
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSector = Bool(modId, TechSectorId, TechSector);

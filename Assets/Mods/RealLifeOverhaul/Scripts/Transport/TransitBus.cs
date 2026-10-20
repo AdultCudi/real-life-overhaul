@@ -27,7 +27,6 @@ namespace RealLifeOverhaul
         private const int StartTries = 8;            // places tried to start from
         private const float LookAhead = 60f;         // metres of its route looked along for a red light or a closed road: more than it stops in
         private const float LitWithin = 170f;        // metres from the player within which a red light is waited at
-        private const float LightPatience = 45f;     // seconds at a red light nobody is looking at before it is taken for one the game does not run
         private const float OnwardMetres = 240f;     // metres of its line it follows after the stop
         private const float LeaveFor = 50f;          // seconds after which a leaving bus is let go wherever it is
         private const float BayBraking = 1.5f;       // m/s2 it comes down to a bay's pace with, before the bay's path begins
@@ -448,13 +447,14 @@ namespace RealLifeOverhaul
                     if (_goingOut)
                     {
                         // Let go where somebody could see it or near the player: it goes once nobody can and the player is not
-                        // near, driving on along the road; after GoOutMost only being seen keeps it, standing.
+                        // near (after GoOutMost being near no longer keeps it), driving on along the road for as long as it is
+                        // seen. It never stands at the end of what it was given in front of the player.
                         bool seen = InView || (Near && now - _since < GoOutMost);
                         if (!seen)
                         {
                             Release(remove: true);
                         }
-                        else if (_driver.Arrived && !_driver.Active && _gate < 0 && now - _since < GoOutMost)
+                        else if (_driver.Arrived && !_driver.Active && _gate < 0)
                         {
                             DriveOn();
                         }
@@ -680,9 +680,9 @@ namespace RealLifeOverhaul
                     Waiting = Hold.Closure;
                     return false;
                 }
-                if (i == from && point.stop && Lit(point) && (WaitingFor < LightPatience || CitySpots.InView(point.position)))
+                if (i == from && point.stop && Lit(point) && RideRules.LightHolds(WaitingFor, CitySpots.InView(point.position)))
                 {
-                    return false;   // a light nobody looks at that has not changed in all that time is one the game is not running
+                    return false;   // a light that has not changed in all that time (longer while seen) is one the game is not running
                 }
             }
             return true;

@@ -92,7 +92,9 @@ namespace RealLifeOverhaul.Tech
         // Licences (enterprise software sold outright)
         public const int LicenceDeal = 4000000;       // a licence's price to a company, cents
         public const int LicenceMaintenance = 200;    // thousandths of a licence a year for its upkeep, billed monthly
-        public const int LicenceLeadsPerSeller = 40;  // per mille a day a seller turns up a deal that closes
+        public const int LicenceLeadsPerSeller = 150; // thousandths of a deal a day one seller closes at an appeal of 1
+        public const int LicenceInbound = 500;        // thousandths of a seller the enquiries that come in by themselves are worth, beside the sellers
+        public const int LicenceSellersMost = 8000;   // thousandths: more than eight sellers find no more companies to call on
 
         // Prices, marketing and focus
         public static readonly int[] PriceTiers = { 700, 1000, 1400 };            // thousandths of the segment's price

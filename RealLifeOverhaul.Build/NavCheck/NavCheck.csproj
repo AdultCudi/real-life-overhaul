@@ -78,6 +78,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\InputPrint.cs" Link="Mod\InputPrint.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\BikeRules.cs" Link="Mod\BikeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\BikeClearRules.cs" Link="Mod\BikeClearRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\BikeSpotRules.cs" Link="Mod\BikeSpotRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\Sound\CarSoundRules.cs" Link="Mod\CarSoundRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\CarCatalogue.cs" Link="Mod\CarCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\GarageCatalogue.cs" Link="Mod\GarageCatalogue.cs" />

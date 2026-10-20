@@ -59,6 +59,7 @@ namespace RealLifeOverhaul.Texts
         private double _restUntil;
         private TextFault _lastFault;
         private int _inRow, _written, _missed;
+        private int _closedLogged;   // the closing line has been written (1): the workers share it
         private double _took;
 
         public TextService(TextQueue queue, TextServiceStart start, ITextWeb web, Action<string> log)
@@ -201,8 +202,26 @@ namespace RealLifeOverhaul.Texts
             }
             catch (Exception e)
             {
-                Stop(TextFault.Busy, "the worker: " + e.GetType().Name);
+                if (TextServiceRules.Closing(e.GetType().Name, _stop))
+                {
+                    Closed();   // the game closing (the engine aborts its threads) or the service switched off: not a fault
+                }
+                else
+                {
+                    Stop(TextFault.Busy, "the worker: " + e.GetType().Name);
+                }
                 _queue.MissAll("the service stopped");
+            }
+        }
+
+        // A worker ended by the game's closing or the service being switched off: one plain line for all the workers, the state
+        // left as it was (Off from Dispose), never Failed, and nothing said of mending it in the options.
+        private void Closed()
+        {
+            _stop = true;
+            if (Interlocked.Exchange(ref _closedLogged, 1) == 0)
+            {
+                Log("Your own AI: " + _start.Provider.Name + " stopped (the game is closing).");
             }
         }
 

@@ -48,6 +48,10 @@ namespace RealLifeOverhaul
             {
                 YieldTo(by, still);
             }
+            if (!_hold.Rounded && Round(now, still, by))
+            {
+                return;   // on its way round what held it
+            }
             if (!_hold.Logged && still >= RideRules.HoldLogAfter)
             {
                 _hold.Logged = true;

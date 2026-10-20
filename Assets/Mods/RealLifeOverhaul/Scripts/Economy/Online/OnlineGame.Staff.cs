@@ -71,6 +71,30 @@ namespace RealLifeOverhaul.Economy
             return pickers;
         }
 
+        /// <summary>
+        /// True if a place is open in an hour of today: a business within its opening hours and not closed for now, a warehouse
+        /// in its drivers' working day. Orders that come outside it wait for the opening, which is no fault.
+        /// </summary>
+        public static bool OpenAt(WebPlace place, int hour)
+        {
+            BuildingRegistration reg = place.Reg;
+            int h = hour % 24;
+            if (reg == null)
+            {
+                return false;
+            }
+            if (place.Warehouse && reg is Warehouse)
+            {
+                return h >= OnlineCatalogue.WarehouseFrom && h < OnlineCatalogue.WarehouseUntil;
+            }
+            if (reg.temporarilyClosed)
+            {
+                return false;
+            }
+            ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
+            return today != null && today.IsOpenAtHour(h);
+        }
+
         /// <summary>Marks ready each van at the player's warehouses with a vehicle and a driver at work; one whose driver or vehicle has gone is dropped after its day.</summary>
         public static void ReadVans(OnlineState state, int day)
         {

@@ -77,7 +77,7 @@ namespace RealLifeOverhaul.Economy
                     place.Pickers = OnlineGame.Pickers(place, _state, hour);
                     _stockAt = place;
                     int idle = place.Shop.Idle;
-                    HourCount count = OnlineRules.Hour(_state, place.Shop, place.Site, hour, place.Pickers, _take, _put);
+                    HourCount count = OnlineRules.Hour(_state, place.Shop, place.Site, hour, place.Pickers, OnlineGame.OpenAt(place, hour), _take, _put);
                     OnlineGame.Picked(place.Reg);
                     came += count.Came;
                     picked += count.Picked;
@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Economy
                     arrived += count.Arrived;
                     late += count.Late;
                     returned += count.Returned;
-                    if (idle < OnlineCatalogue.IdleAlert && place.Shop.Idle >= OnlineCatalogue.IdleAlert)
+                    if (idle < OnlineCatalogue.IdleAlert && place.Shop.Idle >= OnlineCatalogue.IdleAlert && Settings.EconomyOnlineWaitNotes)
                     {
                         Tell(NotificationType.Warning, "reallife_online_note_idle", new Dictionary<string, string>
                         {

@@ -963,6 +963,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_sites_test_floor", () => Tech.TechSites.Instance?.TestFloor())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
+                .AddToggle(Settings.EconomyOnlineWaitNotesId, "reallife_online_opt_wait_notes", Settings.EconomyOnlineWaitNotes,
+                    v => Settings.EconomyOnlineWaitNotes = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
                 .AddButton("reallife_online_test_orders", () => Economy.OnlineDirector.Instance?.TestOrders())
                 .AddButton("reallife_online_test_late", () => Economy.OnlineDirector.Instance?.TestLate())

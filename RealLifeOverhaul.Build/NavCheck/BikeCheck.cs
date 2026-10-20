@@ -196,6 +196,7 @@ internal static partial class Program
             "bikes source: a two-wheeler's box is measured when it is got on and a few looks after, not twice a second all ride");
 
         BikeClear(scripts);   // where a bike is left: the rules and, over the sources, when they are asked (BikeClearCheck.cs)
+        BikeSpots(scripts);   // where a dock, a rack or a stand is put down: wholly on level pavement, off crossings (BikeSpotCheck.cs)
         BikeTurn(scripts, catalogue);   // a bike got on after a save loads turns on the game's own inertia (BikeTurnCheck.cs)
 
         // ---- no page of the Guide says the game calls a bicycle or a motorbike an electric scooter, in any language.

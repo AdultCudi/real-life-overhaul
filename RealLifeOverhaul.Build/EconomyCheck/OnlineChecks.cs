@@ -444,6 +444,33 @@ internal static partial class Program
         Check(count.Picked == 0 && shop.Idle == 3 && shop.Count(OrderStage.Waiting) == 8, "online picking: with nobody on shift orders wait, and the hours they wait are counted");
         OnlineRules.Pick(shop, site, 39, 1, w.Take, ref count);
         Check(shop.Idle == 0 && count.Picked == 6, "online picking: when somebody comes on shift six are picked and the count of idle hours starts again");
+        // Orders that come after closing wait for the opening (a player's report, 20 Oct 2026: placed after the business closes, the
+        // notice came every morning): hours closed count for nothing, and the count runs from the opening.
+        int waitingNow = shop.Count(OrderStage.Waiting);
+        count = new HourCount();
+        for (int h = 40; h < 48; h++)
+        {
+            OnlineRules.Pick(shop, site, h, 0, false, w.Take, ref count);
+        }
+        Check(shop.Idle == 0 && shop.Count(OrderStage.Waiting) == waitingNow && waitingNow > 0,
+            "online picking: a night closed with orders waiting counts no idle hours: they wait for the opening, with no notice and no Planner alert");
+        OnlineRules.Pick(shop, site, 48, 0, true, w.Take, ref count);
+        OnlineRules.Pick(shop, site, 49, 0, true, w.Take, ref count);
+        Check(shop.Idle == 2 && shop.Idle < OnlineCatalogue.IdleAlert, "online picking: from the opening, the hours with nobody on shift are counted, the alert only after " + OnlineCatalogue.IdleAlert);
+        OnlineRules.Pick(shop, site, 50, 0, false, w.Take, ref count);
+        Check(shop.Idle == 0, "online picking: an hour closed again starts the count again");
+        Check(OnlineRules.IdleAfter(2, true, 0, true) == 3 && OnlineRules.IdleAfter(2, true, 1, true) == 0 && OnlineRules.IdleAfter(2, false, 0, true) == 0
+              && OnlineRules.IdleAfter(5, true, 0, false) == 0 && OnlineRules.IdleAfter(-3, true, 0, true) == 1,
+            "online picking: an idle hour is an open hour with orders left and nobody to pick; anything else starts the count again");
+        string onlineScripts = System.IO.Path.Combine(LocalesFolder(), "..", "Scripts", "Economy", "Online");
+        string day = System.IO.File.ReadAllText(System.IO.Path.Combine(onlineScripts, "OnlineDirector.Day.cs"));
+        string tests = System.IO.File.ReadAllText(System.IO.Path.Combine(onlineScripts, "OnlineDirector.Tests.cs"));
+        string staff = System.IO.File.ReadAllText(System.IO.Path.Combine(onlineScripts, "OnlineGame.Staff.cs"));
+        Check(day.Contains("place.Pickers, OnlineGame.OpenAt(place, hour), _take, _put)") && tests.Contains("place.Pickers, OnlineGame.OpenAt(place, hour), _take, _put)")
+              && !day.Contains("place.Pickers, _take, _put)") && staff.Contains("today.IsOpenAtHour(h)") && staff.Contains("reg.temporarilyClosed"),
+            "online picking source: every hour worked through is told whether the place is open by its own opening hours");
+        Check(day.Contains("place.Shop.Idle >= OnlineCatalogue.IdleAlert && Settings.EconomyOnlineWaitNotes"),
+            "online picking source: the notice of orders with nobody to pick them has its own switch");
         int before = shop.Today.Cancelled;
         stars = shop.Stars;
         count = new HourCount();

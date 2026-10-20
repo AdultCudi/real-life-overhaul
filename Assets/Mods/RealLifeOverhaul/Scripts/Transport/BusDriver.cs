@@ -37,6 +37,8 @@ namespace RealLifeOverhaul
         private float _pull;
         private float _obstacle = float.MaxValue;
         private Collider _obstacleHit;   // the nearest thing in its way when last looked
+        private Collider _passing;       // what it is going round (BusDetour): not looked at until it is behind
+        private float _passingUntil;     // metres along its route its front axle comes to before that is so
         private bool _person;
         private bool _blocked;
         private float _blockedSince;
@@ -132,6 +134,7 @@ namespace RealLifeOverhaul
                 _pull = 0f;
             }
             Arrived = false;
+            _passing = null;
             _nearEnough = nearEnough;
             _gateAt = float.MaxValue;
             _blocked = false;
@@ -155,6 +158,37 @@ namespace RealLifeOverhaul
             {
                 Arrive();
             }
+        }
+
+        /// <summary>
+        /// The first point of the route at least so many metres ahead of its nose, or the last: the place of something in its
+        /// way, for the way round it (TransitBus.Round). -1 while it drives no route.
+        /// </summary>
+        public int PointAhead(float metres)
+        {
+            if (_path.Count < 2 || _bus == null)
+            {
+                return -1;
+            }
+            float at = _s + _bus.NoseBeyondAxle + Mathf.Max(0f, metres);
+            for (int i = 0; i < _path.PointArc.Count; i++)
+            {
+                if (_path.PointArc[i] >= at)
+                {
+                    return i;
+                }
+            }
+            return _path.PointArc.Count - 1;
+        }
+
+        /// <summary>
+        /// Drives past something it is going round in a lane beside it: that collider is not looked at for the next
+        /// <paramref name="metres"/> of its route (its corner would hold the bus as it pulls out beside it). Set after a route is begun.
+        /// </summary>
+        public void Pass(Collider by, float metres)
+        {
+            _passing = by;
+            _passingUntil = _s + Mathf.Max(0f, metres);
         }
 
         /// <summary>Pulls up with its nose short of this point of the route; -1 for none.</summary>
@@ -340,6 +374,10 @@ namespace RealLifeOverhaul
                     if (hit == null || (_bus != null && hit.attachedRigidbody == _bus.Body))
                     {
                         continue;
+                    }
+                    if (_passing != null && _s < _passingUntil && (hit == _passing || (hit.attachedRigidbody != null && hit.attachedRigidbody == _passing.attachedRigidbody)))
+                    {
+                        continue;   // what it is going round, in the lane it has left
                     }
                     if (_kerb && Vector3.Dot(Flat(hit.bounds.center - _kerbPoint), _kerbTowards) > 0f)
                     {

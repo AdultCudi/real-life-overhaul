@@ -283,7 +283,7 @@ namespace RealLifeOverhaul.Economy
                         WebPlace place = _places[i];
                         place.Pickers = OnlineGame.Pickers(place, _state, hour);
                         _stockAt = place;
-                        HourCount count = OnlineRules.Hour(_state, place.Shop, place.Site, hour, place.Pickers, _take, _put);
+                        HourCount count = OnlineRules.Hour(_state, place.Shop, place.Site, hour, place.Pickers, OnlineGame.OpenAt(place, hour), _take, _put);
                         OnlineGame.Picked(place.Reg);
                         came += count.Came;
                         picked += count.Picked;

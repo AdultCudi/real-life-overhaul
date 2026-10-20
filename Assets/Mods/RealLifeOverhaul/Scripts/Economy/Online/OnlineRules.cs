@@ -333,11 +333,17 @@ namespace RealLifeOverhaul.Economy
         /// <summary>One hour at one site, in the order things happen: returns, deliveries, new orders, picking, rounds.</summary>
         public static HourCount Hour(OnlineState s, WebShop shop, Site site, int hour, int pickers, StockTake take, StockBack put)
         {
+            return Hour(s, shop, site, hour, pickers, true, take, put);
+        }
+
+        /// <summary>The same for an hour the place is open in or not: a closed hour's waiting orders count for nothing (OnlineRules.IdleAfter).</summary>
+        public static HourCount Hour(OnlineState s, WebShop shop, Site site, int hour, int pickers, bool open, StockTake take, StockBack put)
+        {
             var count = new HourCount();
             Returns(s, shop, site, hour, put, ref count);
             Deliver(s, shop, site, hour, ref count, put);
             count.Came = Arrive(s, shop, site, hour);
-            Pick(shop, site, hour, pickers, take, ref count);
+            Pick(shop, site, hour, pickers, open, take, ref count);
             Rounds(s, shop, site, hour, ref count);
             return count;
         }
