@@ -532,5 +532,61 @@ namespace RealLifeOverhaul
         }
 
         private static readonly Func<int, bool> WeekendOf = Weekend;   // (made once: NextSlot allocates nothing)
+
+        /// <summary>
+        /// A place and an hour for an outing, found together: their first free hour at which one of the places nearby is open
+        /// for the whole outing, trying up to <see cref="SocialRules.OpenTries"/> of their free hours in turn, and another
+        /// place nearby when the nearest is shut then. What is put forward is then never shut when they get there, bar what
+        /// cannot be known ahead. On a step of a call, never per frame.
+        /// </summary>
+        public static PlanFind PlaceAndHour(SocialPerson person, PlanKind kind, Vector3 around, float minDistance, float maxDistance, float from,
+            out Venue venue, out float time)
+        {
+            venue = default;
+            time = NextSlot(person, kind, from);
+            if (time < 0f)
+            {
+                return PlanFind.NoHour;
+            }
+            for (int i = 0; i < SocialRules.OpenTries && time >= 0f; i++)
+            {
+                if (SocialPlaces.Find(kind, around, minDistance, maxDistance, out venue, null, time))
+                {
+                    return PlanFind.Found;
+                }
+                if (i == 0 && !SocialPlaces.Find(kind, around, minDistance, maxDistance, out _))
+                {
+                    return PlanFind.NoPlace;   // (none of the kind at all: no later hour would find one)
+                }
+                time = NextSlot(person, kind, time + 60f);
+            }
+            venue = default;
+            time = -1f;
+            return PlanFind.Shut;
+        }
+
+        /// <summary>Their next free hour from a time at which a place already chosen is open for the whole outing; negative if none (<see cref="PlaceAndHour"/>).</summary>
+        public static float NextOpenSlot(SocialPerson person, PlanKind kind, in Venue venue, float from)
+        {
+            float time = NextSlot(person, kind, from);
+            for (int i = 0; i < SocialRules.OpenTries && time >= 0f; i++)
+            {
+                if (SocialPlaces.OpenFor(venue, kind, time))
+                {
+                    return time;
+                }
+                time = NextSlot(person, kind, time + 60f);
+            }
+            return -1f;
+        }
+    }
+
+    /// <summary>What looking for a place and an hour for an outing found (<see cref="SocialLife.PlaceAndHour"/>).</summary>
+    public enum PlanFind
+    {
+        Found,     // a place open for the whole outing, at one of their free hours
+        NoPlace,   // no place of the kind nearby at all
+        NoHour,    // no free hour of theirs in the days looked at
+        Shut       // places nearby, but none open at any of the free hours tried
     }
 }

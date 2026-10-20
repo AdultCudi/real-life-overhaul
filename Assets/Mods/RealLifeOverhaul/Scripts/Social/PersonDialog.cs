@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dialogs;
 using Entities;
@@ -306,14 +307,18 @@ namespace RealLifeOverhaul
             {
                 return Plans(at + 1, tried + 1, noHour);
             }
-            float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + SocialRules.PlanLead);
-            if (first < 0f)
+            PlanFind found = SocialLife.PlaceAndHour(_p, kind, SocialDirector.Where(), 40f, 1800f, SocialLife.Now + SocialRules.PlanLead, out Venue venue, out float first);
+            if (found == PlanFind.NoHour)
             {
                 return Plans(at + 1, tried + 1, true);
             }
-            if (!SocialPlaces.Find(kind, SocialDirector.Where(), 40f, 1800f, out Venue venue))
+            if (found == PlanFind.NoPlace)
             {
                 return Plans(at + 1, tried + 1, noHour);
+            }
+            if (found == PlanFind.Shut)
+            {
+                return ShutWalk(kind, false, () => Plans(at + 1, 0)) ?? Plans(at + 1, tried + 1, noHour);
             }
             Dictionary<string, string> data = SocialLife.Data(_p, "place", venue.Name);
             data["cost"] = SocialLife.Money(def.Cost);
@@ -325,10 +330,32 @@ namespace RealLifeOverhaul
             return entry;
         }
 
-        // The hour found when the outing was put forward, and a later one if they have it: no refusal is left at this step.
+        // Every place of the kind nearby is shut at every free hour of theirs looked at: a walk instead, said as such, with
+        // the other button for something else, or, when it was their invitation, for not this time. Null when no walk can be
+        // had either (no free hour, or outings of the kind not yet theirs to suggest), for the caller to go on as before.
+        private DialogEntry ShutWalk(PlanKind shut, bool theirIdea, Func<DialogEntry> other)
+        {
+            OutingDef walk = SocialCatalogue.Outing(PlanKind.Walk);
+            if ((_p.Stage < walk.Needs && !_p.IsFamily)
+                || SocialLife.PlaceAndHour(_p, PlanKind.Walk, SocialDirector.Where(), 40f, 1800f, SocialLife.Now + SocialRules.PlanLead, out Venue venue, out float first) != PlanFind.Found)
+            {
+                return null;
+            }
+            Dictionary<string, string> data = SocialLife.Data(_p, "place", venue.Name);
+            data["outing"] = SocialLife.T(SocialCatalogue.Outing(shut).Name);
+            DialogEntry entry = Line("reallife_social_plan_shut_walk", data);
+            entry.ConfirmTextOverride = "reallife_social_btn_lets".Localize();
+            entry.OnConfirm = () => When(PlanKind.Walk, venue, first, theirIdea);
+            entry.SecondOptionTextOverride = theirIdea ? "reallife_social_btn_not_this_time" : "reallife_social_btn_other_idea";
+            entry.OnSecondOption = other;
+            return entry;
+        }
+
+        // The hour found when the outing was put forward, and a later one if they have it and the place is open then too:
+        // no refusal is left at this step.
         private DialogEntry When(PlanKind kind, Venue venue, float first, bool theirIdea)
         {
-            float second = SocialLife.NextSlot(_p, kind, first + 180f);
+            float second = SocialLife.NextOpenSlot(_p, kind, venue, first + 180f);
             Dictionary<string, string> data = SocialLife.Data(_p, "a", SocialLife.Clock(first));
             data["b"] = second > 0f ? SocialLife.Clock(second) : string.Empty;
             DialogEntry entry = Line(second > 0f ? "reallife_social_when_two" : "reallife_social_when_one", data);
@@ -470,18 +497,21 @@ namespace RealLifeOverhaul
                 return moving;
             }
 
-            // An invitation: the place and the hour are found now, near the player, before it is put to them; no free hour
-            // in the days ahead is said now, not after the player says yes.
-            if (!Settings.SocialOutings || !SocialPlaces.Find(kind, player, 40f, 1800f, out Venue venue))
+            // An invitation: the place and the hour are found now, near the player, before it is put to them, the place open
+            // for the whole outing then; no free hour in the days ahead is said now, not after the player says yes, and with
+            // every place of the kind shut at their free hours they put a walk forward instead.
+            Venue venue = default;
+            float first = -1f;
+            PlanFind found = PlanFind.NoPlace;
+            if (Settings.SocialOutings)
             {
-                SocialState.Offer.Clear();
-                return Close("reallife_social_plan_nowhere");
+                found = SocialLife.PlaceAndHour(_p, kind, player, 40f, 1800f, SocialLife.Now + SocialRules.PlanLead, out venue, out first);
             }
-            float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + SocialRules.PlanLead);
-            if (first < 0f)
+            if (found != PlanFind.Found)
             {
                 SocialState.Offer.Clear();
-                return Close(SocialLines.Pick(SocialCatalogue.PlanBusy));
+                DialogEntry walk = found == PlanFind.Shut ? ShutWalk(kind, true, Declined) : null;
+                return walk ?? Close(found == PlanFind.NoHour ? SocialLines.Pick(SocialCatalogue.PlanBusy) : "reallife_social_plan_nowhere");
             }
             Dictionary<string, string> invite = SocialLife.Data(_p, "place", venue.Name);
             invite["cost"] = SocialLife.Money(def.Cost);
@@ -493,14 +523,18 @@ namespace RealLifeOverhaul
                 return When(kind, venue, first, true);
             };
             entry.SecondOptionTextOverride = "reallife_social_btn_not_this_time";
-            entry.OnSecondOption = () =>
-            {
-                SocialState.Offer.Clear();
-                SocialLife.Contacted(_p);
-                SocialLife.Change(_p, 0f, -1f, 0f);
-                return Close("reallife_social_invite_declined");
-            };
+            entry.OnSecondOption = Declined;
             return entry;
+        }
+
+        // Their invitation turned down, the outing they asked for or the walk they put forward in its place: the same small
+        // cost either way.
+        private DialogEntry Declined()
+        {
+            SocialState.Offer.Clear();
+            SocialLife.Contacted(_p);
+            SocialLife.Change(_p, 0f, -1f, 0f);
+            return Close("reallife_social_invite_declined");
         }
 
         private DialogEntry Refuse(string line)

@@ -95,6 +95,7 @@ The Home and health feature is told through `ISocialWellbeing` (`SocialLinks.Wel
 ## Things to do together (`OutingScene`)
 
 A plan is agreed on the phone (they offer what they would like first, then the rest; a place within 1.8 km is found then and named; two times are offered from their free hours and the place's): one plan at a time, saved.
+The place and the hour are found together (`SocialLife.PlaceAndHour`): the place must be open for the whole outing by its business's own week of hours (`SocialPlaces.OpenFor`, `SocialRules.OpenThrough`), another of the nearest is taken when one is shut, up to eight of their free hours are tried, and with every place of the kind shut they put a walk forward instead (`reallife_social_plan_shut_walk`); the second time offered is open too. Flare and street invitations find theirs the same way.
 An hour before, a reminder and the plan on screen with a marker (the game's own guider, so it is on the city map too).
 
 They may cancel by text beforehand (5 % plus traits, mood and rain; never the reliable) and would still like to another day.
@@ -122,7 +123,7 @@ Then both halves start at the same moment: `social_cheek_kiss` for a partner (da
 
 A whole-body greeting is played only if the two really ended 0.70 to 0.90 m apart; otherwise the upper body's `social_hug` / `social_handshake` at 0.65 to 1.0 m as before, and failing that `wave_hello` on both.
 Then the dialogue panel: a chat about something that really happened (see below) and who pays (my treat, split, or theirs if it was their idea or they are generous).
-A place found shut becomes a walk.
+A place found shut on the day (temporarily closed, a fire, an inspection: what cannot be known when the plan is made) becomes a walk.
 
 Afterwards: what they thought, a card with what it cost and did, a word and a wave, and they walk off out of view (after a good outing with a wave over the shoulder as they go: `goodbye_wave_walk`, the right arm over the game's walk).
 
