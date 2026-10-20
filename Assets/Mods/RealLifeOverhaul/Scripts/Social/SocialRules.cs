@@ -16,6 +16,7 @@ namespace RealLifeOverhaul
         public const int CallTopics = 2;              // topics talked over in one call before the goodbye (PersonDialog)
         public const float PlanLead = 45f;            // game minutes from now before the earliest hour an outing is agreed for (PersonDialog)
         public const int PlanLookHours = 48;          // hours looked ahead for one they are free at: past that, "ask me again"
+        public const int OpenTries = 8;               // free hours tried in turn for one at which a place nearby is open, before a walk is offered
         public const float PlanMoodNo = 0.5f;         // the chance that somebody on a rough day (mood -2) will not make plans the player asks for
         public const float SelfieFamiliarity = 1f, SelfieAffection = 2f;   // a selfie together on an outing, once an outing
         public const float SelfieWithin = 3f;                               // metres from the player the friend stands in
@@ -340,6 +341,26 @@ namespace RealLifeOverhaul
                 }
             }
             return -1f;
+        }
+
+        /// <summary>
+        /// Whether a place is open for the whole of an outing that starts at a time (game minutes) and lasts some minutes:
+        /// every hour from the one it starts in to the one its last minute falls in, by <paramref name="open"/> (the day and
+        /// the hour of that day, read from the minutes as <see cref="FirstSlot"/> reads them). A cinema that shuts at 22:00 will
+        /// not do for a film at 21:00. At most a few steps, on a step of a call, never per frame; nothing allocated.
+        /// </summary>
+        public static bool OpenThrough(float at, int minutes, Func<int, int, bool> open)
+        {
+            int first = (int)Math.Floor(at / 60f);
+            int last = (int)Math.Floor((at + Math.Max(1, minutes) - 1f) / 60f);
+            for (int h = first; h <= last; h++)
+            {
+                if (!open(h / 24, h % 24))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>

@@ -28,8 +28,8 @@ namespace RealLifeOverhaul.Family
         /// <summary>True while an ask of this kind is open.</summary>
         public static bool Asking(string kind) => S.PAsk == kind;
 
-        /// <summary>True while any ask is open.</summary>
-        public static bool AnyAsk => !string.IsNullOrEmpty(S.PAsk);
+        /// <summary>True while any ask is open; one whose switch has gone off is none (<see cref="Hourly"/> drops it).</summary>
+        public static bool AnyAsk => !string.IsNullOrEmpty(S.PAsk) && On(S.PAsk);
 
         /// <summary>
         /// True when something may be raised now: living together long enough since moving in, no ask open, and the days
@@ -72,13 +72,19 @@ namespace RealLifeOverhaul.Family
         /// <summary>Once a game hour in the day: the open ask's reminders, and its lapse after a week.</summary>
         public static void Hourly(int day)
         {
-            if (!AnyAsk)
+            if (string.IsNullOrEmpty(S.PAsk))
             {
                 return;
             }
             if (!FamilyState.Together || !S.LivesIn)
             {
                 S.PAsk = null;
+                return;
+            }
+            if (!On(S.PAsk))
+            {
+                FamilyDirector.Logger?.Info("Family: " + Partner.Name + "'s ask (" + S.PAsk + ") was dropped: its switch is off.");
+                S.PAsk = null;   // switched off while it was open: no reminder, no lapse, nothing held against the player
                 return;
             }
             int since = day - S.PAskDay;
@@ -100,7 +106,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>The talk of the open ask, for speaking to the partner face to face: null with none open.</summary>
         public static DialogEntry OpenAsk()
         {
-            Func<DialogEntry> talk = TalkOf(S.PAsk);
+            Func<DialogEntry> talk = AnyAsk ? TalkOf(S.PAsk) : null;
             return talk != null ? talk() : null;
         }
 
@@ -114,14 +120,28 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        // A text in the partner's thread without the game's own notice, and a notice with their name and the text that opens their messages.
+        // A text in the partner's thread without the game's own notice, and a notice with their name and the text that opens their
+        // messages; with no contact to text from (the phone's contacts off) the notice alone, so the words never show twice.
         private static void Text(string key, in Args a)
         {
-            FamilyText.Message(FamilyPhone.PartnerContact, key, a, notify: false);
             Contact contact = FamilyPhone.PartnerContact;
+            if (contact != null)
+            {
+                FamilyText.Message(contact, key, a, notify: false);
+            }
             var data = new Dictionary<string, string>(2) { { "name", Partner.Name }, { "text", FamilyText.T(key, a) } };
             Action open = contact != null ? contact.OnClickNotification : (Action)null;
             Notifications.Show(NotificationType.Info, "reallife_family_voice_notice", data, 12f, key, open != null ? Guard.Wrap(open) : null, true, false);
+        }
+
+        // Whether the switch of an ask's kind is on: an ask whose switch went off while it was open is dropped (Hourly).
+        private static bool On(string kind)
+        {
+            switch (kind)
+            {
+                case Work: return Settings.FamilyWork;
+                default: return true;
+            }
         }
     }
 }

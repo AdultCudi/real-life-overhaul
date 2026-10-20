@@ -202,6 +202,8 @@ namespace RealLifeOverhaul.Family
         public int PFreeTo;
         public bool PNightOwl;       // ...and whether they keep late hours
         public List<int> IncomeWeek = new List<int>();   // the player's daily income on each of the last days, newest last (IncomeRules)
+        // How the partner takes the player's money (PartnerWealth).
+        public int PWealthStep;      // the highest step of the player's cash they have reacted to
         // The partner's bigger wish about work (PartnerWish).
         public bool PWishAsk;        // they have asked, and it waits to be talked over
         public bool PWishGranted;    // the player said yes: never asked again of this partner

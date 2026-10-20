@@ -503,7 +503,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_family_header")
                 .About("reallife_guide_family_about").Help("reallife_guide_family")
                 .Owns(Settings.FamilyId, Settings.FamilyAtHomeId, Settings.FamilyWeddingId, Settings.FamilyChildrenId, Settings.FamilyRelativesId,
-                    Settings.FamilyWorkId, Settings.FamilyInterestId, Settings.FamilyYearWeeksId)
+                    Settings.FamilyWorkId, Settings.FamilyWealthMoodId, Settings.FamilyInterestId, Settings.FamilyYearWeeksId)
                 .Preset(Settings.FamilyFrictionId, 0, 1, 1)
                 .Rows("reallife_family_test_page")   // the Family page: with the phone contacts off it is the only way in, so it is the player's, not a test
                 .Data("reallife:family")

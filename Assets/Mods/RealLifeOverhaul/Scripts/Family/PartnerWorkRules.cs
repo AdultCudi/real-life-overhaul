@@ -3,9 +3,10 @@ using System;
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// The partner's work as the player's fortune grows, game-free: once the player's cash reaches a sum, a partner who
-    /// lives with them asks to cut back to half days; a no is asked again a month later; a yes halves their working day and
-    /// their pay, and they can go back to full days from a family conversation. Nothing here is read per frame.
+    /// The partner's work as the player's fortune grows, game-free: once the player's daily income has held at a sum all
+    /// week and their cash reaches another, a partner who lives with them asks to cut back to half days; a no is asked again
+    /// a month later; a yes halves their working day and their pay, and they can go back to full days from a family
+    /// conversation. Nothing here is read per frame.
     /// </summary>
     public static class PartnerWorkRules
     {

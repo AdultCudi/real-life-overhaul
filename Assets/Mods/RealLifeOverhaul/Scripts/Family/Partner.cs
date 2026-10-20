@@ -96,6 +96,7 @@ namespace RealLifeOverhaul.Family
             s.PNightOwl = false;
             s.PWantsChildren = Random.value < 0.8f;
             PartnerWork.Reset(s);
+            PartnerWealth.Reset(s);
             PartnerWish.Reset(s);
             s.Interest = interest;
             s.Harmony = FamilyBalance.HarmonyStart;
@@ -131,6 +132,7 @@ namespace RealLifeOverhaul.Family
                     s.PIncome = JobIncome[s.PJob];
                     s.PWantsChildren = (s.PSeed & 7) != 0;
                     PartnerWork.Reset(s);
+                    PartnerWealth.Reset(s);
                     PartnerWish.Reset(s);
                     s.PMetDay = TimeHelper.CurrentDay - Mathf.Max(0, p.DaysTogether);
                     s.SinceDay = s.PMetDay;
@@ -194,6 +196,7 @@ namespace RealLifeOverhaul.Family
             s.PSeed = 0;
             s.PAffection = 0f;
             PartnerWork.Reset(s);
+            PartnerWealth.Reset(s);
             PartnerWish.Reset(s);
         }
     }

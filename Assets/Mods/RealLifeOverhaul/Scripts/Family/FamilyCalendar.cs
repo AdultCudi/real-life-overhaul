@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Family
             Relatives.Daily(day);
             HardTimes.Daily(day);
             FamilyState.RecordIncome();
+            PartnerWealth.Daily(day);
             PartnerWish.Daily(day);
             bool warm = s.Harmony >= 40f;
             FamilyModifiers.Keep(FamilyModifiers.Married, FamilyState.Bond == Bond.Married && warm);
@@ -36,6 +37,7 @@ namespace RealLifeOverhaul.Family
                 PartnerVoice.Hourly(day);   // the partner's words about the player's fortune, in the day only
                 PartnerWork.Hourly(day);
                 PartnerGlad.Hourly(day);
+                PartnerWealth.Hourly(day);
                 PartnerWish.Hourly(day);
             }
             HomeLife.Support(day, hour);
