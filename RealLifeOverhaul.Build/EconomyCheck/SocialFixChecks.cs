@@ -215,5 +215,10 @@ internal static partial class Program
         Check(flare.Contains("SocialLife.PlaceAndHour(p, a.Kind, SocialDirector.Where(), PlaceFrom, PlaceTo, a.From, out Venue venue, out float time)")
               && staged.Contains("out venue, null, plan.Time)"),
             "social, open hours: a plan made on Flare or in the street, and a place found again on the day, are open at the hour agreed");
+        string shutWalk = MemberText(dialog, "private DialogEntry ShutWalk(");
+        string asked = MemberText(dialog, "private DialogEntry Asked()");
+        Check(shutWalk.Contains("theirIdea ? \"reallife_social_btn_not_this_time\" : \"reallife_social_btn_other_idea\"") && asked.Contains("ShutWalk(kind, true, Declined)")
+              && asked.Contains("entry.OnSecondOption = Declined;") && MemberText(dialog, "private DialogEntry Declined()").Contains("SocialLife.Change(_p, 0f, -1f, 0f)"),
+            "social, open hours: the walk put forward in place of their own invitation is turned down as the invitation is, not this time and at the same small cost");
     }
 }

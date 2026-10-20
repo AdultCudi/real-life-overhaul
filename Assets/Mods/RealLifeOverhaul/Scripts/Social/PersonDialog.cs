@@ -331,8 +331,8 @@ namespace RealLifeOverhaul
         }
 
         // Every place of the kind nearby is shut at every free hour of theirs looked at: a walk instead, said as such, with
-        // the other button for something else. Null when no walk can be had either (no free hour, or outings of the kind not
-        // yet theirs to suggest), for the caller to go on as before.
+        // the other button for something else, or, when it was their invitation, for not this time. Null when no walk can be
+        // had either (no free hour, or outings of the kind not yet theirs to suggest), for the caller to go on as before.
         private DialogEntry ShutWalk(PlanKind shut, bool theirIdea, Func<DialogEntry> other)
         {
             OutingDef walk = SocialCatalogue.Outing(PlanKind.Walk);
@@ -346,7 +346,7 @@ namespace RealLifeOverhaul
             DialogEntry entry = Line("reallife_social_plan_shut_walk", data);
             entry.ConfirmTextOverride = "reallife_social_btn_lets".Localize();
             entry.OnConfirm = () => When(PlanKind.Walk, venue, first, theirIdea);
-            entry.SecondOptionTextOverride = "reallife_social_btn_other_idea";
+            entry.SecondOptionTextOverride = theirIdea ? "reallife_social_btn_not_this_time" : "reallife_social_btn_other_idea";
             entry.OnSecondOption = other;
             return entry;
         }
@@ -510,7 +510,7 @@ namespace RealLifeOverhaul
             if (found != PlanFind.Found)
             {
                 SocialState.Offer.Clear();
-                DialogEntry walk = found == PlanFind.Shut ? ShutWalk(kind, true, () => Close("reallife_social_invite_declined")) : null;
+                DialogEntry walk = found == PlanFind.Shut ? ShutWalk(kind, true, Declined) : null;
                 return walk ?? Close(found == PlanFind.NoHour ? SocialLines.Pick(SocialCatalogue.PlanBusy) : "reallife_social_plan_nowhere");
             }
             Dictionary<string, string> invite = SocialLife.Data(_p, "place", venue.Name);
@@ -523,14 +523,18 @@ namespace RealLifeOverhaul
                 return When(kind, venue, first, true);
             };
             entry.SecondOptionTextOverride = "reallife_social_btn_not_this_time";
-            entry.OnSecondOption = () =>
-            {
-                SocialState.Offer.Clear();
-                SocialLife.Contacted(_p);
-                SocialLife.Change(_p, 0f, -1f, 0f);
-                return Close("reallife_social_invite_declined");
-            };
+            entry.OnSecondOption = Declined;
             return entry;
+        }
+
+        // Their invitation turned down, the outing they asked for or the walk they put forward in its place: the same small
+        // cost either way.
+        private DialogEntry Declined()
+        {
+            SocialState.Offer.Clear();
+            SocialLife.Contacted(_p);
+            SocialLife.Change(_p, 0f, -1f, 0f);
+            return Close("reallife_social_invite_declined");
         }
 
         private DialogEntry Refuse(string line)
