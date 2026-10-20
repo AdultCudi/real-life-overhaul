@@ -618,7 +618,7 @@ internal static partial class Program
             "street talk: only the player's own businesses get word of mouth; a number and a plan go through the social life's own entries");
         Check(talk.Contains("FlareInviteRules.Decide(a, out FlareInviteWhy why)") && talk.Contains("StreetSay.Read(words, _facts.Shops)"),
             "street talk: an invitation is decided by Flare's own rules; the player's words are read with fixed rules");
-        Check(talk.Contains("_openBy = now + (float)StreetRules.Hold") && talk.Contains("now >= _openBy ||"), "street talk: the panel opens at the latest when the hold is over, words or not");
+        Check(talk.Contains("_openBy = now + (float)Math.Max(StreetRules.Hold, chat.Waits)") && talk.Contains("now >= _openBy ||"), "street talk: the panel opens at the latest when the hold is over, words or not");
         Check(game.Contains("ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog") && game.Contains("TextBox.Ask(\"reallife_street_say_placeholder\"") && TextsSource(@"Core\GameUi\TextBox.cs").Contains("textInputUi.Show(")
               && director.Contains("new DoorPanel("),
             "street talk: the game's own panels: the box over a person, its dialogue panel, its text box");

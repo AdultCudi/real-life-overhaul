@@ -554,11 +554,19 @@ namespace RealLifeOverhaul.Street
     /// own: a short turn over <see cref="StreetRules.TurnSeconds"/>, as a horn's look round turns them), their idling left
     /// to the game. Somebody seated: nothing changed, they stay seated as posed. Everything is given back exactly as found
     /// when it ends: the walker walks on to where it was going, the standing figure turns back to the way it stood. If the
-    /// game takes them meanwhile (the pool puts them away, a car hits them) they are let go.
+    /// game takes them meanwhile (the pool puts them away, a car hits them) they are let go. While their answer is on its
+    /// way from the player's AI service, somebody standing may talk with their hands (<see cref="Speak"/>: the mod's own
+    /// talking clip over the upper body, as everyone the mod has talking), at rest again when the line shows, and handed
+    /// back to the game's own animation at once when they are let go.
     /// COST: <see cref="Keep"/> is a few field reads on the conversation's tick; a turn is a coroutine of a few frames.
     /// </summary>
     public sealed class StreetHold
     {
+        private const string SpeakClip = "talk_a";   // talking with the hands, to somebody in front (BusinessVisit, ChatActivity)
+        private const float SpeakFade = 0.3f;        // seconds the hands take to begin and to come to rest
+
+        private ActivityAnimator _speaking;          // the clip player of a figure talking with its hands, until Quiet or Release
+        private bool _spoke;                         // its hands moved during this hold: its clip player is let go at Release
         private BaseHuman _body;             // who is held (a walker's own figure, or a standing or sitting figure)
         private Pedestrian _p;               // their walker, or null
         private StreetFigure _kind;
@@ -587,6 +595,67 @@ namespace RealLifeOverhaul.Street
         /// <summary>True if the game took them back while held (put away, hit, borrowed by the ragdolls).</summary>
         public bool Gone => (object)_body != null && (_body == null || !_body.gameObject.activeInHierarchy || RagdollSystem.Holds(_body)
                                                      || ((object)_p != null && (_p == null || _p.tpc == null)));
+
+        /// <summary>Why the last <see cref="Speak"/> showed nothing, for the self-check line.</summary>
+        public string Why { get; private set; }
+
+        /// <summary>
+        /// They begin to talk with their hands, about to answer: the mod's talking clip over the upper body. False, with
+        /// nothing changed, for somebody seated, without the clip, or when the clips cannot play. Once until <see cref="Quiet"/>.
+        /// </summary>
+        public bool Speak()
+        {
+            Why = null;
+            if (_body == null || _speaking != null)
+            {
+                Why = _body == null ? "nobody is held" : "already talking with their hands";
+                return false;
+            }
+            if (_kind == StreetFigure.Seated)
+            {
+                Why = "seated, posed as the game sat them";
+                return false;
+            }
+            ActivityAnimator player = ActivityAnimators.Working && _body.animator != null ? ActivityAnimators.For(_body.animator) : null;
+            if (player == null || !player.Usable || !ClipLibrary.TryGet(SpeakClip, out CityClip clip))
+            {
+                Why = "the clip '" + SpeakClip + "' cannot play on them";
+                return false;
+            }
+            BodyMask mask = clip.Mask == BodyMask.Full ? BodyMask.Upper : clip.Mask;
+            if (!player.PlayOver(clip.Clip, mask, SpeakFade, 1f, ClipEnd.Return))
+            {
+                Why = "the clip '" + SpeakClip + "' did not start";
+                return false;
+            }
+            _speaking = player;
+            _spoke = true;
+            ClipLibrary.Played(SpeakClip, "a stranger about to answer in the street");
+            return true;
+        }
+
+        /// <summary>The hands come to rest (their line is said): the game's own animation again.</summary>
+        public void Quiet()
+        {
+            ActivityAnimator player = _speaking;
+            _speaking = null;
+            if (player != null && player.Animator != null)
+            {
+                player.StopOver(SpeakFade);
+            }
+        }
+
+        // Let go: the game's own animation at once (a walker goes back to the game's pool, which may reuse the figure).
+        private void Unspeak(BaseHuman body)
+        {
+            bool spoke = _spoke;
+            _speaking = null;
+            _spoke = false;
+            if (spoke && body != null && body.animator != null)
+            {
+                ActivityAnimators.Forget(body.animator);
+            }
+        }
 
         /// <summary>True while this figure is held (another feature's reactions leave them alone meanwhile).</summary>
         public bool Holds(BaseHuman figure) => _body != null && ReferenceEquals(_body, figure);
@@ -705,6 +774,7 @@ namespace RealLifeOverhaul.Street
             BaseHuman body = _body;
             Pedestrian p = _p;
             bool turned = _turned;
+            Unspeak(body);
             _body = null;
             _p = null;
             _turned = false;

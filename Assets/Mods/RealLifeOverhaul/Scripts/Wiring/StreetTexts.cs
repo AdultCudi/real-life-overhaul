@@ -30,8 +30,13 @@ namespace RealLifeOverhaul
         /// click. The card carries the last three lines of the conversation (the player's, theirs, the player's), the player's
         /// actual words last. The words are tidied for speech before they are shown (StreetCards.Spoken): a stranger never
         /// calls the player by a name they were not told, a sentence starts with a capital, and a line another stranger said
-        /// lately is not said again (StreetCards.Echoes). How each line's words came, or why the written line was used, goes
-        /// back on the conversation (StreetChat.Heard) for the turn's log line. Nothing is kept, nothing is shared.
+        /// lately is not said again (StreetCards.Echoes). With the player's own AI service up, a line asked at the click waits
+        /// for it a little longer than the hold (TextsHub.SpokenWait: the conversation opens and answers by the request's own
+        /// wait, StreetChat.Waits), the person talks with their hands once its first words come (StreetChat.Speaking), and a
+        /// guess or a line asked ahead that the service is still writing at the click is waited for, never asked again
+        /// (TextsHub.Adopt); a service still late leaves the end of the wait to the pack, then the written line. How each
+        /// line's words came (the AI service's, the pack's), or why the written line was used, goes back on the conversation
+        /// (StreetChat.Heard) for the turn's log line. Nothing is kept, nothing is shared.
         /// COST: nothing per frame; a card and a request per line, on a press or a click.
         /// </summary>
         public static class StreetTexts
@@ -76,18 +81,23 @@ namespace RealLifeOverhaul
                         return false;
                     }
                     TextRequest asked = null;
-                    Action<string> back = words => Came(c, asked, words, done);
+                    bool waited = false;
+                    Action<string> back = words => Came(c, asked, waited, words, done);
+                    string guessed = c.WaitFor;   // (a guess of this line the AI service is still writing: waited for, never asked again)
+                    c.WaitFor = null;
                     TextRequest r = RequestV4(c, line, data, back, false);
                     asked = r;
-                    if (r != null && TextsDirector.Words.Ask(r, TextClock.Now))
+                    if (r != null && ((waited = Adopted(ref guessed, r)) || TextsDirector.Words.Ask(r, TextClock.Now)))
                     {
+                        c.Waits = r.Waits;
                         return true;
                     }
                     string why = r != null ? r.Why : null;
                     r = RequestV3(c, line, data, back, false);
                     asked = r;
-                    if (r != null && TextsDirector.Words.Ask(r, TextClock.Now))
+                    if (r != null && ((waited = Adopted(ref guessed, r)) || TextsDirector.Words.Ask(r, TextClock.Now)))
                     {
+                        c.Waits = r.Waits;
                         return true;
                     }
                     c.Heard = r != null ? (why != null ? why + "; data v3's card " : string.Empty) + r.Why
@@ -101,13 +111,24 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The words back: made fit to be said, and how they came (or why not) put on the conversation for its log line.
-            private static void Came(StreetChat c, TextRequest r, string words, Action<string> done)
+            // A guess of this line still being written by the AI service, waited for as the line itself; tried once (a guess of
+            // another card is let go by the hub).
+            private static bool Adopted(ref string guessed, TextRequest r)
+            {
+                string key = guessed;
+                guessed = null;
+                return key != null && TextsDirector.Words.Adopt(key, r, TextClock.Now);
+            }
+
+            // The words back: made fit to be said, and how they came (or why not) put on the conversation for its log line: whose
+            // words they are (the AI service's or the pack's), the card and the time, and why the service's were not used.
+            private static void Came(StreetChat c, TextRequest r, bool waited, string words, Action<string> done)
             {
                 string why = null;
                 string said = words != null ? Spoken(c, words, out why) : null;
-                c.Heard = said != null ? Card(r) + ", " + Ms(r.Took)
-                    : why ?? (r != null && r.Why != null ? r.Why : "no words came");
+                c.Heard = said != null ? TextsDirector.Words.From(r.Source) + ", " + Card(r) + ", " + Ms(r.Took) + (waited ? ", guessed ahead and waited for" : string.Empty)
+                                         + (r.ServiceMiss != null ? "; your own AI's words were not used: " + r.ServiceMiss : string.Empty)
+                    : (why != null ? TextsDirector.Words.From(r.Source) + ": " + why : null) ?? (r != null && r.Why != null ? r.Why : "no words came");
                 done(said);
             }
 
@@ -168,14 +189,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    string words = c != null ? TextsDirector.Words.TakeGuess(AheadKey(c)) : null;
-                    if (words == null)
-                    {
-                        return null;
-                    }
-                    string said = Spoken(c, words, out string why);
-                    c.Heard = said != null ? "asked ahead when the button was shown" : why;
-                    return said;
+                    return c != null ? Taken(c, AheadKey(c), "asked ahead when the button was shown") : null;
                 }
                 catch (Exception e)
                 {
@@ -214,14 +228,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    string words = c != null ? TextsDirector.Words.TakeGuess(GuessKey(c)) : null;
-                    if (words == null)
-                    {
-                        return null;
-                    }
-                    string said = Spoken(c, words, out string why);
-                    c.Heard = said != null ? "guessed while the player looked at them" : why;
-                    return said;
+                    return c != null ? Taken(c, GuessKey(c), "guessed while the player looked at them") : null;
                 }
                 catch (Exception e)
                 {
@@ -232,12 +239,33 @@ namespace RealLifeOverhaul
 
             private static string GuessKey(StreetChat c) => "stg:" + c.Who.Key;
 
+            // A guess at the click: its words if they are written and fit to be said, with whose they are for the log line. A
+            // guess the player's AI service is still writing is left for the line's own ask to wait for (TextsHub.Adopt).
+            private static string Taken(StreetChat c, string key, string how)
+            {
+                TextsHub hub = TextsDirector.Words;
+                if (hub.Writing(key))
+                {
+                    c.WaitFor = key;   // (Ask waits for it as the line: never asked again)
+                    return null;
+                }
+                string words = hub.TakeGuess(key, out TextSource from);
+                if (words == null)
+                {
+                    return null;
+                }
+                string said = Spoken(c, words, out string why);
+                c.Heard = hub.From(from) + (said != null ? ", " + how : ": " + why);
+                return said;
+            }
+
             private static TextRequest Request(StreetChat c, string intent, string branch, Action<string> done, bool guess)
             {
                 return new TextRequest
                 {
                     Use = TextUse.People, Intent = intent, Branch = branch, Key = guess ? GuessKey(c) : "st:" + c.Who.Key + ":" + c.Turns, Speaker = "st:" + c.Who.Key,
-                    Priority = TextPriority.Now, Seconds = guess ? Street.StreetRules.GuessSeconds : Street.StreetRules.Hold, Guess = guess, Day = TextsGame.Day, Done = done
+                    Priority = TextPriority.Now, Seconds = guess ? Street.StreetRules.GuessSeconds : Street.StreetRules.Hold, Guess = guess, Day = TextsGame.Day, Done = done,
+                    Spoken = !guess, Started = guess ? null : c.Speaking   // (said to the player's face: with their AI service up the line may wait for it, and they are seen about to speak)
                 };
             }
 

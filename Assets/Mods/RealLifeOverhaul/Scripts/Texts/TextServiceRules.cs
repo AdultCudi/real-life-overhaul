@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Texts
         public string Body;                     // null for a GET
         public string ContentType = "application/json";
         public readonly List<KeyValuePair<string, string>> Headers = new List<KeyValuePair<string, string>>(4);
+        public Func<string, bool> Lines;        // a streamed answer's lines as they come, on the worker's thread: true once it is whole (not waited for further); null: the body at once
 
         public TextWebRequest Header(string name, string value)
         {
@@ -283,7 +284,9 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>
         /// The ChatGPT plan's streamed answer (server-sent events): the text of every response.output_text.delta, and a
-        /// success only once response.completed came (OpenAI: a stream may start and still end in response.failed).
+        /// success only once the text is whole: its response.output_text.done (the last word: the web client stops
+        /// reading there, TextStreamRead) or response.completed (OpenAI: a stream may start and still end in
+        /// response.failed, which counts when it comes before either).
         /// </summary>
         public static TextServiceResult Stream(string body)
         {
@@ -293,7 +296,7 @@ namespace RealLifeOverhaul.Texts
             }
             var words = new StringBuilder(128);
             string done = null;
-            bool completed = false;
+            bool completed = false, whole = false;
             int at = 0;
             while (at < body.Length)
             {
@@ -317,6 +320,7 @@ namespace RealLifeOverhaul.Texts
                         break;
                     case "response.output_text.done":
                         done = TextJsonTree.Text(e, "text") ?? done;
+                        whole = true;
                         break;
                     case "response.completed":
                         completed = true;
@@ -330,11 +334,11 @@ namespace RealLifeOverhaul.Texts
                         return Fail(TextFault.NoWords, "the reply was cut short (" + (TextJsonTree.Text(e, "response.incomplete_details.reason") ?? "no reason given") + ")");
                 }
             }
-            if (!completed)
+            if (!completed && !whole)
             {
                 return Fail(TextFault.NoWords, "the stream ended before the reply was complete");
             }
-            string text = words.Length > 0 ? words.ToString() : done;
+            string text = !string.IsNullOrEmpty(done) ? done : words.Length > 0 ? words.ToString() : null;   // (the whole text as the service gave it, else its deltas joined)
             return string.IsNullOrEmpty(text) ? Fail(TextFault.NoWords, "no words in the stream") : new TextServiceResult { Words = text, Fault = TextFault.None };
         }
 
@@ -559,6 +563,53 @@ namespace RealLifeOverhaul.Texts
         {
             string one = message.Replace('\n', ' ').Replace('\r', ' ').Trim();
             return one.Length <= WhyMost ? one : one.Substring(0, WhyMost - 1) + "\u2026";
+        }
+    }
+
+    /// <summary>
+    /// A streamed answer read as it comes (the ChatGPT plan's server-sent events), on the worker's thread: it says when
+    /// the first words came (<see cref="Begun"/>: the person may be shown about to speak) and when the text is whole (its
+    /// response.output_text.done, the last word, or the stream's end: completed, failed, incomplete or an error), so the
+    /// web client stops reading there and the line is checked and shown at once, not when the service closes the answer.
+    /// The words themselves are read only from the whole body (TextServiceRules.Stream): nothing partial is ever shown.
+    /// Game-free (EconomyCheck, TextsServiceChecks.cs). COST: one small parse an event, on the worker's thread.
+    /// </summary>
+    public sealed class TextStreamRead
+    {
+        private volatile bool _begun, _whole;
+
+        /// <summary>Called once, on the worker's thread, when the first words came.</summary>
+        public Action OnBegun;
+
+        public bool Begun => _begun;
+        public bool Whole => _whole;
+
+        /// <summary>One line of the stream; true once the answer is whole (the web client reads no more).</summary>
+        public bool Feed(string line)
+        {
+            if (_whole || line == null || !line.StartsWith("data:", StringComparison.Ordinal))
+            {
+                return _whole;
+            }
+            object e = TextJsonTree.Read(line.Substring(5).Trim());
+            switch (TextJsonTree.Text(e, "type"))
+            {
+                case "response.output_text.delta":
+                    if (!_begun && !string.IsNullOrEmpty(TextJsonTree.Text(e, "delta")))
+                    {
+                        _begun = true;
+                        OnBegun?.Invoke();
+                    }
+                    break;
+                case "response.output_text.done":
+                case "response.completed":
+                case "response.failed":
+                case "response.incomplete":
+                case "error":
+                    _whole = true;
+                    break;
+            }
+            return _whole;
         }
     }
 }

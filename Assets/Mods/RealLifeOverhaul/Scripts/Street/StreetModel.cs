@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Street
@@ -191,6 +192,9 @@ namespace RealLifeOverhaul.Street
         public int Earned;               // turns earned back by good exchanges (StreetRules.EarnedMost at most)
         public StreetLine Last = StreetLine.Count;   // the line they said last (the next round's follow-ups come from it); Count before any
         public string Heard;             // how their last line's words came (RLO Texts' words or the written line, and why), for the turn's log line
+        public double Waits;             // real seconds their line asked of RLO Texts waits at most (StreetRules.Hold, or longer for the player's AI service: TextsHub.SpokenWait)
+        public string WaitFor;           // RLO Texts' own: a guess of the next line the AI service is still writing, waited for as that line (TextsHub.Adopt)
+        public Action Speaking;          // the director's: the words of the line they are asked for have begun to come (the AI service): they are about to speak
         public bool Shared;              // they said what they do (asking whether they like it follows)
         internal readonly int[] Ranks = new int[(int)StreetAsk.Count];   // each choice's place in the round being built (StreetRules.Choices)
 

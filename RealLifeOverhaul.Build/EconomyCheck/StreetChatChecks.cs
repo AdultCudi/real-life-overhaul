@@ -409,7 +409,7 @@ internal static partial class Program
               && game.Contains("public static bool CancelKey => PlayerAction.Cancel.Pressed();"),
             "street talk, the panel: the game's cancel key (Esc) says goodbye; a click on the grey button opens the game's text box, one press away");
         Check(talk.Contains("if (Meta.Dev.Verbose)") && talk.Contains("TurnLine(kind, key, said, words != null);") && talk.Contains("Logger?.Info(\"Street talk turn \"")
-              && talk.Contains("_turnSaid = \"chose \"") && talk.Contains("_turnSaid = \"typed \\\"\"") && wiring.Contains("c.Heard = said != null ? Card(r) + \", \" + Ms(r.Took)"),
+              && talk.Contains("_turnSaid = \"chose \"") && talk.Contains("_turnSaid = \"typed \\\"\"") && wiring.Contains("c.Heard = said != null ? TextsDirector.Words.From(r.Source) + \", \" + Card(r) + \", \" + Ms(r.Took)"),
             "street talk, the log: one line a turn with Developer diagnostics: what the player chose or typed, the line, where its words came from and why, warmth and rapport");
         Check(wiring.Contains("private const int HistoryMost = 3;") && wiring.Contains("History(c, r, HistoryMost, next);") && wiring.Contains("TextsDirector.Words.Expect < Street.StreetRules.Hold * AheadShare")
               && talk.Contains("string words = ahead && TakeAhead != null ? TakeAhead(_chat) : null;"),
