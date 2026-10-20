@@ -212,6 +212,17 @@ namespace RealLifeOverhaul.Family
         public int PChipInUntil;     // chipping in for the rent from their savings until this day
         public int PChipInDay;       // the day of the last week's share
         public int PChipInAskDay;    // the day the player last asked them to chip in
+        // What the partner expects as the player gets richer (PartnerExpect).
+        public int PHomeWish;        // square metres of home they have asked for and not yet got; 0 none
+        public int PHomeWishDay;     // the day they asked for it
+        public int PDateWishLevel;   // the level of the player's cash at which they last said they expect more evenings out
+        public int PAllowance;       // the weekly allowance in dollars, as the player typed it
+        public int PAllowanceDay;    // the day it was last paid
+        public int PAllowanceWishLevel;   // the level at which they last said what allowance they expect
+        public int PCarWishDay;      // the day they asked for a car of their own; 0 not asked, or met
+        public int PSecondHomeWishDay;    // the day they asked for a second home; 0 not asked, or met
+        public string PCarId;        // the id of the car handed to them (PartnerCar); null none
+        public int PCarBackDay;      // the day the player last asked their car back
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

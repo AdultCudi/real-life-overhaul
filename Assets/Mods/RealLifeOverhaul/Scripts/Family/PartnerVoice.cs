@@ -19,6 +19,12 @@ namespace RealLifeOverhaul.Family
     {
         public const string Work = "work";   // the kinds of ask, saved by name
         public const string Wish = "wish";
+        public const string Car = "car";
+        public const string Allowance = "allowance";
+        public const string Date = "date";
+
+        /// <summary>For a test button: the next word may come now, whatever the days since the last (one word, then it is spent).</summary>
+        internal static bool ForceOne;
 
         private static readonly string[] Reminders = { "reallife_family_ask_remind_1", "reallife_family_ask_remind_2" };
 
@@ -35,12 +41,12 @@ namespace RealLifeOverhaul.Family
         /// True when something may be raised now: living together long enough since moving in, no ask open, and the days
         /// since the last word said over (PartnerVoiceRules).
         /// </summary>
-        public static bool Free => FamilyState.Together && S.LivesIn && !AnyAsk
-                                   && PartnerVoiceRules.Free(Day, S.MovedInDay, S.PVoiceDay, S.PSeed);
+        public static bool Free => FamilyState.Together && S.LivesIn && (ForceOne || (!AnyAsk && PartnerVoiceRules.Free(Day, S.MovedInDay, S.PVoiceDay, S.PSeed)));
 
         /// <summary>Something said that asks nothing (a reaction, a wish to come): it counts as the latest word.</summary>
         public static void Say(string key, in Args a)
         {
+            ForceOne = false;
             S.PVoiceDay = Day;
             Text(key, a);
         }
@@ -116,6 +122,9 @@ namespace RealLifeOverhaul.Family
             {
                 case Work: return PartnerWork.Talk;
                 case Wish: return PartnerWish.Talk;
+                case Car: return PartnerCar.Offer;
+                case Allowance: return PartnerExpect.AllowanceTalk;
+                case Date: return PartnerExpect.DateTalk;
                 default: return null;
             }
         }
@@ -141,6 +150,9 @@ namespace RealLifeOverhaul.Family
             {
                 case Work: return Settings.FamilyWork;
                 case Wish: return Settings.FamilyWork;   // the bigger wish has the cut back's switch
+                case Car: return Settings.FamilyExpect && !GoingPublic.InSession;   // no car is offered in a Going Public session (PartnerCar)
+                case Allowance: return Settings.FamilyExpect;
+                case Date: return Settings.FamilyExpect;
                 default: return true;
             }
         }

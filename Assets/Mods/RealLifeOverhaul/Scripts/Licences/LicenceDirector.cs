@@ -329,7 +329,7 @@ namespace RealLifeOverhaul
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 VehicleInstance instance = all[i];
-                if (instance == null || instance is DeliveryVehicleInstance || Dealerships.Stock(instance))
+                if (instance == null || instance is DeliveryVehicleInstance || Dealerships.Stock(instance) || Family.PartnerCar.Is(instance))
                 {
                     continue;   // the game's job van and a dealer's stock are not theirs
                 }

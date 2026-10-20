@@ -135,6 +135,11 @@ namespace RealLifeOverhaul.Family
             list.Add(new Choice(() => PartnerWish.CanTalk && InPerson, () => FamilyText.Say("reallife_family_do_wish"), "reallife_family_do_work_yes", PartnerWish.Talk));
             list.Add(new Choice(() => PartnerWish.CanResume && InPerson, () => FamilyText.Say("reallife_family_do_wish_resume"), "reallife_family_do_work_return_yes", PartnerWish.Resume));
             list.Add(new Choice(() => PartnerWish.CanAskChipIn && InPerson, () => FamilyText.Say("reallife_family_do_chip"), "reallife_family_do_chip_yes", PartnerWish.AskChipIn));
+            list.Add(new Choice(() => PartnerExpect.CanSetAllowance,
+                () => FamilyText.Say("reallife_family_do_allowance", new Args { Name = Partner.Name, Amount = FamilyText.Money(PartnerExpect.Allowance) }),
+                "reallife_family_allowance_change", PartnerExpect.TypeAllowance));
+            list.Add(new Choice(() => PartnerCar.CanOffer && InPerson, () => FamilyText.Say("reallife_family_do_car"), "reallife_family_do_car_yes", PartnerCar.Offer));
+            list.Add(new Choice(() => PartnerCar.CanTakeBack && InPerson, () => FamilyText.Say("reallife_family_do_car_back"), "reallife_family_do_car_back_yes", PartnerCar.TakeBack));
 
             list.Add(Call(new Choice(() => Relatives.CanGoToMoms, () => FamilyText.Say("reallife_family_do_moms"), "reallife_family_do_moms_yes", Relatives.GoToMoms)));
             list.Add(Call(new Choice(() => Relatives.InLawFavourOpen, () => FamilyText.Say("reallife_family_do_favour"), "reallife_family_do_favour_yes", Relatives.InLawFavour)));

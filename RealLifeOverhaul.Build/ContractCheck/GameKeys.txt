@@ -5,6 +5,7 @@ auto_tow_service_ny
 ba:buildingtype_office
 ba:buildingtype_residential
 ba:buildingtype_retail
+ba:buildingtype_special
 ba:buildingtype_warehouse
 ba:businesstype_appliancestore
 ba:businesstype_bank

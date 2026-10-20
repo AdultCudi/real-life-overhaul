@@ -140,6 +140,40 @@ namespace RealLifeOverhaul.Family
             });
         }
 
+        // What the partner expects at the first level of wealth, said now whatever the player's cash: the home and evenings out.
+        public void TestExpect()
+        {
+            if (!TestReady("Family expectations", false, false) || !TestPartner("Family expectations"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                FamilySave s = FamilyState.S;
+                if (!s.LivesIn)
+                {
+                    Refuse("Family expectations", "reallife_family_no_lives_in");
+                    return;
+                }
+                if (!Settings.FamilyExpect)
+                {
+                    Refuse("Family expectations", "reallife_family_no_expect_off");
+                    return;
+                }
+                // The next wish not yet said, each press: a home, evenings out, a car, a second home, an allowance (the second level's).
+                PartnerVoice.ForceOne = true;
+                PartnerExpect.Check(TimeHelper.CurrentDay, 2, true);
+                bool said = !PartnerVoice.ForceOne;
+                PartnerVoice.ForceOne = false;
+                if (!said)
+                {
+                    Refuse("Family expectations", "reallife_family_no_expect_more");
+                    return;
+                }
+                Logger?.Info("Family expectations test: " + Partner.Name + " said their next wish.");
+            });
+        }
+
         public void TestPropose()
         {
             if (!TestReady("Family proposal", false, true) || !TestPartner("Family proposal"))

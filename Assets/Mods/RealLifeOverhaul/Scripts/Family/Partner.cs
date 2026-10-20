@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.Family
             PartnerWork.Reset(s);
             PartnerWealth.Reset(s);
             PartnerWish.Reset(s);
+            PartnerExpect.Reset(s);
             s.Interest = interest;
             s.Harmony = FamilyBalance.HarmonyStart;
             FamilyState.Bond = Bond.Dating;
@@ -134,6 +135,7 @@ namespace RealLifeOverhaul.Family
                     PartnerWork.Reset(s);
                     PartnerWealth.Reset(s);
                     PartnerWish.Reset(s);
+                    PartnerExpect.Reset(s);
                     s.PMetDay = TimeHelper.CurrentDay - Mathf.Max(0, p.DaysTogether);
                     s.SinceDay = s.PMetDay;
                     s.Harmony = FamilyBalance.HarmonyStart;
@@ -198,6 +200,7 @@ namespace RealLifeOverhaul.Family
             PartnerWork.Reset(s);
             PartnerWealth.Reset(s);
             PartnerWish.Reset(s);
+            PartnerExpect.Reset(s);
         }
     }
 }

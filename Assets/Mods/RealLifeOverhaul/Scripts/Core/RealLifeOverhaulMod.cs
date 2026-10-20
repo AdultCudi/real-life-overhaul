@@ -1080,6 +1080,8 @@ namespace RealLifeOverhaul
                     v => Settings.FamilyWork = v)
                 .AddToggle(Settings.FamilyWealthMoodId, "reallife_family_wealth_opt", Settings.FamilyWealthMood,
                     v => Settings.FamilyWealthMood = v)
+                .AddToggle(Settings.FamilyExpectId, "reallife_family_expect_opt", Settings.FamilyExpect,
+                    v => Settings.FamilyExpect = v)
                 .AddDropdown(Settings.FamilyInterestId, "reallife_family_interest",
                     new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
                     v => Settings.FamilyInterest = v)
@@ -1089,6 +1091,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_family_test_work", () => Family.FamilyDirector.Instance?.TestWork())
                 .AddButton("reallife_family_test_wealth", () => Family.FamilyDirector.Instance?.TestWealth())
                 .AddButton("reallife_family_test_wish", () => Family.FamilyDirector.Instance?.TestWish())
+                .AddButton("reallife_family_test_expect", () => Family.FamilyDirector.Instance?.TestExpect())
                 .AddButton("reallife_family_test_propose", () => Family.FamilyDirector.Instance?.TestPropose())
                 .AddButton("reallife_family_test_plan", () => Family.FamilyDirector.Instance?.TestPlanWedding())
                 .AddButton("reallife_family_test_wedding", () => Family.FamilyDirector.Instance?.TestWedding())

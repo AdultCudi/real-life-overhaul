@@ -75,7 +75,7 @@ namespace RealLifeOverhaul
         // A motor vehicle of the player's to run. A dealership's stock car is the dealership's to sell and has no Garage page.
         private static bool Runs(VehicleInstance car)
         {
-            return car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle && !Dealerships.Stock(car);
+            return car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle && !Dealerships.Stock(car) && !Family.PartnerCar.Is(car);
         }
 
         /// <summary>The n-th motor vehicle the player owns (wrapping round), or null.</summary>

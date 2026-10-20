@@ -92,7 +92,8 @@ namespace RealLifeOverhaul
                     FreeFrom = p.FreeFrom,
                     FreeTo = p.FreeTo,
                     NightOwl = p.Has(SocialTrait.NightOwl),
-                    Leaning = Family.PartnerWealthRules.LeaningOfTraits(p.Has(SocialTrait.Supportive), p.Has(SocialTrait.Envious))
+                    Leaning = Family.PartnerWealthRules.LeaningOfTraits(p.Has(SocialTrait.Supportive), p.Has(SocialTrait.Envious)),
+                    Spend = Family.PartnerExpectRules.SpendOfTraits(p.Has(SocialTrait.Careful), p.Has(SocialTrait.Envious), p.Has(SocialTrait.Generous))
                 };
             }
 
