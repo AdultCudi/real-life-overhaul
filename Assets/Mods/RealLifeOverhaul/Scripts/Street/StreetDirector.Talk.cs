@@ -26,7 +26,9 @@ namespace RealLifeOverhaul.Street
     /// player looked at them, never later than <see cref="StreetRules.Hold"/>; else the written line. Every later line is
     /// asked when the player clicks and shown when its words come or the hold is over: the panel never waits longer. On a
     /// machine where a reply takes more than half the hold, the answer to the blue button is asked as soon as it is shown
-    /// (StreetTexts: guessed ahead), so it is there when it is clicked.
+    /// (StreetTexts: guessed ahead), so it is there when it is clicked. With the player's own AI service up the hold is the
+    /// service's spoken wait (a short pause before they answer, at most TextsHub.SpokenMost), and once its first words come
+    /// they talk with their hands until the line shows (StreetHold.Speak): nothing of the words shows before they are all in.
     /// With Developer diagnostics on, one line a turn says what the player chose, what the person said, where its words came
     /// from (RLO Texts: the card and the time, or the written line and why) and the warmth and rapport after it.
     /// COST: on a press or a click, a few short strings; while it is open, the director's tick (ten times a second) keeps
@@ -51,6 +53,7 @@ namespace RealLifeOverhaul.Street
         private readonly string[] _two = new string[2];
         private Action _onClosed, _onTyped, _onSayOrBye, _onGoodbye;
         private Action<string> _onSaid, _onWords, _onFirst;
+        private Action _onSpeaking;
         private string _turnSaid;              // what the player chose or typed this turn, for the turn's log line
         private StreetAsk _aheadAsk = StreetAsk.Count;   // the blue button whose answer was asked ahead, and its line
         private StreetLine _aheadLine;
@@ -99,6 +102,7 @@ namespace RealLifeOverhaul.Street
             StreetGame.Fill(_facts, _addresses);
             StreetMemo memo = _memory.Get(who.Key, day);
             var chat = new StreetChat { Who = who, Memo = memo, Approach = StreetRules.Approach(who, memo, _facts, Settings.StreetBrush, StreetGame.Phone(p)) };
+            chat.Speaking = _onSpeaking ?? (_onSpeaking = AboutToSpeak);   // (the player's AI service began their answer: StreetTexts)
             if (!_hold.Take(p, walker, kind, player.transform.position, this))
             {
                 return false;
@@ -126,7 +130,7 @@ namespace RealLifeOverhaul.Street
                 _firstAsked = Words(chat, _firstLine, Data(chat), StreetText.T(StreetLines.Opener), _onFirst ?? (_onFirst = FirstCame));
             }
             _openAt = now + StreetRules.Beat;
-            _openBy = now + (float)StreetRules.Hold;
+            _openBy = now + (float)Math.Max(StreetRules.Hold, chat.Waits);   // (longer only while the player's AI service is up: RLO Texts' spoken wait)
             Logger?.Info("Street talk: " + who.Name + ", " + who.Age + " (" + KindName(_hold.Kind) + "), stopped" + (chat.Approach.Brush != StreetBrush.None ? " and has no time (" + chat.Approach.Brush + ")" : string.Empty)
                          + "; warmth " + chat.Approach.Warmth + ", " + chat.Approach.Patience + " turns" + (chat.Approach.Recognised ? ", knows the player's face" : string.Empty)
                          + (memo.Talks > 0 ? ", talked " + memo.Talks + " time(s) today" : string.Empty)
@@ -138,6 +142,30 @@ namespace RealLifeOverhaul.Street
         {
             _firstWords = words;
             _firstCame = true;
+        }
+
+        // The player's AI service has begun to answer (its first words came, the rest is on its way): while the line is still
+        // awaited, the person starts to talk with their hands, about to speak. Nothing of the words shows until they are all in.
+        private void AboutToSpeak()
+        {
+            try
+            {
+                bool awaited = _chat != null && (_pending || (_phase == 1 && _firstAsked && !_firstCame));
+                if (!awaited || _hold.Gone || !_hold.Held)
+                {
+                    return;
+                }
+                bool shown = _hold.Speak();
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Street talk check (about to speak): your own AI began to answer for " + _chat.Who.Name + "; "
+                                 + (shown ? "they start to talk with their hands while the rest comes: PASS." : "no gesture (" + _hold.Why + "); the line still waits: PASS."));
+                }
+            }
+            catch (Exception e)
+            {
+                Fault("the person about to speak", e);
+            }
         }
 
         // While one is on: the panel opens after the beat; the person is kept stopped; the conversation ends if they or the player went.
@@ -234,6 +262,7 @@ namespace RealLifeOverhaul.Street
         {
             string key = StreetLines.Pick(kind, _chat.Who.Seed, _chat.Turns, _lastKey, kind != StreetLine.Waiting ? _chat.Memo.Lines : null);
             _lastKey = key;
+            _hold.Quiet();   // (the line is said: hands that moved while it was awaited come to rest)
             if (kind != StreetLine.Waiting)
             {
                 string said = words ?? StreetText.T(key, data);
@@ -260,8 +289,9 @@ namespace RealLifeOverhaul.Street
         private void TurnLine(StreetLine kind, string key, string said, bool model)
         {
             StreetChat c = _chat;
-            string how = model ? "RLO Texts" + (c.Heard != null ? ", " + c.Heard : string.Empty)
-                : "written " + key + (c.Heard != null ? ": " + c.Heard : kind == StreetLine.Tired ? ": their time is up (always written)" : ": RLO Texts was not asked");
+            string how = model ? c.Heard ?? "RLO Texts"   // (whose words: "your own AI (ChatGPT), ...", "the pack, ...": StreetTexts)
+                : "the written line " + key + (c.Heard != null ? ": " + c.Heard
+                                                   : kind == StreetLine.Tired ? ": their time is up (always written)" : ": RLO Texts was not asked");
             Logger?.Info("Street talk turn " + c.Turns + " with " + c.Who.Name + ": the player " + (_turnSaid ?? "said nothing new") + "; " + kind + ": \"" + said + "\" (" + how + "); warmth "
                          + c.Approach.Warmth + ", rapport " + c.Rapport + " (today " + c.Memo.Rapport + "), " + Math.Max(0, StreetRules.Turns(c) - c.Turns) + " of " + StreetRules.Turns(c) + " turn(s) left.");
             _turnSaid = null;

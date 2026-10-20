@@ -146,7 +146,7 @@ namespace RealLifeOverhaul
             _waiting = false;
             if (words != null && SocialComposerRules.Against(_heard, words))
             {
-                how = "the words read the other way from what was typed: \"" + words + "\"";
+                how += "; the words read the other way from what was typed: \"" + words + "\"";   // (whose they were stays in the line)
                 words = null;
             }
             bool live = Live;

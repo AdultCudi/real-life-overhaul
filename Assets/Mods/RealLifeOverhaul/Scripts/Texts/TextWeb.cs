@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Texts
     /// whole session, used only from the runner's worker threads and the sign-in's. Every request has its own time-out
     /// by a cancellation, and the wait for it is bounded again by the caller's own clock (a task that has not ended
     /// <see cref="GraceMs"/> after its time is left to end by itself and given up), so no worker is ever held longer
-    /// than its request's time. Nothing of a request or an answer is logged here. Game-free (EconomyCheck,
+    /// than its request's time. A streamed answer (the ChatGPT plan's) is read line by line as it comes and left as soon as
+    /// its text is whole (TextWebRequest.Lines). Nothing of a request or an answer is logged here. Game-free (EconomyCheck,
     /// TextsServiceChecks.cs runs it against a local pretend service).
     /// COST: nothing on the game's thread.
     /// </summary>
@@ -80,10 +81,26 @@ namespace RealLifeOverhaul.Texts
                     message.Content = new StringContent(request.Body, Encoding.UTF8);
                     message.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(request.ContentType + "; charset=utf-8");
                 }
-                using (HttpResponseMessage response = await Client.SendAsync(message, HttpCompletionOption.ResponseContentRead, token).ConfigureAwait(false))
+                bool streamed = request.Lines != null;   // (a streamed answer is read line by line as it comes: TextStreamRead)
+                HttpCompletionOption until = streamed ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead;
+                using (HttpResponseMessage response = await Client.SendAsync(message, until, token).ConfigureAwait(false))
                 {
                     var answer = new TextWebAnswer { Status = (int)response.StatusCode };
-                    answer.Body = response.Content != null ? await response.Content.ReadAsStringAsync().ConfigureAwait(false) : string.Empty;
+                    if (response.Content == null)
+                    {
+                        answer.Body = string.Empty;
+                    }
+                    else if (streamed && answer.Status >= 200 && answer.Status <= 299)
+                    {
+                        using (token.Register(response.Dispose))   // (the time-out ends a read that waits on the network)
+                        {
+                            answer.Body = await ReadLines(response.Content, request.Lines).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        answer.Body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    }
                     RetryConditionHeaderValue retry = response.Headers.RetryAfter;
                     if (retry != null && retry.Delta.HasValue)
                     {
@@ -96,6 +113,28 @@ namespace RealLifeOverhaul.Texts
                     return answer;
                 }
             }
+        }
+
+        // A streamed answer's lines as they come, each told to the reader, until it says the answer is whole or the stream
+        // ends: the body read so far (the rules read the words from it), so the line is shown at its last word rather than
+        // when the service closes the answer.
+        private static async Task<string> ReadLines(HttpContent content, Func<string, bool> lines)
+        {
+            var body = new StringBuilder(2048);
+            using (System.IO.Stream stream = await content.ReadAsStreamAsync().ConfigureAwait(false))
+            using (var reader = new System.IO.StreamReader(stream, Encoding.UTF8))
+            {
+                string line;
+                while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+                {
+                    body.Append(line).Append('\n');
+                    if (lines(line))
+                    {
+                        break;
+                    }
+                }
+            }
+            return body.ToString();
         }
 
         private static string Seconds(int ms) => (ms / 1000.0).ToString("0.0", CultureInfo.InvariantCulture) + " s";

@@ -32,6 +32,19 @@ namespace RealLifeOverhaul.Texts
         public double Took;                 // filled by the hub: seconds the model took over it (0 when it never ran)
         public bool ServiceOnly;            // sent to the player's own AI service only, never the pack (the options' test of the service)
         public bool ByService;              // filled by the hub: the words came from the player's own AI service
+        public bool Spoken;                 // said face to face while the player waits (street talk, a call): with the AI service up it may wait for it (TextsHub.SpokenWait)
+        public double Waits;                // filled by the hub: real seconds from the ask it waits at most (Seconds, or the AI service's spoken wait)
+        public TextSource Source;           // filled by the hub: where the words came from (the written line when there are none)
+        public string ServiceMiss;          // filled by the hub, with an AI service chosen: why it did not word it (not asked, late, failed, refused); null when it did
+        public Action Started;              // on the game's thread, at most once: the AI service has begun to answer it (its first words came; nothing is shown until all are in and checked)
+    }
+
+    /// <summary>Where a request's words came from, for the asker's log line.</summary>
+    public enum TextSource
+    {
+        Written = 0,   // none came: the written line
+        Pack = 1,      // the RLO Texts pack on this PC
+        Service = 2    // the player's own AI service
     }
 
     /// <summary>The runner as the hub sees it (TextServer; the checks put a pretend one in).</summary>
@@ -56,12 +69,24 @@ namespace RealLifeOverhaul.Texts
     /// too late for the service's queue, or the service fails or rests, the request falls back to the pack (if one runs
     /// and has the card, with the time left) and then to the written line. A shared request (Going Public's shared feed
     /// and paper, which must agree on every machine) never goes to the service: the pack and the written lines only.
+    /// A SPOKEN LINE (face to face, the player waiting: <see cref="TextRequest.Spoken"/>) is held about a second for the
+    /// pack, less than a service takes to answer. With the service up such a line waits for it instead, a short pause
+    /// before the person answers, as people do (<see cref="SpokenWait"/>: the service's measured time and a margin, at
+    /// most <see cref="SpokenMost"/>), and the end of that wait is kept for the pack, so a service that is still late
+    /// hands the line to the pack and then to the written line, as before. A guess the service is still writing when its
+    /// line is needed is waited for as that line (<see cref="Adopt"/>), never asked again. When the service's first words
+    /// come (a streamed reply), the asker is told once (<see cref="TextRequest.Started"/>: the person may be shown about to
+    /// speak); the words are handed over only when they are whole and checked. Without a service nothing of this applies:
+    /// a spoken line is held as long as it always was.
     /// COST: a request is a card of a few hundred characters; a look is a pass over the waiting requests (a few).
     /// </summary>
     public sealed class TextsHub
     {
         public const int RecentMost = 4;         // things a speaker said that a new reply must not repeat
         public const int SpeakersMost = 256;     // speakers remembered for it: past this (a long session of street talk) they start again
+        public const double SpokenMargin = 0.6;  // real seconds a spoken line waits for the AI service past its measured time (its replies vary by about that)
+        public const double SpokenMost = 3.5;    // real seconds a spoken line waits at most: past this a pause before an answer is no longer natural
+        public const double PackSlack = 0.2;     // real seconds kept for the pack past its own measured time, at the end of a spoken wait (two looks of the director)
 
         private sealed class Waiting
         {
@@ -71,6 +96,8 @@ namespace RealLifeOverhaul.Texts
             public string Card;
             public TextJob Job;
             public bool ViaService;           // the job is the AI service's (its queue); false: the pack's
+            public double Until;              // the request's last moment: the job's deadline, or later by the time kept for the pack (a spoken line to the service)
+            public bool Told;                 // its asker was told the service began to answer (TextRequest.Started)
         }
 
         private static int _newest;
@@ -184,6 +211,9 @@ namespace RealLifeOverhaul.Texts
             r.Took = 0;
             r.Why = null;
             r.ByService = false;
+            r.Source = TextSource.Written;
+            r.ServiceMiss = null;
+            r.Waits = r.Seconds;
             string service = ServiceWhy(r.Use, r.Shared, r.Intent, r.Branch);
             if (service == null && ToService(r, now))
             {
@@ -195,6 +225,7 @@ namespace RealLifeOverhaul.Texts
                 return false;
             }
             string toService = service ?? r.Why;
+            r.ServiceMiss = Service != null ? toService : null;
             r.Why = PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds);
             if (r.Why != null)
             {
@@ -219,12 +250,13 @@ namespace RealLifeOverhaul.Texts
                         + r.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s)";
                 return false;
             }
-            _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = TextCard.Card(sheet), Job = job });
+            _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = TextCard.Card(sheet), Job = job, Until = job.Deadline });
             Runner.Nudge();
             return true;
         }
 
-        // The request to the AI service, with the newest card: false, with why, when it cannot go (a value missing, no time in its queue).
+        // The request to the AI service, with the newest card: false, with why, when it cannot go (a value missing, no time in
+        // its queue). A spoken line waits for the service (SpokenWait); the end of the wait is kept for the pack.
         private bool ToService(TextRequest r, double now)
         {
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch, Newest);
@@ -235,16 +267,109 @@ namespace RealLifeOverhaul.Texts
                 return false;
             }
             string card = TextCard.Card(sheet);
-            var job = new TextJob { Key = r.Key ?? r.Intent, Card = card, Priority = r.Priority, Deadline = now + r.Seconds, Guess = r.Guess };
+            double reserve = Spoken(r) ? PackReserve(r) : 0.0;
+            double waits = Spoken(r) ? SpokenWait(r.Seconds, _serviceQueue.Expect, reserve) : r.Seconds;
+            var job = new TextJob { Key = r.Key ?? r.Intent, Card = card, Priority = r.Priority, Deadline = now + waits - reserve, Guess = r.Guess };
             GiveWay(r.Key);
             if (!_serviceQueue.Add(job, now))
             {
-                r.Why = "the service's queue: " + job.Why + " (a reply is expected to take " + _serviceQueue.Expect.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " s)";
+                r.Why = "the service's queue: " + job.Why + " (a reply is expected to take " + _serviceQueue.Expect.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " s"
+                        + (Spoken(r) ? ", more than a spoken line waits, " + SpokenMost.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " s at most" : string.Empty) + ")";
                 return false;
             }
-            _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = card, Job = job, ViaService = true });
+            r.Waits = waits;
+            _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = card, Job = job, ViaService = true, Until = now + waits });
             Service.Nudge();
             return true;
+        }
+
+        // A line the player waits for, face to face: never a guess (it waits for its click), never the options' test.
+        private static bool Spoken(TextRequest r) => r.Spoken && !r.Guess && !r.ServiceOnly;
+
+        /// <summary>
+        /// How long a spoken line waits with the AI service up: the service's measured time, a margin and the time kept
+        /// for the pack, at most <see cref="SpokenMost"/>, and never less than the line's own hold. Game-free and pure.
+        /// </summary>
+        public static double SpokenWait(double hold, double serviceExpect, double packReserve)
+        {
+            return Math.Max(hold, Math.Min(SpokenMost, serviceExpect + SpokenMargin + packReserve));
+        }
+
+        // The end of a spoken wait kept for the pack, when it would take the line: its measured time and a slack, within the
+        // line's own hold (what the pack has always been given). None without a pack that would.
+        private double PackReserve(TextRequest r)
+        {
+            if (PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds) != null)
+            {
+                return 0.0;
+            }
+            return Math.Min(r.Seconds, _queue.Expect + PackSlack);
+        }
+
+        /// <summary>
+        /// True while a guess under this key is the AI service's and its words have not come yet (waiting in its queue or
+        /// being written): its asker may wait for it as the line itself (<see cref="Adopt"/>) rather than take it now.
+        /// </summary>
+        public bool Writing(string key)
+        {
+            for (int i = _waiting.Count - 1; key != null && i >= 0; i--)
+            {
+                Waiting w = _waiting[i];
+                if (w.Request.Guess && w.Request.Key == key)
+                {
+                    TextJobState state = w.Job.State;
+                    return w.ViaService && (state == TextJobState.Waiting || state == TextJobState.Running);
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The player clicked while the AI service was still writing the guess under <paramref name="key"/>: the guess
+        /// becomes request <paramref name="r"/> (the same card: intent and branch), waited for as a spoken line from now
+        /// (<see cref="SpokenWait"/> on the time the service is still expected to take), never asked again; its words or
+        /// the written line come through r's Done. False when there is no such guess, it guessed another card, or the
+        /// service could not finish it within the wait: the guess is let go, and the asker asks as usual.
+        /// </summary>
+        public bool Adopt(string key, TextRequest r, double now)
+        {
+            if (key == null || r == null || r.Done == null)
+            {
+                return false;
+            }
+            for (int i = _waiting.Count - 1; i >= 0; i--)
+            {
+                Waiting w = _waiting[i];
+                if (!w.Request.Guess || w.Request.Key != key)
+                {
+                    continue;
+                }
+                TextJobState state = w.Job.State;
+                bool open = state == TextJobState.Waiting || state == TextJobState.Running || state == TextJobState.Written;
+                double reserve = PackReserve(r);
+                double left = Math.Max(0.0, w.Job.Asked + _serviceQueue.Expect - now);   // (what the service is still expected to take)
+                double waits = SpokenWait(r.Seconds, left, reserve);
+                bool same = w.ViaService && open && ServiceUp && Spoken(r) && !r.Shared && w.Request.Intent == r.Intent && w.Request.Branch == r.Branch;
+                if (!same || (state != TextJobState.Written && waits - reserve < left))
+                {
+                    QueueOf(w).Drop(w.Job);
+                    End(i, null, false);   // (the guess's own Done: it was never shown)
+                    return false;
+                }
+                r.Took = 0;
+                r.Why = null;
+                r.ByService = false;
+                r.Source = TextSource.Written;
+                r.ServiceMiss = null;
+                r.Waits = waits;
+                _serviceQueue.Urge(w.Job, now + waits - reserve);
+                w.Request = r;
+                w.Until = now + waits;
+                w.Told = false;   // (its first words may have come already: the next look tells the line's asker)
+                Service.Nudge();
+                return true;
+            }
+            return false;
         }
 
         // Asked again under the same key: the older request gives way (the written line), its job taken out of its queue.
@@ -340,6 +465,11 @@ namespace RealLifeOverhaul.Texts
             {
                 Waiting w = _waiting[i];
                 TextJobState state = w.Job.State;
+                if (w.ViaService && !w.Told && w.Job.Speaking && !w.Request.Guess && state == TextJobState.Running)
+                {
+                    w.Told = true;
+                    w.Request.Started?.Invoke();   // (the service began to answer: its asker may show the person about to speak; the words wait until they are whole)
+                }
                 if (state == TextJobState.Written)
                 {
                     if (w.Request.Guess)
@@ -353,7 +483,11 @@ namespace RealLifeOverhaul.Texts
                     }
                     if (now > w.Job.Deadline + 0.25)
                     {
-                        w.Request.Why = "the words came after the hold";
+                        w.Request.Why = (w.ViaService ? "the service's " : string.Empty) + "words came after the hold";
+                        if (w.ViaService && Fallback(i, now))
+                        {
+                            continue;   // (a spoken line: the time kept for the pack)
+                        }
                         Over(i, !w.ViaService);
                     }
                     else
@@ -379,9 +513,14 @@ namespace RealLifeOverhaul.Texts
                 }
                 else if (now > w.Job.Deadline)
                 {
-                    w.Request.Why = "the hold of " + w.Request.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s ran out while it was "
+                    double held = w.ViaService ? w.Job.Deadline - w.Job.Asked : w.Request.Seconds;
+                    w.Request.Why = "the hold of " + held.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s ran out while it was "
                                     + (state == TextJobState.Running ? "being written" : "waiting in the queue") + (w.ViaService ? " of the service" : string.Empty);
                     QueueOf(w).Drop(w.Job);   // (a running one comes back later and is let go)
+                    if (w.ViaService && !w.Request.Guess && Fallback(i, now))
+                    {
+                        continue;   // (a spoken line the service was late with: the pack in the time kept for it)
+                    }
                     Over(i, !w.ViaService && BudgetMiss(w.Job));
                     handed++;
                 }
@@ -393,8 +532,12 @@ namespace RealLifeOverhaul.Texts
         /// A guess, at the moment its line is needed: the checked words if they are written, else null (the written line;
         /// the request is let go either way).
         /// </summary>
-        public string TakeGuess(string key)
+        public string TakeGuess(string key) => TakeGuess(key, out _);
+
+        /// <summary>As <see cref="TakeGuess(string)"/>, and where its words came from (the pack or the AI service), for the asker's log line.</summary>
+        public string TakeGuess(string key, out TextSource from)
         {
+            from = TextSource.Written;
             for (int i = _waiting.Count - 1; i >= 0; i--)
             {
                 Waiting w = _waiting[i];
@@ -412,6 +555,7 @@ namespace RealLifeOverhaul.Texts
                         _budget.Apply(_queue);
                     }
                     w.Request.ByService = words != null && w.ViaService;
+                    w.Request.Source = from = SourceOf(words, w);
                     Count(words != null, w);
                     return words;
                 }
@@ -422,6 +566,26 @@ namespace RealLifeOverhaul.Texts
                 return null;
             }
             return null;
+        }
+
+        private static TextSource SourceOf(string words, Waiting w) => words == null ? TextSource.Written : w.ViaService ? TextSource.Service : TextSource.Pack;
+
+        /// <summary>
+        /// Where words came from, as a log line names it: "your own AI (ChatGPT)", "the pack" or "the written line". Every
+        /// log line that says where a reply came from uses it, so the AI service, the pack and the written line are told apart.
+        /// </summary>
+        public string From(TextSource source)
+        {
+            switch (source)
+            {
+                case TextSource.Service:
+                    string name = Service is TextService runner && runner.Provider != null ? runner.Provider.Name : null;
+                    return "your own AI" + (name != null ? " (" + name + ")" : string.Empty);
+                case TextSource.Pack:
+                    return "the pack";
+                default:
+                    return "the written line";
+            }
         }
 
         /// <summary>
@@ -509,19 +673,21 @@ namespace RealLifeOverhaul.Texts
                 return false;
             }
             TextRequest r = w.Request;
-            string why = PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, w.Job.Deadline - now);
+            string why = PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, w.Until - now);
             TextIntent intent = why == null ? TextIntents.Find(r.Intent, r.Branch, _packData) : null;
             var sheet = new TextSheet();
             if (intent == null || !TextIntents.Build(intent, r.Who, r.Slots, r.History, sheet))
             {
                 return false;
             }
-            var job = new TextJob { Key = r.Key ?? r.Intent, Prompt = TextCard.ChatMl(sheet), Priority = r.Priority, Deadline = w.Job.Deadline, Guess = r.Guess };
+            var job = new TextJob { Key = r.Key ?? r.Intent, Prompt = TextCard.ChatMl(sheet), Priority = r.Priority, Deadline = w.Until, Guess = r.Guess };
             if (!_queue.Add(job, now))
             {
                 return false;
             }
             ServiceFell++;
+            r.ServiceMiss = r.Why;   // (why the service's words were not used: the pack's words come with it, for the log)
+            r.Why = null;
             w.Job = job;
             w.Intent = intent;
             w.Sheet = sheet;
@@ -581,6 +747,7 @@ namespace RealLifeOverhaul.Texts
             }
             w.Request.Took = w.Job.Took;
             w.Request.ByService = words != null && w.ViaService;
+            w.Request.Source = SourceOf(words, w);
             if (counted || words == null)
             {
                 Count(words != null, w);

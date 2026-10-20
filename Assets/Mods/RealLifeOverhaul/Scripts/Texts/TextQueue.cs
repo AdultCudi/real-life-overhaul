@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Texts
         public double Took;             // seconds the model took
         public string Why;              // why it was missed, for the log
         public bool Ran;                // the worker took it (the model was asked): a miss after that is the model's or the machine's, never the budget's own holding back
+        public volatile bool Speaking;  // an AI service's first words of it came (a streamed reply): the rest is on its way, never shown until it is whole
         public object Owner;            // the asker's own record (what to do with the words), never read by the queue
     }
 
@@ -68,7 +69,7 @@ namespace RealLifeOverhaul.Texts
         public const int Most = 48;                     // requests waiting at once
         public const int PerMinute = 12;                // requests started a minute at most: about a fifth of two threads on the 2B model
         public const int BackgroundPerMinute = 6;       // ...of which the background's
-        public const double StartGuess = 1.5;           // seconds a reply is expected to take before any is measured (the 2B on two threads)
+        public const double StartGuess = 1.5;           // seconds a reply is expected to take before any is measured (the 2B on two threads; an AI service's too)
         public const double GuessWeight = 0.2;          // how much each measured time moves the expectation
         public const double ExpectedMost = 60.0;        // seconds: a speed test's figure past this is no figure (it failed), and the guess stays
 
@@ -176,6 +177,20 @@ namespace RealLifeOverhaul.Texts
                 {
                     job.State = TextJobState.Dropped;
                 }
+            }
+        }
+
+        /// <summary>
+        /// A guess that is now the line itself (the player clicked while it was being written: TextsHub.Adopt): wanted by
+        /// the new deadline, at the first priority, no longer a guess. Waiting or running, it is the same job.
+        /// </summary>
+        public void Urge(TextJob job, double deadline)
+        {
+            lock (_lock)
+            {
+                job.Deadline = deadline;
+                job.Priority = TextPriority.Now;
+                job.Guess = false;
             }
         }
 

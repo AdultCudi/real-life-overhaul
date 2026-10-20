@@ -28,8 +28,10 @@ namespace RealLifeOverhaul.Texts
     /// one queue of its own (TextQueue: the same order, deadlines and budget a minute), by at most <see cref="Workers"/>
     /// worker threads, each with one request at a time, so never more than two in flight. Each request's time is the
     /// time left to its deadline, at most TextServiceRules.TimeOut; its words go back to the queue, and the hub checks
-    /// them with TextCheck as it does the pack's. After a fault it rests as the rules say (no connection, too many
-    /// requests, the service's own fault), and every request waiting meanwhile is missed at once, so the hub falls back
+    /// them with TextCheck as it does the pack's. A streamed reply (the ChatGPT plan's) marks its job the moment its first
+    /// words come (TextJob.Speaking) and is read only until its last word (TextStreamRead). After a fault it rests as the
+    /// rules say (no connection, too many requests, the service's own fault), and every request waiting meanwhile is
+    /// missed at once, so the hub falls back
     /// to the pack or the written line without waiting; a refused key, sign-in or model stops it (Failed) until the
     /// player mends it. A field the service refused (a temperature, a reasoning effort) is left out from then on. A
     /// program on this PC (Ollama, LM Studio) with no model named is asked for its list first, and its first model used.
@@ -286,6 +288,11 @@ namespace RealLifeOverhaul.Texts
                 return;
             }
             TextWebRequest request = TextServiceRules.Build(_start.Provider, _start.Base, _model, TextCard.System, job.Card, secret, _noReasoning, _noTemperature);
+            if (_start.Provider.Api == TextApi.Responses)
+            {
+                var read = new TextStreamRead { OnBegun = () => job.Speaking = true };   // (streamed: the first words tell the hub, and the read ends at the last word)
+                request.Lines = read.Feed;
+            }
             TextWebAnswer answer = _web.Send(request, (int)(Math.Max(0.05, TextServiceRules.Limit(job.Deadline, TextClock.Now)) * 1000.0));
             TextServiceResult result = TextServiceRules.Read(_start.Provider.Api, answer);
             double took = TextClock.Now - begun;

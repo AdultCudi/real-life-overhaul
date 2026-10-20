@@ -81,7 +81,8 @@ namespace RealLifeOverhaul
                     var r = new TextRequest
                     {
                         Use = TextUse.People, Intent = intent, Key = "call:" + person.Index, Speaker = "s:" + person.Index, Priority = TextPriority.Now,
-                        Seconds = SocialComposerRules.HoldSeconds, Day = TextsGame.Day, Wanted = wanted
+                        Seconds = SocialComposerRules.HoldSeconds, Day = TextsGame.Day, Wanted = wanted,
+                        Spoken = true   // (said on the call while the player waits: with their AI service late, the end of the hold is the pack's)
                     };
                     TextsPhone.FriendWho(person, r.Who, person.Together, false);
                     string player = r.Who.Player, first = r.Who.First;
@@ -105,15 +106,17 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The words back, or why none: said to the call with how they came.
+            // The words back, or why none: said to the call with how they came (whose: the AI service's, the pack's).
             private static void Came(TextRequest r, string words, Action<string, string> done)
             {
                 if (words != null && StreetCards.Chatty(words))
                 {
-                    done(null, "the words speak of chat: \"" + words + "\"");
+                    done(null, TextsDirector.Words.From(r.Source) + ": the words speak of chat: \"" + words + "\"");
                     return;
                 }
-                done(words, words != null ? r.Intent + ", " + r.Took.ToString("0.00", Inv) + " s" : r.Why ?? "no words came");
+                done(words, words != null ? TextsDirector.Words.From(r.Source) + ", " + r.Intent + ", " + r.Took.ToString("0.00", Inv) + " s"
+                                            + (r.ServiceMiss != null ? "; your own AI's words were not used: " + r.ServiceMiss : string.Empty)
+                    : r.Why ?? "no words came");
             }
         }
     }
