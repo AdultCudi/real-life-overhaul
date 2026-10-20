@@ -3,9 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One car body as measured: where its roof, boot deck and nose are, in the vehicle's own space
-    /// (metres, origin on the ground under the middle, +Z forwards). Measured from the game's own meshes
-    /// by GarageAssets/scripts/extract_fit.py (every triangle of the body, not its bounding box).
+    /// One car body as measured from the game's meshes by GarageAssets/scripts/extract_fit.py: where its roof, boot
+    /// deck and nose are, in the vehicle's own space (metres, origin on the ground under the middle, +Z forwards).
     /// </summary>
     public readonly struct CarFit
     {
@@ -40,17 +39,16 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Which fitted parts go on which car, and where. A part is offered only on a body it sits on
-    /// cleanly: a wing needs a boot deck that is nearly flat and well below the roof, bars need a roof
-    /// long enough to carry them, a bull bar is for SUVs, pickups and vans. A vehicle type that is not
-    /// in the table (another mod's car, the Mersaidi Dash whose prefab is built differently) gets none.
+    /// Which fitted parts go on which car, and where: a part is offered only on a body it sits on cleanly. A vehicle
+    /// type not in the table (another mod's car, the Mersaidi Dash, whose prefab is built differently) gets none.
     /// </summary>
     public static class GarageFit
     {
         private const string Prefix = "ba:vehicletype_";
 
         // rear z, front z, half width, top | roof from z, to z, height at the bars, half width, height at the feet |
-        // deck height, slope (deg), half width, height at the posts | nose low, nose high, nose half width, bonnet height
+        // deck height, slope (deg), half width, height at the posts | nose low, nose high, nose half width, bonnet
+        // height
         private static readonly Dictionary<string, CarFit> Table = new Dictionary<string, CarFit>
         {
             { "anselmoaf90", new CarFit(-2.13f, 2.53f, 1.11f, 1.20f, -0.39f, 0.29f, 1.17f, 0.54f, 1.12f, 0.91f, 1.6f, 0.80f, 0.90f, 0.17f, 0.46f, 0.38f, 0.59f) },
@@ -73,8 +71,8 @@ namespace RealLifeOverhaul
         };
 
         public const float MaxDeckSlope = 25f;     // degrees: steeper than this is a rear window or a rounded tail, not a deck
-        public const float MinDeckBelowRoof = 0.25f;
-        public const float MinRoofLength = 0.90f;
+        public const float MinDeckBelowRoof = 0.25f; // m
+        public const float MinRoofLength = 0.90f;    // m
 
         public static bool TryGet(string vehicleTypeName, out CarFit fit)
         {

@@ -3,46 +3,20 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// How a bicycle or a motorbike rides, as numbers with nothing of the game or the engine in them, so that NavCheck
-    /// (BikeCheck.cs) checks the very code <see cref="BikeMount"/> rides by.
-    ///
-    /// PEDALLING (<see cref="Pedal"/>). A bicycle is pushed by its rider, not by the scooter's engine: the scooter's
-    /// drivetrain is let go (<see cref="FreeWheelRatio"/>), because through its gearbox the engine and the gearbox weigh on
-    /// the rear wheel like another 275 to 600 kg, and its clutch slips and grabs up to 18 km/h; that was the slow, juddering
-    /// start. The push is the rider's: as hard as <see cref="Ride.StartPush"/> from a standstill (a hard push on the pedals),
-    /// and no more than the rider's power can give as the speed rises. Air drag is whatever is left of that power at the
-    /// cruising speed, so steady pedalling settles there. A tired rider pushes half as hard. Letting go coasts: nothing
-    /// holds the wheels but their rolling and the air. Holding the brake at a standstill walks it back, slowly.
-    ///
-    /// THE POSE (<see cref="Want"/>). Riding (pedalling, on a bicycle), freewheeling, or stopped with a foot down. Pushing
-    /// off is at once; any other change has to last <see cref="HoldFor"/> first, so that a dab of the throttle or a crawl
-    /// does not flick the pose; between two poses the rider's clips and legs cross over, never jump (<see cref="Smooth"/>).
-    ///
-    /// THE LEAN (<see cref="LeanMost"/>, <see cref="LeanRate"/>). The game's scooter leans its full 33 degrees from 1 m/s
-    /// and swings there at 220 degrees a second: at a walking pace a bicycle flopped over with every touch of the steering
-    /// and snapped back. A two-wheeler leans with its speed, as one does (full lean from <see cref="FullLeanAt"/>), and
-    /// gently at a crawl.
-    ///
-    /// THE BODY (<see cref="Frame"/>, <see cref="Bars"/>). What the world meets. The scooter's own box is 0.32 m wide and
-    /// 1.06 m long, under its deck: a bicycle's wheels and a motorbike's both stuck out of it by half a metre, and its bars
-    /// and the rider's knees out of its sides, into whatever they met. The frame box runs from wheel to wheel, high enough
-    /// off the road for kerbs and narrow enough to stay off it at full lean (<see cref="LeanClearance"/>); the bars box
-    /// is the bars and the rider's knees, the width of the grips.
-    ///
-    /// THE MASS (<see cref="KeepMass"/>, <see cref="PutMassBack"/>, <see cref="Turns"/>). The body's centre of mass and
-    /// inertia are the game's, kept while the boxes change and written back after. The game holds a scooter nobody rides
-    /// frozen, and the engine freezes a body's turning by setting its inertia to nothing, which written onto a ridden bike
-    /// is one that steers and goes straight on: they are kept and written back only while the body is free to turn.
-    ///
-    /// Everything here is a handful of multiplications, asked once a physics step or once a frame while a two-wheeler is
-    /// ridden, or once when one is made or got on. Nothing is allocated.
+    /// How a bicycle or a motorbike rides, in plain numbers so that NavCheck checks the code <see cref="BikeMount"/>
+    /// rides by.
+    /// A bicycle's push is the rider's: the scooter's drivetrain is let go, as through its gearbox the engine weighed
+    /// on the wheel like another 275 to 600 kg.
+    /// The game freezes a standing scooter by zeroing its inertia, so the mass is kept and written back only while the
+    /// body is free to turn.
+    /// A few multiplications a physics step or a frame while ridden; nothing allocated.
     /// </summary>
     public static class BikeRules
     {
         /// <summary>One bicycle's push: what its rider can give, on the game's 250 kg scooter body.</summary>
         public struct Ride
         {
-            public float CruiseKmh;     // what steady pedalling holds on the flat
+            public float CruiseKmh;     // km/h: what steady pedalling holds on the flat
             public float PowerPerKg;    // W per kg of the body: the rider's power
             public float StartPush;     // m/s2: the hardest push, from a standstill
 
@@ -64,11 +38,10 @@ namespace RealLifeOverhaul
         public const float BackMost = 1.0f;             // m/s backwards, a slow walk
         public const float WalkingPace = 1.4f;          // m/s, 5 km/h
 
-        // ---------------------------------------------------------------- pedalling
 
         /// <summary>
-        /// The air's hold, N per (m/s) squared, that makes steady pedalling settle at the ride's cruising speed: what is left
-        /// of the rider's power there once the tyres' rolling (N) is paid.
+        /// The air's hold, N per (m/s) squared, that settles steady pedalling at the cruising speed once the tyres'
+        /// rolling (N) is paid.
         /// </summary>
         public static float Drag(Ride ride, float mass, float rolling)
         {
@@ -79,8 +52,9 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The rider's push along the bike (N) at this forward speed (m/s), with the throttle (0 to 1) and the effort
-        /// (1 fresh, 0.5 worn out). Backwards (<paramref name="back"/>: the brake held in the gearbox's reverse) a slow walk
-        /// back instead. Zero with nothing held.
+        /// (1 fresh, 0.5 worn out).
+        /// With the brake held (<paramref name="back"/>, the gearbox's reverse) a slow walk back instead; zero with
+        /// nothing held.
         /// </summary>
         public static float Pedal(Ride ride, float mass, float along, float throttle, float effort, float back)
         {
@@ -103,7 +77,6 @@ namespace RealLifeOverhaul
             return drag * speed * speed;
         }
 
-        // ---------------------------------------------------------------- the pose
 
         public enum Pose { Ride, Coast, Stand }
 
@@ -116,8 +89,9 @@ namespace RealLifeOverhaul
         public const float PoseFade = 0.35f;            // s one riding clip takes to cross into the next; no other change is made meanwhile
 
         /// <summary>
-        /// The pose the rider should be in: <paramref name="speed"/> signed along the bike (m/s), <paramref name="pushing"/>
-        /// with the throttle held. Without a stopped clip the rider never stands; without a freewheeling one never coasts.
+        /// The pose the rider should be in: <paramref name="speed"/> signed along the bike (m/s),
+        /// <paramref name="pushing"/> with the throttle held. Without a stopped clip the rider never stands; without a
+        /// freewheeling one never coasts.
         /// </summary>
         public static Pose Want(Pose now, float speed, bool pushing, bool canStand, bool canCoast, bool bicycle)
         {
@@ -165,7 +139,6 @@ namespace RealLifeOverhaul
             return shown + (target - shown) * (1f - (float)Math.Exp(-dt / seconds));
         }
 
-        // ---------------------------------------------------------------- the lean
 
         public const float LeanMostDeg = 33f;           // the game's scooter's full lean
         public const float FullLeanAt = 10f;            // m/s (36 km/h) from which it may lean fully
@@ -186,7 +159,6 @@ namespace RealLifeOverhaul
             return LeanRateSlow + (LeanRateFast - LeanRateSlow) * Clamp01(fast / FullLeanAt);
         }
 
-        // ---------------------------------------------------------------- the body the world meets
 
         /// <summary>A box in the bike's own space (metres; origin on the road, +Z forwards, +Y up): its middle and its size.</summary>
         public struct Box
@@ -215,7 +187,8 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The frame box: from the back of the rear wheel to the front of the front one, from just off the road to the
-        /// saddle, as narrow as the frame. The wheels' middles at <paramref name="rearZ"/> and <paramref name="frontZ"/>.
+        /// saddle, as narrow as the frame. The wheels' middles at <paramref name="rearZ"/> and
+        /// <paramref name="frontZ"/>.
         /// </summary>
         public static Box Frame(float rearZ, float frontZ, float wheelRadius, float seatHeight, bool motor)
         {
@@ -233,7 +206,8 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The bars box: the width of the grips and the hands on them, from the rider's knees to the hands, from the
-        /// saddle's front to just ahead of the grips. <paramref name="gripHalf"/> is a grip's middle off the centre line.
+        /// saddle's front to just ahead of the grips. <paramref name="gripHalf"/> is a grip's middle off the centre
+        /// line.
         /// </summary>
         public static Box Bars(float gripHalf, float gripHeight, float gripZ, float seatZ)
         {
@@ -251,7 +225,10 @@ namespace RealLifeOverhaul
             };
         }
 
-        /// <summary>The lowest a box's bottom may be for its half width to stay <see cref="LeanClearance"/> off the road at full lean and the margin.</summary>
+        /// <summary>
+        /// The lowest a box's bottom may be for its half width to stay <see cref="LeanClearance"/> off the road at full
+        /// lean and the margin.
+        /// </summary>
         public static float Bottom(float halfWidth)
         {
             double lean = (LeanMostDeg + LeanMargin) * Math.PI / 180.0;
@@ -267,9 +244,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A box's size along the axes of a space turned by the rotation matrix m (rows: the space's axes in the bike's): each
-        /// of the space's axes takes the absolute parts of the bike's sizes that lie along it, so a box turned a quarter turn
-        /// has its width and length swapped, and no size ever comes out negative.
+        /// A box's size along the axes of a space turned by the rotation matrix m (rows: the space's axes in the
+        /// bike's): each of the space's axes takes the absolute parts of the bike's sizes that lie along it, so a box
+        /// turned a quarter turn has its width and length swapped, and no size ever comes out negative.
         /// </summary>
         public static void SizeAlong(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22,
             float x, float y, float z, out float sx, out float sy, out float sz)
@@ -279,13 +256,12 @@ namespace RealLifeOverhaul
             sz = Math.Abs(m20) * x + Math.Abs(m21) * y + Math.Abs(m22) * z;
         }
 
-        // ---------------------------------------------------------------- the mass
 
         public const float LeastInertia = 0.001f;   // kg m2: a component at or under this is the engine's lock on a frozen turn, not a body's own
 
         /// <summary>
-        /// True for an inertia a body turns on: every component finite and over <see cref="LeastInertia"/>. The engine takes
-        /// a zero component as an infinite inertia about that axis; it is how it freezes a body's turning.
+        /// True for an inertia a body turns on: every component finite and over <see cref="LeastInertia"/> (a zero is
+        /// the engine's frozen turn).
         /// </summary>
         public static bool Turns(float x, float y, float z)
         {
@@ -293,9 +269,10 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether the body's centre of mass and inertia, read now, are kept as the game's: only while no turn of the body is
-        /// frozen (<paramref name="turnFree"/>), and only an inertia it turns on. The game holds every scooter nobody is on
-        /// frozen (VehicleController.SetFreeze), so a bike dressed while it stands reads an inertia of nothing.
+        /// Whether the centre of mass and inertia read now are kept: only while no turn is frozen and only an inertia
+        /// it turns on.
+        /// The game freezes every scooter nobody rides (VehicleController.SetFreeze), so a standing bike reads an
+        /// inertia of nothing.
         /// </summary>
         public static bool KeepMass(bool turnFree, float x, float y, float z)
         {
@@ -303,8 +280,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether what was kept is written back: only something kept, and only into a body free to turn. A body the game
-        /// holds frozen gets the game's own values from the game as it is let go (VariableCenterOfMass).
+        /// Whether what was kept is written back: only into a body free to turn. A frozen body gets the game's own
+        /// values as it is let go.
         /// </summary>
         public static bool PutMassBack(bool kept, bool turnFree)
         {

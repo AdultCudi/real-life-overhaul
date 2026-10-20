@@ -3,37 +3,27 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Where a two-wheeler may be left, in plain numbers, so that NavCheck (BikeCheck.cs) checks the very rules
-    /// <see cref="TwoWheelers"/> leaves a bike by.
-    ///
-    /// The game stands a scooter wherever its rider gets off and holds it there (ScooterController.ExitVehicle turns its
-    /// physics off, and with it every constraint is frozen): nothing asks whether that place has room. A rider who comes
-    /// off against a parking meter, a post or a bench (the physics step that stops the bike is the one in which its box
-    /// went into the thing), or who pulls up with the bars over a meter's head, leaves the bike in it, held there; got on
-    /// again, its boxes are inside the meter and it cannot be ridden out. So the moment a bike is left, and again the
-    /// moment it is got on, its frame box and its bars box (<see cref="BikeRules.Frame"/>, <see cref="BikeRules.Bars"/>)
-    /// are looked for in anything solid (<see cref="Pins"/>); a bike of the player's own found in something is stood on the
-    /// nearest place tried (<see cref="Place"/>) that is clear of it and of people, on pavement first.
-    ///
-    /// A switch and a few multiplications, asked once when a bike is got off or on. Nothing is allocated.
+    /// Where a two-wheeler may be left, in plain numbers so that NavCheck checks the rules <see cref="TwoWheelers"/>
+    /// leaves a bike by. The game stands a scooter wherever its rider gets off and freezes it there, so a bike left
+    /// against a post or a meter stays in it. On every getting off and on, its frame and bars boxes are looked for in
+    /// anything solid (<see cref="Pins"/>), and the player's own bike found in something is moved to the nearest clear
+    /// place (<see cref="Place"/>). A few multiplications a check; nothing allocated.
     /// </summary>
     public static class BikeClearRules
     {
         public const float Skin = 0.03f;     // m off every face of the boxes: a resting touch (a post just met, a wall leant on) is not being in it
-        public const float MostShift = 2.6f; // m: the furthest a bike is moved; with nothing clear by then it stays, and "Bring it here" is the way out
+        public const float MostShift = 2.6f; // m: the furthest a bike is moved; with nothing clear it stays, and "Bring it here" is the way out
         public const int Ways = 8;           // places on each ring: either side, ahead and behind, the four corners
 
-        // m from where it stands: the first ring clears a post under the middle of the widest bars (0.37 m) and a thick post's half.
+        // metres from where it stands; the first ring clears a post under the middle of the widest bars (0.37 m)
         private static readonly float[] Rings = { 0.5f, 0.9f, 1.4f, 2.0f, MostShift };
         private const float Corner = 0.70710678f;   // a corner's share of a ring along each axis
 
-        /// <summary>How many places are tried.</summary>
         public static int Places => Rings.Length * Ways;
 
         /// <summary>
-        /// The i-th place tried, in the bike's own frame (metres across to its right and along to its front): the nearest ring
-        /// first, and on each ring to either side first (along the pavement a bike by the kerb usually is), then ahead and
-        /// behind, then the four corners. The same order on every machine.
+        /// The i-th place tried, in the bike's own frame (metres across and along): the nearest ring first, on each
+        /// ring either side first (along the pavement), then ahead and behind, then the corners.
         /// </summary>
         public static void Place(int i, out float across, out float along)
         {
@@ -56,10 +46,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True for a layer whose things a bike must never be left in: street furniture (parking meters, posts, lamps, bins,
-        /// benches), buildings and walls, vehicles, and any other solid thing. Never the ground the bike stands on (the road,
-        /// the pavement and its kerb, crossings), people (they walk off), the zones that are only triggers, or a layer with
-        /// no name (nothing is on it).
+        /// True for a layer a bike must never be left in: street furniture, buildings, vehicles, anything solid. Never
+        /// the ground, people (they walk off), trigger-only zones or a layer with no name.
         /// </summary>
         public static bool Pins(string layer)
         {
@@ -77,7 +65,7 @@ namespace RealLifeOverhaul
             return !string.IsNullOrEmpty(layer) && CarContactRules.KindOfLayer(layer) == ContactKind.Person;
         }
 
-        // The layers that are only zones, as the mod's other room tests leave them out (CitySpots, BikePlaces.Fits).
+        // Zone-only layers, left out as the mod's other room tests leave them (CitySpots, BikePlaces.Fits).
         private static bool Zone(string layer)
         {
             switch (layer)
@@ -95,9 +83,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether a bike is moved: it stands in something, it is the player's own (in a Going Public session never another
-        /// player's), and it is out in the street (from indoors the street round it is not there to be measured; it is
-        /// looked at again when it is got on).
+        /// Whether a bike is moved: it stands in something, it is the player's own (Going Public), and it is outdoors
+        /// (indoors the street is not there to measure; it is looked at again when got on).
         /// </summary>
         public static bool Move(bool pinned, bool mine, bool indoors)
         {
