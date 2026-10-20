@@ -91,6 +91,8 @@ namespace RealLifeOverhaul
                         r.History.Add(new TextSaid(lines[i].Player ? player : first, lines[i].Words));
                     }
                     r.Done = words => Came(r, words, done);
+                    TextsMemory.Fill(r, person);
+                    TextsMemory.Spoke(r, "call");
                     if (TextsDirector.Words.Ask(r, TextClock.Now))
                     {
                         return true;

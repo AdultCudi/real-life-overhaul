@@ -28,9 +28,10 @@ internal static partial class Program
     private static void StreetV5Tiers()
     {
         Check(TextPacks.Tier(1, 0, true, false) == 1 && TextPacks.Tier(2, 0, true, false) == 3 && TextPacks.Tier(2, 2, true, true) == 2 && TextPacks.Tier(2, 3, true, true) == 3
-              && TextPacks.Tier(1, 1, true, true) == 1 && TextPacks.Tier(0, 2, false, true) == 2 && TextPacks.Tier(3, 3, true, true) == 0 && TextPacks.Tier(2, 4, true, true) == 0
+              && TextPacks.Tier(1, 1, true, true) == 1 && TextPacks.Tier(0, 2, false, true) == 2 && TextPacks.Tier(3, 3, true, true) == 0 && TextPacks.Tier(2, 4, true, true) == 4
+              && TextPacks.Tier(2, 5, true, true) == 0
               && TextPacks.Tier(0, 0, false, false) == 0 && TextPacks.Tier(2, 0, true, true) == 0,
-            "texts, packs: a pack's tier is its tier line (Lite 1, Medium 2, RLO Texts 3), else the first packs' rank (1 Lite, 2 the full pack); a rank above 2 or a tier above 3 is no pack");
+            "texts, packs: a pack's tier is its tier line (Lite 1, Medium 2, RLO Texts 3, RLO Texts Large 4), else the first packs' rank (1 Lite, 2 the full pack, never Large); a rank above 2 or a tier above 4 is no pack");
         string root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rlo-texts-tiers-" + System.Diagnostics.Process.GetCurrentProcess().Id);
         try
         {
@@ -242,9 +243,9 @@ internal static partial class Program
         int v4 = 0, v5 = 0, moment = 0;
         foreach (TextIntent t in TextIntents.All)
         {
-            if (!t.Key.StartsWith("street.", StringComparison.Ordinal))
+            if (!t.Key.StartsWith("street.", StringComparison.Ordinal) || t.Data > TextIntents.DataV5)
             {
-                continue;
+                continue;   // (data v6's street cards are the contract's: TextsSixChecks.cs)
             }
             v4 += t.Data == TextIntents.DataV4 ? 1 : 0;
             v5 += t.Data == TextIntents.DataV5 ? 1 : 0;

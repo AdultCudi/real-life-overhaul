@@ -32,23 +32,28 @@ namespace RealLifeOverhaul
             public const double LedgerSeconds = 120.0;   // real seconds an edition's briefs may take: written at dawn, read later
 
             private static readonly HashSet<int> LedgerShown = new HashSet<int>();   // the editions (by day) a piece of which has been shown
+            private static Action<NewsKind, UnityEngine.Vector3> _onNews;
 
             internal static void Connect()
             {
-                FlareBridges.TextAsk = r => TextsDirector.Words.Ask(r, TextClock.Now);
-                FlareBridges.TextKept = key => TextsDirector.Words.Store.Words(key);
+                FlareBridges.TextAsk = AskFlare;
+                FlareBridges.TextKept = key => TextsDirector.Words.Store.Words(key, TextsDirector.Words.Language);   // (data v6's words only in their own language)
                 FlareBridges.TextWants = (use, shared) => TextsDirector.Words.Wants(use, shared);
                 FlareBridges.TextWhen = TextsGame.When;
                 FlareBridges.TextSeconds = TextsGame.SecondsFor;
                 FlareBridges.TextData = () => TextsDirector.Words.Data;
                 FlareBridges.TextFriend = TextsPhone.FlareFriend;
                 FlareBridges.TextListed = Listed;
+                FlareBridges.TextReview = Review;
                 LedgerBridges.TextsEdition = Edition;
                 LedgerBridges.TextsBody = Body;
                 TextsDirector.StillThere = StillThere;
                 LedgerShown.Clear();
+                News.ReportedAt -= _onNews ?? (_onNews = Heard);
+                News.ReportedAt += _onNews;
                 TextsPhone.Connect();
                 TextsCalls.Connect();
+                TextsCity.Connect();
             }
 
             internal static void Disconnect()
@@ -61,11 +66,75 @@ namespace RealLifeOverhaul
                 FlareBridges.TextData = null;
                 FlareBridges.TextFriend = null;
                 FlareBridges.TextListed = null;
+                FlareBridges.TextReview = null;
                 LedgerBridges.TextsEdition = null;
                 LedgerBridges.TextsBody = null;
                 TextsDirector.StillThere = null;
+                if (_onNews != null)
+                {
+                    News.ReportedAt -= _onNews;
+                }
                 TextsPhone.Disconnect();
                 TextsCalls.Disconnect();
+                TextsCity.Disconnect();
+            }
+
+            // A Flare request: its person's memory on the card (data v6: a message's, never a post's), and what it was about remembered.
+            private static bool AskFlare(TextRequest r)
+            {
+                SocialPerson friend = null;
+                if (r != null && r.Speaker != null && r.Speaker.Length > 1 && (r.Speaker[0] == 'f' || r.Speaker[0] == 'p')
+                    && int.TryParse(r.Speaker.Substring(1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int index) && SocialState.Loaded)
+                {
+                    friend = SocialState.Get(index);
+                }
+                TextsMemory.Fill(r, friend);
+                bool asked = TextsDirector.Words.Ask(r, TextClock.Now);
+                TextsMemory.Spoke(r, "dm");
+                return asked;
+            }
+
+            // The paper's log of the player's own events: a crash, an arrest, a knock-down, for the people of the player's life to hear of.
+            private static void Heard(NewsKind kind, UnityEngine.Vector3 where)
+            {
+                try
+                {
+                    switch (kind)
+                    {
+                        case NewsKind.PlayerCrash: TextsDirector.Heard("crash", SocialPlaces.StreetAt(where)); break;
+                        case NewsKind.PlayerArrested: TextsDirector.Heard("arrest", null); break;
+                        case NewsKind.PlayerKnocked: TextsDirector.Heard("knocked", SocialPlaces.StreetAt(where)); break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("RLO Texts, the player's events", e);
+                }
+            }
+
+            // A review of the player's own business (data v6): the game's figures of it on the card; false for another's (the plain card).
+            private static bool Review(string place, int stars, TextSlots slots)
+            {
+                try
+                {
+                    BuildingRegistration reg = FlareGame.Business(place);
+                    if (reg == null || !TextsGame.Figures(reg, out int service, out int pricing, out int cleanliness, out int interior, out int crowd))
+                    {
+                        return false;
+                    }
+                    slots.Set("service", TextWords.Rating(service)).Set("prices", TextWords.Rating(pricing)).Set("cleanliness", TextWords.Rating(cleanliness))
+                        .Set("interior", TextWords.Rating(interior)).Set("about", TextsCityRules.ReviewAbout(stars, service, pricing, cleanliness, interior));
+                    if (crowd != 0)
+                    {
+                        slots.Set("crowd", crowd > 0 ? "busy" : "quiet");
+                    }
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Fault("RLO Texts, a review's figures", e);
+                    return false;
+                }
             }
 
             // The player's listed company's name (a rival's stake in it or bid for it names it); null while there is none.
@@ -84,7 +153,7 @@ namespace RealLifeOverhaul
                     return null;
                 }
                 LedgerShown.Add(day);
-                return TextsDirector.Words.Store.Words(TextsMapRules.LedgerKey(day, p.Key, p.Data));
+                return TextsDirector.Words.Store.Words(TextsMapRules.LedgerKey(day, p.Key, p.Data), TextsDirector.Words.Language);
             }
 
             // The City Ledger's briefs of an edition: the economy's (prices, the bank rate, a district's fortunes), asked as it is written.

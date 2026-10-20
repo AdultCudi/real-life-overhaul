@@ -27,8 +27,10 @@ namespace RealLifeOverhaul.Texts
         public string Lang = "en";
         public readonly List<string> Traits = new List<string>(3);
         public readonly List<string> Facts = new List<string>(4);
+        public readonly List<string> Memory = new List<string>(3);       // data v6: what the speaker remembers of the player, one line each
         public readonly List<TextSaid> History = new List<TextSaid>(3);
         public readonly List<string> Must = new List<string>(3);
+        public readonly List<TextSlotKind> MustKinds = new List<TextSlotKind>(3);   // ...what each must fact is (a name is kept in every language, a word in English only)
 
         public void Clear()
         {
@@ -36,8 +38,10 @@ namespace RealLifeOverhaul.Texts
             Lang = "en";
             Traits.Clear();
             Facts.Clear();
+            Memory.Clear();
             History.Clear();
             Must.Clear();
+            MustKinds.Clear();
         }
     }
 
@@ -46,7 +50,9 @@ namespace RealLifeOverhaul.Texts
     /// card() and chatml()): the fields in a fixed order (who, role, traits, mood, style, player, when, news, facts,
     /// history, write, must, lang), empty ones left out, a list joined with "; ", the thread under "history:" one line each
     /// as "  Name: line", and the whole in ChatML. Proved identical to the Python for every voice and channel used
-    /// (EconomyCheck, TextsChecks.cs, against cards made by the training generator itself). Game-free.
+    /// (EconomyCheck, TextsChecks.cs, against cards made by the training generator itself). Data v6 (the contract,
+    /// SPEC_v6.json): the same order with a "memory:" line of what the speaker remembers, after the facts and joined like them, a lang
+    /// line of any of the seven languages, and the system turn of <see cref="SystemSix"/> (TextsSixChecks.cs). Game-free.
     /// COST: one string of a few hundred characters a request; nothing per frame.
     /// </summary>
     public static class TextCard
@@ -56,7 +62,15 @@ namespace RealLifeOverhaul.Texts
                                      + "given and add no new events, money, times or promises. Plain British English, no dashes. One short message, "
                                      + "nothing else.";
 
+        /// <summary>The system turn of data v6: the card's lang line names the language, English in plain British English.</summary>
+        public const string SystemSix = "You write one message for a character in the game Big Ambitions. Stay in character. Use only the facts "
+                                        + "given and add no new events, money, times or promises. Write in the language the lang line names; English "
+                                        + "in plain British English. No dashes and no exclamation marks. One short message, nothing else.";
+
         public const string Stop = "<|im_end|>";   // where the model's reply ends (ChatML)
+
+        /// <summary>The system turn of a pack of this data version.</summary>
+        public static string SystemOf(int data) => data >= TextIntents.DataV6 ? SystemSix : System;
 
         /// <summary>The user turn: one fact per line, in the trained order.</summary>
         public static string Card(TextSheet s)
@@ -67,10 +81,13 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>The exact text the model reads: system, the card as the user's turn, and the assistant's turn opened.</summary>
-        public static string ChatMl(TextSheet s)
+        public static string ChatMl(TextSheet s) => ChatMl(s, System);
+
+        /// <summary>The same with a system turn of its own (data v6's: <see cref="SystemSix"/>).</summary>
+        public static string ChatMl(TextSheet s, string system)
         {
             var t = new StringBuilder(1024);
-            t.Append("<|im_start|>system\n").Append(System).Append("<|im_end|>\n<|im_start|>user\n");
+            t.Append("<|im_start|>system\n").Append(system).Append("<|im_end|>\n<|im_start|>user\n");
             Append(s, t);
             t.Append("<|im_end|>\n<|im_start|>assistant\n");
             return t.ToString();
@@ -88,6 +105,7 @@ namespace RealLifeOverhaul.Texts
             Line(t, start, "when", s.When);
             Line(t, start, "news", s.News);
             List(t, start, "facts", s.Facts);
+            List(t, start, "memory", s.Memory);
             if (s.History.Count > 0)
             {
                 Open(t, start);

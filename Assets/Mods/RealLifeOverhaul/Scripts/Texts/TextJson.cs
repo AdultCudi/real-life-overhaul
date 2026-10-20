@@ -18,18 +18,77 @@ namespace RealLifeOverhaul.Texts
         public static string Request(string prompt, int seed) => Request(prompt, seed, Tokens);
 
         /// <summary>The same, with a number of tokens of its own (0: read the prompt only, as the cached head is made).</summary>
-        public static string Request(string prompt, int seed, int tokens)
+        public static string Request(string prompt, int seed, int tokens) => Request(prompt, seed, tokens, null, null);
+
+        /// <summary>
+        /// A request of data v6: the same body with the reply's grammar (TextDecoding.Grammar) and the tokens it may never
+        /// write (TextDecoding.Bias), each left out when there is none, after the fields of every request.
+        /// </summary>
+        public static string Request(string prompt, int seed, int tokens, string grammar, string bias)
         {
-            var t = new StringBuilder(prompt.Length + 200);
+            var t = new StringBuilder(prompt.Length + 200 + (grammar != null ? grammar.Length + 32 : 0));
             t.Append("{\"prompt\":");
             Quote(prompt, t);
             t.Append(",\"n_predict\":").Append(tokens.ToString(CultureInfo.InvariantCulture));
             t.Append(",\"temperature\":").Append(Temperature.ToString("0.0#", CultureInfo.InvariantCulture));
             t.Append(",\"top_p\":").Append(TopP.ToString("0.0#", CultureInfo.InvariantCulture));
             t.Append(",\"seed\":").Append(seed.ToString(CultureInfo.InvariantCulture));
-            t.Append(",\"stop\":[\"").Append(TextCard.Stop).Append("\"],\"cache_prompt\":true,\"stream\":false}");
+            t.Append(",\"stop\":[\"").Append(TextCard.Stop).Append("\"],\"cache_prompt\":true,\"stream\":false");
+            if (!string.IsNullOrEmpty(grammar))
+            {
+                t.Append(",\"grammar\":");
+                Quote(grammar, t);
+            }
+            if (!string.IsNullOrEmpty(bias))
+            {
+                t.Append(",\"logit_bias\":").Append(bias);
+            }
+            t.Append('}');
             return t.ToString();
         }
+
+        /// <summary>The body of a POST /tokenize for a piece of text: no special tokens added, none read in the text.</summary>
+        public static string Tokenize(string text)
+        {
+            var t = new StringBuilder(text.Length + 64);
+            t.Append("{\"content\":");
+            Quote(text, t);
+            t.Append(",\"add_special\":false,\"parse_special\":false}");
+            return t.ToString();
+        }
+
+        /// <summary>The first token of a /tokenize answer ({"tokens":[12,34]}); -1 when there is none.</summary>
+        public static int FirstToken(string json)
+        {
+            if (json == null)
+            {
+                return -1;
+            }
+            int at = json.IndexOf("\"tokens\"", System.StringComparison.Ordinal);
+            if (at < 0)
+            {
+                return -1;
+            }
+            int open = json.IndexOf('[', at);
+            if (open < 0)
+            {
+                return -1;
+            }
+            int i = open + 1;
+            while (i < json.Length && char.IsWhiteSpace(json[i]))
+            {
+                i++;
+            }
+            int start = i;
+            while (i < json.Length && char.IsDigit(json[i]))
+            {
+                i++;
+            }
+            return i > start && int.TryParse(json.Substring(start, i - start), NumberStyles.Integer, CultureInfo.InvariantCulture, out int token) ? token : -1;
+        }
+
+        /// <summary>True when the server's answer says the reply stopped at its most tokens ("stop_type":"limit"): it was cut off.</summary>
+        public static bool Cut(string json) => Field(json, "stop_type") == "limit";
 
         /// <summary>A JSON string of the text, quotes included.</summary>
         public static void Quote(string text, StringBuilder t)
