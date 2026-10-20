@@ -49,6 +49,12 @@ namespace RealLifeOverhaul.Family
         int ClosePeople(List<PersonInfo> into, int most);
         /// <summary>The partner's own contact in the phone, which Family's texts from the partner come from; null if there is none.</summary>
         Entities.Contact PartnerContact { get; }
+        /// <summary>
+        /// The partner took up another job in family life (retrained for the one they always wanted): Social's record says so,
+        /// so that People and everything said about them names it. The key is one of Social's jobs (PartnerJobRules); false,
+        /// with nothing changed, when there is no partner or the key is not one of them.
+        /// </summary>
+        bool PartnerJob(string jobKey);
     }
 
     /// <summary>What Home implements. Each call is true if Home did it its own way; false and Family does a short default (a few lines and a mood).</summary>

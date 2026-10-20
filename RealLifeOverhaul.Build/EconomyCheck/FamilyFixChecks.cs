@@ -20,6 +20,10 @@ internal static partial class Program
         FamilyPromptButtons();
         FamilyFaceToFace();
         FamilyOneDay();
+        FamilyCarParked();
+        FamilyContactKept();
+        FamilyRetrainedJob();
+        FamilyThreeTexts();
     }
 
     // People's night owl slept to ten while the family sent the partner to work at eight, and a call at nine went to
@@ -50,8 +54,8 @@ internal static partial class Program
         string director = ModSource(@"Family\FamilyDirector.cs"), person = ModSource(@"Social\PersonDialog.cs"), fridge = ModSource(@"Home\HomeFridgeButton.cs");
         string links = ModSource(@"Wiring\FamilyLinks.cs");
         Check(phone.Contains("public static bool Hides => Partner.UsesSocial && Settings.HomeLife && Settings.HomeRoutines;")
-              && phone.Contains("Contacts.RemoveAll(c => c != null && c.id == FamilyId)") && director.Contains("FamilyPhone.Hides != _hides"),
-            "family face to face: no Family contact while Social keeps the partner and the fridge's board is there; an earlier one is taken off, and switching either brings it back");
+              && phone.Contains("if (!Hides || Saved(FamilyId))") && director.Contains("FamilyPhone.Hides != _hides"),
+            "family face to face: no new Family contact while Social keeps the partner and the fridge's board is there, an earlier one kept, and switching either brings it back");
         string[] call = { "HardTimes.Book)))", "HardTimes.CallApart)))", "HardTimes.ComeHome)))", "HardTimes.EndAsk)))", "Relatives.GoToMoms)))", "Relatives.InLawFavour)))" };
         Check(Array.TrueForAll(call, choices.Contains) && Regex.Matches(choices, @"list\.Add\(Call\(").Count == call.Length + 1
               && choices.Contains("list.Add(Call(new Choice(() => FamilyState.Together && s().LivesIn && BuildingManager.IsInsideBuilding")
@@ -173,5 +177,122 @@ internal static partial class Program
         Match inLaws = Regex.Match(ModSource(@"Family\Relatives.cs"), @"s\.Harmony < (\d+)f \? ""reallife_family_inlaws_advice_tense""");
         Check(word.Success && word.Groups[1].Value == "60" && inLaws.Success && int.Parse(inLaws.Groups[1].Value) <= 60,
             "family fix: counselling is on offer wherever the texts say things are tense and the in-laws suggest a counsellor");
+    }
+
+    // With the partner's expectations switched off the car handed over stayed out of the city, still theirs, and the game
+    // went on billing it parking every hour (it bills a legally parked car by its saved state, object or none); it was billed
+    // with the switch on too. Theirs, it has no parking state; off, it is the player's again, in the city or at a repair bay.
+    private static void FamilyCarParked()
+    {
+        string car = ModSource(@"Family\PartnerCar.cs");
+        string hourly = MemberText(car, "public static void Hourly()"), release = MemberText(car, "private static void Release(VehicleInstance v, VehicleController controller)");
+        int off = hourly.IndexOf("if (!Settings.FamilyExpect)", StringComparison.Ordinal), rel = hourly.IndexOf("Release(v, controller);", StringComparison.Ordinal);
+        int hide = hourly.IndexOf("Economy.EstateGame.Hide(controller);", StringComparison.Ordinal);
+        Check(off > 0 && rel > off && hide > rel && hourly.Contains("Off(v);")
+              && MemberText(car, "private static void Off(VehicleInstance v)").Contains("v.parkingState = ParkingState.NotAvailable;")
+              && MemberText(car, "private static void Back(VehicleInstance v)").Contains("v.parkingState = ParkingState.Legal;"),
+            "family car: with the switch off the car is let go before anything hides it; while it is theirs it has no parking state, and back with the player it is parked");
+        string give = MemberText(car, "private static DialogEntry Give(VehicleController car)"), buy = MemberText(car, "private static DialogEntry Buy(string type, int price)");
+        string back = MemberText(car, "public static DialogEntry TakeBack()");
+        int buyOff = buy.IndexOf("Off(v);", StringComparison.Ordinal);
+        Check(give.IndexOf("Off(car.vehicleInstance);", StringComparison.Ordinal) > 0 && buyOff > 0 && buyOff < buy.IndexOf("save.VehicleInstances.Add(v);", StringComparison.Ordinal)
+              && back.IndexOf("Back(v);", StringComparison.Ordinal) > back.IndexOf("s.PCarId = null;", StringComparison.Ordinal) && back.IndexOf("s.PCarId = null;", StringComparison.Ordinal) > 0,
+            "family car: a car handed over or bought for them is billed no parking from that moment, and one asked back is parked again");
+        int session = release.IndexOf("GoingPublic.InSession", StringComparison.Ordinal), park = release.IndexOf("at = Park(v);", StringComparison.Ordinal);
+        int let = release.IndexOf("FamilyState.S.PCarId = null;", StringComparison.Ordinal);
+        Check(session > 0 && park > session && let > park && release.Contains("if (controller == null)") && release.Contains("catch (Exception e)")
+              && release.Contains("\"reallife_family_car_released\"") && release.Contains("Back(v);") && !release.Contains("Harmony(") && !release.Contains("Partner.Tell("),
+            "family car: let go with the switch off, a car a load made stays where it is, one with no object is made at a repair bay with a notice (never in a Going Public session), "
+            + "a failure leaves it theirs, and nothing is held against the player");
+        var words = LoadWords(IoPath.Combine(LocalesFolder(), "en.json"));
+        string notice = words != null && words.TryGetValue("reallife_family_car_released", out string n) ? n : string.Empty;
+        Check(notice.Length > 0 && notice.Length <= 240 && notice.Contains("{place}") && notice.Contains("{name}") && notice.Contains("{text}"),
+            "family car: the notice says where the car is, which car and whose it was, within 240 characters");
+    }
+
+    // With the social life on, the Family contact of an earlier session was taken off the save, and every message in its
+    // thread with it. It is kept now, answering and getting the family's texts; only a new one is not made. Nothing in family
+    // life takes a contact off the save (the uninstall step and a retired feature's clean-up are elsewhere).
+    private static void FamilyContactKept()
+    {
+        string phone = ModSource(@"Family\FamilyPhone.cs"), setup = MemberText(phone, "public static void Setup()");
+        string saved = MemberText(phone, "private static bool Saved(string id)");
+        Check(setup.Contains("if (!Hides || Saved(FamilyId))") && setup.Contains("FamilyContact = Register(FamilyId,") && setup.Contains("else if (Saved(PartnerId))")
+              && saved.Contains("contacts[i].id == id") && !saved.Contains("Remove"),
+            "family contact: with the social life on an earlier session's Family contact is registered again with its thread, and only a new one is not made");
+        string family = IoPath.GetFullPath(IoPath.Combine(LocalesFolder(), "..", "Scripts", "Family"));
+        var removing = new System.Collections.Generic.List<string>();
+        foreach (string file in Directory.GetFiles(family, "*.cs", SearchOption.AllDirectories))
+        {
+            if (Regex.IsMatch(File.ReadAllText(file), @"\.Contacts\s*\.\s*(RemoveAll|Remove|RemoveAt|Clear)\s*\("))
+            {
+                removing.Add(IoPath.GetFileName(file));
+            }
+        }
+        Check(removing.Count == 0, "family contact: nothing in family life takes a contact off the save, and its messages with it (" + string.Join(", ", removing) + ")");
+    }
+
+    // After the partner Social keeps retrained for the job they always wanted, Family had its own trade for them while People
+    // and everything said about them kept the old job. The dream is one of People's jobs now, and a yes is told to Social.
+    private static void FamilyRetrainedJob()
+    {
+        string[] people = new string[RealLifeOverhaul.SocialCatalogue.Jobs.Length - 1];
+        Array.Copy(RealLifeOverhaul.SocialCatalogue.Jobs, people, people.Length);
+        bool rule = PartnerJobRules.Count == people.Length && PartnerJobRules.Retired(RealLifeOverhaul.SocialCatalogue.Jobs[RealLifeOverhaul.SocialCatalogue.Jobs.Length - 1])
+                    && PartnerJobRules.DreamKey(5, PartnerJobRules.RetiredKey) == null && PartnerJobRules.DreamKey(5, "no such job") == null;
+        for (int seed = 1; seed <= 3000 && rule; seed++)
+        {
+            int s = seed * 7919;
+            foreach (string job in people)
+            {
+                string dream = PartnerJobRules.DreamKey(s, job);
+                rule &= dream != null && dream != job && Array.IndexOf(people, dream) >= 0 && dream == PartnerJobRules.DreamKey(s, job)
+                        && PartnerJobRules.TradeOf(dream, -1) >= 0 && PartnerJobRules.IncomeOf(dream, -1) > 0;
+            }
+        }
+        Check(rule, "family retrain: the job a partner in People always wanted is one of People's jobs, never the one they have or retired, the same every time, with hours and pay");
+        string wish = ModSource(@"Family\PartnerWish.cs"), links = ModSource(@"Wiring\FamilyLinks.cs"), bridge = ModSource(@"Family\FamilyBridges.cs");
+        string talk = MemberText(wish, "public static DialogEntry Talk()"), retrained = MemberText(wish, "private static void Retrained(FamilySave s, string job)");
+        string told = MemberText(links, "public bool PartnerJob(string jobKey)");
+        Check(talk.Contains("string people = stop ? null : PeopleDream;") && talk.Contains("FamilyText.T(people ?? Partner.KeyOf(dream))") && talk.Contains("Retrained(s, people);")
+              && wish.Contains("PartnerJobRules.DreamKey(FamilyState.S.PSeed, p.JobKey)")
+              && retrained.Contains("s.PJobKey = job;") && retrained.Contains("FamilyBridges.Social.PartnerJob(job)") && bridge.Contains("bool PartnerJob(string jobKey);")
+              && told.Contains("Array.IndexOf(SocialCatalogue.Jobs, jobKey)") && told.Contains("p.Job = job;") && told.Contains("catch (Exception e)"),
+            "family retrain: the ask names People's job, and a yes makes it the partner's job in People as well as in family life");
+    }
+
+    // The three fixes' lines in What's new, in every language's own file, in some reallife_changes_ row (the next row until a
+    // release numbers it), and the notice's key in the three languages every release carries.
+    private static void FamilyThreeTexts()
+    {
+        var lines = new System.Collections.Generic.Dictionary<string, string[]>
+        {
+            { "en", new[] { "no longer billed for parking while it is theirs", "a Family contact you already have stays", "People shows the new job" } },
+            { "pt", new[] { "não paga mais estacionamento enquanto é dele", "um contato Família que você já tem continua", "Pessoas mostra o novo trabalho" } },
+            { "zh-cn", new[] { "不再收停车费", "你已有的“家庭”联系人", "“人脉”会显示新工作" } },
+            { "de", new[] { "keine Parkgebühren mehr berechnet", "ein Familie-Kontakt, den du schon hast", "zeigt Leute den neuen Beruf" } },
+            { "fr", new[] { "n'est plus facturée en stationnement", "un contact Famille que vous avez déjà", "Personnes affiche le nouveau métier" } },
+            { "es", new[] { "ya no paga aparcamiento mientras es suyo", "un contacto Familia que ya tienes", "Gente muestra el nuevo trabajo" } },
+            { "ru", new[] { "больше не берут плату за парковку", "контакт «Семья», который у вас уже есть", "«Люди» показывают новую работу" } },
+            { "nl", new[] { "wordt geen parkeergeld meer gerekend", "een Familie-contact dat je al hebt", "toont Mensen de nieuwe baan" } },
+            { "tr", new[] { "artık otopark ücreti yazılmıyor", "zaten sahip olduğunuz Aile kişisi", "Kişiler yeni işi gösteriyor" } }
+        };
+        var lacking = new System.Collections.Generic.List<string>();
+        foreach (var language in lines)
+        {
+            var words = LoadWords(IoPath.Combine(LocalesFolder(), language.Key + ".json"));
+            foreach (string part in language.Value)
+            {
+                if (!AnyChangesRow(words, part))
+                {
+                    lacking.Add(language.Key + ": " + part);
+                }
+            }
+            if (Array.IndexOf(new[] { "en", "pt", "zh-cn" }, language.Key) >= 0 && (words == null || !words.TryGetValue("reallife_family_car_released", out string n) || !n.Contains("{place}")))
+            {
+                lacking.Add(language.Key + ": reallife_family_car_released");
+            }
+        }
+        Check(lacking.Count == 0, "family fixes: What's new has the three fix lines in all nine languages, and the car's notice is in en, pt and zh-cn (" + string.Join("; ", lacking) + ")");
     }
 }
