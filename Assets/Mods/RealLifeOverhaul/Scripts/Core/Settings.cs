@@ -28,6 +28,7 @@ namespace RealLifeOverhaul
         public const string TextsOfficialId = "texts_official";
         public const string TextsRivalsId = "texts_rivals";
         public const string TextsLedgerId = "texts_ledger";
+        public const string TextsServiceId = "texts_service";
         public const string PhoneCameraId = "phone_camera";
         public const string PhoneCameraGridId = "phone_camera_grid";
         public const string MouseLookId = "camera_mouselook";
@@ -328,6 +329,7 @@ namespace RealLifeOverhaul
         public static bool TextsOfficial = true;    // ...the city's accounts and their answers
         public static bool TextsRivals = true;      // ...the rival tycoons
         public static bool TextsLedger = true;      // ...the City Ledger's briefs
+        public static int TextsService = 0;         // ...Your own AI: the AI service the cards go to (Texts/TextProviders: 0 off, the default)
         public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
         public static bool PhoneCamera = true;      // the Camera and Gallery apps on the phone: rear camera and selfie, photos kept per save (Scripts/Photos)
         public static bool PhoneCameraGrid = true;  // ...the viewfinder opens with the rule of thirds' grid showing
@@ -666,6 +668,7 @@ namespace RealLifeOverhaul
             TextsOfficial = Bool(modId, TextsOfficialId, TextsOfficial);
             TextsRivals = Bool(modId, TextsRivalsId, TextsRivals);
             TextsLedger = Bool(modId, TextsLedgerId, TextsLedger);
+            TextsService = Int(modId, TextsServiceId, TextsService);
             PhoneCamera = Bool(modId, PhoneCameraId, PhoneCamera);
             PhoneCameraGrid = Bool(modId, PhoneCameraGridId, PhoneCameraGrid);
             MouseLook = Bool(modId, MouseLookId, MouseLook);

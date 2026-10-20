@@ -43,6 +43,13 @@ namespace RealLifeOverhaul.Meta
             { "reallife_meta_repair_button", "reallife_opt_caption_repair" },
             { "reallife_meta_check_button", "reallife_opt_caption_check" },
             { "reallife_texts_status", "reallife_opt_caption_check" },
+            { "reallife_textsai_key", "reallife_opt_caption_enter" },
+            { "reallife_textsai_chatgpt", "reallife_opt_caption_sign_in" },
+            { "reallife_textsai_model", CaptionChange },
+            { "reallife_textsai_address", CaptionChange },
+            { "reallife_textsai_forget", "reallife_opt_caption_forget" },
+            { "reallife_textsai_status", "reallife_opt_caption_check" },
+            { "reallife_textsai_usage", CaptionOpen },
             { "reallife_car_measure", "reallife_opt_caption_measure" },
         };
 

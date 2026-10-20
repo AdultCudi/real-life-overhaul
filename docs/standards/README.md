@@ -14,7 +14,7 @@ This standard is the set of numbered rules that every change to Real Life Overha
 | [texts.md](texts.md) | Locales, keys, British English, What's new, the Guide | RLO-TXT-001 to 012 |
 | [comments.md](comments.md) | What a comment is for, summaries, lengths | RLO-DOC-001 to 011 |
 | [git-and-review.md](git-and-review.md) | Branches, commits, pull requests, review, done, versions | RLO-GIT-001 to 011 |
-| [decisions/](decisions/README.md) | The architecture decision records behind the rules | ADR-0001 to 0005 |
+| [decisions/](decisions/README.md) | The architecture decision records behind the rules | ADR-0001 to 0006 |
 
 ## How to read a rule
 

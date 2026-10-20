@@ -1,6 +1,6 @@
 # 0005: RLO Texts runs a small text model on the player's own PC, offline
 
-**Status:** Accepted. **Date:** recorded 17 October 2026, from the code as it stands (0.29.0).
+**Status:** Accepted; extended by [0006](0006-your-own-ai.md) (Your own AI, off unless the player chooses a service). **Date:** recorded 17 October 2026, from the code as it stands (0.29.0).
 
 ## Context
 

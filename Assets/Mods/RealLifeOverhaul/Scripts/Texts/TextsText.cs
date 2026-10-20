@@ -16,5 +16,8 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>"the processor": where the model runs without a GPU, for the status.</summary>
         public static string Processor() => T("reallife_texts_processor");
+
+        /// <summary>A line of the browser's page after the ChatGPT sign-in, in the player's language, made safe for the page.</summary>
+        public static string Page(string key) => "<p>" + System.Net.WebUtility.HtmlEncode(T(key)) + "</p>";
     }
 }

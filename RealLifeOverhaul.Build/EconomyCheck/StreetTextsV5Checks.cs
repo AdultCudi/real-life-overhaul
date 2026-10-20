@@ -429,7 +429,7 @@ internal static partial class Program
               && texts.Contains("StreetCards.Moment(weekday, hour)") && texts.Contains("TextsGame.Clock(out int weekday, out int hour)"),
             "street talk, data v5: the card is the pack's data's, with the rain, the moment from the card's own weekday and hour, and whether they know the name");
         Check(talk.Contains("{ \"t_thanks\", StreetRules.WarmThanks(c) ? \"warm\" : \"cool\" }") && talk.Contains("{ \"t_weather\", _facts.Raining ? \"raining\" : string.Empty }")
-              && hub.Contains("TextIntents.Find(r.Intent, r.Branch, Data)"),
+              && hub.Contains("TextIntents.Find(r.Intent, r.Branch, _packData)"),
             "street talk, data v5: thanks warm or cool and the rain are decided with the turn's values; the hub builds the card of the pack's own data");
     }
 

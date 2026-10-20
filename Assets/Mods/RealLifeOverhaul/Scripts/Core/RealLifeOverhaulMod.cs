@@ -1024,6 +1024,7 @@ namespace RealLifeOverhaul
                 .Guarded(o => o.AddDistrictView())   // the district view on the city map (Scripts/Districts)
                 .Guarded(o => o.AddCityFaults())   // real faults in the city, and Flare's reports checked against them (Scripts/Faults)
                 .Guarded(o => o.AddTexts())   // RLO Texts: a small text model on the player's PC words the city's messages (Scripts/Texts)
+                .Guarded(o => o.AddOwnAi())   // Your own AI: RLO Texts' cards sent to an AI service the player chose, off unless chosen (Scripts/Texts)
                 .Guarded(o => o.AddStreetTalk())   // talking to anybody in the street, in the game's own dialogue panel (Scripts/Street)
                 .Guarded(o => o.AddPhotos())   // the Camera and Gallery apps on the phone (Scripts/Photos)
                 .AddHeader("reallife_civic_header")

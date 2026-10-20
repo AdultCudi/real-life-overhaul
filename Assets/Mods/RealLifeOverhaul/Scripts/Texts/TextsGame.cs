@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using BigAmbitions.DayNightCycle;
+using RealLifeOverhaul.GameUi;
+using TMPro;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -11,7 +14,8 @@ namespace RealLifeOverhaul.Texts
     /// <summary>
     /// The only part of RLO Texts that touches the game: where its folders are, the game's language, the player's name,
     /// the day and time as a card writes them, how fast game time runs, whether the game is quiet enough for background
-    /// work, and the game's own notices. Each read is a property or two; nothing here runs per frame.
+    /// work, the game's own notices, and for Your own AI the game's text box with what is typed hidden, and the browser.
+    /// Each read is a property or two; nothing here runs per frame.
     /// </summary>
     public static class TextsGame
     {
@@ -115,6 +119,72 @@ namespace RealLifeOverhaul.Texts
                 return false;
             }
             return !(PolicePursuit.Instance != null && PolicePursuit.Instance.Busy);
+        }
+
+        /// <summary>
+        /// The game's own text box, empty, for a key: what is typed shows as dots (the box's field set to a password's
+        /// while it is open, put back as it was when it closes either way). False, and nothing shown, without the box
+        /// (the main menu). Without the contract's field (GameContract.KeyHidden off) the box still works, unhidden.
+        /// </summary>
+        public static bool AskSecret(string placeholderKey, string buttonKey, Action<string> done, int most)
+        {
+            if (!TextBox.CanType)
+            {
+                return false;
+            }
+            TMP_InputField field = KeyField();
+            TMP_InputField.ContentType was = field != null ? field.contentType : TMP_InputField.ContentType.Standard;
+            if (field != null)
+            {
+                field.contentType = TMP_InputField.ContentType.Password;
+                field.ForceLabelUpdate();
+            }
+            _secretDone = done;
+            _secretWas = was;
+            _secretTyped = _secretTyped ?? Guard.Wrap<string>(SecretTyped);
+            _secretClosed = _secretClosed ?? Guard.Wrap(SecretClosed);
+            return TextBox.Ask(placeholderKey, buttonKey, _secretTyped, _secretClosed, string.Empty, false, most);
+        }
+
+        private static Action<string> _secretDone, _secretTyped;
+        private static Action _secretClosed;
+        private static TMP_InputField.ContentType _secretWas;
+
+        private static void SecretTyped(string text)
+        {
+            SecretClosed();
+            Action<string> done = _secretDone;
+            _secretDone = null;
+            done?.Invoke(text);
+        }
+
+        // The box's field as it was, and empty: a key never stays in it.
+        private static void SecretClosed()
+        {
+            TMP_InputField field = KeyField();
+            if (field != null)
+            {
+                field.text = string.Empty;
+                field.contentType = _secretWas;
+                field.ForceLabelUpdate();
+            }
+        }
+
+        private static TMP_InputField KeyField()
+        {
+            if (GameContract.KeyHidden.Off)
+            {
+                return null;
+            }
+            UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+            FieldInfo f = GameContract.TextInputField.Field;
+            return uis != null && uis.textInputUi != null && f != null ? f.GetValue(uis.textInputUi) as TMP_InputField : null;
+        }
+
+        /// <summary>An address in the player's browser (the ChatGPT sign-in, its usage page): Unity's own call.</summary>
+        public static void OpenUrl(string url)
+        {
+            Application.OpenURL(url);
         }
 
         /// <summary>One of the game's own notices.</summary>

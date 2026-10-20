@@ -61,7 +61,8 @@ namespace RealLifeOverhaul.Texts
 
         // Kept across saves and scenes: the server, its queue and what it has written (one model loaded once a session).
         private static readonly TextQueue Queue = new TextQueue();
-        private static readonly TextsHub Hub = new TextsHub(Queue);
+        private static readonly TextQueue ServiceQueue = new TextQueue();   // Your own AI's (TextsDirector.Service)
+        private static readonly TextsHub Hub = new TextsHub(Queue, ServiceQueue);
         private static TextServer _server;
         private static TextPack _pack;
         private static string _device, _deviceLabel, _serverFor;
@@ -180,12 +181,15 @@ namespace RealLifeOverhaul.Texts
             int frames = Time.frameCount - _frameCount;
             _frameCount = Time.frameCount;
             _frameTime = frames > 0 && since > 0f ? since * 1000f / frames : 0f;   // (frames counted between two looks: the mean frame since the last)
+            SignInLook();
+            SignOutLook();
             if (!Settings.Texts)
             {
                 if (_server != null)
                 {
                     StopServer("switched off");
                 }
+                StopService("RLO Texts switched off");
                 Hub.Clear();
                 Keep(now);
                 return;
@@ -201,14 +205,20 @@ namespace RealLifeOverhaul.Texts
                 return;   // (the main menu: the model is started only once a save is loaded, so its memory is used only while playing)
             }
             Run();
-            if (_pack == null)
+            RunService();
+            if (_pack == null && _service == null)
             {
                 Hub.Clear();
                 return;
             }
+            bool quiet = TextsGame.Quiet(_frameTime);
+            if (_service != null)
+            {
+                _service.Quiet = quiet;
+            }
             if (_server != null)
             {
-                _server.Quiet = TextsGame.Quiet(_frameTime);
+                _server.Quiet = quiet;
                 if (_server.State == TextServerState.Ready && !_speedTold)
                 {
                     Measured();
@@ -626,6 +636,10 @@ namespace RealLifeOverhaul.Texts
         {
             Dictionary<string, string> data = Status(out string key);
             TextsGame.Notice(key, data, 16f);
+            if (Settings.Texts && Settings.TextsService != 0)
+            {
+                ShowServiceStatus();   // (Your own AI's own line beside the pack's)
+            }
         }
     }
 }

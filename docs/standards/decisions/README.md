@@ -9,6 +9,7 @@ An architecture decision record (ADR) says why the code is built the way it is: 
 | [0003](0003-save-under-reallife-keys.md) | Per-save state under `reallife:` keys | RLO-ARC-014, RLO-ARC-015 |
 | [0004](0004-game-free-rules.md) | Game-free rules classes, checked offline | RLO-ARC-002, RLO-TST-001 |
 | [0005](0005-rlo-texts-local-model.md) | RLO Texts runs a small text model on the player's own PC, offline | RLO-PERF-001, RLO-PERF-011, RLO-MP-004, RLO-ARC-009 |
+| [0006](0006-your-own-ai.md) | Your own AI: RLO Texts' cards may go to an AI service the player chooses | RLO-PERF-001, RLO-MP-004, RLO-MP-007, RLO-ARC-009, RLO-ARC-012 |
 
 ## Adding a record
 

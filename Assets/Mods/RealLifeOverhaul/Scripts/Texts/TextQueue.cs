@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Texts
         public int Id;
         public string Key;              // what it is for ("fp:123", "ph:dana:42"): the same key asked again finds this one
         public string Prompt;           // the ChatML text (TextCard.ChatMl)
+        public string Card;             // the card alone (TextCard.Card): what an AI service is sent, after TextCard.System (Your own AI)
         public TextPriority Priority;
         public double Asked;            // real seconds (TextQueue's clock) it was asked
         public double Deadline;         // ...by which it must be shown; past it the written line is used
@@ -186,6 +187,22 @@ namespace RealLifeOverhaul.Texts
                 for (int i = 0; i < _waiting.Count; i++)
                 {
                     _waiting[i].State = TextJobState.Dropped;
+                }
+                _waiting.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Every waiting request missed at once (an AI service resting after a fault, or switched off): their owners fall
+        /// back without waiting for their deadlines.
+        /// </summary>
+        public void MissAll(string why)
+        {
+            lock (_lock)
+            {
+                for (int i = 0; i < _waiting.Count; i++)
+                {
+                    Miss(_waiting[i], why);
                 }
                 _waiting.Clear();
             }
