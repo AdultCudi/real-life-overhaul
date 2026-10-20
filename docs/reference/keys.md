@@ -192,3 +192,4 @@ A key the game itself has bound is allowed and named beside the button (read fro
 | `PerfProbe`, `PerfBench` | F7, Shift+F7 | `Performance/PerfDirector` |
 | `PhoneDump`, `CharacterReport` | F8, F9 | the two development aids |
 | `PhotoMode` | F10 | `Leisure/Photo/PhotoMode`: into and out of photo mode (its other keys are fixed: `PhotoKeys`) |
+| `Walk` | F3 | `Walking/WalkDirector`: on foot, the game's own walk, and a press again for the usual pace. ContractCheck (`KeyClashChecks.cs`) fails if its default is a key of the game's, the mod's, the system's or another mod's |

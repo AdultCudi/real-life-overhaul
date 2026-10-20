@@ -16,6 +16,9 @@
             the game, every page of a dialog, maker of a dialog and options page given to it, behind the guard;
          5. every key of the game's own texts and data the mod's code names (GameKeys.txt) against the game's en.json,
             and that the list is complete;
+         6. the walk key's default (read from the built mod) against every key that is someone's (KeyClashChecks.cs with
+            Core/KeyRules.cs): the game's input assets in its own assemblies, every key its code and the mod's read by
+            themselves (from the IL), the mod's other bindings, and what Windows, Steam, the overlays and other mods take;
        and runs the checks of the contract's logic: a missing piece switches off the right parts and only those, a run
        of faults switches a feature off, a save line that cannot be read is kept as it was, the build rules.
        Compiles the mod's own game-free files, so it checks exactly what ships.
@@ -41,6 +44,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\ButtonRules.cs" Link="Mod\ButtonRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PagerRules.cs" Link="Mod\PagerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\BoxClock.cs" Link="Mod\BoxClock.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\KeyRules.cs" Link="Mod\KeyRules.cs" />
     <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />
   </ItemGroup>
 
