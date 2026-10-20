@@ -168,7 +168,7 @@ The clips are already asked for by id, before today's stand-in, so they drop in 
 | a diploma | 82 to 90 | an electrician 90, IT support 90 | the courier at its top level, about 99 with the distance |
 | a degree | 110 to 130 | a junior developer 120, a banker 130 | a tenth more than the courier at its top; eight hours about the courier's whole capped day, 954 |
 
-The top of a ladder that starts with a degree pays three to eight times its first rung (a chief technology officer 700, a chief executive 950); every rung pays at least a twentieth more than the one below. Before, a barista started on 18 and a junior developer on 38.
+The top of a ladder that starts with a degree pays three to eight times its first rung (a chief technology officer 700, a chief executive 950); every rung pays at least a twentieth more than the one below. Before, a barista started on 18 and a junior developer on 38. A save from before has its job's rate, its open offers and the board's vacancies raised once at load to the least a post at that rank and kind of employer pays now (`ProRules.Reprice`, `LeastPay`); a rate above that, earned with rises or haggling, stays as it was.
 
 Courses are weeks, not months: a short course one or two, a diploma or a course after a degree two or three, a degree three or four (nine to twelve classes, three a week; it was two dozen, eight weeks or more). A course keeps its weeks whatever the year's length.
 

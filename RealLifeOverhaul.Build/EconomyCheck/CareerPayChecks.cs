@@ -23,6 +23,30 @@ internal static partial class Program
         CareerPace();
         CareerClimb();
         CareerFit();
+        CareerReprice();
+    }
+
+    // A save from before: the barista's job at 18 an hour, an offer and a vacancy at the old rates, and a rate above the
+    // floor earned with rises; once at load the old ones come up to the least a post pays now, the rest stay.
+    private static void CareerReprice()
+    {
+        var w = new WorkFile();
+        w.Job = new Job { Hired = 1, RankDay = 1, Pay = 1800 };
+        new Opening { Prof = ProCatalogue.BarStaff, Rank = 0, Kind = (int)EmployerKind.City, Employer = "Bean There" }.CopyTo(w.Job.Post);
+        w.Openings.Add(new Opening { Id = 1, Prof = ProCatalogue.Developer, Rank = 1, Kind = (int)EmployerKind.TechFirm, Employer = "Skyvault Systems", Pay = 5500 });
+        w.Openings.Add(new Opening { Id = 2, Prof = ProCatalogue.Developer, Rank = 0, Kind = (int)EmployerKind.City, Employer = "Codeharbour Software", Pay = 20000 });
+        var a = new Application { Offer = 4000 };
+        new Opening { Prof = ProCatalogue.Nurse, Rank = 1, Kind = (int)EmployerKind.Public, Employer = "Mercy", Pay = 4000 }.CopyTo(a.Post);
+        w.Applications.Add(a);
+        int least = ProRules.LeastPay(w.Job.Post);
+        int raised = ProRules.Reprice(w);
+        Check(raised == 4 && w.Job.Pay == least && least >= ProCatalogue.Find(ProCatalogue.BarStaff).Ranks[0].Pay * 80 / 100,
+            "reprice: a job saved at the old 18 an hour comes up to the least a post pays now (" + w.Job.Pay + ")");
+        Check(w.Openings[0].Pay == ProRules.LeastPay(w.Openings[0]) && w.Openings[1].Pay == 20000 && a.Offer == ProRules.LeastPay(a.Post) && a.Post.Pay == a.Offer,
+            "reprice: old vacancies and an open offer come up; a rate above the floor stays as it was");
+        Check(ProRules.Reprice(w) == 0 && ProRules.Reprice(null) == 0 && ProRules.Reprice(new WorkFile()) == 0, "reprice: once is enough; nothing to raise in a new or empty file");
+        Check(ProRules.LeastPay(w.Job.Post) <= ProRules.OfferPay(ProRules.PostPay(w.Job.Def, 0, EmployerKind.City, 850), ProRules.OfferPass),
+            "reprice: the floor is never above what a fresh offer in the slackest market pays");
     }
 
     // A game hour of a gig at a level: a shift's piece pay (a courier's round of about 800 m with its distance) over the
