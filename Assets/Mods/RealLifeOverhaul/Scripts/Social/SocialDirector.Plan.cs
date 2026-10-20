@@ -73,7 +73,7 @@ namespace RealLifeOverhaul
                 return;
             }
             if (!SocialPlaces.Resolve(plan.Street, plan.Number, out Venue venue)
-                && !SocialPlaces.Find(plan.Kind, new Vector3(plan.X, plan.Y, plan.Z), 0f, 250f, out venue))
+                && !SocialPlaces.Find(plan.Kind, new Vector3(plan.X, plan.Y, plan.Z), 0f, 250f, out venue, null, plan.Time))
             {
                 // The place is not what it was: called off, nobody's fault.
                 SocialLife.SendText(person, "reallife_social_plan_lost", SocialLife.Data(person), true);

@@ -1,4 +1,5 @@
 using System;
+using BigAmbitions.DayNightCycle;
 using Extensions;
 using Helpers;
 using Localizor;
@@ -132,8 +133,11 @@ namespace RealLifeOverhaul
             return "reallife_news_street_unknown".GetLocalization();
         }
 
-        /// <summary>One of the three nearest places that will do for an outing between two distances, so that it is not always the same.</summary>
-        public static bool Find(PlanKind kind, Vector3 around, float minDistance, float maxDistance, out Venue venue, CityBuildingController not = null)
+        /// <summary>
+        /// One of the three nearest places that will do for an outing between two distances, so that it is not always the same.
+        /// With <paramref name="openAt"/> (game minutes) only a place open for the whole outing from then is counted (<see cref="OpenFor"/>).
+        /// </summary>
+        public static bool Find(PlanKind kind, Vector3 around, float minDistance, float maxDistance, out Venue venue, CityBuildingController not = null, float openAt = -1f)
         {
             venue = default;
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -149,7 +153,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < buildings.Length; i++)
             {
                 CityBuildingController building = buildings[i];
-                if (building == null || building == not || !Suits(building, kind, def))
+                if (building == null || building == not || !Suits(building, kind, def) || (openAt >= 0f && !OpenFor(building, def, openAt)))
                 {
                     continue;
                 }
@@ -216,6 +220,66 @@ namespace RealLifeOverhaul
                 if (address != null && address.streetNumber == number && address.streetName == street)
                 {
                     return Make(building, out venue);
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Whether a place will be open for the whole of an outing that starts at a time (game minutes): by its business's own
+        /// opening hours for each day of the week, and not temporarily closed. An outing with no business of the city's (a walk,
+        /// a drive, a lift, a look round the player's own business) and a building with no hours to read always will be. What
+        /// cannot be known ahead (a fire, an inspection) is still found at the door (<see cref="Open"/>). On a step of a call,
+        /// never per frame; nothing allocated.
+        /// </summary>
+        public static bool OpenFor(CityBuildingController building, OutingDef def, float at)
+        {
+            if (def == null || def.Match == null || building == null)
+            {
+                return true;
+            }
+            try
+            {
+                BuildingRegistration registration = building.buildingRegistration;
+                if (registration == null || registration.scheduleDays == null || registration.scheduleDays.Count == 0)
+                {
+                    return true;
+                }
+                if (registration.temporarilyClosed)
+                {
+                    return false;
+                }
+                _hoursOf = registration;
+                return SocialRules.OpenThrough(at, def.Minutes, OpenAtHour);
+            }
+            catch (Exception)
+            {
+                return true;   // (hours that cannot be read stop nothing: the door is still looked at on arrival)
+            }
+            finally
+            {
+                _hoursOf = null;
+            }
+        }
+
+        /// <summary><see cref="OpenFor"/> for a venue already chosen, by its kind of outing.</summary>
+        public static bool OpenFor(in Venue venue, PlanKind kind, float at)
+        {
+            return venue.Anywhere || OpenFor(venue.Building, SocialCatalogue.Outing(kind), at);
+        }
+
+        private static BuildingRegistration _hoursOf;   // the business OpenAtHour reads, only for the length of one OpenFor
+        private static readonly Func<int, int, bool> OpenAtHour = HoursOpen;   // (made once: OpenFor allocates nothing)
+
+        private static bool HoursOpen(int day, int hour)
+        {
+            DayOfWeekOrdered weekday = TimeHelper.GetDayOfWeek(Mathf.Max(1, day));
+            for (int i = 0; i < _hoursOf.scheduleDays.Count; i++)
+            {
+                ScheduleDay schedule = _hoursOf.scheduleDays[i];
+                if (schedule != null && schedule.day == weekday)
+                {
+                    return schedule.isOpen && schedule.IsOpenAtHour(hour);
                 }
             }
             return false;

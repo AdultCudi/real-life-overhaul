@@ -5,7 +5,7 @@ using RealLifeOverhaul;
 // code did wrong. A friend who cannot pay a loan back on the day has the few more days they ask for; a report made
 // indoors moves to the building's door only when it was made where the player stands; a favour asked by a call nobody
 // answered lapses at no cost when no text could follow; a new cast has one personal trainer at the most; an outing put
-// forward on a call is never turned down a step later.
+// forward on a call is never turned down a step later; an outing is never agreed for a place that is shut at the hour.
 internal static partial class Program
 {
     private static void SocialFixes()
@@ -15,6 +15,7 @@ internal static partial class Program
         SocialMissedCall();
         SocialOneTrainer();
         SocialPlanKept();
+        SocialOpenHours();
     }
 
     // Lent on day 10 to be paid back on day 15; the excuse on day 15 asks for a few more days, and nothing is asked in them.
@@ -156,7 +157,7 @@ internal static partial class Program
         string when = MemberText(dialog, "private DialogEntry When(PlanKind kind, Venue venue, float first, bool theirIdea)");
         string agree = MemberText(dialog, "private DialogEntry Agree(PlanKind kind, Venue venue, float time, bool theirIdea)");
         string asked = MemberText(dialog, "private DialogEntry Asked()");
-        int slot = plans.IndexOf("float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + SocialRules.PlanLead);", StringComparison.Ordinal);
+        int slot = plans.IndexOf("PlanFind found = SocialLife.PlaceAndHour(_p, kind, SocialDirector.Where(), 40f, 1800f, SocialLife.Now + SocialRules.PlanLead, out Venue venue, out float first);", StringComparison.Ordinal);
         int offer = plans.IndexOf("Line(def.Offer, data)", StringComparison.Ordinal);
         int mood = plans.IndexOf("SocialRules.MoodSaysNo(_p.Mood, false, _moodRoll)", StringComparison.Ordinal);
         Check(plans.Length > 0 && slot > 0 && offer > slot && mood > 0 && mood < slot && plans.Contains("Plans(at + 1, tried + 1, true)")
@@ -166,10 +167,10 @@ internal static partial class Program
         Check(when.Length > 0 && agree.Length > 0 && !when.Contains("Close(") && !when.Contains("PlanBusy") && !when.Contains("SocialLife.Now") && !agree.Contains("Random")
               && !agree.Contains("PlanMood") && agree.Contains("SocialLife.MakePlan(_p, kind, time, venue, theirIdea, out string reason)"),
             "social, plans: after the player's yes nothing turns it down: the hour put forward is the one offered, and the plan is made at it");
-        int invited = asked.IndexOf("float first = SocialLife.NextSlot(_p, kind, SocialLife.Now + SocialRules.PlanLead);", StringComparison.Ordinal);
+        int invited = asked.IndexOf("found = SocialLife.PlaceAndHour(_p, kind, player, 40f, 1800f, SocialLife.Now + SocialRules.PlanLead, out venue, out first);", StringComparison.Ordinal);
         int moving = asked.IndexOf("float time = SocialLife.NextSlot(_p, PlanKind.Walk, SocialLife.Now + SocialRules.PlanLead);", StringComparison.Ordinal);
         Check(invited > 0 && invited < asked.IndexOf("Line(def.Offer, invite)", StringComparison.Ordinal) && asked.Contains("When(kind, venue, first, true)")
-              && moving > 0 && moving < asked.IndexOf("DialogEntry moving = Line(def.Offer, data);", StringComparison.Ordinal) && Occurs(asked, "NextSlot(") == 2,
+              && moving > 0 && moving < asked.IndexOf("DialogEntry moving = Line(def.Offer, data);", StringComparison.Ordinal) && Occurs(asked, "NextSlot(") == 1 && Occurs(asked, "PlaceAndHour(") == 1,
             "social, plans: their own invitation and a move they ask help with find the hour before they put it, and keep it after the yes");
         string invite = MemberText(ModSource(@"Social\SocialDirector.Contact.cs"), "private void Invite(SocialPerson person, float real)");
         string life = ModSource(@"Social\SocialLife.cs");
@@ -177,5 +178,47 @@ internal static partial class Program
         Check(free > 0 && free < invite.IndexOf("offer.Person = person.Index;", StringComparison.Ordinal)
               && MemberText(life, "public static float NextSlot(").Contains("SocialRules.FirstSlot(person, SocialCatalogue.Outing(kind), from, WeekendOf)") && !life.Contains("new Timestamp(at)"),
             "social, plans: nobody texts an invitation they have no free hour for, and every hour is found by the one rule");
+    }
+
+    // A cinema open 10 to 22 and a club open 20 to 3, shut on the week's last day: an outing is agreed only for an hour at
+    // which the place is open for all of it, and every way a plan is made asks for the place and the hour together.
+    private static void SocialOpenHours()
+    {
+        Func<int, int, bool> cinema = (d, h) => d % 7 != 6 && h >= 10 && h < 22;
+        Func<int, int, bool> club = (d, h) => d % 7 != 6 && (h >= 20 || h < 3);
+        const int film = 130, night = 110;
+        Check(SocialRules.OpenThrough(19f * 60f, film, cinema) && !SocialRules.OpenThrough(21f * 60f, film, cinema) && !SocialRules.OpenThrough(9f * 60f, film, cinema)
+              && SocialRules.OpenThrough(19f * 60f + 50f, film, cinema) && !SocialRules.OpenThrough(19f * 60f + 51f, film, cinema),
+            "social, open hours: a film at 19:00 fits a cinema shut at 22:00, one at 21:00 or before it opens does not, and the last minute counts, not the one after it");
+        Check(SocialRules.OpenThrough(23f * 60f, night, club) && !SocialRules.OpenThrough(2f * 60f, night, club)
+              && !SocialRules.OpenThrough(5f * 1440f + 23f * 60f, night, club) && !SocialRules.OpenThrough(6f * 1440f + 20f * 60f, night, club),
+            "social, open hours: drinks over midnight fit a club open to 3, run into its closing they do not, and not into or on the day it is shut");
+        Check(SocialRules.OpenThrough(12f * 60f, 0, cinema) && !SocialRules.OpenThrough(22f * 60f, 0, cinema),
+            "social, open hours: an outing of no length needs only the hour it starts in to be open");
+
+        string places = ModSource(@"Social\SocialPlaces.cs"), life = ModSource(@"Social\SocialLife.cs"), dialog = ModSource(@"Social\PersonDialog.cs");
+        string find = MemberText(places, "public static bool Find(PlanKind kind");
+        string openFor = MemberText(places, "public static bool OpenFor(CityBuildingController building");
+        Check(find.Contains("(openAt >= 0f && !OpenFor(building, def, openAt))") && openFor.Contains("def.Match == null") && openFor.Contains("registration.temporarilyClosed")
+              && openFor.Contains("SocialRules.OpenThrough(at, def.Minutes, OpenAtHour)"),
+            "social, open hours: a place is looked for open for the whole outing at the hour asked, by its business's own week of hours, and an outing with no business is never held up");
+        string both = MemberText(life, "public static PlanFind PlaceAndHour(");
+        Check(both.Contains("SocialPlaces.Find(kind, around, minDistance, maxDistance, out venue, null, time)") && both.Contains("SocialRules.OpenTries")
+              && both.Contains("return PlanFind.Shut;") && MemberText(life, "public static float NextOpenSlot(").Contains("SocialPlaces.OpenFor(venue, kind, time)"),
+            "social, open hours: their free hours are tried in turn for one at which a place nearby is open, and a second hour offered is open too");
+        string plans = MemberText(dialog, "private DialogEntry Plans(int at, int tried");
+        string flare = ModSource(@"Wiring\FlareInviteLinks.cs"), staged = ModSource(@"Social\SocialDirector.Plan.cs");
+        Check(plans.Contains("SocialLife.PlaceAndHour(") && plans.Contains("found == PlanFind.Shut") && plans.Contains("ShutWalk(")
+              && Occurs(dialog, "SocialLife.PlaceAndHour(") == 3 && dialog.Contains("SocialLife.NextOpenSlot(_p, kind, venue, first + 180f)")
+              && !dialog.Contains("SocialPlaces.Find(kind, SocialDirector.Where(), 40f, 1800f, out Venue venue)") && !dialog.Contains("SocialPlaces.Find(kind, player, 40f, 1800f, out Venue venue)"),
+            "social, open hours: what the player asks for, what they invite to and the walk offered instead all find the place and the hour together");
+        Check(flare.Contains("SocialLife.PlaceAndHour(p, a.Kind, SocialDirector.Where(), PlaceFrom, PlaceTo, a.From, out Venue venue, out float time)")
+              && staged.Contains("out venue, null, plan.Time)"),
+            "social, open hours: a plan made on Flare or in the street, and a place found again on the day, are open at the hour agreed");
+        string shutWalk = MemberText(dialog, "private DialogEntry ShutWalk(");
+        string asked = MemberText(dialog, "private DialogEntry Asked()");
+        Check(shutWalk.Contains("theirIdea ? \"reallife_social_btn_not_this_time\" : \"reallife_social_btn_other_idea\"") && asked.Contains("ShutWalk(kind, true, Declined)")
+              && asked.Contains("entry.OnSecondOption = Declined;") && MemberText(dialog, "private DialogEntry Declined()").Contains("SocialLife.Change(_p, 0f, -1f, 0f)"),
+            "social, open hours: the walk put forward in place of their own invitation is turned down as the invitation is, not this time and at the same small cost");
     }
 }
