@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Family
             });
         }
 
-        // The bigger wish about work asked for now, whatever the player's cash: the text, then the talk in a family conversation.
+        // The bigger wish about work asked for now, whatever the player's cash: the text, then the talk face to face at home.
         public void TestWish()
         {
             if (!TestReady("Family wish", false, false) || !TestPartner("Family wish"))

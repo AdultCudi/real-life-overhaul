@@ -1,9 +1,10 @@
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// The partner's bigger wish about work once the player is rich, game-free: at a million in cash a partner who lives with
-    /// them and still works asks once either to stop working or to retrain for the job they always wanted (which of the two,
-    /// and which job, from their seed); a no is asked again a month later. Retraining takes some days without pay, then they
+    /// The partner's bigger wish about work once the player is rich, game-free: with the daily income held at 5,000 all week
+    /// and 100,000 in cash (the start's prices), a partner who lives with them and still works asks once either to stop
+    /// working or to retrain for the job they always wanted (which of the two, and which job, from their seed); a no is asked
+    /// again a month later. Retraining takes some days without pay, then they
     /// start the new job on full days. Nothing here is read per frame.
     /// </summary>
     public static class PartnerWishRules
