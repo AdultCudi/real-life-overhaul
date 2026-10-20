@@ -91,6 +91,24 @@ namespace RealLifeOverhaul.Family
             });
         }
 
+        // A new step of the player's money heard of now, whatever their cash: the partner's text and its effect, by how they lean.
+        public void TestWealth()
+        {
+            if (!TestReady("Family wealth", false, false) || !TestPartner("Family wealth"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                if (!Settings.FamilyWealthMood)
+                {
+                    Refuse("Family wealth", "reallife_family_no_wealth_off");
+                    return;
+                }
+                PartnerWealth.React(PartnerWealth.Leaning);
+            });
+        }
+
         public void TestPropose()
         {
             if (!TestReady("Family proposal", false, true) || !TestPartner("Family proposal"))

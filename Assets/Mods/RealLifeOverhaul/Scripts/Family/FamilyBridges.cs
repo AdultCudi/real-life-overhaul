@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Family
         public int FreeFrom;         // the hours of a weekday they are free (0 and 0: the owner keeps none)
         public int FreeTo;
         public bool NightOwl;        // they keep late hours: up late, asleep in the morning
+        public int Leaning;          // how they take the player's money: PartnerWealthRules.Neither, Supportive or Envious
     }
 
     /// <summary>What family life tells the owner of relationships about. Each is sent once, when it happens.</summary>

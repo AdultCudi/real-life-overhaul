@@ -202,6 +202,8 @@ namespace RealLifeOverhaul.Family
         public int PFreeTo;
         public bool PNightOwl;       // ...and whether they keep late hours
         public List<int> IncomeWeek = new List<int>();   // the player's daily income on each of the last days, newest last (IncomeRules)
+        // How the partner takes the player's money (PartnerWealth).
+        public int PWealthStep;      // the highest step of the player's cash they have reacted to
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>
