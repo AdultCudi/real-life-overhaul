@@ -955,12 +955,12 @@ internal static partial class Program
         foreach (KeyValuePair<string, string> kv in marks)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(folder, kv.Key + ".json"));
-            if (!words.TryGetValue("reallife_changes_next", out string next) || !next.Contains(kv.Value) || !words["reallife_guide_texts"].Contains(kv.Key == "en" ? "Your own AI" : kv.Value.TrimEnd(' ', ':', '：')))
+            if (!AnyChangesRow(words, kv.Value) || !words["reallife_guide_texts"].Contains(kv.Key == "en" ? "Your own AI" : kv.Value.TrimEnd(' ', ':', '：')))
             {
                 lacking.Add(kv.Key);
             }
         }
-        Check(lacking.Count == 0, "your own AI, What's new and the Guide: its line in the next row of all nine languages, and RLO Texts' page mended in each (" + string.Join(", ", lacking) + ")");
+        Check(lacking.Count == 0, "your own AI, What's new and the Guide: its line in a What's new row (the next row until a release numbers it) of all nine languages, and RLO Texts' page mended in each (" + string.Join(", ", lacking) + ")");
         var longOnes = new List<string>();
         foreach (string k in new[] { "reallife_textsai_note_sending", "reallife_textsai_chatgpt_welcome", "reallife_textsai_chatgpt_limit", "reallife_textsai_status_ready", "reallife_textsai_key_kept",
                      "reallife_textsai_chatgpt_out_unconfirmed", "reallife_textsai_status_failed", "reallife_textsai_status_resting", "reallife_textsai_test_none" })

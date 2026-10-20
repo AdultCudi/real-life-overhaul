@@ -471,8 +471,14 @@ internal static partial class Program
                 Check(doc.RootElement.TryGetProperty(notice, out JsonElement value) && value.GetString().Length <= 240,
                       "walking texts: the notice " + notice + " is at most 240 characters in " + code);
             }
-            string next = doc.RootElement.GetProperty("reallife_changes_next").GetString();
-            Check(next.Contains("F3"), "walking texts: What's new's next row names the walk key in " + code);
+            // Any What's new row: the line is in the next row until a release numbers it into its own.
+            bool walkLine = false;
+            foreach (JsonProperty row in doc.RootElement.EnumerateObject())
+            {
+                walkLine |= row.Name.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Name.EndsWith("_title", StringComparison.Ordinal)
+                         && row.Value.ValueKind == JsonValueKind.String && row.Value.GetString().Contains("F3");
+            }
+            Check(walkLine, "walking texts: a What's new row names the walk key in " + code);
         }
     }
 }
