@@ -1,10 +1,10 @@
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// How the partner takes the player's money, game-free: the player's cash against five steps (Social's wealth steps), a
-    /// reaction once at each new step by how they lean (proud, envious or neither), and while the player is well off a
-    /// daily drift of the home's harmony: down for the envious as the gap grows, half as much once married, a touch up for
-    /// the supportive. Nothing here is read per frame.
+    /// How the partner takes the player's money, game-free: the player's prosperity (the daily income held all week and the
+    /// cash) against five steps, a reaction once at each new step by how they lean (proud, envious or neither), and while
+    /// the player is well off a daily drift of the home's harmony: down for the envious as the gap grows, half as much once
+    /// married, a touch up for the supportive. Nothing here is read per frame.
     /// </summary>
     public static class PartnerWealthRules
     {

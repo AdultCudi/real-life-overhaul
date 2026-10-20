@@ -2,7 +2,7 @@ using System;
 using RealLifeOverhaul.Family;
 
 // How the partner takes the player's money (Scripts/Family/PartnerWealth): a reaction once at each new step of the
-// player's cash, by how they lean, one for steps skipped; the envious minding the gap more at each step past 250,000,
+// player's prosperity, by how they lean, one for steps skipped; the envious minding the gap more at each step from the third,
 // half as much once married; the supportive warmer; nothing with the option off. The rule is checked here, and its use in
 // the game's side in its source.
 internal static partial class Program
@@ -22,7 +22,7 @@ internal static partial class Program
         Check(PartnerWealthRules.Drift(e, 2, false) == 0f && PartnerWealthRules.Drift(e, 4, false) < PartnerWealthRules.Drift(e, 3, false)
               && Math.Abs(PartnerWealthRules.Drift(e, 4, true) - PartnerWealthRules.Drift(e, 4, false) * PartnerWealthRules.MarriedShare) < 1e-6f
               && PartnerWealthRules.Drift(s, 3, false) > 0f && PartnerWealthRules.Drift(n, 5, false) == 0f,
-            "family wealth: from 250,000 the envious mind the gap more at each step, half as much once married; the supportive warm; the rest are untouched");
+            "family wealth: from the third step (2,500 a day and 50,000) the envious mind the gap more at each step, half as much once married; the supportive warm; the rest are untouched");
         int envious = 0, supportive = 0;
         for (int seed = 1; seed <= 5000; seed++)
         {
@@ -35,7 +35,8 @@ internal static partial class Program
 
         string wealth = ModSource(@"Family\PartnerWealth.cs"), partner = ModSource(@"Family\Partner.cs"), links = ModSource(@"Wiring\FamilyLinks.cs");
         Check(MemberText(wealth, "public static void Daily(int day)").Contains("!Settings.FamilyWealthMood") && MemberText(wealth, "public static void Hourly(int day)").Contains("!PartnerVoice.Free")
-              && wealth.Contains("PartnerWealthRules.StepOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, FamilyState.IncomeHeld, Prices.Level)") && wealth.Contains("PartnerVoice.Say(Texts[leaning], Args.Us);")
+              && wealth.Contains("PartnerWealthRules.StepOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, FamilyState.IncomeHeld, Prices.Level)")
+              && wealth.Contains("PartnerVoice.Say(Texts[leaning], Args.Us);")
               && ModSource(@"Family\FamilyCalendar.cs").Contains("PartnerWealth.Daily(day);") && Occurs(partner, "PartnerWealth.Reset(s);") == 3
               && links.Contains("PartnerWealthRules.LeaningOfTraits(p.Has(SocialTrait.Supportive), p.Has(SocialTrait.Envious))"),
             "family wealth: once a day behind its option, at today's prices, afresh with every new partner, and Social's partner leans by their own traits");

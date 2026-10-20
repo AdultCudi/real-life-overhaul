@@ -1,10 +1,10 @@
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// How the partner takes the player's money (PartnerWealthRules): once a day, a text and a change of heart at each new
-    /// step of the player's cash, by how they lean (Social's Supportive and Envious traits, or the default partner's seed),
+    /// How the partner takes the player's money (PartnerWealthRules): a text and a change of heart at each new step of the
+    /// player's prosperity, by how they lean (Social's Supportive and Envious traits, or the default partner's seed),
     /// and the home's harmony drifting with the gap while the player is well off. With the option off nothing happens.
-    /// Cost: nothing per frame; a few comparisons once a game day.
+    /// Cost: nothing per frame; a few comparisons once a game hour in the day, and once a day.
     /// </summary>
     internal static class PartnerWealth
     {
