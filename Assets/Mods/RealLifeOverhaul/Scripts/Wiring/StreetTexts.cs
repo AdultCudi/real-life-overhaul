@@ -147,7 +147,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    if (c == null || !TextsDirector.Words.Wants(TextUse.People, false) || TextsDirector.Words.Queue.Expect < Street.StreetRules.Hold * AheadShare)
+                    if (c == null || !TextsDirector.Words.Wants(TextUse.People, false) || TextsDirector.Words.Expect < Street.StreetRules.Hold * AheadShare)
                     {
                         return;   // (fast enough: asked at the click, within the hold; nothing spent on a guess)
                     }

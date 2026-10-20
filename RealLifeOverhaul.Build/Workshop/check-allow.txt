@@ -153,3 +153,17 @@
 
 # 17: A receptionist's ordinary greeting, not a sales pitch.
 17 reallife_travel_desk_greet_4
+
+# 11: "API key" is what each AI service of Your own AI calls the key a player gets from it and pastes in, so it is named as the services name it.
+11 reallife_textsai_provider_2
+11 reallife_textsai_provider_3
+11 reallife_textsai_provider_4
+11 reallife_textsai_provider_5
+11 reallife_textsai_provider_6
+11 reallife_textsai_provider_7
+11 reallife_textsai_provider_8
+11 reallife_textsai_provider_9
+11 reallife_textsai_key
+11 reallife_textsai_key_placeholder
+11 reallife_guide_textsai_about
+11 reallife_guide_textsai

@@ -28,6 +28,14 @@ namespace RealLifeOverhaul.Texts
                 .Fact("texts_ahead", () => TextSpeed.AheadSlow.ToString("0", Inv))
                 .Cleanup(() => TextsDirector.Words.Clear())
                 .ResetData(() => TextsDirector.Words.Store.Clear());
+            Features.Add("textsai", "reallife_meta_title_textsai")
+                .Group("reallife_textsai_header")
+                .About("reallife_guide_textsai_about").Help("reallife_guide_textsai")
+                .Owns(Settings.TextsServiceId)
+                .Rows(TextsOptions.OwnAiButtons)
+                .Fact("textsai_timeout", () => TextServiceRules.TimeOut.ToString("0", Inv))
+                .Fact("textsai_in_flight", () => TextService.Workers.ToString(Inv))
+                .Fact("textsai_per_minute", () => TextService.PerMinute.ToString(Inv));
         }
     }
 
@@ -53,6 +61,34 @@ namespace RealLifeOverhaul.Texts
                 .AddToggle(Settings.TextsLedgerId, "reallife_texts_opt_ledger", Settings.TextsLedger, v => Settings.TextsLedger = v)
                 .AddButton("reallife_texts_status", TextsDirector.ShowStatus)
                 .AddButton("reallife_texts_test_sample", TextsDirector.TestSample)
+                .AddSplitter();
+        }
+
+        /// <summary>Your own AI's buttons, by label key, in the page's order.</summary>
+        public static readonly string[] OwnAiButtons =
+        {
+            "reallife_textsai_key", "reallife_textsai_chatgpt", "reallife_textsai_model", "reallife_textsai_address", "reallife_textsai_forget",
+            "reallife_textsai_test", "reallife_textsai_status", "reallife_textsai_usage"
+        };
+
+        /// <summary>
+        /// The "Your own AI" block: which AI service the cards go to (off unless the player chooses one), its key or the
+        /// ChatGPT sign-in, the model, a local program's address, forgetting the key or signing out, the test, the status and
+        /// ChatGPT's usage page.
+        /// </summary>
+        public static ModOptions AddOwnAi(this ModOptions options)
+        {
+            return options
+                .AddHeader("reallife_textsai_header")
+                .AddDropdown(Settings.TextsServiceId, "reallife_textsai_opt_service", TextProviders.ChoiceKeys(), Settings.TextsService, v => Settings.TextsService = v)
+                .AddButton("reallife_textsai_key", TextsDirector.EnterKey)
+                .AddButton("reallife_textsai_chatgpt", TextsDirector.SignIn)
+                .AddButton("reallife_textsai_model", TextsDirector.ChooseModel)
+                .AddButton("reallife_textsai_address", TextsDirector.ChooseAddress)
+                .AddButton("reallife_textsai_forget", TextsDirector.Forget)
+                .AddButton("reallife_textsai_test", TextsDirector.TestService)
+                .AddButton("reallife_textsai_status", TextsDirector.ShowServiceStatus)
+                .AddButton("reallife_textsai_usage", TextsDirector.ManageUsage)
                 .AddSplitter();
         }
     }

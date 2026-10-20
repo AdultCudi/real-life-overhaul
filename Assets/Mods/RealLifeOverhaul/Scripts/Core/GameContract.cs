@@ -100,6 +100,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart PhotoHolds = ContractBook.Part("photo_holds", "photos", "the Camera telling its own hold on the player from the game's, and putting the world's clicks back as they were (the mop's floor)");
         public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
         public static readonly GamePart StaffLeaving = ContractBook.Part("staff_leaving", null, "paying an employee the mod lets go at the turn of a day only once");
+        public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -232,7 +233,7 @@ namespace RealLifeOverhaul
         // Phone/Contacts
         public static readonly GameMember ContactIcons = Optional(StaticField(ContactPictures, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "PredefinedContactIconSprites", "Dictionary<String,Sprite>"));   // (else from the next load)
         public static readonly GameMember ContactsMarkAll = Field(ContactSearch, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "markAllAsReadButton", "Button");
-        public static readonly GameMember TextInputField = Field(ContactSearch, Game, "TextInputUI", "inputField", "TMP_InputField");
+        public static readonly GameMember TextInputField = Field(On(ContactSearch, KeyHidden), Game, "TextInputUI", "inputField", "TMP_InputField");   // (also Texts/TextsGame.AskSecret)
 
         // Phone/PhoneSkin
         public static readonly GameMember FrameData = Field(PhoneSkin, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "frameData", "List<SmartPhoneFrame.FrameData>");

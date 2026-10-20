@@ -277,6 +277,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsMapRules.cs" Link="Mod\TextsMapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextRuntime.cs" Link="Mod\TextRuntime.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextHang.cs" Link="Mod\TextHang.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextJsonTree.cs" Link="Mod\TextJsonTree.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextProviders.cs" Link="Mod\TextProviders.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServiceRules.cs" Link="Mod\TextServiceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextWeb.cs" Link="Mod\TextWeb.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextKeys.cs" Link="Mod\TextKeys.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextChatGpt.cs" Link="Mod\TextChatGpt.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextSignIn.cs" Link="Mod\TextSignIn.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextService.cs" Link="Mod\TextService.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.cs" Link="Mod\FlareTextsMap.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.Comments.cs" Link="Mod\FlareTextsMap.Comments.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.Checks.cs" Link="Mod\FlareTextsMap.Checks.cs" />

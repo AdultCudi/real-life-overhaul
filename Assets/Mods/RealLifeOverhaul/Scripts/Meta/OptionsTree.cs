@@ -232,6 +232,10 @@ namespace RealLifeOverhaul.Meta
                     .Also("social media app followers posts likes selfie influencer"),
                 S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
                     .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite"),
+                S("textsai").For("textsai").Need("texts").Opts("texts_service")
+                    .Buttons("reallife_textsai_key", "reallife_textsai_chatgpt", "reallife_textsai_model", "reallife_textsai_address", "reallife_textsai_forget",
+                        "reallife_textsai_test", "reallife_textsai_status", "reallife_textsai_usage")
+                    .Also("ai service chatgpt openai anthropic gemini google openrouter groq mistral cerebras opencode zen ollama lm studio key api sign model"),
                 S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption", "standing_request_notes")
                     .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity")
                     .Also("standing_request_notes", "fundraiser fundraising donation sponsor request requests"),

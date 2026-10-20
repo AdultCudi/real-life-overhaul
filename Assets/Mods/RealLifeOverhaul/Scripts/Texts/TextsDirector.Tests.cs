@@ -23,21 +23,7 @@ namespace RealLifeOverhaul.Texts
                 TextsGame.Notice(TextsGame.English ? key : "reallife_texts_test_language", status, 16f);
                 return;
             }
-            var r = new TextRequest
-            {
-                Use = TextUse.People, Key = "test:sample", Intent = "friend.news.good", Speaker = "test", Priority = TextPriority.Now, Seconds = 15.0, Day = TextsGame.Day
-            };
-            r.Who.Name = "Dana Whitlock";
-            r.Who.First = "Dana";
-            r.Who.Age = 31;
-            r.Who.Job = TextWords.Jobs[13];
-            r.Who.District = "Midtown";
-            r.Who.Role = TextWords.Stages[3] + ", " + TextWords.Origins[3];
-            r.Who.Mood = TextWords.Mood(1);
-            r.Who.Style = TextWords.FriendStyle(TextsGame.Day * 7919 + 13, 0, false);
-            r.Who.Player = TextsGame.PlayerName;
-            r.Who.When = TextsGame.When();
-            r.Slots.Set("happening", TextWords.Happening(TextsGame.Day, true));
+            TextRequest r = SampleRequest();   // (with Your own AI up, it goes the way every message goes: the service first)
             double asked = TextClock.Now;
             r.Done = words => TextsGame.Notice(words != null ? "reallife_texts_test_sample_done" : "reallife_texts_test_sample_none",
                 new Dictionary<string, string>(2) { { "text", words ?? string.Empty }, { "seconds", (TextClock.Now - asked).ToString("0.0") } }, 16f);

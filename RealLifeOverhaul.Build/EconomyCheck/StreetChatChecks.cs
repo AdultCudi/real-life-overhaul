@@ -411,7 +411,7 @@ internal static partial class Program
         Check(talk.Contains("if (Meta.Dev.Verbose)") && talk.Contains("TurnLine(kind, key, said, words != null);") && talk.Contains("Logger?.Info(\"Street talk turn \"")
               && talk.Contains("_turnSaid = \"chose \"") && talk.Contains("_turnSaid = \"typed \\\"\"") && wiring.Contains("c.Heard = said != null ? Card(r) + \", \" + Ms(r.Took)"),
             "street talk, the log: one line a turn with Developer diagnostics: what the player chose or typed, the line, where its words came from and why, warmth and rapport");
-        Check(wiring.Contains("private const int HistoryMost = 3;") && wiring.Contains("History(c, r, HistoryMost, next);") && wiring.Contains("TextsDirector.Words.Queue.Expect < Street.StreetRules.Hold * AheadShare")
+        Check(wiring.Contains("private const int HistoryMost = 3;") && wiring.Contains("History(c, r, HistoryMost, next);") && wiring.Contains("TextsDirector.Words.Expect < Street.StreetRules.Hold * AheadShare")
               && talk.Contains("string words = ahead && TakeAhead != null ? TakeAhead(_chat) : null;"),
             "street talk, RLO Texts: the card carries the last three lines; on a slow machine the blue button's answer is asked as it is shown and taken at the click");
         Check(talk.Contains("_chat.Menu = 0;") && talk.Contains("StreetRules.Choices(_chat, _facts, _choices);") && !talk.Contains("_chat.Rapport +="),
