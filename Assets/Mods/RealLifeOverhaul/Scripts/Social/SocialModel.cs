@@ -126,7 +126,10 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>Set by Wiring/FamilyLinks: whether this person is free at that hour when the family keeps their day (the partner who lives with the player: half days, stopped work); null for People's own hours.</summary>
+        /// <summary>
+        /// Set by Wiring/FamilyLinks: whether this person is free at that hour when the family keeps their day (the partner
+        /// who lives with the player: half days, stopped work); null for People's own hours.
+        /// </summary>
         public static Func<SocialPerson, int, bool, bool?> FreeOf;
 
         public bool FreeAt(int hour, bool weekend)
