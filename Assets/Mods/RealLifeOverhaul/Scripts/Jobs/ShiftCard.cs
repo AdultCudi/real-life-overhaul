@@ -10,7 +10,8 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// The shift's figures on a copy of the game's job panel (top right), made asleep without its script: a headline and five
-    /// lines, each written only on a change, under the game's own panel while that shows. <see cref="Make"/> gives null if it cannot.
+    /// lines, each written only on a change, under the game's own panel while that shows. While it shows, the game's
+    /// notifications start under it (GameUi.NoticeRoom), so they never cover its lines. <see cref="Make"/> gives null if it cannot.
     /// </summary>
     public sealed class ShiftCard
     {
@@ -35,6 +36,7 @@ namespace RealLifeOverhaul
         private bool _under;
         private GameBar _bar;
         private bool _barTried;
+        private NoticeRoomMark _room;
 
         private ShiftCard(GameObject panel, TMP_Text title, TMP_Text[] lines, GameObject gamePanel)
         {
@@ -123,6 +125,7 @@ namespace RealLifeOverhaul
                 box.sizeDelta = size;
                 panel.AddComponent<Canvas>();   // batched by itself: a line written here does not rebuild the HUD's canvas
                 var card = new ShiftCard(panel, title, lines, game.panel);
+                card._room = panel.AddComponent<NoticeRoomMark>();   // the game's notifications start under it while it shows (GameUi.NoticeRoom)
                 panel.SetActive(false);
                 root.SetParent(game.transform, false);
                 root.SetAsFirstSibling();
@@ -201,6 +204,10 @@ namespace RealLifeOverhaul
                 {
                     _under = under;
                     _rect.anchoredPosition = under ? new Vector2(_home.x, _home.y - GameHeight - Gap) : _home;
+                    if (_room != null)
+                    {
+                        _room.Moved();   // (showing already: the notifications under it follow; coming on, its mark says so as it is switched on)
+                    }
                 }
             }
             if (on != _shown)

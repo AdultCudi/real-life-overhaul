@@ -193,6 +193,7 @@ internal static partial class Program
         SetOff();       // a class's desk, the work desk and the computer at home: set off as the game's activities, stood up whatever fails, the keys (SetOffChecks.cs)
         SessionDesks(); // the school's and the university's desks in a Going Public session: never the game's study panel, which it takes (SessionDeskChecks.cs)
         Life();
+        CareerPay();    // what the professions pay against the gigs, how long courses take, the reviews' pace, the climb, a timetable against the working days (CareerPayChecks.cs)
         Own();
         FamilyStudy();
         Districts();

@@ -217,6 +217,66 @@ namespace RealLifeOverhaul.Careers
             return (int)(pay * TalentCatalogue.Clamp(shortage, 850, 1500) / 1000);
         }
 
+        /// <summary>
+        /// The least a post at a rank of a kind of employer pays now: an offer at the pass mark on the rank's rate in the
+        /// slackest market (cents an hour at the start's prices). A saved rate under it is from the catalogue before the
+        /// professions were set against the gigs (a barista's 18 an hour where the first rung now pays 70).
+        /// </summary>
+        public static int LeastPay(Opening post)
+        {
+            Profession p = post != null ? post.Def : null;
+            return p == null ? 0 : OfferPay(PostPay(p, post.Rank, (EmployerKind)post.Kind, 850), 0);
+        }
+
+        /// <summary>
+        /// A save's rates brought up to the catalogue's, once at load: the job's, an offer or answer still open, and the
+        /// vacancies on the board, each raised to <see cref="LeastPay"/> where it is under it; nothing above it is touched,
+        /// so a rate earned with rises or haggling stays as it is. Returns how many were raised. Game-free, nothing allocated.
+        /// </summary>
+        public static int Reprice(WorkFile w)
+        {
+            if (w == null)
+            {
+                return 0;
+            }
+            int raised = 0;
+            if (w.Job != null)
+            {
+                int least = LeastPay(w.Job.Post);
+                if (w.Job.Pay < least)
+                {
+                    w.Job.Pay = least;
+                    raised++;
+                }
+            }
+            for (int i = 0; i < w.Openings.Count; i++)
+            {
+                Opening o = w.Openings[i];
+                int least = LeastPay(o);
+                if (o.Pay < least)
+                {
+                    o.Pay = least;
+                    raised++;
+                }
+            }
+            for (int i = 0; i < w.Applications.Count; i++)
+            {
+                Application a = w.Applications[i];
+                int least = LeastPay(a.Post);
+                if (a.Offer > 0 && a.Offer < least)
+                {
+                    a.Offer = least;
+                    raised++;
+                }
+                if (a.Post.Pay > 0 && a.Post.Pay < least)
+                {
+                    a.Post.Pay = least;
+                    raised++;
+                }
+            }
+            return raised;
+        }
+
         /// <summary>The player asks for more: the chance (per cent) the employer agrees, by the score, the size of the ask and how often they have asked.</summary>
         public static int AskChance(int score, int askBp, int asks)
         {
@@ -394,7 +454,10 @@ namespace RealLifeOverhaul.Careers
             };
         }
 
-        /// <summary>Days worked in a profession before, from the CV (and the job now, if it is one), in days of a 365-day year.</summary>
+        /// <summary>
+        /// Days worked in a profession before, from the CV (and the job now, if it is one), in days of a 365-day year at the
+        /// careers' pace (LifeRules.PaceYear), so that they weigh as the time at a rank does.
+        /// </summary>
         public static int Experience(WorkFile w, int prof, int today, int year)
         {
             long days = 0;
@@ -409,7 +472,7 @@ namespace RealLifeOverhaul.Careers
             {
                 days += today - w.Job.Hired;
             }
-            return (int)(days * 365 / Math.Max(60, year));
+            return (int)(days * 365 / LifeRules.PaceYear(year));
         }
 
         /// <summary>References on the CV: good ones and poor ones.</summary>

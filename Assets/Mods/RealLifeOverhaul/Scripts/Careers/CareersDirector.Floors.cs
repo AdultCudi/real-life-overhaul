@@ -222,7 +222,7 @@ namespace RealLifeOverhaul.Careers
                 offer.Key = "reallife_study_prompt_attend";
                 offer.Arguments = CourseArgs(course);
                 offer.Lines = new[] { where, CareersText.T("reallife_study_skip_class", "number", (e.Seen + 1).ToString(), "of", c.Sessions.ToString()),
-                    CareersText.T("reallife_study_skip_until", "time", CareersText.Minutes(minutes)) };
+                    CareersText.ClassRuns(minutes) };
                 return offer;
             }
             string examWhy = CanSit(e);

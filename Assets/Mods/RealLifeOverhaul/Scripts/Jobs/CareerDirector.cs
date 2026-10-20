@@ -396,7 +396,7 @@ namespace RealLifeOverhaul
             }
             int day = TimeHelper.CurrentDay;
             bool late = TimeHelper.CurrentHour >= CareerState.RotaHour + CareerCatalogue.OnTimeHours;
-            if (!Begin(CareerState.Employer, CareerState.CurrentRank, CareerState.Hourly, late, true, out reasonKey))
+            if (!Begin(CareerState.Employer, CareerState.CurrentRank, CareerState.Hourly, CareerState.Piece, late, true, out reasonKey))
             {
                 return false;
             }
@@ -420,10 +420,10 @@ namespace RealLifeOverhaul
         /// <summary>Test buttons: a shift at the current employer's rank (or the courier firm's desk) that goes on no record.</summary>
         public bool TestShift(Employer employer, CareerRank rank, out string reasonKey)
         {
-            return Begin(employer, rank, rank.Hourly, false, false, out reasonKey);
+            return Begin(employer, rank, rank.Hourly, CareerCatalogue.PieceWith(rank, 0), false, false, out reasonKey);
         }
 
-        private bool Begin(Employer employer, CareerRank rank, float hourly, bool late, bool counts, out string reasonKey)
+        private bool Begin(Employer employer, CareerRank rank, float hourly, float piece, bool late, bool counts, out string reasonKey)
         {
             reasonKey = null;
             if (_director.HasJob)
@@ -458,6 +458,7 @@ namespace RealLifeOverhaul
             _shift.Employer = employer;
             _shift.Rank = rank;
             _shift.Hourly = hourly;
+            _shift.Piece = piece;
             _shift.Late = late;
             _shift.Counts = counts;
             _shift.StartMinutes = TimeHelper.NowInMinutes();
@@ -472,7 +473,8 @@ namespace RealLifeOverhaul
                 CareerState.CartPaidDay = day;
                 JobText.Toast(NotificationType.Info, "reallife_career_cart_rented", "amount", JobText.Money(CareerCatalogue.CartRent), 8f);
             }
-            _logger?.Info("Careers: shift for " + employer.Id + " as '" + rank.TitleKey + "' (" + def.Id + "), " + hourly.ToString("F1", CultureInfo.InvariantCulture) + "/h"
+            _logger?.Info("Careers: shift for " + employer.Id + " as '" + rank.TitleKey + "' (" + def.Id + "), " + hourly.ToString("F1", CultureInfo.InvariantCulture) + "/h, work paid at "
+                          + piece.ToString("F2", CultureInfo.InvariantCulture) + "x"
                           + (late ? ", late" : string.Empty) + (counts ? string.Empty : ", test") + ".");
             return true;
         }
@@ -565,7 +567,7 @@ namespace RealLifeOverhaul
                 { "hours", hours.ToString() }, { "rate", JobText.Money(shift.Hourly) }, { "wage", JobText.Money(wage) }
             };
             Notifications.Show(piece + wage > 0 ? NotificationType.Success : NotificationType.Info,
-                shift.Late ? "reallife_career_slip_note_late" : "reallife_career_slip_note", data, 16f);
+                CareerCatalogue.SlipKey(shift.Rank, shift.Late), data, 16f);
             if (Meta.Dev.Verbose)
             {
                 _logger?.Info("Careers: payslip shown as one of the game's notifications: total " + (piece + wage) + " (" + data["lines"] + "; basic " + hours + " h at "

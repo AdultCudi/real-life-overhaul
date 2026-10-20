@@ -33,10 +33,16 @@ namespace RealLifeOverhaul.Careers
     /// <summary>The rules of working life in plain numbers: reviews, promotion, burnout, office matters, search firms, redundancy, options, the pension. Game-free.</summary>
     public static class LifeRules
     {
-        public const int ReviewDays = 182;          // between reviews, written for a year of 365 days (two a year)
+        // Reviews come every 14 game days in the game's own year of 60, every 28 at most in a longer one (Paced). It was 182:
+        // a review a month at 60, against gigs that reach their top level in three days. The careers keep the pace of a
+        // year of PaceYearMost days at most, so a longer year (up to 365) is never more than twice as slow as the game's own
+        // 60, while gigs and businesses keep theirs.
+        public const int ReviewDays = 85;           // between reviews, written for a year of 365 days (four a year)
+        public const int PaceYearMost = 120;        // days: the longest year the careers' days are kept to
         public static readonly int[] RatingFrom = { 0, 35, 50, 65, 80 };   // a review's score for each rating, 1 to 5
         public const int RiseBp = 300;              // a rating of 4: a rise of so much; 5: twice it; 3: half of it
-        public const int BonusWeeks4 = 1, BonusWeeks5 = 2;   // a bonus of weeks of pay for a 4, a 5
+        // A bonus is a fifth and two fifths of the fortnight's pay between reviews (it was a week and two, set for two reviews a year).
+        public const int BonusDays4 = 2, BonusDays5 = 4;     // a bonus of working days' pay for a 4, a 5
         public const int RaisesMost = 4;            // rises at one rank
         public const int PromoteRating = 4;
         public const int PromoteBp = 1200;          // a promotion pays at least this much more, or the new rank's own rate if higher
@@ -97,8 +103,14 @@ namespace RealLifeOverhaul.Careers
         public const int ConflictChance = 3;        // per mille a day an undeclared conflict comes out, for each rung
         public const int ConflictIntegrity = -4;    // what it does to the player's integrity
 
+        /// <summary>The year the careers' days are kept to: the game's, from 60 days to <see cref="PaceYearMost"/>.</summary>
+        public static int PaceYear(int year) => TalentCatalogue.Clamp(year, 60, PaceYearMost);
+
+        /// <summary>Game days for a number of days written for a year of 365, at the careers' pace (<see cref="PaceYear"/>): reviews, time at a rank, experience.</summary>
+        public static int Paced(int days, int year) => TalentCatalogue.Scaled(days, PaceYear(year));
+
         /// <summary>Days between reviews in a year of the game's length.</summary>
-        public static int ReviewEvery(int year) => TalentCatalogue.Scaled(ReviewDays, year);
+        public static int ReviewEvery(int year) => Paced(ReviewDays, year);
 
         /// <summary>A review's score, 0 to 100: half for attendance, skills against the rank, overtime, standing with colleagues, the boss's manner and burnout.</summary>
         public static int ReviewScore(Job j, int points, int need, BossKind boss)
@@ -139,8 +151,11 @@ namespace RealLifeOverhaul.Careers
             return rating >= 5 ? RiseBp * 2 : rating == 4 ? RiseBp : rating == 3 ? RiseBp / 2 : 0;
         }
 
-        /// <summary>The bonus a rating brings, in weeks of pay.</summary>
-        public static int BonusWeeks(int rating) => rating >= 5 ? BonusWeeks5 : rating == 4 ? BonusWeeks4 : 0;
+        /// <summary>The bonus a rating brings, in working days' pay.</summary>
+        public static int BonusDays(int rating) => rating >= 5 ? BonusDays5 : rating == 4 ? BonusDays4 : 0;
+
+        /// <summary>A working day's pay of a job, cents at the start's prices.</summary>
+        public static long DayPay(Job j) => (long)j.Pay * j.Def.Hours;
 
         /// <summary>A week's pay of a job, cents at the start's prices.</summary>
         public static long WeekPay(Job j) => (long)j.Pay * j.Def.Hours * Days(j.Def.Days);
@@ -165,7 +180,7 @@ namespace RealLifeOverhaul.Careers
                 return false;
             }
             ProRank r = p.Ranks[next];
-            if (day - j.RankDay < TalentCatalogue.Scaled(r.Days, year))
+            if (day - j.RankDay < Paced(r.Days, year))
             {
                 return false;
             }

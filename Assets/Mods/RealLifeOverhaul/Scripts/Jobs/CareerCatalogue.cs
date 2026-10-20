@@ -45,6 +45,12 @@ namespace RealLifeOverhaul
         }
 
         public bool Has(CareerPerk perk) => (Perks & perk) != 0;
+
+        /// <summary>
+        /// True for a rank paid only by what it takes (the licensed cart, the owner-operator's cab): no basic wage, so its
+        /// texts say what the player keeps and a raise there is a bigger share (<see cref="CareerCatalogue.RaiseShare"/>), never an hourly wage of 0.
+        /// </summary>
+        public bool Own => Hourly <= 0f;
     }
 
     /// <summary>A rota on offer: which days of the week (bit 0 = Monday) and the hour a shift starts.</summary>
@@ -132,9 +138,13 @@ namespace RealLifeOverhaul
         public const int BanDays = 7;               // days an employer will not hear from someone it dismissed or who walked out
         public const int MaxRaises = 3;             // raises at one rank
         public const float RaiseStep = 3f;          // basic wage per hour added by a raise
+        public const float RaiseShare = 0.05f;      // ...and at a rank with no basic wage (CareerRank.Own), the share of what the work pays added by a raise
         public const int HistoryMost = 8;           // lines of employment history kept
-        public static int CartRent => Prices.At(165);            // a day's rent of the cart, own-cart licence
-        public const float CartTakings = 30f;       // what a customer pays at the player's own cart
+        // The own cart: a shift's takings less stock and rent come to a fifth more than the cart vendor's pay and basic at
+        // level 1, a quarter more at the top level (it was 165 rent against takings of 30: the licence paid less than half
+        // the rank below, and a promotion to it read as a wage of 0 an hour).
+        public static int CartRent => Prices.At(45);             // a day's rent of the cart, own-cart licence
+        public const float CartTakings = 40f;       // what a customer pays at the player's own cart
         public const float CartStock = 9.5f;        // ...and what the drink cost
         public const int CabShiftFares = 4;         // fares in an employed cab shift
         public static int GigFee => Prices.At(125);              // a venue's fee for a booked set, on top of the hat
@@ -210,7 +220,7 @@ namespace RealLifeOverhaul
                 }, JobCatalogue.Taxi, JobCatalogue.Courier, 2, 4606, false, null, new[] { "cardealership", "gasstation", "truckgarage" },
                 new CareerRank("reallife_career_cab_rank_1", CareerWork.Gig, 14f, 1f, 1f, 0, CareerPerk.Shorter),
                 new CareerRank("reallife_career_cab_rank_2", CareerWork.Gig, 22f, 1.25f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium),
-                new CareerRank("reallife_career_cab_rank_3", CareerWork.Gig, 0f, 1.45f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium))
+                new CareerRank("reallife_career_cab_rank_3", CareerWork.Gig, 0f, 1.6f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium))
         };
 
         public static Employer Find(string id)
@@ -268,6 +278,26 @@ namespace RealLifeOverhaul
             }
             return -1;
         }
+
+        /// <summary>What the work itself pays at a rank, as a factor (<see cref="CareerRank.Piece"/>), with the raises earned there at a rank paid only by what it takes.</summary>
+        public static float PieceWith(CareerRank rank, int raises)
+        {
+            if (rank == null)
+            {
+                return 1f;
+            }
+            int earned = raises < 0 ? 0 : raises > MaxRaises ? MaxRaises : raises;
+            return rank.Own ? rank.Piece * (1f + RaiseShare * earned) : rank.Piece;
+        }
+
+        /// <summary>The line on the game's skip panel about the basic wage of a rota shift: paid as usual, or none at a rank paid only by what it takes.</summary>
+        public static string SkipWageKey(CareerRank rank) => rank != null && rank.Own ? "reallife_job_skip_info_own" : "reallife_job_skip_info_wage";
+
+        /// <summary>The payslip's words for a rota shift: with the basic wage (an hour docked if late), or without one at a rank paid only by what it takes.</summary>
+        public static string SlipKey(CareerRank rank, bool late) => rank != null && rank.Own ? "reallife_career_slip_note_own" : late ? "reallife_career_slip_note_late" : "reallife_career_slip_note";
+
+        /// <summary>What one customer leaves the licensed cart's owner, before the pay option, levels and the city's prices: the takings less the stock.</summary>
+        public static float CartMargin => CartTakings - CartStock;
 
         /// <summary>Hours of basic wage for a shift that ended so many game minutes after clock-on: every hour begun, 1 to <see cref="ShiftHours"/>, one less if late.</summary>
         public static int PaidHours(float elapsedMinutes, bool late)

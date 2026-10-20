@@ -55,10 +55,10 @@ At an office board the game's panel over a place offers "Speak to the office" on
 |---|---|---|---|
 | Brightline Promotions (Tasha Greene) | flyers | 0 | Leafleter (the flyer round) -> Street team lead (a shift in charge) |
 | Brightside Contract Cleaning (Dolores Whitlock) | cleaner | 0 | Cleaner -> Crew lead (in charge) |
-| Uncle Lou's Street Eats (Lou Ferrante) | drinks cart | 0 | Cart vendor -> Licensed cart owner (the cart is rented by the day, 165, and the takings are kept: 30 a customer less 9.50 stock) |
+| Uncle Lou's Street Eats (Lou Ferrante) | drinks cart | 0 | Cart vendor -> Licensed cart owner (the cart is rented by the day, 45, and the takings are kept: 40 a customer less 9.50 stock) |
 | Fairway Markets (Anand Rao) | shelf stocker | 1 | Stockroom assistant -> Shift lead -> Assistant manager (both in charge) |
 | Hudson Parcel Co. (Marge Kowalski) | courier | 1 | Courier -> Senior courier (7 parcels, the firm's van free, +10 %) -> Dispatcher (the planning desk) -> Depot supervisor (in charge) |
-| Five Borough Cabs (Sal DeMarco) | ride-hail | 2 | Cab driver (4 fares a shift) -> Premium driver (a Luxury-kind car by `Driving/CarCatalogue`, passengers mind 30 % sooner, fares +25 %, tips x2) -> Owner-operator (fares +45 %) |
+| Five Borough Cabs (Sal DeMarco) | ride-hail | 2 | Cab driver (4 fares a shift) -> Premium driver (a Luxury-kind car by `Driving/CarCatalogue`, passengers mind 30 % sooner, fares +25 %, tips x2) -> Owner-operator (fares +60 %) |
 
 The game has no taxi business type (taxis are transport the player buys), so the cab ladder ends at owner-operator and has no hook into a business.
 
@@ -84,6 +84,10 @@ The game's one employer job (the cashier) is left exactly as it is: an hour work
 
   The numbers read out are the ones the outcome is decided from (`CareerCatalogue.ReviewScore`): 20 + 60 x the share of shifts on time (late counts 0.4), -12 a complaint (a failed shift), -6 a crash, -10 a police stop on the job, plus a point per dollar of tips a shift up to 20. 70 or more is a promotion, 55 a raise (+3 an hour, three at most per rank), under 35 a mark.
 
+  A shift left to the clock pays 85 % and brings no tips, so a rota of skipped shifts all on time scores 80: enough for a promotion and a raise, and the tips are only the last 20 points for serving by hand.
+
+  The licensed cart and the owner-operator's cab have no basic wage (`CareerRank.Own`): they are paid by what they take. The boss says so (`reallife_career_status_own`, `_review_promoted_own`), never "0 an hour", the payslip and the skip panel leave the basic wage out, and a raise there is 5 % more of what the work pays (`CareerCatalogue.RaiseShare`, `PieceWith`), three at most. Before this change a promotion to the cart read "on 0 an hour basic", the cart paid less than half the rank below (165 rent against 30 a customer), and a good review there could bring nothing.
+
 - **Leaving.** Notice is two more shifts (or seven days) and ends with a good reference if three shifts were worked and fewer than two marks stand; walking out marks the reference down and bans for a week.
 - **The CV** is two pages of the Work contact's call: employer and rank, employment history (eight spells kept) with references, shifts and earnings; then gig levels, the reference letter, cashier hours and the record (police stops on a job; a law feature's line if `CareerLinks.Law` is set).
 - **Booked sets.** From busker level 2 the Work contact books one set a day at an open business nearby: it is marked on the map, begins when the player walks up to its front, pays 125 from the venue on top of the hat for a set at least half played, and tips are 30 % better.
@@ -101,8 +105,8 @@ The game's one employer job (the cashier) is left exactly as it is: an hour work
 | Depot supervisor | 60 | the same, +20 % | 100 to 105 |
 | Cab driver | 14 | 4 fares, as the gig | 110 to 120 (a fare is about 80 s of driving) |
 | Premium driver | 22 | fares +25 %, tips x2 | 170 to 190 (needs a Luxury car) |
-| Owner-operator | 0 | fares +45 %, tips x2 | 190 to 200 |
-| Licensed cart owner | 0 | takings of 30 a customer less 9.50 stock, less 165 a day for the cart | 80 to 125 a shift |
+| Owner-operator | 0 | fares +60 %, tips x2 | about 220 |
+| Licensed cart owner | 0 | takings of 40 a customer less 9.50 stock, less 45 a day for the cart | 320 to 410 a shift (a fifth to a quarter more than the cart vendor's) |
 
 Set against the game: cashier 25 an hour, its own staff 12 to 18, the van job about 100.
 A rota shift is worth about a fifth to a third more than the same work freelance.
@@ -152,6 +156,25 @@ The clips are already asked for by id, before today's stand-in, so they drop in 
 | clip `staff_struggle` | hands on hips, a shake of the head, looking down at something, 6 s loop | `LeadJob`'s "stuck" (today `arms_crossed`) |
 | prop `dispatch_desk` | a lectern-height desk with a wall map, 1.2 x 1.4 x 0.5 m, read from +Z | (needs placement code) stood by the board on a dispatcher shift |
 | prop `employer_sign` | a small wall plaque (0.6 x 0.3 m), six variants, one per employer name | (needs placement code) above each office's board |
+
+## The professions: pay and pace
+
+`Work/ProCatalogue` pays a first rung by what it asks, set against the gigs, which ask no course (`EconomyCheck`, `CareerPayChecks.cs`, works the gigs' own figures out of `Jobs/JobCatalogue`):
+
+| first rung after | an hour | for example | against |
+|---|---|---|---|
+| no course | 48 to 60 | an apprentice electrician 50, a teaching assistant 60 | the gigs on foot, 40 to 54 at level 1 |
+| a short course | 70 to 80 | a barista 70, a security guard 70, a junior accountant 70 | the best gig on foot at its top level, 67 |
+| a diploma | 82 to 90 | an electrician 90, IT support 90 | the courier at its top level, about 99 with the distance |
+| a degree | 110 to 130 | a junior developer 120, a banker 130 | a tenth more than the courier at its top; eight hours about the courier's whole capped day, 954 |
+
+The top of a ladder that starts with a degree pays three to eight times its first rung (a chief technology officer 700, a chief executive 950); every rung pays at least a twentieth more than the one below. Before, a barista started on 18 and a junior developer on 38. A save from before has its job's rate, its open offers and the board's vacancies raised once at load to the least a post at that rank and kind of employer pays now (`ProRules.Reprice`, `LeastPay`); a rate above that, earned with rises or haggling, stays as it was.
+
+Courses are weeks, not months: a short course one or two, a diploma or a course after a degree two or three, a degree three or four (nine to twelve classes, three a week; it was two dozen, eight weeks or more). A course keeps its weeks whatever the year's length.
+
+Reviews and the time at a rank are written for a year of 365 days and kept to the careers' pace (`LifeRules.Paced`): the game's year, from 60 days to `PaceYearMost` (120). So reviews come every 14 days in the game's own year of 60 and every 28 at most in a longer one, a rung asks 5 to 35 game days at the one below (twice that at most in a long year), and experience on a CV is counted at the same pace (`ProRules.Experience`), so coming in at a rung from outside still needs half the time of rising to it inside. A good review's bonus is days of pay (2 for a 4, 4 for a 5). A working hour teaches 0.15 of a point of each of the job's two skills at 0 points (`StudyCatalogue.WorkLearn`, less near the top): about a point a working day at 20 points, so the skills a rung asks come with the time; a junior developer from a degree alone is promoted on days 15, 57, 99 and 169.
+
+**A timetable against the working days** (`Study/StudyRules.Clash.cs`, `StudyRules.Fit`): a class counts once three quarters of it is sat, and a working day once three quarters of it is worked, with 45 game minutes for the way between. A course's page in Campus says, for the player's job, whether it fits, when to leave class for work or work for class, or on which days it clashes; a vacancy's page in Career says the same of the courses being followed; a class's panel says how much of it counts ("Runs for 4h 00m; counts after 3h 00m"). A degree from 10:00 to 14:00 and a bar from 14:00 fit, leaving class at 13:00.
 
 ## Classes, work desks and the computer at home
 

@@ -30,8 +30,9 @@ namespace RealLifeOverhaul.GameUi
     /// that room, as the game centres its own row (0.27.1 put it at the room's left end, off centre). (Before, the room was
     /// measured each time the menu opened, to the left edge of the money's words, so the number of apps on a page, the
     /// number of pages and the row's length changed with the money and the date.) The game's own apps come first, in
-    /// the game's order, then the mod's and other mods' in the order they stand; the game's last app may fall on the
-    /// second page. When the apps
+    /// the game's order, then the mod's in one fixed order (PagerRules.ModOrder: before, they stood in the order their
+    /// features happened to put them on, which changed from one load to the next), then other mods' in the order they
+    /// stand; the game's last app may fall on the second page. When the apps
     /// fit on one page there are no pages. Otherwise the last tile of every page is the "More apps" button: a copy of
     /// the game's app button (its rounded tile, a neutral colour, the game's double chevron in white), its name where the
     /// apps show theirs and the page under it ("2 / 3"); it goes to the next page, and from the last to the first. The
@@ -72,6 +73,7 @@ namespace RealLifeOverhaul.GameUi
         private static readonly FeatureGuard FrameGuard = Guard.For(null, "PhoneGridPager", typeof(PhoneGridPager));   // the game's calls of it (Core/Guard)
 
         private const string MoreName = "RealLife MoreApps";
+        private const int RanksKept = 128;                               // buttons whose place is kept from their names, before the record starts again
         private const string MoreTitleKey = "reallife_apps_more";       // "More apps", where the apps show their names
         private const string MorePageKey = "reallife_apps_page";        // "{page} / {pages}", under the name
         private const string MoreGlyph = "Icon-Arrows";                  // the game's double chevron, white, 64 by 64 (sharedassets1)
@@ -106,6 +108,8 @@ namespace RealLifeOverhaul.GameUi
         private readonly List<Transform> _found = new List<Transform>(24);
         private bool[] _isGame = new bool[32];
         private int[] _order = new int[32];
+        private int[] _rank = new int[32];                                           // each button's place among the mod's apps (PagerRules.ModRank), -1 for the game's and other mods'
+        private readonly Dictionary<Transform, int> _ranks = new Dictionary<Transform, int>(32);   // ...read once from its name
         private float _pagesLeft;       // the strip's place for a page, in the row's space: a full page centred in the room
         private float _room = float.NaN;   // the strip's room, from where the game's own row begins to the money's box, for the bar's width measured (NaN: not yet)
         private bool _own;              // the strip holds only the game's own apps: laid out as the game lays it out
@@ -444,10 +448,13 @@ namespace RealLifeOverhaul.GameUi
             GameFirst();
         }
 
-        // The game's own apps first, in the game's order, then the others in the order they stand (PagerRules.GameFirst):
-        // the game's apps never shuffle, whoever adds a button. The game's buttons are found once by their names (the
-        // game names each after its app) and kept. Where another's button stands among the game's, it is moved after
-        // them, keeping its order among the others, so that the layout shows each page in the pages' order.
+        // The game's own apps first, in the game's order, then the mod's in their one fixed order, then other mods' in the
+        // order they stand (PagerRules.Arrange): the game's apps never shuffle, whoever adds a button, and the mod's stand
+        // in the same places at every opening, load and start, whichever of its features put its app on first. The game's
+        // buttons are found once by their names (the game names each after its app) and kept; a button's place among the
+        // mod's is read from its name once (PagerRules.ModRank) and kept. Where another's button stands among the game's,
+        // or the mod's stand out of their order, every button after the game's is moved to the end in the order worked
+        // out, so that the layout shows each page in the pages' order.
         private void GameFirst()
         {
             int count = _found.Count;
@@ -473,24 +480,39 @@ namespace RealLifeOverhaul.GameUi
             {
                 _isGame = new bool[count * 2];
                 _order = new int[count * 2];
+                _rank = new int[count * 2];
+            }
+            if (_ranks.Count > RanksKept)
+            {
+                _ranks.Clear();   // (buttons taken off leave their names behind: read again)
             }
             int lastGame = -1;
             for (int i = 0; i < count; i++)
             {
-                _isGame[i] = _gameButtons.Contains(_found[i]);
+                Transform found = _found[i];
+                _isGame[i] = _gameButtons.Contains(found);
                 if (_isGame[i])
                 {
-                    lastGame = _found[i].GetSiblingIndex();
+                    lastGame = found.GetSiblingIndex();
+                    _rank[i] = -1;
+                }
+                else if (!_ranks.TryGetValue(found, out _rank[i]))
+                {
+                    _rank[i] = PagerRules.ModRank(found.name);   // (a button keeps its name: read once)
+                    _ranks[found] = _rank[i];
                 }
             }
-            _gameShown = PagerRules.GameFirst(_isGame, count, _order);
+            _gameShown = PagerRules.Arrange(_isGame, _rank, count, _order);
             _apps.Clear();
             bool among = false;
+            int before = -1;
             for (int i = 0; i < count; i++)
             {
                 Transform item = _found[_order[i]];
                 _apps.Add(item);
-                among |= i >= _gameShown && item.GetSiblingIndex() < lastGame;
+                int at = item.GetSiblingIndex();
+                among |= i >= _gameShown && (at < lastGame || at < before);   // among the game's, or out of the order worked out
+                before = i >= _gameShown ? at : before;
             }
             if (among && !_aside)
             {

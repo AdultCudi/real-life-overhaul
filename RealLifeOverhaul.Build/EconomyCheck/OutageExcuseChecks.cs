@@ -66,7 +66,7 @@ internal static partial class Program
               && to == 1 * 1440 + 18 * 60 + StudyCatalogue.LateMinutes && !StudyRules.JoinWindow(boot, StudyMode.FullTime, 2, out _, out _),
             "outage excuse: an online class's window is from its early minutes before the hour to its late minutes after, on its days only");
 
-        // ten classes: eight attended, two gone by in an outage, then the course is over
+        // the bootcamp's classes: two gone by in an outage, the rest attended, then the course is over
         Enrolment excused = Bootcamp(), missed = Bootcamp();
         int day = 1;
         for (int i = 0; i < boot.Sessions; i++, day = StudyRules.Next(boot, StudyMode.FullTime, day + 1))
@@ -87,7 +87,7 @@ internal static partial class Program
         Check(missed.Excused == 0 && StudyRules.Attendance(missed) == (boot.Sessions - 2) * 1000 / boot.Sessions,
             "outage excuse: the same two missed count against attendance as before (" + StudyRules.Attendance(missed) + ")");
         Check(StudyRules.ExamScore(excused, 0, false, 0) > StudyRules.ExamScore(missed, 0, false, 0)
-              && StudyRules.ExamScore(excused, 0, false, 0) - StudyRules.ExamScore(missed, 0, false, 0) == 8,
+              && StudyRules.ExamScore(excused, 0, false, 0) - StudyRules.ExamScore(missed, 0, false, 0) == 60 - (int)Math.Round(20 + 40 * StudyRules.Attendance(missed) / 1000.0),
             "outage excuse: the mark's attendance part counts excused classes neither way (" + StudyRules.ExamScore(excused, 0, false, 0) + " against " + StudyRules.ExamScore(missed, 0, false, 0) + " missed)");
         Check(StudyRules.HomeworkSet(excused) == boot.Homework && StudyRules.HomeworkSet(missed) == (boot.Sessions - 2) * boot.Homework / boot.Sessions,
             "outage excuse: every counted class attended sets all the homework; excused classes take none away");

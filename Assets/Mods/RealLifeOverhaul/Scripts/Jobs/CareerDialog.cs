@@ -187,7 +187,7 @@ namespace RealLifeOverhaul
             var entry = new DialogEntry
             {
                 headerKey = inPerson ? employer.BossKey : null,
-                messageData = "reallife_career_status".Localize(new
+                messageData = (CareerState.CurrentRank.Own ? "reallife_career_status_own" : "reallife_career_status").Localize(new
                 {
                     employer = employer.NameKey.GetLocalization(),
                     boss = employer.BossKey.GetLocalization(),
@@ -439,10 +439,11 @@ namespace RealLifeOverhaul
             ReviewOutcome outcome = career.HoldReview(out float score, out _, out _, out _, out _, out _, out _);
             float rate = JobDirector.PayScale();   // the wage as it will be paid, owners' cut included
             string key;
+            bool own = CareerState.Employed && CareerState.CurrentRank.Own;   // (paid by what it takes: no basic wage to say, a raise is a bigger share)
             switch (outcome)
             {
-                case ReviewOutcome.Promoted: key = "reallife_career_review_promoted"; break;
-                case ReviewOutcome.Raise: key = "reallife_career_review_raise"; break;
+                case ReviewOutcome.Promoted: key = own ? "reallife_career_review_promoted_own" : "reallife_career_review_promoted"; break;
+                case ReviewOutcome.Raise: key = own ? "reallife_career_review_raise_own" : "reallife_career_review_raise"; break;
                 case ReviewOutcome.Warning: key = "reallife_career_review_warning"; break;
                 case ReviewOutcome.Dismissed: key = "reallife_career_review_dismissed"; break;
                 default: key = "reallife_career_review_steady"; break;
@@ -452,6 +453,7 @@ namespace RealLifeOverhaul
                 score = Mathf.RoundToInt(score).ToString(),
                 title = CareerState.Employed ? CareerState.CurrentRank.TitleKey.GetLocalization() : string.Empty,
                 wage = (CareerState.Hourly * rate).ToCurrencyFormat(),
+                share = Mathf.RoundToInt(CareerState.Raises * CareerCatalogue.RaiseShare * 100f) + "%",
                 marks = CareerState.Marks.ToString(),
                 most = CareerCatalogue.MarksToDismiss.ToString(),
                 days = CareerCatalogue.BanDays.ToString()

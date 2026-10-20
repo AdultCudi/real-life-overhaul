@@ -179,7 +179,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (r > 0)
                 {
-                    line.Append(' ').Append(CareersText.T("reallife_career_prof_after", "days", TalentCatalogue.Scaled(rank.Days, GameCalendar.DaysPerYear).ToString()));
+                    line.Append(' ').Append(CareersText.T("reallife_career_prof_after", "days", LifeRules.Paced(rank.Days, GameCalendar.DaysPerYear).ToString()));
                 }
                 if (r == now)
                 {

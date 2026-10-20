@@ -98,6 +98,44 @@ namespace RealLifeOverhaul.Careers
         /// <summary>An hour as the game writes the time of day.</summary>
         public static string Hour(int hour) => (hour % 24).GetFormattedTime(0f);
 
+        /// <summary>A minute of the game's day as the game writes the time of day ("13:00").</summary>
+        public static string TimeOfDay(int minuteOfDay)
+        {
+            int m = ((minuteOfDay % 1440) + 1440) % 1440;
+            return (m / 60).GetFormattedTime(m % 60);
+        }
+
+        /// <summary>A class's length on its panels, and how much of it must be sat for it to count as attended (it may be left then, as for work).</summary>
+        public static string ClassRuns(int minutes) => T("reallife_study_skip_runs", "time", Minutes(minutes), "counts", Minutes(StudyRules.CountsFrom(0, minutes)));
+
+        /// <summary>How a course fits the player's working days, for the course's page in the Campus app (<see cref="StudyRules.Fit(CourseDef, StudyMode, Profession, out int, out int)"/>).</summary>
+        public static string FitsWork(WorkFit fit, int days, int leaveAt)
+        {
+            switch (fit)
+            {
+                case WorkFit.LeaveClass: return T("reallife_campus_work_leave_class", "days", DayList(days), "time", TimeOfDay(leaveAt));
+                case WorkFit.LeaveWork: return T("reallife_campus_work_leave_work", "days", DayList(days), "time", TimeOfDay(leaveAt));
+                case WorkFit.Clash: return T("reallife_campus_work_clash", "days", DayList(days));
+                default: return T("reallife_campus_work_fits");
+            }
+        }
+
+        /// <summary>How a post's working days fit the courses being followed, for its page in the Career app.</summary>
+        public static string FitsClasses(WorkFit fit, int days, int leaveAt, int course)
+        {
+            string name = course >= 0 ? Course(course) : string.Empty;
+            switch (fit)
+            {
+                case WorkFit.LeaveClass: return Fill("reallife_career_classes_leave_class", "course", name, "days", DayList(days), "time", TimeOfDay(leaveAt));
+                case WorkFit.LeaveWork: return Fill("reallife_career_classes_leave_work", "course", name, "days", DayList(days), "time", TimeOfDay(leaveAt));
+                case WorkFit.Clash: return Fill("reallife_career_classes_clash", "course", name, "days", DayList(days));
+                default: return T("reallife_career_classes_fits");
+            }
+        }
+
+        /// <summary>The tone of a fit: plain when it fits, the game's yellow when one must be left early, red for a clash.</summary>
+        public static GameUi.CellTone FitTone(WorkFit fit) => fit == WorkFit.Clash ? GameUi.CellTone.Red : fit == WorkFit.Fits ? GameUi.CellTone.Plain : GameUi.CellTone.Yellow;
+
         /// <summary>A length of game time in hours and minutes.</summary>
         public static string Minutes(int minutes) => T("reallife_study_hours_minutes", "hours", (minutes / 60).ToString(Inv), "minutes", (minutes % 60).ToString("00", Inv));
 

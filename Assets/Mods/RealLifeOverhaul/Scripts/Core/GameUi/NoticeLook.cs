@@ -45,6 +45,9 @@ namespace RealLifeOverhaul.GameUi
         public static IModLogger Logger;
         public static NoticeLook Instance { get; private set; }
 
+        /// <summary>The game's stack of notifications (NotificationsUI.container), once found behind the loading screen; null before. NoticeRoom moves it under the mod's panels.</summary>
+        internal Transform Container => _container;
+
         private const string GlyphName = "RealLifeOverhaul";       // the mod's child on a picture's disc
         private const float ToastDisc = 52f;                       // the toast's picture, px of its 3840 x 2160 canvas (the game's is 44)
         private const float ToastGlyph = 32f;                      // the kind's picture on it

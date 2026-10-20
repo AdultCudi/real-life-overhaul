@@ -11,7 +11,9 @@ namespace RealLifeOverhaul.GameUi
     /// date or the language (those were measured each opening before, and the row's length changed with them): six tiles
     /// on a 16:9 screen at 100%, five at 16:10, two at 4:3. A full page stands centred in that room (PageStart).
     ///
-    /// The game's own apps come first, in the game's order, then everyone else's in the order they stand (GameFirst).
+    /// The game's own apps come first, in the game's order, then the mod's in one fixed order (<see cref="ModOrder"/>,
+    /// the same at every opening, load and start, whichever feature put its app on first), then other mods' in the order
+    /// they stand (Arrange).
     ///
     /// When every app fits on one page there are no pages and no button. Otherwise the last tile of every page is the
     /// button ("More apps"), so a page holds one app fewer than it has tiles; the pages fill in order and only the last
@@ -96,6 +98,129 @@ namespace RealLifeOverhaul.GameUi
             for (int i = 0; i < count; i++)
             {
                 if (!game[i])
+                {
+                    order[at++] = i;
+                }
+            }
+            return games;
+        }
+
+        /// <summary>
+        /// The mod's apps in the one order they stand on both phones: the day (Planner, Flare, the camera, the paper), work
+        /// and study, money, business, then the Guide and the options. Each feature puts its app on when it is ready, so the
+        /// order they were put on changed from one load to the next; their place is this table's, never that.
+        /// </summary>
+        public static readonly string[] ModOrder =
+        {
+            "RealLifePlanner", "RealLifeFlare", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
+            "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles",
+            "RealLifeFinance", "RealLifeBank", "RealLifeOwnBank", "RealLifeStocks",
+            "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
+            "RealLifeTechSector", "RealLifeOverhaulUtilities",
+            "RealLifeGuide", "RealLifeSettings"
+        };
+
+        public const string BankPrefix = "RealLifeBank";   // the bank apps are RealLifeBank1, RealLifeBank2 and on (BanksDirector.AppIdPrefix), in the banks' order
+        private const int RankStep = 100;                  // places kept under each name of the table: a bank's number among the bank apps
+
+        /// <summary>
+        /// Where a button of this name stands among the mod's apps (<see cref="ModOrder"/>): its place in the table times
+        /// <see cref="RankStep"/>, a bank app's number added; -1 for a name that is not one of the mod's (another mod's
+        /// button). No allocation: an ordinal comparison of the name against the table.
+        /// </summary>
+        public static int ModRank(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return -1;
+            }
+            for (int i = 0; i < ModOrder.Length; i++)
+            {
+                string id = ModOrder[i];
+                if (string.Equals(name, id, System.StringComparison.Ordinal))
+                {
+                    return i * RankStep;
+                }
+                if (id == BankPrefix && name.Length > id.Length && name.Length <= id.Length + 2 && name.StartsWith(id, System.StringComparison.Ordinal))
+                {
+                    int number = 0;
+                    for (int c = id.Length; c < name.Length; c++)
+                    {
+                        char d = name[c];
+                        if (d < '0' || d > '9')
+                        {
+                            number = -1;
+                            break;
+                        }
+                        number = number * 10 + (d - '0');
+                    }
+                    if (number > 0 && number < RankStep)
+                    {
+                        return i * RankStep + number;
+                    }
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// The order the items go on the pages: those of the game (<paramref name="game"/> true) first, in the order they
+        /// stand; then the mod's (<paramref name="rank"/> at 0 or more, from <see cref="ModRank"/>) by their rank, equal ranks
+        /// in the order they stand; then the rest (another mod's, rank under 0) in the order they stand. Writes the items'
+        /// places into <paramref name="order"/>; returns how many of the game's there are. Stable and the same whatever order
+        /// the items were put on in. A pass over a few dozen buttons: no allocation.
+        /// </summary>
+        public static int Arrange(bool[] game, int[] rank, int count, int[] order)
+        {
+            if (rank == null)
+            {
+                return GameFirst(game, count, order);
+            }
+            if (game == null || order == null || count <= 0)
+            {
+                return 0;
+            }
+            if (count > game.Length || count > order.Length || count > rank.Length)
+            {
+                count = System.Math.Min(game.Length, System.Math.Min(order.Length, rank.Length));
+            }
+            int at = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (game[i])
+                {
+                    order[at++] = i;
+                }
+            }
+            int games = at;
+            // The mod's: each next one is the least rank not yet placed (the first standing of equal ones).
+            int last = -1, lastAt = -1;
+            while (true)
+            {
+                int best = -1;
+                for (int i = 0; i < count; i++)
+                {
+                    if (game[i] || rank[i] < 0)
+                    {
+                        continue;
+                    }
+                    bool after = rank[i] > last || (rank[i] == last && i > lastAt);
+                    if (after && (best < 0 || rank[i] < rank[best]))
+                    {
+                        best = i;
+                    }
+                }
+                if (best < 0)
+                {
+                    break;
+                }
+                order[at++] = best;
+                last = rank[best];
+                lastAt = best;
+            }
+            for (int i = 0; i < count; i++)
+            {
+                if (!game[i] && rank[i] < 0)
                 {
                     order[at++] = i;
                 }

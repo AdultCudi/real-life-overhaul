@@ -186,8 +186,8 @@ namespace RealLifeOverhaul.Careers
                 j.Pay = (int)((long)j.Pay * (10000 + rise) / 10000);
                 j.Raises++;
             }
-            int weeks = LifeRules.BonusWeeks(rating);
-            int bonus = weeks > 0 ? Prices.At((int)(LifeRules.WeekPay(j) * weeks / 100)) : 0;
+            int days = LifeRules.BonusDays(rating);
+            int bonus = days > 0 ? Prices.At((int)(LifeRules.DayPay(j) * days / 100)) : 0;
             if (bonus > 0)
             {
                 CareersGame.Pay(bonus, BonusKey, SalaryCategory, employer);

@@ -46,8 +46,10 @@ namespace RealLifeOverhaul.Careers
             }
             _study = file;
             _studyOn = true;
+            int repriced = fresh ? 0 : ProRules.Reprice(file.Work);   // rates saved before the professions were set against the gigs
             Logger?.Info("Careers: studying " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": "
-                         + file.Courses.Count + " course(s) under way, " + file.Results.Count + " result(s).");
+                         + file.Courses.Count + " course(s) under way, " + file.Results.Count + " result(s)"
+                         + (repriced > 0 ? "; " + repriced + " rate(s) of the job, offers and vacancies raised to the professions' pay now." : "."));
         }
 
         private void StopStudy(bool keep, bool unloading)

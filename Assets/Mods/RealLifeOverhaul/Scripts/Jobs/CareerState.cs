@@ -84,6 +84,9 @@ namespace RealLifeOverhaul
         /// <summary>The basic hourly wage right now: the rank's, plus the raises earned at it.</summary>
         public static float Hourly => Employed ? CurrentRank.Hourly + (CurrentRank.Hourly > 0f ? Raises * CareerCatalogue.RaiseStep : 0f) : 0f;
 
+        /// <summary>The factor on what the work pays right now: the rank's, with the raises earned there at a rank paid only by what it takes (<see cref="CareerRank.Own"/>).</summary>
+        public static float Piece => Employed ? CareerCatalogue.PieceWith(CurrentRank, Raises) : 1f;
+
         /// <summary>References that count for the next employer: good ones less marked-down ones, never below zero.</summary>
         public static int ReferenceScore(bool gigLetter)
         {
@@ -275,7 +278,7 @@ namespace RealLifeOverhaul
                 }
                 outcome = ReviewOutcome.Promoted;
             }
-            else if (score >= CareerCatalogue.RaiseScore && Raises < CareerCatalogue.MaxRaises && CurrentRank != null && CurrentRank.Hourly > 0f)
+            else if (score >= CareerCatalogue.RaiseScore && Raises < CareerCatalogue.MaxRaises && CurrentRank != null)   // (at a rank with no basic wage a raise is a bigger share: Piece)
             {
                 Raises++;
                 if (Marks > 0)
