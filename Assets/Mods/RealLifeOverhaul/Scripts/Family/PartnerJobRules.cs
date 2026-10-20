@@ -33,7 +33,6 @@ namespace RealLifeOverhaul.Family
             return i >= 0 ? Trades[i] : fallback;
         }
 
-        /// <summary>What a day of the job brings in: nothing retired, <paramref name="fallback"/> for a job it does not know.</summary>
         /// <summary>Asleep at that hour by People's own hours: a night owl from two to ten, anyone else from eleven to eight (SocialPerson.Asleep).</summary>
         public static bool Asleep(int hour, bool nightOwl) => nightOwl ? hour >= 2 && hour < 10 : hour >= 23 || hour < 8;
 
@@ -60,6 +59,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>Whether the hour is in a stretch that may run past midnight (to over 24).</summary>
         public static bool Within(int hour, int from, int to) => (hour >= from && hour < to) || (hour + 24 >= from && hour + 24 < to);
 
+        /// <summary>What a day of the job brings in: nothing retired, <paramref name="fallback"/> for a job it does not know.</summary>
         public static int IncomeOf(string key, int fallback)
         {
             if (Retired(key))
