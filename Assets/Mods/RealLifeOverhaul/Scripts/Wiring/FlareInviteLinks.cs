@@ -18,9 +18,9 @@ namespace RealLifeOverhaul
         ///                 (SocialDialogs.Plans, When, Agree): who they are (a city person who said yes once is in People
         ///                 under the name they have on Flare; somebody new is who they would be when met), a plan on already,
         ///                 their night hours, a rough day, a stood-up date, a rude word or money not repaid remembered, the
-        ///                 outing their stage allows (OutingDef.Needs, a workout with somebody not sporty), a place near the
-        ///                 player (SocialPlaces.Find, as a call finds one) and the first hour that suits both from the yes's
-        ///                 arrival on (SocialLife.NextSlot)
+        ///                 outing their stage allows (OutingDef.Needs, a workout with somebody not sporty), and a place near
+        ///                 the player with the first hour from the yes's arrival on that suits both and at which the place is
+        ///                 open for the whole outing (SocialLife.PlaceAndHour, as a call finds them)
         ///   InviteBook    the plan booked exactly as a call books it (SocialLife.MakePlan: its reminder an hour before, the
         ///                 job panel's line and the game's marker, late and stood-up as for any plan); somebody new is met
         ///                 online first, as when they answer a post (FlareLinks.MeetOnline: SocialOrigin.Online,
@@ -28,7 +28,8 @@ namespace RealLifeOverhaul
         ///                 say them (a person of the cast not yet met takes them on; never one a friend is bringing, or a star)
         ///
         /// Nothing of the social life is changed but through its own entries. COST: nothing per frame; a look per invitation
-        /// sent (one walk over the city's buildings for a place, as a call), a booking per yes.
+        /// sent (a walk over the city's buildings for each free hour tried, at most SocialRules.OpenTries, as a call), a
+        /// booking per yes.
         /// </summary>
         public static class FlareInviteLinks
         {
