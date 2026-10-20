@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Family
             });
         }
 
-        // The cut back at work asked for now, whatever the player's cash: the text, then the talk in a family conversation.
+        // The cut back at work asked for now, whatever the player's cash: the text, then the talk face to face at home.
         public void TestWork()
         {
             if (!TestReady("Family work", false, false) || !TestPartner("Family work"))
@@ -87,7 +87,56 @@ namespace RealLifeOverhaul.Family
                 s.PAsk = null;
                 s.PWorkAsk = true;
                 PartnerVoice.Ask(PartnerVoice.Work, "reallife_family_work_text", Args.Us.With(FamilyText.T(Partner.JobKey)));
-                Logger?.Info("Family work test: " + Partner.Name + " asks to cut back to half days; talk it over from the Family contact.");
+                Logger?.Info("Family work test: " + Partner.Name + " asks to cut back to half days; talk it over with them at home.");
+            });
+        }
+
+        // A new step of the player's money heard of now, whatever their cash: the partner's text and its effect, by how they lean.
+        public void TestWealth()
+        {
+            if (!TestReady("Family wealth", false, false) || !TestPartner("Family wealth"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                if (!Settings.FamilyWealthMood)
+                {
+                    Refuse("Family wealth", "reallife_family_no_wealth_off");
+                    return;
+                }
+                PartnerWealth.React(PartnerWealth.Leaning);
+            });
+        }
+
+        // The bigger wish about work asked for now, whatever the player's cash: the text, then the talk face to face at home.
+        public void TestWish()
+        {
+            if (!TestReady("Family wish", false, false) || !TestPartner("Family wish"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                FamilySave s = FamilyState.S;
+                if (!s.LivesIn)
+                {
+                    Refuse("Family wish", "reallife_family_no_lives_in");
+                    return;
+                }
+                if (!Settings.FamilyWork)
+                {
+                    Refuse("Family wish", "reallife_family_no_work_off");
+                    return;
+                }
+                PartnerWish.Reset(s);
+                s.PWork = PartnerWorkRules.FullTime;
+                s.PWishAsk = true;
+                s.PWishAskDay = TimeHelper.CurrentDay;
+                s.PWorkAsk = false;
+                s.PAsk = null;
+                PartnerVoice.Ask(PartnerVoice.Wish, "reallife_family_wish_text", Args.Us);
+                Logger?.Info("Family wish test: " + Partner.Name + " has a wish about work; talk to them at home.");
             });
         }
 

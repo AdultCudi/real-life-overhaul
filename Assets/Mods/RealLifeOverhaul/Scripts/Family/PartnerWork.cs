@@ -7,14 +7,16 @@ namespace RealLifeOverhaul.Family
     /// The partner's work as the player's fortune grows (PartnerWorkRules): whether they would like to cut back to half days,
     /// raised by a text when the partner's voice allows (PartnerVoice) and talked over face to face at home within the week; a yes shortens their working day at home and
     /// halves their pay and so their share of the rent. With the option off nothing is asked and their days are full, as
-    /// before. Cost: nothing per frame; a few comparisons once a game day.
+    /// before; an ask still open when it goes off is dropped, with nothing held against the player. Cost: nothing per frame;
+    /// a few comparisons once a game hour in the day.
     /// </summary>
     internal static class PartnerWork
     {
         /// <summary>Their working day as the option and their choice make it: full days with the option off.</summary>
-        public static int Work => Settings.FamilyWork ? FamilyState.S.PWork : PartnerWorkRules.FullTime;
+        public static int Work => !Settings.FamilyWork ? PartnerWorkRules.FullTime
+            : PartnerWishRules.Studying(FamilyState.S.PRetrainUntil, TimeHelper.CurrentDay) ? PartnerWorkRules.Studying : FamilyState.S.PWork;
 
-        /// <summary>The cut back is waiting to be talked over in a family conversation.</summary>
+        /// <summary>The cut back is waiting to be talked over face to face at home.</summary>
         public static bool CanTalk => Settings.FamilyWork && FamilyState.Together && FamilyState.S.LivesIn && FamilyState.S.PWorkAsk && PartnerVoice.Asking(PartnerVoice.Work);
 
         /// <summary>They are on half days and could go back to full ones.</summary>
@@ -24,6 +26,11 @@ namespace RealLifeOverhaul.Family
         public static void Hourly(int day)
         {
             FamilySave s = FamilyState.S;
+            if (!Settings.FamilyWork)
+            {
+                s.PWorkAsk = false;   // switched off: nothing is asked, and an ask left open is dropped, not counted as a no (PartnerVoice.Hourly)
+                return;
+            }
             if (s.PWorkAsk && !PartnerVoice.Asking(PartnerVoice.Work))
             {
                 s.PWorkAsk = false;   // the week went by without the talk: as a no
@@ -32,8 +39,8 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
-            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay,
-                    FamilyState.IncomeHeld, Prices.At(PartnerWorkRules.AskAtIncome)))
+            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired && !s.PWishAsk, s.PWork, s.PWorkAsk, cash,
+                    Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay, FamilyState.IncomeHeld, Prices.At(PartnerWorkRules.AskAtIncome)))
             {
                 return;
             }

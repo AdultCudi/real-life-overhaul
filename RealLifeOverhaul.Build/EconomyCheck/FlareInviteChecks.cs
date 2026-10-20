@@ -480,8 +480,8 @@ internal static partial class Program
               && flareLinks.Contains("SocialLife.Meet(stranger, true);") && links.Contains("ContactPictures.Person(SocialPhone.IdOf(p)"),
             "flare invitations: somebody new who says yes is met online as when they answer a post (SocialOrigin.Online, SocialLife.Meet), with their face under their name");
         Check(links.Contains("SocialLife.MakePlan(p, b.Kind, b.At, venue, false, out string reason)") && phone.Contains("SocialLife.MakePlan(_p, kind, time, venue, theirIdea, out string reason)")
-              && links.Contains("SocialPlaces.Find(a.Kind, SocialDirector.Where(), PlaceFrom, PlaceTo") && phone.Contains("SocialPlaces.Find(kind, SocialDirector.Where(), 40f, 1800f")
-              && links.Contains("SocialLife.NextSlot(p, a.Kind, a.From)") && links.Contains("PlaceFrom = 40f") && links.Contains("PlaceTo = 1800f"),
+              && links.Contains("SocialLife.PlaceAndHour(p, a.Kind, SocialDirector.Where(), PlaceFrom, PlaceTo, a.From")
+              && phone.Contains("SocialLife.PlaceAndHour(_p, kind, SocialDirector.Where(), 40f, 1800f") && links.Contains("PlaceFrom = 40f") && links.Contains("PlaceTo = 1800f"),
             "flare invitations: the place, the hour and the plan are found and made exactly as a call makes them (its reminder, panel line, marker, late and stood-up rules follow)");
         Check(links.Contains("SocialState.Plan.Active") && links.Contains("Known(b.First, b.Last) ?? Stranger(b.Sex)") && links.Contains("SocialDirector.Expected(p)")
               && links.Contains("FlareCast.IsOne(file, p.Index)"),

@@ -40,7 +40,7 @@ internal static partial class Program
 
         string work = ModSource(@"Family\PartnerWork.cs"), home = ModSource(@"Family\HomeLife.cs"), partner = ModSource(@"Family\Partner.cs");
         string calendar = ModSource(@"Family\FamilyCalendar.cs"), choices = ModSource(@"Family\FamilyPhone.Choices.cs");
-        Check(work.Contains("Settings.FamilyWork ? FamilyState.S.PWork : PartnerWorkRules.FullTime") && home.Contains("to = PartnerWorkRules.Until(from, to, PartnerWork.Work);")
+        Check(work.Contains("!Settings.FamilyWork ? PartnerWorkRules.FullTime") && home.Contains("to = PartnerWorkRules.Until(from, to, PartnerWork.Work);")
               && partner.Contains("PartnerWorkRules.Income(") && partner.Contains("PartnerWork.Work);"),
             "family work: the timetable at home and the share of the rent read the work through the option, so off means full days as before");
         Check(Occurs(partner, "PartnerWork.Reset(s);") == 3 && calendar.Contains("PartnerWork.Hourly(day);")
@@ -66,5 +66,18 @@ internal static partial class Program
             spread &= g >= PartnerVoiceRules.GapLeast && g <= PartnerVoiceRules.GapMost && st >= PartnerVoiceRules.SettleLeast && st <= PartnerVoiceRules.SettleMost;
         }
         Check(spread, "family voice: every gap and every settling-in stays within its days");
+
+        string voice = ModSource(@"Family\PartnerVoice.cs"), tree = ModSource(@"Meta\OptionsTree.cs");
+        string text = MemberText(voice, "private static void Text(string key, in Args a)"), hourly = MemberText(work, "public static void Hourly(int day)");
+        Check(text.Contains("if (contact != null)") && text.Contains("FamilyText.Message(contact, key, a, notify: false);")
+              && !voice.Contains("FamilyText.Message(FamilyPhone.PartnerContact"),
+            "family voice: with no contact to text from (the phone's contacts off) the partner's word is their named notice alone, never that and a plain one");
+        int off = hourly.IndexOf("if (!Settings.FamilyWork)", StringComparison.Ordinal);
+        int lapse = hourly.IndexOf("if (s.PWorkAsk && !PartnerVoice.Asking(PartnerVoice.Work))", StringComparison.Ordinal);
+        Check(voice.Contains("public static bool AnyAsk => !string.IsNullOrEmpty(S.PAsk) && On(S.PAsk);")
+              && MemberText(voice, "public static void Hourly(int day)").Contains("if (!On(S.PAsk))")
+              && MemberText(voice, "private static bool On(string kind)").Contains("case Work: return Settings.FamilyWork;") && off > 0 && lapse > off
+              && tree.Contains("S(\"partner\").Guide(\"family\").Need(\"family\").Opts(\"family_work\""),
+            "family work: switched off while an ask is open, the ask is dropped (no reminder, no lapse, nothing held against the player), and the partner's section greys with Family off");
     }
 }

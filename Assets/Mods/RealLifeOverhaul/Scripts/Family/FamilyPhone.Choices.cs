@@ -132,6 +132,9 @@ namespace RealLifeOverhaul.Family
 
             list.Add(new Choice(() => PartnerWork.CanTalk && InPerson, () => FamilyText.Say("reallife_family_do_work"), "reallife_family_do_work_yes", PartnerWork.Talk));
             list.Add(new Choice(() => PartnerWork.CanReturn, () => FamilyText.Say("reallife_family_do_work_return"), "reallife_family_do_work_return_yes", PartnerWork.Return));
+            list.Add(new Choice(() => PartnerWish.CanTalk && InPerson, () => FamilyText.Say("reallife_family_do_wish"), "reallife_family_do_work_yes", PartnerWish.Talk));
+            list.Add(new Choice(() => PartnerWish.CanResume && InPerson, () => FamilyText.Say("reallife_family_do_wish_resume"), "reallife_family_do_work_return_yes", PartnerWish.Resume));
+            list.Add(new Choice(() => PartnerWish.CanAskChipIn && InPerson, () => FamilyText.Say("reallife_family_do_chip"), "reallife_family_do_chip_yes", PartnerWish.AskChipIn));
             list.Add(new Choice(() => PartnerExpect.CanSetAllowance,
                 () => FamilyText.Say("reallife_family_do_allowance", new Args { Name = Partner.Name, Amount = FamilyText.Money(PartnerExpect.Allowance) }),
                 "reallife_family_allowance_change", PartnerExpect.TypeAllowance));
