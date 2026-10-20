@@ -9,11 +9,12 @@ using UI.Notification;
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// What the partner comes to expect as the player gets richer (PartnerExpectRules): once a day, a bigger home, evenings
-    /// out more often, a weekly allowance, a car of their own and a second home, each said once by a text, the home's
-    /// harmony cooling while one falls short and warming when it is met. The allowance is chosen from the Family contact and
-    /// paid each week. With the option off nothing is expected and no allowance is paid. Cost: nothing per frame; a few
-    /// comparisons, one look at the home's size and one count of the player's homes and cars once a game day.
+    /// What the partner comes to expect as the player gets richer (PartnerExpectRules): a bigger home, evenings out more
+    /// often, a weekly allowance, a car of their own (never in a Going Public session) and a second home, each said once by
+    /// a text, the home's harmony cooling while one falls short and warming when it is met. The allowance is chosen in a
+    /// family conversation and paid each week. With the option off nothing is expected and no allowance is paid. Cost:
+    /// nothing per frame; a few comparisons, one look at the home's size and one count of the player's homes and cars once
+    /// a game hour in the day and once a day.
     /// </summary>
     internal static class PartnerExpect
     {
@@ -79,7 +80,8 @@ namespace RealLifeOverhaul.Family
             {
                 FamilyState.Harmony(PartnerExpectRules.DatesShort);
             }
-            Wish(day, speak, PartnerExpectRules.WantsCar(level, day, s.PCarBackDay), PartnerCar.Has, ref s.PCarWishDay, "reallife_family_expect_car",
+            // No car in a Going Public session (PartnerCar): none is wished for there, nor held against the player.
+            Wish(day, speak, PartnerExpectRules.WantsCar(level, day, s.PCarBackDay) && !GoingPublic.InSession, PartnerCar.Has, ref s.PCarWishDay, "reallife_family_expect_car",
                 "reallife_family_expect_car_thanks", 0f, PartnerVoice.Car);
             Wish(day, speak, level >= PartnerExpectRules.SecondHomeFrom, PartnerExpectRules.SecondHomeMet(Homes()), ref s.PSecondHomeWishDay,
                 "reallife_family_expect_second_home", "reallife_family_expect_second_home_thanks", PartnerExpectRules.AffectionSecondHome, null);

@@ -1,7 +1,7 @@
 using RealLifeOverhaul.Family;
 
-// What the partner expects as the player gets richer (Scripts/Family/PartnerExpect): three levels of the player's cash
-// at today's prices, a bigger home and evenings out more often at each, a home of unknown size never too small, evenings
+// What the partner expects as the player gets richer (Scripts/Family/PartnerExpect): three levels of the player's
+// prosperity (the daily income held all week and the cash) at today's prices, a bigger home and evenings out more often at each, a home of unknown size never too small, evenings
 // out counted from the move in when there has been none, and nothing with the option off. The rule is checked here, and
 // its use in the game's side in its source.
 internal static partial class Program
@@ -92,6 +92,24 @@ internal static partial class Program
         Check(MemberText(expect, "public static void Check(int day, int level, bool speak)").Contains("!Settings.FamilyExpect")
               && expect.Contains("if (!PartnerVoice.Free)") && ModSource(@"Family\FamilyCalendar.cs").Contains("PartnerExpect.Hourly(day);") && expect.Contains("PartnerExpectRules.LevelOf(SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f, FamilyState.IncomeHeld, Prices.Level)")
               && ModSource(@"Family\FamilyCalendar.cs").Contains("PartnerExpect.Daily(day);") && Occurs(ModSource(@"Family\Partner.cs"), "PartnerExpect.Reset(s);") == 3,
-            "family expectations: looked at once a day behind its option, at today's prices, and afresh with every new partner");
+            "family expectations: looked at each hour in the day and each day behind its option, at today's prices, and afresh with every new partner");
+
+        // A load made the partner's car again in the city until the next game hour; a car bought for them was saved at the
+        // interior's coordinates the player stood at; in a Going Public session, where no car is offered, the partner still
+        // wished for one, the home cooled while it went without, and the open ask's talk offered the car anyway.
+        string director = ModSource(@"Family\FamilyDirector.cs"), voice = ModSource(@"Family\PartnerVoice.cs");
+        int load = director.IndexOf("FamilyState.Load();", System.StringComparison.Ordinal);
+        int resync = load < 0 ? -1 : director.IndexOf("Partner.Resync();", load, System.StringComparison.Ordinal);
+        int hour = resync < 0 ? -1 : director.IndexOf("_lastHour = TimeHelper.CurrentHour;", resync, System.StringComparison.Ordinal);
+        int hide = resync < 0 ? -1 : director.IndexOf("PartnerCar.Hourly();", resync, System.StringComparison.Ordinal);
+        string buy = MemberText(car, "private static DialogEntry Buy(string type, int price)"), on = MemberText(voice, "private static bool On(string kind)");
+        Check(resync > 0 && hide > resync && hide < hour
+              && buy.Contains("v.position = OnStreet();") && buy.Contains("v.rotation = Quaternion.identity;") && !buy.Contains("player.transform.position")
+              && MemberText(car, "private static Vector3 OnStreet()").Contains("entranceDoors[0].doorTransform.position")
+              && expect.Contains("PartnerExpectRules.WantsCar(level, day, s.PCarBackDay) && !GoingPublic.InSession")
+              && on.Contains("case Car: return Settings.FamilyExpect && !GoingPublic.InSession;") && on.Contains("case Allowance: return Settings.FamilyExpect;")
+              && on.Contains("case Date: return Settings.FamilyExpect;"),
+            "family expectations: the partner's car is out of the city at once after a load, a car bought for them is saved on the street, "
+            + "and in a Going Public session no car is wished for or offered");
     }
 }

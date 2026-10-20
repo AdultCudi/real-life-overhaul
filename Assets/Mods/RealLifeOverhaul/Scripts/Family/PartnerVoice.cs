@@ -150,6 +150,9 @@ namespace RealLifeOverhaul.Family
             {
                 case Work: return Settings.FamilyWork;
                 case Wish: return Settings.FamilyWork;   // the bigger wish has the cut back's switch
+                case Car: return Settings.FamilyExpect && !GoingPublic.InSession;   // no car is offered in a Going Public session (PartnerCar)
+                case Allowance: return Settings.FamilyExpect;
+                case Date: return Settings.FamilyExpect;
                 default: return true;
             }
         }

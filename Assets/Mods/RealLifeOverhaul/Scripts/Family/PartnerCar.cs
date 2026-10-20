@@ -15,9 +15,11 @@ namespace RealLifeOverhaul.Family
     /// A car of the partner's own (PartnerExpectRules): one of the player's cars handed over, the dearest they do not drive
     /// first and another once if asked, or a new one bought for them at the game's own price when the player has none to
     /// spare. A car handed over stays in the save, the player's on paper, so that a save without the mod still has it, but
-    /// is kept out of the city as a car out on hire is (EstateGame), and every part of the mod that looks after the
-    /// player's cars leaves it alone (<see cref="Is"/>). Taken back, the game's tow service leaves it at a repair shop.
-    /// Cost: nothing per frame; a look at the player's cars once a game hour and when a conversation offers the car.
+    /// is kept out of the city as a car out on hire is (EstateGame), also at once after a load brings it back, and every
+    /// part of the mod that looks after the player's cars leaves it alone (<see cref="Is"/>). A car bought for them is
+    /// saved on the street outside, never at an interior's coordinates. Taken back, it is made again at the nearest free
+    /// repair bay, as the game's tow would leave it. Cost: nothing per frame; a look at the player's cars once a game hour,
+    /// after a load and when a conversation offers the car.
     /// </summary>
     internal static class PartnerCar
     {
@@ -119,8 +121,8 @@ namespace RealLifeOverhaul.Family
                 dirtiness = 0f,
                 damage = 0f
             };
-            PlayerController player = PlayerHelper.PlayerController;
-            v.position = player != null ? player.transform.position : Vector3.zero;   // (never spawned while theirs: a towed car is placed by the tow)
+            v.position = OnStreet();   // the game makes it there on a load (and the mod takes it out of the city again)
+            v.rotation = Quaternion.identity;   // (the save's default is no rotation at all)
             save.VehicleInstances.Add(v);
             Took(v.id);
             FamilyDirector.Logger?.Info("Family: the player bought " + Partner.Name + " a " + type + " for " + price + ".");
@@ -165,14 +167,11 @@ namespace RealLifeOverhaul.Family
         {
             GameInstance save = SaveGameManager.Current;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            PlayerController player = PlayerHelper.PlayerController;
             if (save == null || city == null || v.VehicleType == null)
             {
                 return null;
             }
-            Vector3 from = BuildingManager.IsInsideBuilding && InstanceBehavior<BuildingManager>.Instance.cityBuildingController != null
-                ? InstanceBehavior<BuildingManager>.Instance.cityBuildingController.entranceDoors[0].doorTransform.position
-                : player != null ? player.transform.position : Vector3.zero;
+            Vector3 from = OnStreet();
             bool truck = v.VehicleType.HasTag(BigAmbitions.Tags.TagRef.Vehicletag.istruck);
             CityBuildingController best = null;
             GasStationTrigger bay = null;
@@ -224,6 +223,20 @@ namespace RealLifeOverhaul.Family
             }
             v.SetStreetData(string.Empty, 0);
             return best.building.Address;
+        }
+
+        // Where the player is in the city: indoors, the building's door, as the game's tow measures from (an interior's
+        // coordinates are not the city's); else where they stand.
+        private static Vector3 OnStreet()
+        {
+            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+            if (BuildingManager.IsInsideBuilding && manager != null && manager.cityBuildingController != null
+                && manager.cityBuildingController.entranceDoors != null && manager.cityBuildingController.entranceDoors.Length > 0)
+            {
+                return manager.cityBuildingController.entranceDoors[0].doorTransform.position;
+            }
+            PlayerController player = PlayerHelper.PlayerController;
+            return player != null ? player.transform.position : Vector3.zero;
         }
 
         // The player's cars they could hand over: theirs, a motor car, not a dealer's stock, not the one they are in; dearest first.

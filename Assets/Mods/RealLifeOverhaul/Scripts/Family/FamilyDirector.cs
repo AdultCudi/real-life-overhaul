@@ -128,6 +128,7 @@ namespace RealLifeOverhaul.Family
                     _hides = FamilyPhone.Hides;
                     FamilyPhone.Setup();
                     Partner.Resync();
+                    PartnerCar.Hourly();   // the load made the partner's car again: out of the city at once, as the hire's cars are
                     _lastHour = TimeHelper.CurrentHour;
                     if (FamilyState.S.LastDay <= 0)
                     {

@@ -5,10 +5,11 @@ namespace RealLifeOverhaul.Family
 
     /// <summary>
     /// What a partner who lives with the player comes to expect as the player gets richer, game-free: three levels of the
-    /// player's cash, and at each a bigger home, evenings out more often and a bigger weekly allowance, a car of their own
-    /// from the first and a second home from the second. A wish is said once; going without cools the home a little each day
-    /// after some days' grace and meeting it warms it; evenings out further apart than they now expect cool it each day, and
-    /// each week's allowance warms or cools it by whether it is what they expect. Nothing here is read per frame.
+    /// player's prosperity (the daily income held all week and the cash), and at each a bigger home, evenings out more
+    /// often and a bigger weekly allowance, a car of their own from the first and a second home from the second. A wish is
+    /// said once; going without cools the home a little each day after some days' grace and meeting it warms it; evenings
+    /// out further apart than they now expect cool it each day, and each week's allowance warms or cools it by whether it
+    /// is what they expect. Nothing here is read per frame.
     /// </summary>
     public static class PartnerExpectRules
     {
