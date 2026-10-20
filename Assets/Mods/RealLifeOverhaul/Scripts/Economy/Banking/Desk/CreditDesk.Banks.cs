@@ -18,18 +18,32 @@ namespace RealLifeOverhaul.Economy
         private const string LoanPayOff = "ba:transaction_loanpayoff";   // the game's own, as EconoView pays a loan off
 
         /// <summary>An overdraft's or a card's limit, or the most put into a vehicle or a building, at one bank at a rating.</summary>
-        public static int LimitAt(ProductKind kind, int score, Lender bank)
+        public static int LimitAt(ProductKind kind, int score, Lender bank, bool diagnose = false)
         {
             if (bank == null)
             {
                 return 0;
             }
+            if (ProductCatalogue.Revolving(kind))
+            {
+                bool card = kind == ProductKind.CreditCard;
+                int usual = card ? ProductTerms.CardLimit(score, BankTerms.OwnCapTotal)
+                    : ProductTerms.OverdraftLimit(score, BankTerms.OwnCapTotal);
+                int round = card ? ProductCatalogue.CardRound : ProductCatalogue.OverdraftRound;
+                int least = card ? ProductCatalogue.CardLeast : ProductCatalogue.OverdraftLeast;
+                int ratingLimit = BankRules.Limit(usual, bank.Rank, round, least);
+                float income = Save != null ? PlayerHelper.CalculateDailyIncome() : 0f;
+                int limit = ProductTerms.IncomeLimit(kind, ratingLimit, income);
+                if (diagnose && Verbose && limit < ratingLimit)
+                {
+                    Logger?.Info("Economy check (credit income): " + kind + " at rating " + score + ": bank limit "
+                        + ratingLimit + ", income " + income.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+                        + " a day, offer capped at " + limit + ": " + (limit <= ratingLimit ? "PASS" : "FAIL"));
+                }
+                return limit;
+            }
             switch (kind)
             {
-                case ProductKind.Overdraft:
-                    return BankRules.Limit(ProductTerms.OverdraftLimit(score, BankTerms.OwnCapTotal), bank.Rank, ProductCatalogue.OverdraftRound, ProductCatalogue.OverdraftLeast);
-                case ProductKind.CreditCard:
-                    return BankRules.Limit(ProductTerms.CardLimit(score, BankTerms.OwnCapTotal), bank.Rank, ProductCatalogue.CardRound, ProductCatalogue.CardLeast);
                 case ProductKind.CarFinance:
                 case ProductKind.Mortgage:
                     return BankRules.Most(ProductTerms.FinanceMost(kind, score, BankTerms.OwnCap(bank.Settings)), bank.Rank);

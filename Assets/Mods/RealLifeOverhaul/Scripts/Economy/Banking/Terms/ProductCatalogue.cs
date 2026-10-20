@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Economy
         public const float OverdraftShareAtBest = 0.08f;
         public const int OverdraftRound = 50;
         public static int OverdraftLeast => Prices.At(200);
+        public const int OverdraftIncomeDays = 30;           // days of average income: a short-term cash buffer
         public const int OverdraftRatePoints = 8;            // on the bank's rate for the rating
         public static int OverdraftFloat => Prices.At(500);  // cash above this pays the overdraft back at each day's end
 
@@ -84,6 +85,7 @@ namespace RealLifeOverhaul.Economy
         public const float CardShareAtBest = 0.12f;
         public const int CardRound = 50;
         public static int CardLeast => Prices.At(300);
+        public const int CardIncomeDays = 60;                // days of average income: two months of earnings
         public const int CardRatePoints = 12;
         public const float CardCashFeeShare = 0.03f;         // of cash drawn, never less than the least
         public static int CardCashFeeLeast => Prices.At(5);
