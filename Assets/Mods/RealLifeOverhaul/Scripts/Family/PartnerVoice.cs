@@ -140,6 +140,7 @@ namespace RealLifeOverhaul.Family
             switch (kind)
             {
                 case Work: return Settings.FamilyWork;
+                case Wish: return Settings.FamilyWork;   // the bigger wish has the cut back's switch
                 default: return true;
             }
         }

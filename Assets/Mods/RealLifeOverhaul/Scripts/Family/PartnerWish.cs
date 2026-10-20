@@ -4,14 +4,15 @@ using Entities;
 namespace RealLifeOverhaul.Family
 {
     /// <summary>
-    /// The partner's bigger wish about work (PartnerWishRules), under the same switch as cutting back (PartnerWork): once a
-    /// day, whether they ask to stop working or to retrain for the job they always wanted, said by a text and talked over in
-    /// a family conversation; the end of their studies told by a text. Stopping is undone from a family conversation.
-    /// Cost: nothing per frame; a few comparisons once a game day.
+    /// The partner's bigger wish about work (PartnerWishRules), under the same switch as cutting back (PartnerWork): whether
+    /// they ask to stop working or to retrain for the job they always wanted, said by a text and talked over face to face at
+    /// home; the end of their studies told by a text. Stopping is undone, and chipping in for the rent asked for, face to
+    /// face at home too. With the switch off nothing is asked or paid, and an ask left open is dropped. Cost: nothing per
+    /// frame; a few comparisons once a game hour in the day, and once a day.
     /// </summary>
     internal static class PartnerWish
     {
-        /// <summary>A wish waits to be talked over in a family conversation.</summary>
+        /// <summary>A wish waits to be talked over face to face at home.</summary>
         public static bool CanTalk => Settings.FamilyWork && FamilyState.Together && FamilyState.S.LivesIn && FamilyState.S.PWishAsk && PartnerVoice.Asking(PartnerVoice.Wish);
 
         /// <summary>They have stopped working and could go back to it.</summary>
@@ -26,6 +27,11 @@ namespace RealLifeOverhaul.Family
         public static void Hourly(int day)
         {
             FamilySave s = FamilyState.S;
+            if (!Settings.FamilyWork)
+            {
+                s.PWishAsk = false;   // switched off: nothing is asked, and an ask left open is dropped, not counted as a no (PartnerVoice.Hourly)
+                return;
+            }
             if (s.PRetrainUntil > 0 && day >= s.PRetrainUntil)
             {
                 s.PRetrainUntil = 0;
@@ -127,7 +133,7 @@ namespace RealLifeOverhaul.Family
         public static void Daily(int day)
         {
             FamilySave s = FamilyState.S;
-            if (day >= s.PChipInUntil || !FamilyState.Together || (s.PChipInDay > 0 && day - s.PChipInDay < 7))
+            if (!Settings.FamilyWork || day >= s.PChipInUntil || !FamilyState.Together || (s.PChipInDay > 0 && day - s.PChipInDay < 7))
             {
                 return;
             }

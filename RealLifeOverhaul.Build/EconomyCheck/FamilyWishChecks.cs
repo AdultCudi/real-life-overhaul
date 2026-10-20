@@ -1,9 +1,9 @@
 using RealLifeOverhaul.Family;
 
-// The partner's bigger wish about work (Scripts/Family/PartnerWish): at a million in cash a partner who lives with the
-// player and still works asks once to stop working or to retrain for the job they always wanted, never the one they have;
-// stopping and studying bring in nothing and keep them home; a yes is never asked again, a no a month later. The rule is
-// checked here, and its use in the game's side in its source.
+// The partner's bigger wish about work (Scripts/Family/PartnerWish): with the daily income held at 5,000 all week and
+// 100,000 in cash a partner who lives with the player and still works asks once to stop working or to retrain for the job
+// they always wanted, never the one they have; stopping and studying bring in nothing and keep them home; a yes is never
+// asked again, a no a month later. The rule is checked here, and its use in the game's side in its source.
 internal static partial class Program
 {
     private static void FamilyWish()
@@ -51,5 +51,11 @@ internal static partial class Program
         Check(wish.Contains("PartnerGlad.Start(PartnerGlad.Stop);") && wish.Contains("PartnerGlad.Start(PartnerGlad.Retrain);") && wish.Contains("s.PJobKey = null;")
               && ModSource(@"Family\Partner.cs").Contains("&& !PartnerWish.OwnJob)") && wish.Contains("s.LivesIn && !Partner.Retired"),
             "family wish: a yes is followed by warm texts, a job retrained for stays theirs over People's, and a retired partner is never asked");
+        string hourly = MemberText(wish, "public static void Hourly(int day)");
+        int off = hourly.IndexOf("if (!Settings.FamilyWork)", System.StringComparison.Ordinal);
+        int lapse = hourly.IndexOf("if (s.PWishAsk && !PartnerVoice.Asking(PartnerVoice.Wish))", System.StringComparison.Ordinal);
+        Check(off > 0 && lapse > off && MemberText(wish, "public static void Daily(int day)").Contains("!Settings.FamilyWork || day >= s.PChipInUntil")
+              && MemberText(ModSource(@"Family\PartnerVoice.cs"), "private static bool On(string kind)").Contains("case Wish: return Settings.FamilyWork;"),
+            "family wish: switched off, nothing is asked or paid towards the rent, and an ask left open is dropped with nothing held against the player");
     }
 }
