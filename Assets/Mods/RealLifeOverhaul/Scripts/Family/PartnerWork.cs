@@ -39,8 +39,8 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
-            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired && !s.PWishAsk, s.PWork, s.PWorkAsk, cash, Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay,
-                    FamilyState.IncomeHeld, Prices.At(PartnerWorkRules.AskAtIncome)))
+            if (!PartnerWorkRules.Asks(Settings.FamilyWork, FamilyState.Together && s.LivesIn && !Partner.Retired && !s.PWishAsk, s.PWork, s.PWorkAsk, cash,
+                    Prices.At(PartnerWorkRules.AskAtCash), day, s.PWorkAskDay, FamilyState.IncomeHeld, Prices.At(PartnerWorkRules.AskAtIncome)))
             {
                 return;
             }

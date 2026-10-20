@@ -23,7 +23,10 @@ namespace RealLifeOverhaul.Family
         /// <summary>They retrained for the job they wanted: it is theirs now, whatever People said they did before.</summary>
         public static bool OwnJob => FamilyState.S.PWishGranted && PartnerWishRules.WishOf(FamilyState.S.PSeed) == PartnerWishRules.Retrain;
 
-        /// <summary>Once a game hour in the day: the end of their studies, else whether they ask (raised when the partner's voice allows, talked over face to face within the week: PartnerVoice).</summary>
+        /// <summary>
+        /// Once a game hour in the day: the end of their studies, else whether they ask (raised when the partner's voice
+        /// allows, talked over face to face within the week: PartnerVoice).
+        /// </summary>
         public static void Hourly(int day)
         {
             FamilySave s = FamilyState.S;
