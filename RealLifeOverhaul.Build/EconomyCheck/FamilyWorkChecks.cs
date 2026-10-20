@@ -40,7 +40,7 @@ internal static partial class Program
 
         string work = ModSource(@"Family\PartnerWork.cs"), home = ModSource(@"Family\HomeLife.cs"), partner = ModSource(@"Family\Partner.cs");
         string calendar = ModSource(@"Family\FamilyCalendar.cs"), choices = ModSource(@"Family\FamilyPhone.Choices.cs");
-        Check(work.Contains("Settings.FamilyWork ? FamilyState.S.PWork : PartnerWorkRules.FullTime") && home.Contains("to = PartnerWorkRules.Until(from, to, PartnerWork.Work);")
+        Check(work.Contains("!Settings.FamilyWork ? PartnerWorkRules.FullTime") && home.Contains("to = PartnerWorkRules.Until(from, to, PartnerWork.Work);")
               && partner.Contains("PartnerWorkRules.Income(") && partner.Contains("PartnerWork.Work);"),
             "family work: the timetable at home and the share of the rent read the work through the option, so off means full days as before");
         Check(Occurs(partner, "PartnerWork.Reset(s);") == 3 && calendar.Contains("PartnerWork.Hourly(day);")

@@ -13,6 +13,8 @@ namespace RealLifeOverhaul.Family
         public const int FullTime = 0, PartTime = 1;
         public const int AskAtCash = 10000;      // the player's cash at the start's prices when the partner first asks...
         public const int AskAtIncome = 800;      // ...with the game's daily income held at least this all week (IncomeRules, the start's prices)
+        public const int Stopped = 2;            // not working at all (PartnerWishRules); saved
+        public const int Studying = 3;           // retraining for a new job (PartnerWishRules); never saved, read from the day studies end
         public const int AskAgainDays = 30;      // days after a no before they ask again
         public const int PartTimeHours = 4;      // hours of a working day on half days
         public const float HarmonyYes = 6f;      // the home, when the player says yes
@@ -32,10 +34,10 @@ namespace RealLifeOverhaul.Family
             return work == PartTime ? Math.Min(to, from + PartTimeHours) : to;
         }
 
-        /// <summary>What a day of their work brings in: half on half days.</summary>
+        /// <summary>What a day of their work brings in: half on half days, nothing while they have stopped or are studying.</summary>
         public static int Income(int fullDay, int work)
         {
-            return work == PartTime ? fullDay / 2 : fullDay;
+            return work == PartTime ? fullDay / 2 : work == Stopped || work == Studying ? 0 : fullDay;
         }
 
         /// <summary>Whether they go to work at all: not once they have stopped, nor while they are studying.</summary>

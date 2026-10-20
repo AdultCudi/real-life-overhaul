@@ -12,7 +12,9 @@ namespace RealLifeOverhaul.Family
 
         // The sets of lines, by what was agreed; the keys are written out in full for the locale check. A set is saved by its first key.
         public static readonly string[] Work = { "reallife_family_glad_work_1", "reallife_family_glad_work_2", "reallife_family_glad_work_3" };
-        private static readonly string[][] Sets = { Work };
+        public static readonly string[] Stop = { "reallife_family_glad_stop_1", "reallife_family_glad_stop_2", "reallife_family_glad_stop_3" };
+        public static readonly string[] Retrain = { "reallife_family_glad_retrain_1", "reallife_family_glad_retrain_2", "reallife_family_glad_retrain_3" };
+        private static readonly string[][] Sets = { Work, Stop, Retrain };
 
         /// <summary>A yes to what they asked, with the set of lines that follow it.</summary>
         public static void Start(string[] lines)

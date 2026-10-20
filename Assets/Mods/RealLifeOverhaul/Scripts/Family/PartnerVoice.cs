@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Family
     internal static class PartnerVoice
     {
         public const string Work = "work";   // the kinds of ask, saved by name
+        public const string Wish = "wish";
 
         private static readonly string[] Reminders = { "reallife_family_ask_remind_1", "reallife_family_ask_remind_2" };
 
@@ -114,6 +115,7 @@ namespace RealLifeOverhaul.Family
             switch (kind)
             {
                 case Work: return PartnerWork.Talk;
+                case Wish: return PartnerWish.Talk;
                 default: return null;
             }
         }
@@ -138,6 +140,7 @@ namespace RealLifeOverhaul.Family
             switch (kind)
             {
                 case Work: return Settings.FamilyWork;
+                case Wish: return Settings.FamilyWork;   // the bigger wish has the cut back's switch
                 default: return true;
             }
         }

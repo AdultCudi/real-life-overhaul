@@ -204,6 +204,14 @@ namespace RealLifeOverhaul.Family
         public List<int> IncomeWeek = new List<int>();   // the player's daily income on each of the last days, newest last (IncomeRules)
         // How the partner takes the player's money (PartnerWealth).
         public int PWealthStep;      // the highest step of the player's cash they have reacted to
+        // The partner's bigger wish about work (PartnerWish).
+        public bool PWishAsk;        // they have asked, and it waits to be talked over
+        public bool PWishGranted;    // the player said yes: never asked again of this partner
+        public int PWishAskDay;      // the day they last asked
+        public int PRetrainUntil;    // studying for the new job until this day; 0 none
+        public int PChipInUntil;     // chipping in for the rent from their savings until this day
+        public int PChipInDay;       // the day of the last week's share
+        public int PChipInAskDay;    // the day the player last asked them to chip in
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

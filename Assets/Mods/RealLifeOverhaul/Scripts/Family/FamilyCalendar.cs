@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Family
             HardTimes.Daily(day);
             FamilyState.RecordIncome();
             PartnerWealth.Daily(day);
+            PartnerWish.Daily(day);
             bool warm = s.Harmony >= 40f;
             FamilyModifiers.Keep(FamilyModifiers.Married, FamilyState.Bond == Bond.Married && warm);
             FamilyModifiers.Keep(FamilyModifiers.Engaged, FamilyState.Bond == Bond.Engaged && warm);
@@ -37,6 +38,7 @@ namespace RealLifeOverhaul.Family
                 PartnerWork.Hourly(day);
                 PartnerGlad.Hourly(day);
                 PartnerWealth.Hourly(day);
+                PartnerWish.Hourly(day);
             }
             HomeLife.Support(day, hour);
             WeddingPlanner.Eve(day, hour);
