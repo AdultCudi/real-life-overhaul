@@ -20,6 +20,10 @@ namespace RealLifeOverhaul.Family
 
         private static int Dream => PartnerWishRules.DreamOf(FamilyState.S.PSeed, FamilyState.S.PJob, Partner.TradeCount);
 
+        // While Social keeps the partner, the job they always wanted is one of People's (PartnerJobRules), so that People can
+        // say it once they have retrained; null for Family's own partner, whose dream is one of Family's trades.
+        private static string PeopleDream => Partner.Kept(out PersonInfo p) && !string.IsNullOrEmpty(p.JobKey) ? PartnerJobRules.DreamKey(FamilyState.S.PSeed, p.JobKey) : null;
+
         /// <summary>They retrained for the job they wanted: it is theirs now, whatever People said they did before.</summary>
         public static bool OwnJob => FamilyState.S.PWishGranted && PartnerWishRules.WishOf(FamilyState.S.PSeed) == PartnerWishRules.Retrain;
 
@@ -70,8 +74,9 @@ namespace RealLifeOverhaul.Family
         {
             bool stop = PartnerWishRules.WishOf(FamilyState.S.PSeed) == PartnerWishRules.Stop;
             int dream = Dream;
+            string people = stop ? null : PeopleDream;
             string ask = stop ? "reallife_family_wish_stop_ask" : "reallife_family_wish_retrain_ask";
-            Args fill = Args.Us.With(FamilyText.T(Partner.KeyOf(dream)));
+            Args fill = Args.Us.With(FamilyText.T(people ?? Partner.KeyOf(dream)));
             return FamilyTalk.Either(FamilyText.Say(ask, fill), "reallife_family_work_yes", () =>
             {
                 FamilySave s = FamilyState.S;
@@ -85,10 +90,17 @@ namespace RealLifeOverhaul.Family
                 }
                 else
                 {
-                    s.PJob = dream;
-                    s.PJobKey = null;   // the new job is Family's trade now, not the one People gave them
+                    if (people != null)
+                    {
+                        Retrained(s, people);
+                    }
+                    else
+                    {
+                        s.PJob = dream;
+                        s.PJobKey = null;   // the new job is Family's trade now
+                        s.PIncome = Partner.IncomeOf(dream);
+                    }
                     PartnerGlad.Start(PartnerGlad.Retrain);
-                    s.PIncome = Partner.IncomeOf(dream);
                     s.PWork = PartnerWorkRules.FullTime;
                     s.PRetrainUntil = TimeHelper.CurrentDay + PartnerWishRules.RetrainDays;
                 }
@@ -105,6 +117,19 @@ namespace RealLifeOverhaul.Family
                 FamilyState.Harmony(PartnerWishRules.HarmonyNo);
                 return FamilyTalk.Close("reallife_family_work_no_done");
             });
+        }
+
+        // The new job of a partner Social keeps is People's job too: its text, its hours and its pay here, and the person's
+        // job in Social's record, so that People, their texts and Flare say what they do now (Partner.Resync then reads the same).
+        private static void Retrained(FamilySave s, string job)
+        {
+            s.PJobKey = job;
+            s.PJob = PartnerJobRules.TradeOf(job, s.PJob);
+            s.PIncome = PartnerJobRules.IncomeOf(job, Partner.IncomeOf(s.PJob));
+            if (!Partner.UsesSocial || !FamilyBridges.Social.PartnerJob(job))
+            {
+                FamilyDirector.Logger?.Warn("Family: People could not be told " + Partner.Name + "'s new job; family life keeps it as theirs.");
+            }
         }
 
         /// <summary>They earn nothing (stopped, or retired) and could be asked to chip in for the rent.</summary>

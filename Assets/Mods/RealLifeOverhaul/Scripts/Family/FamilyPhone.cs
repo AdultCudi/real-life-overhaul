@@ -37,9 +37,11 @@ namespace RealLifeOverhaul.Family
         public static Contact InLawContact { get; private set; }
 
         /// <summary>
-        /// While the social life keeps the partner and the home's fridge can show the family's board, there is no Family contact:
+        /// While the social life keeps the partner and the home's fridge can show the family's board, no Family contact is made:
         /// what it offered is face to face at home, on the fridge's Family button (Board), in the partner's People call (CallMatters:
         /// time apart and the in-laws) and, for a new home, a text to the partner (FamilySms). The family's own texts are notices then.
+        /// A Family contact the save already has is never taken away: it keeps its thread, still answers and still gets the
+        /// family's texts (Setup), since a contact removed from the save takes every message in it with it.
         /// </summary>
         public static bool Hides => Partner.UsesSocial && Settings.HomeLife && Settings.HomeRoutines;
 
@@ -105,12 +107,9 @@ namespace RealLifeOverhaul.Family
             }
             try
             {
-                if (Hides)
+                if (!Hides || Saved(FamilyId))
                 {
-                    SaveGameManager.Current?.Contacts.RemoveAll(c => c != null && c.id == FamilyId);   // an earlier session's, made again when it is wanted
-                }
-                else
-                {
+                    // Made, or an earlier session's kept with its thread: face to face at home takes the place of a new one only.
                     FamilyContact = Register(FamilyId, "reallife_contact_family_desc", "reallife_family_calldialogtype", () => new FamilyPageDialog(),
                         "reallife_text_family_welcome");
                 }
@@ -119,7 +118,7 @@ namespace RealLifeOverhaul.Family
                     _partnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
                         "reallife_text_partner_welcome");
                 }
-                else if (SaveGameManager.Current != null && SaveGameManager.Current.Contacts.Exists(c => c != null && c.id == PartnerId))
+                else if (Saved(PartnerId))
                 {
                     // The stand-in contact of an earlier session is not made again, but it still answers and says where the partner is now.
                     Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
@@ -132,6 +131,20 @@ namespace RealLifeOverhaul.Family
                 FamilyDirector.Logger?.Error(e);
                 FamilyDirector.Logger?.Warn("Family: the phone contacts could not be added; family life goes on through notices and the options page.");
             }
+        }
+
+        // Whether the save holds the contact already (an earlier session's): such a contact is kept, never removed or made again.
+        private static bool Saved(string id)
+        {
+            List<Contact> contacts = SaveGameManager.Current != null ? SaveGameManager.Current.Contacts : null;
+            for (int i = 0; contacts != null && i < contacts.Count; i++)
+            {
+                if (contacts[i] != null && contacts[i].id == id)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static void SetupInLaws()

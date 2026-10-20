@@ -19,7 +19,8 @@ namespace RealLifeOverhaul
         /// Family life with the features it leans on. The doors that are filled in:
         ///
         ///   FamilyBridges.Social     the partner is one of the people of Scripts/Social (the one the player is dating or with),
-        ///                            what happens between the two moves that person's figures, the wedding's guests are the close people
+        ///                            what happens between the two moves that person's figures, the wedding's guests are the close people,
+        ///                            and a job the partner retrained for is that person's job in People
         ///   FamilyBridges.Home       a partner who looks after the player when ill shortens the illness; a baby's broken night is owed sleep
         ///   FamilyBridges.Law        whether the player is locked up (a cell or a prison term): family life waits
         ///   SocialLinks.PartnerChanged   a break-up or a new partner in Social reaches the family at once
@@ -188,6 +189,26 @@ namespace RealLifeOverhaul
                             Fault("FamilyLinks.PartnerContact", e);
                             return null;
                         }
+                    }
+                }
+
+                public bool PartnerJob(string jobKey)
+                {
+                    try
+                    {
+                        SocialPerson p = PeopleOn ? SocialState.Partner : null;
+                        int job = Array.IndexOf(SocialCatalogue.Jobs, jobKey);
+                        if (p == null || !p.Met || job < 0)
+                        {
+                            return false;
+                        }
+                        p.Job = job;   // saved with the person (SocialState): People, the texts and Flare all read it
+                        return true;
+                    }
+                    catch (Exception e)
+                    {
+                        Fault("FamilyLinks.PartnerJob", e);
+                        return false;
                     }
                 }
 

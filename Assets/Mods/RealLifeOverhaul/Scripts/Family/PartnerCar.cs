@@ -6,6 +6,7 @@ using Entities;
 using Extensions;
 using Helpers;
 using Streets;
+using UI.Notification;
 using UnityEngine;
 using Vehicles.VehicleTypes;
 
@@ -16,13 +17,17 @@ namespace RealLifeOverhaul.Family
     /// first and another once if asked, or a new one bought for them at the game's own price when the player has none to
     /// spare. A car handed over stays in the save, the player's on paper, so that a save without the mod still has it, but
     /// is kept out of the city as a car out on hire is (EstateGame), also at once after a load brings it back, and every
-    /// part of the mod that looks after the player's cars leaves it alone (<see cref="Is"/>). A car bought for them is
-    /// saved on the street outside, never at an interior's coordinates. Taken back, it is made again at the nearest free
-    /// repair bay, as the game's tow would leave it. Cost: nothing per frame; a look at the player's cars once a game hour,
-    /// after a load and when a conversation offers the car.
+    /// part of the mod that looks after the player's cars leaves it alone (<see cref="Is"/>). While it is theirs the game
+    /// bills no parking for it: the game charges every saved car by its parking state each hour, whether or not it stands
+    /// in the city, so it has none (Off). A car bought for them is saved on the street outside, never at an interior's
+    /// coordinates. Taken back, it is made again at the nearest free repair bay, as the game's tow would leave it. With the
+    /// partner's expectations switched off it is the player's again at once, as without the feature: in the city where a
+    /// load left it, else made again at a repair bay as when taken back, with a notice (Release). Cost: nothing per frame;
+    /// a look at the player's cars once a game hour, after a load and when a conversation offers the car.
     /// </summary>
     internal static class PartnerCar
     {
+        private static bool _releaseFailed;   // making the car again failed once (Release): not tried again this session
 
         /// <summary>The partner has a car of their own that is still in the save.</summary>
         public static bool Has => !string.IsNullOrEmpty(FamilyState.S.PCarId) && Economy.EstateGame.Vehicle(FamilyState.S.PCarId) != null;
@@ -40,13 +45,83 @@ namespace RealLifeOverhaul.Family
         /// <summary>They have one, and it can be asked back.</summary>
         public static bool CanTakeBack => Settings.FamilyExpect && !GoingPublic.InSession && FamilyState.Together && Has;
 
-        /// <summary>Once a game hour: their car stays out of the city, also after a load brought it back.</summary>
+        /// <summary>
+        /// Once a game hour and after a load: their car stays out of the city, also after a load brought it back, with no
+        /// parking billed; with the switch off it is the player's again.
+        /// </summary>
         public static void Hourly()
         {
-            VehicleController controller = Has ? Economy.EstateGame.Controller(FamilyState.S.PCarId) : null;
+            VehicleInstance v = Has ? Economy.EstateGame.Vehicle(FamilyState.S.PCarId) : null;
+            if (v == null)
+            {
+                return;
+            }
+            VehicleController controller = Economy.EstateGame.Controller(v.id);
+            if (!Settings.FamilyExpect)
+            {
+                Release(v, controller);
+                return;
+            }
+            Off(v);
             if (controller != null && !controller.controlledByPlayer)
             {
                 Economy.EstateGame.Hide(controller);
+            }
+        }
+
+        // Out of the city and theirs: no parking state, so the game's hour bills it nothing (ParkingSimulator.RunHourly charges a
+        // legally parked car whether or not it has an object, and tickets only one it can see).
+        private static void Off(VehicleInstance v)
+        {
+            v.parkingState = ParkingState.NotAvailable;
+        }
+
+        // Back with the player: parked as the game parks a car it makes again (the private driver's PrivateDriverServiceDialog).
+        private static void Back(VehicleInstance v)
+        {
+            v.parkingState = ParkingState.Legal;
+        }
+
+        // The switch is off: the car is the player's again, as without the feature. A load has made it in the city already,
+        // where it was saved; else it is made again at the nearest free repair bay, as when it is asked back, and the player told
+        // where. In a Going Public session a car made again would not be the same car to the other players (EstateGame.MayHire),
+        // and with no bay free there is nowhere to put it: it waits, billed nothing, for the next game hour.
+        private static void Release(VehicleInstance v, VehicleController controller)
+        {
+            string name = Partner.Name, shop = null;
+            if (controller == null)
+            {
+                if (GoingPublic.InSession || _releaseFailed)
+                {
+                    Off(v);
+                    return;
+                }
+                Address at;
+                try
+                {
+                    at = Park(v);
+                }
+                catch (Exception e)
+                {
+                    _releaseFailed = true;   // tried once a session: the car stays as it is, out of the city and billed nothing
+                    FamilyDirector.Logger?.Error(e);
+                    Off(v);
+                    return;
+                }
+                if (at == null || at.IsUndefined())
+                {
+                    Off(v);
+                    return;
+                }
+                shop = at.ToFormattedString();
+            }
+            FamilyState.S.PCarId = null;
+            Back(v);
+            FamilyDirector.Logger?.Info("Family: the partner's expectations are off, so the car given to " + name + " is the player's again"
+                + (shop != null ? ", left at " + shop + "." : ", where it stands."));
+            if (shop != null)
+            {
+                FamilyText.Toast(NotificationType.Info, "reallife_family_car_released", new Args { Name = name, Text = Model(v), Place = shop }, 12f);
             }
         }
 
@@ -96,6 +171,7 @@ namespace RealLifeOverhaul.Family
                 return FamilyTalk.Close("reallife_family_car_cannot");
             }
             Took(car.vehicleInstance.id);
+            Off(car.vehicleInstance);
             Economy.EstateGame.Hide(car);
             FamilyDirector.Logger?.Info("Family: the player gave " + Partner.Name + " their " + Model(car.vehicleInstance) + ".");
             return FamilyTalk.Close("reallife_family_car_given", new Args { Name = Partner.Name, Text = Model(car.vehicleInstance) });
@@ -123,6 +199,7 @@ namespace RealLifeOverhaul.Family
             };
             v.position = OnStreet();   // the game makes it there on a load (and the mod takes it out of the city again)
             v.rotation = Quaternion.identity;   // (the save's default is no rotation at all)
+            Off(v);
             save.VehicleInstances.Add(v);
             Took(v.id);
             FamilyDirector.Logger?.Info("Family: the player bought " + Partner.Name + " a " + type + " for " + price + ".");
@@ -152,6 +229,7 @@ namespace RealLifeOverhaul.Family
                     return FamilyTalk.Close("reallife_family_car_cannot");
                 }
                 s.PCarId = null;
+                Back(v);
                 s.PCarBackDay = TimeHelper.CurrentDay;
                 FamilyState.Harmony(PartnerExpectRules.CarBackHarmony);
                 Partner.Tell(FamilyEvent.BrokenPromise, PartnerExpectRules.CarBackAffection);

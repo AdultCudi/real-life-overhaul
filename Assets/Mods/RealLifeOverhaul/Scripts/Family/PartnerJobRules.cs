@@ -23,6 +23,19 @@ namespace RealLifeOverhaul.Family
         private static readonly int[] Trades = { 9, 0, 1, 4, 2, 5, 2, OfficeHours, 3, OfficeHours, 6, OfficeHours, OfficeHours, OfficeHours, OfficeHours };
         private static readonly int[] Pay = { 110, 210, 180, 190, 160, 260, 150, 160, 230, 220, 140, 130, 150, 140, 190 };
 
+        /// <summary>How many of Social's jobs there are to work at (retired is not one).</summary>
+        public static int Count => Keys.Length;
+
+        /// <summary>
+        /// The job of People's they always wanted, for a partner Social keeps (PartnerWish): by the same rule as Family's own
+        /// trades (PartnerWishRules.DreamOf), over People's jobs, never the one they have; null for a key it does not know.
+        /// </summary>
+        public static string DreamKey(int seed, string current)
+        {
+            int at = System.Array.IndexOf(Keys, current);
+            return at < 0 ? null : Keys[PartnerWishRules.DreamOf(seed, at, Keys.Length)];
+        }
+
         /// <summary>Whether the job is no job: retired.</summary>
         public static bool Retired(string key) => key == RetiredKey;
 
