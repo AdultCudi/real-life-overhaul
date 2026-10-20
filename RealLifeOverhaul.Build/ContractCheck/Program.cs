@@ -15,7 +15,8 @@ using RealLifeOverhaul;
 // GameBuild.MadeFor is the new build; every line under "the game contract" names a piece that is missing or changed and
 // the parts it switches off; every line under "the mod's code against this game" a type or member the mod's code names
 // that the game no longer has, who uses it and the features the running mod switches off for it; every line under "the
-// game's keys" a text or data key of the game's that is gone. Fix those, run it again until only the build fails, then
+// game's keys" a text or data key of the game's that is gone; under "the walk key" a binding, a key read by the game's or
+// the mod's code, or a system key that the walk key's default shares. Fix those, run it again until only the build fails, then
 // set GameBuild.MadeFor.
 internal static partial class Program
 {
@@ -85,6 +86,7 @@ internal static partial class Program
             References(files, mod);
             ScanChecks(files, mod);
             Keys(locale, scripts);
+            KeyClashes(files, mod);   // the walk key against every key of the game's, the mod's and the system's (KeyClashChecks.cs)
             Languages(managed, root);
         }
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");

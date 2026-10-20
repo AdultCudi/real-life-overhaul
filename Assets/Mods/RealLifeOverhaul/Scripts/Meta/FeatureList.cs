@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Meta
             EndScaleGuide.Register();
             Rivals.RivalGuide.Register();
             Photos.PhotosGuide.Register();
+            Walking.WalkGuide.Register();
         }
 
         private static void RegisterGameplay()

@@ -29,6 +29,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 - [Transport](transport.md): buses, the subway and owning a car.
 - [Taxi by phone](taxi.md): a taxi sent to where you are.
 - [Garage](garage.md): the custom shop, bicycles and motorbikes.
+- [Walking](walking.md): the walk key on foot.
 - [Minimap and GPS](navigation.md): a minimap and a route along the roads.
 
 ## Work and careers

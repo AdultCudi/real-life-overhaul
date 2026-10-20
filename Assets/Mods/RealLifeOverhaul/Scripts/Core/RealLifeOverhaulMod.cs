@@ -1106,6 +1106,7 @@ namespace RealLifeOverhaul
                 .AddSplitter()
                 .Guarded(o => o.AddPermadeath())   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
                 .Guarded(o => o.AddRoommates())
+                .Guarded(o => Walking.WalkOptions.AddWalking(o))
                 .Guarded(o => o.AddControls())
                 .Guarded(o => o.AddPerformance());
 
@@ -1215,6 +1216,7 @@ namespace RealLifeOverhaul
             Guard.Step("SolidStreets", () => SolidStreets.Logger = context.Logger);
             Guard.Step("SolidGame", () => SolidGame.Logger = context.Logger);
             Guard.Step("CityDrivers", () => CityDrivers.Logger = context.Logger);
+            Guard.Step("Walking.WalkDirector", () => Walking.WalkDirector.Logger = context.Logger);
             Guard.Step("DriverGame", () => DriverGame.Logger = context.Logger);
             Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
@@ -1280,6 +1282,7 @@ namespace RealLifeOverhaul
             Guard.Step("ThirdPersonCamera", () => Guard.Add<ThirdPersonCamera>(_root));
             Guard.Step("VisualEnhancer", () => Guard.Add<VisualEnhancer>(_root));
             Guard.Step("NearbyInteraction", () => Guard.Add<NearbyInteraction>(_root));
+            Guard.Step("Walking.WalkDirector", () => Guard.Add<Walking.WalkDirector>(_root));   // walking on a key, on foot (Scripts/Walking): one key read a frame, and one speed read while walking
             Guard.Step("ChaseCamera", () => Guard.Add<ChaseCamera>(_root));
             Guard.Step("PoiDirection", () => Guard.Add<PoiDirection>(_root));   // the game's place markers, when what they mark is behind the camera
             Guard.Step("LifeEvents", () => Guard.Add<LifeEvents>(_root));

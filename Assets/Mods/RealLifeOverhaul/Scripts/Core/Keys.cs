@@ -24,6 +24,7 @@ namespace RealLifeOverhaul
         PhoneDump,
         CharacterReport,
         PhotoMode,          // into and out of photo mode (Leisure/Photo)
+        Walk,               // on foot: walk, and press again for the game's own pace (Walking/WalkDirector)
     }
 
     public enum KeyModifier
@@ -77,6 +78,7 @@ namespace RealLifeOverhaul
             new Binding("phone_dump", "reallife_keys_phone_dump", KeyCode.F8),
             new Binding("character_report", "reallife_keys_character_report", KeyCode.F9),
             new Binding("photo_mode", "reallife_keys_photo_mode", KeyCode.F10),
+            new Binding("walk", "reallife_keys_walk", KeyCode.F3),   // nothing of the game's, the mod's or the system's (ContractCheck, KeyClashChecks.cs)
         };
 
         private static readonly TextLocalizationComponent[] Rows = new TextLocalizationComponent[All.Length];
@@ -680,36 +682,10 @@ namespace RealLifeOverhaul
         }
 
         // The input system's name for a key: "<Keyboard>/f", "<Mouse>/rightButton". "either" gives the name that
-        // covers both of a pair ("<Keyboard>/shift").
+        // covers both of a pair ("<Keyboard>/shift"). One rule for the page and the checks (Core/KeyRules).
         private static string InputPath(KeyCode key, bool either)
         {
-            switch (key)
-            {
-                case KeyCode.Mouse0: return "<Mouse>/leftButton";
-                case KeyCode.Mouse1: return "<Mouse>/rightButton";
-                case KeyCode.Mouse2: return "<Mouse>/middleButton";
-                case KeyCode.Mouse3: return "<Mouse>/backButton";
-                case KeyCode.Mouse4: return "<Mouse>/forwardButton";
-                case KeyCode.LeftShift: return either ? "<Keyboard>/shift" : "<Keyboard>/leftShift";
-                case KeyCode.RightShift: return either ? "<Keyboard>/shift" : "<Keyboard>/rightShift";
-                case KeyCode.LeftControl: return either ? "<Keyboard>/ctrl" : "<Keyboard>/leftCtrl";
-                case KeyCode.RightControl: return either ? "<Keyboard>/ctrl" : "<Keyboard>/rightCtrl";
-                case KeyCode.LeftAlt: return either ? "<Keyboard>/alt" : "<Keyboard>/leftAlt";
-                case KeyCode.RightAlt: return either ? "<Keyboard>/alt" : "<Keyboard>/rightAlt";
-                case KeyCode.Return: return "<Keyboard>/enter";
-                case KeyCode.KeypadEnter: return "<Keyboard>/numpadEnter";
-            }
-            if (key >= KeyCode.Alpha0 && key <= KeyCode.Alpha9)
-            {
-                return "<Keyboard>/" + (int)(key - KeyCode.Alpha0);
-            }
-            if (key >= KeyCode.Keypad0 && key <= KeyCode.Keypad9)
-            {
-                return "<Keyboard>/numpad" + (int)(key - KeyCode.Keypad0);
-            }
-            // Letters, function keys, arrows, brackets and the rest are the same word with a small first letter.
-            string name = key.ToString();
-            return "<Keyboard>/" + char.ToLowerInvariant(name[0]) + name.Substring(1);
+            return KeyRules.PathOf(key.ToString(), either);
         }
     }
 

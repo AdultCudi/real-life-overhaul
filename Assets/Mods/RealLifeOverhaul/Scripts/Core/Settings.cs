@@ -34,6 +34,7 @@ namespace RealLifeOverhaul
         public const string MouseLookId = "camera_mouselook";
         public const string MouseSensitivityId = "camera_sensitivity";
         public const string EnterWithKeyId = "enter_with_key";
+        public const string WalkToggleId = "walk_toggle";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -338,6 +339,7 @@ namespace RealLifeOverhaul
         public static bool MouseLook = true;     // GTA-style: mouse steers the camera, cursor locked
         public static int MouseSensitivity = 6;
         public static bool EnterWithKey = true;  // E/F near a door enters the building
+        public static bool WalkToggle = true;    // on foot, the walk key walks and gives back the game's own pace (Walking/WalkDirector)
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -674,6 +676,7 @@ namespace RealLifeOverhaul
             MouseLook = Bool(modId, MouseLookId, MouseLook);
             MouseSensitivity = Int(modId, MouseSensitivityId, MouseSensitivity);
             EnterWithKey = Bool(modId, EnterWithKeyId, EnterWithKey);
+            WalkToggle = Bool(modId, WalkToggleId, WalkToggle);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);

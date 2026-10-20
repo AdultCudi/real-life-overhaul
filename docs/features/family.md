@@ -433,4 +433,5 @@ Its driving keys beyond these (throttle, brake, gears, handbrake) are in an NWH 
 | 1, 2, 3 | tools in the interior designer | a row of three choices (leisure, transit, the theory paper, the cell, the courts' panel); photo mode | one at a time: a choice row is on screen only while its owner has the player, and none of them with the designer open |
 | Space, Enter, Tab, Esc, N, M, T, P, O, I, Q, C, H, [ ], F1, F2, F5, F12, Backspace, Left Shift | the game's | nothing of the mod's outside photo mode (paused) | free of the mod |
 
-Free in both for a future action: F3, F4, F6, F11, the digits 4 to 0, and ; ' / \ - =. The letters L, U, Y, Z, J and X are used only inside photo mode, R only in the game's placement.
+F3 is the walk key now (`Walk`, [Walking](walking.md)), checked against every key of the game's, the mod's and the system's by ContractCheck's `KeyClashChecks.cs`, which prints the keys still free.
+Free in both for a future action: F11, the digits 4 to 0, and ' / \ - =. F4 is left alone (Alt+F4 closes the game), F6 is Empire Motors', and ; is a fallback key of a vehicle input the game carries. The letters L, U, Y, Z, J and X are used only inside photo mode, R only in the game's placement.
