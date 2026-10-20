@@ -40,6 +40,19 @@ namespace RealLifeOverhaul.Family
         public static Whereabouts Where(int day, int hour)
         {
             FamilySave s = FamilyState.S;
+            if (KeptByPeople(s))
+            {
+                // The social life keeps them: People's hours and traits, with the family's say on how much they work.
+                if (PartnerJobRules.Asleep(hour, s.PNightOwl))
+                {
+                    return Whereabouts.Asleep;
+                }
+                if (s.NewParentUntil < day && PeopleWork(s, Weekend(day), hour))
+                {
+                    return Whereabouts.Work;
+                }
+                return EveningOut(s, day, hour) ? Whereabouts.Out : Whereabouts.Home;
+            }
             if (hour >= 23 || hour < 6)
             {
                 return Whereabouts.Asleep;
@@ -77,6 +90,8 @@ namespace RealLifeOverhaul.Family
                     to = 17;
                     break;
             }
+            to = PartnerWorkRules.Until(from, to, PartnerWork.Work);   // half days once they have cut back (PartnerWork)
+            works = works && !Partner.Retired;   // retired in People: at home
             if (FamilyState.Care == Care.Partner && FamilyState.AnyUnder(FamilyBalance.SchoolFrom))
             {
                 to = Mathf.Min(to, from + 4);   // short days: they are the one at home with the children
@@ -85,12 +100,45 @@ namespace RealLifeOverhaul.Family
             {
                 return Whereabouts.Work;
             }
-            // An evening of their own now and then: the gym, friends.
-            if (hour >= 18 && hour < 21 && (day * 7 + (s.PSeed & 0xff)) % 5 == 0)
+            return EveningOut(s, day, hour) ? Whereabouts.Out : Whereabouts.Home;
+        }
+
+        // An evening of their own now and then: the gym, friends.
+        private static bool EveningOut(FamilySave s, int day, int hour) => hour >= 18 && hour < 21 && (day * 7 + (s.PSeed & 0xff)) % 5 == 0;
+
+        private static bool KeptByPeople(FamilySave s) => Partner.UsesSocial && s.PFreeTo > 0;
+
+        private static bool Weekend(int day)
+        {
+            DayOfWeekOrdered weekday = TimeHelper.GetDayOfWeek(day);
+            return weekday == DayOfWeekOrdered.Saturday || weekday == DayOfWeekOrdered.Sunday;
+        }
+
+        // A weekday's work by People's hours, shortened on half days and none once stopped, retired or studying.
+        private static bool PeopleWork(FamilySave s, bool weekend, int hour)
+        {
+            if (weekend || Partner.Retired || !PartnerWorkRules.Works(PartnerWork.Work))
             {
-                return Whereabouts.Out;
+                return false;
             }
-            return Whereabouts.Home;
+            PartnerJobRules.Work(s.PFreeFrom, s.PFreeTo, s.PNightOwl, out int from, out int to);
+            to = PartnerWorkRules.Until(from, to, PartnerWork.Work);
+            if (FamilyState.Care == Care.Partner && FamilyState.AnyUnder(FamilyBalance.SchoolFrom))
+            {
+                to = Mathf.Min(to, from + 4);
+            }
+            return PartnerJobRules.Within(hour, from, to);
+        }
+
+        /// <summary>For People: whether the partner who lives with the player is free at that hour (awake and not at work); null while People's own hours stand.</summary>
+        public static bool? PeopleFree(int hour, bool weekend)
+        {
+            FamilySave s = FamilyState.S;
+            if (!FamilyState.Together || !s.LivesIn || !KeptByPeople(s))
+            {
+                return null;
+            }
+            return !PartnerJobRules.Asleep(hour, s.PNightOwl) && !PeopleWork(s, weekend, hour);
         }
 
         /// <summary>The partner moves in. Null if they did; otherwise why not (a locale key).</summary>

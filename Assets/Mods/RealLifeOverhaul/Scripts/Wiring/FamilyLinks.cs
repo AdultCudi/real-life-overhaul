@@ -7,6 +7,7 @@ using FamilyBridges = RealLifeOverhaul.Family.FamilyBridges;
 using FamilyEvent = RealLifeOverhaul.Family.FamilyEvent;
 using FamilyHomeBridge = RealLifeOverhaul.Family.IHomeBridge;
 using FamilyLawBridge = RealLifeOverhaul.Family.ILawBridge;
+using FamilyPhone = RealLifeOverhaul.Family.FamilyPhone;
 using FamilySocialBridge = RealLifeOverhaul.Family.ISocialBridge;
 using PersonInfo = RealLifeOverhaul.Family.PersonInfo;
 
@@ -22,6 +23,8 @@ namespace RealLifeOverhaul
         ///   FamilyBridges.Home       a partner who looks after the player when ill shortens the illness; a baby's broken night is owed sleep
         ///   FamilyBridges.Law        whether the player is locked up (a cell or a prison term): family life waits
         ///   SocialLinks.PartnerChanged   a break-up or a new partner in Social reaches the family at once
+        ///   SocialPhone.FamilyMatters    the partner's People call has time apart and the in-laws while there is no Family contact
+        ///   HomeFridgeButton.Family*     the fridge's Family button opens the family's board then
         ///
         /// An arrest is told to the family from <see cref="Arrests"/>, once, as it happens.
         ///
@@ -39,11 +42,21 @@ namespace RealLifeOverhaul
                 FamilyBridges.Home = new HomeForFamily();
                 FamilyBridges.Law = new LawForFamily();
                 SocialLinks.PartnerChanged = TellFamily;
+                SocialPerson.FreeOf = (p, hour, weekend) => p != null && PeopleOn && p == SocialState.Partner ? FamilyApi.PartnerFree(hour, weekend) : null;
+                SocialPhone.HasFamilyMatters = p => p != null && PeopleOn && p == SocialState.Partner && FamilyPhone.HasCallMatters;
+                SocialPhone.FamilyMatters = FamilyPhone.CallMatters;
+                HomeFridgeButton.FamilyShown = () => FamilyPhone.BoardShown;
+                HomeFridgeButton.FamilyClicked = FamilyPhone.Board;
             }
 
             internal static void Disconnect()
             {
                 SocialLinks.PartnerChanged = null;
+                SocialPerson.FreeOf = null;
+                SocialPhone.HasFamilyMatters = null;
+                SocialPhone.FamilyMatters = null;
+                HomeFridgeButton.FamilyShown = null;
+                HomeFridgeButton.FamilyClicked = null;
                 FamilyBridges.Reset();
             }
 
@@ -74,7 +87,11 @@ namespace RealLifeOverhaul
                     Trust = p.Trust,
                     Stage = (int)p.Stage,
                     DaysTogether = Math.Max(0, TimeHelper.CurrentDay - p.StageDay),  // since the stage they are in began
-                    LastContactDay = p.LastContactDay                                 // Social's calls, texts, outings and meetings
+                    LastContactDay = p.LastContactDay,                                 // Social's calls, texts, outings and meetings
+                    JobKey = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))],
+                    FreeFrom = p.FreeFrom,
+                    FreeTo = p.FreeTo,
+                    NightOwl = p.Has(SocialTrait.NightOwl)
                 };
             }
 
@@ -154,6 +171,23 @@ namespace RealLifeOverhaul
                 }
 
                 public bool StartOuting(string kind, Action<bool> done) => false;
+
+                public Entities.Contact PartnerContact
+                {
+                    get
+                    {
+                        try
+                        {
+                            SocialPerson p = PeopleOn ? SocialState.Partner : null;
+                            return p != null && p.Met ? SocialPhone.ContactOf(p) : null;
+                        }
+                        catch (Exception e)
+                        {
+                            Fault("FamilyLinks.PartnerContact", e);
+                            return null;
+                        }
+                    }
+                }
 
                 public int ClosePeople(List<PersonInfo> into, int most)
                 {

@@ -184,11 +184,42 @@ namespace RealLifeOverhaul.Family
         public string ExName;
         public int FreeDay;          // the day the last relationship ended
         public int Interest;         // who the player asked to meet: 0 anyone, 1 women, 2 men (the options page sets the default)
+
+        // The partner's work as the player's fortune grows (PartnerWork).
+        public int PWork;            // PartnerWorkRules.FullTime or PartTime
+        public bool PWorkAsk;        // they have asked to cut back, and it waits to be talked over
+        public int PWorkAskDay;      // the day they last asked, or last went back to full days
+
+        public string PJobKey;       // Social's partner's job in People (its locale key); null: the trade Family gave them (PJob)
+        public string PGlad;         // what the player said yes to, whose warm texts are still to come (PartnerGlad); null none
+        public int PGladDay;         // the day of that yes
+        public int PGladNext;        // which of its texts comes next
+        public int PVoiceDay;        // the day of the partner's last word about the player's fortune (PartnerVoice)
+        public string PAsk;          // the kind of ask open now (PartnerVoice.Work and others); null none
+        public int PAskDay;          // the day it was asked
+        public int PAskReminded;     // reminders of it sent
+        public int PFreeFrom;        // People's partner: the hours they are free on a weekday (PFreeTo 0: Family's own trades' hours)
+        public int PFreeTo;
+        public bool PNightOwl;       // ...and whether they keep late hours
+        public List<int> IncomeWeek = new List<int>();   // the player's daily income on each of the last days, newest last (IncomeRules)
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>
     public static class FamilyState
     {
+        /// <summary>The player's daily income held all week (IncomeRules): what the partner's steps of prosperity go by, with the cash.</summary>
+        public static int IncomeHeld => IncomeRules.Held(S.IncomeWeek);
+
+        /// <summary>Once a day: the game's own figure for a day's income into the week.</summary>
+        public static void RecordIncome()
+        {
+            if (S.IncomeWeek == null)
+            {
+                S.IncomeWeek = new List<int>();
+            }
+            IncomeRules.Record(S.IncomeWeek, SaveGameManager.Current != null ? Helpers.PlayerHelper.CalculateDailyIncome() : 0f);
+        }
+
         private const string Key = "reallife:family";
         private const int MostMemories = 80;
 

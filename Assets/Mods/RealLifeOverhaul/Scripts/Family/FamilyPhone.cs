@@ -27,8 +27,69 @@ namespace RealLifeOverhaul.Family
         private static int _lastTopic = -1;
 
         public static Contact FamilyContact { get; private set; }
-        public static Contact PartnerContact { get; private set; }
+        private static Contact _partnerContact;   // the stand-in contact, made only while Social does not keep the partner
+
+        /// <summary>
+        /// Who the partner's texts come from: Family's stand-in contact, or while Social keeps the partner their own contact in
+        /// People, so that a text from them is a text in their thread and not a notice on screen.
+        /// </summary>
+        public static Contact PartnerContact => _partnerContact ?? (Partner.Kept(out _) ? FamilyBridges.Social.PartnerContact : null);
         public static Contact InLawContact { get; private set; }
+
+        /// <summary>
+        /// While the social life keeps the partner and the home's fridge can show the family's board, there is no Family contact:
+        /// what it offered is face to face at home, on the fridge's Family button (Board), in the partner's People call (CallMatters:
+        /// time apart and the in-laws) and, for a new home, a text to the partner (FamilySms). The family's own texts are notices then.
+        /// </summary>
+        public static bool Hides => Partner.UsesSocial && Settings.HomeLife && Settings.HomeRoutines;
+
+        /// <summary>True while the fridge's board is open: nothing that needs the partner face to face is offered from it.</summary>
+        internal static bool AtBoard;
+
+        /// <summary>Whether the fridge's panel shows the Family button (Home/HomeFridgeButton, through Wiring/FamilyLinks).</summary>
+        public static bool BoardShown => Settings.Family && FamilyState.Loaded && Hides;
+
+        /// <summary>The fridge's Family button: the family's page, then everything that can be done from it, once the fridge's panel has gone.</summary>
+        public static void Board()
+        {
+            FamilyDirector.Instance?.WhenFree(() =>
+            {
+                AtBoard = true;
+                FamilyTalk.Open(() => FamilyPageDialog.Guard(() => FamilyPage.Page(0)), BoardClosed);
+            });
+        }
+
+        // The board closed: face to face again, and (with diagnostics) whether anything still stands in the way of the partner's prompt.
+        private static void BoardClosed()
+        {
+            AtBoard = false;
+            if (Meta.Dev.Verbose)
+            {
+                FamilyDirector.Instance?.WhenFree(() => FamilyDirector.Logger?.Info("Family check (board): closed; then the game's screens open: " + ThirdPersonCamera.IsUiOpen()
+                    + ", the family may act: " + FamilyDirector.CanAct() + ", the partner here: " + HomeLife.Present + "."));
+            }
+        }
+
+        /// <summary>Whether the partner's People call offers "Family matters": time apart or the in-laws, with something to say.</summary>
+        public static bool HasCallMatters
+        {
+            get
+            {
+                if (!Settings.Family || !FamilyState.Loaded || !Hides)
+                {
+                    return false;
+                }
+                Choices();
+                return _callChoices.Exists(c => c.When == null || c.When());
+            }
+        }
+
+        /// <summary>"Family matters" in the partner's People call.</summary>
+        public static DialogEntry CallMatters()
+        {
+            Choices();
+            return FamilyPageDialog.Guard(() => FamilyTalk.Menu(_callChoices, 0));
+        }
 
         /// <summary>The family's badge: the Family contact's picture, and the icon of a wedding in the open on the city map.</summary>
         public static Sprite Icon => Disc(FamilyId, new Color(0.93f, 0.42f, 0.55f));
@@ -36,7 +97,7 @@ namespace RealLifeOverhaul.Family
         public static void Setup()
         {
             FamilyContact = null;
-            PartnerContact = null;
+            _partnerContact = null;
             InLawContact = null;
             if (!Settings.PhoneContacts || !Settings.Family)
             {
@@ -44,11 +105,18 @@ namespace RealLifeOverhaul.Family
             }
             try
             {
-                FamilyContact = Register(FamilyId, "reallife_contact_family_desc", "reallife_family_calldialogtype", () => new FamilyPageDialog(),
-                    "reallife_text_family_welcome");
+                if (Hides)
+                {
+                    SaveGameManager.Current?.Contacts.RemoveAll(c => c != null && c.id == FamilyId);   // an earlier session's, made again when it is wanted
+                }
+                else
+                {
+                    FamilyContact = Register(FamilyId, "reallife_contact_family_desc", "reallife_family_calldialogtype", () => new FamilyPageDialog(),
+                        "reallife_text_family_welcome");
+                }
                 if (!Partner.UsesSocial)
                 {
-                    PartnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
+                    _partnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
                         "reallife_text_partner_welcome");
                 }
                 else if (SaveGameManager.Current != null && SaveGameManager.Current.Contacts.Exists(c => c != null && c.id == PartnerId))

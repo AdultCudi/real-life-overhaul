@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using IoPath = System.IO.Path;
+using RealLifeOverhaul.Family;
 
 // Faults found in Scripts/Family: a passage refused (another under way, the director off) after its money or errand was
 // taken left nothing to show for it; the player's own missed scan or class was said to be rebooked and was not; and the
@@ -14,6 +15,111 @@ internal static partial class Program
         FamilyPassages();
         FamilyRebooked();
         FamilyCounselLine();
+        FamilyPartnerTexts();
+        FamilyPartnerJob();
+        FamilyPromptButtons();
+        FamilyFaceToFace();
+        FamilyOneDay();
+    }
+
+    // People's night owl slept to ten while the family sent the partner to work at eight, and a call at nine went to
+    // voicemail. The partner the social life keeps has People's day: its sleep and its working stretch by their traits and
+    // free hours, shortened on half days and gone when they stop; People reads back from it when they are free.
+    private static void FamilyOneDay()
+    {
+        PartnerJobRules.Work(17, 23, false, out int f0, out int t0);
+        PartnerJobRules.Work(14, 22, false, out int f1, out int t1);
+        PartnerJobRules.Work(11, 18, true, out int f2, out int t2);
+        Check(f0 == 8 && t0 == 17 && f1 == 8 && t1 == 14 && f2 == 18 && t2 == 26 && PartnerJobRules.Within(1, 18, 26) && !PartnerJobRules.Within(3, 18, 26)
+              && PartnerJobRules.Asleep(9, true) && !PartnerJobRules.Asleep(9, false) && PartnerJobRules.Asleep(1, false) && !PartnerJobRules.Asleep(1, true),
+            "family fix: People's day for the partner: office hours 8 to 17, an afternoon shift 8 to 14, a night owl 18 to 2 and asleep 2 to 10, as People has them");
+        string model = ModSource(@"Social\SocialModel.cs"), home = ModSource(@"Family\HomeLife.cs"), asleep = MemberText(model, "public bool Asleep(int hour)");
+        bool same = asleep.Contains("hour >= 2 && hour < 10") && asleep.Contains("hour >= 23 || hour < 8");
+        Check(same && MemberText(model, "public bool FreeAt(int hour, bool weekend)").Contains("FreeOf?.Invoke(this, hour, weekend)")
+              && home.Contains("PartnerJobRules.Asleep(hour, s.PNightOwl)") && home.Contains("to = PartnerWorkRules.Until(from, to, PartnerWork.Work);")
+              && ModSource(@"Wiring\FamilyLinks.cs").Contains("p == SocialState.Partner ? FamilyApi.PartnerAsleep") == false,
+            "family fix: the family's day for People's partner sleeps and works by People's hours, and People asks the family when they are free");
+    }
+
+    // With the social life keeping the partner the Family contact is left out, and nothing it offered is lost: talking at home
+    // has the whole list, the fridge's Family button the list without what needs the partner there, the partner's People call
+    // the phone's part (counselling, time apart, the in-laws), and a new home is a text whose button is never saved.
+    private static void FamilyFaceToFace()
+    {
+        string phone = ModSource(@"Family\FamilyPhone.cs"), choices = ModSource(@"Family\FamilyPhone.Choices.cs"), sms = ModSource(@"Family\FamilySms.cs");
+        string director = ModSource(@"Family\FamilyDirector.cs"), person = ModSource(@"Social\PersonDialog.cs"), fridge = ModSource(@"Home\HomeFridgeButton.cs");
+        string links = ModSource(@"Wiring\FamilyLinks.cs");
+        Check(phone.Contains("public static bool Hides => Partner.UsesSocial && Settings.HomeLife && Settings.HomeRoutines;")
+              && phone.Contains("Contacts.RemoveAll(c => c != null && c.id == FamilyId)") && director.Contains("FamilyPhone.Hides != _hides"),
+            "family face to face: no Family contact while Social keeps the partner and the fridge's board is there; an earlier one is taken off, and switching either brings it back");
+        string[] call = { "HardTimes.Book)))", "HardTimes.CallApart)))", "HardTimes.ComeHome)))", "HardTimes.EndAsk)))", "Relatives.GoToMoms)))", "Relatives.InLawFavour)))" };
+        Check(Array.TrueForAll(call, choices.Contains) && Regex.Matches(choices, @"list\.Add\(Call\(").Count == call.Length + 1
+              && choices.Contains("list.Add(Call(new Choice(() => FamilyState.Together && s().LivesIn && BuildingManager.IsInsideBuilding")
+              && person.Contains("case \"family\":") && links.Contains("p == SocialState.Partner && FamilyPhone.HasCallMatters"),
+            "family face to face: the partner's People call has Family matters: a new home where the player stands, counselling, time apart (call, come home, part) and the in-laws, and nothing else");
+        Check(choices.Contains("HomeLife.Present && !AtBoard;") && fridge.Contains("FamilyShown != null && FamilyShown()") && links.Contains("HomeFridgeButton.FamilyClicked = FamilyPhone.Board;"),
+            "family face to face: the fridge's Family button opens the family's page and list, without what needs the partner in the room");
+        int save = director.IndexOf("FamilySms.BeforeSave();", StringComparison.Ordinal), write = director.IndexOf("FamilyState.Write();", StringComparison.Ordinal);
+        Check(save > 0 && write > save && director.Contains("FamilySms.Tick();") && director.Contains("FamilySms.Reset();")
+              && sms.Contains("_quietUntil = Time.unscaledTime + AfterSave;") && sms.Contains("buttons.RemoveAll(b => b.key == NewHomeKey);")
+              && sms.Contains("!FamilyPlaces.AtHome() && FamilyPhone.InOwnHome()"),
+            "family face to face: the new-home text button is on only in another home of the player's, taken off before every save and back after it");
+    }
+
+    // The panel's button is named after the prompt (_prompt_ to _button_): the ask's prompt had no button text, and the
+    // button showed its bare key. Every family prompt in the source has its button's words in the three languages.
+    private static void FamilyPromptButtons()
+    {
+        string mod = IoPath.GetFullPath(IoPath.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul"));
+        string folder = IoPath.Combine(mod, "Locales");
+        var langs = new[] { LoadWords(IoPath.Combine(folder, "en.json")), LoadWords(IoPath.Combine(folder, "pt.json")), LoadWords(IoPath.Combine(folder, "zh-cn.json")) };
+        string bare = null;
+        int prompts = 0;
+        foreach (string path in Directory.GetFiles(IoPath.Combine(mod, "Scripts"), "*.cs", SearchOption.AllDirectories))
+        {
+            foreach (Match m in Regex.Matches(File.ReadAllText(path), "\"(reallife_family_prompt_[a-z_]+)\""))
+            {
+                prompts++;
+                string button = m.Groups[1].Value.Replace("_prompt_", "_button_");
+                if (Array.Exists(langs, w => w == null || !w.TryGetValue(button, out string words) || words.Length == 0))
+                {
+                    bare = button;
+                }
+            }
+        }
+        Check(prompts > 10 && bare == null, "family fix: every family prompt's button has its words in English, Portuguese and Chinese" + (bare != null ? " (" + bare + ")" : string.Empty));
+    }
+
+    // Social's partner had a trade of Family's own, rolled from their seed, whatever People said they did: a barista in the
+    // Family talk who was a cab driver in People. Their job is People's now, with the hours and pay of the nearest trade.
+    private static void FamilyPartnerJob()
+    {
+        bool all = true;
+        string social = MemberText(ModSource(@"Social\SocialCatalogue.cs"), "public static readonly string[] Jobs =");
+        var jobs = System.Text.RegularExpressions.Regex.Matches(social, "\"(reallife_social_job_[a-z]+)\"");
+        all &= jobs.Count > 10;
+        foreach (System.Text.RegularExpressions.Match m in jobs)
+        {
+            string key = m.Groups[1].Value;
+            all &= RealLifeOverhaul.Family.PartnerJobRules.Retired(key) || (RealLifeOverhaul.Family.PartnerJobRules.TradeOf(key, -1) >= 0 && PartnerJobRules.IncomeOf(key, -1) > 0);
+        }
+        Check(all && PartnerJobRules.IncomeOf(PartnerJobRules.RetiredKey, 200) == 0 && PartnerJobRules.TradeOf("reallife_social_job_nurse", -1) == 0
+              && PartnerJobRules.TradeOf("reallife_social_job_cook", -1) == 2 && PartnerJobRules.TradeOf("no such job", 7) == 7,
+            "family fix: every job in People has Family's hours and a day's pay, a nurse keeps a nurse's shifts, a cook a chef's evenings, and the retired bring in nothing");
+        string partner = ModSource(@"Family\Partner.cs"), home = ModSource(@"Family\HomeLife.cs"), links = ModSource(@"Wiring\FamilyLinks.cs");
+        Check(partner.Contains("s.PJobKey = p.JobKey;") && partner.Contains("public static int Income => Retired ? 0") && home.Contains("works = works && !Partner.Retired;")
+              && links.Contains("JobKey = SocialCatalogue.Jobs["),
+            "family fix: Social's partner's job, hours and pay come from People, and a retired partner stays at home");
+    }
+
+    // With the social life keeping the partner Family has no stand-in contact: their texts were notices on screen. They come
+    // from the partner's own contact in People now, and the stand-in is still the one used without the social life.
+    private static void FamilyPartnerTexts()
+    {
+        string phone = ModSource(@"Family\FamilyPhone.cs"), links = ModSource(@"Wiring\FamilyLinks.cs");
+        Check(phone.Contains("PartnerContact => _partnerContact ?? (Partner.Kept(out _) ? FamilyBridges.Social.PartnerContact : null)")
+              && phone.Contains("_partnerContact = Register(PartnerId,") && links.Contains("SocialPhone.ContactOf(p)"),
+            "family fix: the partner's texts come from their own contact in People while the social life keeps them, else from Family's stand-in");
     }
 
     private static void FamilyPassages()

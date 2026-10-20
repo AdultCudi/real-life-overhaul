@@ -15,6 +15,10 @@ namespace RealLifeOverhaul.Family
         public int Stage;            // 0 stranger, 1 acquaintance, 2 friend, 3 close friend, 4 dating, 5 partner
         public int DaysTogether;     // days since they began dating
         public int LastContactDay;   // the owner's last call, text, outing or meeting with them (0: none known)
+        public string JobKey;        // what they do for a living, the owner's locale key said after "a"; null if the owner keeps none
+        public int FreeFrom;         // the hours of a weekday they are free (0 and 0: the owner keeps none)
+        public int FreeTo;
+        public bool NightOwl;        // they keep late hours: up late, asleep in the morning
     }
 
     /// <summary>What family life tells the owner of relationships about. Each is sent once, when it happens.</summary>
@@ -41,6 +45,8 @@ namespace RealLifeOverhaul.Family
         bool StartOuting(string kind, Action<bool> done);
         /// <summary>Fills the list with the people close enough to ask to a wedding, family first, at most so many; returns how many.</summary>
         int ClosePeople(List<PersonInfo> into, int most);
+        /// <summary>The partner's own contact in the phone, which Family's texts from the partner come from; null if there is none.</summary>
+        Entities.Contact PartnerContact { get; }
     }
 
     /// <summary>What Home implements. Each call is true if Home did it its own way; false and Family does a short default (a few lines and a mood).</summary>
@@ -102,6 +108,9 @@ namespace RealLifeOverhaul.Family
         public static bool Active => FamilyDirector.Instance != null && FamilyState.Loaded && Settings.Family;
         public static bool HasPartner => Active && FamilyState.Together;
         public static bool LivesTogether => Active && FamilyState.Together && FamilyState.S.LivesIn;
+
+        /// <summary>Whether the partner who lives with the player is free at that hour (awake, not at work) by the family's day; null when People's own hours stand.</summary>
+        public static bool? PartnerFree(int hour, bool weekend) => Active ? HomeLife.PeopleFree(hour, weekend) : null;
         public static bool Engaged => Active && FamilyState.Bond == Bond.Engaged;
         public static bool Married => Active && FamilyState.Bond == Bond.Married;
         public static int Children => Active ? FamilyState.AtHome() : 0;

@@ -38,8 +38,12 @@ namespace RealLifeOverhaul.Family
         public static string Name => string.IsNullOrEmpty(FamilyState.S.PName) ? FamilyText.T("reallife_family_someone") : FamilyState.S.PName;
         public static int Seed => FamilyState.S.PSeed;
         public static bool Female => FamilyState.S.PFemale;
-        public static string JobKey => Trades[Mathf.Clamp(FamilyState.S.PJob, 0, Trades.Length - 1)];
-        public static int Income => FamilyState.S.PIncome > 0 ? FamilyState.S.PIncome : JobIncome[Mathf.Clamp(FamilyState.S.PJob, 0, JobIncome.Length - 1)];
+        /// <summary>What they do for a living: their job in People while Social keeps them, else the trade Family gave them.</summary>
+        public static string JobKey => !string.IsNullOrEmpty(FamilyState.S.PJobKey) ? FamilyState.S.PJobKey : Trades[Mathf.Clamp(FamilyState.S.PJob, 0, Trades.Length - 1)];
+        /// <summary>Retired in People: they do not work and bring in nothing.</summary>
+        public static bool Retired => PartnerJobRules.Retired(FamilyState.S.PJobKey);
+        public static int Income => Retired ? 0 : PartnerWorkRules.Income(FamilyState.S.PIncome > 0 ? FamilyState.S.PIncome : JobIncome[Mathf.Clamp(FamilyState.S.PJob, 0, JobIncome.Length - 1)],
+            PartnerWork.Work);
 
         /// <summary>How fond they are, 0 to 100: Social's figure when it keeps them, else the default record's.</summary>
         public static float Affection
@@ -84,7 +88,11 @@ namespace RealLifeOverhaul.Family
             s.PMetDay = TimeHelper.CurrentDay;
             s.PJob = Random.Range(0, Trades.Length);
             s.PIncome = JobIncome[s.PJob];
+            s.PJobKey = null;
+            s.PFreeFrom = s.PFreeTo = 0;
+            s.PNightOwl = false;
             s.PWantsChildren = Random.value < 0.8f;
+            PartnerWork.Reset(s);
             s.Interest = interest;
             s.Harmony = FamilyBalance.HarmonyStart;
             FamilyState.Bond = Bond.Dating;
@@ -118,10 +126,25 @@ namespace RealLifeOverhaul.Family
                     s.PJob = (s.PSeed & 0x7fffffff) % Trades.Length;
                     s.PIncome = JobIncome[s.PJob];
                     s.PWantsChildren = (s.PSeed & 7) != 0;
+                    PartnerWork.Reset(s);
                     s.PMetDay = TimeHelper.CurrentDay - Mathf.Max(0, p.DaysTogether);
                     s.SinceDay = s.PMetDay;
                     s.Harmony = FamilyBalance.HarmonyStart;
                     FamilyState.Bond = Bond.Dating;
+                }
+                // What they do for a living is what People says they do: the text, the hours and the pay.
+                if (!string.IsNullOrEmpty(p.JobKey) && p.JobKey != s.PJobKey && s.PName == p.Name)
+                {
+                    s.PJobKey = p.JobKey;
+                    s.PJob = PartnerJobRules.TradeOf(p.JobKey, s.PJob);
+                    s.PIncome = PartnerJobRules.IncomeOf(p.JobKey, JobIncome[Mathf.Clamp(s.PJob, 0, JobIncome.Length - 1)]);
+                }
+                // ...and their day is People's: when they are free, and a night owl's late hours (HomeLife.Where).
+                if (s.PName == p.Name)
+                {
+                    s.PFreeFrom = p.FreeFrom;
+                    s.PFreeTo = p.FreeTo;
+                    s.PNightOwl = p.NightOwl;
                 }
             }
             else if (FamilyState.Bond == Bond.Dating && !s.LivesIn)
@@ -160,8 +183,12 @@ namespace RealLifeOverhaul.Family
             s.Wedding = new WeddingPlan();
             s.InLaws = false;
             s.PName = null;
+            s.PJobKey = null;
+            s.PFreeFrom = s.PFreeTo = 0;
+            s.PNightOwl = false;
             s.PSeed = 0;
             s.PAffection = 0f;
+            PartnerWork.Reset(s);
         }
     }
 }

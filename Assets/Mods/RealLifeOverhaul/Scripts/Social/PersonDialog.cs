@@ -191,6 +191,10 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("movein");
             }
+            if (SocialPhone.FamilyMatters != null && SocialPhone.HasFamilyMatters != null && SocialPhone.HasFamilyMatters(_p))
+            {
+                _actions.Add("family");
+            }
             if (_p.Stage >= SocialStage.Friend && _p.Debt == 0)
             {
                 _actions.Add("borrow");
@@ -232,6 +236,10 @@ namespace RealLifeOverhaul
                 case "introduce":
                     entry.ConfirmTextOverride = "reallife_social_btn_introduce".Localize();
                     entry.OnConfirm = Introduce;
+                    break;
+                case "family":
+                    entry.ConfirmTextOverride = "reallife_social_btn_family".Localize();
+                    entry.OnConfirm = SocialPhone.FamilyMatters;
                     break;
                 default:
                     entry.ConfirmTextOverride = "reallife_social_btn_plans".Localize();
