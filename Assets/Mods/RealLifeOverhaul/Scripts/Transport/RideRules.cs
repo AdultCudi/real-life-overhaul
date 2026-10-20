@@ -148,6 +148,38 @@ namespace RealLifeOverhaul
             return !yielded && trafficOurs && carStanding && waitsForBus && !busOnItsWay && heldFor >= YieldAfter;
         }
 
+        public const float LightPatience = 45f;      // seconds at a red light nobody is looking at before it is taken for one the game does not run
+
+        public const float LightPatienceSeen = 90f;  // and one in view: longer than any of the game's own cycles, but never for good
+
+        public const float RoundClosedAfter = 3f;    // seconds before a closed lane before the bus goes round it, as the traffic does
+
+        public const float RoundStillAfter = 30f;    // seconds behind something standing still in its lane (a car, a person) before it goes round
+
+        /// <summary>
+        /// Whether a red light still holds a vehicle the mod drives (the bus, the taxi): it is waited at for as long as any of the
+        /// game's light cycles takes, longer while the player can see it, and then taken for one the game is not running (it
+        /// runs only the junctions near the player; a light it does not run stays as it was for good). Before, a light in view
+        /// was waited at for ever.
+        /// </summary>
+        public static bool LightHolds(float waitedFor, bool seen)
+        {
+            return waitedFor < (seen ? LightPatienceSeen : LightPatience);
+        }
+
+        /// <summary>
+        /// Whether a bus held up goes round what holds it (BusDetour): a lane closed ahead after a moment, something standing
+        /// still in its lane after half a minute (not a car that only stands for the bus: that one is told to go on), once a hold.
+        /// </summary>
+        public static bool GoRound(bool closed, float heldFor, bool holderStill, bool waitsForBus, bool tried)
+        {
+            if (tried)
+            {
+                return false;
+            }
+            return closed ? heldFor >= RoundClosedAfter : holderStill && !waitsForBus && heldFor >= RoundStillAfter;
+        }
+
         /// <summary>How long a bus has stood still, looked at four times a second; what is done once a hold is kept here and forgotten with it.</summary>
         public sealed class HoldClock
         {
@@ -157,6 +189,8 @@ namespace RealLifeOverhaul
             public bool Logged;     // the hold has been written to the log
 
             public bool Yielded;    // a car it stood behind has been told the bus is not in its way
+
+            public bool Rounded;    // a way round what held it has been looked for
 
             public float For { get; private set; }   // seconds of the hold, as of the last look
 
@@ -172,6 +206,7 @@ namespace RealLifeOverhaul
                     _since = now;
                     Logged = false;
                     Yielded = false;
+                    Rounded = false;
                 }
                 For = now - _since;
                 return For;
@@ -183,6 +218,7 @@ namespace RealLifeOverhaul
                 _on = false;
                 Logged = false;
                 Yielded = false;
+                Rounded = false;
                 For = 0f;
             }
         }

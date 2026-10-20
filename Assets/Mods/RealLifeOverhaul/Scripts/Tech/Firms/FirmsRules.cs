@@ -277,15 +277,13 @@ namespace RealLifeOverhaul.Tech
             int selling = seg == (int)Segment.Consumer ? 1000 : 1000 + Math.Min(2000, c.Selling * 50);
             if (p.K == ProductKind.Licence)
             {
-                int sellers = Math.Max(1, c.Selling / FirmsCatalogue.PointsPerDay);
-                for (int s = 0; s < sellers; s++)
-                {
-                    if (TechRandom.Mille(f.Seed, p.Id, day, 100 + s) < FirmsCatalogue.LicenceLeadsPerSeller * appeal / 1000 * spend / 1000 && open > 0)
-                    {
-                        r.Won++;
-                        r.Takings += (long)FirmsCatalogue.LicenceDeal * FirmsCatalogue.PriceTiers[TalentCatalogue.Clamp(p.Tier, 0, 2)] / 1000;
-                    }
-                }
+                // The deals the day has earned, carried in millionths (Carry) until a whole one closes: a launched licence sells on
+                // a known pace, never by a daily draw that at a launch's appeal left it unsold for months.
+                p.Carry += open > 0 ? LicenceRate(appeal, spend, c.Selling) : 0;
+                long deals = Math.Min(open, p.Carry / 1000000);
+                p.Carry -= deals * 1000000;
+                r.Won = deals;
+                r.Takings += deals * FirmsCatalogue.LicenceDeal * FirmsCatalogue.PriceTiers[TalentCatalogue.Clamp(p.Tier, 0, 2)] / 1000;
             }
             else
             {
@@ -296,7 +294,14 @@ namespace RealLifeOverhaul.Tech
                 p.Carry %= 1000000;
                 if (seg == (int)Segment.Consumer)
                 {
+                    // The paying share of the day's sign-ups, its part of one customer drawn for (a day of 19 sign-ups is 0.95 of a
+                    // payer): cut off, a product winning fewer than twenty a day never had a paying customer at all.
                     long paying = whole * FirmsCatalogue.ConsumerPaying / 1000;
+                    int part = (int)(whole * FirmsCatalogue.ConsumerPaying % 1000);
+                    if (part > 0 && TechRandom.Mille(f.Seed, p.Id, day, 19) < part)
+                    {
+                        paying++;
+                    }
                     r.Won = paying;
                     p.Free += whole - paying;
                 }
@@ -369,6 +374,29 @@ namespace RealLifeOverhaul.Tech
             }
             p.Revenue += r.Takings;
             return r;
+        }
+
+        /// <summary>
+        /// Millionths of a licence deal a day: so much a seller at the product's appeal and the economy's spend, the firm's
+        /// sellers counted by their points (one in good heart a day is one seller), and a firm with nobody selling still
+        /// worth its enquiries (<see cref="FirmsCatalogue.LicenceInbound"/>).
+        /// </summary>
+        public static long LicenceRate(int appeal, int spend, int selling)
+        {
+            return (long)FirmsCatalogue.LicenceLeadsPerSeller * 1000 * Math.Max(0, appeal) / 1000 * Math.Max(0, spend) / 1000 * LicenceSellers(selling) / 1000;
+        }
+
+        /// <summary>The sellers a licence has, thousandths: the enquiries that come by themselves and the firm's selling points over a seller's day, eight at the most.</summary>
+        public static int LicenceSellers(int selling)
+        {
+            long sellers = FirmsCatalogue.LicenceInbound + (long)Math.Max(0, selling) * 1000 / FirmsCatalogue.PointsPerDay;
+            return (int)Math.Min(FirmsCatalogue.LicenceSellersMost, sellers);
+        }
+
+        /// <summary>Days a licence takes to close a deal at this pace, at least one; 0 when it closes none.</summary>
+        public static int LicenceDealDays(long rate)
+        {
+            return rate <= 0 ? 0 : (int)Math.Min(9999L, Math.Max(1L, (1000000L + rate - 1) / rate));
         }
 
         private static int Digits(long n)

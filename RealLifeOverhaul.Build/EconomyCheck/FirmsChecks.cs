@@ -10,6 +10,7 @@ internal static partial class Program
     {
         FirmsBuild();
         FirmsSell();
+        FirmsLaunchSales();
         FirmsGames();
         FirmsRisks();
         FirmsContracts();
@@ -142,6 +143,84 @@ internal static partial class Program
             won += FirmsRules.Sell(f, firm, consumer, Team(16), 10, 500 + d, 1, 1000).Won;
         }
         Check(consumer.Free > won * 10, "firms: most of a consumer service's users do not pay (" + consumer.Free + " free, " + won + " paying)");
+    }
+
+    // A product launched at its third feature sells (a player's report, 20 Oct 2026: a software studio's product launched with
+    // three features sold nothing, day after day). A licence sold only by a daily draw of about one in a hundred, so it could
+    // go months without a deal; a consumer service won its paying share cut to whole customers, none under twenty sign-ups a day.
+    private static void FirmsLaunchSales()
+    {
+        int[] firstDeal = new int[3];
+        long[] deals = new long[3];
+        int[] selling = { 0, 8, 32 };   // nobody selling, one seller in good heart, four
+        for (int k = 0; k < 3; k++)
+        {
+            var f = new FirmsFile { Seed = 13 };
+            var firm = new Firm { Place = "l", Reputation = 500 };
+            Product lic = FirmsRules.NewProduct(f, "l", ProductKind.Licence, Segment.Enterprise, 0, null);
+            lic.Features = FirmsCatalogue.LaunchFeatures;
+            f.Products.Add(lic);
+            FirmsRules.Launch(lic, 10);
+            Crew c = Team(16);
+            c.Selling = selling[k];
+            long rate = FirmsRules.LicenceRate(FirmsRules.Appeal(lic, firm, c), FirmsRules.CycleSpend[1], c.Selling);
+            int promised = FirmsRules.LicenceDealDays(rate);
+            firstDeal[k] = -1;
+            long takings = 0;
+            for (int d = 11; d <= 375; d++)
+            {
+                ProductDay r = FirmsRules.Sell(f, firm, lic, c, 10, d, 1, 1000);
+                deals[k] += r.Won;
+                takings += r.Takings;
+                if (r.Won > 0 && firstDeal[k] < 0)
+                {
+                    firstDeal[k] = d - 10;
+                    // (the rival ships features meanwhile, which slows it a little: the page says the pace as things stand)
+                    Check(firstDeal[k] >= promised - 1 && firstDeal[k] <= promised * 5 / 4 + 2,
+                        "firms: a licence's first deal comes about when its page says (day " + firstDeal[k] + ", the page said " + promised + " at launch, " + selling[k] / 8 + " seller(s))");
+                }
+            }
+            Check(takings >= deals[k] * FirmsCatalogue.LicenceDeal * FirmsCatalogue.PriceTiers[1] / 1000, "firms: each licence deal pays its price in full");
+        }
+        Check(firstDeal[0] > 0 && firstDeal[0] <= 60, "firms: a licence launched at its third feature with nobody selling still closes a deal within two months (day " + firstDeal[0] + ")");
+        Check(firstDeal[1] > 0 && firstDeal[1] < firstDeal[0] && firstDeal[2] < firstDeal[1] && deals[2] > deals[1] && deals[1] > deals[0],
+            "firms: sales people close licence deals sooner and more of them (first deal on day " + firstDeal[0] + ", " + firstDeal[1] + ", " + firstDeal[2] + "; "
+            + deals[0] + ", " + deals[1] + ", " + deals[2] + " in a year)");
+        Check(FirmsRules.LicenceSellers(0) == FirmsCatalogue.LicenceInbound && FirmsRules.LicenceSellers(1000000) == FirmsCatalogue.LicenceSellersMost && FirmsRules.LicenceRate(0, 1000, 32) == 0
+              && FirmsRules.LicenceDealDays(0) == 0 && FirmsRules.LicenceDealDays(2000000) == 1,
+            "firms: a licence's sellers are its enquiries and its sales people up to eight; no appeal, no deals; the days to a deal at least one");
+        // the same product sells the same on every machine (Going Public): deals carried, not drawn
+        var f1 = new FirmsFile { Seed = 21 };
+        var f2 = new FirmsFile { Seed = 99 };
+        Product a = FirmsRules.NewProduct(f1, "l", ProductKind.Licence, Segment.Enterprise, 0, null), b = FirmsRules.NewProduct(f2, "l", ProductKind.Licence, Segment.Enterprise, 0, null);
+        a.Features = b.Features = 6;
+        a.RivalFeatures = b.RivalFeatures = FirmsCatalogue.FeaturesMost;   // (a rival that ships no more: its own draw is the seed's)
+        FirmsRules.Launch(a, 1);
+        FirmsRules.Launch(b, 1);
+        bool alike = true;
+        for (int d = 2; d <= 200; d++)
+        {
+            alike &= FirmsRules.Sell(f1, new Firm { Place = "l" }, a, Team(8), 5, d, 1, 1000).Won == FirmsRules.Sell(f2, new Firm { Place = "l" }, b, Team(8), 5, d, 1, 1000).Won;
+        }
+        Check(alike && a.Users > 0, "firms: a licence's deals follow from its pace alone, the same whatever the save's seed (" + a.Users + " in 200 days)");
+
+        // a consumer service at the least appeal (about eighteen sign-ups a day) still finds paying customers
+        var fc = new FirmsFile { Seed = 17 };
+        var weakFirm = new Firm { Place = "c", Reputation = 0 };
+        Product weak = FirmsRules.NewProduct(fc, "c", ProductKind.App, Segment.Consumer, 0, null);
+        weak.Features = FirmsCatalogue.LaunchFeatures;
+        weak.Bugs = 10000;
+        weak.Tier = 2;
+        fc.Products.Add(weak);
+        FirmsRules.Launch(weak, 1);
+        long paying = 0;
+        for (int d = 2; d <= 31; d++)
+        {
+            paying += FirmsRules.Sell(fc, weakFirm, weak, Team(8), 5, d, 3, 1000).Won;
+        }
+        int least = FirmsRules.Appeal(weak, weakFirm, Team(8));
+        Check(least <= 60 && paying > 0 && weak.Free > paying * 10,
+            "firms: a consumer product at the least appeal (" + least + ") still has paying customers within a month (" + paying + " paying, " + weak.Free + " free)");
     }
 
     private static void FirmsGames()

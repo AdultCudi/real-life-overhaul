@@ -295,7 +295,7 @@ namespace RealLifeOverhaul.Meta
             // Its rows stand under the company's header.
             Economy.OnlineGuide.AddFacts(Features.Add("economy_online", "reallife_meta_title_economy_online")
                 .About("reallife_guide_economy_online_about").Help("reallife_guide_economy_online")
-                .Owns(Settings.EconomyOnlineId)
+                .Owns(Settings.EconomyOnlineId, Settings.EconomyOnlineWaitNotesId)
                 .Test("reallife_online_test_open", "reallife_online_test_orders", "reallife_online_test_late", "reallife_online_test_return", "reallife_online_test_day", "reallife_online_test_back")
                 .Data(Economy.OnlineStore.Key, Economy.OnlineStore.TestKey)
                 .Cleanup(() => Economy.OnlineDirector.Instance?.StopAll(), -2)

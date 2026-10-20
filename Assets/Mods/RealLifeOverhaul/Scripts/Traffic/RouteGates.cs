@@ -18,7 +18,7 @@ namespace RealLifeOverhaul
     {
         public const float LookAhead = 45f;        // metres of route looked along
         public const float LitWithin = 170f;       // metres from the player within which a red light is waited at
-        public const float LightPatience = 45f;    // seconds at a red light nobody is looking at before it is taken to be one the game is not running
+        public const float LightPatience = RideRules.LightPatience;   // seconds at an unseen red light before it is taken for one the game does not run (RideRules.LightHolds)
         private const float JunctionWithin = 16f;  // metres ahead within which a junction's lane point slows the vehicle
         private const float LineClose = 7f;        // metres: a light that turns red this near the line, at speed, is driven through
         private const float LineSpeed = 4f;        // m/s
@@ -86,7 +86,7 @@ namespace RealLifeOverhaul
                     why = RoadHold.Closure;
                     return false;
                 }
-                if (i == from && point.stop && Lit(point) && (waitedFor < LightPatience || CitySpots.InView(point.position)))
+                if (i == from && point.stop && Lit(point) && RideRules.LightHolds(waitedFor, CitySpots.InView(point.position)))
                 {
                     why = RoadHold.Light;
                     return false;

@@ -492,6 +492,42 @@ internal static partial class Program
         Check(halted.Sent.Count == 0 && after.State == TextJobState.Waiting,
             "your own AI, the runner: halted (the player chose another service), it sends nothing more; what waits is left for the next runner of the same queue");
         run.Dispose();
+        // The game closing: the engine aborts the workers (ThreadAbortException), or a request ends in an exception while the service
+        // is being switched off. Not a fault: one plain line for both workers, never Failed, nothing to mend in the options.
+        Check(TextServiceRules.Closing("ThreadAbortException", false) && TextServiceRules.Closing("IOException", true) && !TextServiceRules.Closing("IOException", false)
+              && !TextServiceRules.Closing("NullReferenceException", false),
+            "your own AI, the runner: a worker aborted as the game closes, or any end while it is switched off, is a quiet stop; any other exception is a fault");
+        var gate = new ManualResetEventSlim(false);
+        var tearing = new PretendWeb { Answer = (r, ms) => { gate.Wait(3000); throw new IOException("the connection was torn down"); } };
+        q = new TextQueue();
+        run = new TextService(q, new TextServiceStart { Provider = groq, Base = groq.Base, Key = ServiceKey }, tearing, log);
+        run.Start();
+        ServiceJob(q, "close1", 20);
+        ServiceJob(q, "close2", 20);
+        run.Nudge();
+        Until(() => tearing.Sent.Count >= 2, 3000);
+        int mark;
+        lock (logs)
+        {
+            mark = logs.Count;
+        }
+        var closing = new Thread(run.Dispose) { IsBackground = true };
+        closing.Start();
+        Thread.Sleep(60);
+        gate.Set();
+        closing.Join(5000);
+        int closed = 0, mended = 0;
+        lock (logs)
+        {
+            for (int i = mark; i < logs.Count; i++)
+            {
+                closed += logs[i].Contains("stopped (the game is closing)") ? 1 : 0;
+                mended += logs[i].Contains("mended") ? 1 : 0;
+            }
+        }
+        Check(tearing.Sent.Count == 2 && closed == 1 && mended == 0 && run.State == TextServerState.Off && run.Fault != TextFault.Busy,
+            "your own AI, the runner: both workers ending as it is switched off say one plain closing line (" + closed + "), nothing to mend (" + mended + "), and it is Off, not Failed ("
+            + run.State + ")");
         foreach (string line in logs)
         {
             if (line.Contains(ServiceKey))

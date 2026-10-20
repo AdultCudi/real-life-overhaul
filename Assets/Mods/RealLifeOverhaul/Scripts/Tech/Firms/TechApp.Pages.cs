@@ -441,6 +441,13 @@ namespace RealLifeOverhaul.Tech
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
                     "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
+                if (p.K == ProductKind.Licence && p.Stage < 2 && firm != null)
+                {
+                    // How often it sells as things stand: a licence's deals are few and large, so the page says when to expect the next.
+                    long rate = FirmsRules.LicenceRate(FirmsRules.Appeal(p, firm.File, firm.Crew), FirmsRules.CycleSpend[TalentCatalogue.Clamp(HiringGame.Cycle, 0, 3)], firm.Crew.Selling);
+                    box.Line(TechText.Fill(firm.Crew.Selling > 0 ? "reallife_tech_product_deals" : "reallife_tech_product_deals_none",
+                        "days", FirmsRules.LicenceDealDays(rate).ToString()));
+                }
             }
             if (p.K == ProductKind.Model)
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Localizor;
 using Streets;
@@ -31,7 +32,8 @@ namespace RealLifeOverhaul
     /// - a bicycle rack on the pavement outside supermarkets (five at most);
     /// - a motorbike stand outside car dealerships (four at most), or at garages with a repair bay where
     ///   the city has no dealership open.
-    /// Each stands on pavement that <see cref="CitySpots"/> found clear. A place is a handful of renderers
+    /// Each stands on pavement that <see cref="CitySpots"/> found clear, all of it (<see cref="Grounded"/>, by
+    /// <see cref="BikeSpotRules"/>): never on a crossing, over a kerb or in the road, and on the ground. A place is a handful of renderers
     /// (display bikes of the shared meshes, a rail or a plinth), built when the player first comes within
     /// 90 m, hidden beyond that, with no collider: dressing, like the mod's other street props.
     /// </summary>
@@ -56,6 +58,7 @@ namespace RealLifeOverhaul
         private readonly List<BikePlace> _places = new List<BikePlace>(18);
         private List<Transform> _stands;   // the game's scooter stands, found behind the loading screen (PrewarmStands); null once Find has them
         private bool _found;
+        private static int _refused;   // places tried and refused by BikeSpotRules this city load, for the log
 
         public BikePlaces(Transform owner)
         {
@@ -107,6 +110,7 @@ namespace RealLifeOverhaul
         public void Find()
         {
             _found = true;
+            _refused = 0;
             var city = InstanceBehavior<CityManager>.Instance;
             if (city == null || city.cityBuildingControllers == null)
             {
@@ -165,7 +169,7 @@ namespace RealLifeOverhaul
                     }
                 }
                 Logger?.Info("Two-wheelers: " + docks + " bike-share docks (of " + stands.Count + " scooter stands), " + shops + " bicycle racks outside supermarkets, "
-                             + motor + " motorbike stands.");
+                             + motor + " motorbike stands; " + _refused + " place(s) tried were refused as not wholly on level pavement or on a crossing.");
             }
             catch (Exception e)
             {
@@ -193,7 +197,7 @@ namespace RealLifeOverhaul
                 for (int side = 0; side < 4; side++)
                 {
                     Vector3 way = side == 0 ? right : side == 1 ? -right : side == 2 ? forward : -forward;
-                    if (CitySpots.Pavement(from + way * out_, 1.2f, out spot) && Fits(spot, facing, DockHalf, 0.05f)
+                    if (CitySpots.Pavement(from + way * out_, 1.2f, out spot) && Grounded(ref spot, facing, DockHalf) && Fits(spot, facing, DockHalf, 0.05f)
                         && !Physics.CheckSphere(spot + Vector3.up, 1.6f, UsableMask, QueryTriggerInteraction.Collide))
                     {
                         return true;
@@ -225,12 +229,70 @@ namespace RealLifeOverhaul
             for (int i = 0; i < 6; i++)
             {
                 float out_ = (4f + i / 2 * 2.5f) * (i % 2 == 0 ? 1f : -1f);
-                if (CitySpots.Pavement(front + along * out_, 1.5f, out spot) && CitySpots.ClearQuietly(spot, 1.2f) && Fits(spot, facing, half, 0f))
+                if (CitySpots.Pavement(front + along * out_, 1.5f, out spot) && Grounded(ref spot, facing, half) && CitySpots.ClearQuietly(spot, 1.2f) && Fits(spot, facing, half, 0f))
                 {
                     return true;
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// True if the whole of a place of this half size (its width across, its length along) stands on pavement at a spot:
+        /// each of <see cref="BikeSpotRules"/>' samples over its footprint and a margin round it is pavement exactly there, the
+        /// ground under them is level (none over a kerb), and no marked crossing is under it (<see cref="CitySpots.ClearOfCrossings"/>).
+        /// The spot is then put on the ground at its middle, as the mesh's point can stand above the ground. Nine samples of
+        /// two rays and a mesh query each and one box query: once per place tried, a city load. Refusals are counted for the log.
+        /// </summary>
+        public static bool Grounded(ref Vector3 spot, Quaternion facing, Vector3 half)
+        {
+            int off = 0;
+            float lowest = float.MaxValue, highest = float.MinValue, middle = spot.y;
+            for (int i = 0; i < BikeSpotRules.Samples; i++)
+            {
+                BikeSpotRules.Sample(i, half.x, half.z, out float across, out float along);
+                Vector3 at = spot + facing * new Vector3(across, 0f, along);
+                bool ground = StandHeight(at, out float height, out _);
+                bool mesh = CitySpots.Pavement(new Vector3(at.x, height, at.z), BikeSpotRules.OnMesh + 0.3f, out Vector3 walk);
+                if (!ground || !BikeSpotRules.OnPavement(mesh, CitySpots.Flat(walk - at)))
+                {
+                    off++;
+                    continue;
+                }
+                lowest = Mathf.Min(lowest, height);
+                highest = Mathf.Max(highest, height);
+                if (i == 0)
+                {
+                    middle = height;
+                }
+            }
+            var room = new Vector3(half.x + BikeSpotRules.CrossingMargin, 1f, half.z + BikeSpotRules.CrossingMargin);
+            bool crossing = !CitySpots.ClearOfCrossings(spot + Vector3.up * 0.5f, room, facing, out _);
+            BikeSpotRules.Refusal why = BikeSpotRules.Judge(off, lowest, highest, crossing);
+            if (why != BikeSpotRules.Refusal.None)
+            {
+                _refused++;
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Two-wheelers check (place): a place at (" + spot.x.ToString("F1", CultureInfo.InvariantCulture) + ", "
+                                 + spot.z.ToString("F1", CultureInfo.InvariantCulture) + ") refused: " + RefusalWords(why, off, highest - lowest) + ": PASS.");
+                }
+                return false;
+            }
+            spot.y = middle;
+            return true;
+        }
+
+        private static string RefusalWords(BikeSpotRules.Refusal why, int off, float rise)
+        {
+            switch (why)
+            {
+                case BikeSpotRules.Refusal.Crossing: return "a marked crossing under it or within " + BikeSpotRules.CrossingMargin.ToString("F1", CultureInfo.InvariantCulture) + " m";
+                case BikeSpotRules.Refusal.OffPavement:
+                    return off + " of its " + BikeSpotRules.Samples + " points (its footprint and " + BikeSpotRules.Margin.ToString("F2", CultureInfo.InvariantCulture)
+                           + " m round it) not on pavement";
+                default: return "the ground under it rises " + rise.ToString("F2", CultureInfo.InvariantCulture) + " m, over a kerb";
+            }
         }
 
         /// <summary>
@@ -522,8 +584,9 @@ namespace RealLifeOverhaul
                         continue;
                     }
                     spot = new Vector3(at.x, height, at.z);
-                    // Looked along above head height: whoever stands at the stand is not a wall.
-                    if (Fits(spot, place.Rotation, BikeHalf, 0f) && Seen(place.Position, spot, 2.1f))
+                    // Looked along above head height: whoever stands at the stand is not a wall. Never on a crossing.
+                    if (Fits(spot, place.Rotation, BikeHalf, 0f) && Seen(place.Position, spot, 2.1f)
+                        && CitySpots.ClearOfCrossings(spot + Vector3.up * 0.5f, new Vector3(BikeHalf.x, 1f, BikeHalf.z), place.Rotation, out _))
                     {
                         return true;
                     }

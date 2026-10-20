@@ -75,6 +75,10 @@ namespace RealLifeOverhaul
             }
             for (int i = from; i < _line.Path.Length && _line.Metres[i] - _line.Metres[Mathf.Max(0, from - 1)] < OnwardMore; i++)
             {
+                if (Closed(_line.Path[i]))
+                {
+                    break;   // its line is closed ahead: on along whatever road is open from here (Extend), not into the closure
+                }
                 Add(_line, i);
             }
             Extend(OnwardMore - RouteMetres());

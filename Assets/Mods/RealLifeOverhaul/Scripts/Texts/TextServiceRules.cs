@@ -488,6 +488,13 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
+        /// <summary>
+        /// True when a worker that ended with an exception of this type ended because it was told to: the engine aborts the mod's
+        /// threads as the game closes (a ThreadAbortException, after "Input System module state changed to: Shutdown"), or the
+        /// service was being switched off. Neither is a fault of the service, so nothing is to be mended in the options.
+        /// </summary>
+        public static bool Closing(string exceptionType, bool stopping) => stopping || exceptionType == "ThreadAbortException";
+
         /// <summary>True for the faults that stop the service until the player mends it (the key, the sign-in, the model).</summary>
         public static bool Stops(TextFault fault) => fault == TextFault.Key || fault == TextFault.Model || fault == TextFault.NotEligible;
 

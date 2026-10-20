@@ -13,8 +13,17 @@ namespace RealLifeOverhaul.Economy
             return ReturnPool.Count > 0 ? ReturnPool.Pop() : new WebReturn();
         }
 
-        /// <summary>The staff on shift pick, oldest first; an order still unpicked long after its promise is given up.</summary>
+        /// <summary>The staff on shift pick, oldest first; an order still unpicked long after its promise is given up. An hour counted as open.</summary>
         public static void Pick(WebShop shop, Site site, int hour, int pickers, StockTake take, ref HourCount count)
+        {
+            Pick(shop, site, hour, pickers, true, take, ref count);
+        }
+
+        /// <summary>
+        /// The same for an hour the place is open in or not (<paramref name="open"/>: its opening hours, a warehouse's working
+        /// day). Only an open hour with orders waiting and nobody to pick them counts towards <see cref="WebShop.Idle"/>.
+        /// </summary>
+        public static void Pick(WebShop shop, Site site, int hour, int pickers, bool open, StockTake take, ref HourCount count)
         {
             int room = Math.Max(0, pickers) * OnlineCatalogue.PickPerHour;
             bool left = false;
@@ -45,7 +54,17 @@ namespace RealLifeOverhaul.Economy
                     i--;
                 }
             }
-            shop.Idle = left && pickers <= 0 ? shop.Idle + 1 : 0;
+            shop.Idle = IdleAfter(shop.Idle, left, pickers, open);
+        }
+
+        /// <summary>
+        /// The hours orders have waited with nobody to pick them, after one more hour: an open hour with orders left and no
+        /// picker adds one, anything else starts the count again. Orders placed after closing wait for the opening hours, and
+        /// a wait for them is no fault: the count (the Planner's alert, the notification) runs from the opening.
+        /// </summary>
+        public static int IdleAfter(int idle, bool left, int pickers, bool open)
+        {
+            return open && left && pickers <= 0 ? Math.Max(0, idle) + 1 : 0;
         }
 
         /// <summary>Picks one order from the real stock as far as it goes and sends it on. False if nothing of it was there: it is cancelled.</summary>

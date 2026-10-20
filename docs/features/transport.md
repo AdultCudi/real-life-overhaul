@@ -201,9 +201,11 @@ What cannot be told from the one log there is: its last transit line is the only
   It is held the way a response unit is (ignored by the traffic AI, an empty scripted route as the mark that keeps the game from taking it off the road) and **driven by the mod** with `EmergencyDriver` along the line's own lane points: 40 km/h, 25 through junctions, stopping behind whatever is ahead, never out of its lane (`PullOver` with next to nothing: a bus passes nobody), to within a metre of the end of its route.
 
   What that driver does not know of this class adds.
-  It pulls up at a red light (the light's own lane point, `Waypoint.stop`, within 170 m of the player; the game only runs the lights near the player, so a light further off, or one out of view that has not changed in 45 s, is not waited at).
+  It pulls up at a red light (the light's own lane point, `Waypoint.stop`, within 170 m of the player; the game only runs the lights near the player, so a light further off, or one that has not changed in 45 s out of view or 90 s in view, is not waited at: `RideRules.LightHolds`, the taxi's too).
 
   It stops two points before any lane point a scene has closed (`temporaryDisabled`: the cordon, a lane closed for roadworks), frozen while it stands, and goes on when they open.
+
+  It goes round what would hold it for good, as the traffic does (`BusDetour`, `TransitBus.Round`; a player's report, 20 Oct 2026: "I see the bus but it is stuck in place and not moving"): 3 s before a closed lane point, or 30 s behind something standing still in its lane that is not a car standing only for the bus, it takes the lane beside it running the same way from 9 m ahead, past the place, and rejoins its route beyond it; what it goes round is not looked at for that drive. With no lane beside it, it waits as the traffic there does. `Transit check (round)` says which. A bus let go in view drives on along the road for as long as it is seen, never left standing at the end of its route.
 
   Which vehicle is not luck: an idle van.
   Else a van driving out of sight (taken off the road there).
