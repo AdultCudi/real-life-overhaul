@@ -177,6 +177,7 @@ internal static partial class Program
         Flare();
         FlareLive();   // Flare as a living network: the feed, the City Office, the reactions, the filter, pictures, Going Public, the save, the texts (FlareLiveChecks.cs)
         FlareReview();   // the review round of Flare as a living network (FlareReviewChecks.cs)
+        FlareClosedReviews();   // the city's reviews come of visits: none of a business the game has closed then, asked again at the hour, a review that went up kept (FlareClosedReviewChecks.cs)
         Faults();   // the city's real faults: weighting, limits, reports, escalation, the city's people, the save, Going Public, the source of chance, texts (FaultChecks.cs)
         Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
         TextsService();   // Your own AI: the services, each request and answer, faults and rests, the runner, the hub's fallback, Going Public, Sign in with ChatGPT end to end, the web client, the sealed keys, no secret in a log or a save (TextsServiceChecks.cs)
