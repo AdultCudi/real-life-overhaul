@@ -142,6 +142,7 @@ namespace RealLifeOverhaul
         public const string MarketsBondSoFarId = "markets_bond_so_far";
         public const string MarketsLargeId = "markets_large";
         public const string MarketsReinvestId = "markets_reinvest";
+        public const string MarketsDerivativesId = "markets_derivatives";
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -152,6 +153,7 @@ namespace RealLifeOverhaul
         public const string EconomyCompanyHideId = "economy_company_hide";
         public const string EconomyCompanyLicencesId = "economy_company_licences";
         public const string EconomyRotaId = "economy_rota";
+        public const string EconomyManagersId = "economy_managers";
         public const string EstateId = "economy_estate";
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
@@ -314,6 +316,7 @@ namespace RealLifeOverhaul
         private const int DecorChoiceWas = 1, DecorChoiceNow = 2;   // (the decor drop-down's 5% and 10%)
         public const string InteriorsStandingId = "interiors_standing";
         public const string InteriorsStaffId = "interiors_staff";
+        public const string DesignsId = "designs";
         public const string PermadeathId = "permadeath";
 
         public static bool CameraEnabled = true;
@@ -449,6 +452,7 @@ namespace RealLifeOverhaul
         public static bool MarketsBonds = true;          // bonds and bank deposits may be bought in the Stocks app (off: none is bought; those held still pay, end and can be sold) (Scripts/Markets/Bonds)
         public static bool MarketsLarge = true;          // an order over one order's limit is worked a slice of each step at a time, and one bond purchase may be up to a share of what the player is worth (off: both limits as before; worked orders open are cancelled) (Scripts/Markets/InvestRules)
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open (off: every dividend is paid in cash) (Scripts/Markets/InvestRules)
+        public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab (off: prices as before, nothing new) (Markets/Derivatives)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Ventures/VenturesCatalogue)
         public static bool EconomyCompany = true;        // running a business: staff, insurance, marketing, tax and licences, with the Company app (off: none of it runs and nothing is charged) (Scripts/Economy/Company)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Company/CompanyCatalogue)
@@ -459,6 +463,7 @@ namespace RealLifeOverhaul
         public static bool EconomyCompanyHide = true;    // ...cash sales kept off the books (off: every share is nothing and none can be set)
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
         public static bool EconomyRota = true;           // the staff rota planner: a customer forecast, the hours worth opening, the people they take and a rota at a press, on the Company app's Rota tab (off: the tab says so and nothing is worked out) (Scripts/Economy/Company/CompanyDirector.Rota.cs)
+        public static bool EconomyManagers = true;       // managers deciding inside the player's limits (CompanyDirector.Managers)
         public static bool Estate = true;                // property: a market that moves, letting a building yourself, works, selling and an estate agency, with the Property app (off: every value and rent is the game's own) (Scripts/Economy/Estate)
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
         public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300) (Scripts/Economy/Estate/EstateRules.MarketRent)
@@ -630,6 +635,7 @@ namespace RealLifeOverhaul
         public static int InteriorsWearStrength = 100;      // per cent, 0 off to 200 double: how fast finishes wear and get dirty (Scripts/Interiors)
         public static bool InteriorsBasket = true;          // over the standard each customer takes more products the shop has in stock, by the size of their order (it adds to the game's own list of the hour's customers) (with Meaningful Interiors on: nothing) (Scripts/Interiors)
         public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way (Scripts/Interiors)
+        public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs (Scripts/Designs)
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids (Scripts/Interiors)
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
 
@@ -797,6 +803,7 @@ namespace RealLifeOverhaul
             MarketsBondSoFar = Bool(modId, MarketsBondSoFarId, MarketsBondSoFar);
             MarketsLarge = Bool(modId, MarketsLargeId, MarketsLarge);
             MarketsReinvest = Bool(modId, MarketsReinvestId, MarketsReinvest);
+            MarketsDerivatives = Bool(modId, MarketsDerivativesId, MarketsDerivatives);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
@@ -807,6 +814,7 @@ namespace RealLifeOverhaul
             EconomyCompanyHide = Bool(modId, EconomyCompanyHideId, EconomyCompanyHide);
             EconomyCompanyLicences = Bool(modId, EconomyCompanyLicencesId, EconomyCompanyLicences);
             EconomyRota = Bool(modId, EconomyRotaId, EconomyRota);
+            EconomyManagers = Bool(modId, EconomyManagersId, EconomyManagers);
             Estate = Bool(modId, EstateId, Estate);
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);
@@ -961,6 +969,7 @@ namespace RealLifeOverhaul
             InteriorsBasket = Bool(modId, InteriorsBasketId, InteriorsBasket);
             InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
             InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
+            Designs = Bool(modId, DesignsId, Designs);
         }
 
         /// <summary>

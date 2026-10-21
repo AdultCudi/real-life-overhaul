@@ -27,6 +27,9 @@ namespace RealLifeOverhaul
         ///                 changed. A strike is asked for on the day event: the company's own, by its public state
         ///   the courts    a franchisee's dispute, filed as one of Justice's own civil suits (Economy/Brands/BrandClaims)
         ///   the Planner   a source of its own (<see cref="BrandsSource"/>): the rows the brands have made for the day
+        ///   managers      the company's managers write a shop's prices with the brands' own writer (BrandsGame.KeepPrice,
+        ///                 as the game's price cell does) and leave alone a shop whose prices a chain or a brand keeps
+        ///                 (CompanyBridges.WritePrice, PricesKept; put back with the company's other bridges)
         ///
         /// Read from the city's economy without a bridge, as every feature may: the cycle, a district's income and the
         /// price index (Economy/City/CityEconomy). Connected after the company and disconnected before it, so that the
@@ -78,6 +81,8 @@ namespace RealLifeOverhaul
                 BrandsBridges.Promoted = BusinessGame.Promoted;
                 BrandsBridges.PriceLoss = PriceLoss;
                 BrandsBridges.StrikeStarts = StrikeStarts;
+                CompanyBridges.WritePrice = WritePrice;
+                CompanyBridges.PricesKept = PricesKept;
                 BrandsBridges.FileClaim = BrandClaims.File;
                 BrandsBridges.ClaimOpen = BrandClaims.Open;
                 BrandsBridges.WithdrawClaim = BrandClaims.Withdraw;
@@ -91,10 +96,24 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 BrandsBridges.Reset();
+                CompanyBridges.WritePrice = null;
+                CompanyBridges.PricesKept = null;
                 FireLosses.Billed -= Fire;
                 BusinessEvents.Fined -= Fined;
                 BusinessGame.Ambient = _ambientBefore;   // (the company's and the city's own pairings take theirs off in a moment)
                 _ambientBefore = null;
+            }
+
+            // A manager's price, through the brands' writer: never at another player's shop (BrandsGame.KeepPrice asks Going Public).
+            private static bool WritePrice(BuildingRegistration reg, string item, float price, string district)
+            {
+                return BrandsGame.KeepPrice(reg, item, price, district, false);
+            }
+
+            private static bool PricesKept(string place)
+            {
+                BrandsDirector brands = BrandsDirector.Instance;
+                return Settings.Economy && Settings.EconomyBrands && brands != null && brands.Running && brands.KeepsPrices(place);
             }
 
             // What was asked for before this pairing, and the brand's share on top. Business pressure keeps the sum inside its own bounds.

@@ -105,6 +105,26 @@ namespace RealLifeOverhaul.Markets
             .Filter("reallife_mkt_bond_filter_all", BondStates)
             .Empty("reallife_mkt_bond_empty");
 
+        public static readonly string[] FuturesKinds = { "reallife_mkt_drv_filter_materials", "reallife_mkt_drv_filter_companies", "reallife_mkt_drv_filter_contracts" };
+
+        /// <summary>
+        /// Futures: 0 material, company or contract, 1 its group, sector or kind, 2 price, 3 today, 4 five days, 5 next week's
+        /// future or a contract's day, 6 under contract, 7 worth, 8 gain.
+        /// </summary>
+        public static readonly TableSpec Futures = new TableSpec("Stocks", "Futures")
+            .Column("reallife_mkt_drv_col_name", 440f, TableSort.Text, flexible: true)
+            .Column("reallife_mkt_drv_col_kind", 240f, TableSort.Text)
+            .Column("reallife_mkt_col_price", 170f, TableSort.Money)
+            .Column("reallife_mkt_col_today", 150f, TableSort.Number)
+            .Column("reallife_mkt_col_week", 150f, TableSort.Number)
+            .Column("reallife_mkt_drv_col_next", 190f, TableSort.Money)
+            .Column("reallife_mkt_drv_col_held", 170f, TableSort.Number)
+            .Column("reallife_mkt_col_worth", 170f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_col_gain", 170f, TableSort.Money, sums: true, right: true)
+            .Filter("reallife_mkt_drv_filter_all", FuturesKinds)
+            .Filter("reallife_mkt_drv_filter_groups", DerivCatalogue.GroupKeys)
+            .Empty("reallife_mkt_drv_empty");
+
         /// <summary>The player's own company on its way: 0 what it takes, 1 needed, 2 the company's, 3 met.</summary>
         public static readonly TableSpec ListingNeeds = new TableSpec("Stocks", "Your company: what it takes")
             .Column("reallife_lst_col_need", 640f, TableSort.None, flexible: true)

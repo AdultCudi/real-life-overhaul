@@ -74,6 +74,18 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--derivatives")
+        {
+            Derivatives();   // (the raw materials exchange, futures and options alone, while working on them: DerivChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--designs")
+        {
+            Designs();   // (the ready-made designs' checks alone, while working on them: DesignChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--probe-start")
         {
             return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
@@ -119,6 +131,7 @@ internal static partial class Program
         Ventures();
         Company();
         Rota();
+        Managers();   // the managers of the player's places: their decisions inside the limits, mistakes, undo and the save (ManagerChecks.cs)
         Estate();
         Online();
         Services();
@@ -213,6 +226,7 @@ internal static partial class Program
         FamilyStudy();
         Districts();
         Interiors();
+        Designs();      // the ready-made designs: the firms' folders, the names, the showroom's lot, and the plan from the game's own design files (DesignChecks.cs)
         BusRide();
         PlayerBank();
         Office();

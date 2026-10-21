@@ -9,14 +9,15 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The Company app in the game's own frame (GameUi.AppShell): six tabs, a list in the table and the one thing picked
+    /// The Company app in the game's own frame (GameUi.AppShell): seven tabs, a list in the table and the one thing picked
     /// in the white box. Nothing runs while it is closed; a page is written on opening, a pick or a change.
     /// </summary>
     public sealed partial class CompanyApp
     {
         private static readonly string[] TabKeys =
         {
-            "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax", "reallife_rota_tab"
+            "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax", "reallife_rota_tab",
+            "reallife_mgr_tab"
         };
         public static IModLogger Logger;
 
@@ -185,6 +186,9 @@ namespace RealLifeOverhaul.Economy
                         case CompanyDirector.TabRota:
                             WriteRota(box, ref selected);
                             break;
+                        case CompanyDirector.TabManagers:
+                            WriteManagers(box, ref selected);
+                            break;
                         case CompanyDirector.TabTax:
                             if (!_director.On(CompanyPart.Tax) && !_director.On(CompanyPart.Licences))
                             {
@@ -221,6 +225,7 @@ namespace RealLifeOverhaul.Economy
         partial void WriteTax(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteLicences(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteRota(InfoBox box, ref string selected);
+        partial void WriteManagers(InfoBox box, ref string selected);
 
         // A tab whose part is off, or stopped by a fault, says so and shows nothing else.
         private bool PartPage(CompanyPart part, InfoBox box)
@@ -309,7 +314,8 @@ namespace RealLifeOverhaul.Economy
 
         private void Guide(InfoBox box)
         {
-            Meta.Guide.Point(box, _tab == CompanyDirector.TabRota ? "reallife_meta_title_economy_rota" : "reallife_meta_title_economy_company");
+            Meta.Guide.Point(box, _tab == CompanyDirector.TabRota ? "reallife_meta_title_economy_rota"
+                : _tab == CompanyDirector.TabManagers ? "reallife_meta_title_economy_managers" : "reallife_meta_title_economy_company");
         }
 
         private string WriteOverview(InfoBox box, CompanyState state, int day)

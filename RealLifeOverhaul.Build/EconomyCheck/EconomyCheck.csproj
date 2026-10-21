@@ -12,7 +12,7 @@
        orders, picking, rounds, lateness and the rating, returns, the day's book, the bound on what a site adds and
        its line in the save, and (ServicesChecks.cs) the cleaning service and selling a business: the round,
        what a visit does, contracts, a business's value, the market and the money on the day, and (BrandChecks.cs) brands and franchises: recognition, standards, a
-       franchised shop's day, every way an agreement ends, a shop under a city chain and the save's line, and (KeptPriceChecks.cs) prices kept for a chain or a brand: always
+       franchised shop's day, every way an agreement ends, a shop under a city chain and the save's line, and (ManagerChecks.cs) the managers of the player's places: each kind of decision inside its limit, mistakes bounded, the stock arithmetic, who decides, the company asking again when they are off, overrides, undo windows and the save's line, and (KeptPriceChecks.cs) prices kept for a chain or a brand: always
        inside the chain's range, the district's adjustment bounded, a price changed by something else put back, and (EstateChecks.cs) property:
        the market, a purchase on the existing mortgage, tenancies, works, a sale, the agency, a hotel's night, car hire,
        the yearly returns and the save's line, a building sold and put back as the player's for nothing handed back to its buyer (SoldBackChecks.cs), and (MarketChecks.cs) the city's stock market: prices over thousands of days,
@@ -202,6 +202,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.Steps.cs" Link="Mod\RotaLadder.Steps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.Week.cs" Link="Mod\RotaLadder.Week.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStore.cs" Link="Mod\RotaStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerRules.cs" Link="Mod\ManagerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerState.cs" Link="Mod\ManagerState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerStore.cs" Link="Mod\ManagerStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaFit.cs" Link="Mod\RotaFit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessCatalogue.cs" Link="Mod\BusinessCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessState.cs" Link="Mod\BusinessState.cs" />
@@ -247,6 +250,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.cs" Link="Mod\MarketStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.Stocks.cs" Link="Mod\MarketStore.Stocks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.Player.cs" Link="Mod\MarketStore.Player.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\DerivCatalogue.cs" Link="Mod\DerivCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\DerivContract.cs" Link="Mod\DerivContract.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\MaterialRules.cs" Link="Mod\MaterialRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\OptionRules.cs" Link="Mod\OptionRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\DerivRules.cs" Link="Mod\DerivRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\DerivStore.cs" Link="Mod\DerivStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Derivatives.cs" Link="Mod\MarketEngine.Derivatives.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerEdition.cs" Link="Mod\LedgerEdition.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerState.cs" Link="Mod\LedgerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerCatalogue.cs" Link="Mod\LedgerCatalogue.cs" />
@@ -416,6 +426,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Floor\ShowroomBays.cs" Link="Mod\ShowroomBays.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.Business.cs" Link="Mod\DealerRules.Business.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerReport.cs" Link="Mod\DealerReport.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignCatalogue.cs" Link="Mod\DesignCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignRules.cs" Link="Mod\DesignRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignPlan.cs" Link="Mod\DesignPlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignFiles.cs" Link="Mod\DesignFiles.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignsText.cs" Link="Mod\DesignsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RedrawRules.cs" Link="Mod\RedrawRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LookupRules.cs" Link="Mod\LookupRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashTable.cs" Link="Mod\CashTable.cs" />

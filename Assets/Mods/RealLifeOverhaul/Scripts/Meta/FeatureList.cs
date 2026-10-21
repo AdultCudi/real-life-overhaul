@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Meta
             Rivals.RivalGuide.Register();
             Photos.PhotosGuide.Register();
             Walking.WalkGuide.Register();
+            Designs.DesignsGuide.Register();
         }
 
         private static void RegisterGameplay()
