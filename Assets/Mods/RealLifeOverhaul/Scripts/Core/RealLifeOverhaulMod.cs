@@ -869,6 +869,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyLicences = v)
                 .AddToggle(Settings.EconomyRotaId, "reallife_rota_enabled", Settings.EconomyRota,
                     v => Settings.EconomyRota = v)
+                .AddToggle(Settings.EconomyManagersId, "reallife_mgr_enabled", Settings.EconomyManagers,
+                    v => Settings.EconomyManagers = v)
                 .AddToggle(Settings.EconomyCleaningId, "reallife_svc_cleaning_enabled", Settings.EconomyCleaning,
                     v => Settings.EconomyCleaning = v)
                 .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
@@ -898,6 +900,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_plans", () => Economy.CompanyDirector.Instance?.TestRotaPlans())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddButton("reallife_mgr_test_appoint", () => Economy.CompanyDirector.Instance?.TestManagerAppoint())
+                .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())
+                .AddButton("reallife_mgr_test_undo", () => Economy.CompanyDirector.Instance?.TestManagerUndoAll())
                 .AddButton("reallife_ob_test_found", () => Economy.OwnBankDirector.Instance?.TestFound())
                 .AddButton("reallife_ob_test_month", () => Economy.OwnBankDirector.Instance?.TestMonth())
                 .AddButton("reallife_ob_test_hard", () => Economy.OwnBankDirector.Instance?.TestHardMonth())

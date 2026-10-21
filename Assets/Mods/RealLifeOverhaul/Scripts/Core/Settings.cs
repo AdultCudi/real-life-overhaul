@@ -151,6 +151,7 @@ namespace RealLifeOverhaul
         public const string EconomyCompanyHideId = "economy_company_hide";
         public const string EconomyCompanyLicencesId = "economy_company_licences";
         public const string EconomyRotaId = "economy_rota";
+        public const string EconomyManagersId = "economy_managers";
         public const string EstateId = "economy_estate";
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
@@ -457,6 +458,7 @@ namespace RealLifeOverhaul
         public static bool EconomyCompanyHide = true;    // ...cash sales kept off the books (off: every share is nothing and none can be set)
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
         public static bool EconomyRota = true;           // the staff rota planner: a customer forecast, the hours worth opening, the people they take and a rota at a press, on the Company app's Rota tab (off: the tab says so and nothing is worked out) (Scripts/Economy/Company/CompanyDirector.Rota.cs)
+        public static bool EconomyManagers = true;       // managers deciding inside the player's limits (CompanyDirector.Managers)
         public static bool Estate = true;                // property: a market that moves, letting a building yourself, works, selling and an estate agency, with the Property app (off: every value and rent is the game's own) (Scripts/Economy/Estate)
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
         public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300) (Scripts/Economy/Estate/EstateRules.MarketRent)
@@ -804,6 +806,7 @@ namespace RealLifeOverhaul
             EconomyCompanyHide = Bool(modId, EconomyCompanyHideId, EconomyCompanyHide);
             EconomyCompanyLicences = Bool(modId, EconomyCompanyLicencesId, EconomyCompanyLicences);
             EconomyRota = Bool(modId, EconomyRotaId, EconomyRota);
+            EconomyManagers = Bool(modId, EconomyManagersId, EconomyManagers);
             Estate = Bool(modId, EstateId, Estate);
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);

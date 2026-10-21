@@ -47,6 +47,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 - [The stock market, your listed company and trading bots](economy-markets.md).
 - [Running a business](economy-company.md).
 - [The staff rota planner](economy-rota.md).
+- [Managers for your empire](economy-managers.md).
 - [Business pressure](business-pressure.md): rivals, inspections, the racket and more.
 - [Interiors and decor](interiors.md).
 - [Districts](districts.md): the district view on the city map.

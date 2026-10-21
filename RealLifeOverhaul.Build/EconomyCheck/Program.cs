@@ -118,6 +118,7 @@ internal static partial class Program
         Ventures();
         Company();
         Rota();
+        Managers();   // the managers of the player's places: their decisions inside the limits, mistakes, undo and the save (ManagerChecks.cs)
         Estate();
         Online();
         Services();

@@ -336,6 +336,8 @@ namespace RealLifeOverhaul.Meta
                     "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
                     .Also("shop wages insurance advertising accountant permits"),
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
+                S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
+                    .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
