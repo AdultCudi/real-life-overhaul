@@ -1355,6 +1355,8 @@ namespace RealLifeOverhaul
             Guard.Step("GameUi.PhoneMove", () => GameUi.PhoneMove.Logger = context.Logger);
             Guard.Step("GameUi.AppShell", () => GameUi.AppShell.Logger = context.Logger);
             Guard.Step("GameUi.InfoBox", () => GameUi.InfoBox.Logger = context.Logger);
+            Guard.Step("GameUi.HelpFrame", () => GameUi.HelpFrame.Logger = context.Logger);
+            Guard.Step("GameUi.OptionRows", () => GameUi.OptionRows.Logger = context.Logger);
             Guard.Step("Planner.PlannerApp", () => Planner.PlannerApp.Logger = context.Logger);
             Guard.Step("Planner.PlannerDirector", () => Planner.PlannerDirector.Logger = context.Logger);
             Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)

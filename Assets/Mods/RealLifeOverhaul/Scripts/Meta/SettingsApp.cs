@@ -6,7 +6,10 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Meta
 {
-    /// <summary>The mod's settings as an app on the game's phone, drawn by <see cref="SettingsView"/> through the Mods tab's own rows; on and off the phone like the Guide.</summary>
+    /// <summary>
+    /// The mod's settings as an app on the game's phone: the game's help screen in dark colours (<see cref="SettingsView"/>),
+    /// written through the Mods tab's own rows; on and off the phone like the Guide.
+    /// </summary>
     public static class SettingsApp
     {
         public const string AppId = "RealLifeSettings";
@@ -101,6 +104,7 @@ namespace RealLifeOverhaul.Meta
                 return;
             }
             GameSprites.Want(AppGlyphs);
+            GameSprites.Want(SettingsView.Glyphs);
             var view = new SettingsView();
             _app = PhoneApp.Install(new PhoneAppDef
             {
