@@ -51,8 +51,8 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>Takes the box's parts as templates and empties it. Null if the parts no page can do without are missing.</summary>
         public static InfoBox From(Transform whiteBox, Transform templates)
         {
-            var box = new InfoBox { _box = whiteBox };
-            box._title = Take(whiteBox, "EmployeePersonalData/EmployeeName", templates, "Title");
+            var box = new InfoBox { _box = whiteBox, _templatesAt = templates };
+            box._title =Take(whiteBox, "EmployeePersonalData/EmployeeName", templates, "Title");
             box._line = Take(whiteBox, "EmployeePersonalData/EmployeeInfoRow1/Age", templates, "Line");
             box._headline = Take(whiteBox, "CurrentBusinessHeadline", templates, "Headline");
             box._switch = Take(whiteBox, "Demands/DemandTemplate", templates, "Switch");

@@ -25,6 +25,19 @@ namespace RealLifeOverhaul.Economy
         Closed = 3          // made, and too late to undo now
     }
 
+    /// <summary>
+    /// What a manager does with the week's rota once the planner has worked a new one out (ManagerRules.Rota). Only Write
+    /// changes the game; a call kept in a decision is its figure A as a negative (CompanyDirector.ManagerDecisions).
+    /// </summary>
+    public enum RotaCall
+    {
+        Whole = 0,      // every wanted hour has somebody and everybody who can work a station has a shift: left as it is
+        Write = 1,      // the new week keeps everybody on it who is on it now, covers no fewer hours and mends what was missing
+        LeavesOut = 2,  // the new week would take somebody off the rota who is on it now: left as it is
+        CoversLess = 3, // the new week would leave hours with nobody that have somebody now: left as it is
+        NoBetter = 4    // the new week mends nothing: left as it is
+    }
+
     /// <summary>What a place is, for which kinds of decision it has. Not saved: read from the game each time.</summary>
     public enum ManagedKind
     {
@@ -118,6 +131,106 @@ namespace RealLifeOverhaul.Economy
         public static bool Has(int tasks, ManagerTask task)
         {
             return (tasks & Bit(task)) != 0;
+        }
+
+        /// <summary>
+        /// Whether a place's manager makes this kind of decision at all: its switch on and a kind the place has. With the
+        /// switch off nothing of that kind is done there, at its hour, by a test button or by a job already waiting.
+        /// </summary>
+        public static bool Runs(int tasks, ManagedKind kind, ManagerTask task)
+        {
+            return Has(tasks, task) && Has(Kinds(kind), task);
+        }
+
+        /// <summary>
+        /// Whether a kind of decision is made at this hour of this day: prices at 8, requests, offers, overtime and claims
+        /// at 9, hiring at 11, a Sunday's orders at 12 and its rota at 21. No other hour makes one, so a change by a
+        /// manager comes at a time the player can know.
+        /// </summary>
+        public static bool Due(int day, int hour, ManagerTask task)
+        {
+            bool sunday = Weekday(day) == ManagerCatalogue.Sunday;
+            switch (task)
+            {
+                case ManagerTask.Prices: return hour == ManagerCatalogue.PriceHour;
+                case ManagerTask.Raises:
+                case ManagerTask.Offers:
+                case ManagerTask.Overtime:
+                case ManagerTask.Claims: return hour == ManagerCatalogue.StaffHour;
+                case ManagerTask.Hiring: return hour == ManagerCatalogue.HireHour;
+                case ManagerTask.Stock: return sunday && hour == ManagerCatalogue.StockHour;
+                case ManagerTask.Rota: return sunday && hour == ManagerCatalogue.RotaHour;
+                default: return false;
+            }
+        }
+
+        /// <summary>
+        /// The week's rota: the week as it is (rated) against the planner's new one for the same hours. A week with every
+        /// wanted hour manned and everybody who can work on it is left alone; otherwise the new one is written only if it
+        /// is whole: nobody on the rota now taken off, no hour manned now left empty, and something mended (more hours
+        /// covered or more staff on it). Those the planner leaves as they are count for neither. The hours arrays get each
+        /// worker's hours, <paramref name="dropped"/> how many it would take off. Cost: one pass over both weeks' cells.
+        /// </summary>
+        public static RotaCall Rota(RotaPlan now, RotaPlan fill, RotaProblem problem, bool[] fixedWorker, int[] hoursNow, int[] hoursAfter, out int dropped)
+        {
+            dropped = 0;
+            int workers = problem.Workers, stations = problem.Stations;
+            Count(now, stations, workers, hoursNow);
+            Count(fill, stations, workers, hoursAfter);
+            int placedNow = 0, placedAfter = 0;
+            bool unplaced = false;
+            for (int w = 0; w < workers; w++)
+            {
+                if (fixedWorker != null && w < fixedWorker.Length && fixedWorker[w])
+                {
+                    continue;
+                }
+                placedNow += hoursNow[w] > 0 ? 1 : 0;
+                placedAfter += hoursAfter[w] > 0 ? 1 : 0;
+                dropped += hoursNow[w] > 0 && hoursAfter[w] == 0 ? 1 : 0;
+                unplaced |= hoursNow[w] == 0 && Placeable(problem, w);
+            }
+            if (now.CoveredHours >= now.WantedHours && !unplaced)
+            {
+                return RotaCall.Whole;
+            }
+            if (dropped > 0)
+            {
+                return RotaCall.LeavesOut;
+            }
+            if (fill.CoveredHours < now.CoveredHours)
+            {
+                return RotaCall.CoversLess;
+            }
+            return fill.CoveredHours > now.CoveredHours || placedAfter > placedNow ? RotaCall.Write : RotaCall.NoBetter;
+        }
+
+        // Each worker's hours in a week: one for every cell of a station they hold.
+        private static void Count(RotaPlan plan, int stations, int workers, int[] hours)
+        {
+            Array.Clear(hours, 0, Math.Min(hours.Length, workers));
+            int cells = Math.Min(plan.At.Length, RotaCatalogue.Cells * Math.Min(stations, plan.Stations));
+            for (int i = 0; i < cells; i++)
+            {
+                int w = plan.At[i];
+                if (w >= 0 && w < workers)
+                {
+                    hours[w]++;
+                }
+            }
+        }
+
+        // Somebody who can stand at one of the stations at all (a skill it takes).
+        private static bool Placeable(RotaProblem problem, int w)
+        {
+            for (int s = 0; s < problem.Stations; s++)
+            {
+                if (problem.Can[w * problem.Stations + s] > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>The game's weekday of a day, Monday 0 (TimeHelper.GetDayOfWeek counts from day 1, a Monday).</summary>

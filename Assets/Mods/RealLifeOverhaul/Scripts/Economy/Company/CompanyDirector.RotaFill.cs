@@ -134,8 +134,9 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // In one frame, on a sheet just found true. The week as it was is kept first: the oldest, if filled twice. False
-        // with nothing written: never a rota with people in it who are not there.
+        // In one frame, on a sheet just found true. The week as it was is kept first: the oldest, if filled twice, but for
+        // a manager's week the one just before it (their decision undoes that week). False with nothing written: never a
+        // rota with people in it who are not there.
         private bool RotaWrite(RotaJob job, RotaPlace at, RotaSheet sheet, RotaPlan plan, RotaRung rung)
         {
             bool useHours = rung != null;
@@ -146,6 +147,11 @@ namespace RealLifeOverhaul.Economy
             string place = job.Place, name = at.Name;   // the places are read again below, and their entries with them
             int kept = RotaUndoAt(place);
             bool keep = job.Test || job.Kind == JobManager;   // a manager's week to put back stays when the app closes
+            if (kept >= 0 && job.Kind == JobManager)
+            {
+                _rotaUndo.RemoveAt(kept);
+                kept = -1;
+            }
             if (kept < 0)
             {
                 _rotaUndo.Add(RotaGame.Keep(at, keep));

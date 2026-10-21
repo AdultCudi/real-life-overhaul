@@ -79,6 +79,28 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        /// <summary>
+        /// The menu's switch row alone, asleep under 'dormant': its two lines of words and the game's switch at the right, for
+        /// a page that is not the settings app's (InfoBox.Toggle sets it for its box). Null, with one line in Player.log, as
+        /// Take is. Cost: once, the first time such a page asks for one; the other three rows are made and let go with it.
+        /// </summary>
+        public static GameObject SwitchRow(Transform dormant)
+        {
+            OptionRows rows = Take(dormant);
+            if (rows == null)
+            {
+                return null;
+            }
+            for (int i = 0; i < rows._templates.Length; i++)
+            {
+                if (i != (int)OptionRowKind.Switch && rows._templates[i] != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(rows._templates[i]);
+                }
+            }
+            return rows._templates[(int)OptionRowKind.Switch];
+        }
+
         // The menu's button row that has a description under its name ("Reset windows"): its two lines are every row's.
         private static ModOptionsButtonControl Described(ModOptionsButtonControl[] all)
         {

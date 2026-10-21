@@ -278,7 +278,7 @@ namespace RealLifeOverhaul.Economy
             return ManagerRules.Allowance(m.Role, m.Skill, _index);
         }
 
-        // Once a game hour, after the company's own: each kind at its hour.
+        // Once a game hour, after the company's own: each kind at its hour (ManagerRules.Due).
         partial void ManagerHour(int day, int hour)
         {
             if (!ManagersOn || _mgr == null || _managed.Count == 0)
@@ -297,29 +297,12 @@ namespace RealLifeOverhaul.Economy
 
         private void Hour(int day, int hour)
         {
-            bool sunday = ManagerRules.Weekday(day) == ManagerCatalogue.Sunday;
-            if (hour == ManagerCatalogue.PriceHour)
+            for (int t = 0; t < (int)ManagerTask.Count; t++)
             {
-                Round(day, hour, ManagerTask.Prices);
-            }
-            if (hour == ManagerCatalogue.StaffHour)
-            {
-                Round(day, hour, ManagerTask.Raises);
-                Round(day, hour, ManagerTask.Offers);
-                Round(day, hour, ManagerTask.Overtime);
-                Round(day, hour, ManagerTask.Claims);
-            }
-            if (hour == ManagerCatalogue.HireHour)
-            {
-                Round(day, hour, ManagerTask.Hiring);
-            }
-            if (sunday && hour == ManagerCatalogue.StockHour)
-            {
-                Round(day, hour, ManagerTask.Stock);
-            }
-            if (sunday && hour == ManagerCatalogue.RotaHour)
-            {
-                Round(day, hour, ManagerTask.Rota);
+                if (ManagerRules.Due(day, hour, (ManagerTask)t))
+                {
+                    Round(day, hour, (ManagerTask)t);
+                }
             }
             if (hour == ManagerCatalogue.DigestHour && _mgr.Today > 0 && !_mgrBroken)
             {
@@ -342,7 +325,7 @@ namespace RealLifeOverhaul.Economy
                     ManagedPlace mp = _managed[i];
                     int skill, review;
                     string who;
-                    if (mp.Own == null || !ManagerRules.Has(mp.Own.Tasks, task) || !ManagerRules.Has(ManagerRules.Kinds(mp.Kind), task) || mp.Place.Reg == null
+                    if (mp.Own == null || !ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task) || mp.Place.Reg == null
                         || !GoingPublic.Mine(mp.Place.Reg) || !Decider(mp, out skill, out review, out who))
                     {
                         continue;
@@ -595,6 +578,10 @@ namespace RealLifeOverhaul.Economy
             if (on && task == ManagerTask.Stock)
             {
                 SnapNow(mp, Save.Day, Save.Hour);
+            }
+            if (!on && task == ManagerTask.Rota)
+            {
+                ManagerRotaDropped(place);   // a week of theirs still waiting is not written (one under way is stopped before it writes)
             }
             Logger?.Info("Company: the manager of " + mp.Place.Name + " " + (on ? "now decides " : "no longer decides ") + task + ".");
             Changed();
