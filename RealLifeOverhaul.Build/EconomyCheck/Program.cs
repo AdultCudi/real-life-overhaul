@@ -289,6 +289,7 @@ internal static partial class Program
         FamilyHomeFixes();  // the partner at home: night texts kept for the morning, cooking and watching together, moving about, the chat face to face (FamilyHomeChecks.cs)
         FamilyChores();  // household chores asked when really so and counted when really done (FamilyChoreChecks.cs)
         FamilyHeldTexts();  // the family texts kept for the morning, kept in the save too (FamilyHeldTextChecks.cs)
+        VentureFollowOns();  // a startup's follow-on once a round, back to the share before it and no more, kept in the save, older saves as they were (VentureFollowOnChecks.cs)
         MetaFixes();    // the options page and Report a bug: Import without its backup, a report never left busy, the pages' search and dispatcher lines (MetaFixChecks.cs)
         MoodBuffs();    // the mod's moods: a cap from each catalogue entry, a load puts saved moods back as saved (never through Going Public's scaled add), a save past the cap trimmed once (MoodBuffChecks.cs)
         LaterLanguages(); // Dutch and Turkish: listed wherever the other languages are, as complete as the other translations, What's new numbered and marked (LaterLanguageChecks.cs)

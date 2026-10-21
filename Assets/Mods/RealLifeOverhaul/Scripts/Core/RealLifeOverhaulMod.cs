@@ -980,6 +980,7 @@ namespace RealLifeOverhaul
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
                 .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
+                .AddButton("reallife_vc_test_round", () => Tech.TechDirector.Instance?.TestRound())
                 .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
                 .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
                     v => Settings.TechSiteRooms = v)
