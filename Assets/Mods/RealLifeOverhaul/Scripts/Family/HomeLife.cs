@@ -19,7 +19,12 @@ namespace RealLifeOverhaul.Family
 
         private static readonly string[] Encourage =
         {
-            "reallife_family_encourage_1", "reallife_family_encourage_2", "reallife_family_encourage_3", "reallife_family_encourage_4", "reallife_family_encourage_5"
+            "reallife_family_encourage_1", "reallife_family_encourage_2", "reallife_family_encourage_3", "reallife_family_encourage_4", "reallife_family_encourage_5",
+            "reallife_family_encourage_6"
+        };
+        private static readonly string[] EncourageNoBath =   // encourage_5 runs a bath: not in a home without a bathtub
+        {
+            "reallife_family_encourage_1", "reallife_family_encourage_2", "reallife_family_encourage_3", "reallife_family_encourage_4", "reallife_family_encourage_6"
         };
         private static readonly string[] SickCare = { "reallife_family_sickcare_1", "reallife_family_sickcare_2", "reallife_family_sickcare_3" };
         private static readonly string[] CookLines = { "reallife_family_cook_1", "reallife_family_cook_2", "reallife_family_cook_3", "reallife_family_cook_4" };
@@ -27,15 +32,8 @@ namespace RealLifeOverhaul.Family
         private static readonly string[] DinnerLines = { "reallife_family_dinner_1", "reallife_family_dinner_2", "reallife_family_dinner_3", "reallife_family_dinner_4", "reallife_family_dinner_5" };
         private static readonly string[] StoodUp = { "reallife_family_stoodup_1", "reallife_family_stoodup_2", "reallife_family_stoodup_3" };
         private static readonly string[] Missing = { "reallife_family_neglect_1", "reallife_family_neglect_2", "reallife_family_neglect_3" };
-        private static readonly string[] ChoreAsks =
-        {
-            "reallife_family_chore_1", "reallife_family_chore_2", "reallife_family_chore_3", "reallife_family_chore_4", "reallife_family_chore_5", "reallife_family_chore_6"
-        };
-        private static readonly string[] ChoreThanks = { "reallife_family_chore_thanks_1", "reallife_family_chore_thanks_2", "reallife_family_chore_thanks_3" };
-        private static readonly string[] ChoreSighs = { "reallife_family_chore_sigh_1", "reallife_family_chore_sigh_2", "reallife_family_chore_sigh_3" };
 
-        private static int _lastEncourage = -1, _lastSick = -1, _lastCook = -1, _lastWatch = -1, _lastDinner = -1, _lastStood = -1, _lastMissing = -1,
-            _lastChore = -1, _lastThanks = -1, _lastSigh = -1;
+        private static int _lastEncourage = -1, _lastSick = -1, _lastCook = -1, _lastWatch = -1, _lastDinner = -1, _lastStood = -1, _lastMissing = -1;
 
         public static Whereabouts Where(int day, int hour)
         {
@@ -197,6 +195,17 @@ namespace RealLifeOverhaul.Family
             Partner.Tell(FamilyEvent.MovedOut, 0f);
         }
 
+        /// <summary>What "cook together" says at this hour: breakfast, lunch, tonight, or just something.</summary>
+        public static string CookAsk
+        {
+            get
+            {
+                int hour = TimeHelper.CurrentHour;
+                return hour >= 6 && hour < 11 ? "reallife_family_do_cook_breakfast" : hour >= 11 && hour < 16 ? "reallife_family_do_cook_lunch"
+                    : hour >= 16 && hour < 23 ? "reallife_family_do_cook" : "reallife_family_do_cook_any";
+            }
+        }
+
         public static bool CanCook => FamilyState.S.LivesIn && Present && FamilyState.S.LastCookDay != TimeHelper.CurrentDay;
         public static bool CanWatch => FamilyState.S.LivesIn && Present && FamilyState.S.LastWatchDay != TimeHelper.CurrentDay;
 
@@ -204,27 +213,86 @@ namespace RealLifeOverhaul.Family
         {
             FamilySave s = FamilyState.S;
             s.LastCookDay = TimeHelper.CurrentDay;
-            Shared(FamilyBalance.HarmonyRoutine);
-            if (FamilyBridges.Home != null && FamilyBridges.Home.CookTogether(Partner.Name))
+            // With Home's cooking: a dish from the home's fridges or the leftovers, cooked by the player at the cooker like any
+            // meal, the partner in the kitchen; the evening counts once it is served (Cooked).
+            if (FamilyBridges.Home != null && FamilyBridges.Home.CookTogether(Partner.Name, Cooked))
             {
+                AfterTalk(false);
                 return FamilyTalk.Close("reallife_family_cook_home");
             }
+            Shared(FamilyBalance.HarmonyRoutine);
             EnergyHelper.SetCurrentHunger(Mathf.Min(100f, SaveGameManager.Current.Hunger + 30f));
             FamilyModifiers.Add(FamilyModifiers.Joy, 8);
             return FamilyTalk.Close(FamilyText.Pick(CookLines, ref _lastCook));
         }
 
+        // Home's dish for two is served (true), or nothing was cooked after all: then it can be asked again today.
+        private static void Cooked(bool served)
+        {
+            FamilyDirector.Instance?.Guarded(() =>
+            {
+                if (!served)
+                {
+                    if (FamilyState.S.LastCookDay == TimeHelper.CurrentDay)
+                    {
+                        FamilyState.S.LastCookDay = 0;
+                    }
+                    return;
+                }
+                Shared(FamilyBalance.HarmonyRoutine);
+                FamilyModifiers.Add(FamilyModifiers.Joy, 8);
+                FamilyText.Toast(NotificationType.Success, FamilyText.Pick(CookLines, ref _lastCook), Args.Us, 9f);
+            });
+        }
+
+        /// <summary>
+        /// Watching together: once the conversation is over they take the seat facing the television and wait there; the evening
+        /// is had (Watched) when the player sits down beside them, and an hour without them is a text and a small cooling
+        /// (WaitedInVain). Where there is no seat for it, the evening is had at once, as before.
+        /// </summary>
         public static DialogEntry Watch()
         {
-            FamilySave s = FamilyState.S;
-            s.LastWatchDay = TimeHelper.CurrentDay;
-            Shared(FamilyBalance.HarmonyRoutine);
+            FamilyState.S.LastWatchDay = TimeHelper.CurrentDay;
             if (FamilyBridges.Home != null && FamilyBridges.Home.WatchTogether(Partner.Name))
             {
+                Shared(FamilyBalance.HarmonyRoutine);
                 return FamilyTalk.Close("reallife_family_watch_home");
             }
+            AfterTalk(true);
+            return FamilyTalk.Close("reallife_family_watch_home");
+        }
+
+        // The player sat down with them (or there was nowhere to sit): the evening in front of the television.
+        private static void Watched()
+        {
+            Shared(FamilyBalance.HarmonyRoutine);
             FamilyModifiers.Add(FamilyModifiers.Joy, 8);
-            return FamilyTalk.Close(FamilyText.Pick(WatchLines, ref _lastWatch));
+            FamilyText.Toast(NotificationType.Success, FamilyText.Pick(WatchLines, ref _lastWatch), Args.Us, 10f);
+        }
+
+        // An hour on the seat and the player never came.
+        private static void WaitedInVain()
+        {
+            FamilyState.Harmony(FamilyBalance.HarmonyWaitedInVain);
+            FamilyText.Message(FamilyPhone.PartnerContact, "reallife_family_watch_waited", Args.Us);
+        }
+
+        /// <summary>
+        /// The People chat face to face at home, while Social keeps the partner: its topics and answers, worth what face to face
+        /// is there; the home hears of it as of Family's own chat. Null if Social cannot, and Family's chat is had instead.
+        /// </summary>
+        public static DialogEntry FaceChat()
+        {
+            DialogEntry first = FamilyBridges.Social != null && FamilyBridges.Social.Active
+                ? FamilyBridges.Social.ChatInPerson(() => FamilyPhone.PartnerMenu(true), FamilyTalk.Leave) : null;
+            if (first != null)
+            {
+                FamilySave s = FamilyState.S;
+                s.LastTalkDay = TimeHelper.CurrentDay;
+                s.LastChatDay = TimeHelper.CurrentDay;
+                FamilyState.Harmony(2f);
+            }
+            return first;
         }
 
         /// <summary>Time spent together: the home is happier, and Social (or the default record) hears of it.</summary>
@@ -358,43 +426,12 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>A small thing asked of the player now and then; doing it is noticed, and so is never doing it.</summary>
-        public static void Chore(int day, int hour)
-        {
-            FamilySave s = FamilyState.S;
-            if (!s.LivesIn || !FamilyState.Together || !Settings.FamilyFriction || hour < 9 || hour > 21 || s.LastChoreDay == day)
-            {
-                return;
-            }
-            s.LastChoreDay = day;
-            if (Random.value > 0.3f || FamilyDirector.Instance.HasQuestions)
-            {
-                return;
-            }
-            FamilyDirector.Instance.Ask("reallife_family_chore_header", FamilyText.Pick(ChoreAsks, ref _lastChore), Args.Us,
-                "reallife_family_chore_yes", "reallife_family_chore_no",
-                () =>
-                {
-                    if (SaveGameManager.Current.Energy > 25f)
-                    {
-                        EnergyHelper.SpentEnergyOnce(4f);
-                    }
-                    FamilyState.Harmony(FamilyBalance.HarmonyChore);
-                    FamilyState.S.LastSharedDay = TimeHelper.CurrentDay;
-                    FamilyText.Toast(NotificationType.Success, FamilyText.Pick(ChoreThanks, ref _lastThanks), Args.Us, 6f);
-                },
-                () =>
-                {
-                    FamilyState.Harmony(-2f);
-                    FamilyText.Toast(NotificationType.Info, FamilyText.Pick(ChoreSighs, ref _lastSigh), Args.Us, 6f);
-                });
-        }
-
-        /// <summary>After a bad day, or when the player is ill, the person at home notices.</summary>
+        /// <summary>After a bad day, or when the player is ill, the person at home notices: both of them in, the partner shown there where they are shown at all.</summary>
         public static void Support(int day, int hour)
         {
             FamilySave s = FamilyState.S;
-            if (!s.LivesIn || !FamilyState.Together || hour < 19 || s.LastSupportDay == day || Where(day, hour) != Whereabouts.Home || !LifeEvents.IsSafeForEvent())
+            if (!s.LivesIn || !FamilyState.Together || hour < 19 || s.LastSupportDay == day || Where(day, hour) != Whereabouts.Home || !LifeEvents.IsSafeForEvent()
+                || !FamilyPlaces.AtHome() || (Settings.FamilyAtHome && !Present))
             {
                 return;
             }
@@ -415,7 +452,7 @@ namespace RealLifeOverhaul.Family
             {
                 s.LastSupportDay = day;
                 ModState.AddModifier(ModState.MoodUp);
-                FamilyText.Toast(NotificationType.Success, FamilyText.Pick(Encourage, ref _lastEncourage), Args.Us, 9f);
+                FamilyText.Toast(NotificationType.Success, FamilyText.Pick(HasBath() ? Encourage : EncourageNoBath, ref _lastEncourage), Args.Us, 9f);
             }
         }
 
@@ -425,6 +462,22 @@ namespace RealLifeOverhaul.Family
         {
             ISocialBridge social = FamilyBridges.Social;
             return social != null && social.Active && social.TryGetPartner(out PersonInfo partner) ? partner.LastContactDay : 0;
+        }
+
+        // Whether the home the player is in has a bathtub among its furniture (read when asked, on an evening's event only).
+        private static bool HasBath()
+        {
+            var manager = InstanceBehavior<BuildingManager>.Instance;
+            System.Collections.Generic.List<ItemController> items = manager != null ? manager.allItemControllers : null;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                string name = items[i] != null ? items[i].itemName : null;
+                if (name != null && (name.IndexOf("bathtub", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("bath_tub", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Once a day: a home is kept warm by time spent in it, and cools without.</summary>

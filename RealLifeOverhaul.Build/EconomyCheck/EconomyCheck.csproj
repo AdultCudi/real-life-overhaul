@@ -50,6 +50,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\ChoreRules.cs" Link="Mod\ChoreRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\CreditCatalogue.cs" Link="Mod\CreditCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditFile.cs" Link="Mod\CreditFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditScoring.cs" Link="Mod\CreditScoring.cs" />

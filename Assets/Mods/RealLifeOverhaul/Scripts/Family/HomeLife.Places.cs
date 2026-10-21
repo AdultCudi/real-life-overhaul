@@ -8,10 +8,19 @@ namespace RealLifeOverhaul.Family
     /// <summary>HomeLife's part for the places in a home where the partner stands or sits, and the cot and the high chair.</summary>
     internal static partial class HomeLife
     {
-        private static readonly string[] KitchenItems = { "stove", "fridge", "coffeemachine", "microwave", "kitchen", "sink", "oven" };
+        private static readonly string[] CookItems = { "stove", "oven", "microwave", "cooker", "grill", "hob" };
+        private static readonly string[] KitchenItems = { "fridge", "coffeemachine", "kitchen", "sink", "counter", "dishwasher" };
+        private static readonly string[] BedItems = { "bed" };
+        private static readonly string[] SportItems = { "yoga", "treadmill", "weight", "dumbbell", "barbell", "gym", "exercise", "fitness", "punch", "rowing" };
+        private static readonly string[] DeskItems = { "desk", "computer", "laptop" };
+        private static readonly string[] PlantItems = { "plant", "flower" };
         private static readonly string[] LivingItems = { "sofa", "couch", "itemname_tv", "television", "armchair", "bookshel", "coffeetable" };
+        private const int FloorAtLeast = 4;   // places in all, made up with clear floor
+        private const int EachKindMost = 2;   // places of one kind (seats: MaxSeats)
 
-        // The places they stand: beside what the game calls a cooker, a fridge, a sofa, a television; failing all, clear floor.
+        // The places they go to: beside what the game calls a cooker, a fridge or sink, the bed, a mat or weights, a desk, a
+        // plant, a sofa or the television, and the seats themselves; failing those, clear floor. Close to the furniture (a small
+        // flat's gaps are narrow), and reached from where the player came in.
         private static void Scan(BuildingManager manager, Vector3 player)
         {
             _spotCount = 0;
@@ -19,7 +28,8 @@ namespace RealLifeOverhaul.Family
             _agentType = -1;
             Array.Clear(Seats, 0, Seats.Length);
             List<ItemController> items = manager.allItemControllers;
-            int kitchens = 0, livings = 0, seats = 0;
+            var per = new int[10];
+            var seen = Meta.Dev.Verbose ? new System.Text.StringBuilder(256) : null;
             for (int i = 0; items != null && i < items.Count && _spotCount < MaxSpots; i++)
             {
                 ItemController item = items[i];
@@ -27,42 +37,32 @@ namespace RealLifeOverhaul.Family
                 {
                     continue;
                 }
-                // Something to sit on (whatever the game calls it: a chair, an armchair, a sofa) is a place to sit; the rest are places to stand.
-                int kind = Seating.IsSeat(item) ? SeatKind : Is(item.itemName, KitchenItems) ? 0 : Is(item.itemName, LivingItems) ? 1 : -1;
-                if (kind < 0 || (kind == 0 && kitchens >= 2) || (kind == 1 && livings >= 2) || (kind == SeatKind && seats >= MaxSeats))
+                int kind = KindOf(item);
+                seen?.Append(seen.Length > 0 ? ", " : string.Empty).Append(item.itemName).Append(kind >= 0 ? "=" + kind : string.Empty);
+                if (kind < 0 || per[kind] >= (kind == SeatKind ? MaxSeats : EachKindMost))
                 {
                     continue;
                 }
                 Vector3 at = item.transform.position;
-                if (!FamilyPlaces.Floor(at, player, 0.4f, 1.6f, out Vector3 spot, out int type) || !Usable(spot, at, type))
+                if (!FamilyPlaces.Floor(at, player, 0.25f, 1.8f, out Vector3 spot, out int type) || !Usable(spot, at, type))
                 {
                     continue;
                 }
-                Seats[_spotCount] = kind == SeatKind ? item : null;
+                Seats[_spotCount] = kind == SeatKind || kind == BedKind ? item : null;   // (the seat to sit on, the bed to lie in)
                 Add(spot, at, kind, type);
-                if (kind == 0)
-                {
-                    kitchens++;
-                }
-                else if (kind == 1)
-                {
-                    livings++;
-                }
-                else
-                {
-                    seats++;
-                }
+                per[kind]++;
             }
-            if (Meta.Dev.Verbose)
+            if (seen != null)
             {
-                FamilyDirector.Logger?.Info("People check (seat): this home has " + seats + " place(s) to sit among " + _spotCount
-                                            + " place(s) for the partner (the game's own seats, at most " + MaxSeats + "): " + (seats > 0 ? "PASS" : "none: they stand") + ".");
+                FamilyDirector.Logger?.Info("People check (seat): this home has " + per[SeatKind] + " place(s) to sit among " + _spotCount
+                                            + " place(s) for the partner (the game's own seats, at most " + MaxSeats + "): " + (per[SeatKind] > 0 ? "PASS" : "none: they stand") + ".");
+                FamilyDirector.Logger?.Info("Family check (home's furniture): " + seen + " (=kind: 0 kitchen, 1 living, 3 seat, 5 cooker, 6 sport, 7 bed, 8 desk, 9 plant).");
             }
-            // Clear floor a few steps in from the door, if the furniture gave nothing (or one place only).
-            for (int ring = 0; ring < 2 && _spotCount < 2; ring++)
+            // Clear floor a few steps in from the door, if the furniture gave few places: enough to move between in a small home.
+            for (int ring = 0; ring < 3 && _spotCount < FloorAtLeast; ring++)
             {
                 float radius = 3f + ring * 1.6f;
-                for (int i = 0; i < 8 && _spotCount < 2; i++)
+                for (int i = 0; i < 8 && _spotCount < FloorAtLeast; i++)
                 {
                     float angle = (i + ring * 0.5f) * Mathf.PI / 4f;
                     Vector3 near = player + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
@@ -79,11 +79,19 @@ namespace RealLifeOverhaul.Family
             }
         }
 
+        // What a piece of furniture is to them: something to sit on first (a chair, an armchair, a sofa), then by its name. -1: nothing.
+        private static int KindOf(ItemController item)
+        {
+            string name = item.itemName;
+            return Seating.IsSeat(item) ? SeatKind : Is(name, CookItems) ? CookKind : Is(name, KitchenItems) ? 0 : Is(name, BedItems) ? BedKind
+                : Is(name, SportItems) ? SportKind : Is(name, DeskItems) ? DeskKind : Is(name, PlantItems) ? PlantKind : Is(name, LivingItems) ? 1 : -1;
+        }
+
         private static bool Is(string name, string[] parts)
         {
             for (int i = 0; i < parts.Length; i++)
             {
-                if (name.IndexOf(parts[i], StringComparison.Ordinal) >= 0)
+                if (name.IndexOf(parts[i], StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     return true;
                 }
@@ -98,13 +106,13 @@ namespace RealLifeOverhaul.Family
             {
                 return false;
             }
-            if (CitySpots.Flat(spot - _entry) < 1.6f * 1.6f || CitySpots.Flat(spot - item) > 2.0f * 2.0f)
+            if (CitySpots.Flat(spot - _entry) < 1.2f * 1.2f || CitySpots.Flat(spot - item) > 2.5f * 2.5f)
             {
                 return false;
             }
             for (int i = 0; i < _spotCount; i++)
             {
-                if (CitySpots.Flat(Spots[i] - spot) < 1.5f * 1.5f)
+                if (CitySpots.Flat(Spots[i] - spot) < 0.9f * 0.9f)
                 {
                     return false;
                 }

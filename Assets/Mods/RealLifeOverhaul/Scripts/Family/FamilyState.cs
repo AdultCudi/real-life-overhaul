@@ -223,6 +223,11 @@ namespace RealLifeOverhaul.Family
         public int PSecondHomeWishDay;    // the day they asked for a second home; 0 not asked, or met
         public string PCarId;        // the id of the car handed to them (PartnerCar); null none
         public int PCarBackDay;      // the day the player last asked their car back
+
+        public int ChoreKind;        // the chore asked (ChoreKind); 0 none
+        public int ChoreDue;         // the last day it may be done on
+        public int ChoreDay;         // the day the last one was settled
+        public int ChoreAskStamp;    // day * 24 + hour it was raised at home, while it waits to be talked over; 0 agreed (or texted)
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>

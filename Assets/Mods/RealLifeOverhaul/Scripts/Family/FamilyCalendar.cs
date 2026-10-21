@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Family
         public static void Hourly(int day, int hour)
         {
             bool held = FamilyBridges.Law != null && FamilyBridges.Law.InCustody;
+            FamilyText.SendHeld();
             HomeLife.Contribution(day, hour);
             PartnerCar.Hourly();
             Children.Hourly(day, hour);
@@ -33,7 +34,7 @@ namespace RealLifeOverhaul.Family
             {
                 return;   // family life waits while the player is locked up
             }
-            HomeLife.Chore(day, hour);
+            Chores.Hourly(day, hour);
             if (hour >= DayFrom && hour < DayTo)
             {
                 PartnerVoice.Hourly(day);   // the partner's words about the player's fortune, in the day only
