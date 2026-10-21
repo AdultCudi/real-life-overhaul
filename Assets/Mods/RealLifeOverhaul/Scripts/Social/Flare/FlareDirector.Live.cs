@@ -247,11 +247,11 @@ namespace RealLifeOverhaul.Flare
         {
             bool hiring = day - _hiringDay <= 7 || FlareBridges.Ask(FlareBridges.Hiring, false);
             string with, what;
-            if (!FlareLiveRules.CityDm(_file, day, hiring, out with, out what))
+            long at;
+            if (!FlareLiveRules.CityDm(_file, day, hiring, out with, out what, out at))
             {
                 return;
             }
-            long at = FlareLiveRules.Now(day, 10 + FlareRules.Roll(_file.Seed, day, 842) % 10, FlareRules.Roll(_file.Seed, day, 843) % 60);
             string name = AccountName(with);
             FlareLiveRules.Dm(_file.Net, with, name, at, false, null, FlareText.DmKey(what), null);
             Logger?.Info("Flare: " + name + " writes to the player (" + what + ") on day " + day + ".");

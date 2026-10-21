@@ -330,7 +330,7 @@ namespace RealLifeOverhaul.Flare
             Guarded(() =>
             {
                 string with = "c" + (Save.Day % FlareLiveRules.Citizens);
-                FlareLiveRules.Dm(_file.Net, with, AccountName(with), Now, false, null, "reallife_flare_dm_chat", null);
+                FlareLiveRules.Dm(_file.Net, with, AccountName(with), Now, false, null, FlareText.DmKey(FlareLiveRules.Opener(_file, Now)), null);
                 Recount();
                 Tell(NotificationType.Info, "reallife_flare_note_dm", _openMessages, "name", AccountName(with));
                 Changed();
