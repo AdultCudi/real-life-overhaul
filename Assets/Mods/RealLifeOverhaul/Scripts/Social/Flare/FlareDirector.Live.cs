@@ -257,22 +257,36 @@ namespace RealLifeOverhaul.Flare
             Logger?.Info("Flare: " + name + " writes to the player (" + what + ") on day " + day + ".");
         }
 
-        private void LiveHour(int day, int hour)
+        // The hour's live steps (FlareHourSteps), one a frame: the City Office's cases due this hour and the works done; the
+        // invitations starting and the patrols watched; the unread count; the words of the hour's answers and replies.
+        private void LiveHour(int day, int hour, int step)
         {
-            long now = FlareLiveRules.Now(day, hour, 0);
-            if (!Following)
+            if (step == FlareHourSteps.Cases)
             {
-                FlareLiveRules.Due(_file.Net, now + 59, _due);   // the cases of this hour: the answer is dated at its own minute
-                for (int i = 0; i < _due.Count; i++)
+                long now = FlareLiveRules.Now(day, hour, 0);
+                if (!Following)
                 {
-                    Answer(_due[i], day);
+                    FlareLiveRules.Due(_file.Net, now + 59, _due);   // the cases of this hour: the answer is dated at its own minute
+                    for (int i = 0; i < _due.Count; i++)
+                    {
+                        Answer(_due[i], day);
+                    }
+                    Works(day);
                 }
-                Works(day);
             }
-            Invitations(day, hour);
-            Watched(day);
-            Recount();
-            TextsAhead();   // the hour's answers and replies: their words asked now
+            else if (step == FlareHourSteps.Out)
+            {
+                Invitations(day, hour);
+                Watched(day);
+            }
+            else if (step == FlareHourSteps.Unread)
+            {
+                Recount();
+            }
+            else if (step == FlareHourSteps.Words)
+            {
+                TextsAhead();   // the hour's answers and replies: their words asked now
+            }
         }
 
         private void Watched(int day)

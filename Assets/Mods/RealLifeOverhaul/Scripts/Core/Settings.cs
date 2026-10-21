@@ -85,6 +85,9 @@ namespace RealLifeOverhaul
         public const string ContrastId = "visuals_contrast";
         public const string BloomId = "visuals_bloom";
         public const string DetailId = "visuals_detail";
+        public const string ShadowReachId = "render_shadow_reach";
+        public const string ShadowCascadesId = "render_shadow_cascades";
+        public const string LodReachId = "render_lod_reach";
         public const string CharacterHighDetailId = "character_high_detail";
         public const string CharacterHairId = "character_hair";
         public const string CharacterLightingId = "character_lighting";
@@ -395,6 +398,9 @@ namespace RealLifeOverhaul
         public static int Contrast = 10;
         public static int Bloom = 0;             // percent; 0 leaves the game's bloom alone (bloom costs performance)
         public static int Detail = 100;          // LOD distance, percent of vanilla (above 100 costs performance)
+        public static int ShadowReach = RenderLevelRules.Game;       // the sun's shadows, percent of the game's distance
+        public static int ShadowCascades = RenderLevelRules.GameCascades;   // the sun's shadow cascades: 0 the game's own, else 1 to 4
+        public static int LodReach = RenderLevelRules.Game;          // level-of-detail distances, percent of the game's
         public static bool CharacterHighDetail = true;   // the player is drawn with the game's detailed character set in the city
         public static bool CharacterHair = true;         // solid base layer and calmer highlights for detailed hair and beards
         public static bool CharacterLighting = true;     // fill and rim light in character creation and the shop previews
@@ -742,6 +748,9 @@ namespace RealLifeOverhaul
             Contrast = Int(modId, ContrastId, Contrast);
             Bloom = Int(modId, BloomId, Bloom);
             Detail = Int(modId, DetailId, Detail);
+            ShadowReach = RenderLevelRules.Percent(Int(modId, ShadowReachId, ShadowReach));
+            ShadowCascades = RenderLevelRules.Cascades(Int(modId, ShadowCascadesId, ShadowCascades));
+            LodReach = RenderLevelRules.Percent(Int(modId, LodReachId, LodReach));
             CharacterHighDetail = Bool(modId, CharacterHighDetailId, CharacterHighDetail);
             CharacterHair = Bool(modId, CharacterHairId, CharacterHair);
             CharacterLighting = Bool(modId, CharacterLightingId, CharacterLighting);

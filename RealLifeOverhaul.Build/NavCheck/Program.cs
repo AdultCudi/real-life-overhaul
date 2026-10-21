@@ -85,6 +85,11 @@ internal static partial class Program
         Handling(Array.IndexOf(args, "--handling") >= 0);   // the driven car's handling on the game's own cars, with the Garage's builds, and its sources (HandlingCheck.cs)
         Walks();          // walking on a key: the toggle, the walk over the game's own pace frame by frame, its cycle, and its sources (WalkCheck.cs)
         Washes();         // the game's car wash in a repair bay never holding a car for good, and every way out of the custom shop (WashCheck.cs)
+        Culling();        // the mod's own things drawn by distance: the game's bands, what may and may not be culled, the group's slots (CullCheck.cs)
+        Bounces();        // the bounce watch still catches a bounce while moving traffic is looked at a fifth as often (BounceCheck.cs)
+        RenderLevels();   // the performance section's picture settings: the game's own until moved, their limits, the trials (RenderLevelCheck.cs)
+        FlareHours();     // Flare's hour a step a frame, in its order, finished first by the save and the day (FlareHourCheck.cs)
+        SlowSpots();      // the interact key's flags only on a press, the bus zones' parking laid out a lane a tick (SlowSpotCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

@@ -12,6 +12,7 @@ namespace RealLifeOverhaul
     /// What stands at one bus stop: the pole and, where there is room, a shelter with a bench; modelled where the prop bundle
     /// has them, else plain shapes. One per place, built once. Carving NavMeshObstacles cut exactly the solid things out of
     /// the mesh, so the seats stay walkable; a stop with a bay has its zone painted on the road (RoadPaint) or strips.
+    /// Every place of the city stands while the city is loaded: beyond the game's far band it is not drawn (ModCulling).
     /// </summary>
     public sealed class BusStopDressing
     {
@@ -50,12 +51,14 @@ namespace RealLifeOverhaul
         private const float WordsLong = 4.6f;
         private const float WordsAhead = 1f;        // their middle this far ahead of the pole
         private const int PaintPieces = 8;          // seven pieces of line at the most, and the words
+        private const float CullRadius = 15f;       // metres round the pole: the shelter and the bay's strips (Performance/ModCulling)
 
         private readonly GameObject _root;
         private readonly Transform _sign;
         private readonly Transform _shelter;
         private readonly TextMeshPro[] _labels = new TextMeshPro[2];
         private readonly NavMeshObstacle[] _blocks = new NavMeshObstacle[5];   // pole, back, end panel, screen, bench
+        private CullEntry _cull;                    // not drawn beyond the far band while it stands (Performance/ModCulling)
         private readonly byte[] _taken = new byte[Seats];                      // 0 free, 1 the player, 2 somebody waiting
         private bool _modelled;
         private bool _solid;       // the boxes cut the navigation mesh, only while the player is on foot near the stop
@@ -176,6 +179,14 @@ namespace RealLifeOverhaul
             }
             _checkDue = false;
             _root.SetActive(true);
+            if (_cull == null)
+            {
+                _cull = ModCulling.Add(CullRules.Kind.BusStop, _root.transform, stop.Sign, CullRadius);
+            }
+            else
+            {
+                ModCulling.Move(_cull, stop.Sign, CullRadius);
+            }
         }
 
         public void Clear()
@@ -187,11 +198,15 @@ namespace RealLifeOverhaul
             {
                 _taken[i] = 0;
             }
+            ModCulling.Remove(_cull);
+            _cull = null;
             _root.SetActive(false);
         }
 
         public void Dispose()
         {
+            ModCulling.Remove(_cull);
+            _cull = null;
             if (_root != null)
             {
                 Object.Destroy(_root);

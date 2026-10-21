@@ -340,10 +340,11 @@ namespace RealLifeOverhaul.Meta
             Features.Add("performance", "reallife_meta_title_performance")
                 .Group("reallife_perf_header")
                 .About("reallife_guide_performance_about").Help("reallife_guide_performance")
+                .Owns(Settings.ShadowReachId, Settings.ShadowCascadesId, Settings.LodReachId)
                 .Test("reallife_perf_test_session", SessionWatch.TestSay);
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
-                if (!tweak.Trial)
+                if (!tweak.Trial && !tweak.BySetting)
                 {
                     SettingsTable.Declare("perf_" + tweak.Id, OptionType.Toggle, tweak.DefaultOn ? 1 : 0);
                 }

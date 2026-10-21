@@ -86,6 +86,57 @@ All of the mod's are `carveOnlyStationary`, placed while switched off and then s
   The cordon switches a wall off and on once more if its cut did not take.
   None is toggled on a timer.
 
+## The mod's own things far away: drawn by distance (`Performance/ModCulling`)
+
+The game measures its own street things (lamps, trees, benches, signs, stands) against two bands from the player, 60 m and 200 m (`Culling.CullingManager`, `Culling.CullingGroupController`, `ICullable`), and puts out their lights, particles and people beyond the first.
+The mod's own things are measured the same way, in a culling group of its own with the same bands (`ModCulling`; the rules in `CullRules`, the slots in `CullBook`): a thing registered there has its renderers held back from drawing (`Renderer.forceRenderingOff`, only on renderers that were drawn, given back exactly) beyond 200 m, and drawn again inside it.
+Nothing else of it changes: its colliders, navigation boxes, place and state stay as they are, so the culling is visual and this machine's alone, and nothing about it goes over a Going Public session.
+While the city map is open everything is drawn.
+It is a performance option, "The mod's bus stops, signs and boards drawn within 200 m" (`perf_mod_cull`), on by default: the camera's far plane is 300 m, so what goes is small and far.
+
+A group of its own rather than the game's: the game's list re-reads every sphere of its whole list in the frame after any one leaves it (`UnregisterCullable` sets `_recreateCullingGroup`), and bus stops and station fronts come and go.
+The engine measures the spheres as it culls; a change of band is noted in its callback and applied in a later frame (at most 8 things a frame), so a frame with no change costs `PerfDirector` one comparison.
+
+Every kind of thing the mod puts in the world, and how each is kept from costing frames far away (`CullRules.Inventory`, printed by the F7 probe's census):
+
+| Things | How | Why |
+| --- | --- | --- |
+| bus stops (pole, shelter, bench, lettering, strips) | culled here | every place of the city (26) is dressed while the city is loaded; the bay's paint already ends at 120 m |
+| police station fronts and their parked patrol cars | culled here | dressed within 260 m and taken in beyond 330 m: drawn only to 200 m in between |
+| the university's, the courthouse's and the driving school's signs | culled here | they stand all session |
+| help-wanted boards, newspaper kiosks | culled here | they stand all session |
+| hotel fronts, data centre fronts, bike docks and stands | their own distance | dressed within 150 m, 160 m and 90 m |
+| the living city's stalls, carts, brooms and cones; civic stands and dressed sites | their own distance | taken away beyond 150 m (out of view beyond 95 m), 160 m and 175 m |
+| a parked patrol car with officers (`PolicePresence`) | its own distance | put out 45 to 95 m away out of view, taken away beyond 175 m |
+| the mod's street people (crowds, staff, officers, crews) | out of view | `CityPeople` and `ActorPool` stop drawing whoever is out of view |
+| interiors (stations, offices, server rooms, the showroom, the garage, campus rooms, home life) | indoors | drawn only while the player is in the building |
+| signs on the mod's buildings (`FrontSigns`) | the game's | the game's own sign holders, culled by the game |
+| fires, accident scenes, emergency vehicles and their beacons | never | an incident in progress |
+| police pursuits and reckless drivers | never | a car the player chases or is chased by |
+| the city bus on the road, the tow truck, taxis | never | the player waits for it, rides it, or works with it |
+| street events, jobs' props, leisure, the driving test, runs, community service | never | the player's own activity, in progress |
+| friends, family and roommates met in the street | never | a person in a conversation |
+| the player's own bikes | never | drawn as the game draws the player's own cars |
+
+What it saves: the bus stops (a dozen or so renderers each, all 26 standing at once), a station front's pieces with up to three parked cars, and the signs, boards and kiosks are no longer drawn while they are between 200 m and the far plane in view; that band is where most of the camera's draws are (2,779 of the 4,487 renderers drawn were 200 to 400 m away in the probe of 9 Oct).
+Estimated: a few dozen to about a hundred draws fewer in a busy view, under 0.1 to 0.3 ms of the render thread; the F7 probe's census now counts the mod's renderers in the street by distance and how many the culling holds back, and Shift+F7 measures `mod_cull` as a row of its own (it counts the renderers drawn with it off and on).
+
+## The picture settings and the pipeline's costly features (`Performance/Tweaks/ShadowReach.cs`, `PipelineTrials`)
+
+Three settings in the Performance section's "Shadows and detail", each the game's own until the player moves it (`RenderLevelRules`):
+
+- **Sun shadow distance** (`render_shadow_reach`, 25% to 100% of the game's): the shadow distance of the game's own global volumes ('Default Volume' and 'OutdoorShadowVolume'; 100 m in the probe of 9 Oct) as a share; fewer things drawn into the shadow maps, shadows end nearer. Interiors' local volumes are never touched.
+- **Sun shadow cascades** (`render_shadow_cascades`, the game's own or one to four; the game has two): fewer passes over the shadow casters, softer shadows near the camera. For three and four the pipeline's own splits are set, as the game's profile holds splits for two only.
+- **Detailed models distance** (`render_lod_reach`, 25% to 100%): the player's camera's level-of-detail bias as a share of the game's quality level's, through the camera's own frame settings (`PerfFrameSettings`).
+
+Only values the game's own global volumes set are changed, kept as found and put back exactly when a setting returns to the game's own, when the city goes or the option faults.
+
+The benchmark (Shift+F7) has a trial row for each, at a set value (half the distance, one cascade, half the detail), and for each of the pipeline's often costly features: screen-space reflections, the pipeline's ambient occlusion, volumetric fog, volumetric clouds and contact shadows.
+A trial of a feature the game has off already is not measured but listed under NOT MEASURED with the reason: on High the pipeline asset supports none of reflections, ambient occlusion, volumetric fog or volumetric clouds (the game's own ambient occlusion is the HBAO plug-in, on its own option in the game's settings), and the volumes leave contact shadows off (the census of 9 Oct).
+A picture setting left at the game's own value is listed there too.
+
+Found while reading: the Visuals section's "Detail distance" (`visuals_detail`, `World/VisualEnhancer`) writes `QualitySettings.lodBias`, which the render pipeline replaces with its frame settings' bias for every camera's culling (`HDRenderPipeline.TryCull` calls `QualitySettings.SetLODSettings` with `GetResolvedLODBias`), so it has not changed what is drawn. Left as it is for the owner to decide; "Detailed models distance" goes through the frame settings.
+
 ## Long frames: what was found, and the rules that follow
 
 Three sessions of Player.log with the record on (83 frames over 80 ms) sort like this:
@@ -135,6 +186,17 @@ A session of 0.9.4 (half an hour on foot in the street, 16 frames over 50 ms a m
   Which engine step they were in is named from now on.
 - **The heap's growth** (72 MB in the busiest minute, 35 MB in the next): the mod's share of it is now said in the minute's line, and a frame in which the heap leaps by 8 MB or more (one of 25 MB in that session) gets a line of its own.
 
+Two sessions of 0.45.0 (the owner's Player.log and Player-prev.log, 21 Oct), every frame over 80 ms:
+
+- **Flare's hour: the mod's, on the hour.** A frame of 84 and of 99 ms, 53 to 63 ms of it `FlareDirector.OnHour` (the city's posts, the City Office's cases, invitations, the unread count, the words asked ahead and the player's milestones, all in the game's hour event, with the other features' hour work in the same frame).
+  The hour's work now runs a step a frame from the frame after the hour (`Social/Flare/FlareHourSteps`), in the same order; the save, a new day and standing down finish what is left first.
+  Each step is named in the session record ("flare: the hour's ...").
+- **The first ticks after a load** (a frame of 91 ms, 38 ms of it the mod's: `EconomyDirector.Tick` and its `StartUp`, nested): once a load, with the game's own physics and scripts at 50 ms in the same frame; left.
+- **A police station's front put out (434 ms) and `MapLinks`:** behind the loading screen, not seen.
+- **The game's own, left as they are:** two frames waiting for the last frame to be shown (159 and 212 ms: the render thread, the graphics card or the display; the mod's scripts 0.2 ms), and two frames outside the engine's steps (102 and 119 ms, the mod's scripts under 3.2 ms).
+- **The transit director's worst moment of the first minutes** (13.4 ms, under 80 ms so unnamed): the bus zones made the first time out of doors had every parking lane beside a zone laid out again by the game in that frame (`ParkingLaneGenerator.RegenerateAutoParkSpotsNear`: a sync of every moved transform with physics, and the lane's spots destroyed and made again, two to four lanes a zone).
+  Now one lane a tick (`BusZones.RelayOne`), and the transit director's steps have slots of their own in the session record (`BusZones.Step`, `TransitMap.Step`, `DressNear`).
+
 ## What the merged whole costs per frame
 
 Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods, no `OnGUI`, no `InvokeRepeating`, and no `Find*` or allocation on any idle per-frame path.
@@ -148,14 +210,16 @@ Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods
 | `CityPeople.FixedUpdate` (people out, driving) | every other step: the car against eight people | **before: `GetComponent<Rigidbody>` twice a second. After: when the car changes** |
 | `CrimeDirector`, `EventDirector`, `BusinessDirector`, `SocialDirector`, `CarOwnership`, `LeisureSound`, `PoliceAttention`, `PolicePursuit`, `BeatPatrol`, `PolicePresence`, `PedestrianIncidents`, `PlayerKnockdown`, `Law.LawDirector` | one to three comparisons | nothing to do per frame. **On their timers, found later: `Law.LawDirector` (the save and the two building events, every three seconds), `HomeDirector` (the game's event, every second), `Family.FamilyDirector` (the save, every two seconds) and `MapPlaces` (the map event, every three seconds) still took themselves off the game's events and put themselves back. Now `SaveHook.Keep` and `EventHold.Keep`: nothing allocated while the game's event has not changed** |
 | `PerfDirector` and the tweaks that are on by default | one time comparison; the tweaks tick every 2 to 5 s | **before: every scene loaded or unloaded made `RefractionOff` look through every material in memory in that frame (`Resources.FindObjectsOfTypeAll<Material>`, seven engine calls a material) and, on the next tick, `StaleLampLights` through all 3,038 street lamps (three reflected fields each). After: unloads are ignored, a load asks for one look four seconds after the last scene arrived, and both looks go through their list 300 and 250 at a time, 20 times a second. The first look after the city loads is sliced the same way; refraction stays as the game has it until that look is finished** |
-| `TransitDirector` (4 times a second) | the stops in reach, the bus | **before: every second the label of each dressed stop was put together for a self-check that had already been made; and the self-check itself (a dozen questions to the navigation mesh, once per dressing) ran with diagnostics off, when nobody reads its line. After: neither** |
+| `TransitDirector` (4 times a second) | the stops in reach, the bus | **before: every second the label of each dressed stop was put together for a self-check that had already been made; and the self-check itself (a dozen questions to the navigation mesh, once per dressing) ran with diagnostics off, when nobody reads its line. After: neither.** The first time out of doors, the bus zones' parking lanes are laid out again by the game one a tick, not two to four in one frame |
 | `MetaUi`, `CuffPose`, `HoseHold`, `CarMeasure`, `CarDrag`, `ActivityAnimators`, `RagdollSystem`, `Stretcher`, `EmergencyDriver`, `BikeMount`, `TipsyDriving`, `PerfSampler`, `PerfLoop` | disabled while idle | nothing to do |
 | `TowService` (added after this read-through) | disabled while there is nothing to tow; with a truck out, a time comparison a frame and a 0.25 s tick (a few distances; driving away, `TransitSight.Seen`'s rays) | at work a handful of transform writes a frame (the bed, the cable, the wreck); `TowTruck.Update` and its `BusDriver` run only while the truck is on the street |
 | `CityPeople.Update`, `ActorPool.Update` | off with nobody out; with people out, a distance and a dot product each to hide those out of view | left: it is what keeps unseen characters from being drawn |
 | `PlayerDouble.LateUpdate` | off by default; on: every bone copied | left: an option that says what it costs |
 | `CarStrikes.FixedUpdate` (driving above 5 km/h) | every other step: the car against walkers, standing figures and the mod's people | left: it is the hit test itself |
-| `NearbyInteraction.Update` | the option, thirteen `TakesInteractKey` flags, two key tests | left for whoever next touches that line: test the two keys first and the ten flags only on a press |
-| `TrafficAccidents.Update` -> `TrafficWatch` | 5 times a second: every pooled traffic car's body looked at | left: the bounce watchdog's whole purpose; it is the largest timed cost while idle |
+| `NearbyInteraction.Update` | the option and two key tests | **before: eighteen `TakesInteractKey` flags read every frame, then the keys. After: the option, the two keys, and the flags only on a press (the same answer; NavCheck's SlowSpotCheck keeps the order and every flag)** |
+| `TrafficAccidents.Update` -> `TrafficWatch` | 5 times a second: a fifth of the pool's bodies, and each standing car's | **before: every pooled car's body (active, kinematic, position) five times a second. After: every car once a second, and five times a second only those that moved under 2 m in that second (`TrafficWatchRules`): moving traffic is read a fifth as often, standing traffic at most a fifth more. A bounce is still caught, within 5.4 s of it starting, from a stand or after a stop (NavCheck's BounceCheck)** |
+| `PerfDirector` -> `ModCulling.Frame` | one comparison | new: the mod's things beyond 200 m are not drawn; a change of band costs a walk over that thing's renderers, at most 8 things a frame |
+| `FlareDirector` on the game's hour | nothing between hours | **before: the hour's work in the hour's frame (53 to 63 ms the first hour after a load). After: a step a frame from the next frame, six steps an hour** |
 | `Wiring` | nothing: no component, no tick | adapters run when asked; `Wiring.Scenes` is four flag reads on a director's own roll timer |
 | `HomeDirector`, `CarOwnership`, `GarageDirector` (their interface moved to the game's own after this read-through) | a time comparison each; the Garage also compares what is ridden (`TwoWheelers.Frame`, one reference) | **before: a key test per frame while a prompt was up (Home, car ownership, Garage), the run's marker and the two-wheeler's marker drawn per frame, the custom shop's money text written four times a second. After: no key is read (the game runs its panels' buttons), the markers are the game's guider, set when they change, and a text is written only when what it says has changed.** The needs bars are three `fillAmount` writes a second at most, each only when its whole number changed; the bay panel's line and button are built when the game shows or refreshes its panel |
 | `Economy.EconomyDirector` (added after this read-through) | no `Update`: a coroutine that waits one second on the real clock, then four flag tests, three handlers held (`SaveHook.Keep`, `EventHold.Keep`) and, only while nobody lends, one static field read | see [Economy](../features/README.md#economy): its work is on the game's hour and day events (a handful of loans and banks compared; the score worked out when something changed) and when the app is opened |
@@ -179,7 +243,9 @@ fixes for the base game's frame rate, and the measuring that decides them.
 | `PerfLoop` | where the main thread's frame goes: a timestamp in front of each of the engine's frame steps, and per camera; off unless measuring |
 | `PerfProbe` | F7: ten seconds measured, then RealLifeOverhaul_perf_HHmmss.txt with the step table and a census of the scene |
 | `PerfCensus` | what is in the scene and how the engine is set up (report time only) |
-| `PerfBench` | Shift+F7: every tweak, trial (one render-pipeline feature off) and reference measured off/ON/off/ON in one-second windows, paired so drift cancels; RealLifeOverhaul_bench_HHmmss.txt |
+| `PerfBench` | Shift+F7: every tweak, trial (one render-pipeline feature off, or a picture setting at a set value) and reference measured off/ON/off/ON in one-second windows, paired so drift cancels; a feature the game has off already, or a setting at the game's value, is listed as not measured; RealLifeOverhaul_bench_HHmmss.txt |
+| `ModCulling`, `CullRules`, `CullBook` | the mod's own things drawn by distance, with the game's bands; the inventory of every kind of thing the mod puts in the world; the culling group's slots |
+| `RenderLevelRules`, `Tweaks/ShadowReach.cs` | the picture settings: the sun's shadow distance and cascades, and the distance of detailed models, each the game's own until moved |
 | `PerfGame` | what the above need from the game (pedestrians, traffic, lamps, trees) |
 
 ### `Scripts/Diagnostics`

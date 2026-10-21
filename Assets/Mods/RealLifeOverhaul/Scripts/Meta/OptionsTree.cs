@@ -386,7 +386,9 @@ namespace RealLifeOverhaul.Meta
 
             G("performance",
                 S("speed").For("performance").Opts("perf_refraction", "perf_sky_updates", "perf_stale_lights", "perf_far_districts", "perf_view_radius",
-                    "perf_far_props", "perf_textures_whole").Also("fps frame rate lag stutter slow faster"),
+                    "perf_far_props", "perf_textures_whole", "perf_mod_cull").Also("fps frame rate lag stutter slow faster"),
+                S("render").Guide("performance").Opts("render_shadow_reach", "render_shadow_cascades", "render_lod_reach")
+                    .Also("graphics shadows shadow distance cascades level of detail lod models quality fps"),
                 S("picture").For("visuals").Main("visuals_enabled").Opts("visuals_saturation", "visuals_contrast", "visuals_bloom", "visuals_detail")
                     .Also("graphics colour visuals quality")),
 
