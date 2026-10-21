@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     internal sealed class InterviewMeeting
     {
-        private const NavigationBlocker Blocker = (NavigationBlocker)7311;   // a value of our own, so nobody else's is ever lifted
+        private const NavigationBlocker Blocker = (NavigationBlocker)7314;   // a value of our own, so nobody else's is ever lifted (each hold of the mod's has a value no other uses: TextBoxChecks)
         private const float InputDelay = 0.4f;   // seconds before a click on a new page counts
         private const int Leave = 10, Close = 11;
         private const string ButtonAsk = "reallife_hire_meet_ask";

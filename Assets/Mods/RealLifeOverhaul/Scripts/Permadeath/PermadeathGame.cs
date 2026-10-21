@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Permadeath
     public static class PermadeathGame
     {
         // The game blocks walking with named blockers kept in a set: one of the mod's own, outside the game's list.
-        private const NavigationBlocker Blocker = (NavigationBlocker)7311;
+        private const NavigationBlocker Blocker = (NavigationBlocker)7313;   // a value of our own: no other hold of the mod's uses it (TextBoxChecks)
 
         private static bool _blocked;
 

@@ -418,6 +418,7 @@ namespace RealLifeOverhaul
             }
             VehicleComponent car = Car;
             bool held = Held;
+            OverlayGuard.Release(Controller);   // the game's card over it goes first: the pool keeps the vehicle, so the card would not see it gone
             bool running = TrafficManager.HasInstance && TrafficManager.IsInitialized;
             bool takeOff = how == Leave.Remove || !held || !TrafficTools.Ready
                            || (how == Leave.Unseen && !Seen(car.transform.position) && car.visibilityScript != null && car.visibilityScript.IsNotInView());
@@ -467,6 +468,7 @@ namespace RealLifeOverhaul
         // The vehicle is no longer ours: only what is still ours on it is undone.
         private void Abandon()
         {
+            OverlayGuard.Release(Controller);
             if (_driver != null)
             {
                 _driver.Forget();
