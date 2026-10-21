@@ -121,23 +121,24 @@ internal static partial class Program
         }
         Check(kept, "people's age: the day their age is true on survives a save and a load, and the age grows only by the birthdays since");
 
-        // The record: field 41 is still the look and the anchor comes after it, so a version that reads 41 or 42 fields reads all it did.
+        // The record: field 41 is still the look and the anchor comes after it, so a version that reads 41 or 42 fields reads all
+        // it did (a call back's fields come after the anchor: CallBackChecks.cs).
         string[] records = saved.Split('\n');
         bool shape = records.Length == SocialRules.CastSize;
         foreach (string record in records)
         {
             string[] f = record.Split('|');
-            shape &= f.Length == 43 && f[42] == "500" && int.TryParse(f[0], out int index) && index >= 0 && index < SocialRules.CastSize
+            shape &= f.Length >= 43 && f[42] == "500" && int.TryParse(f[0], out int index) && index >= 0 && index < SocialRules.CastSize
                      && f[41] == (SocialState.Get(index)?.Look ?? string.Empty);
         }
-        Check(shape, "people's age: the day is saved last in each person's record, after the look, so an older version still reads the look and the rest");
+        Check(shape, "people's age: the day is saved after the look in each person's record (field 42), so an older version still reads the look and the rest");
 
         // A save from before the anchor (records of 42 fields), first loaded with it on day 300: the stored age is their age that
         // day, and one more at the next birthday after it.
         var trimmed = new string[records.Length];
         for (int i = 0; i < records.Length; i++)
         {
-            trimmed[i] = records[i].Substring(0, records[i].LastIndexOf('|'));
+            trimmed[i] = string.Join("|", records[i].Split('|'), 0, 42);
         }
         data["reallife:social_people"] = string.Join("\n", trimmed);
         SocialState.Load(data, 300, AgeYear, 9, 2);
@@ -157,7 +158,7 @@ internal static partial class Program
         var resaved = new Dictionary<string, string>();
         SocialState.Save(resaved);
         string[] first = resaved.TryGetValue("reallife:social_people", out string again) ? again.Split('\n')[0].Split('|') : new string[0];
-        Check(first.Length == 43 && first[42] == "300", "people's age: and that first load's day is saved, so the age goes on from there");
+        Check(first.Length >= 43 && first[42] == "300", "people's age: and that first load's day is saved, so the age goes on from there");
     }
 
     // Every language's own file has the page with the age on its first line, in that language's words, and the Guide's

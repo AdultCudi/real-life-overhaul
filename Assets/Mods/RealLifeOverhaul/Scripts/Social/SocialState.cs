@@ -185,8 +185,12 @@ namespace RealLifeOverhaul
                 }
                 // The look: a version that reads 41 fields leaves it; its text holds no '|' or line break.
                 text.Append(Field).Append(p.Look ?? string.Empty);
-                // The day their age is true on, last: a version that reads 42 fields leaves it.
+                // The day their age is true on: a version that reads 42 fields leaves it.
                 text.Append(Field).Append(p.AgeDay);
+                // The minute of the text a call back last opened on, then the outing still to be texted about the day after:
+                // a version that reads 43 fields leaves them (Social/SocialFollowRules).
+                text.Append(Field).Append(p.FollowedAt).Append(Field).Append(p.AfterDay).Append(Field).Append((int)p.AfterKind).Append(Field).Append(p.AfterWell ? 1 : 0)
+                    .Append(Field).Append(Clean(p.AfterPlace));
             }
             data[KeyPeople] = text.ToString();
 
@@ -267,6 +271,26 @@ namespace RealLifeOverhaul
             return f.Length >= 43 && f[42].Length > 0 ? Int(f[42]) : day;
         }
 
+        // Fields 43 to 47, a call back's mark and the outing to be texted about the day after. A record from before them has
+        // none: no text taken up on a call yet (the newest fresh one is, once), and no outing waiting.
+        private static void ReadFollow(SocialPerson p, string[] f)
+        {
+            p.FollowedAt = f.Length >= 44 && f[43].Length > 0 ? Int(f[43]) : -1;
+            if (f.Length < 48)
+            {
+                return;
+            }
+            p.AfterDay = Math.Max(0, Int(f[44]));
+            var kind = (PlanKind)Int(f[45]);
+            p.AfterKind = kind >= PlanKind.Coffee && kind <= PlanKind.Moving ? kind : PlanKind.Coffee;
+            p.AfterWell = f[46] == "1";
+            p.AfterPlace = f[47].Length > 0 ? f[47] : null;
+            if (kind != p.AfterKind)
+            {
+                p.AfterDay = 0;   // (a later version's outing: never a number past the table)
+            }
+        }
+
         // Field 41, the look kept from the street, gives them its seed; one that cannot be read is let go.
         private static void ReadLook(SocialPerson p, string[] f)
         {
@@ -335,6 +359,7 @@ namespace RealLifeOverhaul
                 }
                 ReadLook(p, f);
                 p.AgeDay = AgeDayOf(f, day);
+                ReadFollow(p, f);
                 SocialCatalogue.FixLook(p);   // before a later version's origin is read as an old friend below
                 if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
                 {

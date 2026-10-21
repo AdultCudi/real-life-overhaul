@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Texts
                 case Social + "cancel_rain": return "friend.cancel.rain";
                 case Social + "stoodup": return "friend.stood_up";
                 case Social + "thanks": return "friend.thanks";
+                case Social + "nextday_good": return from == From.Friend ? "friend.thanks" : null;   // (a friend's the day after a good outing: thanks for it, the card every pack has)
                 case Social + "birthday_own": return "friend.birthday_own";
                 case Social + "birthday_missed": return "friend.birthday_missed";
                 case Social + "rich_kind":
@@ -287,7 +288,9 @@ namespace RealLifeOverhaul.Texts
             new[] { "reallife_family_arrest_3", "partner.arrest" }, new[] { "reallife_family_mom_birthday", "mom.grandchild_birthday" },
             new[] { "reallife_family_inlaws_grandchild", "inlaws.baby" }, new[] { "reallife_text_roommate_notice", "roommate.notice" },
             new[] { "reallife_career_text_noshow", "boss.noshow" }, new[] { "reallife_text_shark_warn", "lender.warn" },
-            new[] { "reallife_social_invite_drive", null }, new[] { "reallife_social_text_breakup_1", null }, new[] { "reallife_social_text_where", null }
+            new[] { "reallife_social_invite_drive", null }, new[] { "reallife_social_text_breakup_1", null }, new[] { "reallife_social_text_where", null },
+            new[] { "reallife_social_text_nextday_good_2", "friend.thanks" }, new[] { "reallife_social_text_nextday_bad_1", null },
+            new[] { "reallife_social_text_nextday_date_good_1", null }, new[] { "reallife_social_text_nextday_mom_bad_2", null }
         };
 
         /// <summary>The cases checked (for the checks' line).</summary>

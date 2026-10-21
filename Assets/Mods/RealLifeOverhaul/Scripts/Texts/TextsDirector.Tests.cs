@@ -134,15 +134,16 @@ namespace RealLifeOverhaul.Texts
 
         // ---------------------------------------------------------------- the city's new talk, now
 
-        // Whether the city's talk can be tried now: a save, a pack of data 6, the option; else the notice that says why not.
-        private static bool CityReady()
+        // Whether the city's talk can be tried now: a save, a pack of data 6 (the staff and gossip: the life's texts need none),
+        // the option; else the notice that says why not.
+        private static bool CityReady(bool six = true)
         {
             if (Instance == null || SaveGameManager.Current == null)
             {
                 TextsGame.Notice("reallife_texts_test_no_save", null);
                 return false;
             }
-            if (!Six)
+            if (six && !Six)
             {
                 TextsGame.Notice("reallife_texts_test_six", new Dictionary<string, string>(1) { { "pack", _pack != null ? _pack.Name + " (data v" + _pack.Data + ")" : TextsHub.NoPack } }, 14f);
                 return false;
@@ -177,10 +178,10 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice("reallife_texts_test_staff_sent", new Dictionary<string, string>(1) { { "name", s.Name } }, 12f);
         }
 
-        /// <summary>A text after a life event now: the player's graduation, told by Mom or a friend as on the day.</summary>
+        /// <summary>A text after a life event now: the player's graduation, told by Mom or a friend as on the day, a pack or not.</summary>
         public static void TestLife()
         {
-            if (!CityReady())
+            if (!CityReady(false))
             {
                 return;
             }

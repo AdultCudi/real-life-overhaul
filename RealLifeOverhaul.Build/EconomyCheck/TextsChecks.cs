@@ -1103,6 +1103,7 @@ internal static partial class Program
                 "texts, the runner: a crashed session's head file is gone at the start, and the server keeps one of its own");
             TextsRunnerV3(lite, q, server);
             TextsRunnerSix(q, server);   // (data v6's grammars and the name's ban through the same server: TextsDecodingChecks.cs)
+            TextsRunnerHistory(lite, q, server);   // (a call back's and the day after's cards, with memory and a thread: TextsHistoryChecks.cs)
         }
         Check(Directory.GetFiles(cache, "rlo-head-*.bin").Length == 0, "texts, the runner: the server's head file goes with it (the cache never grows)");
         try

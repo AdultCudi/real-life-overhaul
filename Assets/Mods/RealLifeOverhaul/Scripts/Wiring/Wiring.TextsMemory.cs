@@ -19,16 +19,24 @@ namespace RealLifeOverhaul
         ///   street talk       recorded at each line the stranger says (<see cref="Street"/>): met in the street, what was
         ///                     talked about, how it went, the way given, numbers swapped, the name told, the business
         ///                     heard of, a famous face recognised; a stranger who swaps numbers takes it with them
-        ///   texts and calls   what each text, call or Flare message was about (<see cref="Spoke"/>)
+        ///   texts and calls   what each text, call or Flare message was about (<see cref="Spoke"/>), and what a person of
+        ///                     the social life last texted the player about, read from their own thread in the game's phone
+        ///                     (<see cref="Texted"/>: every feature's texts, the family's, life's little moments' and
+        ///                     travel's too, worded by a pack or not), so a text remembers the one before it and a call back
+        ///                     the text it opens on
         ///   the city          the player's own life events the people of the player's life have heard of
         ///                     (TextsDirector.Events), and what gossip passed on
         ///
-        /// Only with a pack of data 6 (TextsDirector.Six); only on cards of the player's own people, never a shared one.
-        /// COST: nothing per frame; a few facts a card, a few a line of street talk.
+        /// Only with a pack of data 6 (TextsDirector.Six); only on cards of the player's own people, never a shared one. A
+        /// card's memory lines are of the kinds and codes data 6 was trained on, at most TextMemoryRules.CardMost of them, so a
+        /// card keeps the shape and the size the packs know (the thread's own lines are not put on a text's card: see
+        /// docs/features/social.md, What a later pack could add).
+        /// COST: nothing per frame; a few facts a card and one thread of twenty messages at most, a few a line of street talk.
         /// </summary>
         public static class TextsMemory
         {
             private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+            private static readonly List<SocialThreadLine> Lines = new List<SocialThreadLine>(Entities.Contact.MaxMessages);
 
             /// <summary>The memory a request's card may carry: its person's kept facts, and for a person of the social life what it keeps of them.</summary>
             internal static void Fill(TextRequest r, SocialPerson person)
@@ -49,8 +57,17 @@ namespace RealLifeOverhaul
                 if (person != null)
                 {
                     Derived(person, r.Day, r.Memory);
+                    Texted(person, r.Day, r.Memory);
                 }
                 Heard(r.Memory);
+            }
+
+            // What a person last texted the player about, from their own thread in the game's phone (TextsMemoryFacts.Texted).
+            private static void Texted(SocialPerson p, int today, List<TextFact> into)
+            {
+                SocialPhone.Thread(p, Lines);
+                TextsMemoryFacts.Texted(Lines, p.IsFamily, p.Together, today, into);
+                Lines.Clear();
             }
 
             /// <summary>What a text, a call or a Flare message was about, remembered by its person (only an intent of the player's own people).</summary>
@@ -106,20 +123,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                string met = MetCode(p.Origin);
-                if (met != null)
-                {
-                    into.Add(new TextFact(TextMemoryKinds.Met, met, p.MetDay));
-                }
-                for (int i = 0; i < p.Memories.Count; i++)
-                {
-                    SocialMemory m = p.Memories[i];
-                    TextFact f;
-                    if (FactOf(m, out f))
-                    {
-                        into.Add(f);
-                    }
-                }
+                TextsMemoryFacts.People(p, into);   // (how they met, and their memories)
                 if (p.Debt > 0)
                 {
                     into.Add(new TextFact(TextMemoryKinds.Favour, "owed", Math.Max(p.DebtDay, 0), TextsGame.Money(p.Debt)));
@@ -130,59 +134,6 @@ namespace RealLifeOverhaul
                 }
                 into.Add(new TextFact(TextMemoryKinds.Knows, "name", p.MetDay));
                 Knows(p, into);
-            }
-
-            // How the social life met a person, as a memory's code; null for the family (Mom is not "met").
-            private static string MetCode(SocialOrigin origin)
-            {
-                switch (origin)
-                {
-                    case SocialOrigin.OldFriend: return "old_friend";
-                    case SocialOrigin.Gym: return "gym";
-                    case SocialOrigin.Work: return "work";
-                    case SocialOrigin.CoffeeCart: return "coffee";
-                    case SocialOrigin.Neighbour: return "neighbour";
-                    case SocialOrigin.Helped: return "helped";
-                    case SocialOrigin.Customer: return "customer";
-                    case SocialOrigin.Online: return "flare";
-                    case SocialOrigin.Event: return "event";
-                    case SocialOrigin.Street: return "street";
-                    default: return null;
-                }
-            }
-
-            // One of the social life's memories as a memory fact; false for one with none.
-            private static bool FactOf(SocialMemory m, out TextFact f)
-            {
-                f = default(TextFact);
-                switch (m.Code)
-                {
-                    case MemoryCode.Coffee: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[0]); return true;
-                    case MemoryCode.Meal: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[1]); return true;
-                    case MemoryCode.Drinks: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[2]); return true;
-                    case MemoryCode.Cinema: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[3]); return true;
-                    case MemoryCode.Walk: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[4]); return true;
-                    case MemoryCode.Drive: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[5]); return true;
-                    case MemoryCode.Workout: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[6]); return true;
-                    case MemoryCode.Business: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[7]); return true;
-                    case MemoryCode.DroppedBy: f = new TextFact(TextMemoryKinds.Talked, "visit", m.Day); return true;
-                    case MemoryCode.Posted: f = new TextFact(TextMemoryKinds.Talked, "tagged", m.Day); return true;
-                    case MemoryCode.Lift: f = new TextFact(TextMemoryKinds.Favour, "lift", m.Day); return true;
-                    case MemoryCode.Moving: f = new TextFact(TextMemoryKinds.Favour, "moving", m.Day); return true;
-                    case MemoryCode.Loan: f = new TextFact(TextMemoryKinds.Favour, "borrowed", m.Day); return true;
-                    case MemoryCode.Borrowed: f = new TextFact(TextMemoryKinds.Favour, "lent", m.Day); return true;
-                    case MemoryCode.NotRepaid: f = new TextFact(TextMemoryKinds.Favour, "not_repaid", m.Day); return true;
-                    case MemoryCode.Birthday: f = new TextFact(TextMemoryKinds.Favour, "birthday", m.Day); return true;
-                    case MemoryCode.Introduced: f = new TextFact(TextMemoryKinds.Favour, "introduced", m.Day); return true;
-                    case MemoryCode.StoodUp: f = new TextFact(TextMemoryKinds.Tone, "stood_up", m.Day); return true;
-                    case MemoryCode.Late: f = new TextFact(TextMemoryKinds.Tone, "late", m.Day); return true;
-                    case MemoryCode.Rude: f = new TextFact(TextMemoryKinds.Tone, "rude", m.Day); return true;
-                    case MemoryCode.AskedOut: f = new TextFact(TextMemoryKinds.Tone, "asked_out", m.Day); return true;
-                    case MemoryCode.BreakUp: f = new TextFact(TextMemoryKinds.Tone, "broke_up", m.Day); return true;
-                    case MemoryCode.Arrest: f = new TextFact(TextMemoryKinds.Event, "arrest", m.Day); return true;
-                    case MemoryCode.Crash: f = new TextFact(TextMemoryKinds.Event, "crash", m.Day); return true;
-                    default: return false;
-                }
             }
 
             // What a person of the social life knows of the player: their job (one met at work, or a friend), their business

@@ -563,6 +563,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_test_call", () => SocialDirector.Instance?.TestCall())
                 .AddButton("reallife_social_test_composer", () => SocialDirector.Instance?.TestComposer())
                 .AddButton("reallife_social_test_text", () => SocialDirector.Instance?.TestText())
+                .AddButton("reallife_social_test_followup", () => SocialDirector.Instance?.TestFollowUp())
+                .AddButton("reallife_social_test_nextday", () => SocialDirector.Instance?.TestNextDay())
                 .AddButton("reallife_social_test_favour", () => SocialDirector.Instance?.TestFavour())
                 .AddButton("reallife_social_test_dropby", () => SocialDirector.Instance?.TestDropBy())
                 .AddButton("reallife_social_test_mom", () => SocialDirector.Instance?.TestOutingWithMom())

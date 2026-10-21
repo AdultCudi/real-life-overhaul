@@ -571,6 +571,14 @@ namespace RealLifeOverhaul
         public static readonly string[] TextLoanAsk = { "reallife_social_text_loan_1", "reallife_social_text_loan_2" };
         public static readonly string[] TextMovingAsk = { "reallife_social_text_moving_1", "reallife_social_text_moving_2" };
 
+        // The day after an outing, how it went (SocialFollowRules.NextDay): a friend's, the partner's after a date, Mom's.
+        public static readonly string[] TextNextDayGood = { "reallife_social_text_nextday_good_1", "reallife_social_text_nextday_good_2" };
+        public static readonly string[] TextNextDayBad = { "reallife_social_text_nextday_bad_1", "reallife_social_text_nextday_bad_2" };
+        public static readonly string[] TextNextDayDateGood = { "reallife_social_text_nextday_date_good_1", "reallife_social_text_nextday_date_good_2" };
+        public static readonly string[] TextNextDayDateBad = { "reallife_social_text_nextday_date_bad_1", "reallife_social_text_nextday_date_bad_2" };
+        public static readonly string[] TextNextDayMomGood = { "reallife_social_text_nextday_mom_good_1", "reallife_social_text_nextday_mom_good_2" };
+        public static readonly string[] TextNextDayMomBad = { "reallife_social_text_nextday_mom_bad_1", "reallife_social_text_nextday_mom_bad_2" };
+
         public static readonly string[] NewsAccidentMinor = { "reallife_news_accident_minor_1", "reallife_news_accident_minor_2", "reallife_news_accident_minor_3" };
         public static readonly string[] NewsAccidentModerate = { "reallife_news_accident_moderate_1", "reallife_news_accident_moderate_2", "reallife_news_accident_moderate_3" };
         public static readonly string[] NewsAccidentSevere = { "reallife_news_accident_severe_1", "reallife_news_accident_severe_2", "reallife_news_accident_severe_3" };

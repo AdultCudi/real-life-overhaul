@@ -6,16 +6,19 @@ namespace RealLifeOverhaul.Texts
 {
     /// <summary>
     /// The director's part that runs once a game hour (a comparison of the game's hour in each look, twice a second): the
-    /// line of what was shown, in Player.log while Developer diagnostics are on, and with a pack of data 6 the city's new
-    /// talk (the option "Texts from your staff, about your news, and gossip", Settings.TextsCity):
+    /// line of what was shown, in Player.log while Developer diagnostics are on, and the city's new talk (the option "Texts
+    /// from your staff, about your news, and gossip", Settings.TextsCity):
     ///
-    ///   the staff     one of the player's staff texts, in the game's own thread with them, when the company records a
-    ///                 raise asked for, the game has them off sick, a raise is agreed, or their hours run past what they
-    ///                 agreed (TextsCityRules.Staff); worded by the model like the phone's texts, held at most
+    ///   the staff     with a pack of data 6: one of the player's staff texts, in the game's own thread with them, when the
+    ///                 company records a raise asked for, the game has them off sick, a raise is agreed, or their hours run
+    ///                 past what they agreed (TextsCityRules.Staff); worded by the model like the phone's texts, held at most
     ///                 <see cref="StaffHold"/> s, else the written line
-    ///   life events   the partner, Mom or a friend texts after the player's own events, read from the features' public
-    ///                 state since the last look (TextsCityRules.Life, Sender), through the social life's own texts
-    ///   gossip        a public event passed on the day after by somebody who knows who heard it (TextsCityRules.Gossip)
+    ///   life events   with a pack or without one: the partner, Mom or a friend texts after the player's own events, read
+    ///                 from the features' public state since the last look (TextsCityRules.Life, Sender), through the social
+    ///                 life's own texts; a pack of data 6 words them, and every other player has their written lines (a
+    ///                 player's own news is a reason to text whatever words it is said in: GitHub #12)
+    ///   gossip        with a pack of data 6: a public event passed on the day after by somebody who knows who heard it
+    ///                 (TextsCityRules.Gossip)
     ///
     /// Each player's own: in a Going Public session nothing of it is sent, and only the player's own staff and people
     /// speak. One life text and one piece of gossip an hour at most, and the social life's own daily cap and quiet hours
@@ -54,11 +57,11 @@ namespace RealLifeOverhaul.Texts
                     Logger?.Info(line);
                 }
             }
-            if (Six && Settings.TextsCity)
+            if (Settings.TextsCity)
             {
                 try
                 {
-                    City(save.Day, save.Hour);
+                    City(save.Day, save.Hour, Six);
                 }
                 catch (Exception e)
                 {
@@ -67,10 +70,10 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // The city's new talk this hour.
-        private static void City(int day, int hour)
+        // The city's new talk this hour: the life texts always, the staff and gossip with a pack of data 6.
+        private static void City(int day, int hour, bool six)
         {
-            if (TextsBridges.Staff != null)
+            if (six && TextsBridges.Staff != null)
             {
                 ReadStaff();
                 for (int i = 0; i < Views.Staff.Count; i++)
@@ -100,7 +103,10 @@ namespace RealLifeOverhaul.Texts
             Views.People.Clear();
             TextsBridges.People(Views.People);
             LifeTexts(day);
-            Gossip(day, hour);
+            if (six)
+            {
+                Gossip(day, hour);
+            }
         }
 
         // One life event's text this hour: the oldest still to be sent today or yesterday.
