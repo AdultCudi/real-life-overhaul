@@ -38,7 +38,7 @@ internal static partial class Program
         Check(open.Length > 0 && !open.Contains("ShowApp(") && !open.Contains("Send") && !open.Contains("Save"),
             "bizman link: the open goes through BizMan.Open alone (it opens the app itself) and writes or sends nothing");
 
-        // The texts, in the three languages, and the What's new line.
+        // The texts, in the three languages, and the What's new line in any row: the next row until a release numbers it.
         foreach (string code in new[] { "en", "pt", "zh-cn" })
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, code + ".json"));
@@ -46,7 +46,7 @@ internal static partial class Program
                   && words.TryGetValue("reallife_co_bizman_cannot", out string cannot) && cannot.Length > 0 && cannot.Length <= 240
                   && !button.Contains('!') && !cannot.Contains('!') && !cannot.Contains((char)0x2014) && !cannot.Contains((char)0x2013),
                 "bizman link: the button and its notice in " + code);
-            Check(words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Contains("BizMan"),
+            Check(AnyChangesRow(words, code == "en" ? "Open in BizMan button" : code == "pt" ? "Abrir no BizMan" : "在 BizMan 中打开"),
                 "bizman link: What's new says so in " + code);
         }
     }
