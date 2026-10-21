@@ -1115,32 +1115,59 @@ A new option: add its row in `RealLifeOverhaulMod.cs` as before, name its id in 
 Proven: every member named, from the game's code. Inferred (not seen running): that a cash register takes a customer
 service shift at a business with no products, and how cars stand on a shop's floor.
 
-## 35. The mod's settings on the phone (`Meta/SettingsApp`, `SettingsView`, `OptionsLayout.Book`)
+## 35. The mod's settings on the phone (`Meta/SettingsApp`, `SettingsView`, `OptionsLayout.Book`, `GameUi.HelpFrame`, `GameUi.OptionRows`)
 
 The Mods tab is one flat list for every mod: `ModOptionsViewController.Rebuild` destroys and makes every row of it each
 time the tab is shown (`OnEnable`) and each time a mod registers its page (`OptionsService.OnChanged`), about 470 of the
-mod's rows and buttons, and about 500 more with the test tools on. The Settings app is the same options in the frame
-every app of the mod uses (`AppShell`, `DataTable`, `InfoBox`), with ten tabs (`AppShell.SetTabCount`, the most of any
-app: the tab labels are one short word, `SettingsRules.TabChars`):
+mod's rows and buttons, and about 500 more with the test tools on. The Settings app ("Mod settings") is the same options
+laid out as the game's help screen (F1), in the mod's dark colours, inside the full menu like every app of the mod:
 
-- **One source.** The app's lines are `SettingsRules.Tabs` over the very plan the Mods tab is placed by
-  (`OptionsPlan.Place`), and each line holds the row the page registers. A value is read as the game's controls read it
-  (`ModOptionPrefs.Load`: the key `m:<mod>:<id>`, the option's default) or from its field in `Settings`; a change is saved
-  under that key and then the row's own handler is called with it, as `ModOptionsToggleControl`,
-  `ModOptionsSliderControl` and `ModOptionsDropdownControl` do on a click. A switch's handler is the page's wrapper, so
-  the Mods tab hears of it. The game's controls leave the writing to disk to Unity (at the latest when the game quits);
-  the app calls `PlayerPrefs.Save` when it is closed after a change, so that a crash later does not lose it.
-- **Controls.** A switch is the white box's own (MyEmployees' demand row), a choice the game's previous/next selector
-  (`InfoBox.Selector`), a number the same selector over at most about twenty steps (`SettingsRules.Steps`) or a number
-  typed in the game's text entry (`UIs.textInputUi`). The box has no slider: the game's white box has none.
-- **Search** is the game's text entry; the words are matched as the Mods tab's box matches them (`OptionsFind`; a word in
-  Chinese characters anywhere in a text).
-- **Keys** are listed with the key they have; they are changed on the Mods tab, whose row waits for the key itself.
+- **The window** is a copy of `HelpSystem.container` (`Canvases/HelpSystem/Container`, 2400 x 1600 at the middle; F1 and
+  `HelpSystem.Toggle` stay the game's): the frame (sprite `helpoverlay`), the top bar's headline and red close button, the
+  round back and forward buttons, the search box (`InputField (Search)`, a `TMP_InputField` with the magnifier and the
+  clear icon), the list on the left (`Left (Categories)`: a `Category` of button, arrow, `PagesBackground` and `Pages` of
+  links) and the page on the right (`Help Page`, a ScrollRect with its scroll bar, the `Topic` header and the help's own
+  text, `TMProTemplate`). `GameUi.HelpFrame` copies it asleep, takes off `HelpSystem`, `HelpCategory`, `HelpPageLink`,
+  `HelpPageRenderer`, the game's `InputField` and the mark-down renderer, and keeps what only draws or sounds. It is
+  painted with `GameUi.DarkLook` (Flare's night colours of 0.40.5, the game's blue for the page shown): the help's white
+  sprites are tinted, so their shapes and shading stay the game's. The game's own help is not touched.
+- **The list**: one category per group of `OptionsTree` (Start here first, Troubleshooting last) and one more, Test tools,
+  while "Show test tools" is on; a link per section (`SettingsRules.Pages`). A category opens and closes as the help's
+  does (`HelpCategory.SetOpenState`: pages and their ground shown, the arrow turned); the page shown is in the blue.
+- **The rows** are copies of the game's own settings menu (`UIs.options`, `Canvases/Options`): the button row with a
+  description under its name (the menu's "Reset windows": `Labels` with `Label` and `Tip`), its switch row
+  (`ModOptionsToggleControl`: `switch-off@2x`, `switch-on@2x`), its slider row (`ModOptionsSliderControl`, the number in
+  its `Suffix`) and its drop-down row (`ModOptionsDropdownControl`: the game's `UI.Elements.Dropdown`, kept whole as
+  `GameUi.FilterDrop` keeps it). `GameUi.OptionRows` gives every row the two lines of words, the control at the right in
+  the menu's own column of 700. The menu is white on dark already, so its rows stand on the dark window as they are.
+- **Controls by kind** (`SettingsRules.ControlOf`): an option that is on or off is the switch; a number is the slider,
+  between the option's own `Min` and `Max` in whole numbers (`wholeNumbers`, as `ModOptionsSliderControl`), its value
+  written beside it (`valueLabelKey`); a choice is the drop-down with its arrows; a button of the player's or a test tool
+  is the blue button with its word (`OptionsLayout.Captions`); a key is a button with the key on it, which waits for the
+  next key (`Keys.Rebind`, the Mods tab's own capture; Esc keeps the key).
+- **Words**: each row has its label and, under it, the option's sentence (`reallife_opt_tip_<id>`), what keeps it from
+  working (in orange), "takes effect when the save is loaded again" where so, and its default when it is not at it. A
+  preset's row says what it does and how far the choices are from it; the top bar says the preset in use.
+- **One source.** The lines are `SettingsRules.Tabs` over the very plan the Mods tab is placed by (`OptionsPlan.Place`),
+  and each line holds the row the page registers. A value is read as the game's controls read it (`ModOptionPrefs.Load`:
+  the key `m:<mod>:<id>`, the option's default) or from its field in `Settings`; a change is saved under that key and
+  then the row's own handler is called with it (`OptionsLayout.AppSet`), as `ModOptionsToggleControl`,
+  `ModOptionsSliderControl` and `ModOptionsDropdownControl` do. A switch's handler is the page's wrapper, so the Mods tab
+  hears of it. The app calls `PlayerPrefs.Save` when it is closed after a change.
+- **Search** is the help's own box: from two letters the page shows every row with each word typed (`OptionsFind`, as
+  the Mods tab's box), under its group and section, at most 60, each with its control; the list keeps only the pages
+  with a match, open, as the help's list does while searched. While the box has the keyboard the mod's keys are off.
+- **Cost**: the window and the list are built the first time the app is opened (a few hundred objects, the game paused
+  under the menu); a page takes rows from pools of each kind, so a page shown again makes nothing; a change writes the
+  rows of the page that hang on it. Nothing runs a frame of its own.
 - **Opening it** from the Mods tab waits for the options to close (`GuideApp.Blocked`), as the Guide does. Another app's
   page can add a button that opens it on a section (`SettingsApp.Link`; BizMan's Interior tab).
+- **If the game changes**: a part of the help or of the settings menu not where it was leaves the app off the phone,
+  with one line in Player.log; the options stay on the Mods tab.
 
-Proven: the game's members named, from the decompiled game. Not seen running: the ten tabs side by side, the box's
-height for an option's page.
+Proven: the game's members and objects named, from the decompiled game and the scene data (`evidence/uitools/uitree.py
+script:HelpSystem`, `script:ModOptionsToggleControl`, `name:ResetWindows`). Not seen running: the window inside the full
+menu, the drop-down's list over it, the rows' heights with long descriptions.
 
 ## 36. The box's own look (`InfoBox.Look.cs`, `InfoBox.Parts.cs`, `LookRules`)
 
