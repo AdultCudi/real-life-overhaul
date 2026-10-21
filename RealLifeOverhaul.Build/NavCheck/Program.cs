@@ -84,6 +84,7 @@ internal static partial class Program
         CarContactChecks(); // when a contact of the player's car is a hit: never the road under a braking van, a kerb or its load; every collision judged so (CarContactCheck.cs)
         Handling(Array.IndexOf(args, "--handling") >= 0);   // the driven car's handling on the game's own cars, with the Garage's builds, and its sources (HandlingCheck.cs)
         Walks();          // walking on a key: the toggle, the walk over the game's own pace frame by frame, its cycle, and its sources (WalkCheck.cs)
+        Washes();         // the game's car wash in a repair bay never holding a car for good, and every way out of the custom shop (WashCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();
