@@ -9,7 +9,8 @@ namespace RealLifeOverhaul.Economy
     /// each a letter and a colon, its records divided by ';' and fields by '|'.
     ///   s  state|name|seed|founded|end day|end cents|why|last day|capital|reserves|strategy|fund limit|rebalance|scare|
     ///      run|run from|stage|deadline|strikes|fined|month from|month|month income|month costs|last income|last costs|
-    ///      month lost|last lost|lost in all|recovered in all|history count|test|closures|watch told|stood still
+    ///      month lost|last lost|lost in all|recovered in all|history count|test|closures|watch told|stood still|
+    ///      level|its record's day|level told|pay mode|pay share|fixed pay|paid this month|paid last month|paid in all
     ///   d  each kind of saver: deposits|points over the rivals
     ///   l  each kind of borrower: loans|arrears|recovering|its days|points over the rivals|lending
     ///   f  the fund's holdings: stock|ticker|name|shares|cost|last price|dividend
@@ -35,7 +36,8 @@ namespace RealLifeOverhaul.Economy
             {
                 (int)b.State, 0, b.Seed, b.FoundedDay, b.EndDay, b.EndCents, (int)b.Why, b.LastDay, b.Capital, b.Reserves, b.Strategy, b.FundLimit, b.Rebalance ? 1 : 0, b.Scare,
                 b.Run ? 1 : 0, b.RunFrom, (int)b.Stage, b.Deadline, b.Strikes, b.FinedCents, b.MonthFrom, b.Month, b.MonthIncome, b.MonthCosts, b.LastIncome, b.LastCosts,
-                b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0, b.Closures, b.WatchTold, b.Still ? 1 : 0
+                b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0, b.Closures, b.WatchTold, b.Still ? 1 : 0,
+                b.Tier, b.TierFrom, b.TierTold, b.PayMode, b.PayShare, b.PayFixed, b.PaidMonth, b.PaidLast, b.PaidAll
             };
             for (int f = 0; f < head.Length; f++)
             {
@@ -250,7 +252,26 @@ namespace RealLifeOverhaul.Economy
             }
             b.WatchTold = c.Length > 33 ? I(c, 33) : int.MinValue;   // a line written before it was kept: never told
             b.Still = I(c, 34) != 0;
+            ReadTier(c, b);
             return true;
+        }
+
+        // The level and the owner's pay (Economy/OwnBank/Tiers). A line written before levels has neither: its level is
+        // fitted to its bank when the director reads it (OwnBankRules.FitTier), and nothing is paid to the owner.
+        private const int TierAt = 35;
+
+        private static void ReadTier(string[] c, OwnBank b)
+        {
+            int tier = c.Length > TierAt && c[TierAt].Length > 0 ? I(c, TierAt) : BankTiers.Unknown;
+            b.Tier = tier >= BankTiers.Community && tier <= BankTiers.National ? tier : BankTiers.Unknown;   // one out of the table is fitted again
+            b.TierFrom = c.Length > TierAt + 1 ? I(c, TierAt + 1) : b.FoundedDay;
+            b.TierTold = c.Length > TierAt + 2 ? Clamp(I(c, TierAt + 2), BankTiers.Unknown, BankTiers.National) : BankTiers.Unknown;
+            b.PayMode = Clamp(I(c, TierAt + 3), BankTiers.PayShareMode, BankTiers.PayFixedMode);
+            b.PayShare = OwnBankRules.PayShareStep(I(c, TierAt + 4));
+            b.PayFixed = Math.Max(0, Math.Min(BankTiers.PayFixedMostCents, L(c, TierAt + 5)));
+            b.PaidMonth = Math.Max(0, L(c, TierAt + 6));
+            b.PaidLast = Math.Max(0, L(c, TierAt + 7));
+            b.PaidAll = Math.Max(0, L(c, TierAt + 8));
         }
 
         private static void WriteBranch(StringBuilder t, BankBranch br)

@@ -115,45 +115,46 @@ internal static partial class Program
         OwnBank b = YearBank(c);
         int level = c.Level;
         long people = b.Deposits[OwnBankCatalogue.People], reserves = b.Reserves, lent = b.Loans[OwnBankCatalogue.Good];
-        VisitResult r = OwnBankRules.Visit(b, BranchCatalogue.Open, OwnBankCatalogue.Fair, 40000, level, out long fee, out long moved);
+        VisitResult r = OwnBankRules.Visit(b, BranchCatalogue.Open, OwnBankCatalogue.Fair, 40000, level, OwnBankRules.Caps(b, level, 0), out long fee, out long moved);
         Check(r == VisitResult.PaidIn && moved == 40000 && b.Deposits[OwnBankCatalogue.People] == people + 40000 && b.Reserves == reserves + 40000
               && fee == BranchCatalogue.OpenFeeCents && b.CounterFees == fee && OwnBankRules.Balanced(b),
             "bank branch: an account opened is a deposit of the city's people and cash in the reserves, its fee waiting for the day, the books balanced");
-        r = OwnBankRules.Visit(b, BranchCatalogue.Withdraw, OwnBankCatalogue.Fair, 30000, level, out fee, out moved);
+        r = OwnBankRules.Visit(b, BranchCatalogue.Withdraw, OwnBankCatalogue.Fair, 30000, level, OwnBankRules.Caps(b, level, 0), out fee, out moved);
         Check(r == VisitResult.TakenOut && moved == 30000 && b.Deposits[OwnBankCatalogue.People] == people + 10000 && fee == BranchCatalogue.CounterFeeCents && OwnBankRules.Balanced(b),
             "bank branch: a withdrawal takes from both, for the counter's fee");
-        Check(!OwnBankRules.CounterLends(b, OwnBankCatalogue.Good, 600000) || OwnBankRules.Ratio(b) >= OwnBankCatalogue.LendRatio,
+        Check(!OwnBankRules.CounterLends(b, OwnBankCatalogue.Good, 600000, OwnBankRules.Caps(b, PriceRules.Start, 0)) || OwnBankRules.Ratio(b) >= OwnBankCatalogue.LendRatio,
             "bank branch: a bank lent up to its line makes no loan at the counter");
         OwnBankRules.PutIn(b, 100000000);   // capital over the line: room to lend
         lent = b.Loans[OwnBankCatalogue.Good];
-        r = OwnBankRules.Visit(b, BranchCatalogue.Loan, OwnBankCatalogue.Good, 600000, level, out fee, out moved);
+        r = OwnBankRules.Visit(b, BranchCatalogue.Loan, OwnBankCatalogue.Good, 600000, level, OwnBankRules.Caps(b, level, 0), out fee, out moved);
         Check(r == VisitResult.Lent && b.Loans[OwnBankCatalogue.Good] == lent + 600000 && fee == Math.Max(BranchCatalogue.LoanFeeLeastCents, 600000L * BranchCatalogue.LoanFee / 1000)
               && OwnBankRules.Balanced(b),
             "bank branch: a loan at the counter is the bank's loan out of its reserves, with its arrangement fee");
-        r = OwnBankRules.Visit(b, BranchCatalogue.Enquiry, OwnBankCatalogue.Fair, 0, level, out fee, out moved);
+        r = OwnBankRules.Visit(b, BranchCatalogue.Enquiry, OwnBankCatalogue.Fair, 0, level, OwnBankRules.Caps(b, level, 0), out fee, out moved);
         Check(r == VisitResult.None && fee == 0 && moved == 0, "bank branch: a question costs nothing and moves nothing");
-        r = OwnBankRules.Visit(b, BranchCatalogue.Loan, OwnBankCatalogue.Poor, 600000, level, out fee, out moved);
+        r = OwnBankRules.Visit(b, BranchCatalogue.Loan, OwnBankCatalogue.Poor, 600000, level, OwnBankRules.Caps(b, level, 0), out fee, out moved);
         Check(r == VisitResult.Refused && fee == 0 && !b.Lending[OwnBankCatalogue.Poor], "bank branch: no loan to those the bank does not lend to");
 
         // A withdrawal never takes more than the people hold or the bank has in cash.
         OwnBank small = NewBank(c);
         small.Deposits[OwnBankCatalogue.People] = 5000;
         small.Reserves += 5000;
-        r = OwnBankRules.Visit(small, BranchCatalogue.Withdraw, OwnBankCatalogue.Fair, 30000, level, out fee, out moved);
+        r = OwnBankRules.Visit(small, BranchCatalogue.Withdraw, OwnBankCatalogue.Fair, 30000, level, OwnBankRules.Caps(small, level, 0), out fee, out moved);
         Check(r == VisitResult.TakenOut && moved == 5000 && small.Deposits[OwnBankCatalogue.People] == 0 && OwnBankRules.Balanced(small), "bank branch: a withdrawal takes no more than is there");
-        r = OwnBankRules.Visit(small, BranchCatalogue.Withdraw, OwnBankCatalogue.Fair, 30000, level, out fee, out moved);
+        r = OwnBankRules.Visit(small, BranchCatalogue.Withdraw, OwnBankCatalogue.Fair, 30000, level, OwnBankRules.Caps(small, level, 0), out fee, out moved);
         Check(r == VisitResult.None && fee == 0, "bank branch: nothing to take out, and no fee");
 
         // No loan in a run or a breach, or beyond the reserve and the lending line.
         OwnBank run = YearBank(c);
         run.Run = true;
-        Check(!OwnBankRules.CounterLends(run, OwnBankCatalogue.Good, 600000), "bank branch: no loan at the counter in a run");
+        Check(!OwnBankRules.CounterLends(run, OwnBankCatalogue.Good, 600000, OwnBankRules.Caps(run, PriceRules.Start, 0)), "bank branch: no loan at the counter in a run");
         run.Run = false;
         run.Stage = Regulator.Breach;
-        Check(!OwnBankRules.CounterLends(run, OwnBankCatalogue.Good, 600000), "bank branch: no loan at the counter in a breach");
+        Check(!OwnBankRules.CounterLends(run, OwnBankCatalogue.Good, 600000, OwnBankRules.Caps(run, PriceRules.Start, 0)), "bank branch: no loan at the counter in a breach");
         run.Stage = Regulator.Clear;
-        Check(!OwnBankRules.CounterLends(run, OwnBankCatalogue.Good, run.Reserves), "bank branch: no loan that would take the reserves under what the deposits need");
-        Check(!OwnBankRules.CounterLends(run, OwnBankCatalogue.Good, OwnBankRules.CapitalNow(run) * 1000 / OwnBankCatalogue.LendRatio * 2),
+        Check(!OwnBankRules.CounterLends(run, OwnBankCatalogue.Good, run.Reserves, OwnBankRules.Caps(run, PriceRules.Start, 0)),
+            "bank branch: no loan that would take the reserves under what the deposits need");
+        Check(!OwnBankRules.CounterLends(run, OwnBankCatalogue.Good, OwnBankRules.CapitalNow(run) * 1000 / OwnBankCatalogue.LendRatio * 2, OwnBankRules.Caps(run, PriceRules.Start, 0)),
             "bank branch: no loan beyond the lending line");
         Check(BranchRules.Kind(0, true) == BranchCatalogue.Withdraw && BranchRules.Kind(BranchCatalogue.KindShare[0] + 1, true) == BranchCatalogue.Withdraw
               && BranchRules.Kind(999, false) == BranchCatalogue.Enquiry, "bank branch: in a run those who came to pay in take out instead");
@@ -161,7 +162,7 @@ internal static partial class Program
         // The fees are the bank's income with the next day, kept in its capital; the day's books balance.
         OwnBank day = YearBank(c);
         OwnBank same = YearBank(c);
-        OwnBankRules.Visit(day, BranchCatalogue.Open, OwnBankCatalogue.Fair, 40000, level, out long f1, out _);
+        OwnBankRules.Visit(day, BranchCatalogue.Open, OwnBankCatalogue.Fair, 40000, level, OwnBankRules.Caps(day, level, 0), out long f1, out _);
         same.Deposits[OwnBankCatalogue.People] += 40000;
         same.Reserves += 40000;
         var d1 = new BankDay();
@@ -176,7 +177,7 @@ internal static partial class Program
         OwnBank hourBank = YearBank(c);
         var br = new BankBranch { Place = "Main%20Street~12", Name = "Main Street", MonthFrom = BranchYear };
         long savings = hourBank.Savings, loans = hourBank.Lent;
-        BranchHourOut o = BranchRules.Hour(hourBank, br, MidBranch(), (BranchYear + 2) * 24 + 12, level, 5);
+        BranchHourOut o = BranchRules.Hour(hourBank, br, MidBranch(), (BranchYear + 2) * 24 + 12, level, 5, 0);
         Check(o.Visitors > 0 && o.Served == Math.Min(o.Visitors, 2 * BranchCatalogue.ServePerTeller) && o.Lost == o.Visitors - o.Served && OwnBankRules.Balanced(hourBank)
               && hourBank.Savings == savings + o.PaidIn - o.TakenOut && hourBank.Lent == loans + o.Lent && hourBank.CounterFees == o.Fees,
             "bank branch: an hour's visits are what the bank's deposits and loans moved by, and its fees are what waits (" + o.Served + " seen to)");
@@ -184,7 +185,7 @@ internal static partial class Program
             "bank branch: the branch counts the hour in its month and its week");
         var closed = new OwnBank();
         var none = new BankBranch { Place = "x" };
-        BranchHourOut nothing = BranchRules.Hour(closed, none, MidBranch(), 100, level, 5);
+        BranchHourOut nothing = BranchRules.Hour(closed, none, MidBranch(), 100, level, 5, 0);
         Check(nothing.Visitors == 0 && none.Month[BranchFigure.Visitors] == 0 && closed.CounterFees == 0, "bank branch: a branch of a bank that is not running sees nobody");
 
         // The same bank, hour and branch come to the same visits on every machine.
@@ -194,8 +195,8 @@ internal static partial class Program
         bool sameHours = true;
         for (int h = 0; h < 48; h++)
         {
-            BranchHourOut x = BranchRules.Hour(one, b1, MidBranch(), (BranchYear + 2) * 24 + h, level, 5);
-            BranchHourOut y = BranchRules.Hour(two, b2, MidBranch(), (BranchYear + 2) * 24 + h, level, 5);
+            BranchHourOut x = BranchRules.Hour(one, b1, MidBranch(), (BranchYear + 2) * 24 + h, level, 5, 0);
+            BranchHourOut y = BranchRules.Hour(two, b2, MidBranch(), (BranchYear + 2) * 24 + h, level, 5, 0);
             sameHours &= x.Served == y.Served && x.Fees == y.Fees && x.PaidIn == y.PaidIn && x.Lent == y.Lent;
         }
         Check(sameHours && OwnBankStore.Write(one) == OwnBankStore.Write(two), "bank branch: the same bank, hours and branch come to the same books");
@@ -267,7 +268,7 @@ internal static partial class Program
                 {
                     for (int n = 0; n < list.Count; n++)
                     {
-                        BranchRules.Hour(many, list[n], MidBranch(), d * 24 + h, c.Level, 5);
+                        BranchRules.Hour(many, list[n], MidBranch(), d * 24 + h, c.Level, 5, 0);
                     }
                 }
                 BankCity city = c;
@@ -301,7 +302,7 @@ internal static partial class Program
         {
             for (int h = 0; h < 24; h++)
             {
-                fees += BranchRules.Hour(b, br, MidBranch(h >= 9 && h < 18), d * 24 + h, c.Level, 5).Fees;
+                fees += BranchRules.Hour(b, br, MidBranch(h >= 9 && h < 18), d * 24 + h, c.Level, 5, 0).Fees;
             }
         }
         long feesDay = fees / days;
@@ -343,7 +344,7 @@ internal static partial class Program
         b.Branches.Add(new BankBranch { Place = "Second~9", Name = "Second", MonthFrom = BranchYear });
         for (int h = 0; h < 30; h++)
         {
-            BranchRules.Hour(b, br, MidBranch(), (BranchYear + 1) * 24 + h, c.Level, 5);
+            BranchRules.Hour(b, br, MidBranch(), (BranchYear + 1) * 24 + h, c.Level, 5, 0);
         }
         b.CounterHour = (BranchYear + 2) * 24 + 5;
         br.Last[BranchFigure.Fees] = 4321;
@@ -516,7 +517,7 @@ internal static partial class Program
         {
             for (int n = 0; n < list.Count; n++)
             {
-                BranchRules.Hour(b, list[n], mid, (BranchYear + 3) * 24 + h, level, 5);
+                BranchRules.Hour(b, list[n], mid, (BranchYear + 3) * 24 + h, level, 5, 0);
             }
         }
     }

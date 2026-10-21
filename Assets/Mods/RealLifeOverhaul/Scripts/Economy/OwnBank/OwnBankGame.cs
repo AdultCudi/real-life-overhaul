@@ -45,7 +45,8 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// Everything the player's bank reads from or does to the game. Its money moves as the game's transactions at the
-    /// headquarters, the day's profit then kept in the bank, so the player's cash nets to nothing. Nothing runs per frame.
+    /// headquarters, the day's profit then kept in the bank, so the player's cash nets to the owner's pay alone (nothing
+    /// unless they chose a pay). Nothing runs per frame.
     /// </summary>
     public static class OwnBankGame
     {
@@ -116,7 +117,10 @@ namespace RealLifeOverhaul.Economy
             };
         }
 
-        /// <summary>A day booked at the headquarters on the day it is for: takings, costs, and the profit kept or the loss met.</summary>
+        /// <summary>
+        /// A day booked at the headquarters on the day it is for: takings, costs, the profit kept or the loss met, and the
+        /// owner's pay out of the profit into the player's cash, as a dividend is.
+        /// </summary>
         public static void BookDay(BankDay d, BuildingRegistration hq, int day)
         {
             long profit = d.Profit;
@@ -133,6 +137,10 @@ namespace RealLifeOverhaul.Economy
             if (profit > 0)
             {
                 Book(-profit, OwnBankCatalogue.KeptKey, hq, null, day, false, true);
+            }
+            if (d.Pay > 0)
+            {
+                Book(d.Pay, OwnBankCatalogue.PayKey, hq, null, day, false, false);
             }
         }
 

@@ -137,6 +137,7 @@ namespace RealLifeOverhaul.Economy
         public const string KeptKey = "reallife_transaction_ownbank_investment_kept";   // the day's profit kept in the bank's capital
         public const string CoveredKey = "reallife_transaction_ownbank_investment_covered";     // the day's loss met from it
         public const string SaleKey = "reallife_transaction_ownbank_investment_sale";   // the bank sold, or what its winding up left
+        public const string PayKey = "reallife_transaction_ownbank_investment_pay";     // the owner's pay out of the day's profit (Economy/OwnBank/Tiers)
         public const string SaversRow = "reallife_books_ownbank_savers";
         public const string LossesRow = "reallife_books_ownbank_losses";
         public const string SystemsKey = "reallife_transaction_ownbank_systems";       // at the end game's scale: its systems, compliance and deposit insurance

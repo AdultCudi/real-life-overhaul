@@ -75,9 +75,9 @@ namespace RealLifeOverhaul.Economy
                 float started = Time.realtimeSinceStartup;
                 int from = _bank.CounterHour == int.MinValue || now - _bank.CounterHour > CatchUpHours ? now : _bank.CounterHour + 1;
                 ReadBranches();
-                int visitors = 0, served = 0, lost = 0, loans = 0;
+                int visitors = 0, served = 0, lost = 0, loans = 0, full = 0;
                 long fees = 0;
-                int level = Prices.Level, month = GameCalendar.MonthDays;
+                int level = Prices.Level, month = GameCalendar.MonthDays, share = ScaleNow();
                 for (int hour = from; hour <= now && _bank.Running; hour++)
                 {
                     for (int i = 0; i < _branchRegs.Count; i++)
@@ -91,11 +91,12 @@ namespace RealLifeOverhaul.Economy
                         }
                         bool player = AtCounter(place);
                         BranchHourIn h = BranchGame.Hour(reg, player);
-                        BranchHourOut o = BranchRules.Hour(_bank, br, h, hour, level, month);
+                        BranchHourOut o = BranchRules.Hour(_bank, br, h, hour, level, month, share);
                         visitors += o.Visitors;
                         served += o.Served;
                         lost += o.Lost;
                         loans += o.Loans;
+                        full += o.Full;
                         fees += o.Fees;
                         if (player && o.Served > 0)
                         {
@@ -115,9 +116,9 @@ namespace RealLifeOverhaul.Economy
                 if (Verbose && _branchRegs.Count > 0)
                 {
                     bool balanced = !_bank.Running || OwnBankRules.Balanced(_bank);
-                    Logger?.Info("Bank branch check (hour " + Save.Hour + " of day " + Save.Day + "): " + _branchRegs.Count + " branch(es), " + visitors + " visitor(s), " + served
-                                 + " seen to, " + lost + " left unseen, " + loans + " loan(s) arranged, fees " + fees + " cents waiting for the day; the reach "
-                                 + Reach() + " thousandths; "
+                    Logger?.Info("Bank branch check (hour " + Save.Hour + " of day " + Save.Day + "): " + _bank.Branches.Count + " of " + _branchRegs.Count + " branch(es) taken in, "
+                                 + visitors + " visitor(s), " + served + " seen to, " + lost + " left unseen, " + loans + " loan(s) arranged, " + full
+                                 + " turned away as the bank's level takes no more deposits, fees " + fees + " cents waiting for the day; the reach " + Reach() + " thousandths; "
                                  + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms; the books "
                                  + (balanced ? "balance: PASS" : "DO NOT BALANCE: FAIL") + ".");
                 }
@@ -128,19 +129,32 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The player's branches now, each with its figures in the bank; the figures of a branch no longer there are let go.
+        // The player's branches now, each with its figures in the bank: the figures of a branch no longer there are let go
+        // first, then a new branch is taken in while the bank's level has room for one (OwnBankRules.BranchRoom). A branch
+        // past the level's count is not the bank's: it sees nobody until the bank moves up, and the player is told once a
+        // day. The branches taken in before stay, however many the level allows.
         private void ReadBranches()
         {
             BranchGame.Branches(_branchRegs);
+            for (int b = _bank.Branches.Count - 1; b >= 0; b--)
+            {
+                if (!Listed(_bank.Branches[b].Place))
+                {
+                    Logger?.Info("Bank branch: '" + _bank.Branches[b].Name + "' is no longer one of the player's branches; its figures are let go.");
+                    _bank.Branches.RemoveAt(b);
+                }
+            }
             int today = Save.Day;
+            string waiting = null;
             for (int i = 0; i < _branchRegs.Count; i++)
             {
                 string place = BranchGame.Place(_branchRegs[i]);
                 BankBranch br = _bank.Branch(place);
                 if (br == null)
                 {
-                    if (_bank.Branches.Count >= BranchCatalogue.BranchesMost)
+                    if (!_bank.Running || !OwnBankRules.BranchRoom(_bank))
                     {
+                        waiting = waiting ?? BranchGame.Name(_branchRegs[i]);
                         continue;
                     }
                     br = new BankBranch { Place = place, MonthFrom = today };
@@ -149,13 +163,9 @@ namespace RealLifeOverhaul.Economy
                 }
                 br.Name = BranchGame.Name(_branchRegs[i]);
             }
-            for (int b = _bank.Branches.Count - 1; b >= 0; b--)
+            if (waiting != null && _bank.Running)
             {
-                if (!Listed(_bank.Branches[b].Place))
-                {
-                    Logger?.Info("Bank branch: '" + _bank.Branches[b].Name + "' is no longer one of the player's branches; its figures are let go.");
-                    _bank.Branches.RemoveAt(b);
-                }
+                TellWaiting(waiting);
             }
         }
 
@@ -215,7 +225,7 @@ namespace RealLifeOverhaul.Economy
             }
             BranchFloor.Instance?.Stand(BranchInside());
             WatchCounter(reg);
-            OfferCounter(reg);
+            OfferCounter(place != null && _bank.Branch(place) != null ? reg : null);   // a branch waiting for a larger licence has no counter to work
         }
 
         // A free till of the branch the player is in is the counter they may click; nothing to click elsewhere, or while they work.
@@ -424,7 +434,7 @@ namespace RealLifeOverhaul.Economy
                 h.Open = true;
                 h.Tellers = Math.Max(1, h.Tellers);
                 int busiest = 12;   // the lunchtime peak, whatever the hour now
-                BranchHourOut o = BranchRules.Hour(_bank, br, h, Save.Day * 24 + busiest, Prices.Level, GameCalendar.MonthDays);
+                BranchHourOut o = BranchRules.Hour(_bank, br, h, Save.Day * 24 + busiest, Prices.Level, GameCalendar.MonthDays, ScaleNow());
                 if (br.Place == _insidePlace)
                 {
                     BranchFloor.Instance?.NewHour(br);
