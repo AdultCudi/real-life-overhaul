@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Texts
     /// <summary>
     /// Your own AI's rules, game-free (EconomyCheck, TextsServiceChecks.cs): the request for a card to each kind of
     /// service (the chat API that most speak, Anthropic's Messages API, the ChatGPT plan's streamed Responses API), with
-    /// exactly RLO Texts' system turn and card (TextCard.System and TextCard.Card, as the local pack is given them);
+    /// RLO Texts' system turn and card (TextCard.ServiceSystem and TextCard.Card: the local pack's, the language named);
     /// reading the words back out of each kind of answer; telling the faults apart and how long to rest after each; the
     /// models a service lists; and taking anything like a key or a token out of a line before it is logged.
     /// COST: a few strings a request, on the runner's worker threads; nothing per frame.
@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Texts
         // ---------------------------------------------------------------- the request
 
         /// <summary>
-        /// The request for one card: <paramref name="system"/> and <paramref name="card"/> are RLO Texts' own (TextCard.System,
+        /// The request for one card: <paramref name="system"/> and <paramref name="card"/> are RLO Texts' own (TextCard.ServiceSystem,
         /// TextCard.Card); <paramref name="secret"/> the key or the access token (null for a program on this PC).
         /// <paramref name="noReasoning"/> and <paramref name="noTemperature"/> leave out what the service refused before.
         /// </summary>

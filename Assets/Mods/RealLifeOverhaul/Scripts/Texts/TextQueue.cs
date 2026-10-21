@@ -30,7 +30,8 @@ namespace RealLifeOverhaul.Texts
         public int Id;
         public string Key;              // what it is for ("fp:123", "ph:dana:42"): the same key asked again finds this one
         public string Prompt;           // the ChatML text (TextCard.ChatMl)
-        public string Card;             // the card alone (TextCard.Card): what an AI service is sent, after TextCard.System (Your own AI)
+        public string Card;             // the card alone (TextCard.Card): what an AI service is sent, after its system turn (Your own AI)
+        public string System;           // ...that system turn (TextCard.ServiceSystem: data v6's in the card's language); null: TextCard.System
         public TextPriority Priority;
         public double Asked;            // real seconds (TextQueue's clock) it was asked
         public double Deadline;         // ...by which it must be shown; past it the written line is used

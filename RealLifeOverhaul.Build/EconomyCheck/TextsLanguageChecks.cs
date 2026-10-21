@@ -118,8 +118,6 @@ internal static partial class Program
     {
         var q = new TextQueue();
         var hub = new TextsHub(q) { Runner = new PretendRunner(), Data = TextIntents.DataV6, Language = "pt", Languages = new[] { "en", "pt" }, Pack = "RLO Texts" };
-        hub.Allowed = (use, shared) => hub.WritesLanguage;
-        hub.Barred = (use, shared) => hub.WritesLanguage ? TextShownWhy.Off : TextShownWhy.Language;
         string got = "(none)";
         TextRequest r = TextsAskOf("pt1", "friend.crash", null, w => got = w);
         bool asked = hub.Ask(r, 0);
