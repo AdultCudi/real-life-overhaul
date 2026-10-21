@@ -677,6 +677,31 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>
+        /// Opens the game's BizMan on a business's own page, as the game's own buttons do (MyEmployees.ManageSchedule,
+        /// UniformLockerController: BizMan.Open with the business's address, BizMan picking its first tab). Only a business of
+        /// the player's own (GoingPublic.Mine); nothing is sent or written. False, with nothing opened, if it cannot be.
+        /// Runs on a click only.
+        /// </summary>
+        public static bool OpenBizMan(BuildingRegistration reg)
+        {
+            try
+            {
+                global::UI.UIs ui = InstanceBehavior<global::UI.UIs>.Instance;
+                if (reg == null || !reg.RentedByPlayer || reg.Address == null || ui == null || ui.fullMenu == null || ui.fullMenu.bizMan == null || !GoingPublic.Mine(reg))
+                {
+                    return false;
+                }
+                ui.fullMenu.bizMan.Open(reg.Address);
+                return true;
+            }
+            catch (Exception e)
+            {
+                CompanyApp.Logger?.Error(e);
+                return false;
+            }
+        }
+
         // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
         private static TransactionInfo Info(string key, string name)
         {
