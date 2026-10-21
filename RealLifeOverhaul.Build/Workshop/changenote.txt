@@ -1,4 +1,16 @@
-0.42.0
+0.43.0
 
 New
-- RLO Texts, with a pack made for it: messages in the game's language when the pack writes it, people who remember how you met, what you talked about and the news of yours they heard, replies held to the rules as they are written, texts from your staff and from the people in your life after your own news, gossip, and reviews of your businesses from their real figures. Without such a pack nothing changes. Under Options, Test tools, RLO Texts: what was shown counts the model's words and the written lines.
+- At night your partner sleeps in your bed, where you can see them, and gets up in the morning; in a bed for two they leave you room, and from a bed for one they make way while you sleep. Household chores are real now: your partner asks only when it is so (the fridge nearly empty, the flat a mess, you unwashed, a filthy car), face to face at home or by text, and it counts once it is really done (groceries in the fridge, the flat tidied, a shower, a car wash) in a day or two; a promise not kept is a text and a cooler home. Have a chat with your partner at home is now the phone's chat, face to face: the same topics and answers. Your own AI writes in the game's language: English, Portuguese, Chinese, German, French, Spanish or Russian, as native speakers write it, and each reply is checked in that language. In Dutch and Turkish messages keep their written lines, since a reply in them cannot be checked.
+
+Fixed
+- Credit card and overdraft limits now follow your income as well as your rating.
+- Texts your partner writes at night no longer slip by while you sleep; they come in the morning, with a notice.
+- Cook together now opens your cooking list and uses what is in the fridge or the leftovers; you cook it at the stove and a portion is theirs.
+- For Watch together your partner sits on the seat facing the TV, and beside you on a sofa.
+- Your partner no longer stands at one spot doing the same thing for days; they move between more places and do different things.
+- Your partner now comes in when they get home while you are in, and only comforts you after a bad day when you are both at home.
+- Your partner comes in and leaves by the flat's real door; their sweeping and wiping really clean the flat; and next of kin stays Mom until you marry.
+- Texts from your partner and family that wait for the morning are now kept in your save, so a save and quit at night no longer loses them; they arrive in the morning after you load.
+- A building you sold, such as a car park another mod sells, could come back as yours when the save loaded, still on the market, and be sold again for the same price. A building you sell now stays sold: if it comes back without being bought again, it goes back to its buyer and you are told once.
+- The car wash in a repair bay could lock a car for good, so it would not drive and you could not get out until the game was loaded again. It happened with cars from other mods that have no wash spray or sound of their own. Those cars now wash as the game's own do, and a wash that stops is ended after a few seconds, with the car clean. The custom shop also hands the car and the view back at once if it is switched off while open.
