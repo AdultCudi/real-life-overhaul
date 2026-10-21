@@ -251,17 +251,27 @@ internal static partial class Program
             }
         }
         Check(missing.Count == 0, "Flare closed reviews: the Tests entry's texts are in every language, short enough for a toast" + (missing.Count > 0 ? "; not: " + string.Join(", ", missing) : string.Empty));
+        // The What's new row that holds the fix: the next row, or the version's row once the release numbers it
+        string row = null;
+        foreach (var r in words[0])
+        {
+            if (r.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !r.Key.EndsWith("_title", StringComparison.Ordinal)
+                && r.Value.Contains("temporarily closed") && r.Value.Contains("opening hours"))
+            {
+                row = r.Key;
+            }
+        }
         var lines = new List<string>();
         for (int l = 0; l < codes.Length; l++)
         {
-            string next = words[l].TryGetValue("reallife_changes_next", out string t) ? t : string.Empty;
-            if (!FixMarks.TryGetValue(codes[l], out string mark) || !next.StartsWith(mark, StringComparison.Ordinal) || !next.Contains("Flare"))
+            string text = row != null && words[l].TryGetValue(row, out string t) ? t : string.Empty;
+            if (!FixMarks.TryGetValue(codes[l], out string mark) || !text.StartsWith(mark, StringComparison.Ordinal) || !text.Contains("Flare"))
             {
                 lines.Add(codes[l]);
             }
         }
-        Check(lines.Count == 0 && words[0]["reallife_changes_next"].Contains("temporarily closed") && words[0]["reallife_changes_next"].Contains("opening hours"),
-            "Flare closed reviews: What's new's next row has the fix in every language (" + codes.Length + (lines.Count > 0 ? "; not in " + string.Join(", ", lines) : string.Empty) + ")");
+        Check(row != null && lines.Count == 0,
+            "Flare closed reviews: What's new has the fix in every language, in the same row (" + (row ?? "no row") + ", " + codes.Length + (lines.Count > 0 ? "; not in " + string.Join(", ", lines) : string.Empty) + ")");
     }
 
     // ---------------------------------------------------------------- the cost

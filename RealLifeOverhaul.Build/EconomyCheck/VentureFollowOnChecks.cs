@@ -235,6 +235,6 @@ internal static partial class Program
         Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(DesignLocales, "zh-cn.json"));
         Check(en != null && pt != null && zh != null && en.ContainsKey("reallife_vc_test_round") && pt.ContainsKey("reallife_vc_test_round") && zh.ContainsKey("reallife_vc_test_round"),
             "venture follow-on: the test of a round is named in en, pt and zh-cn");
-        Check(en != null && en.TryGetValue("reallife_changes_next", out string next) && next.Contains("Fixed: a startup's follow-on"), "venture follow-on: What's new says so");
+        Check(AnyChangesRow(en, "Fixed: a startup's follow-on"), "venture follow-on: What's new says so (the next row, or the version's row once the release numbers it)");
     }
 }
