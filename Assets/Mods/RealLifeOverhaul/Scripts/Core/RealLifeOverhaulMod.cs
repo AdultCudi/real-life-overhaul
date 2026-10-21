@@ -836,6 +836,8 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsLarge = v)
                 .AddToggle(Settings.MarketsReinvestId, "reallife_mkt_inv_opt_reinvest", Settings.MarketsReinvest,
                     v => Settings.MarketsReinvest = v)
+                .AddToggle(Settings.MarketsDerivativesId, "reallife_mkt_drv_opt", Settings.MarketsDerivatives,
+                    v => Settings.MarketsDerivatives = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
@@ -843,6 +845,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mkt_bot_test_month", () => Markets.MarketDirector.Instance?.TestBotMonth())
                 .AddButton("reallife_mkt_bond_test_open", () => Markets.MarketDirector.Instance?.TestBonds())
                 .AddButton("reallife_mkt_bond_test_pay", () => Markets.MarketDirector.Instance?.TestBondPay())
+                .AddButton("reallife_mkt_drv_test_open", () => Markets.MarketDirector.Instance?.TestFutures())
+                .AddButton("reallife_mkt_drv_test_settle", () => Markets.MarketDirector.Instance?.TestSettle())
+                .AddButton("reallife_mkt_drv_test_call", () => Markets.MarketDirector.Instance?.TestCall())
                 .AddButton("reallife_mkt_inv_test_work", () => Markets.MarketDirector.Instance?.TestWorkedDay())
                 .AddButton("reallife_mkt_inv_test_back", () => Markets.MarketDirector.Instance?.TestPutBack())
                 .AddButton("reallife_mkt_inv_test_roll", () => Markets.MarketDirector.Instance?.TestRollover())
