@@ -36,6 +36,21 @@ namespace RealLifeOverhaul
             return seat.SittingPosition;
         }
 
+        /// <summary>
+        /// A free sitting position of a seat that somebody may already sit on elsewhere (the other end of a sofa), by the
+        /// game's own rule for joining them (SeatController.CanSit); the one turned most towards <paramref name="facing"/>.
+        /// Null if there is none.
+        /// </summary>
+        public static Transform Beside(ItemController item, Vector3 facing)
+        {
+            var seat = item as SeatController;
+            if (seat == null || !seat.isActiveAndEnabled || !seat.CanSit)
+            {
+                return null;
+            }
+            return seat.GetBestAngledSeatingPosition(facing) ?? seat.SittingPosition;
+        }
+
         /// <summary>True if somebody standing here is near enough to a seat to sit on it without being seen to jump.</summary>
         public static bool InReach(Vector3 from, Transform seat)
         {

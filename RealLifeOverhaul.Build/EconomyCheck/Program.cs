@@ -102,6 +102,7 @@ internal static partial class Program
         Identity();
         DailyRun();
         Products();
+        CreditIncomeLimits();
         Interest();
         Instalments();
         OverdraftCover();
@@ -162,7 +163,7 @@ internal static partial class Program
         TextsShownSix();       // what RLO Texts showed: the model's words against the written lines and why, by pack and intent, the hourly line, the hub counting every way (TextsShownChecks.cs)
         TextsMemorySix();      // what people remember: the lines, a card's choice the same in any order, whose keys, the save, caps and pruning, the topics (TextsMemoryChecks.cs)
         TextsCitySix();        // the city's new talk: the staff, life events, who texts, gossip, reviews, every written line, the save, RLO Texts Large, the sources (TextsCityChecks.cs)
-        TextsServiceSix();     // your own AI beside data v6: the English card finished as a pack's, a game in another language left to the pack, the pack's own card after a miss; Dutch and Turkish keep their written lines (TextsServiceSixChecks.cs)
+        TextsServiceSix();     // your own AI beside data v6: the card finished as a pack's in the game's language, the pack's own card after a miss; each of the seven languages asked, checked and fallen back in; Dutch and Turkish keep their written lines (TextsServiceSixChecks.cs, TextsServiceLanguageChecks.cs)
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
         ComposerChecks();   // a call's composer: the two answers without a pack, typed words worth the warm answer a day as before, the model's words read by no rule, cleaned (ComposerChecks.cs)
         TypedReadingChecks();   // what an answer typed on a call says, in every language, and what it gets back: never a sorry to good news (TypedReadingChecks.cs)
@@ -194,6 +195,7 @@ internal static partial class Program
         Firms();
         Competitors();
         LetGo();        // a building let go: the utilities' accounts and bills, business pressure's closures, an underground car park never supplied (LetGoChecks.cs)
+        SoldBack();     // a building sold and put back as the player's for nothing goes back to its buyer, a purchase since stays the player's (SoldBackChecks.cs)
         Hiring();
         Tech();
         Careers();
@@ -255,6 +257,9 @@ internal static partial class Program
         FamilyExpect(); // the partner expects a bigger home and more evenings out as the player gets richer (FamilyExpectChecks.cs)
         FamilyWork();   // the partner cuts back to half days once the player is well off (FamilyWorkChecks.cs)
         FamilyFixes();  // family life: a refused passage done at once, the player's own missed appointment booked again, counselling's threshold (FamilyFixChecks.cs)
+        FamilyHomeFixes();  // the partner at home: night texts kept for the morning, cooking and watching together, moving about, the chat face to face (FamilyHomeChecks.cs)
+        FamilyChores();  // household chores asked when really so and counted when really done (FamilyChoreChecks.cs)
+        FamilyHeldTexts();  // the family texts kept for the morning, kept in the save too (FamilyHeldTextChecks.cs)
         MetaFixes();    // the options page and Report a bug: Import without its backup, a report never left busy, the pages' search and dispatcher lines (MetaFixChecks.cs)
         MoodBuffs();    // the mod's moods: a cap from each catalogue entry, a load puts saved moods back as saved (never through Going Public's scaled add), a save past the cap trimmed once (MoodBuffChecks.cs)
         LaterLanguages(); // Dutch and Turkish: listed wherever the other languages are, as complete as the other translations, What's new numbered and marked (LaterLanguageChecks.cs)

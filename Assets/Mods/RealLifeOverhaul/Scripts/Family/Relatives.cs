@@ -251,12 +251,14 @@ namespace RealLifeOverhaul.Family
 
         public static string NextOfKin()
         {
+            // A spouse is next of kin, not somebody the player is dating or engaged to: Mom until the wedding.
             FamilySave s = FamilyState.S;
-            if (!string.IsNullOrEmpty(s.NextOfKin))
+            bool spouse = FamilyState.Bond == Bond.Married;
+            if (!string.IsNullOrEmpty(s.NextOfKin) && (spouse || s.NextOfKin != Partner.Name))
             {
                 return s.NextOfKin;
             }
-            return FamilyState.Together ? Partner.Name : FamilyText.T("reallife-mom");
+            return spouse ? Partner.Name : FamilyText.T("reallife-mom");
         }
 
         public static DialogEntry NextOfKinStep()
@@ -269,7 +271,7 @@ namespace RealLifeOverhaul.Family
             bool take = false;
             for (int pass = 0; pass < 2 && next == null; pass++)
             {
-                if (FamilyState.Together)
+                if (FamilyState.Bond == Bond.Married)
                 {
                     if (take) { next = Partner.Name; break; }
                     take |= current == Partner.Name;

@@ -42,6 +42,20 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
+    /// A building of the player's that a sale took (the game's to a competitor, or the agency's), remembered so that the
+    /// very ownership put back afterwards, with no purchase since (another mod restoring its buildings as a save loads),
+    /// is handed back to its buyer and cannot be sold again (<see cref="EstateRules.SoldBack"/>).
+    /// </summary>
+    public sealed class SoldBuilding
+    {
+        public string Place;                    // street and number (EstateGame.Place)
+        public int SoldDay;                     // the day the sale's money came in
+        public int BoughtDay;                   // the purchase day the ownership had when it was sold
+        public string Rival = string.Empty;     // who bought it, as the game named the owner after the sale; empty if not known
+        public bool Told;                       // the player has been told it was handed back
+    }
+
+    /// <summary>
     /// One building the player owns. The fields from <see cref="Base"/> on are read from the game, not saved; the first
     /// of <see cref="Units"/> holds what a save from before units kept as the building's lease.
     /// </summary>
@@ -316,6 +330,20 @@ namespace RealLifeOverhaul.Economy
         public readonly AgencyFile Agency = new AgencyFile();
         public readonly List<HotelFile> Hotels = new List<HotelFile>(2);
         public readonly HireFile Hire = new HireFile();
+        public readonly List<SoldBuilding> Sold = new List<SoldBuilding>(4);
+
+        /// <summary>The sale remembered of a building, or null.</summary>
+        public SoldBuilding SoldOf(string place)
+        {
+            for (int i = 0; place != null && i < Sold.Count; i++)
+            {
+                if (Sold[i].Place == place)
+                {
+                    return Sold[i];
+                }
+            }
+            return null;
+        }
 
         public EstateHolding Holding(string place)
         {

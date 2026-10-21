@@ -378,9 +378,14 @@ namespace RealLifeOverhaul.Texts
                 TextsGame.Notice("reallife_texts_test_no_save", null);
                 return;
             }
-            if (!Settings.Texts || !TextsGame.English)
+            if (!Settings.Texts)
             {
-                TextsGame.Notice(Settings.Texts ? "reallife_texts_test_language" : "reallife_texts_status_off", null, 12f);
+                TextsGame.Notice("reallife_texts_status_off", null, 12f);
+                return;
+            }
+            if (!Hub.ServiceWrites)
+            {
+                TextsGame.Notice("reallife_textsai_test_language", new Dictionary<string, string>(1) { { "service", p.Name } }, 16f);   // (Dutch, Turkish: no checks of a reply in them)
                 return;
             }
             if (_service == null || _service.State == TextServerState.Failed || !Hub.ServiceUp)

@@ -2,17 +2,19 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Texts;
 
-// Your own AI beside RLO Texts' data v6: the service is given the newest card finished as a pack's would be in English
-// (its lang line, the speaker's memory) and its words are checked in English; a game in another language leaves the
-// service out and asks the pack in that language; after a miss of the service, a pack of data v6 gets its own card, its
-// system turn, grammar and language. And the mod's languages: Dutch and Turkish, whose texts are the mod's own and which
-// no pack writes, keep their written lines (TextLanguages.Unwritten), and every language of the mod is one of the two kinds.
+// Your own AI beside RLO Texts' data v6: the service is given the newest card finished as a pack's would be, in the game's
+// language (its lang line, the speaker's memory), and its words are checked in that language; after a miss of the
+// service, a pack of data v6 that writes the language gets its own card, its system turn, grammar and language. And the
+// mod's languages: Dutch and Turkish, whose texts are the mod's own and which no pack writes, keep their written lines
+// (TextLanguages.Unwritten), and every language of the mod is one of the two kinds. The service in each of the seven
+// languages is in TextsServiceLanguageChecks.cs.
 internal static partial class Program
 {
     private static void TextsServiceSix()
     {
         ServiceSixLanguages();
         ServiceSixRoute();
+        ServiceEveryLanguage();
     }
 
     private static void ServiceSixLanguages()
@@ -76,19 +78,28 @@ internal static partial class Program
             "your own AI with data v6: the service's words are checked in English and shown as the service's");
 
         hub.Language = "de";
+        hub.English = false;
         TextRequest german = TextsAskOf("six:2", "friend.crash", null, w => { });
         bool germanAsked = hub.Ask(german, 2);
-        TextJob packJob = packQ.Take(2.1, true);
+        TextJob germanJob = serviceQ.Take(2.1, true);
         string why = hub.ServiceWhy(TextUse.People, false, "friend.crash", null);
-        Check(germanAsked && serviceQ.Count == 0 && packJob != null && packJob.Prompt.Contains(TextCard.SystemSix) && packJob.Prompt.Contains("lang: de") && packJob.Grammar != null
-              && german.Lang == "de" && !german.ByService && why != null && why.Contains("writes English"),
-            "your own AI with data v6: with the game in German the service is left out (it writes English) and the pack is asked in German, with its grammar (" + why + ")");
+        Check(germanAsked && germanJob != null && packQ.Count == 0 && germanJob.Card.EndsWith("lang: de", StringComparison.Ordinal) && german.Lang == "de" && why == null,
+            "your own AI with data v6: with the game in German the service is asked first, its card's lang line German");
+        if (germanJob != null)
+        {
+            serviceQ.Done(germanJob, null, 0.1, "the check's");
+        }
+        hub.Look(2.2);
+        TextJob packJob = packQ.Take(2.3, true);
+        Check(packJob != null && packJob.Prompt.Contains(TextCard.SystemSix) && packJob.Prompt.Contains("lang: de") && packJob.Grammar != null && german.Lang == "de" && !german.ByService,
+            "your own AI with data v6: when the service misses in German, the pack that writes German is asked in German, with its own system turn and grammar");
         if (packJob != null)
         {
             packQ.Done(packJob, null, 0.1, "the check's");
         }
-        hub.Look(2.2);
+        hub.Look(2.4);
         hub.Clear();
+        hub.English = true;
 
         hub.Language = "en";
         got = "(none)";
