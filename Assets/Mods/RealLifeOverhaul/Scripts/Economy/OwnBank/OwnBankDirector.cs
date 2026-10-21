@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
+using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
 using UI.Notification;
@@ -84,15 +85,24 @@ namespace RealLifeOverhaul.Economy
             _second = EachSecond;
             _onSave = OnSave;
             _onDay = OnDay;
+            _onHour = OnHour;
+            _onCounter = CounterClicked;
             EconomyDirector.Follow(StartSeats.OwnBank, _second);   // its first second after a load waits for its seat (Core/StartLine)
+            EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
         }
 
         private void OnDestroy()
         {
             EconomyDirector.Unfollow(_second);
+            EconomyDirector.AfterHour -= _onHour;
             EconomyDirector.AfterDay -= _onDay;
             SaveHook.Drop(_onSave);
+            if (ReferenceEquals(DeskGame.OtherClicked, _onCounter))
+            {
+                DeskGame.OtherTarget = null;
+                DeskGame.OtherClicked = null;
+            }
             if (Instance != this)
             {
                 RemoveApp();
@@ -134,6 +144,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Install();
                 }
+                BranchSecond();
             }
             catch (Exception e)
             {
@@ -174,6 +185,7 @@ namespace RealLifeOverhaul.Economy
                 _bank.Still = true;   // read back on the next start, so the days off are not run then
                 Write(Save);
             }
+            BranchesDown();
             _running = false;
             RemoveApp();
             Logger?.Info("Own bank: stood down (" + why + "); the bank is kept in the save as it is, nothing is run, booked or charged until it is on again.");
@@ -195,6 +207,7 @@ namespace RealLifeOverhaul.Economy
             Logger?.Error(e);
             try
             {
+                BranchesDown();
                 RemoveApp();
             }
             catch (Exception second)

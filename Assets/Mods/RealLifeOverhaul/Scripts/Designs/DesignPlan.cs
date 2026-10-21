@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Designs
         public string Size;
         public string Name;
         public DesignSource Source;
-        public ShowroomCut Cut;              // what a Car Showroom keeps of its source; null for a design offered whole
+        public ShowroomCut Cut;              // what a Car Showroom or a bank branch keeps of its source; null for a design offered whole
         public string Path;                  // under the installers' folder, with '/': building/size/type/name.json
     }
 
@@ -184,13 +184,24 @@ namespace RealLifeOverhaul.Designs
                     {
                         read1.Add(read(group[i]));
                     }
-                    DesignRules.Lot(DesignRules.Room(read1), lot);
+                    bool branch = kind.Way == DesignWay.Branch;
+                    if (!branch)
+                    {
+                        DesignRules.Lot(DesignRules.Room(read1), lot);
+                    }
                     cuts.Clear();
                     for (int i = 0; i < group.Count; i++)
                     {
-                        cuts.Add(read1[i] != null ? DesignRules.Cut(read1[i], lot) : null);
+                        cuts.Add(read1[i] == null ? null : branch ? DesignRules.BranchCut(read1[i]) : DesignRules.Cut(read1[i], lot));
                     }
-                    DesignRules.Showrooms(group, cuts, picks);
+                    if (branch)
+                    {
+                        DesignRules.Branches(group, cuts, picks);
+                    }
+                    else
+                    {
+                        DesignRules.Showrooms(group, cuts, picks);
+                    }
                     for (int p = 0; p < picks.Count; p++)
                     {
                         plan.Add(Planned(k, size, building, group[picks[p]], cuts[picks[p]]));

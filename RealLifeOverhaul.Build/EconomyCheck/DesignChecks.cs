@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul.Designs;
+using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
 
 // The ready-made designs (Scripts/Designs): the folders the game's installation firm reads, the names, the list of the mod's
@@ -58,8 +59,12 @@ internal static partial class Program
             {
                 registered.Add(DealerCatalogue.TypeName);
             }
+            if (text.Contains("BranchCatalogue.TypeName"))
+            {
+                registered.Add(BranchCatalogue.TypeName);
+            }
         }
-        Check(callers == 3, "designs: the business types are registered in three files (Tech/Firms/TechTypes, Careers/AcademyType, Economy/Dealer/DealerType), found " + callers);
+        Check(callers == 4, "designs: the business types are registered in four files (Tech/Firms/TechTypes, Careers/AcademyType, Economy/Dealer/DealerType, Economy/OwnBank/Branch/BranchType), found " + callers);
         var kinds = new HashSet<string>(StringComparer.Ordinal);
         var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (DesignKind kind in DesignCatalogue.Kinds)
@@ -73,7 +78,10 @@ internal static partial class Program
         {
             Check(kinds.Contains(type), "designs: the business type " + type + " the mod registers has no ready-made designs");
         }
-        Check(kinds.Count == registered.Count && kinds.Count == 7, "designs: the catalogue holds the mod's seven business types (" + kinds.Count + " in it, " + registered.Count + " registered)");
+        Check(kinds.Count == registered.Count && kinds.Count == 8, "designs: the catalogue holds the mod's eight business types (" + kinds.Count + " in it, " + registered.Count + " registered)");
+        int branchKind = Array.FindIndex(DesignCatalogue.Kinds, k => k.Type == BranchCatalogue.TypeName);
+        Check(branchKind >= 0 && DesignCatalogue.Kinds[branchKind].Way == DesignWay.Branch && DesignCatalogue.Kinds[branchKind].Building == BranchCatalogue.BuildingType,
+            "designs: the bank branch is cut to a bank's furniture, in the building it is opened in");
         Check(DesignCatalogue.Kinds[DesignCatalogue.Kinds.Length - 1].Type == DealerCatalogue.TypeName
               && DesignCatalogue.Kinds[DesignCatalogue.Kinds.Length - 1].Way == DesignWay.Showroom
               && DesignCatalogue.Kinds[DesignCatalogue.Kinds.Length - 1].Building == DealerCatalogue.BuildingType,
@@ -88,6 +96,7 @@ internal static partial class Program
         Check(DesignRules.FolderOf("reallife:businesstype_gamestudio") == "gamestudio" && DesignRules.FolderOf("reallife:businesstype_academy") == "academy",
             "designs: the tech firms' and the academy's folders");
         Check(DesignRules.FolderOf(DealerCatalogue.TypeName) == "businesstype", "designs: the Car Showroom's saved name has no ':', so the game reads its folder as 'businesstype'");
+        Check(DesignRules.FolderOf(BranchCatalogue.TypeName) == "bankbranch", "designs: the bank branch's folder is 'bankbranch', apart from the showroom's");
         Check(DesignRules.FolderOf("nounderscore") == string.Empty && DesignRules.FolderOf(null) == string.Empty, "designs: an id with no '_' has no folder");
         Check(DesignRules.IsSize("C1") && DesignRules.IsSize("K1") && DesignRules.IsSize("T16") && DesignRules.IsSize("Boat1"), "designs: the game's size folders are sizes");
         Check(!DesignRules.IsSize("c1") && !DesignRules.IsSize("C") && !DesignRules.IsSize("C1x") && !DesignRules.IsSize("") && !DesignRules.IsSize("LawFirm"),
@@ -245,6 +254,57 @@ internal static partial class Program
         cuts[1] = null;
         DesignRules.Showrooms(sources, cuts, picks);
         Check(picks.Count == DesignCatalogue.ShowroomMost && sources[picks[1]].Name == "Modern" && picks[1] == 3, "designs: a design that could not be read is passed over for the next of its name");
+        BranchCuts();
+    }
+
+    // The bank branch's cut: no lot, the bank's furniture kept, a till for its teller, seats to wait on first.
+    private static void BranchCuts()
+    {
+        var items = new List<DesignItem>
+        {
+            Item("counter", "counter1", 100, 0, 100),
+            Item("till", "cashregister", 100, 90, 100, "counter"),
+            Item("shelf", "storageshelf", 100, 0, 1400),
+            Item("sofa", "cornersofa01", 750, 0, 750),
+            Item("barrier", "beltbarrier", 400, 0, 400),
+            Item("wc", "toiletstall", 1400, 0, 100),
+            Item("plant", "groundplant01", 1400, 0, 1400),
+            Item("chair", "waitingroomchairs", 1300, 0, 1300),
+            Item("desk", "officedesk1", 750, 0, 760),
+            Item("pc", "computer", 750, 80, 760, "desk"),
+            Item("case", "displaycase", 500, 0, 500)
+        };
+        items[0].Children.Add("till");
+        items[8].Children.Add("pc");
+        ShowroomCut cut = DesignRules.BranchCut(items);
+        Check(cut.Kept.Contains("counter") && cut.Kept.Contains("till") && cut.Kept.Contains("sofa") && cut.Kept.Contains("desk") && cut.Kept.Contains("pc") && cut.Kept.Contains("barrier")
+              && cut.InLot == 0, "designs: a bank branch keeps its counter and till, the seats and desk in the middle of the floor and the queue's barrier: it has no lot");
+        Check(!cut.Kept.Contains("shelf") && !cut.Kept.Contains("case"), "designs: a bank branch keeps no shelves or display cases");
+        Check(cut.Tills == 1 && cut.Seats == 2 && cut.ValidBranch, "designs: a branch's cut counts its till and its seats to wait on, and is offered (" + cut.Seats + " seats)");
+        items.RemoveAt(1);
+        items[0].Children.Clear();
+        Check(DesignRules.BranchCut(items).Valid && !DesignRules.BranchCut(items).ValidBranch, "designs: a branch design without a till for its teller is not offered");
+        Check(!DesignRules.Cut(new List<DesignItem> { Item("barrier", "beltbarrier", 0, 0, 900) }, new List<FloorBox>()).Kept.Contains("barrier"),
+            "designs: a showroom keeps no queue barriers: the branch's extras are the branch's");
+
+        var sources = new List<DesignSource>();
+        var cuts = new List<ShowroomCut>();
+        void Add(string name, int tills, int seats)
+        {
+            sources.Add(Source(6, 0, "C1", name, "x/" + name + sources.Count + ".json"));
+            cuts.Add(new ShowroomCut { Furniture = DesignCatalogue.ShowroomLeast, Toilets = 1, Tills = tills, Seats = seats });
+        }
+        Add("Classic", 1, 0);
+        Add("Modern", 1, 3);
+        Add("Dark", 0, 4);
+        Add("Rustic", 1, 0);
+        Add("Modern", 2, 2);
+        Add("Lemon", 1, 1);
+        Add("Sky", 1, 0);
+        var picks = new List<int>();
+        DesignRules.Branches(sources, cuts, picks);
+        Check(picks.Count == DesignCatalogue.BranchMost && picks[0] == 1 && sources[picks[1]].Name == "Lemon" && sources[picks[2]].Name == "Classic" && sources[picks[3]].Name == "Rustic",
+            "designs: a branch is offered designs with seats to wait on first, then the rest, each with a till, one of a name, at most " + DesignCatalogue.BranchMost);
     }
 
     private static bool InAny(List<FloorBox> boxes, int x, int z)
@@ -382,6 +442,11 @@ internal static partial class Program
                 gameKeys.Add(k);
             }
         }
+        foreach (string keep in DesignCatalogue.BranchExtras)
+        {
+            Check(gameItems.Contains(DesignCatalogue.ItemPrefix + keep), "designs: the branch's " + keep + " is furniture the game's installation firms put in");
+            Check(gameWords == null || gameKeys.Contains(DesignCatalogue.ItemPrefix + keep), "designs: the branch's " + keep + " is an item the game names");
+        }
         foreach (string keep in DesignCatalogue.ShowroomKeeps)
         {
             Check(gameItems.Contains(DesignCatalogue.ItemPrefix + keep), "designs: the showroom's " + keep + " is furniture the game's installation firms put in");
@@ -389,7 +454,7 @@ internal static partial class Program
         }
 
         var perKind = new Dictionary<string, int>(StringComparer.Ordinal);
-        int tills = 0, showrooms = 0, inLot = 0, outside = 0, wrongSize = 0, unknown = 0, notSubset = 0, noDesk = 0, noToilet = 0, lostParent = 0;
+        int branches = 0, branchNoTill = 0, tills = 0, showrooms = 0, inLot = 0, outside = 0, wrongSize = 0, unknown = 0, notSubset = 0, noDesk = 0, noToilet = 0, lostParent = 0;
         string firstOutside = null;
         foreach (PlannedDesign design in plan)
         {
@@ -444,6 +509,13 @@ internal static partial class Program
                 noToilet += Has(kept, "toiletstall") ? 0 : 1;
                 continue;
             }
+            if (kind.Way == DesignWay.Branch)
+            {
+                branches++;
+                branchNoTill += design.Cut.Tills > 0 && Has(kept, "cashregister") ? 0 : 1;
+                noToilet += Has(kept, "toiletstall") ? 0 : 1;
+                continue;
+            }
             showrooms++;
             tills += design.Cut.Tills > 0 ? 1 : 0;
             noToilet += Has(kept, "toiletstall") ? 0 : 1;
@@ -489,10 +561,16 @@ internal static partial class Program
         Check(missing == 0, "designs: every business type of the mod's has at least one design at every size (" + missing + " missing)");
         Check(sizes.TryGetValue(0, out List<string> office) && string.Join(",", office) == "A3,C1,C2,D2,J1,K1", "designs: the office sizes are the game's six (" + (office != null ? string.Join(",", office) : "none") + ")");
         Check(sizes.TryGetValue(6, out List<string> retail) && string.Join(",", retail) == "A1,A2,C1,C2,D2,M1", "designs: the shop sizes are the game's six (" + (retail != null ? string.Join(",", retail) : "none") + ")");
+        Check(branches > 0 && branchNoTill == 0, "designs: every bank branch's design keeps a till for its teller (" + branchNoTill + " of " + branches + " without)");
         Check(showrooms > 0 && tills * 2 >= showrooms, "designs: most showroom designs keep a sales counter with its till (" + tills + " of " + showrooms + ")");
         foreach (PlannedDesign design in plan)
         {
-            if (design.Cut != null)
+            if (design.Cut != null && DesignCatalogue.Kinds[design.Kind].Way == DesignWay.Branch)
+            {
+                Console.WriteLine("    branch " + design.Size + " " + design.Name + ": the game's " + DesignCatalogue.Kinds[design.Kind].Donors[design.Source.Donor].Business + ", "
+                                  + design.Cut.Furniture + " pieces kept, " + design.Cut.Tills + " till(s), " + design.Cut.Seats + " seat(s) to wait on");
+            }
+            else if (design.Cut != null)
             {
                 string donor = DesignCatalogue.Kinds[design.Kind].Donors[design.Source.Donor].Business;
                 Console.WriteLine("    showroom " + design.Size + " " + design.Name + ": the game's " + donor + " " + System.IO.Path.GetFileNameWithoutExtension(design.Source.Path)
@@ -565,7 +643,7 @@ internal static partial class Program
 
             DesignsReport first = DesignFiles.Put(root, SandboxRead, SandboxCut);
             DesignManifest list = DesignFiles.List(root);
-            Check(!first.Failed && first.Written > 0 && first.Written == list.Files.Count && first.Designs == list.Files.Count && first.Types == 7,
+            Check(!first.Failed && first.Written > 0 && first.Written == list.Files.Count && first.Designs == list.Files.Count && first.Types == 8,
                 "designs job: the first start writes every design and lists each (" + first.Written + " written, " + list.Files.Count + " listed, " + first.Types + " types"
                 + (first.Why != null ? ", " + first.Why : string.Empty) + ")");
             Check(File.ReadAllText(foreign) == "somebody else's" && !list.Holds("Office/C1/ailab/Modern.json") && first.Skipped == 1,

@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-One Banks app on the phone for the city's three largest banks, each bank's page showing that bank's slice of the player's money, and late in a game a bank of the player's own, run from the headquarters.
+One Banks app on the phone for the city's three largest banks, each bank's page showing that bank's slice of the player's money, and late in a game a bank of the player's own, run from the headquarters, with branches of its own in shop units.
 
 ## Where the code is
 
@@ -181,3 +181,38 @@ That the City Ledger prints the pieces on the morning after (they are queued for
 That the headquarters' statement shows the bank's rows (the same path as the broadband company's network row).
 
 And the game's own text box for a name and an amount (as the bank apps use it).
+
+## Bank branches
+
+`Scripts/Economy/OwnBank/Branch/`.
+Branches of the player's own bank: a business type of the mod's own (`BranchType`, `reallife_bankbranch`, "Bank Branch") opened in a shop unit with BizMan while the bank runs, its customers booked in the bank's own books.
+Option: Business > Bank branches (`economy_bank_branch`, on; it needs Your own bank).
+Its figures are part of the bank's save line (`OwnBankStore` parts `k` and `b`); there is no line of its own.
+
+- **The business** is the game's own: rent, the fit-out (ready-made designs, see [Ready-made designs](designs.md)), opening hours, the rota and staff hired the game's way. Tellers are staff with customer service as their main skill, each on a shift at a till. The type sends no game shoppers (`spawnCustomers` off, no simulator); it is dressed as the city's banks (their icon and uniforms) once the game's types are there, and "prepare this save for removing the mod" makes each branch a gift shop (`BranchType.Strip`).
+- **An hour** (`OwnBankDirector.Branches`, `EconomyDirector.AfterHour`, at most three hours caught up): each branch's customers are the game's own count for a shop of its building (`CustomerEntriesCalculator.GetInitialCustomers`, by promotion as the game counts it) times the branch's share (180 thousandths), the hour's weight and its satisfaction; the counter sees to six an hour a teller on shift (70% to 130% by skill) and six for the player while they work it; the rest leave.
+- **A visit** (`BranchRules.Hour`, `OwnBankRules.Visit`) is drawn from the bank's seed, the hour, the branch and the visit: an account opened (about $400 paid in), a deposit ($350), a withdrawal ($300, never more than the people hold or the bank's cash), a loan of about $6,000 to a poorly, fairly or well rated person (only to those the bank lends to, outside a run or a breach, and within its cash over the reserve and its lending line), or a question. Each moves the bank's people's deposits, its loans and its reserves as its day does, so `OwnBankRules.Balanced` holds after every visit. In a run those who came to pay in take out. Fees: $25 an account, $1.50 cash at the counter, 1.5% of a loan (at least $50), at today's prices; they wait outside the balance sheet (`OwnBank.CounterFees`) and are the next day's takings (`BankDay.Counter`), booked at the headquarters with the rest.
+- **The reach** (`BranchRules.Reach`): the visits all branches saw to in the last seven days raise the bank's hold of the city's people (`BankCity.Reach`, read by `SaversWanted` and `LoansWanted`) towards 300 thousandths more, half of it at 2,000 visits a week; businesses get 400 thousandths of it. Each branch more adds less.
+- **The counter**: inside one of the player's branches a free till is clickable (`Careers/DeskGame`'s second target), the player walks to it and the game's own work panel (`Jobs/ShiftSkip`) offers a stint of up to four hours; while it runs the player stands at the till as the game's own WorkActivity puts them there and counts as a teller.
+- **The floor** (`BranchFloor`): while the player is in a branch, up to eight of the hour's customers come in at the door, queue across a staffed till from its teller, are seen to and leave, or wait and leave unseen; at most three at once, from the mod's people (`People/ActorPool`). It shows what the hour booked and changes nothing.
+- **The app**: a Branches tab in Your bank, a row a branch (this month's customers, seen to, left, accounts, loans, fees, rent and wages a day from the game's `RentPerDay` and the staff's shifts), and the reach with what it brings (`BranchRules.Worth`: the deposits and loans wanted with and without it, and their margin a day before staff).
+- **Off**: no hour is worked and none is owed later, the reach is nothing, the counter cannot be clicked and the floor is empty; the bank holds what it would without branches. The type stays registered, so a save that holds a branch still loads.
+
+What a branch comes to, in the offline check (a quiet city, a bank a year old, a mid-sized shop unit with two tellers, open 9 to 18): 553 customers seen to a week, a reach of 64 thousandths, $376 a day in fees and $2,921 a day of margin on $1.48 million more deposits and $1.84 million more loans, against $802 a day of rent and wages: $2,496 a day net, a $90,000 fit-out paid back in eight months of five days. A tenth such branch brings less than its rent and wages.
+
+Going Public: branches are the player's own registrations (`GoingPublic.Mine`); visits are drawn from the bank's own seed, so the same everywhere; the floor and the counter are local; nothing new is sent.
+Cost: nothing per frame; once a game hour one pass over the save's buildings and staff and a few dozen sums a branch (sixteen branches' hour in well under a millisecond offline, nothing allocated); once a second, inside a branch, a look at its tills; the floor four times a second over at most three people, only inside a branch.
+With "Developer diagnostics" on each hour writes `Bank branch check (hour N of day D)`: the branches, customers, seen to, loans, fees, the reach, the time and whether the books balance; walking in writes `Bank branch check (floor, ...)`.
+
+Tests: "An hour at my branch now" (a lunchtime hour of the branch the player is in, or the first, with a teller at least, booked now; "Put my bank back" undoes it) and "Customers at my branch now" (the floor of a busy hour, nothing booked).
+
+### Checks
+
+EconomyCheck (`BranchChecks.cs`): the catalogue; an hour's customers by hour, promotion and satisfaction, carried parts, a closed hour; the counter by tellers, skill and the player; each kind of visit in the books, balanced, with its fee, a withdrawal capped, no loan in a run, a breach, to those not lent to or past the line; the fees as the next day's takings and nothing else different; an hour's visits against the bank's moves; determinism; the month and the week; the reach bounded and diminishing, more of people than of businesses; a year with none, one, three and eight branches balanced every day; a branch that pays (the figures above) and a tenth that does not; the save with branches, without, short and capped; the option off; the floor's plan; the texts; an hour of sixteen branches timed and allocation-free.
+
+### Not verified (the game could not be run)
+
+That the game lists Bank Branch in BizMan's start screen for a shop unit and dresses it with the bank's icon and uniforms.
+That the till is clickable with the business's own call to action asked after the mod's, and that the player stands at it as at a job's till.
+That a teller hired for the branch stands at the till on their shift, and that customers queue across it on the floor.
+That five tabs and eight columns fit the bank app.

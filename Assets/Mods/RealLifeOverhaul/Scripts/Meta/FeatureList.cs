@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Meta
             Street.StreetGuide.Register();
             Districts.DistrictGuide.Register();
             Economy.OwnBankGuide.Register();
+            Economy.BranchGuide.Register();
             EndScaleGuide.Register();
             Rivals.RivalGuide.Register();
             Photos.PhotosGuide.Register();

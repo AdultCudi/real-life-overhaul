@@ -71,8 +71,12 @@ namespace RealLifeOverhaul.Designs
         public int Tills;                    // kept points of sale, standing on kept counters
         public int Toilets;
         public int InLot;                    // pieces left out because they stood where the cars go
+        public int Seats;                    // kept seats to wait on (DesignCatalogue.BranchSeats)
 
         public bool Valid => Furniture >= DesignCatalogue.ShowroomLeast && Toilets > 0;
+
+        /// <summary>A bank branch's design: valid, and a till on a counter for its teller.</summary>
+        public bool ValidBranch => Valid && Tills > 0;
     }
 
     /// <summary>
@@ -85,13 +89,18 @@ namespace RealLifeOverhaul.Designs
     public static class DesignRules
     {
         private static readonly HashSet<string> Keeps = Build(DesignCatalogue.ShowroomKeeps);
+        private static readonly HashSet<string> BranchKeeps = Build(DesignCatalogue.ShowroomKeeps, DesignCatalogue.BranchExtras);
+        private static readonly HashSet<string> Seats = Build(DesignCatalogue.BranchSeats);
 
-        private static HashSet<string> Build(string[] names)
+        private static HashSet<string> Build(params string[][] lists)
         {
             var set = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 0; i < names.Length; i++)
+            for (int l = 0; l < lists.Length; l++)
             {
-                set.Add(DesignCatalogue.ItemPrefix + names[i]);
+                for (int i = 0; i < lists[l].Length; i++)
+                {
+                    set.Add(DesignCatalogue.ItemPrefix + lists[l][i]);
+                }
             }
             return set;
         }
@@ -287,6 +296,22 @@ namespace RealLifeOverhaul.Designs
         /// </summary>
         public static ShowroomCut Cut(List<DesignItem> items, List<FloorBox> lot)
         {
+            return Cut(items, lot, Keeps);
+        }
+
+        /// <summary>
+        /// What a bank branch keeps of a design: the showroom's furniture and <see cref="DesignCatalogue.BranchExtras"/>, with
+        /// no lot to keep clear, and of that only what stands on something kept, or on the floor.
+        /// </summary>
+        public static ShowroomCut BranchCut(List<DesignItem> items)
+        {
+            return Cut(items, NoLot, BranchKeeps);
+        }
+
+        private static readonly List<FloorBox> NoLot = new List<FloorBox>(0);
+
+        private static ShowroomCut Cut(List<DesignItem> items, List<FloorBox> lot, HashSet<string> keeps)
+        {
             var cut = new ShowroomCut();
             var byId = new Dictionary<string, DesignItem>(items.Count, StringComparer.Ordinal);
             for (int i = 0; i < items.Count; i++)
@@ -299,7 +324,7 @@ namespace RealLifeOverhaul.Designs
             for (int i = 0; i < items.Count; i++)
             {
                 DesignItem item = items[i];
-                if (string.IsNullOrEmpty(item.Id) || byId[item.Id] != item || !Keeps.Contains(item.Name ?? string.Empty) || Stray(item))
+                if (string.IsNullOrEmpty(item.Id) || byId[item.Id] != item || !keeps.Contains(item.Name ?? string.Empty) || Stray(item))
                 {
                     continue;
                 }
@@ -338,6 +363,7 @@ namespace RealLifeOverhaul.Designs
                 cut.Furniture += bare.IndexOf(DesignCatalogue.LampMark, StringComparison.Ordinal) < 0 ? 1 : 0;
                 cut.Tills += bare == DesignCatalogue.Till ? 1 : 0;
                 cut.Toilets += bare == DesignCatalogue.Toilet ? 1 : 0;
+                cut.Seats += Seats.Contains(item.Name) ? 1 : 0;
             }
             return cut;
         }
@@ -371,6 +397,30 @@ namespace RealLifeOverhaul.Designs
                     bool dealer = sources[i].Root == DonorRoot.Layouts;
                     bool fits = pass == 0 ? dealer : !dealer && (pass == 1 ? cut != null && cut.Tills > 0 : cut != null && cut.Tills == 0);
                     if (!fits || cut == null || !cut.Valid || Named(named, sources[i].Name))
+                    {
+                        continue;
+                    }
+                    named.Add(sources[i]);
+                    into.Add(i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The designs a bank branch is offered for one size, by their places in <paramref name="sources"/> (in
+        /// <see cref="Order"/>, each with its cut): those with seats to wait on first, then the rest, every one with a till for
+        /// its teller, one of each name, at most <see cref="DesignCatalogue.BranchMost"/>.
+        /// </summary>
+        public static void Branches(List<DesignSource> sources, List<ShowroomCut> cuts, List<int> into)
+        {
+            into.Clear();
+            var named = new List<DesignSource>(DesignCatalogue.BranchMost);
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = 0; i < sources.Count && into.Count < DesignCatalogue.BranchMost; i++)
+                {
+                    ShowroomCut cut = cuts[i];
+                    if (cut == null || !cut.ValidBranch || (pass == 0) != (cut.Seats > 0) || Named(named, sources[i].Name))
                     {
                         continue;
                     }

@@ -52,12 +52,27 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_ob_col_dividends", 280f, TableSort.Money, sums: true, right: true)
             .Order(3, false)
             .Empty("reallife_ob_empty_fund");
+
+        /// <summary>0 branch, 1 visitors this month, 2 seen to, 3 left unseen, 4 accounts opened, 5 loans arranged, 6 fees, 7 rent and wages a day.</summary>
+        public static readonly TableSpec Branches = new TableSpec("OwnBank", "Branches")
+            .Column("reallife_branch_col_branch", 440f, TableSort.Text, flexible: true)
+            .Column("reallife_branch_col_visitors", 200f, TableSort.Number, sums: true)
+            .Column("reallife_branch_col_served", 200f, TableSort.Number, sums: true)
+            .Column("reallife_branch_col_lost", 200f, TableSort.Number, sums: true)
+            .Column("reallife_branch_col_opened", 200f, TableSort.Number, sums: true)
+            .Column("reallife_branch_col_loans", 200f, TableSort.Number, sums: true)
+            .Column("reallife_branch_col_fees", 240f, TableSort.Money, sums: true)
+            .Column("reallife_branch_col_costs", 260f, TableSort.Money, sums: true, right: true)
+            .Empty("reallife_branch_empty");
     }
 
-    /// <summary>The bank's app (GameUi.AppShell) on four tabs: bank, savers, lending, fund. Written on opening, on a choice and after the day.</summary>
-    public sealed class OwnBankApp
+    /// <summary>
+    /// The bank's app (GameUi.AppShell) on five tabs: bank, savers, lending, fund, branches (OwnBankApp.Branches). Written on
+    /// opening, on a choice, after the day and after a branch's hour.
+    /// </summary>
+    public sealed partial class OwnBankApp
     {
-        private static readonly string[] TabKeys = { "reallife_ob_tab_bank", "reallife_ob_tab_savers", "reallife_ob_tab_lending", "reallife_ob_tab_fund" };
+        private static readonly string[] TabKeys = { "reallife_ob_tab_bank", "reallife_ob_tab_savers", "reallife_ob_tab_lending", "reallife_ob_tab_fund", "reallife_branch_tab" };
         private const int TypedLength = 12;
         private const string GuideTitle = "reallife_meta_title_economy_ownbank";
 
@@ -172,7 +187,7 @@ namespace RealLifeOverhaul.Economy
                 box.Clear();
                 string selected = null;
                 TableSpec spec = _tab == OwnBankDirector.TabSavers ? OwnBankTables.Savers : _tab == OwnBankDirector.TabLending ? OwnBankTables.Lending
-                    : _tab == OwnBankDirector.TabFund ? OwnBankTables.Fund : OwnBankTables.Books;
+                    : _tab == OwnBankDirector.TabFund ? OwnBankTables.Fund : _tab == OwnBankDirector.TabBranches ? OwnBankTables.Branches : OwnBankTables.Books;
                 OwnBank bank = _director.Bank;
                 if (bank == null || SaveGameManager.Current == null)
                 {
@@ -202,6 +217,10 @@ namespace RealLifeOverhaul.Economy
                     else if (_tab == OwnBankDirector.TabFund)
                     {
                         WriteFund(box, bank);
+                    }
+                    else if (_tab == OwnBankDirector.TabBranches)
+                    {
+                        WriteBranches(box, bank, city, ref selected);
                     }
                     else
                     {

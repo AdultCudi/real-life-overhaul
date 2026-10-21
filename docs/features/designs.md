@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-The game's interior installation firms offer the mod's own business types (the Car Showroom, the five tech firms and the Training Academy) ready-made designs, as they do the game's own businesses, made from the game's own designs and furniture at the game's own prices.
+The game's interior installation firms offer the mod's own business types (the Car Showroom, the bank branch, the five tech firms and the Training Academy) ready-made designs, as they do the game's own businesses, made from the game's own designs and furniture at the game's own prices.
 
 ## Where the code is
 
@@ -33,6 +33,7 @@ DesignsText         the locale keys
 At the game's start (and when the option is switched) a job on a worker thread puts a design file in each of those folders for every size the game has designs for in the type's building (offices A3, C1, C2, D2, J1, K1; shops A1, A2, C1, C2, D2, M1):
 
 - **The tech firms and the academy** get the game's own designs of the business they work as, whole: the web development agency's (computer workstations and washrooms, the furniture their requirements ask for), the Game Studio the graphic designer's first, the IT Consultancy the law firm's too, the academy the travel agency's and the law firm's. A name two donors share is the first donor's.
+- **The bank branch** gets up to four designs a size cut from the game's shop designs to a bank's furniture: what a showroom keeps (counters and the till, seats, desks, plants, washrooms and the rest) and the game's queue barriers, counters with glass, more chairs, a bench and a paper holder, with no lot to keep clear. Every design keeps a till on a counter for its teller and a washroom; those with seats to wait on are offered first.
 - **The Car Showroom** gets up to four designs a size cut from the game's own: its car dealerships' rooms (the `BusinessLayouts` of D2 and M1 whose names end in Cheap or Luxury) first, then shop designs with a sales counter and till, then the rest. A cut keeps only furniture on the catalogue's list (counters and the till, seats, tables, desks, plants, pictures, screens, carpets, lamps, washrooms, the staff's things) and nothing standing on the floor where the lot's cars go: the lot as `Economy/Dealer` lays it out (`DealerRules.Layout`, centred along the longer side), on the room the size's designs fill, 30 cm wider or narrower either way, with 40 cm round each place. What stood on something left out goes with it. A cut with fewer than six pieces of furniture or no washroom is not offered.
 
 Every file goes on a list in the folder (`InteriorDesigns/reallife_designs.txt`) with a stamp of the game's files and these rules. While the stamp and every file are as they were, a job only lists the folders. Only a file on the list is ever written over or taken away: a file of that name the list does not hold (the game's, another mod's) is left and its design not offered. The option off takes every design on the list away, and so does "prepare this save for removing the mod". An order for a design taken away is cancelled by the firm on its day ("the design you chose ... is no longer available"), as the game does.

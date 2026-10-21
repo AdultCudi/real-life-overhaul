@@ -111,7 +111,8 @@ namespace RealLifeOverhaul.Economy
                 Wages = lever != null ? lever(Lever.Wages) : 0,
                 Rent = lever != null ? lever(Lever.Rent) : 0,
                 Courts = OwnBankBridges.Courts != null && OwnBankBridges.Courts(),
-                Scale = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.ScaleNow() : 0
+                Scale = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.ScaleNow() : 0,
+                Reach = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.Reach() : 0
             };
         }
 
