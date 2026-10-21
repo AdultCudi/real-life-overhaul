@@ -9,7 +9,8 @@ namespace RealLifeOverhaul.Economy
         PaidIn = 1,     // an account opened or a deposit: the bank's people's deposits and its reserves grew
         TakenOut = 2,   // a withdrawal: both fell
         Lent = 3,       // a loan arranged: the bank's loans grew and its reserves fell
-        Refused = 4     // a loan the bank would not make now
+        Refused = 4,    // a loan the bank would not make now
+        Full = 5        // money the bank's level takes no more of: its deposits are at the level's most (BankTiers)
     }
 
     /// <summary>
@@ -30,9 +31,10 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// True while a loan of this many cents to a kind of borrower can be made at a counter now: the bank lends to them, is
-        /// not in a run or a breach, and its cash over the reserve and its capital over the lending line both cover it.
+        /// not in a run or a breach, its cash over the reserve and its capital over the lending line both cover it, and its
+        /// level's book has room for it (<paramref name="caps"/>).
         /// </summary>
-        public static bool CounterLends(OwnBank b, int segment, long cents)
+        public static bool CounterLends(OwnBank b, int segment, long cents, in BankCaps caps)
         {
             if (!b.Running || b.Run || b.Stage == Regulator.Breach || segment < 0 || segment >= OwnBankCatalogue.Segments || !b.Lending[segment] || cents <= 0)
             {
@@ -40,16 +42,17 @@ namespace RealLifeOverhaul.Economy
             }
             long cash = b.Reserves - ReserveNeed(b);
             long risk = RiskWeighted(b) + cents * OwnBankCatalogue.LoanWeight[segment] / 1000;
-            return cash >= cents && CapitalNow(b) * 1000 >= risk * OwnBankCatalogue.LendRatio;
+            return cash >= cents && CapitalNow(b) * 1000 >= risk * OwnBankCatalogue.LendRatio && LoanRoom(b, caps) >= cents;
         }
 
         /// <summary>
         /// One visit at a counter, in the bank's books, at today's price level: an account opened or a deposit into the city's
-        /// people's savings with the bank, a withdrawal from them (never more than they hold or the bank's cash), or a loan to a
-        /// kind of borrower if <see cref="CounterLends"/>. Its fee (at today's prices) is added to the counter's takings and
-        /// given back in <paramref name="fee"/>, the sum that moved in <paramref name="moved"/>. Nothing happens at a bank that is not running.
+        /// people's savings with the bank (none past its level's deposits: <see cref="VisitResult.Full"/>), a withdrawal from
+        /// them (never more than they hold or the bank's cash), or a loan to a kind of borrower if <see cref="CounterLends"/>.
+        /// Its fee (at today's prices) is added to the counter's takings and given back in <paramref name="fee"/>, the sum that
+        /// moved in <paramref name="moved"/>. Nothing happens at a bank that is not running.
         /// </summary>
-        public static VisitResult Visit(OwnBank b, int kind, int segment, long cents, int level, out long fee, out long moved)
+        public static VisitResult Visit(OwnBank b, int kind, int segment, long cents, int level, in BankCaps caps, out long fee, out long moved)
         {
             fee = 0;
             moved = 0;
@@ -66,6 +69,11 @@ namespace RealLifeOverhaul.Economy
                     {
                         moved = 0;
                         return VisitResult.None;
+                    }
+                    if (DepositRoom(b, caps) < moved)
+                    {
+                        moved = 0;
+                        return VisitResult.Full;
                     }
                     b.Deposits[OwnBankCatalogue.People] += moved;
                     b.Reserves += moved;
@@ -85,7 +93,7 @@ namespace RealLifeOverhaul.Economy
                     b.CounterFees += fee;
                     return VisitResult.TakenOut;
                 case BranchCatalogue.Loan:
-                    if (!CounterLends(b, segment, moved))
+                    if (!CounterLends(b, segment, moved, caps))
                     {
                         moved = 0;
                         return VisitResult.Refused;

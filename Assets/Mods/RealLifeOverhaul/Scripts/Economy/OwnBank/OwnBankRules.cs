@@ -276,9 +276,25 @@ namespace RealLifeOverhaul.Economy
             return (int)(Clamp(confidence, 0, 1000) * Math.Max(0L, Math.Min(1000L, age)) / 1000);
         }
 
-        /// <summary>The bank founded with its capital paid in: no savers or loans yet, the rivals' rates, lending to all but the poorly rated.</summary>
+        /// <summary>A national bank founded, as every bank was before there were levels (the offline checks' bank of the full size).</summary>
         public static void Found(OwnBank b, int day, int seed, long capital, string name)
         {
+            Found(b, day, seed, capital, name, BankTiers.National);
+        }
+
+        /// <summary>
+        /// The bank founded at a level with its capital paid in: no savers or loans yet, the rivals' rates, lending to all but
+        /// the poorly rated, its record at the level from today, and the owner paid nothing until they choose a pay.
+        /// </summary>
+        public static void Found(OwnBank b, int day, int seed, long capital, string name, int tier)
+        {
+            b.Tier = Clamp(tier, BankTiers.Community, BankTiers.National);
+            b.TierFrom = day;
+            b.TierTold = BankTiers.Unknown;
+            b.PayMode = BankTiers.PayShareMode;
+            b.PayShare = 0;
+            b.PayFixed = 0;
+            b.PaidMonth = b.PaidLast = b.PaidAll = 0;
             b.State = OwnBankState.Running;
             b.Name = name ?? string.Empty;
             b.Seed = seed;
@@ -344,8 +360,7 @@ namespace RealLifeOverhaul.Economy
                 return 0;
             }
             long cash = b.Reserves - ReserveNeed(b);
-            long keep = Math.Max(At(b.FoundedLeast > 0 ? b.FoundedLeast : OwnBankCatalogue.CapitalLeastCents, level), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000);
-            long capital = CapitalNow(b) - keep;
+            long capital = CapitalNow(b) - Keep(b, level);
             return ToStep(Math.Min(cash, capital));
         }
 
@@ -425,7 +440,7 @@ namespace RealLifeOverhaul.Economy
             b.Run = false;
             b.Stage = Regulator.Clear;
             b.Deadline = b.Strikes = 0;
-            b.MonthIncome = b.MonthCosts = 0;
+            b.MonthIncome = b.MonthCosts = b.PaidMonth = 0;
         }
 
         internal static int Cycle(BankCity c)

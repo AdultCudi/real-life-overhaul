@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Economy
     public struct BranchHourOut
     {
         public int Visitors, Served, Lost, Opened, Loans, Refused;
+        public int Full;                    // came to pay in while the bank's level took no more deposits (not one of the branch's figures)
         public long PaidIn, TakenOut, Lent, Fees;
     }
 
@@ -224,10 +225,11 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// One hour of a branch: its visitors come, the counter sees to as many as it can, and each visit seen to is booked in
-        /// the bank (<see cref="OwnBankRules.Visit"/>); the branch's figures and its week are counted. Nothing comes to a branch
-        /// of a bank that is not running. <paramref name="hourIndex"/> is day x 24 + hour; a branch's month is <paramref name="monthDays"/> long.
+        /// the bank (<see cref="OwnBankRules.Visit"/>) within its level's limits at the share of the end game's scale it runs
+        /// at (<paramref name="share"/>); the branch's figures and its week are counted. Nothing comes to a branch of a bank
+        /// that is not running. <paramref name="hourIndex"/> is day x 24 + hour; a branch's month is <paramref name="monthDays"/> long.
         /// </summary>
-        public static BranchHourOut Hour(OwnBank b, BankBranch br, in BranchHourIn h, int hourIndex, int level, int monthDays)
+        public static BranchHourOut Hour(OwnBank b, BankBranch br, in BranchHourIn h, int hourIndex, int level, int monthDays, int share)
         {
             var o = new BranchHourOut();
             int day = hourIndex / 24, hour = hourIndex - day * 24;
@@ -245,12 +247,13 @@ namespace RealLifeOverhaul.Economy
             o.Served = Math.Min(o.Visitors, Capacity(h));
             o.Lost = o.Visitors - o.Served;
             int place = PlaceKey(br.Place);
+            BankCaps caps = OwnBankRules.Caps(b, level, share);
             for (int i = 0; i < o.Served; i++)
             {
                 int kind = Kind(Draw(b.Seed, hourIndex, place, i, 0), b.Run);
                 int segment = kind == BranchCatalogue.Loan ? Asker(Draw(b.Seed, hourIndex, place, i, 1)) : OwnBankCatalogue.Fair;
                 long sum = Sum(kind, Draw(b.Seed, hourIndex, place, i, 2), level);
-                VisitResult r = OwnBankRules.Visit(b, kind, segment, sum, level, out long fee, out long moved);
+                VisitResult r = OwnBankRules.Visit(b, kind, segment, sum, level, caps, out long fee, out long moved);
                 o.Fees += fee;
                 switch (r)
                 {
@@ -267,6 +270,9 @@ namespace RealLifeOverhaul.Economy
                         break;
                     case VisitResult.Refused:
                         o.Refused++;
+                        break;
+                    case VisitResult.Full:
+                        o.Full++;
                         break;
                 }
             }

@@ -111,7 +111,7 @@ The statement's matching by name relies on the data keys of the game's loan tran
 ## Your own bank
 
 `Scripts/Economy/OwnBank/`.
-A bank of the player's own, late in a game, run from the headquarters, in its own app (Your bank; the Company app's first page has a button to it).
+A bank of the player's own, founded in the middle of a game as a community bank and grown a level at a time to a national one (see [Bank levels and the owner's pay](#bank-levels-and-the-owners-pay)), run from the headquarters, in its own app (Your bank; the Company app's first page has a button to it).
 Option: Business > Your own bank (`economy_bank`, on; it needs the credit rating).
 Save line `reallife:economy_ownbank` (`OwnBankStore`, v1), and `reallife:economy_ownbank_test` while a test has run.
 
@@ -182,6 +182,42 @@ That the headquarters' statement shows the bank's rows (the same path as the bro
 
 And the game's own text box for a name and an amount (as the bank apps use it).
 
+## Bank levels and the owner's pay
+
+`Scripts/Economy/OwnBank/Tiers/`.
+The bank's level (its tier in the code: `BankTiers`, `OwnBankRules.Tiers`) and the owner's pay are part of the bank: no option of their own, and their fields appended to the end of the bank's head record (`OwnBankStore`, still v1), so an older RLO reads its own fields and leaves them.
+
+- **Three levels.** A Community Bank, a Regional Bank and a National Bank; the National Bank is the bank as it was before levels, every figure of `OwnBankCatalogue` and no limit but the ratio. Each has a licence and a least capital, before the end game's scale and at it (mixed by the share as the bank's other figures are), a count of branches, a most of loans (performing and in arrears) and of savings, the record of months a move up to it asks, and its running costs (the banking hall before the scale; its systems and its least compliance crew at it).
+
+  | Level | Licence | Least capital | Branches | Loans | Savings | Record to reach it |
+  |---|---|---|---|---|---|---|
+  | Community Bank | $150,000 ($500,000 at scale) | $300,000 ($1,000,000) | 2 | $2.5m ($15m) | $4m ($25m) | founded |
+  | Regional Bank | $800,000 ($5,000,000) | $700,000 ($4,000,000) | 6 | $12m ($70m) | $20m ($100m) | 6 months |
+  | National Bank | $3,000,000 ($60,000,000) | $5,000,000 ($150,000,000) | 16 | no limit | no limit | 12 months |
+
+- **Founding** is always a Community Bank (`OwnBankDirector.FoundLicence`, `FoundCapital`): $450,000 in all without the scale, $1,500,000 with it, where a bank cost $8,000,000 and $210,000,000 before levels. A closure before still asks half as much capital again for each.
+- **Where the limits bind** (`OwnBankRules.Caps`, at today's prices and the scale the bank runs at): the day shares the savers' new money within the room its level's savings leave (`OwnBankRules.Day`, `DepositRoom`) and lends within the room its book leaves (`Lend`, `LoanRoom`); a counter turns away a deposit past the room (`VisitResult.Full`) and makes no loan past it (`CounterLends`); the director takes a branch in only while the level's count has room (`OwnBankRules.BranchRoom`, `ReadBranches`), and a branch past it takes no customers and has no counter until the bank moves up. Interest is still credited to savers, and savers and borrowers still leave and repay: a bank at or over a limit keeps all it holds and takes no more.
+- **Moving up** (`OwnBankRules.MoveUpWhy`, `MoveUp`; `OwnBankDirector.MoveUp`): the bank must be clear of the regulator (not watched, not in breach) with no run, have held its level for the next level's record without a breach (a breach day begins the record again: `TierFrom`), and hold the next level's least capital at the price of what is bought now. It costs the next level's licence less the one it holds, so a bank climbed to the top has paid exactly a national licence. Moved up, its record begins again and it keeps the new level's least capital (`FoundedLeast`). The player is told once a level when every condition but the licence is met (`TierTold`), and at a month's turn when a level's savings or loans are full.
+- **An older save's bank** (`OwnBankRules.FitTier`, as the director reads the line): a line with no level is fitted on the terms the bank was founded on (its `FoundedLeast` gives the end game's share and its closures). A bank whose capital still meets that least is a National Bank, as it paid for; one whose capital has fallen is put at the highest level its capital meets and keeps that level's least from then. Either way it keeps every saver, loan and branch, even past that level's limits (they only stop it taking more), and its record counts from its founding.
+- **The owner's pay** (`OwnBankRules.OwnerPay`, at the end of the day after the regulator): a share of the day's profit in steps of 5% (the game's own slider, copied from its settings menu as the Mod settings app's rows are: `GameUi/InfoBox.Slider`), or a fixed sum a day never more than the profit. Nothing on a day without profit, in a breach or a run, or for a test's bank, and never past what the bank can spare (its cash over the reserve, its capital over its least and its lending line: `Keep`, as for a dividend). The pay leaves the capital and the reserves together, so the books balance; the rest of the profit stays in the capital. It is booked into the player's cash as a dividend is (`PayKey`, among the Finance app's investments); `PaidMonth`, `PaidLast` and `PaidAll` keep what was paid. With no pay chosen (the default, and every older bank) the bank keeps all of its profit, as before.
+- **The app**: the Bank tab's list has two rows more, its level (what it may hold) and the owner's pay (this month's); each opens a page in the box: the level's meters against its limits, the next level's conditions ticked as met, the licence and a button to move up (with the game's question); the pay's way of paying, its slider or its sum, and what was paid.
+- **Tests**: "make it ready to move up a level" (the record made long enough; a test's bank also gets the next level's least capital, paid by nobody, and moves up for nothing).
+
+What the levels come to, in the offline check (a quiet city of the game's year, a bank founded a Community Bank, a year at each level, its capital put up to the next level's least where its profit has not brought it there, nothing paid out): before the scale a Community Bank makes about $3,500 a day and pays its licence back in ten months, and its kept profit brings it a Regional Bank's capital in two years; a Regional Bank makes about $13,000 a day six months on and pays its move up back in fourteen months; a National Bank about $45,000, its move up back in sixteen. At the scale: about $16,000 to $22,000 a day, the licence back in nine months, a Regional Bank's capital in thirty-one; a Regional Bank about $63,000 to $90,000, its move up back in eighteen months; a National Bank about $276,000 six months on, its $55,000,000 move up back in fifty months, about what a bank's licence took before levels.
+
+Going Public: the bank is the player's own (the headquarters and the branches are Going Public's `Mine`); a level and a pay are the bank's own figures in its own line; nothing new is sent.
+Cost: nothing per frame; a few sums more in the bank's day and in a branch's hour.
+
+### Checks
+
+EconomyCheck (`BankTierChecks.cs`): the table (every figure, rising, the top the bank of before, a climb paying exactly a national licence, founding at most a tenth of before); each limit binding in the day before the scale and at it, with the city wanting far more, and a bank over its limits keeping what it holds; the counter's deposits and loans; the branch count and the director's reading; moving up and each condition alone, the record begun again by a breach, the save's own months; an older save's bank fitted at each level, on the scale's terms and after closures, its loans, savers and ten branches kept and nothing more taken; the save's new fields after every field an older version reads; the pay at 0%, 5%, 35% and 100% split to the cent every day of two years, a fixed sum, nothing in a breach, a run or for a test's bank, never past the bank's room, the same on every run, a month's pay rolled; the balance figures above against their aims; the texts and the slider; a day of a bank at its limits timed and allocation-free.
+
+### Not verified (the game could not be run)
+
+That the game's slider, copied into the Bank tab's white box, shows its track, fill and knob in the box's colours and drags in steps.
+That the level's and the pay's pages fit the box with their rows, ticks and buttons (`InfoBox.Fit` with diagnostics on).
+That a branch opened past the level's count waits as told, and is taken in when the bank moves up.
+
 ## Bank branches
 
 `Scripts/Economy/OwnBank/Branch/`.
@@ -197,6 +233,7 @@ Its figures are part of the bank's save line (`OwnBankStore` parts `k` and `b`);
 - **The floor** (`BranchFloor`): while the player is in a branch, up to eight of the hour's customers come in at the door, queue across a staffed till from its teller, are seen to and leave, or wait and leave unseen; at most three at once, from the mod's people (`People/ActorPool`). It shows what the hour booked and changes nothing.
 - **The app**: a Branches tab in Your bank, a row a branch (this month's customers, seen to, left, accounts, loans, fees, rent and wages a day from the game's `RentPerDay` and the staff's shifts), and the reach with what it brings (`BranchRules.Worth`: the deposits and loans wanted with and without it, and their margin a day before staff).
 - **Off**: no hour is worked and none is owed later, the reach is nothing, the counter cannot be clicked and the floor is empty; the bank holds what it would without branches. The type stays registered, so a save that holds a branch still loads.
+- **The bank's level** sets how many branches it runs (two, six, sixteen: see [Bank levels and the owner's pay](#bank-levels-and-the-owners-pay)); a branch past that count is not taken in, sees nobody and has no counter until the bank moves up, and the player is told once a day.
 
 What a branch comes to, in the offline check (a quiet city, a bank a year old, a mid-sized shop unit with two tellers, open 9 to 18): 553 customers seen to a week, a reach of 64 thousandths, $376 a day in fees and $2,921 a day of margin on $1.48 million more deposits and $1.84 million more loans, against $802 a day of rent and wages: $2,496 a day net, a $90,000 fit-out paid back in eight months of five days. A tenth such branch brings less than its rent and wages.
 

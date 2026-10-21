@@ -933,6 +933,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ob_test_run", () => Economy.OwnBankDirector.Instance?.TestRun())
                 .AddButton("reallife_ob_test_deadline", () => Economy.OwnBankDirector.Instance?.TestDeadline())
                 .AddButton("reallife_ob_test_fund", () => Economy.OwnBankDirector.Instance?.TestFund())
+                .AddButton("reallife_ob_test_level", () => Economy.OwnBankDirector.Instance?.TestTierReady())
                 .AddButton("reallife_ob_test_back", () => Economy.OwnBankDirector.Instance?.TestBack())
                 .AddButton("reallife_branch_test_hour", () => Economy.OwnBankDirector.Instance?.TestBranchHour())
                 .AddButton("reallife_branch_test_floor", () => Economy.BranchFloor.Instance?.TestFloor())

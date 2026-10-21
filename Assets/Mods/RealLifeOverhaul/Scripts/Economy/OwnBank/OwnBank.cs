@@ -93,6 +93,15 @@ namespace RealLifeOverhaul.Economy
         public int CounterHour = int.MinValue;  // the last hour the branches were worked (day x 24 + hour); int.MinValue: never
         public readonly List<BankBranch> Branches = new List<BankBranch>(4);   // each branch's figures (Economy/OwnBank/Branch)
 
+        // Its level and the owner's pay (Economy/OwnBank/Tiers).
+        public int Tier;                        // BankTiers: a community bank when founded; BankTiers.Unknown for a line written before levels, until fitted
+        public int TierFrom;                    // the day its record at its level counts from: founded, moved up, or last in breach
+        public int TierTold = BankTiers.Unknown;   // the level the player was last told the bank is ready to move up to
+        public int PayMode;                     // BankTiers.PayShareMode or PayFixedMode
+        public int PayShare;                    // thousandths of each day's profit paid to the owner
+        public long PayFixed;                   // cents a day paid to the owner, never more than the day's profit
+        public long PaidMonth, PaidLast, PaidAll;   // what the owner was paid this month, last month and in all
+
         public BankBranch Branch(string place)
         {
             for (int i = 0; i < Branches.Count; i++)
@@ -218,13 +227,17 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>What a day did, in cents, as booked at the headquarters and told to the player. Its profit is kept in the bank's capital.</summary>
+    /// <summary>
+    /// What a day did, in cents, as booked at the headquarters and told to the player. Its profit is kept in the bank's
+    /// capital, but for the owner's pay (<see cref="Pay"/>), which is taken out of it.
+    /// </summary>
     public sealed class BankDay
     {
         public long Interest, Reserve, Dividends, Recovered, Gains;    // in: takings
         public long Savers, Staff, Lost, Court, FundLost, Fees, Fine;  // out
         public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
         public long Counter;                    // in: what the branches' counters charged their customers (OwnBankRules.Visit)
+        public long Pay;                        // the owner's pay out of the day's profit (OwnBankRules.OwnerPay): neither takings nor a cost
         public long Withdrawn, Deposited, Lent, Repaid, Defaulted, Cured, WrittenOff;
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;
@@ -239,7 +252,7 @@ namespace RealLifeOverhaul.Economy
         {
             Interest = Reserve = Dividends = Recovered = Gains = 0;
             Savers = Staff = Lost = Court = FundLost = Fees = Fine = Systems = 0;
-            Counter = 0;
+            Counter = Pay = 0;
             Withdrawn = Deposited = Lent = Repaid = Defaulted = Cured = WrittenOff = 0;
             Bought = Sold = FireSold = 0;
             RunStarted = RunEnded = Breached = Cured2 = Fined = Watched = Closed = false;
