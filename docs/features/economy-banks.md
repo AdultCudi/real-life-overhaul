@@ -37,7 +37,10 @@ The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jen
 | 3 and on | as rank 0 | as rank 0 | as rank 0 |
 
 The rule moves only the mod's own terms, and only inside the one desk that decides them: `CreditDesk.Offer(kind, bank)`, `Business(shop, bank, ...)`, `BusinessQuote`, `AgreedAt`, `LimitAt` and `PhoneLending.Quote` (the fee).
-The Finance app asks the same desk, so its offers from a bank are that bank's in its app too; rank 0 keeps every figure exactly as before (checked for every rating).
+The Finance app asks the same desk, so its offers from a bank are that bank's in its app too.
+For a new overdraft or card, the bank's share applies to the rating-based ceiling first, then `ProductTerms.IncomeLimit` caps it at 30 or 60 days of the game's average daily income (`PlayerHelper.CalculateDailyIncome`), rounded down to 50, with starter minimums of 200 or 300.
+A bank that gives a quarter more still stops at the income cap. The Rating tab and next-rating preview use the same capped terms.
+An open account retains its agreed limit, so changes in income or rating do not create an over-limit balance or fees; see [credit products](economy-credit-products.md).
 
 The game's own loan at the bank counter keeps the game's terms by the rating alone (`BankTerms.Apply`): the banks already differ there by their own settings.
 Under the lending threshold (580) every limit is 0 at every bank whatever its share, and the rating's gate (`CreditDesk.Gate`, `CreditLedger.CanBorrow`) is asked again at the moment anything is done: every app refuses in the bank's own words and shows no button that could lend.

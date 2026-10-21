@@ -13,6 +13,7 @@ namespace RealLifeOverhaul
         private readonly string _name;
         private float _nextStir;
         private bool _clip;
+        private readonly bool _together;   // cooked with the partner (CookingTogether): a portion is theirs
 
         public CookActivity(HomeDirector host, ItemController at, CookPlan plan) : base(host)
         {
@@ -20,6 +21,7 @@ namespace RealLifeOverhaul
             _plan = plan;
             _name = JobText.T(plan.NameKey);
             Total = plan.Minutes;
+            _together = CookingTogether.Waiting;
         }
 
         public override Doing Kind => Doing.HomeRoutine;
@@ -96,6 +98,10 @@ namespace RealLifeOverhaul
             if (!completed)
             {
                 Toast(NotificationType.Warning, "reallife_home_cook_stopped", "meal", _name);
+                if (_together)
+                {
+                    CookingTogether.Finish(false);
+                }
                 return;
             }
             GameInstance save = SaveGameManager.Current;
@@ -112,6 +118,10 @@ namespace RealLifeOverhaul
             }
             // What was not eaten is put by: nothing of a burnt meal, everything when the player could not eat.
             int extra = burnt ? 0 : full ? _plan.Portions : _plan.Portions - 1;
+            if (_together && extra > 0)
+            {
+                extra--;   // the partner's plate
+            }
             int kept = extra > 0 ? HomeState.PutBy(extra, dish != null ? dish.Number : HomeState.LeftoverDish, _plan.Fill) : 0;
             HomeDirector.Logger?.Info("Home: " + _plan.NameKey + " done: " + (burnt ? "burnt, " : string.Empty) + (full ? "not eaten (full), " : "filled " + fill + ", ")
                                       + kept + " of " + extra + " portion(s) put by, leftovers now " + HomeState.Leftovers + ".");
@@ -132,6 +142,10 @@ namespace RealLifeOverhaul
                 }
                 string key = full ? "reallife_home_cook_served_full" : kept > 0 ? "reallife_home_cook_served_leftovers" : "reallife_home_cook_served";
                 Toast(NotificationType.Success, key, "meal", _name, "count", kept.ToString());
+            }
+            if (_together)
+            {
+                CookingTogether.Finish(true);   // burnt or not, it was cooked and eaten together
             }
             if (full)
             {
