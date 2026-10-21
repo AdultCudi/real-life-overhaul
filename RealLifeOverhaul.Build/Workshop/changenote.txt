@@ -1,7 +1,7 @@
-0.47.0
-
-New
-- RLO Texts Large, a fourth pack on the Workshop for PCs with a strong graphics card: a larger model with the best words, in all seven languages. It runs only on a graphics card with the memory and speed for it, and the mod tells you about it once where RLO Texts is fast on such a card.
+0.47.1
 
 Fixed
-- When stocking shelves, the shelf to stock is shown as soon as you carry a box in.
+- On Flare, a message from somebody in the city no longer says they saw your post when you have posted nothing. It mentions a post only after one of yours from the last three days.
+- The city's people no longer review your business on Flare while it is temporarily closed or outside its opening hours. A review comes of a visit while it is open, and shows at the time of that visit.
+- A startup's follow-on could be pressed again and again, each press buying more, until you held nearly all of it. It is now taken once a round, only with pro rata rights, and brings you back to the share you held before that round, never more. Shares you already hold stay yours.
+- The short stutter as the room fades in when you walk into a building.
