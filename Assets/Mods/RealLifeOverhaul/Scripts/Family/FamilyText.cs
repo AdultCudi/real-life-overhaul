@@ -110,18 +110,10 @@ namespace RealLifeOverhaul.Family
         /// <summary>Set by RLO Texts: true when it holds a text for the model's words and sends it later; null or false, it goes now.</summary>
         public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
 
-        // A text written at night or in a time skip, kept for the morning: the game shows a message's notice with the hour's
+        // A text written at night or in a time skip is kept for the morning: the game shows a message's notice with the hour's
         // batch, which a sleep's skip runs past unseen (ContactsHelper.RunHourly), so it would only ever be found in the phone.
-        private sealed class Held
-        {
-            public GameInstance Save;   // the game it belongs to: another one loaded meanwhile, and it is let go
-            public string Contact, Key;
-            public Dictionary<string, string> Data;
-            public int Day;
-            public bool Notify;   // a text whose notice its sender shows itself (PartnerVoice) comes without the game's
-        }
-
-        private static readonly List<Held> Morning = new List<Held>(4);
+        // It is kept in the family's save (FamilySave.Held, HeldTextRules), so a save and quit at night loses none, and another
+        // save loaded meanwhile has its own.
 
         /// <summary>The hours a family text is sent in, and a notice with it; outside them it waits (<see cref="SendHeld"/>).</summary>
         public const int TextFrom = 8, TextTo = 22;
@@ -151,31 +143,52 @@ namespace RealLifeOverhaul.Family
             Dictionary<string, string> data = Data(a);
             if (!Awake)
             {
-                Morning.Add(new Held { Save = SaveGameManager.Current, Contact = contact.id, Key = key, Data = data, Day = TimeHelper.CurrentDay, Notify = notify });
+                HeldTextRules.Keep(FamilyState.S.Held, new HeldText { Contact = contact.id, Key = key, Data = data, Day = TimeHelper.CurrentDay, Notify = notify });
                 return;
             }
             Deliver(contact, key, data, notify);
         }
 
-        /// <summary>Hourly: the texts kept from the night go out once it is day and nobody is skipping time; a day late, they are let go.</summary>
+        /// <summary>
+        /// Hourly, and once after a load: the texts kept from the night (in the save too) go out once it is day and nobody is
+        /// skipping time; a day late, they are let go.
+        /// </summary>
         public static void SendHeld()
         {
-            if (Morning.Count == 0 || !Awake)
+            List<HeldText> kept = FamilyState.S.Held;
+            if (kept == null || kept.Count == 0 || !Awake)
             {
                 return;
             }
-            GameInstance save = SaveGameManager.Current;
-            var held = new List<Held>(Morning);
-            Morning.Clear();
-            for (int i = 0; i < held.Count; i++)
+            List<HeldText> due = HeldTextRules.TakeDue(kept, TimeHelper.CurrentDay);
+            for (int i = 0; due != null && i < due.Count; i++)
             {
-                Held h = held[i];
-                Contact contact = save != null && ReferenceEquals(h.Save, save) && TimeHelper.CurrentDay - h.Day <= 1 ? save.Contacts.Find(c => c != null && c.id == h.Contact) : null;
+                HeldText h = due[i];
+                Contact contact = HeldFrom(h.Contact);
                 if (contact != null)
                 {
-                    Deliver(contact, h.Key, h.Data, h.Notify);
+                    Deliver(contact, h.Key, h.Data ?? new Dictionary<string, string>(), h.Notify);
+                }
+                else
+                {
+                    FamilyDirector.Logger?.Info($"Family: a text kept for the morning ({h.Key}) was let go: its contact {h.Contact} is not in this game.");
                 }
             }
+        }
+
+        // The contact a kept text comes from: the family's own first (Social's partner may not be in the save's list), then the save's.
+        private static Contact HeldFrom(string id)
+        {
+            Contact[] own = { FamilyPhone.PartnerContact, FamilyPhone.FamilyContact, FamilyPhone.InLawContact, PhoneContacts.Mom };
+            for (int i = 0; i < own.Length; i++)
+            {
+                if (own[i] != null && own[i].id == id)
+                {
+                    return own[i];
+                }
+            }
+            GameInstance save = SaveGameManager.Current;
+            return save != null && save.Contacts != null ? save.Contacts.Find(c => c != null && c.id == id) : null;
         }
 
         private static void Deliver(Contact contact, string key, Dictionary<string, string> data, bool notify)
