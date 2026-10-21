@@ -74,7 +74,8 @@ namespace RealLifeOverhaul
         private float _bayBehind;        // metres of the strip it needs free behind the pole to come in
         private float _bayAhead;         // and ahead of it to pull out
         private BusBay.Curve _curveIn;   // its curve into the bay
-        private float _holdUntil;        // it stands at its start, out of sight, until then, to keep the timetable
+        private readonly RideRules.StartHold _startHold = new RideRules.StartHold();   // it stands at its start, out of sight, to keep the timetable
+        private bool _holdCutTold;       // a hold let go because it was seen, not yet taken by the director
         private float _driveSeconds;     // its own reckoning of the drive left, as last made while driving
         private float _tickAt;           // when it was last ticked
         private float _gapWaited;
@@ -169,9 +170,21 @@ namespace RealLifeOverhaul
         public bool Near => Vehicle != null && TransitSight.Near(Vehicle.transform.position, TransitSight.NearKeep);
 
         /// <summary>Seconds it still stands at its start, to keep the timetable.</summary>
-        public float HoldLeft => State == Phase.Approaching ? Mathf.Max(0f, _holdUntil - Time.time) : 0f;
+        public float HoldLeft => State == Phase.Approaching ? _startHold.Left(Time.time) : 0f;
 
-        public float Held0 { get; private set; }         // seconds it was held at its start, all told
+        public float Held0 { get; private set; }         // seconds it was held at its start, all told (what it stood, once a hold is let go)
+
+        /// <summary>Seconds of its hold at the start let go because the player could see it: it is that much early.</summary>
+        public float HoldCut => _startHold.Cut;
+
+        /// <summary>True once after its hold at the start was let go because it was seen, with the seconds let go.</summary>
+        public bool TakeHoldCut(out float seconds)
+        {
+            seconds = _startHold.Cut;
+            bool told = _holdCutTold;
+            _holdCutTold = false;
+            return told;
+        }
 
         public float DriveAtStart { get; private set; }  // seconds of open road it reckoned when put on the road, which it is judged by
 
@@ -236,7 +249,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            _holdUntil = Time.time + seconds;
+            _startHold.Set(Time.time, seconds);
             Held0 = seconds;
         }
 
@@ -495,14 +508,20 @@ namespace RealLifeOverhaul
         // What the driver does not know of: red lights and closed lane points. And how it is getting on.
         private void Drive(float now)
         {
-            if (State == Phase.Approaching && now < _holdUntil && _driver.Active)
+            if (State == Phase.Approaching && _startHold.Holds(now) && _driver.Active)
             {
-                // Held at its start, out of sight, to keep the timetable: it stands, engine running, then sets off.
-                _driver.CruiseSpeed = 0f;
-                _progressAt = now;
-                Waiting = Hold.None;
-                Remaining = _driver.RouteLeft;
-                return;
+                // Held at its start, out of sight, to keep the timetable: it stands, engine running, then sets off. Seen
+                // while it stands, it sets off at once instead (RideRules.StartHold): a bus in view never stands in its lane
+                // for the timetable.
+                if (!_startHold.LookDue(now) || !_startHold.Looked(now, InView))
+                {
+                    _driver.CruiseSpeed = 0f;
+                    _progressAt = now;
+                    Waiting = Hold.None;
+                    Remaining = _driver.RouteLeft;
+                    return;
+                }
+                HoldLetGo();
             }
             if (_gate >= 0 && !_driver.Active)
             {

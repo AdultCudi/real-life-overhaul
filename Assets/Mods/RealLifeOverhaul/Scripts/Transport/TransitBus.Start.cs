@@ -76,7 +76,8 @@ namespace RealLifeOverhaul
             State = Phase.Approaching;
             Lost = false;
             _since = Time.time;
-            _holdUntil = 0f;
+            _startHold.Clear();
+            _holdCutTold = false;
             Held0 = 0f;
             AtLights = 0f;
             _tickAt = Time.time;

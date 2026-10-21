@@ -223,6 +223,63 @@ namespace RealLifeOverhaul
             }
         }
 
+        public const float StartLookEvery = 0.5f;    // seconds between looks at whether a bus held at its start can be seen (a few rays a look)
+
+        /// <summary>
+        /// A bus held where it was put on the road, so as not to be at its stop early (TransitDirector.Put). It stands there only
+        /// while nobody can see it: it is looked at every <see cref="StartLookEvery"/> seconds while it holds, and the look that
+        /// finds it seen lets the rest of the hold go, so it drives on at once and is early at its stop by that much (the panel
+        /// follows its estimate down; the timetable starts again from when it stood there). Before, a bus put out of sight that
+        /// the player then saw stood still in its lane for the rest of its hold, looking stuck. A few comparisons a tick.
+        /// </summary>
+        public sealed class StartHold
+        {
+            private float _lookAt;
+
+            /// <summary>When the hold ends by the timetable; 0 when there is none.</summary>
+            public float Until { get; private set; }
+
+            /// <summary>Seconds of the hold let go because the bus was seen; 0 if it held to the end or had none.</summary>
+            public float Cut { get; private set; }
+
+            /// <summary>Holds it for so many seconds from now; looked at first at once.</summary>
+            public void Set(float now, float seconds)
+            {
+                Until = seconds > 0f ? now + seconds : 0f;
+                Cut = 0f;
+                _lookAt = now;
+            }
+
+            public void Clear()
+            {
+                Until = 0f;
+                Cut = 0f;
+                _lookAt = 0f;
+            }
+
+            /// <summary>True while it stands at its start.</summary>
+            public bool Holds(float now) => now < Until;
+
+            /// <summary>Seconds of the hold still to come.</summary>
+            public float Left(float now) => Math.Max(0f, Until - now);
+
+            /// <summary>True when it holds and is due to be looked at.</summary>
+            public bool LookDue(float now) => now < Until && now >= _lookAt;
+
+            /// <summary>What a look found. Seen, the rest of the hold is let go and true is returned: it drives on now.</summary>
+            public bool Looked(float now, bool seen)
+            {
+                _lookAt = now + StartLookEvery;
+                if (!seen || now >= Until)
+                {
+                    return false;
+                }
+                Cut = Until - now;
+                Until = now;
+                return true;
+            }
+        }
+
         /// <summary>
         /// Whether a ride is driven in real time: alone, or as a Going Public host, the bus being this machine's own object. A
         /// guest's street is the host's, so a guest has no buses: nothing of the host's may be taken, stopped or steered.
