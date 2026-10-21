@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -71,6 +72,29 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>The system turn of a pack of this data version.</summary>
         public static string SystemOf(int data) => data >= TextIntents.DataV6 ? SystemSix : System;
+
+        // The service's system turns of data v6, one a language in TextLanguages.All's order, made the first time each is asked.
+        private static readonly string[] ServiceSix = new string[TextLanguages.All.Length];
+
+        /// <summary>
+        /// The system turn Your own AI is sent with a card (TextServiceRules.Build): a pack's of the card's data version
+        /// (<see cref="SystemOf"/>), and for a card of data v6 in a language other than English one sentence more, which
+        /// names the card's lang line as its native speakers write it and how they address the player
+        /// (TextLanguages.Native, AddressOf), as the teacher that wrote the packs' lines was told: a large model reads
+        /// "lang: pt" as any Portuguese, the packs learnt Brazilian Portuguese. The card itself stays as the packs read it.
+        /// COST: a string made once a language; then an array read.
+        /// </summary>
+        public static string ServiceSystem(int data, string lang)
+        {
+            int at = Array.IndexOf(TextLanguages.All, lang);
+            if (data < TextIntents.DataV6 || at <= 0)
+            {
+                return SystemOf(data);   // (English, or a code that is none of the seven: the pack's own turn)
+            }
+            return ServiceSix[at] ?? (ServiceSix[at] = SystemSix + " The lang line here is " + lang + ": write " + TextLanguages.Native(lang)
+                                                      + " as a native speaker talks in a big city today, in everyday words, never like a translation. "
+                                                      + TextLanguages.AddressOf(lang));
+        }
 
         /// <summary>The user turn: one fact per line, in the trained order.</summary>
         public static string Card(TextSheet s)

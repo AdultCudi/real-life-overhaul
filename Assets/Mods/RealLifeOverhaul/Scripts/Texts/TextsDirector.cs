@@ -104,7 +104,6 @@ namespace RealLifeOverhaul.Texts
             Instance = this;
             _onSave = OnSaveGame;
             Hub.Allowed = Allowed;
-            Hub.Barred = Barred;
             Hub.SharedKept = SharedKept;
             if (!_quitHooked)
             {
@@ -197,7 +196,8 @@ namespace RealLifeOverhaul.Texts
             if (!ReferenceEquals(locale, _locale))
             {
                 _locale = locale;
-                Hub.Language = TextLanguages.Of(locale);   // (the game's language: a data 6 pack writes it if it can)
+                Hub.Language = TextLanguages.Of(locale);   // (the game's language: a data 6 pack writes it if it can, your own AI if it is one of the seven)
+                Hub.English = TextsGame.English;
             }
             if (!Settings.Texts)
             {
@@ -531,21 +531,14 @@ namespace RealLifeOverhaul.Texts
 
         // The game's language as the running pack writes it: a pack of data 6 writes the languages it says it was trained
         // and passed in (the game's, of the seven; Dutch and Turkish keep their written lines; any other reads the mod in
-        // English); an older pack only English. The pack's own data, whatever Your own AI (the hub's ServiceWhy has its own).
-        private static bool LanguageOk()
-        {
-            return Hub.PackData >= TextIntents.DataV6 ? TextLanguages.Has(Hub.Languages, Hub.Language) : TextsGame.English;
-        }
+        // English); an older pack only English. The pack's own data, whatever Your own AI (the hub's ServiceWrites).
+        private static bool LanguageOk() => Hub.WritesLanguage;
 
-        // Why a use may not ask now: the language, or switched off (RLO Texts, the use's own option, a guest's shared text).
-        private static TextShownWhy Barred(TextUse use, bool shared)
-        {
-            return Settings.Texts && !LanguageOk() ? TextShownWhy.Language : TextShownWhy.Off;
-        }
-
+        // Whether a use may ask now: RLO Texts, the use's own option, a guest's shared text. The language is the hub's to
+        // judge, for the pack and for your own AI each (TextsHub.WritesLanguage, ServiceWrites).
         private static bool Allowed(TextUse use, bool shared)
         {
-            if (!Settings.Texts || !LanguageOk())
+            if (!Settings.Texts)
             {
                 return false;
             }

@@ -50,10 +50,10 @@ internal static partial class Program
         hub.Runner = new PretendRunner();
         hub.Allowed = (use, shared) => false;
         hub.Ask(TextsAskOf("c", "friend.crash", null, w => { }), 0);                  // switched off
-        hub.Barred = (use, shared) => TextShownWhy.Language;
-        hub.Ask(TextsAskOf("d", "friend.crash", null, w => { }), 0);                  // the pack does not write the game's language
         hub.Allowed = null;
-        hub.Barred = null;
+        hub.English = false;
+        hub.Ask(TextsAskOf("d", "friend.crash", null, w => { }), 0);                  // the pack does not write the game's language (an older pack, the game not in English)
+        hub.English = true;
         var loading = new PretendRunner { State = TextServerState.Loading };
         hub.Runner = loading;
         hub.Ask(TextsAskOf("e", "friend.crash", null, w => { }, TextPriority.Now, 5), 0);   // still loading, due soon

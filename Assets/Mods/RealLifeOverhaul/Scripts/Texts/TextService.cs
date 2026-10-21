@@ -306,7 +306,7 @@ namespace RealLifeOverhaul.Texts
                 After(fault, why, 0);
                 return;
             }
-            TextWebRequest request = TextServiceRules.Build(_start.Provider, _start.Base, _model, TextCard.System, job.Card, secret, _noReasoning, _noTemperature);
+            TextWebRequest request = TextServiceRules.Build(_start.Provider, _start.Base, _model, job.System ?? TextCard.System, job.Card, secret, _noReasoning, _noTemperature);
             if (_start.Provider.Api == TextApi.Responses)
             {
                 var read = new TextStreamRead { OnBegun = () => job.Speaking = true };   // (streamed: the first words tell the hub, and the read ends at the last word)
