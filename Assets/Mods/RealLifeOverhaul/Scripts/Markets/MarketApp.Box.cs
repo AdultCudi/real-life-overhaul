@@ -309,7 +309,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            InfoBox.Button(row, kind, buttonKey, () => uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
+            InfoBox.Button(row, kind, buttonKey, () => GameUi.TextBox.Ask(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
             {
                 if (!long.TryParse((text ?? string.Empty).Trim().Replace(",", string.Empty).Replace(".", string.Empty), NumberStyles.Integer, CultureInfo.InvariantCulture,
                         out long amount)
@@ -538,7 +538,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return null;
             }
-            return InfoBox.Button(row, kind, key, () => uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
+            return InfoBox.Button(row, kind, key, () => GameUi.TextBox.Ask(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
             {
                 long value;
                 if (!(price ? TryCents(text, out value)

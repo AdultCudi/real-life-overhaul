@@ -1305,6 +1305,10 @@ namespace RealLifeOverhaul
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
+            Guard.Step("GameUi.TextBox", () => GameUi.TextBox.Logger = context.Logger);
+            // What a conversation ended another way leaves behind put right: the game's text box closed once what it was for is
+            // over, the dialogue panel's handle given back after a call (Core/GameUi/ConversationWatch): one time comparison a frame.
+            Guard.Step("GameUi.ConversationWatch", () => Guard.Add<GameUi.ConversationWatch>(_root));
             Guard.Step("GameUi.GuideMark", () => GameUi.GuideMark.Logger = context.Logger);
             Guard.Step("GameUi.GuideMarkWatch", () => Guard.Add<GameUi.GuideMarkWatch>(_root));   // the mod's marks on the game's destination guider taken off once their owner is gone, stopped or past its time (Core/GameUi/GuideMarkWatch): one time comparison a frame
             Guard.Step("DayRollGuard", () => DayRollGuard.Logger = context.Logger);

@@ -568,7 +568,7 @@ namespace RealLifeOverhaul.Economy
                 AskFound(suggested, licence, capital);
                 return;
             }
-            uis.textInputUi.Show("reallife_ob_ask_name", "common_confirm", text => UiClone.Safe(() => AskFound(OwnBankDirector.Named(text, hq), licence, capital)), null, suggested, true,
+            GameUi.TextBox.Ask("reallife_ob_ask_name", "common_confirm", text => UiClone.Safe(() => AskFound(OwnBankDirector.Named(text, hq), licence, capital)), null, suggested, true,
                 OwnBankDirector.NameMost);
         }
 
@@ -587,7 +587,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
+            GameUi.TextBox.Ask(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
             {
                 if (!Whole(text, out long money) || money <= 0)
                 {

@@ -40,6 +40,7 @@ namespace RealLifeOverhaul
         private Action _onTypingClosed;
         private Action<string, string> _onAnswer;
         private Func<bool> _wanted;
+        private Func<bool> _boxWanted;                    // the text box stays while this call is the game's: hung up, the phone shut or Esc, and it goes (Core/GameUi/TextBox)
 
         // The game's call is still this one: hung up, the phone shut or another call, and it is not.
         private bool Live => DialogController.current != null && DialogController.current.dialog == this;
@@ -81,7 +82,8 @@ namespace RealLifeOverhaul
             _typing = topic;
             _typingData = data;
             if (!TextBox.Ask("reallife_social_type_placeholder", "reallife_social_type_send", _onTyped ?? (_onTyped = Guard.Wrap<string>(Typed)),
-                    _onTypingClosed ?? (_onTypingClosed = Guard.Wrap(TypingClosed)), null, false, SocialComposerRules.TypedMost))
+                    _onTypingClosed ?? (_onTypingClosed = Guard.Wrap(TypingClosed)), null, false, SocialComposerRules.TypedMost,
+                    _boxWanted ?? (_boxWanted = () => Live), "a call's typed answer"))
             {
                 _typing = null;   // (the game has no text box after all: "Something else" is still there)
             }

@@ -349,7 +349,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            InfoBox.Button(row, InfoBox.Additional, buttonKey, () => uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
+            InfoBox.Button(row, InfoBox.Additional, buttonKey, () => GameUi.TextBox.Ask(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
             {
                 int amount;
                 if (!FinanceApp.Whole(text, out amount) || amount <= 0)
