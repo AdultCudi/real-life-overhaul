@@ -94,8 +94,31 @@ namespace RealLifeOverhaul.Flare
             return new FlareBiz
             {
                 Place = FlareGame.Place(reg), Name = FlareGame.Name(reg), District = reg.Neighborhood, Niche = FlareCast.NicheOf(reg.businessTypeName),
-                Stars = s != null ? s.overall : -1, Mine = mine
+                Stars = s != null ? s.overall : -1, Mine = mine, Open = OpenHours(reg)
             };
+        }
+
+        // The hours of today the game has a business open (bit h for hour h): its own opening hours, none while it is
+        // temporarily closed (BusinessHelper.IsBusinessOpen reads both). Once a day for each business the day's posts see.
+        private static int OpenHours(BuildingRegistration reg)
+        {
+            int open = 0;
+            for (int h = 0; h < 24 && !reg.temporarilyClosed; h++)
+            {
+                open |= BusinessHelper.IsBusinessOpen(reg, h) ? 1 << h : 0;
+            }
+            return open;
+        }
+
+        /// <summary>
+        /// Whether the game has the business at a place open at <paramref name="hour"/>: the visit a city review is of. Asked
+        /// as the review's hour comes; with <paramref name="today"/> false (the hour's step ran after midnight) only the
+        /// temporary closing is read, the day's hours having been read when the review was picked. A business no longer there is closed.
+        /// </summary>
+        public static bool OpenAt(string place, int hour, bool today)
+        {
+            BuildingRegistration reg = AnyBusiness(place);
+            return reg != null && !reg.temporarilyClosed && (!today || BusinessHelper.IsBusinessOpen(reg, hour));
         }
 
         /// <summary>Where the player is in the city, on the ground (at the door of a building they are in).</summary>
