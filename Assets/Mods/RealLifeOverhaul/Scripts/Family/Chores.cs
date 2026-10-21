@@ -99,7 +99,9 @@ namespace RealLifeOverhaul.Family
                 FamilyText.Message(FamilyPhone.PartnerContact, ChoreRules.AskKey(kind), Args.Us);
             }
             FamilyDirector.Logger?.Info("Family: a chore asked (" + kind + ", by day " + s.ChoreDue + (together ? ", face to face" : ", by text") + "): food "
-                                        + food + ", tidiness " + tidy.ToString("F0", CultureInfo.InvariantCulture) + ", hygiene " + hygiene.ToString("F0", CultureInfo.InvariantCulture) + ", car dirt " + car.ToString("F2", CultureInfo.InvariantCulture) + ".");
+                                        + food + ", tidiness " + tidy.ToString("F0", CultureInfo.InvariantCulture)
+                                        + ", hygiene " + hygiene.ToString("F0", CultureInfo.InvariantCulture)
+                                        + ", car dirt " + car.ToString("F2", CultureInfo.InvariantCulture) + ".");
         }
 
         /// <summary>The chore that waits to be talked over, first in a conversation at home; null if none waits.</summary>

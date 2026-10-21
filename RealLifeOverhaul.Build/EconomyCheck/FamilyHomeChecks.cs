@@ -146,8 +146,7 @@ internal static partial class Program
         for (int l = 0; guide && l < codes.Length; l++)
         {
             string page = words[l].TryGetValue("reallife_guide_family", out string g) ? g : string.Empty;
-            guide &= page.Split('
-').Length == 26 && (codes[l] != "en" || (page.Contains("At night they sleep in your bed") && page.Contains("asks for a chore only when it is needed")
+            guide &= page.Split('\n').Length == 26 && (codes[l] != "en" || (page.Contains("At night they sleep in your bed") && page.Contains("asks for a chore only when it is needed")
                      && !page.Contains("They never lie down") && !page.Contains("they stand in the kitchen or the living room")));
         }
         Check(guide, "family home: the Guide's family page tells of the partner's routine, nights in bed and real chores, its 26 lines in every language");
