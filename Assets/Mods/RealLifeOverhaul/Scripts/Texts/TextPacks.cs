@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Texts
             "3820711613",   // RLO Texts
             "3820712020",   // RLO Texts Lite
             "3820776564",   // RLO Texts Medium
-            ""              // RLO Texts Large: not published yet
+            "3824106911"    // RLO Texts Large
         };
 
         /// <summary>True once RLO Texts Large has its Workshop id (it is published): only then is it offered.</summary>

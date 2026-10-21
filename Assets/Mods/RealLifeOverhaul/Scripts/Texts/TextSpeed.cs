@@ -117,7 +117,8 @@ namespace RealLifeOverhaul.Texts
 
         public const double LargeSlow = 1.2;       // seconds a reply of RLO Texts Large may take on its graphics card: past this, the next pack runs instead
         public const double LargeOffer = 0.45;     // ...a reply of the full pack this fast on a graphics card with the memory for Large: Large is offered (once it is published)
-        public const long LargeBytes = 5L << 30;   // the Large pack's model as the offer reckons it before it is installed (a model of up to 9B at four bits)
+        public const long LargeBytes = 2708804096L;   // bytes of the Large pack's model as the offer reckons it before it is installed: its published file
+                                                      // (Qwen 3.5 4B at Q4_K_M, 2.52 GiB), so the offer asks the free memory Pick asks once it is there
 
         /// <summary>True when a graphics card (never graphics built into the processor) has the free memory for a model of this size beside the game.</summary>
         public static bool LargeFits(TextDevice card, long modelBytes) => !TextPacks.BuiltIn(card.Label) && TextPacks.Ample(card.FreeMiB, modelBytes);

@@ -813,9 +813,10 @@ internal static partial class Program
             "texts, safety: on the Workshop only RLO's own pack items by id are looked in (none while their ids are empty, never a path)");
         string game = TextsSource("Texts/TextsGame.cs");
         Check(TextPacks.WorkshopItems.Length == 4 && TextPacks.WorkshopItems[0] == "3820711613" && TextPacks.WorkshopItems[1] == "3820712020" && TextPacks.WorkshopItems[2] == "3820776564"
-              && TextPacks.WorkshopItems[3] == "" && !TextPacks.LargePublished
-              && TextPacks.WorkshopPacks(@"C:\ws", TextPacks.WorkshopItems).Count == 3 && TextPacks.WorkshopPacks(@"C:\ws", new[] { "3820711613", "" }).Count == 1,
-            "texts, packs: the mod looks only in the three published pack items, RLO Texts (3820711613), RLO Texts Lite (3820712020) and RLO Texts Medium (3820776564); RLO Texts Large's id is empty until it is published, and an empty id is never looked in");
+              && (TextPacks.WorkshopItems[3] == "" ? !TextPacks.LargePublished : TextPacks.LargePublished && TextPacks.WorkshopItems[3].Length >= 9)
+              && TextPacks.WorkshopPacks(@"C:\ws", TextPacks.WorkshopItems).Count == (TextPacks.LargePublished ? 4 : 3) && TextPacks.WorkshopPacks(@"C:\ws", new[] { "3820711613", "" }).Count == 1,
+            "texts, packs: the mod looks only in the published pack items, RLO Texts (3820711613), RLO Texts Lite (3820712020), RLO Texts Medium (3820776564) and RLO Texts Large ("
+            + (TextPacks.LargePublished ? TextPacks.WorkshopItems[3] : "no id until it is published") + "), and an empty id is never looked in");
         Check(game.Contains("TextPacks.WorkshopPacks(TextPacks.WorkshopOf(Application.dataPath, AppId), TextPacks.WorkshopItems)") && !game.Contains("places.Add(workshop)"),
             "texts, safety: the game's whole Workshop folder is never a place packs are looked for in");
         Check(TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLO\runtime\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLOX\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\a.exe"),
