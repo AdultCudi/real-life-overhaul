@@ -99,7 +99,7 @@ internal static partial class Program
             start = server.IndexOf("_process = Process.Start(info);", StringComparison.Ordinal);
         Check(offline > 0 && own > offline && start > own && Regex.Matches(server, @"OwnShaderCache\(info\)").Count == 1,
             "texts, the runner: the server is started without Steam's shader cache variables, once, before Process.Start");
-        Check(server.Contains("Stage(TextStartStage.WarmUp, WarmLimit(_start), WarmUp)") && server.Contains("TextJson.Request(TextCard.ChatMl(TestCard()), 1, 1), Ms(WarmLimit(_start)))"),
+        Check(server.Contains("Stage(TextStartStage.WarmUp, WarmLimit(_start), WarmUp)") && server.Contains("TextJson.Request(TextCard.ChatMl(TestCard(), _start.System ?? TextCard.System), 1, 1), Ms(WarmLimit(_start)))"),
             "texts, the runner: the first reply's stage and its request both wait the first reply's limit");
         Check(server.Contains("_detail = \"sent the test card, 1 token to write: \" + Timings(answer, took, used) + ShaderCacheName(KeepShaderMark(used));")
               && server.Contains("double took = TextClock.Now - begun, used = Cpu() - cpu;"),

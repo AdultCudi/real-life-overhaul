@@ -37,6 +37,9 @@ namespace RealLifeOverhaul.Texts
         public TextSource Source;           // filled by the hub: where the words came from (the written line when there are none)
         public string ServiceMiss;          // filled by the hub, with an AI service chosen: why it did not word it (not asked, late, failed, refused); null when it did
         public Action Started;              // on the game's thread, at most once: the AI service has begun to answer it (its first words came; nothing is shown until all are in and checked)
+        public string Person;               // data v6: whose memory the card carries (TextMemoryRules.KeyOk); null: none
+        public readonly List<TextFact> Memory = new List<TextFact>(8);   // data v6: what that person remembers, filled by the asker (TextsDirector.Recall); the hub picks the card's lines
+        public string Lang;                 // filled by the hub: the language the card asks for (data v6), or null below
     }
 
     /// <summary>Where a request's words came from, for the asker's log line.</summary>
@@ -64,11 +67,20 @@ namespace RealLifeOverhaul.Texts
     /// hears every end but a background request the queue held back itself (<see cref="BudgetMiss"/>). Words that pass
     /// are remembered by speaker for the repeat check, and kept in the store (TextsStore) when the asker wants them kept.
     /// Only the intents of the running pack's data version or older are asked (<see cref="Data"/>).
+    ///
+    /// A pack of data v6 is asked in the game's language when the pack writes it (<see cref="Language"/>,
+    /// <see cref="Languages"/>): the card carries its lang and the speaker's memory (<see cref="TextRequest.Memory"/>,
+    /// TextMemoryRules.Select; none on a shared card), its request the grammar, the most tokens and the name to keep out
+    /// (TextDecoding), its words the checker of the language (TextCheck.JudgeSix). Every line, asked or not, is counted
+    /// by pack and intent with what was shown and why (<see cref="Tally"/>, TextShown).
+    ///
     /// YOUR OWN AI: with an AI service of the player's running (<see cref="Service"/>), a request goes to it first, through
-    /// a queue of its own, with the newest cards; its words are checked by the same TextCheck, and when they fail, come
-    /// too late for the service's queue, or the service fails or rests, the request falls back to the pack (if one runs
-    /// and has the card, with the time left) and then to the written line. A shared request (Going Public's shared feed
-    /// and paper, which must agree on every machine) never goes to the service: the pack and the written lines only.
+    /// a queue of its own, with the newest cards (a card of data v6 finished in English, memory and all: the service
+    /// writes English, so a game in another language leaves it to the pack, <see cref="ServiceWhy"/>); its words are
+    /// checked by the same TextCheck, and when they fail, come too late for the service's queue, or the service fails or
+    /// rests, the request falls back to the pack (if one runs and has the card, with the time left, the pack's own card in
+    /// its language) and then to the written line. A shared request (Going Public's shared feed and paper, which must
+    /// agree on every machine) never goes to the service: the pack and the written lines only.
     /// A SPOKEN LINE (face to face, the player waiting: <see cref="TextRequest.Spoken"/>) is held about a second for the
     /// pack, less than a service takes to answer. With the service up such a line waits for it instead, a short pause
     /// before the person answers, as people do (<see cref="SpokenWait"/>: the service's measured time and a margin, at
@@ -87,6 +99,8 @@ namespace RealLifeOverhaul.Texts
         public const double SpokenMargin = 0.6;  // real seconds a spoken line waits for the AI service past its measured time (its replies vary by about that)
         public const double SpokenMost = 3.5;    // real seconds a spoken line waits at most: past this a pause before an answer is no longer natural
         public const double PackSlack = 0.2;     // real seconds kept for the pack past its own measured time, at the end of a spoken wait (two looks of the director)
+        public const string NoPack = "no pack";  // the pack name lines are counted under while none runs
+        public const string ServiceTally = "your own AI";   // the name the AI service's own words are counted under (a written line is the pack's)
 
         private sealed class Waiting
         {
@@ -98,6 +112,9 @@ namespace RealLifeOverhaul.Texts
             public bool ViaService;           // the job is the AI service's (its queue); false: the pack's
             public double Until;              // the request's last moment: the job's deadline, or later by the time kept for the pack (a spoken line to the service)
             public bool Told;                 // its asker was told the service began to answer (TextRequest.Started)
+            public string Lang;               // data v6: the card's language
+            public string Untold;             // ...the player's name, when the speaker does not know it
+            public bool Lowercase;            // ...the speaker writes in lower case
         }
 
         private static int _newest;
@@ -109,8 +126,13 @@ namespace RealLifeOverhaul.Texts
         private readonly List<TextJob> _missed = new List<TextJob>(8);
         private readonly Dictionary<string, List<string>> _recent = new Dictionary<string, List<string>>(32, StringComparer.Ordinal);
         private readonly int[] _verdicts = new int[Enum.GetValues(typeof(TextVerdict)).Length];
+        private TextShownWhy _whyNot;
+        private TextVerdict _verdict;
 
         public readonly TextsStore Store = new TextsStore();
+
+        /// <summary>Every line counted by pack and intent: the model's words or the written line, and why (TextShown).</summary>
+        public readonly TextShown Tally = new TextShown();
 
         public TextsHub(TextQueue queue, TextQueue serviceQueue = null)
         {
@@ -151,6 +173,9 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Which uses may ask now (the options, the game's language, Going Public's rule); set by the director.</summary>
         public Func<TextUse, bool, bool> Allowed;
 
+        /// <summary>Why a use may not ask now, when <see cref="Allowed"/> says no (switched off, the language); null: Off.</summary>
+        public Func<TextUse, bool, TextShownWhy> Barred;
+
         /// <summary>
         /// The data version of the running pack's model (TextPack.Data): an intent of a later data version is never asked of
         /// it (the written line). Set by the director when it starts a pack.
@@ -165,6 +190,15 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>The running pack's own data version, whatever the service.</summary>
         public int PackData => _packData;
+
+        /// <summary>The game's language as a card of data v6 writes it (TextLanguages.Of); set by the director.</summary>
+        public string Language { get; set; } = TextLanguages.English;
+
+        /// <summary>The languages the running pack was trained and passed in (TextPack.Languages); English alone by default.</summary>
+        public string[] Languages { get; set; } = { TextLanguages.English };
+
+        /// <summary>The running pack's name as lines are counted under it; <see cref="NoPack"/> while none runs.</summary>
+        public string Pack { get; set; } = NoPack;
 
         /// <summary>Seconds a reply is expected to take on the route a request goes by now: the service's while it is up, else the pack's.</summary>
         public double Expect => ServiceUp ? _serviceQueue.Expect : _queue.Expect;
@@ -191,6 +225,9 @@ namespace RealLifeOverhaul.Texts
 
         public int Verdicts(TextVerdict v) => _verdicts[(int)v];
 
+        /// <summary>True when the running pack writes the game's language now (a pack below data v6 writes English alone).</summary>
+        public bool WritesLanguage => TextLanguages.Has(Languages, _packData >= TextIntents.DataV6 ? Language : TextLanguages.English);
+
         /// <summary>True when a request of this use could go to the model now (asked before the card is built, so that nothing is built for nothing).</summary>
         public bool Wants(TextUse use, bool shared)
         {
@@ -198,9 +235,28 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
+        /// A line the asker shows with its written words without asking (it asked <see cref="Wants"/> first and was told no):
+        /// counted with why (no pack, off, the language, a pack that could not run).
+        /// </summary>
+        public void NotAsked(TextUse use, bool shared, string intent)
+        {
+            Tally.Count(Pack, intent, Unwanted(use, shared));
+        }
+
+        // Why Wants says no: no way to word it (no pack, or one that could not run, and no AI service for it), else off or the language.
+        private TextShownWhy Unwanted(TextUse use, bool shared)
+        {
+            if (!PackUp && !(ServiceUp && !shared))
+            {
+                return Runner == null && Pack == NoPack ? TextShownWhy.NoPack : TextShownWhy.Failed;
+            }
+            return Barred != null ? Barred(use, shared) : TextShownWhy.Off;
+        }
+
+        /// <summary>
         /// Asks for words. True: they come through the request's Done, on a later look, words or null. False: not asked
         /// (switched off, no pack, no such intent or a value missing, too slow for it, no time): the asker uses the written
-        /// line now, and Done is not called.
+        /// line now, and Done is not called. Either way the line is counted (<see cref="Tally"/>).
         /// </summary>
         public bool Ask(TextRequest r, double now)
         {
@@ -210,6 +266,7 @@ namespace RealLifeOverhaul.Texts
             }
             r.Took = 0;
             r.Why = null;
+            r.Lang = null;
             r.ByService = false;
             r.Source = TextSource.Written;
             r.ServiceMiss = null;
@@ -226,13 +283,15 @@ namespace RealLifeOverhaul.Texts
             }
             string toService = service ?? r.Why;
             r.ServiceMiss = Service != null ? toService : null;
-            r.Why = PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds);
+            r.Lang = null;   // (a card made for the service that could not go: the pack's own is finished below)
+            r.Why = PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds, out _whyNot);
             if (r.Why != null)
             {
                 if (Service != null && toService != null)
                 {
                     r.Why += "; " + toService;
                 }
+                Tally.Count(Pack, r.Intent, _whyNot);
                 return false;
             }
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch, _packData);   // (the card of the pack's own data: v4's for a data 4 pack, v5's for a data 5 one)
@@ -240,23 +299,35 @@ namespace RealLifeOverhaul.Texts
             if (!TextIntents.Build(intent, r.Who, r.Slots, r.History, sheet))
             {
                 r.Why = "not asked: a value the card " + r.Intent + " needs is missing";
+                Tally.Count(Pack, r.Intent, TextShownWhy.NoCard);
                 return false;
             }
-            var job = new TextJob { Key = r.Key ?? r.Intent, Prompt = TextCard.ChatMl(sheet), Priority = r.Priority, Deadline = now + r.Seconds, Guess = r.Guess };
+            bool six = intent.Data >= TextIntents.DataV6;
+            var job = new TextJob { Key = r.Key ?? r.Intent, Priority = r.Priority, Deadline = now + r.Seconds, Guess = r.Guess };
+            var w = new Waiting { Request = r, Intent = intent, Sheet = sheet, Job = job };
+            if (six)
+            {
+                Six(r, intent, sheet, w, PackLanguage);
+            }
+            job.Prompt = TextCard.ChatMl(sheet, six ? TextCard.SystemSix : TextCard.System);
+            w.Card = TextCard.Card(sheet);
             GiveWay(r.Key);
             if (!_queue.Add(job, now))
             {
                 r.Why = "not asked: " + job.Why + " (a reply is expected to take " + _queue.Expect.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " s, the line waits "
                         + r.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s)";
+                Tally.Count(Pack, r.Intent, job.Why == "the queue was full" ? TextShownWhy.Busy : TextShownWhy.Slow);
                 return false;
             }
-            _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = TextCard.Card(sheet), Job = job, Until = job.Deadline });
+            w.Until = job.Deadline;
+            _waiting.Add(w);
             Runner.Nudge();
             return true;
         }
 
         // The request to the AI service, with the newest card: false, with why, when it cannot go (a value missing, no time in
-        // its queue). A spoken line waits for the service (SpokenWait); the end of the wait is kept for the pack.
+        // its queue). A card of data v6 is finished in English, as the service writes (ServiceWhy). A spoken line waits for
+        // the service (SpokenWait); the end of the wait is kept for the pack.
         private bool ToService(TextRequest r, double now)
         {
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch, Newest);
@@ -266,10 +337,15 @@ namespace RealLifeOverhaul.Texts
                 r.Why = "a value the card " + r.Intent + " needs is missing";
                 return false;
             }
-            string card = TextCard.Card(sheet);
             double reserve = Spoken(r) ? PackReserve(r) : 0.0;
             double waits = Spoken(r) ? SpokenWait(r.Seconds, _serviceQueue.Expect, reserve) : r.Seconds;
-            var job = new TextJob { Key = r.Key ?? r.Intent, Card = card, Priority = r.Priority, Deadline = now + waits - reserve, Guess = r.Guess };
+            var job = new TextJob { Key = r.Key ?? r.Intent, Priority = r.Priority, Deadline = now + waits - reserve, Guess = r.Guess };
+            var w = new Waiting { Request = r, Intent = intent, Sheet = sheet, Job = job, ViaService = true, Until = now + waits };
+            if (intent.Data >= TextIntents.DataV6)
+            {
+                Six(r, intent, sheet, w, TextLanguages.English);
+            }
+            job.Card = w.Card = TextCard.Card(sheet);
             GiveWay(r.Key);
             if (!_serviceQueue.Add(job, now))
             {
@@ -278,9 +354,39 @@ namespace RealLifeOverhaul.Texts
                 return false;
             }
             r.Waits = waits;
-            _waiting.Add(new Waiting { Request = r, Intent = intent, Sheet = sheet, Card = card, Job = job, ViaService = true, Until = now + waits });
+            _waiting.Add(w);
             Service.Nudge();
             return true;
+        }
+
+        // The language a pack's card of data v6 asks for: the game's when it is one of the seven, else English.
+        private string PackLanguage => TextLanguages.Known(Language) ? Language : TextLanguages.English;
+
+        // A card of data v6: its language, the speaker's memory (never on a shared card), and the request's grammar, length and the name kept out.
+        private void Six(TextRequest r, TextIntent intent, TextSheet sheet, Waiting w, string lang)
+        {
+            r.Lang = lang;
+            w.Lang = lang;
+            Finish(intent, sheet, lang, r.Memory, r.Day, r.Shared);
+            w.Lowercase = TextDecoding.Lowercase(sheet.Style);
+            w.Untold = intent.UntoldName && r.Slots.Get("known") != "yes" ? r.Who.Player : null;
+            w.Job.Grammar = TextDecoding.Grammar(TextDecoding.GrammarName(lang, w.Lowercase));
+            w.Job.Tokens = TextDecoding.Tokens(intent, lang);
+            w.Job.BanName = w.Untold != null && TextDecoding.NameForms(w.Untold) != null ? w.Untold : null;
+        }
+
+        /// <summary>
+        /// A built card of data v6 finished as it is sent: its lang line, and the memory lines of what its speaker remembers
+        /// (none on a shared card). The contract's fixtures are finished by the same (EconomyCheck: --texts-spec).
+        /// </summary>
+        public static void Finish(TextIntent intent, TextSheet sheet, string lang, List<TextFact> memory, int today, bool shared)
+        {
+            sheet.Lang = lang;
+            sheet.Memory.Clear();
+            if (!shared && memory != null && memory.Count > 0)
+            {
+                TextMemoryRules.Select(memory, intent, today, TextIntents.Subject(intent.Key, intent.Branch), sheet.Memory);
+            }
         }
 
         // A line the player waits for, face to face: never a guess (it waits for its click), never the options' test.
@@ -299,7 +405,7 @@ namespace RealLifeOverhaul.Texts
         // line's own hold (what the pack has always been given). None without a pack that would.
         private double PackReserve(TextRequest r)
         {
-            if (PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds) != null)
+            if (PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, r.Seconds, out _) != null)
             {
                 return 0.0;
             }
@@ -353,7 +459,7 @@ namespace RealLifeOverhaul.Texts
                 if (!same || (state != TextJobState.Written && waits - reserve < left))
                 {
                     QueueOf(w).Drop(w.Job);
-                    End(i, null, false);   // (the guess's own Done: it was never shown)
+                    End(i, null, false, TextShownWhy.Unwanted, true);   // (the guess's own Done: it was never shown)
                     return false;
                 }
                 r.Took = 0;
@@ -362,6 +468,7 @@ namespace RealLifeOverhaul.Texts
                 r.Source = TextSource.Written;
                 r.ServiceMiss = null;
                 r.Waits = waits;
+                r.Lang = w.Request.Lang;   // (the guess's card is the line's)
                 _serviceQueue.Urge(w.Job, now + waits - reserve);
                 w.Request = r;
                 w.Until = now + waits;
@@ -380,7 +487,7 @@ namespace RealLifeOverhaul.Texts
                 if (_waiting[i].Request.Key != null && _waiting[i].Request.Key == key)
                 {
                     QueueOf(_waiting[i]).Drop(_waiting[i].Job);
-                    End(i, null, false);
+                    End(i, null, false, TextShownWhy.Unwanted);
                 }
             }
         }
@@ -389,7 +496,8 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>
         /// Why a request would not go to the AI service now (null when it would): none chosen, a shared text (Going
-        /// Public), off for this kind of message, the service not ready or resting, or no card of the intent.
+        /// Public), off for this kind of message, the game in a language other than the one the service writes (English, as
+        /// the mod reads in a language it has no texts in), the service not ready or resting, or no card of the intent.
         /// </summary>
         public string ServiceWhy(TextUse use, bool shared, string intent, string branch)
         {
@@ -404,6 +512,10 @@ namespace RealLifeOverhaul.Texts
             if (Allowed != null && !Allowed(use, false))
             {
                 return "RLO Texts is off for this kind of message";
+            }
+            if (Language != TextLanguages.English)
+            {
+                return "your own AI writes English, and the game is in " + Language;
             }
             if (!ServiceUp)
             {
@@ -420,34 +532,47 @@ namespace RealLifeOverhaul.Texts
         /// </summary>
         public string WhyNot(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds)
         {
+            return WhyNot(use, shared, intent, branch, priority, guess, seconds, out _);
+        }
+
+        /// <summary>The same, with what the written line shown for it is counted as.</summary>
+        public string WhyNot(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds, out TextShownWhy why)
+        {
             string service = ServiceWhy(use, shared, intent, branch);
             if (service == null && seconds >= _serviceQueue.Expect)
             {
+                why = TextShownWhy.Model;
                 return null;
             }
-            string pack = PackWhy(use, shared, intent, branch, priority, guess, seconds);
+            string pack = PackWhy(use, shared, intent, branch, priority, guess, seconds, out why);
             return pack != null && Service != null ? pack + "; " + (service ?? "your own AI service is expected to take longer than that") : pack;
         }
 
-        // The pack's own reasons, as before the AI service.
-        private string PackWhy(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds)
+        // The pack's own reasons, as before the AI service, with what the written line shown for it is counted as.
+        private string PackWhy(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds, out TextShownWhy why)
         {
             if (!PackUp || (Allowed != null && !Allowed(use, shared)))
             {
-                return "not asked: RLO Texts is off, has no pack or is not running";
+                why = !PackUp ? (Runner == null && Pack == NoPack ? TextShownWhy.NoPack : TextShownWhy.Failed) : Barred != null ? Barred(use, shared) : TextShownWhy.Off;
+                return why == TextShownWhy.Language ? "not asked: the pack does not write the game's language (" + Language + ")"
+                    : "not asked: RLO Texts is off, has no pack or is not running";
             }
             if (!TextSpeed.Allows(AheadOnly, priority, guess, seconds))
             {
+                why = TextShownWhy.Slow;
                 return "not asked: this machine's model writes only what is asked well ahead";
             }
             if (Runner.State == TextServerState.Loading && seconds < TextSpeed.AheadSeconds)
             {
+                why = TextShownWhy.Loading;
                 return "not asked: the model is still loading";   // (what is due soon takes its written line now rather than wait for nothing)
             }
             if (TextIntents.Find(intent, branch, _packData) == null)
             {
+                why = TextShownWhy.NoCard;
                 return "not asked: the pack (data v" + _packData + ") has no card " + intent + (branch != null ? " " + branch : string.Empty);   // (a v2 pack is never asked a v3 intent)
             }
+            why = TextShownWhy.Model;
             return null;
         }
 
@@ -476,7 +601,7 @@ namespace RealLifeOverhaul.Texts
                     {
                         if (now > w.Job.Deadline)
                         {
-                            End(i, null, false);   // (never taken: the player went another way)
+                            End(i, null, false, TextShownWhy.Unwanted, true);   // (never taken: the player went another way; nothing was shown for it)
                             handed++;
                         }
                         continue;   // (its asker takes it, or its time runs out)
@@ -488,7 +613,7 @@ namespace RealLifeOverhaul.Texts
                         {
                             continue;   // (a spoken line: the time kept for the pack)
                         }
-                        Over(i, !w.ViaService);
+                        Over(i, !w.ViaService, TextShownWhy.Slow);
                     }
                     else
                     {
@@ -508,7 +633,7 @@ namespace RealLifeOverhaul.Texts
                     {
                         continue;   // (the service failed or rests: the pack tries in the time left)
                     }
-                    Over(i, !w.ViaService && state == TextJobState.Missed && BudgetMiss(w.Job));
+                    Over(i, !w.ViaService && state == TextJobState.Missed && BudgetMiss(w.Job), state == TextJobState.Dropped ? TextShownWhy.Unwanted : Missed(w.Job));
                     handed++;
                 }
                 else if (now > w.Job.Deadline)
@@ -521,11 +646,23 @@ namespace RealLifeOverhaul.Texts
                     {
                         continue;   // (a spoken line the service was late with: the pack in the time kept for it)
                     }
-                    Over(i, !w.ViaService && BudgetMiss(w.Job));
+                    Over(i, !w.ViaService && BudgetMiss(w.Job), TextShownWhy.Slow);
                     handed++;
                 }
             }
             return handed;
+        }
+
+        // A missed request's reason: the model's own failure (it gave nothing, an error), the queue full, or the time.
+        private static TextShownWhy Missed(TextJob job)
+        {
+            string why = job.Why ?? string.Empty;
+            if (why == "the queue was full")
+            {
+                return TextShownWhy.Busy;
+            }
+            return why.StartsWith("its time", StringComparison.Ordinal) || why.StartsWith("it took", StringComparison.Ordinal) || why == "no time"
+                ? TextShownWhy.Slow : TextShownWhy.Failed;
         }
 
         /// <summary>
@@ -556,13 +693,13 @@ namespace RealLifeOverhaul.Texts
                     }
                     w.Request.ByService = words != null && w.ViaService;
                     w.Request.Source = from = SourceOf(words, w);
-                    Count(words != null, w);
+                    Count(w, words, TextShownWhy.Refused);
                     return words;
                 }
                 w.Request.Why = "the guess was not written yet";
                 QueueOf(w).Drop(w.Job);
                 _waiting.RemoveAt(i);
-                Count(false, w);
+                Count(w, null, TextShownWhy.Slow);
                 return null;
             }
             return null;
@@ -600,7 +737,7 @@ namespace RealLifeOverhaul.Texts
                 if (_waiting[i].Request.Flush)
                 {
                     QueueOf(_waiting[i]).Drop(_waiting[i].Job);
-                    End(i, null, false);
+                    End(i, null, false, TextShownWhy.Busy);
                     n++;
                 }
             }
@@ -613,7 +750,7 @@ namespace RealLifeOverhaul.Texts
             for (int i = _waiting.Count - 1; i >= 0; i--)
             {
                 QueueOf(_waiting[i]).Drop(_waiting[i].Job);
-                End(i, null, false);
+                End(i, null, false, TextShownWhy.Off);
             }
             _queue.Clear();
             _serviceQueue?.Clear();
@@ -660,11 +797,12 @@ namespace RealLifeOverhaul.Texts
                 _budget.Ended(false);
                 _budget.Apply(_queue);
             }
-            End(i, words, true);
+            End(i, words, true, TextShownWhy.Refused);
         }
 
         // A request the AI service did not word (it failed, rested, or its words were refused) asked of the pack instead, in
-        // the time left to its deadline, with the pack's own card. False when the pack cannot take it: the written line.
+        // the time left to its deadline, with the pack's own card (of data v6: in the pack's language, with its grammar).
+        // False when the pack cannot take it: the written line.
         private bool Fallback(int i, double now)
         {
             Waiting w = _waiting[i];
@@ -673,25 +811,38 @@ namespace RealLifeOverhaul.Texts
                 return false;
             }
             TextRequest r = w.Request;
-            string why = PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, w.Until - now);
+            string why = PackWhy(r.Use, r.Shared, r.Intent, r.Branch, r.Priority, r.Guess, w.Until - now, out _);
             TextIntent intent = why == null ? TextIntents.Find(r.Intent, r.Branch, _packData) : null;
             var sheet = new TextSheet();
             if (intent == null || !TextIntents.Build(intent, r.Who, r.Slots, r.History, sheet))
             {
                 return false;
             }
-            var job = new TextJob { Key = r.Key ?? r.Intent, Prompt = TextCard.ChatMl(sheet), Priority = r.Priority, Deadline = w.Until, Guess = r.Guess };
+            bool six = intent.Data >= TextIntents.DataV6;
+            var job = new TextJob { Key = r.Key ?? r.Intent, Priority = r.Priority, Deadline = w.Until, Guess = r.Guess };
+            var pack = new Waiting { Request = r, Intent = intent, Sheet = sheet, Job = job };
+            string lang = r.Lang;
+            if (six)
+            {
+                Six(r, intent, sheet, pack, PackLanguage);
+            }
+            job.Prompt = TextCard.ChatMl(sheet, six ? TextCard.SystemSix : TextCard.System);
             if (!_queue.Add(job, now))
             {
+                r.Lang = lang;   // (still the service's card: its written line follows)
                 return false;
             }
             ServiceFell++;
             r.ServiceMiss = r.Why;   // (why the service's words were not used: the pack's words come with it, for the log)
             r.Why = null;
+            r.Lang = pack.Lang;
             w.Job = job;
             w.Intent = intent;
             w.Sheet = sheet;
             w.Card = TextCard.Card(sheet);
+            w.Lang = pack.Lang;
+            w.Untold = pack.Untold;
+            w.Lowercase = pack.Lowercase;
             w.ViaService = false;
             Runner.Nudge();
             return true;
@@ -709,22 +860,25 @@ namespace RealLifeOverhaul.Texts
             return job.Ran || (job.Priority != TextPriority.Background && job.Priority <= _queue.Floor);
         }
 
-        private void Over(int i, bool missed)
+        private void Over(int i, bool missed, TextShownWhy why)
         {
             if (missed)
             {
                 _budget.Ended(true);
                 _budget.Apply(_queue);
             }
-            End(i, null, false);
+            End(i, null, false, why);
         }
 
-        // The words checked: null if they fail (counted by verdict).
+        // The words checked: null if they fail (counted by verdict; _verdict says which).
         private string Checked(Waiting w)
         {
-            string words = TextCheck.Tidy(w.Job.Raw);
-            TextVerdict verdict = TextCheck.Judge(words, w.Intent, w.Sheet, w.Card, Recent(w.Request.Speaker));
+            string words = TextCheck.Tidy(w.Job.Raw, w.Lang);
+            TextVerdict verdict = w.Lang != null
+                ? TextCheck.JudgeSix(words, w.Intent, w.Sheet, w.Card, Recent(w.Request.Speaker), w.Lang, w.Job.Cut, w.Untold, w.Lowercase)
+                : TextCheck.Judge(words, w.Intent, w.Sheet, w.Card, Recent(w.Request.Speaker));
             _verdicts[(int)verdict]++;
+            _verdict = verdict;
             w.Request.Took = w.Job.Took;
             if (verdict != TextVerdict.Ok)
             {
@@ -735,7 +889,10 @@ namespace RealLifeOverhaul.Texts
             return words;
         }
 
-        private void End(int i, string words, bool counted)
+        // A request handed over: the words or null, counted (a null after the checker's verdict as Refused with its rule,
+        // else as the reason given; a guess never shown only in the session's figures), kept and remembered when there are
+        // words. Done is called last.
+        private void End(int i, string words, bool counted, TextShownWhy why, bool unseen = false)
         {
             Waiting w = _waiting[i];
             _waiting.RemoveAt(i);
@@ -743,14 +900,20 @@ namespace RealLifeOverhaul.Texts
             {
                 words = null;   // (too late for where it was going: the written line stays)
                 counted = true;
+                why = TextShownWhy.Unwanted;
                 w.Request.Why = "no longer wanted when the words came";
             }
             w.Request.Took = w.Job.Took;
             w.Request.ByService = words != null && w.ViaService;
             w.Request.Source = SourceOf(words, w);
-            if (counted || words == null)
+            if (unseen)
             {
-                Count(words != null, w);
+                Fallbacks++;   // (the session's figures as ever; the tally counts only lines shown)
+                ServiceFell += w.ViaService && !w.Request.ServiceOnly ? 1 : 0;
+            }
+            else if (counted || words == null)
+            {
+                Count(w, words, why);
             }
             TextRequest r = w.Request;
             if (words != null)
@@ -758,7 +921,7 @@ namespace RealLifeOverhaul.Texts
                 Said(r.Speaker, words);
                 if ((r.Keep || r.Shared) && r.Key != null)
                 {
-                    TextKept k = Store.Keep(r.Key, r.Day, w.Intent.Key, words, r.Shared);
+                    TextKept k = Store.Keep(r.Key, r.Day, w.Intent.Key, words, r.Shared, false, w.Lang);
                     if (r.Shared)
                     {
                         SharedKept?.Invoke(k);
@@ -768,18 +931,22 @@ namespace RealLifeOverhaul.Texts
             r.Done(words);
         }
 
-        private void Count(bool shown, Waiting w)
+        // One line handed over, counted: the session's figures and the tally (the model's words under the way that wrote
+        // them, a written line under the pack; a refusal under the checker's rule).
+        private void Count(Waiting w, string words, TextShownWhy why)
         {
-            if (shown)
+            if (words != null)
             {
                 Shown++;
                 ServiceShown += w.ViaService ? 1 : 0;
+                Tally.Count(w.ViaService ? ServiceTally : Pack, w.Request.Intent, TextShownWhy.Model);
+                return;
             }
-            else
-            {
-                Fallbacks++;
-                ServiceFell += w.ViaService && !w.Request.ServiceOnly ? 1 : 0;   // (a service request that ended in the written line without reaching the pack)
-            }
+            Fallbacks++;
+            ServiceFell += w.ViaService && !w.Request.ServiceOnly ? 1 : 0;   // (a service request that ended in the written line without reaching the pack)
+            bool refused = why == TextShownWhy.Refused && _verdict != TextVerdict.Ok;
+            Tally.Count(Pack, w.Request.Intent, refused ? TextShownWhy.Refused : why == TextShownWhy.Refused ? TextShownWhy.Slow : why, refused ? _verdict : TextVerdict.Ok);
+            _verdict = TextVerdict.Ok;
         }
     }
 }

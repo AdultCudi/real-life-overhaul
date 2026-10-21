@@ -42,6 +42,10 @@ namespace RealLifeOverhaul.Texts
         public bool Ran;                // the worker took it (the model was asked): a miss after that is the model's or the machine's, never the budget's own holding back
         public volatile bool Speaking;  // an AI service's first words of it came (a streamed reply): the rest is on its way, never shown until it is whole
         public object Owner;            // the asker's own record (what to do with the words), never read by the queue
+        public int Tokens;              // data v6: the reply's most tokens (TextDecoding.Tokens); 0: TextJson.Tokens
+        public string Grammar;          // data v6: the reply's GBNF grammar (TextDecoding.Grammar); null: none
+        public string BanName;          // data v6: a name the reply may never write (its first token banned); null: none
+        public bool Cut;                // the worker's: the reply stopped at its most tokens (the server's stop_type "limit")
     }
 
     /// <summary>

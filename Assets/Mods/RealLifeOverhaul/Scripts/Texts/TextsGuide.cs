@@ -19,15 +19,28 @@ namespace RealLifeOverhaul.Texts
                 .Group("reallife_texts_header")
                 .About("reallife_guide_texts_about").Help("reallife_guide_texts")
                 .Owns(Settings.TextsId, Settings.TextsDeviceId, Settings.TextsThreadsId, Settings.TextsRepliesId, Settings.TextsPostsId, Settings.TextsPeopleId,
-                    Settings.TextsOfficialId, Settings.TextsRivalsId, Settings.TextsLedgerId)
-                .Data(TextsStore.SaveKey)
+                    Settings.TextsOfficialId, Settings.TextsRivalsId, Settings.TextsLedgerId, Settings.TextsCityId)
+                .Data(TextsStore.SaveKey, TextMemoryStore.SaveKey, TextsCityStore.SaveKey)
                 .Test("reallife_texts_test_sample")
+                .Test("reallife_texts_test_shown", TextsDirector.TestShown)
+                .Test("reallife_texts_test_staff", TextsDirector.TestStaff)
+                .Test("reallife_texts_test_life", TextsDirector.TestLife)
+                .Test("reallife_texts_test_gossip", TextsDirector.TestGossip)
                 .Fact("texts_timeout", () => TextServer.TimeOut.ToString("0", Inv))
                 .Fact("texts_per_minute", () => TextQueue.PerMinute.ToString(Inv))
                 .Fact("texts_slow", () => TextSpeed.FullSlow.ToString("0", Inv))
                 .Fact("texts_ahead", () => TextSpeed.AheadSlow.ToString("0", Inv))
+                .Fact("texts_memory_lines", () => TextMemoryRules.CardMost.ToString(Inv))
+                .Fact("texts_memory_people", () => TextMemoryRules.PeopleMost.ToString(Inv))
+                .Fact("texts_memory_facts", () => TextMemoryRules.FactsMost.ToString(Inv))
+                .Fact("texts_big_share", () => TextsCityRules.BigShare.ToString(Inv))
+                .Fact("texts_large_slow", () => TextSpeed.LargeSlow.ToString("0.0", Inv))
                 .Cleanup(() => TextsDirector.Words.Clear())
-                .ResetData(() => TextsDirector.Words.Store.Clear());
+                .ResetData(() =>
+                {
+                    TextsDirector.Words.Store.Clear();
+                    TextsDirector.ForgetAll();
+                });
             Features.Add("textsai", "reallife_meta_title_textsai")
                 .Group("reallife_textsai_header")
                 .About("reallife_guide_textsai_about").Help("reallife_guide_textsai")
@@ -59,6 +72,7 @@ namespace RealLifeOverhaul.Texts
                 .AddToggle(Settings.TextsOfficialId, "reallife_texts_opt_official", Settings.TextsOfficial, v => Settings.TextsOfficial = v)
                 .AddToggle(Settings.TextsRivalsId, "reallife_texts_opt_rivals", Settings.TextsRivals, v => Settings.TextsRivals = v)
                 .AddToggle(Settings.TextsLedgerId, "reallife_texts_opt_ledger", Settings.TextsLedger, v => Settings.TextsLedger = v)
+                .AddToggle(Settings.TextsCityId, "reallife_texts_opt_city", Settings.TextsCity, v => Settings.TextsCity = v)
                 .AddButton("reallife_texts_status", TextsDirector.ShowStatus)
                 .AddButton("reallife_texts_test_sample", TextsDirector.TestSample)
                 .AddSplitter();

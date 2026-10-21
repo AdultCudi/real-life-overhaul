@@ -64,6 +64,9 @@ namespace RealLifeOverhaul.Street
         /// <summary>RLO Texts: the answer asked ahead, taken at the click: the words, or null (then it is asked as usual).</summary>
         public static Func<StreetChat, string> TakeAhead;
 
+        /// <summary>RLO Texts (data v6): a line the stranger has just said, its words shown however they came, for what they will remember. Null: none.</summary>
+        public static Action<StreetChat, StreetLine, Dictionary<string, string>> Spoken;
+
         /// <summary>True while the interact key is street talk's (its panel is up, or its button ran this frame): the mod's own key stands aside.</summary>
         public static bool TakesInteractKey => Instance != null && Instance._door.TakesKey;
 

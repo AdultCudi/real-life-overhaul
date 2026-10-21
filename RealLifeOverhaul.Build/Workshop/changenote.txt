@@ -1,8 +1,4 @@
-0.41.1
+0.42.0
 
-Fixed
-- With your own AI chosen, people you stop in the street answered from the pack almost every time: their line waited only about a second, and ChatGPT takes longer to reply. Their line now waits for your AI a moment more, a short pause before they answer; they start to talk with their hands as its first words come, and the line shows as soon as its last word is in. If it is still late, the pack or the written line answers as before.
-- Bike racks, bike-share docks and motorbike stands are put only on level pavement, never on a crossing, over the kerb or in the air.
-- A product launched with three features sells. Software sold by licence closes deals at a steady pace, sooner with sales people, and its page says about when the next comes; a consumer service that wins only a few users a day still gets some who pay.
-- Online orders placed after closing wait for the opening hours without a notification, and the Planner counts from the opening. Orders left with nobody on shift while you are open still notify you, with a switch of their own in the options.
-- A bus held up for good gets going again. It goes round a closed lane or a car standing in its lane by the lane beside it, a red light in view no longer holds it for ever, and a bus driving off keeps going instead of standing in the road.
+New
+- RLO Texts, with a pack made for it: messages in the game's language when the pack writes it, people who remember how you met, what you talked about and the news of yours they heard, replies held to the rules as they are written, texts from your staff and from the people in your life after your own news, gossip, and reviews of your businesses from their real figures. Without such a pack nothing changes. Under Options, Test tools, RLO Texts: what was shown counts the model's words and the written lines.

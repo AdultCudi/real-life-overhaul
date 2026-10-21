@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Texts
         public string Words;
         public bool Shared;       // the host's words for the session's shared feed or paper (go to guests)
         public bool Received;     // ...sent by the host of a session to this guest: shown, never saved and never sent on
+        public string Lang;       // data v6: the language the words are in (TextLanguages); null: English, as every pack before wrote
     }
 
     /// <summary>
@@ -22,7 +23,7 @@ namespace RealLifeOverhaul.Texts
     /// the phone needs nothing here: the game keeps the words in its own thread. One line under its own key, records
     /// separated by '^', fields by '|', the words escaped (% ^ | and line breaks):
     ///
-    ///     v=1^w=key|day|intent|shared|words^...
+    ///     v=1^w=key|day|intent|shared|words^...      (and data v6's words: ...|words|lang, the language at the record's end)
     ///
     /// Each record is kept while the game still has what it belongs to (<see cref="Prune"/>, once a game day), and at most
     /// <see cref="Most"/> records in all (past that the oldest go: a bound on the save's line, not a rule of time). A line of a
@@ -50,13 +51,26 @@ namespace RealLifeOverhaul.Texts
             return key != null && _byKey.TryGetValue(key, out TextKept k) ? k.Words : null;
         }
 
+        /// <summary>
+        /// The words kept under a key for a game in this language: words of data v6 only in their own language (in another,
+        /// the written line), and words of an older pack, which carry no language, as ever. Null if none.
+        /// </summary>
+        public string Words(string key, string lang)
+        {
+            if (key == null || !_byKey.TryGetValue(key, out TextKept k))
+            {
+                return null;
+            }
+            return k.Lang == null || k.Lang == lang ? k.Words : null;
+        }
+
         public TextKept Get(string key)
         {
             return key != null && _byKey.TryGetValue(key, out TextKept k) ? k : null;
         }
 
-        /// <summary>Keeps words under a key (replacing any), and lets the oldest go past the limit.</summary>
-        public TextKept Keep(string key, int day, string intent, string words, bool shared, bool received = false)
+        /// <summary>Keeps words under a key (replacing any), and lets the oldest go past the limit. <paramref name="lang"/>: data v6's language, null below.</summary>
+        public TextKept Keep(string key, int day, string intent, string words, bool shared, bool received = false, string lang = null)
         {
             if (key == null || words == null)
             {
@@ -66,7 +80,7 @@ namespace RealLifeOverhaul.Texts
             {
                 _order.Remove(old);
             }
-            var k = new TextKept { Key = key, Day = day, Intent = intent, Words = words, Shared = shared, Received = received };
+            var k = new TextKept { Key = key, Day = day, Intent = intent, Words = words, Shared = shared, Received = received, Lang = lang };
             _byKey[key] = k;
             _order.Add(k);
             while (_order.Count > Most)
@@ -137,6 +151,11 @@ namespace RealLifeOverhaul.Texts
                 Escape(k.Intent ?? string.Empty, t);
                 t.Append('|').Append(k.Shared ? '1' : '0').Append('|');
                 Escape(k.Words, t);
+                if (k.Lang != null)
+                {
+                    t.Append('|');
+                    Escape(k.Lang, t);   // (at the record's end: an older RLO reads the five fields before it)
+                }
             }
             return t.ToString();
         }
@@ -173,7 +192,8 @@ namespace RealLifeOverhaul.Texts
                     return false;
                 }
                 string intent = Unescape(f[2]);
-                Keep(Unescape(f[0]), day, intent.Length > 0 ? intent : null, Unescape(f[4]), f[3] == "1");
+                string lang = f.Length > 5 ? Unescape(f[5]) : null;
+                Keep(Unescape(f[0]), day, intent.Length > 0 ? intent : null, Unescape(f[4]), f[3] == "1", false, string.IsNullOrEmpty(lang) ? null : lang);
             }
             return true;
         }
