@@ -59,6 +59,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 
 - [Meta](meta.md): the Guide, presets, the options page and the save tools.
 - [The Planner](planner.md): the phone's agenda.
+- [The Calendar](calendar.md): the month on the phone, as the year you chose divides it.
 - [The phone](phone.md): folders on the home screen, a dock, moving apps, and the Banks app.
 
 ## Folders without a page

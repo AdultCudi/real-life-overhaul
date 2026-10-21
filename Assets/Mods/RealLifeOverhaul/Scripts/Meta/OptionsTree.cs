@@ -314,7 +314,8 @@ namespace RealLifeOverhaul.Meta
                         + "retirement options shares conflict interest"),
                 S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own")
                     .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
-                S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary calendar notes to do")),
+                S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary notes to do"),
+                S("calendar").For("calendar").Main("calendar").Also("calendar month months year date dates payday bills due birthday birthdays")),
 
             G("money",
                 S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Also("bank borrow score finance"),

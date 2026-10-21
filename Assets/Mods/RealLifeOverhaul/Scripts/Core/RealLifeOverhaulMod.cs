@@ -765,6 +765,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
+                .Guarded(o => Calendar.CalendarOptions.AddCalendar(o))   // the month on the phone (Scripts/Calendar)
                 .AddHeader("reallife_econ_header")
                 .AddToggle(Settings.EconomyId, "reallife_econ_enabled", Settings.Economy,
                     v => Settings.Economy = v)
@@ -1366,6 +1367,9 @@ namespace RealLifeOverhaul
             Guard.Step("GameUi.OptionRows", () => GameUi.OptionRows.Logger = context.Logger);
             Guard.Step("Planner.PlannerApp", () => Planner.PlannerApp.Logger = context.Logger);
             Guard.Step("Planner.PlannerDirector", () => Planner.PlannerDirector.Logger = context.Logger);
+            Guard.Step("Calendar.CalendarDirector", () => Calendar.CalendarDirector.Logger = context.Logger);
+            Guard.Step("Calendar.CalendarApp", () => Calendar.CalendarApp.Logger = context.Logger);
+            Guard.Step("Calendar.CalendarDirector", () => Guard.Add<Calendar.CalendarDirector>(_root));   // the Calendar: the month on the phone (Scripts/Calendar)
             Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)
             Guard.Step("Economy.EconomyDirector", () => Economy.EconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);

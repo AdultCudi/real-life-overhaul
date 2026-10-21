@@ -126,6 +126,7 @@ namespace RealLifeOverhaul
         public const string PlannerId = "planner";
         public const string PlannerRemindersId = "planner_reminders";
         public const string PlannerMorningId = "planner_morning";
+        public const string CalendarId = "calendar";
         public const string EconomyId = "economy";
         public const string EconomyGradeUpNotesId = "economy_grade_up_notes";
         public const string EconomyProductsId = "economy_products";
@@ -439,6 +440,7 @@ namespace RealLifeOverhaul
         public static bool LicencePoints = true;         // booked offences put penalty points on the licence; twelve suspend it
         public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda (Scripts/Planner)
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
+        public static bool Calendar = true;              // the Calendar app: the month as the chosen year divides it, with the days money moves and the player's own time (Scripts/Calendar)
         public static bool PlannerMorning = true;        // ...and one line of the day on waking: how many entries, the first and when to leave for it (off: none)
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
         public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade (off: only a fall is told; the Finance app shows the rating either way)
@@ -797,6 +799,7 @@ namespace RealLifeOverhaul
             Planner = Bool(modId, PlannerId, Planner);
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
             PlannerMorning = Bool(modId, PlannerMorningId, PlannerMorning);
+            Calendar = Bool(modId, CalendarId, Calendar);
             Economy = Bool(modId, EconomyId, Economy);
             EconomyGradeUpNotes = Bool(modId, EconomyGradeUpNotesId, EconomyGradeUpNotes);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
