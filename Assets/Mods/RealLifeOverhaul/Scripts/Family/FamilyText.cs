@@ -110,7 +110,37 @@ namespace RealLifeOverhaul.Family
         /// <summary>Set by RLO Texts: true when it holds a text for the model's words and sends it later; null or false, it goes now.</summary>
         public static System.Func<string, string, Dictionary<string, string>, System.Action<string, Dictionary<string, string>>, bool> HoldText;
 
-        /// <summary>A text message from one of the phone's contacts; without the contact, said on screen instead.</summary>
+        // A text written at night or in a time skip, kept for the morning: the game shows a message's notice with the hour's
+        // batch, which a sleep's skip runs past unseen (ContactsHelper.RunHourly), so it would only ever be found in the phone.
+        private sealed class Held
+        {
+            public GameInstance Save;   // the game it belongs to: another one loaded meanwhile, and it is let go
+            public string Contact, Key;
+            public Dictionary<string, string> Data;
+            public int Day;
+            public bool Notify;   // a text whose notice its sender shows itself (PartnerVoice) comes without the game's
+        }
+
+        private static readonly List<Held> Morning = new List<Held>(4);
+
+        /// <summary>The hours a family text is sent in, and a notice with it; outside them it waits (<see cref="SendHeld"/>).</summary>
+        public const int TextFrom = 8, TextTo = 22;
+
+        /// <summary>Day hours, and nobody skipping time: what is told now is seen.</summary>
+        internal static bool Awake
+        {
+            get
+            {
+                int hour = TimeHelper.CurrentHour;
+                var uis = InstanceBehavior<UI.UIs>.Instance;
+                return hour >= TextFrom && hour < TextTo && (uis == null || uis.timeMachine == null || !uis.timeMachine.isRunning);
+            }
+        }
+
+        /// <summary>
+        /// A text message from one of the phone's contacts, with its notice at once; written at night or in a time skip it is
+        /// sent in the morning instead. Without the contact, said on screen.
+        /// </summary>
         public static void Message(Contact contact, string key, in Args a, bool notify = true)
         {
             if (contact == null)
@@ -119,21 +149,49 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             Dictionary<string, string> data = Data(a);
-            string from = contact == FamilyPhone.PartnerContact ? "partner" : contact == PhoneContacts.Mom ? "mom" : contact == FamilyPhone.InLawContact ? "inlaws" : "family";
-            if (HoldText == null || !HoldText(from, key, data, (k, d) => Send(contact, k, d, notify)))
+            if (!Awake)
             {
-                contact.SendMessage(new TextMessage(key, data), notify: notify, sendNotificationInstantly: Now(contact));
+                Morning.Add(new Held { Save = SaveGameManager.Current, Contact = contact.id, Key = key, Data = data, Day = TimeHelper.CurrentDay, Notify = notify });
+                return;
+            }
+            Deliver(contact, key, data, notify);
+        }
+
+        /// <summary>Hourly: the texts kept from the night go out once it is day and nobody is skipping time; a day late, they are let go.</summary>
+        public static void SendHeld()
+        {
+            if (Morning.Count == 0 || !Awake)
+            {
+                return;
+            }
+            GameInstance save = SaveGameManager.Current;
+            var held = new List<Held>(Morning);
+            Morning.Clear();
+            for (int i = 0; i < held.Count; i++)
+            {
+                Held h = held[i];
+                Contact contact = save != null && ReferenceEquals(h.Save, save) && TimeHelper.CurrentDay - h.Day <= 1 ? save.Contacts.Find(c => c != null && c.id == h.Contact) : null;
+                if (contact != null)
+                {
+                    Deliver(contact, h.Key, h.Data, h.Notify);
+                }
             }
         }
 
-        // A text from the partner is told the moment it comes, as Social's own texts are; the game otherwise holds the notice back.
-        private static bool Now(Contact contact) => contact != null && contact == FamilyPhone.PartnerContact;
+        private static void Deliver(Contact contact, string key, Dictionary<string, string> data, bool notify)
+        {
+            string from = contact == FamilyPhone.PartnerContact ? "partner" : contact == PhoneContacts.Mom ? "mom" : contact == FamilyPhone.InLawContact ? "inlaws" : "family";
+            if (HoldText == null || !HoldText(from, key, data, (k, d) => Send(contact, k, d, notify)))
+            {
+                Send(contact, key, data, notify);
+            }
+        }
 
         private static void Send(Contact contact, string key, Dictionary<string, string> data, bool notify)
         {
             try
             {
-                contact.SendMessage(new TextMessage(key, data), notify: notify, sendNotificationInstantly: Now(contact));
+                contact.SendMessage(new TextMessage(key, data), notify: notify, sendNotificationInstantly: notify);
             }
             catch (System.Exception e)
             {

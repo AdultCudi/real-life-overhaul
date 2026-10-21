@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Family
         public const float HarmonyStart = 70f;
         public const float HarmonyChore = 4f;
         public const float HarmonyRoutine = 5f;
+        public const float HarmonyWaitedInVain = -2f;   // an hour on the sofa for a programme the player never came to
         public const float HarmonyDate = 8f;
         public const float HarmonyBrokenPromise = -8f;
         public const float HarmonyArrest = -22f;        // at severity 1; times 0.6 + 0.4 x severity
