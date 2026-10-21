@@ -19,6 +19,7 @@ internal static partial class Program
         ManagerPrices();
         ManagerHiring();
         ManagerOffAndOverrides();
+        ManagerTasks();   // the task switches and the weekly rota written only whole (ManagerTaskChecks.cs)
         ManagerSave();
         ManagerWords();
     }
@@ -400,7 +401,8 @@ internal static partial class Program
         "reallife_mgr_undo_locked", "reallife_mgr_undo_delivered", "reallife_mgr_undo_nothing", "reallife_mgr_undo_rota_gone", "reallife_mgr_undo_rota_off",
         "reallife_mgr_note_today", "reallife_mgr_note_month", "reallife_mgr_note_gone", "reallife_mgr_note_appointed", "reallife_mgr_note_stood_down",
         "reallife_mgr_note_cannot", "reallife_mgr_note_most", "reallife_mgr_note_undone", "reallife_mgr_appoint_title", "reallife_mgr_appoint_what", "reallife_mgr_appoint_hire",
-        "reallife_mgr_appoint_replaces", "reallife_mgr_region_what", "reallife_mgr_region_pick", "reallife_mgr_region_places", "reallife_opt_sec_managers"
+        "reallife_mgr_appoint_replaces", "reallife_mgr_region_what", "reallife_mgr_region_pick", "reallife_mgr_region_places", "reallife_opt_sec_managers",
+        "reallife_mgr_sec_tasks", "reallife_mgr_tasks_what", "reallife_mgr_task_rota_when", "reallife_mgr_did_rota_kept_out", "reallife_mgr_did_rota_kept_less"
     };
 
     private static void ManagerWords()
@@ -435,6 +437,11 @@ internal static partial class Program
                                                   && g.Contains("<b>" + tab + "</b>") && w.TryGetValue("reallife_mgr_undo", out string undo) && g.Contains("<b>" + undo + "</b>")
                                                   && w.TryGetValue("reallife_mgr_hand_back", out string back) && g.Contains("<b>" + back + "</b>"));
         Check(guide, "managers: the Guide page names the tab, Undo and Hand them back as the app does, in each language");
+        bool switches = Array.TrueForAll(langs, w => w.TryGetValue("reallife_guide_economy_managers", out string g) && w.TryGetValue("reallife_mgr_task_rota", out string rota)
+                                                     && g.Contains("<b>" + rota + "</b>") && g.Contains("{mgr_rota_hour}"));
+        Check(switches, "manager switches: the Guide page names the weekly rota's switch as the panel does, with its hour, in each language");
+        Check(AnyChangesRow(en, "a switch for every task they do") && AnyChangesRow(en, "Fixed: a manager no longer rewrites the rota out of nowhere"),
+            "manager switches: What's new has the switches' line and the rota's fix (in the next row, or its version's row once it is made)");
         // In the next row until its version is made, and in that version's own row after (the release empties the next row).
         bool line = false;
         foreach (KeyValuePair<string, string> row in en)

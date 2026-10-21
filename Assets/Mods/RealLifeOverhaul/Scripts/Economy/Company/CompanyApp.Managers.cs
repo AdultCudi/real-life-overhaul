@@ -8,8 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The Managers tab: every place and district with its manager, a place's kinds of decision and its log, a decision
-    /// with its undo, and the staff to appoint from. The table and the white box as the other tabs have them; a page is
+    /// The Managers tab: every place and district with its manager, a place's kinds of decision with a switch each in the
+    /// manager's own panel and its log, a decision with its undo, and the staff to appoint from. The table and the white box as the other tabs have them; a page is
     /// written when the tab opens, a row is picked or something changes. The picks:
     ///   "mp:place" a place; "mk:place*kind" one of its kinds; "md:id" a decision; "ma:place" its staff to appoint from;
     ///   "mc:place*id" one of them; "rg:district" a district's regional manager and who could be; "rc:district*id" one of them.
@@ -296,6 +296,19 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CompanyText.T("reallife_mgr_place_waits"), CellTone.Yellow);
             }
+            // A switch for every kind the place has, as the Mod settings app has them: off, the manager never does it.
+            box.Section("reallife_mgr_sec_tasks");
+            int kinds = ManagerRules.Kinds(mp.Kind), blocked = _director.ManagerBlocked(mp);
+            for (int t = 0; t < (int)ManagerTask.Count; t++)
+            {
+                ManagerTask task = (ManagerTask)t;
+                if (ManagerRules.Has(kinds, task))
+                {
+                    bool on = ManagerRules.Has(m.Tasks, task);
+                    TaskSwitch(box, place, task, TaskKeys[t], on, on && (blocked & (1 << t)) != 0 && TaskWaitKeys[t] != null ? CompanyText.T(TaskWaitKeys[t]) : TaskNote(m, task));
+                }
+            }
+            box.Note(CompanyText.T("reallife_mgr_tasks_what"));
             box.Section("reallife_mgr_sec_month");
             box.RowPair("reallife_mgr_decided", m.Decided.ToString(), "reallife_mgr_mistakes", m.Mistakes.ToString());
             box.RowPair("reallife_mgr_undone", m.Undone.ToString(), "reallife_mgr_spent",
@@ -330,12 +343,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CompanyText.T(TaskWaitKeys[(int)task]), CellTone.Yellow);
             }
-            bool on = ManagerRules.Has(m.Tasks, task);
-            if (!box.Switch("reallife_mgr_task_given", on, v => _director.ManagerTaskSet(place, task, v)))
-            {
-                InfoBox.Button(box.ButtonRow(), on ? InfoBox.Negative : InfoBox.Positive, on ? "reallife_mgr_task_take" : "reallife_mgr_task_give",
-                    () => _director.ManagerTaskSet(place, task, !on));
-            }
+            TaskSwitch(box, place, task, "reallife_mgr_task_given", ManagerRules.Has(m.Tasks, task), TaskNote(m, task));
             switch (task)
             {
                 case ManagerTask.Raises:
@@ -362,6 +370,23 @@ namespace RealLifeOverhaul.Economy
                         i => CompanyText.Share(ManagerCatalogue.PriceHighs[i]));
                     break;
             }
+        }
+
+        // One kind's switch: the Mod settings app's own (InfoBox.Toggle), else the box's tick switch, else a button that does the same.
+        private void TaskSwitch(InfoBox box, string place, ManagerTask task, string labelKey, bool on, string note)
+        {
+            Action<bool> set = v => _director.ManagerTaskSet(place, task, v);
+            if (box.Toggle(labelKey, note, on, set) || box.Switch(labelKey, on, set))
+            {
+                return;
+            }
+            InfoBox.Button(box.ButtonRow(), on ? InfoBox.Negative : InfoBox.Positive, on ? "reallife_mgr_task_take" : "reallife_mgr_task_give", () => set(!on));
+        }
+
+        // The line under a kind's switch: its limit, or for the rota when it is written.
+        private static string TaskNote(ManagerFile m, ManagerTask task)
+        {
+            return task == ManagerTask.Rota ? CompanyText.T("reallife_mgr_task_rota_when", "hour", ManagerCatalogue.RotaHour.ToString("00")) : LimitText(m, task);
         }
 
         private void BudgetLimit(InfoBox box, string place, ManagerFile m)
@@ -464,6 +489,8 @@ namespace RealLifeOverhaul.Economy
                     return CompanyText.T("reallife_mgr_did_prices", "count", d.A.ToString());
                 case ManagerTask.Rota:
                     return d.A == -1 ? CompanyText.T("reallife_mgr_did_rota_missed") : d.A == -2 ? CompanyText.T("reallife_mgr_did_rota_unwritten")
+                        : d.A == -3 ? CompanyText.T("reallife_mgr_did_rota_kept_out", "count", d.B.ToString())
+                        : d.A == -4 ? CompanyText.T("reallife_mgr_did_rota_kept_less", "after", d.B.ToString(), "wanted", d.C.ToString(), "now", d.D.ToString())
                         : CompanyText.T("reallife_mgr_did_rota", "shifts", d.A.ToString(), "covered", d.B.ToString(), "wanted", d.C.ToString());
                 case ManagerTask.Hiring:
                     return CompanyText.T("reallife_mgr_did_hire", "name", name, "skill", d.B.ToString(), "wage", CompanyText.Wage(d.A));

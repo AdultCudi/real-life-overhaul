@@ -251,17 +251,17 @@ internal static partial class Program
             }
         }
         Check(missing.Count == 0, "Flare closed reviews: the Tests entry's texts are in every language, short enough for a toast" + (missing.Count > 0 ? "; not: " + string.Join(", ", missing) : string.Empty));
+        // In any What's new row: the next row until a release numbers it into its own, wherever other lines stand in it.
         var lines = new List<string>();
         for (int l = 0; l < codes.Length; l++)
         {
-            string next = words[l].TryGetValue("reallife_changes_next", out string t) ? t : string.Empty;
-            if (!FixMarks.TryGetValue(codes[l], out string mark) || !next.StartsWith(mark, StringComparison.Ordinal) || !next.Contains("Flare"))
+            if (!FixMarks.TryGetValue(codes[l], out string mark) || !AnyChangesRow(words[l], mark) || !AnyChangesRow(words[l], "Flare"))
             {
                 lines.Add(codes[l]);
             }
         }
-        Check(lines.Count == 0 && words[0]["reallife_changes_next"].Contains("temporarily closed") && words[0]["reallife_changes_next"].Contains("opening hours"),
-            "Flare closed reviews: What's new's next row has the fix in every language (" + codes.Length + (lines.Count > 0 ? "; not in " + string.Join(", ", lines) : string.Empty) + ")");
+        Check(lines.Count == 0 && AnyChangesRow(words[0], "while it is temporarily closed or outside its opening hours"),
+            "Flare closed reviews: What's new has the fix in every language (" + codes.Length + (lines.Count > 0 ? "; not in " + string.Join(", ", lines) : string.Empty) + ")");
     }
 
     // ---------------------------------------------------------------- the cost

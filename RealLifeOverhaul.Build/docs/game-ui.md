@@ -877,6 +877,10 @@ offer less, refuse. A row has no fourth, so a page with three answers puts its B
 
 **A switch in the box** is `InfoBox.Switch` (MyEmployees' own switch row); where the game's row could not be had it
 returns false and the page shows a button that does the same.
+`InfoBox.Toggle` is the Mod settings app's switch in the box: the game's settings menu switch row (`OptionRows.SwitchRow`,
+`switch-off@2x` and `switch-on@2x`) with a name and a short line under it in the box's words and colours, the control's
+column the switch's own width. It is made the first time a page asks and kept as the box's other parts are; where the
+menu cannot be copied it returns false and the page uses `InfoBox.Switch` (the managers' task switches do so).
 
 **What the game keeps, and where a mod can read it without patching**
 
