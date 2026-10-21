@@ -1,12 +1,7 @@
-0.46.0
+0.47.0
 
 New
-- Faster frames: the mod's bus stops, police station fronts, signs, help-wanted boards and newspaper kiosks are no longer drawn beyond 200 m, the distance the game uses for its own street furniture. Performance in the mod's settings has three new choices for the picture: how far the sun's shadows reach, how many cascades they are drawn in, and how far away things keep their detailed models. Each stays as the game has it until you change it, and the performance test (Shift+F7) measures each of them. A bank branch of your own: open a Bank Branch in a shop unit, hire tellers for its tills, and customers come in during opening hours to open accounts, pay in, take out and borrow, all booked in your bank. Busy branches bring your bank more of the city, each one less than the last. Click a free till to work the counter yourself. The Branches tab of Your bank shows what each branch brings and costs. A Calendar app on the phone, in the Social and life folder. It shows the month as the year you chose divides it, from 5 days in a 60-day year to 30 or 31 in a 365-day one, and the day the month ends on. Each day shows the money that moves on it, from bills, card statements and your firms' monthly invoices to taxes and insurance, and your shifts, classes, appointments, deliveries and birthdays. Click a day for its page, and an entry to open its app. Rent, wages and loans are paid every night, and the calendar says so.
+- RLO Texts Large, a fourth pack on the Workshop for PCs with a strong graphics card: a larger model with the best words, in all seven languages. It runs only on a graphics card with the memory and speed for it, and the mod tells you about it once where RLO Texts is fast on such a card.
 
 Fixed
-- The street chess player faces the board again. Their stool is close to the table, and the way people walk round the table turned them away from it; they now keep facing the board's centre at every table, while they wait and while you play.
-- A bus held back at its start to keep the timetable stood still in its lane when you could see it, and looked stuck. It now waits only out of sight: as soon as you can see it, it drives on, and the stop's panel shows it coming sooner.
-- A stutter on the hour from Flare's work for the hour, which is now spread over a few frames.
-- A stutter the first time you were back on the street, from the parking beside the bus stops being laid out all at once.
-- The watch for bouncing cars and the interact key now cost less in every frame.
-- The Planner's day box said the new year began on the year's last day, day 60 in a 60-day year. It now counts the year as the calendar, the weather, the stock market and the game's tax year do: the new year begins the day after.
+- When stocking shelves, the shelf to stock is shown as soon as you carry a box in.
