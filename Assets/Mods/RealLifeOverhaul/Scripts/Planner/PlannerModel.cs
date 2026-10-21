@@ -37,17 +37,8 @@ namespace RealLifeOverhaul.Planner
             return index < 0 ? index + 7 : index;
         }
 
-        /// <summary>The game's year of a day (TimeHelper.GetYearsByDays: day / daysPerYear).</summary>
-        public static int Year(int day, int daysPerYear)
-        {
-            return daysPerYear > 0 && day > 0 ? day / daysPerYear : 0;
-        }
-
-        /// <summary>The first day of the year after the one this day is in.</summary>
-        public static int NextYearStart(int day, int daysPerYear)
-        {
-            return daysPerYear > 0 ? (Year(day, daysPerYear) + 1) * daysPerYear : 0;
-        }
+        // The year and the next one's first day are the calendar's (CalendarRules.YearOf, NextYearStart): days 1 to the
+        // year's length are the first year, as the calendar, the weather, the market and the game's tax year count them.
     }
 
     public enum PlannerCategory

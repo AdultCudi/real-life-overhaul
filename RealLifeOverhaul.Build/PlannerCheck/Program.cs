@@ -67,9 +67,6 @@ internal static partial class Program
         Check(PlannerTime.DayOf(PlannerTime.At(13, 0)) == 13 && PlannerTime.OfDay(PlannerTime.At(13, 0)) == 0, "midnight belongs to the new day");
         Check(PlannerTime.Weekday(1) == 0 && PlannerTime.Weekday(7) == 6 && PlannerTime.Weekday(8) == 0 && PlannerTime.Weekday(6) == 5, "day 1 is a Monday, day 6 a Saturday");
         Check(PlannerTime.Weekday(0) == 6 && PlannerTime.Weekday(-6) == 0, "weekday of a day before the first does not throw");
-        Check(PlannerTime.Year(59, 60) == 0 && PlannerTime.Year(60, 60) == 1 && PlannerTime.Year(125, 60) == 2, "the game's year");
-        Check(PlannerTime.NextYearStart(1, 60) == 60 && PlannerTime.NextYearStart(60, 60) == 120 && PlannerTime.NextYearStart(61, 120) == 120, "the next year's first day");
-        Check(PlannerTime.Year(10, 0) == 0 && PlannerTime.NextYearStart(10, 0) == 0, "a year of no days is no year");
     }
 
     private static void Order()

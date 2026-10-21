@@ -192,9 +192,9 @@ namespace RealLifeOverhaul.Planner
             int perYear = SaveGameManager.Current != null ? GameCalendar.DaysPerYear : 0;
             if (perYear > 0)
             {
-                int year = PlannerTime.Year(today, perYear);
-                int next = PlannerTime.NextYearStart(today, perYear);
-                box.Row("reallife_planner_calendar_year", PlannerText.T("reallife_planner_calendar_year_value", "year", (year + 1).ToString(), "days", perYear.ToString()));
+                int year = CalendarRules.YearOf(today, perYear);
+                int next = CalendarRules.NextYearStart(today, perYear);
+                box.Row("reallife_planner_calendar_year", PlannerText.T("reallife_planner_calendar_year_value", "year", year.ToString(), "days", perYear.ToString()));
                 box.Row("reallife_planner_calendar_new_year", PlannerText.Date(next));
             }
         }

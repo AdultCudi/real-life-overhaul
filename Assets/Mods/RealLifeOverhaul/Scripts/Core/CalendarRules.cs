@@ -129,6 +129,17 @@ namespace RealLifeOverhaul
             return FloorDiv(day - 1, Math.Max(1, year)) + 1;
         }
 
+        /// <summary>
+        /// The first day of the year after the one a day is in: the day after the year's last. The game closes its tax
+        /// year on that last day (TaxHelper: the day a multiple of the year's length, the period from the day after the
+        /// last one), so day 60 of a 60-day year is still the first year and day 61 begins the second, as the calendar,
+        /// the weather and the stock market count it. The Planner's day box reads it from here.
+        /// </summary>
+        public static int NextYearStart(int day, int year)
+        {
+            return YearOf(day, year) * Math.Max(1, year) + 1;
+        }
+
         private static int FloorDiv(int a, int b)
         {
             int q = a / b;
