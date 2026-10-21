@@ -122,6 +122,7 @@ ba:skill_securityguard
 ba:towdestination_autorepairshop
 ba:transaction_autotowservice
 ba:transaction_boatyearlymaintenance
+ba:transaction_buildingbought
 ba:transaction_buildingsold
 ba:transaction_casinoboatticket
 ba:transaction_depositreturn

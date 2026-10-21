@@ -20233,5 +20233,6 @@
   "reallife_family_do_cook_breakfast": "Preparar o café da manhã juntos?",
   "reallife_family_do_cook_lunch": "Fazer um almoço juntos?",
   "reallife_family_do_cook_any": "Cozinhar alguma coisa juntos?",
-  "reallife_estate_note_sold_back": "{building} foi vendido, mas voltou a ser seu quando o jogo foi carregado. Ele pertence ao comprador de novo, então não pode ser vendido duas vezes."
+  "reallife_estate_note_sold_back": "{building} foi vendido, mas voltou a ser seu quando o jogo foi carregado. Ele pertence ao comprador de novo, então não pode ser vendido duas vezes.",
+  "reallife_contract_part_car_wash": "substitutos para o jato e o som de um carro que não os tem, para que a lavagem do jogo na baia da oficina termine nele"
 }

@@ -20233,5 +20233,6 @@
   "reallife_family_do_cook_breakfast": "一起做早餐吗？",
   "reallife_family_do_cook_lunch": "一起做午饭吗？",
   "reallife_family_do_cook_any": "一起做点吃的吗？",
-  "reallife_estate_note_sold_back": "{building}已经卖出，但读取存档时又变回了你的。它已重新归买家所有，所以不能再卖一次。"
+  "reallife_estate_note_sold_back": "{building}已经卖出，但读取存档时又变回了你的。它已重新归买家所有，所以不能再卖一次。",
+  "reallife_contract_part_car_wash": "为没有洗车喷雾和声音的车提供替代，让游戏在维修车位的洗车能在它身上正常结束"
 }

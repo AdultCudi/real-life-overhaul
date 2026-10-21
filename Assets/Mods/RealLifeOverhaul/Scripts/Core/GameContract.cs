@@ -101,7 +101,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
         public static readonly GamePart StaffLeaving = ContractBook.Part("staff_leaving", null, "paying an employee the mod lets go at the turn of a day only once");
         public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
-        public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage", "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
+        public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
+            "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
 
         // ---------------------------------------------------------------- the pieces
 

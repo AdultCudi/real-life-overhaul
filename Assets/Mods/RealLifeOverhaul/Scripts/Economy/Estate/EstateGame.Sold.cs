@@ -136,8 +136,10 @@ namespace RealLifeOverhaul.Economy
                     s.Sold.RemoveAt(i);
                     if (Meta.Dev.Verbose)
                     {
-                        EstateDirector.Logger?.Info("Estate check (a sold building held again): " + name + " was sold on day " + r.SoldDay + " and is the player's again, bought on day "
-                                                    + e.purchaseDay + (again >= 0 ? " (a purchase on day " + again + " in the game's books)" : string.Empty) + ": a purchase of the player's, kept: PASS");
+                        EstateDirector.Logger?.Info("Estate check (a sold building held again): " + name + " was sold on day " + r.SoldDay
+                                                    + " and is the player's again, bought on day " + e.purchaseDay
+                                                    + (again >= 0 ? " (a purchase on day " + again + " in the game's books)" : string.Empty)
+                                                    + ": a purchase of the player's, kept: PASS");
                     }
                     continue;
                 }
@@ -146,9 +148,10 @@ namespace RealLifeOverhaul.Economy
                 bool listed = Listed(save, e.address);
                 Release(save, e, rival);
                 back++;
-                EstateDirector.Logger?.Info("Estate: " + name + " was sold on day " + r.SoldDay + " and was among the player's buildings again with no purchase since (its purchase day " + e.purchaseDay
-                                            + ", before the sale" + (listed ? ", and on the market again" : string.Empty) + "; another mod that keeps its own buildings puts them back as a save loads): "
-                                            + "handed back to its buyer as the sale left it. No money moved.");
+                EstateDirector.Logger?.Info("Estate: " + name + " was sold on day " + r.SoldDay + " and was among the player's buildings again with no purchase since"
+                                            + " (its purchase day " + e.purchaseDay + ", before the sale" + (listed ? ", and on the market again" : string.Empty)
+                                            + "; another mod that keeps its own buildings puts them back as a save loads): handed back to its buyer as the sale left it."
+                                            + " No money moved.");
                 if (!r.Told)
                 {
                     r.Told = true;

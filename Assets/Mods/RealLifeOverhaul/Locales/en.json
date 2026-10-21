@@ -20233,5 +20233,6 @@
   "reallife_family_do_cook_breakfast": "Make breakfast together?",
   "reallife_family_do_cook_lunch": "Make some lunch together?",
   "reallife_family_do_cook_any": "Cook something together?",
-  "reallife_estate_note_sold_back": "{building} was sold, but it came back as yours when the save loaded. It belongs to its buyer again, so it cannot be sold twice."
+  "reallife_estate_note_sold_back": "{building} was sold, but it came back as yours when the save loaded. It belongs to its buyer again, so it cannot be sold twice.",
+  "reallife_contract_part_car_wash": "a spray and a wash sound given to a car that has none of its own, so the game's car wash in a repair bay ends on it"
 }
