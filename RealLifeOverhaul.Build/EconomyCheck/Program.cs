@@ -102,6 +102,7 @@ internal static partial class Program
         Identity();
         DailyRun();
         Products();
+        CreditIncomeLimits();
         Interest();
         Instalments();
         OverdraftCover();

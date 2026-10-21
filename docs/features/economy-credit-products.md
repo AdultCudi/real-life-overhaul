@@ -59,12 +59,30 @@ Interest is whole money, worked out in hundredths of a per cent over the game's 
 
 | Product | What it is | How it is collected |
 | --- | --- | --- |
-| Overdraft (`ProductKind.Overdraft`) | A limit of 2% (at 580) to 8% (from 800) of what the city's banks lend at the rating, rounded to 50, at least 200. Free to hold. Rate: the bank's plus 8 points. | On the first hour event of a new day, before the game's run, if cash is short of what leaves tonight (`Books.Tomorrow`, the figure the Overview shows) it pays the shortfall into cash up to its free limit. Interest is added to the balance each day. Cash above 500 pays it back at each day's end. A balance over the limit is a missed payment. |
-| Credit card (`CreditCard`) | A limit of 3% to 12% of the same, rounded to 50, at least 300. Cash is drawn in the app for a fee of 3%, at least 5. Rate: the bank's plus 12 points. | A statement every 7 days. 3 days later the minimum (5% of the statement, at least 25, or all of a smaller balance) is taken, and what is then still unpaid of the statement bears 7 days' interest. A statement paid in full bears none. A minimum paid by hand before its day counts as a payment on time on that day (`DayOutcome.PaidEarly`, `OnTime`). A minimum that could not be taken is tried again each day, and is one miss a statement. |
+| Overdraft (`ProductKind.Overdraft`) | The lower of the bank's rating-based limit (2% at 580 to 8% from 800 of what the city's banks lend at the rating, rounded to 50, then the bank's share) and 30 days of average income, rounded down to 50, at least 200. Free to hold. Rate: the bank's plus 8 points. | On the first hour event of a new day, before the game's run, if cash is short of what leaves tonight (`Books.Tomorrow`, the figure the Overview shows) it pays the shortfall into cash up to its free limit. Interest is added to the balance each day. Cash above 500 pays it back at each day's end. A balance over the limit is a missed payment. |
+| Credit card (`CreditCard`) | The lower of the bank's rating-based limit (3% to 12% of the same, rounded to 50, then the bank's share) and 60 days of average income, rounded down to 50, at least 300. Cash is drawn in the app for a fee of 3%, at least 5. Rate: the bank's plus 12 points. | A statement every 7 days. 3 days later the minimum (5% of the statement, at least 25, or all of a smaller balance) is taken, and what is then still unpaid of the statement bears 7 days' interest. A statement paid in full bears none. A minimum paid by hand before its day counts as a payment on time on that day (`DayOutcome.PaidEarly`, `OnTime`). A minimum that could not be taken is tried again each day, and is one miss a statement. |
 | Business loan (a game `Loan`, `LoanMark.Purpose = Business`) | Offered when the player runs a business with 7 daily statements on record (`GameInstance.financialSummaries`, what EconoView's business page reads): up to 30 times its average daily profit, at the bank's rate less 1 point, plus the phone's arrangement fee. The mark keeps the business as `Security`. The bank's cap in memory is raised by what is owed on it (`BankTerms.Secured`), so it does not use up the personal cap. | By the game, like any loan. |
 | Car finance (`CarFinance`) | See  [A purchase on finance](#a-purchase-on-finance-where-the-game-forced-a-change). Deposit 10% to 50%, 60 to 240 days, the bank's rate plus 2 points, up to what the bank lends unsecured at the rating. The vehicle (`VehicleInstance.id`) is the security. | A daily instalment (the amount over the term, rounded up) and the day's interest, taken together on the game's day event, after the game's own loans. If the cash is not there nothing is taken, the interest is added to the balance, and it is a miss. |
 | Mortgage (`Mortgage`) | The same for a building bought in BizMan: deposit 20% to 50%, 360 to 1,440 days, the bank's rate less 1 point, up to 5 times what the bank lends unsecured. The building (its address) is the security. | As car finance. |
 | Late fees (`Arrears`) | Late fees on a game loan that were not in cash on their day. No interest. | Taken in full as soon as the cash is there. |
+
+An overdraft and a card use `ProductTerms.IncomeLimit` after `BankRules.Limit` applies the bank's profile, so a bank offering 125% cannot exceed affordability.
+The income is `PlayerHelper.CalculateDailyIncome`, the game's average daily income used by the credit rating and the game's loan means test, with negative income treated as zero.
+The starter limits (200 and 300, at the current price scale) remain available from rating 580, including with no income; below 580 neither is offered.
+At rating 695 with New York's combined original bank caps of 2,040,000 and income of 80 a day, the house bank's rating ceilings are 91,200 for an overdraft and 136,800 for a card; the offers are 2,400 and 4,800 respectively.
+With enough income each reaches its bank's rating ceiling.
+Thirty days gives the overdraft a short cash buffer; sixty gives the card about two months of earnings.
+Wealth is not added: wealth before loans can include cash borrowed, so adding it could let borrowing enlarge the next offer.
+These terms are the same on Relaxed through Hardcore, as the other product limits are; the level changes collection consequences.
+
+**Existing agreements stay agreed.** `CreditDesk.Offer` returns an open account's saved `Agreed` limit before calculating a new offer.
+Limits are set at opening, not recomputed at the statement or on a new day; this also applies to accounts opened before the income cap.
+A fall in income or rating therefore neither reduces an existing limit nor creates an over-limit balance or fee.
+Closing an empty account and opening another uses today's income and rating.
+The bank app's Rating table and its next-rating preview call the same `CreditDesk.LimitAt` as new offers; an existing account's own page shows its agreed terms.
+`GameLoans.Limit` still returns `BankTerms.OwnCapTotal` for the score's game-loan utilisation denominator; the mod's accounts still contribute their agreed limits through `CreditAccount.Limit`.
+No rating formula changes.
+With Developer diagnostics on, an offer capped by income writes an Info line (`Economy check (credit income)`) with the rating ceiling, daily income and capped offer; Rating previews do not log.
 
 Early repayment of any of the mod's accounts is free, at any time, in Finance under Accounts.
 A game loan is repaid in EconoView, as before.
@@ -296,6 +314,7 @@ Lines the tests put on the credit file are test entries: "clear test entries" ta
 
 - `Economy check (accounts at load, day 40): 3 account(s), 1 loan(s) with something held (0 without its own figures: cleared), 0 business loan(s) whose business has gone ..., 0 account(s) whose security has gone ...: PASS`
 - `Economy check (account opened): CreditCard #2 with <bank>, 0 owed of 1200 at 26% a year: PASS`
+- `Economy check (credit income): CreditCard at rating 695: bank limit 136800, income 80 a day, offer capped at 4800 (60 days of income at most): PASS`
 - `Economy check (overdraft, day 41): 950 leaves tonight (loans 300, accounts 118, fines 0, rent 400, wages 132) against 610 in cash: the overdraft paid 340, 340 of 800 drawn: PASS`
 - `Economy check (account, day 41): CarFinance #3: 9000 owed, interest 18, paid 118, now 8900 owed: PASS` (or `a payment of 100 missed (2 in a row)`)
 - `Economy check (step, day 43): CarFinance #3: 3 payment(s) missed in a row on level 1 (secured), 300 overdue: PenaltyRate: PASS`
@@ -308,9 +327,10 @@ Lines the tests put on the credit file are test entries: "clear test entries" ta
 
 ## Checks
 
-`EconomyCheck` now compiles fourteen game-free files and runs 293 checks (`Checks2.cs` has the new ones):
+`EconomyCheck` compiles the game-free credit rules directly. `Checks2.cs` covers the products and debt; `CreditIncomeChecks.cs` covers revolving affordability:
 
 - the terms of every product at every score (nothing under the threshold, no limit falling, no rate rising);
+- revolving offers at rating 695 and income of 80 a day (card 4,800, overdraft 2,400), high income reaching each bank's rating ceiling, zero and negative income, starter minimums, rounding down, and shared Rating and offer terms;
 - interest over 600 days to the unit, a vehicle and a mortgage paid off on their last day to the unit, missed days, early repayment;
 - the overdraft's cover and repayment, the card's statement cycle;
 - the steps for each level from a scripted history, the payment plan kept and broken, repossession sums and the claim after 10 days;
