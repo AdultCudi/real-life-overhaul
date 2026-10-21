@@ -32,13 +32,15 @@ namespace RealLifeOverhaul.Economy
                 int round = card ? ProductCatalogue.CardRound : ProductCatalogue.OverdraftRound;
                 int least = card ? ProductCatalogue.CardLeast : ProductCatalogue.OverdraftLeast;
                 int ratingLimit = BankRules.Limit(usual, bank.Rank, round, least);
-                float income = Save != null ? PlayerHelper.CalculateDailyIncome() : 0f;
+                float income = ratingLimit > 0 && Save != null && Save.financialSummaries != null ? PlayerHelper.CalculateDailyIncome() : 0f;
                 int limit = ProductTerms.IncomeLimit(kind, ratingLimit, income);
                 if (diagnose && Verbose && limit < ratingLimit)
                 {
+                    int days = card ? ProductCatalogue.CardIncomeDays : ProductCatalogue.OverdraftIncomeDays;
+                    bool within = limit == least || limit <= Mathf.Max(0f, income) * days;   // the starter limit, or no more than the days of income
                     Logger?.Info("Economy check (credit income): " + kind + " at rating " + score + ": bank limit "
                         + ratingLimit + ", income " + income.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
-                        + " a day, offer capped at " + limit + ": " + (limit <= ratingLimit ? "PASS" : "FAIL"));
+                        + " a day, offer capped at " + limit + " (" + days + " days of income at most): " + (within ? "PASS" : "FAIL"));
                 }
                 return limit;
             }

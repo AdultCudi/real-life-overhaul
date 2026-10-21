@@ -314,7 +314,7 @@ Lines the tests put on the credit file are test entries: "clear test entries" ta
 
 - `Economy check (accounts at load, day 40): 3 account(s), 1 loan(s) with something held (0 without its own figures: cleared), 0 business loan(s) whose business has gone ..., 0 account(s) whose security has gone ...: PASS`
 - `Economy check (account opened): CreditCard #2 with <bank>, 0 owed of 1200 at 26% a year: PASS`
-- `Economy check (credit income): CreditCard at rating 695: bank limit 136800, income 80 a day, offer capped at 4800: PASS`
+- `Economy check (credit income): CreditCard at rating 695: bank limit 136800, income 80 a day, offer capped at 4800 (60 days of income at most): PASS`
 - `Economy check (overdraft, day 41): 950 leaves tonight (loans 300, accounts 118, fines 0, rent 400, wages 132) against 610 in cash: the overdraft paid 340, 340 of 800 drawn: PASS`
 - `Economy check (account, day 41): CarFinance #3: 9000 owed, interest 18, paid 118, now 8900 owed: PASS` (or `a payment of 100 missed (2 in a row)`)
 - `Economy check (step, day 43): CarFinance #3: 3 payment(s) missed in a row on level 1 (secured), 300 overdue: PenaltyRate: PASS`
