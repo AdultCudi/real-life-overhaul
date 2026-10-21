@@ -55,6 +55,9 @@ namespace RealLifeOverhaul
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
             Careers.AcademyType.Logger = context.Logger;
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
+            Designs.DesignsDirector.Logger = context.Logger;
+            // The installation firms' designs for the mod's business types, put in place or taken away on a worker (Scripts/Designs).
+            Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -349,6 +352,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_business_resolve", () => BusinessDirector.Instance?.TestResolveAll())
                 .AddSplitter()
                 .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
+                .Guarded(o => Designs.DesignsOptions.AddDesigns(o))   // the installation firms' designs for the mod's types (Scripts/Designs)
                 .AddHeader("reallife_home_header")
                 .AddToggle(Settings.HomeLifeId, "reallife_home_enabled", Settings.HomeLife,
                     v => Settings.HomeLife = v)
@@ -1438,6 +1442,8 @@ namespace RealLifeOverhaul
             Guard.Step("Districts.DistrictView", () => Guard.Add<Districts.DistrictView>(_root));   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
             Guard.Step("Interiors.InteriorDirector", () => Interiors.InteriorDirector.Logger = context.Logger);
             Guard.Step("CustomerDraw", () => CustomerDraw.Logger = context.Logger);
+            // With Developer diagnostics on, the installation firms' own lists checked against the designs written (Scripts/Designs).
+            Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
             Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));   // interiors and decor that matter: the scores once a game day, the BizMan tab (Scripts/Interiors)
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
