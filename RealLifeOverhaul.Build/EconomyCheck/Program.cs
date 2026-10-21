@@ -194,6 +194,7 @@ internal static partial class Program
         Firms();
         Competitors();
         LetGo();        // a building let go: the utilities' accounts and bills, business pressure's closures, an underground car park never supplied (LetGoChecks.cs)
+        SoldBack();     // a building sold and put back as the player's for nothing goes back to its buyer, a purchase since stays the player's (SoldBackChecks.cs)
         Hiring();
         Tech();
         Careers();

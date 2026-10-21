@@ -47,7 +47,7 @@ namespace RealLifeOverhaul
         {
             if (FrameGuard.Off)
             {
-                return (ButtonInfo[])null;
+                return base.GetButtons();   // (the Garage switched off after its faults: the game's own buttons, as without it)
             }
             try
             {
@@ -105,7 +105,7 @@ namespace RealLifeOverhaul
     ///   service and whatever else is due, the custom shop, and "My vehicles".
     ///
     /// The cost: the Garage's quarter-second timer and car ownership's own call <see cref="Tick"/> (either keeps the
-    /// panel going should the other have switched itself off), which is two compares unless the list is open. The game asks for the line and the button when it shows or refreshes its panel, never per frame.
+    /// panel going should the other have switched itself off), which is two compares unless the list is open, and one more for the wash (<see cref="GarageWash"/>). The game asks for the line and the button when it shows or refreshes its panel, never per frame.
     /// </summary>
     public static class GarageBay
     {
@@ -140,14 +140,19 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the game's panel
 
         /// <summary>
-        /// Four times a second. Puts the extended panel in the game's field the first time the box is down, and
-        /// closes the workshop's list when the car has left the bay or another screen has come up.
+        /// Four times a second. Puts the extended panel in the game's field the first time the box is down, ends a
+        /// car wash of the game's that has stopped without ending (<see cref="GarageWash"/>), and closes the workshop's
+        /// list when the car has left the bay or another screen has come up.
         /// </summary>
         public static void Tick(GameManager gm)
         {
             if (_ours == null && !_failed)
             {
                 Install();
+            }
+            if (_ours != null)
+            {
+                GarageWash.Watch(gm);
             }
             if (!ListOpen)
             {
@@ -227,6 +232,7 @@ namespace RealLifeOverhaul
             _car = null;
             _told = false;
             _failed = false;
+            GarageWash.Forget();
         }
 
         /// <summary>The game's buttons in a bay, and the workshop's after them if this car is one the workshop takes.</summary>
@@ -236,6 +242,7 @@ namespace RealLifeOverhaul
             {
                 var gm = InstanceBehavior<GameManager>.Instance;
                 VehicleController car = gm != null ? gm.selectedVehicle : null;
+                GarageWash.Ready(car);   // before "Wash" can be pressed: a car without the wash's parts gets stand-ins
                 if (_button == null || car == null || !Takes(car))
                 {
                     return own;

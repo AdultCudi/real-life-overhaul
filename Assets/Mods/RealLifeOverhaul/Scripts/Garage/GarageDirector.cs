@@ -291,6 +291,41 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Everything of the Garage's that holds the player's car or the view, let go at once: the custom shop (the car back as
+        /// it came in, its pedals and its hold given back, the game's own camera), the workshop's and the stands' lists, "My
+        /// vehicles". When the feature is switched off, on the options page or by the guard after its faults (its clean-up in
+        /// Meta/FeatureList): with the guard's switch the director's own timer never runs again to close an open shop.
+        /// </summary>
+        public static void LetGo()
+        {
+            GarageDirector director = Instance;
+            try
+            {
+                if (director != null && director._shop != null && director._shop.IsOpen)
+                {
+                    director._shop.Close(false);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            try
+            {
+                GarageSummary.Close();
+                GarageBay.CloseList("the Garage was switched off");
+                if (director != null && director._bikes != null)
+                {
+                    director._bikes.HideUi();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
         // Every car and scooter as the game made it. On the way out of the city, and if the Garage has to switch itself off.
         private void PutEverythingBack(bool leaving)
         {

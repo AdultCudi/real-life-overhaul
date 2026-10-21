@@ -101,6 +101,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
         public static readonly GamePart StaffLeaving = ContractBook.Part("staff_leaving", null, "paying an employee the mod lets go at the turn of a day only once");
         public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
+        public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
+            "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -396,6 +398,10 @@ namespace RealLifeOverhaul
         public static readonly GameMember SettingsUnsaved = Optional(Prop(AppOpening, Game, "BizManSettings", "HasUnsavedChanges", "Boolean", false));
         public static readonly GameMember RegistrationName = Optional(Field(AppOpening, Game, "BuildingRegistration", "BusinessName", "String"));
         public static readonly GameMember NoticeError = Optional(StaticMethod(AppOpening, Game, "UI.Notification.Notifications", "ShowError", "Void", "String", "String", "Boolean"));
+
+        // The Garage's car wash (Garage/GarageWash): what the game's wash in a bay plays and shows, given a stand-in on a car that has none (CarController.cs 88-100).
+        public static readonly GameMember WashSpray = Optional(Field(CarWash, Game, "CarController", "washVfx", "GameObject"));
+        public static readonly GameMember WashSound = Optional(Field(CarWash, Game, "CarController", "washAudioSource", "AudioSource"));
 
         /// <summary>The five pieces Build 3675 of the game lacks (the funeral helper's two properties are one piece, its type): ContractCheck holds them to the contract, isolated.</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };
