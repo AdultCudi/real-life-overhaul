@@ -315,6 +315,7 @@ namespace RealLifeOverhaul
         private const int DecorChoiceWas = 1, DecorChoiceNow = 2;   // (the decor drop-down's 5% and 10%)
         public const string InteriorsStandingId = "interiors_standing";
         public const string InteriorsStaffId = "interiors_staff";
+        public const string DesignsId = "designs";
         public const string PermadeathId = "permadeath";
 
         public static bool CameraEnabled = true;
@@ -632,6 +633,7 @@ namespace RealLifeOverhaul
         public static int InteriorsWearStrength = 100;      // per cent, 0 off to 200 double: how fast finishes wear and get dirty (Scripts/Interiors)
         public static bool InteriorsBasket = true;          // over the standard each customer takes more products the shop has in stock, by the size of their order (it adds to the game's own list of the hour's customers) (with Meaningful Interiors on: nothing) (Scripts/Interiors)
         public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way (Scripts/Interiors)
+        public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs (Scripts/Designs)
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids (Scripts/Interiors)
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
 
@@ -964,6 +966,7 @@ namespace RealLifeOverhaul
             InteriorsBasket = Bool(modId, InteriorsBasketId, InteriorsBasket);
             InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
             InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
+            Designs = Bool(modId, DesignsId, Designs);
         }
 
         /// <summary>
