@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Meta
             { "reallife_meta_repair_button", "reallife_opt_caption_repair" },
             { "reallife_meta_check_button", "reallife_opt_caption_check" },
             { "reallife_texts_status", "reallife_opt_caption_check" },
+            { "reallife_phone_layout_reset", "reallife_opt_caption_reset" },
             { "reallife_textsai_key", "reallife_opt_caption_enter" },
             { "reallife_textsai_chatgpt", "reallife_opt_caption_sign_in" },
             { "reallife_textsai_model", CaptionChange },

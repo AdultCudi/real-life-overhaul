@@ -108,27 +108,35 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>
         /// The mod's apps in the one order they stand on both phones: the day (Planner, Flare, the camera, the paper), work
         /// and study, money, business, then the Guide and the options. Each feature puts its app on when it is ready, so the
-        /// order they were put on changed from one load to the next; their place is this table's, never that.
+        /// order they were put on changed from one load to the next; their place is this table's, never that. The same
+        /// groups are the home screen's folders (PhoneLayoutRules.Defaults, one place for each name here).
         /// </summary>
         public static readonly string[] ModOrder =
         {
             "RealLifePlanner", "RealLifeFlare", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles",
-            "RealLifeFinance", "RealLifeBank", "RealLifeOwnBank", "RealLifeStocks",
+            "RealLifeFinance", "RealLifeBanks", "RealLifeOwnBank", "RealLifeStocks",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
             "RealLifeTechSector", "RealLifeOverhaulUtilities",
             "RealLifeGuide", "RealLifeSettings"
         };
 
-        public const string BankPrefix = "RealLifeBank";   // the bank apps are RealLifeBank1, RealLifeBank2 and on (BanksDirector.AppIdPrefix), in the banks' order
-        private const int RankStep = 100;                  // places kept under each name of the table: a bank's number among the bank apps
+        private const int RankStep = 100;   // places kept under each name of the table (room for a name put between two later without moving the rest)
 
         /// <summary>
         /// Where a button of this name stands among the mod's apps (<see cref="ModOrder"/>): its place in the table times
-        /// <see cref="RankStep"/>, a bank app's number added; -1 for a name that is not one of the mod's (another mod's
-        /// button). No allocation: an ordinal comparison of the name against the table.
+        /// <see cref="RankStep"/>; -1 for a name that is not one of the mod's (another mod's button). No allocation: an
+        /// ordinal comparison of the name against the table. (The banks once had an app each, RealLifeBank1 and on: they are
+        /// one Banks app now, so no name is read for a number any more.)
         /// </summary>
         public static int ModRank(string name)
+        {
+            int at = IndexOf(name);
+            return at >= 0 ? at * RankStep : -1;
+        }
+
+        /// <summary>The place of a name in <see cref="ModOrder"/>, from 0; -1 for none. An ordinal comparison: no allocation.</summary>
+        public static int IndexOf(string name)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -136,28 +144,9 @@ namespace RealLifeOverhaul.GameUi
             }
             for (int i = 0; i < ModOrder.Length; i++)
             {
-                string id = ModOrder[i];
-                if (string.Equals(name, id, System.StringComparison.Ordinal))
+                if (string.Equals(name, ModOrder[i], System.StringComparison.Ordinal))
                 {
-                    return i * RankStep;
-                }
-                if (id == BankPrefix && name.Length > id.Length && name.Length <= id.Length + 2 && name.StartsWith(id, System.StringComparison.Ordinal))
-                {
-                    int number = 0;
-                    for (int c = id.Length; c < name.Length; c++)
-                    {
-                        char d = name[c];
-                        if (d < '0' || d > '9')
-                        {
-                            number = -1;
-                            break;
-                        }
-                        number = number * 10 + (d - '0');
-                    }
-                    if (number > 0 && number < RankStep)
-                    {
-                        return i * RankStep + number;
-                    }
+                    return i;
                 }
             }
             return -1;

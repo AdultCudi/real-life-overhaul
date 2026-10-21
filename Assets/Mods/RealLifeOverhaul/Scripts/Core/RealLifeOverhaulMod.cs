@@ -193,6 +193,15 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_contacts_test_redraw", ContactPictures.TestRedraw)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
                     v => Settings.PhoneSkin = v)
+                .AddToggle(Settings.PhoneFoldersId, "reallife_phone_folders", Settings.PhoneFolders,
+                    v =>
+                    {
+                        Settings.PhoneFolders = v;
+                        GameUi.PhoneLayoutPrefs.Tell();   // the phones lay themselves out again at once
+                    })
+                .AddButton("reallife_phone_layout_reset", GameUi.PhoneMove.ResetAll)
+                .AddButton("reallife_phone_test_check", GameUi.PhoneMove.TestCheck)
+                .AddButton("reallife_phone_test_folder", GameUi.PhoneMove.TestFolder)
                 .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
@@ -1342,6 +1351,8 @@ namespace RealLifeOverhaul
             Guard.Step("GameUi.AppIconPainter", () => GameUi.AppIconPainter.Logger = context.Logger);
             Guard.Step("GameUi.PhoneApp", () => GameUi.PhoneApp.Logger = context.Logger);
             Guard.Step("GameUi.PhoneGridPager", () => GameUi.PhoneGridPager.Logger = context.Logger);
+            Guard.Step("GameUi.PhoneLayoutPrefs", () => GameUi.PhoneLayoutPrefs.Logger = context.Logger);
+            Guard.Step("GameUi.PhoneMove", () => GameUi.PhoneMove.Logger = context.Logger);
             Guard.Step("GameUi.AppShell", () => GameUi.AppShell.Logger = context.Logger);
             Guard.Step("GameUi.InfoBox", () => GameUi.InfoBox.Logger = context.Logger);
             Guard.Step("Planner.PlannerApp", () => Planner.PlannerApp.Logger = context.Logger);
@@ -1351,7 +1362,7 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);
             Guard.Step("Economy.EconomyDirector", () => Guard.Add<Economy.EconomyDirector>(_root));   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
             Guard.Step("Economy.BanksDirector", () => Economy.BanksDirector.Logger = context.Logger);
-            Guard.Step("Economy.BanksDirector", () => Guard.Add<Economy.BanksDirector>(_root));   // the bank apps: one for each of the city's three largest banks, a front on the same credit desk (Scripts/Economy/Banks)
+            Guard.Step("Economy.BanksDirector", () => Guard.Add<Economy.BanksDirector>(_root));   // the Banks app: the three largest banks in one app, on the credit desk (Scripts/Economy/Banks)
             Guard.Step("Economy.CityEconomyDirector", () => Economy.CityEconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.CityEconomyDirector", () => Guard.Add<Economy.CityEconomyDirector>(_root));   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
             Guard.Step("Economy.Ventures.VenturesDirector", () => Economy.Ventures.VenturesDirector.Logger = context.Logger);

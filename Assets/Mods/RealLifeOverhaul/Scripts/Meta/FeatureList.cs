@@ -244,6 +244,13 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_test_notice_look")
                 .Repair(PhoneContacts.Setup);
 
+            Features.Add("phonefolders", "reallife_meta_title_phonefolders")
+                .About("reallife_guide_phonefolders_about").Help("reallife_guide_phonefolders")
+                .Owns(Settings.PhoneFoldersId)
+                .Fact("phone_dock", () => Whole(GameUi.PhoneLayoutRules.DockMost))
+                .Rows("reallife_phone_layout_reset")   // every app back in its folder: the player's, not a test
+                .Test("reallife_phone_test_check", "reallife_phone_test_folder");
+
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")
                 .About("reallife_guide_ragdoll_about").Help("reallife_guide_ragdoll")
                 .Fact("roadside_least", () => Guide.Money(JusticeLaw.FineFloor))

@@ -1,8 +1,8 @@
-# Economy: bank apps and your own bank
+# Economy: the Banks app and your own bank
 
 ## In a sentence
 
-One phone app for each of the city's three largest banks, each showing that bank's slice of the player's money, and late in a game a bank of the player's own, run from the headquarters.
+One Banks app on the phone for the city's three largest banks, each bank's page showing that bank's slice of the player's money, and late in a game a bank of the player's own, run from the headquarters.
 
 ## Where the code is
 
@@ -11,13 +11,13 @@ One phone app for each of the city's three largest banks, each showing that bank
 
 ## How it talks to other features
 
-- The bank apps read the game's own banks (`Banking/Loans/BankTerms.Lenders`) and keep no save data.
+- The Banks app reads the game's own banks (`Banking/Loans/BankTerms.Lenders`) and keep no save data.
 - `Wiring/OwnBankLinks.cs` gives your own bank Standing's integrity, the council's levers, the courts for a lender's claims and the Stocks app's quotes.
 
 `Scripts/Economy/Banking/BankApps/`.
-One app on the game's phone for each of the city's three largest banks, under the game's own name for the bank, each that bank's slice of the player's money.
+One app on the game's phone for the city's three largest banks, the bank picked under each page's title with the game's own selector, under the game's own name for the bank; each bank's page is that bank's slice of the player's money. (Until the phone had folders each bank had an app of its own: three buttons that were one app in all but the bank. They are one app now, in the Money folder, as a phone's banking app holds every account; see [the phone](phone.md).)
 The Finance app stays the one page for every lender at once.
-Option: Money > Bank apps (`economy_banks`, on by default).
+Option: Money > Banks app (`economy_banks`, on by default).
 No save data.
 
 ## Which banks, and how they differ
@@ -27,7 +27,7 @@ Branches with the same name are one bank.
 `BankRules.Rank` orders them by the most each lends on its own terms (`BankSettings.maxTotalLoanAmount` as first read, before the rating writes it), the largest first, by name among equals; `BankTerms.Banks` holds one branch of each in that order.
 
 The first is `BankTerms.House`, the bank the mod's accounts have always been held with.
-The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jensen Capital, 40,000 at 20%), so it has two bank apps; the log says so once per city ("Banks: 2 bank(s) in the city, 2 bank app(s) on the phone (the city has fewer than 3 banks)").
+The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jensen Capital, 40,000 at 20%), so its Banks app holds two; the log says so once per city ("Banks: 2 bank(s) in the city, 2 in the Banks app (the city has fewer than 3 banks)").
 
 | Rank | Rates | Card, overdraft, car finance, mortgage, business loan | Fee of a loan by phone |
 |---|---|---|---|
@@ -37,13 +37,13 @@ The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jen
 | 3 and on | as rank 0 | as rank 0 | as rank 0 |
 
 The rule moves only the mod's own terms, and only inside the one desk that decides them: `CreditDesk.Offer(kind, bank)`, `Business(shop, bank, ...)`, `BusinessQuote`, `AgreedAt`, `LimitAt` and `PhoneLending.Quote` (the fee).
-The Finance app asks the same desk, so its offers from a bank are that bank's in its app too.
+The Finance app asks the same desk, so its offers from a bank are that bank's on its page of the Banks app too.
 For a new overdraft or card, the bank's share applies to the rating-based ceiling first, then `ProductTerms.IncomeLimit` caps it at 30 or 60 days of the game's average daily income (`PlayerHelper.CalculateDailyIncome`), rounded down to 50, with starter minimums of 200 or 300.
 A bank that gives a quarter more still stops at the income cap. The Rating tab and next-rating preview use the same capped terms.
 An open account retains its agreed limit, so changes in income or rating do not create an over-limit balance or fees; see [credit products](economy-credit-products.md).
 
 The game's own loan at the bank counter keeps the game's terms by the rating alone (`BankTerms.Apply`): the banks already differ there by their own settings.
-Under the lending threshold (580) every limit is 0 at every bank whatever its share, and the rating's gate (`CreditDesk.Gate`, `CreditLedger.CanBorrow`) is asked again at the moment anything is done: every app refuses in the bank's own words and shows no button that could lend.
+Under the lending threshold (580) every limit is 0 at every bank whatever its share, and the rating's gate (`CreditDesk.Gate`, `CreditLedger.CanBorrow`) is asked again at the moment anything is done: every page refuses in the bank's own words and shows no button that could lend.
 
 One overdraft and one card are held in all, as before, with the bank that opened them (the address on the account, `CreditAccount.Street` and `Number`, which every account has always carried: an older save's accounts are at the house bank already, so nothing is converted).
 A car or home approval records its bank (`Relief.ApprovedStreet`), and the account it becomes is held there.
@@ -51,7 +51,7 @@ A game loan belongs to the bank at its own `Loan.bankAddress`.
 
 ## The tabs
 
-- **Accounts**: the current account (the cash, held with the house bank; another bank's app says where it is), an overdraft held here with pay, pay off and close, and the statement: every transaction of the game's history (`CashFlow`) that is this bank's, over a day, a week or a month.
+- **Accounts**: the current account (the cash, held with the house bank; another bank's page says where it is), an overdraft held here with pay, pay off and close, and the statement: every transaction of the game's history (`CashFlow`) that is this bank's, over a day, a week or a month.
 
   The house bank's statement is every movement of cash; another bank's is what names it (`businessName` on the game's loan transactions and the fees) or names an account it holds (`name` on the accounts' transactions).
 
@@ -72,19 +72,20 @@ A game loan belongs to the bank at its own `Loan.bankAddress`.
 ## The game's parts
 
 The panel is `GameUi.AppShell` (copied from MyEmployees) like the Finance app's.
-Tables are `GameUi.DataTable` (a cell's tone is a type of its own, `GameUi.CellTone`, so that a figure passed to `TableRow.Set` is always what the column is ordered and summed by, never taken for a colour) with one set of `TableSpec`s per app (`BankTables`), so an order or a filter is that app's.
+Tables are `GameUi.DataTable` (a cell's tone is a type of its own, `GameUi.CellTone`, so that a figure passed to `TableRow.Set` is always what the column is ordered and summed by, never taken for a colour) with one set of `TableSpec`s for the app (`BankTables`), so an order or a filter is the app's.
 
-The app's name on its button and in the menu's top bar is one text key, `reallife_bank_app` ("{bank}"), filled through the game's own `TextLocalizationComponent.Arguments` (`PhoneAppDef.TitleArguments`, [game-ui.md](../../RealLifeOverhaul.Build/docs/game-ui.md) section 33): it still follows a change of language.
-The icon is the game's app icon painted in one of three plain colours by rank; no bank's real name, logo or colours are used.
+The app's name on its button and in the menu's top bar is one text key, `reallife_banks_app` ("Banks").
+The bank is picked under each page's title with the game's own previous and next selector (`InfoBox.Selector`, `BankApp.Which`), its words the game's own name for each bank; with one bank in the city its name alone stands there. The bank picked stays picked by its name when the city's banks are read again (`BankApp.Offer`), and another bank picked starts that bank's page of the tab from its start.
+The icon is the game's app icon painted in a plain banking blue; no bank's real name, logo or colours are used.
 
 ## Cost
 
 No Update.
-Once a second (the credit side's timer) `BanksDirector` compares the banks wanted with the apps on the phone: a few comparisons while nothing changes, and at most one app put on a second (each copies a few hundred of the game's objects, so they never land in one frame together).
+Once a second (the credit side's timer) `BanksDirector` compares the banks wanted with the banks the app shows: a few comparisons while nothing changes. The app is put on once (it copies a few hundred of the game's objects when it is first opened).
 
-The badges (debts behind or with a call waiting) are counted after the credit side's hour and day: one pass over the file's accounts and loans per bank.
+The badge (debts behind or with a call waiting, at every bank the app shows, added up) is counted after the credit side's hour and day: one pass over the file's accounts and loans per bank.
 A page costs one pass over the accounts and loans; the statement one pass over the game's transaction history (at most about a thousand).
-Nothing runs while an app is closed.
+Nothing runs while the app is closed.
 
 ## Checks
 
@@ -94,9 +95,9 @@ Under the threshold every bank's every limit is 0 and at or over it every bank l
 Limits never fall and rates never rise as the rating rises, at every bank; no rate under the floor; the fees.
 The ranking of branches and banks; its cost.
 
-In the game: Options > Tests > "Check the bank apps against Finance" writes `Bank check (figures)`: what every bank's Loans tab adds up with what no bank holds, against the Finance app's total, and that every bank refuses under the threshold.
-"Open the first bank's app" opens it on Apply.
-With diagnostics on, every page writes `Banks: <bank>, tab N written` with its height against the white box (`InfoBox.Fit`), and a game loan paid from an app writes `Bank check (loan payment)`.
+In the game: Options > Tests > "Check the Banks app against Finance" writes `Bank check (figures)`: what every bank's Loans tab adds up with what no bank holds, against the Finance app's total, and that every bank refuses under the threshold.
+"Open the Banks app on the first bank" opens it on the largest bank's Apply tab.
+With diagnostics on, every page writes `Banks: <bank>, tab N written` with its height against the white box (`InfoBox.Fit`), and a game loan paid from the app writes `Bank check (loan payment)`.
 
 ## Not verified (the game could not be run)
 

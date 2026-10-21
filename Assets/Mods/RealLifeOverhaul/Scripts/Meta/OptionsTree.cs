@@ -246,7 +246,8 @@ namespace RealLifeOverhaul.Meta
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
                 S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
-                S("phone").For("phone").Opts("phone_contacts", "phone_skin", "notice_look").Also("call numbers wallpaper notifications toast icons"),
+                S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_skin", "phone_folders", "notice_look").Buttons("reallife_phone_layout_reset")
+                    .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange"),
                 S("photos").For("photos").Main("phone_camera").Opts("phone_camera_grid").Also("camera gallery photo photos picture pictures selfie grid filter frame wallpaper")),
 
             G("city",

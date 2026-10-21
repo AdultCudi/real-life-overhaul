@@ -72,6 +72,7 @@ internal static partial class Program
         LookChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
         ButtonChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
         PagerChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
+        PhoneLayoutChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));   // the phone's folders, dock and moves (PhoneLayoutChecks.cs)
         BoxClockChecks(scripts);   // the box's self-check times its own work, not the app's between its calls (BoxClockChecks.cs)
 
         if (!Directory.Exists(managed))

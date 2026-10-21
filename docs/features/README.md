@@ -41,7 +41,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 
 - [Credit rating, lending and the Finance app](economy-credit.md): the core.
 - [Credit products, missed payments, the private lender and the ways out](economy-credit-products.md).
-- [Bank apps and your own bank](economy-banks.md).
+- [The Banks app and your own bank](economy-banks.md).
 - [The city's economy](economy-city.md), with the game's daily statement.
 - [Investors](economy-investors.md): investors, pitches and the lettings page.
 - [The stock market, your listed company and trading bots](economy-markets.md).
@@ -59,6 +59,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 
 - [Meta](meta.md): the Guide, presets, the options page and the save tools.
 - [The Planner](planner.md): the phone's agenda.
+- [The phone](phone.md): folders on the home screen, a dock, moving apps, and the Banks app.
 
 ## Folders without a page
 

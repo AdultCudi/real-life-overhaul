@@ -65,6 +65,7 @@ namespace RealLifeOverhaul
         public const string CityDriversId = "city_drivers";
         public const string PhoneContactsId = "phone_contacts";
         public const string PhoneSkinId = "phone_skin";
+        public const string PhoneFoldersId = "phone_folders";
         public const string NoticeLookId = "notice_look";
         public const string CarSpeedId = "car_speed";           // the old single "car speed %" slider: dropped at load
         public const string CarTuningId = "car_tuning";
@@ -384,6 +385,7 @@ namespace RealLifeOverhaul
         public static int HandlingSteering = 100;    // ...the steering's reach at speed
         public static int HandlingBrakes = 100;      // ...how quickly the brakes build
         public static bool PhoneSkin = true;         // modern phone body, wallpaper and status bar
+        public static bool PhoneFolders = true;      // the mod's apps in folders on the home screen, and a dock (GameUi/PhoneLayoutRules); off, the plain pages of before
         public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour (Core/GameUi/NoticeLook); off: they look like the game's
         public static bool CarCamera = true;     // chase camera while driving
         public static int CarCameraDistance = 8; // metres behind the car
@@ -485,7 +487,7 @@ namespace RealLifeOverhaul
         public static bool EconomyBank = true;           // the player's own bank: a licence, savers, loans, a fund and a regulator, in its own app (off: it stands still, nothing is run, booked or charged) (Scripts/Economy/OwnBank)
         public static bool EndScale = true;              // the end game at scale: data centres, the cloud and the hyperscaler, the broadband company and the player's own bank cost and earn at the size of the real thing, with upkeep, crews of staff by kind and income that grows with what is built; a save that already held one is brought to it over four game weeks (off: every figure as before) (Scripts/Core/EndScale)
         public static bool EconomyBrands = true;         // brands and franchises: a brand made from a shop, its recognition and standards, franchising it, and a shop under a city chain, with the Brands app (off: none of it runs, nothing is paid and footfall is without it) (Scripts/Economy/Brands)
-        public static bool EconomyBanks = true;          // the bank apps: one app on the phone for each of the city's three largest banks, that bank's slice of the accounts, loans, card, offers and rating (off: no bank app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
+        public static bool EconomyBanks = true;          // the Banks app: the city's three largest banks in one app on the phone, each bank's slice of the accounts, loans, card, offers and rating (off: no Banks app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
@@ -717,6 +719,7 @@ namespace RealLifeOverhaul
             CityDrivers = Bool(modId, CityDriversId, CityDrivers);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
+            PhoneFolders = Bool(modId, PhoneFoldersId, PhoneFolders);
             NoticeLook = Bool(modId, NoticeLookId, NoticeLook);
             CarTuning = Bool(modId, CarTuningId, CarTuning);
             CarTopSpeed = Int(modId, CarTopSpeedId, CarTopSpeed);

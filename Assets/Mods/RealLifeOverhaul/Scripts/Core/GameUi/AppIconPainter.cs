@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.GameUi
             public Sprite Result, Like, Glyph;
             public Color32 Top, Bottom, Ink;
             public float GlyphSize;
+            public bool Mirrored;
         }
 
         private static readonly Dictionary<string, Painted> Made = new Dictionary<string, Painted>(32, StringComparer.Ordinal);
@@ -42,9 +43,10 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>
         /// The tile and shadow of 'like', coloured from 'top' (upper left) to 'bottom' (lower right), with 'glyph' on it in
-        /// white, or in 'ink' (a dark glyph on a light tile).
+        /// white, or in 'ink' (a dark glyph on a light tile), turned left for right when 'mirrored' (the game's chevron
+        /// pointing back); with no glyph the tile alone (a folder's, under its small pictures).
         /// </summary>
-        public static Sprite Paint(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name, Color32? ink = null)
+        public static Sprite Paint(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name, Color32? ink = null, bool mirrored = false)
         {
             try
             {
@@ -55,19 +57,19 @@ namespace RealLifeOverhaul.GameUi
                 string key = name ?? string.Empty;
                 Color32 colour = ink ?? new Color32(255, 255, 255, 255);
                 if (Made.TryGetValue(key, out Painted kept) && kept.Result != null && kept.Result.texture != null && kept.Like == like && kept.Glyph == glyph
-                    && Same(kept.Top, top) && Same(kept.Bottom, bottom) && Same(kept.Ink, colour) && kept.GlyphSize == glyphSize)
+                    && Same(kept.Top, top) && Same(kept.Bottom, bottom) && Same(kept.Ink, colour) && kept.GlyphSize == glyphSize && kept.Mirrored == mirrored)
                 {
                     return kept.Result;
                 }
                 ForgetStale();
-                Sprite made = Draw(like, glyph, top, bottom, glyphSize, name, colour);
+                Sprite made = Draw(like, glyph, top, bottom, glyphSize, name, colour, mirrored);
                 if (made != null && made != glyph)
                 {
                     if (kept != null && kept.Result != made)
                     {
                         CodeAssets.DropSprite(kept.Result);   // the icon it replaces was on the buttons of an earlier load, gone with them
                     }
-                    Made[key] = new Painted { Result = made, Like = like, Glyph = glyph, Top = top, Bottom = bottom, Ink = colour, GlyphSize = glyphSize };
+                    Made[key] = new Painted { Result = made, Like = like, Glyph = glyph, Top = top, Bottom = bottom, Ink = colour, GlyphSize = glyphSize, Mirrored = mirrored };
                 }
                 return made;
             }
@@ -103,7 +105,7 @@ namespace RealLifeOverhaul.GameUi
             return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
         }
 
-        private static Sprite Draw(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name, Color32 ink)
+        private static Sprite Draw(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name, Color32 ink, bool mirrored)
         {
             int size = Mathf.RoundToInt(like.rect.width);
             Color32[] read = Read(like, size, size);
@@ -154,7 +156,7 @@ namespace RealLifeOverhaul.GameUi
                     {
                         for (int x = 0; x < g; x++)
                         {
-                            Color32 m = mark[y * g + x];
+                            Color32 m = mark[y * g + (mirrored ? g - 1 - x : x)];
                             if (m.a == 0)
                             {
                                 continue;

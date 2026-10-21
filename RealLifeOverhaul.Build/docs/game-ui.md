@@ -60,7 +60,7 @@ between two and the game's own seven. It is worked out at the first opening and 
 changes (`RowBarWatch` on `Topbar`): 6 tiles on 16:9 at 100%, 5 on 16:10, 2 on 4:3. (Until 0.26.x the room was
 measured to the money's words at every opening, so the count and the row's length changed.) The game's own apps come
 first in the game's order, then the mod's in one fixed order (`PagerRules.ModOrder`: the day, work and study, money,
-business, then the Guide and the options; the bank apps together in the banks' order), then other mods' in the order
+business, then the Guide and the options; one Banks app for the three banks), then other mods' in the order
 they stand (`PagerRules.Arrange`; buttons standing among the game's, or the mod's out of their order, are moved after
 them in it). Each feature puts its app on when it is ready, so the mod's apps once stood in a different order after
 each load; ContractCheck fails if an app of the mod's has no place in the table. A full page stands centred in that room (`PagerRules.PageStart`, worked out with the
@@ -1162,3 +1162,32 @@ satisfaction bar, the tick of its switch, and the game's red, orange and green (
 Each part is one copy of a template, and as many texts as the game's box would use for the same page: a heading is two
 objects where the game's headline is seven. With Developer diagnostics on, each page writes its parts and time to
 Player.log ("Info box check"). ContractCheck fails the gate on a label and value written as one bare line.
+
+## 37. Folders and a dock on the phone's home screen (`PhoneLayoutRules`, `PhoneFolders`, `PhoneGridPager`)
+
+The game's phone has no folders and no dock: two buttons wide and four rows on the HUD phone, one row in the full
+menu, every app a button. A folder of the mod's is made of the game's own parts only:
+
+- **The tile** is a copy of that phone's app button template (as the More apps button is: `UiClone.Asleep`, the game's
+  scripts that make it an app taken off, `ButtonEffects` and `Badge` kept, the open app's dot taken away), its title
+  the folder's name, its picture a tile painted as the game's icons are (`AppIconPainter.Paint` with no glyph) with
+  nine `Image` children over it, the icons of the folder's first nine apps (`AppButton`'s own `icon` field read back),
+  three rows of three. It stands in the grid, with a `PhoneTile` on it so that no pager counts it as an app.
+- **A folder's page** puts the folder's apps on the same grid, after a Back tile (the More apps button's light tile
+  with the game's `Icon-Arrows` mirrored: `AppIconPainter.Paint(..., mirrored: true)`). Every other button of the grid is
+  switched off with a `PageMark`, as a button on another page is, so another mod's pager is seen at once.
+- **The dock** is the grid's last row on the home screen. The grid lays out what shows in the order it stands, so a
+  short page is filled before the dock with empty tiles (a bare `RectTransform` each), and the pager puts every child
+  it counts in the view's order whatever the page (`PhoneGridPager.Order`).
+- **The badge** of a folder is the game's `Badge.UpdateBadge` with the numbers of its apps added up, read back from
+  each button's own badge text (whoever set it).
+- **The cancel key** is `PlayerAction.Cancel`, which `GameManager` sends to `CancelButtonHandler.HandleEscapeClick`; with
+  only the HUD up the game opens its menu. A component on the grid, on only while a folder is open and run before the
+  game (`DefaultExecutionOrder(-31000)`), takes the press (`PlayerAction.Cancel.Reset`) unless something the game closes
+  first is up (`HudConfirm.isOpen`, `MiniMenu.IsOpen`, `FullMenu.IsOpen`, `CityMap.IsOpen`, `Options.IsVisible`,
+  `PlayerActivityUI.IsPanelOpen`, `BuildingPreview.isPreviewing`, `InteriorDesignerUI.IsOpen`, the dialogue, the
+  building card, `GameManager.HasInputSelected`, a list window of the mod's).
+- **Moving an app** is a right click (`IPointerClickHandler` on the button: `Button` itself answers the left one only),
+  which opens the subway's list window (`DeskList`, section 10) with the places to go.
+
+See [the phone](../../docs/features/phone.md) for what the player sees and what is checked.
