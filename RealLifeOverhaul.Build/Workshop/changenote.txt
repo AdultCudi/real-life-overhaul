@@ -1,7 +1,8 @@
-0.47.1
+0.48.0
+
+New
+- Managers: each manager's panel on the Company app's Managers tab has a switch for every task they do, so you can keep the rota, prices or anything else for yourself or for another mod. The Company app has an Open in BizMan button on each business's page. It takes you straight to that business in BizMan. Levels for your own bank: it is now founded as a Community Bank for a small part of the old cost, with limits on its branches, loans and savings, and moves up to a Regional Bank and then a National Bank as it grows and you pay for a larger licence. A bank you already have keeps everything it holds. You can also pay yourself from the bank, a share of each day's profit on a slider or a fixed sum a day, and leave the rest in it to grow. Calling somebody back after a text opens on what they wrote about, from Mom's news to a friend's worry or one of life's little moments. Each text is taken up once, on its day or the next. People text the day after an outing or a date about how it went, and the people in your life text after your big news without an RLO Texts pack too. With a newer pack, a text remembers what that person last texted you about.
 
 Fixed
-- On Flare, a message from somebody in the city no longer says they saw your post when you have posted nothing. It mentions a post only after one of yours from the last three days.
-- The city's people no longer review your business on Flare while it is temporarily closed or outside its opening hours. A review comes of a visit while it is open, and shows at the time of that visit.
-- A startup's follow-on could be pressed again and again, each press buying more, until you held nearly all of it. It is now taken once a round, only with pro rata rights, and brings you back to the share you held before that round, never more. Shares you already hold stay yours.
-- The short stutter as the room fades in when you walk into a building.
+- A manager no longer rewrites the rota out of nowhere and leaves staff off it. They look at it only on Sunday evening, only when an hour has nobody or somebody has no shift, and write a new one only if it keeps all the staff on it.
+- Ending a call by putting the phone away or pressing Esc, instead of with its own button, no longer leaves its typing box open, which stopped doors, keys and the mod's buttons from working. The same goes for a talk in the street, a phone app's box, a door gone through and a load. A talk in person that a call interrupted can be ended again.
