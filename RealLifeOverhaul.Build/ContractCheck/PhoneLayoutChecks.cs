@@ -60,13 +60,13 @@ internal static partial class Program
         {
             { "RealLifeFinance", 0 }, { "RealLifeBanks", 0 }, { "RealLifeOwnBank", 0 }, { "RealLifeStocks", 0 }, { "RealLifeNewsstand", 0 }, { "RealLifeLedger", 0 }, { "RealLifeOverhaulUtilities", 0 },
             { "RealLifeCareer", 1 }, { "RealLifeCampus", 1 }, { "RealLifeOpenRoles", 1 },
-            { "RealLifeCamera", 2 }, { "RealLifeGallery", 2 },
+            { "RealLifeCalendar", 2 }, { "RealLifeCamera", 2 }, { "RealLifeGallery", 2 },
             { "RealLifeCompany", 3 }, { "RealLifeBrands", 3 }, { "RealLifeServices", 3 }, { "RealLifeVentures", 3 }, { "RealLifeOnline", 3 }, { "RealLifeEstate", 3 },
             { "RealLifeDealer", 3 }, { "RealLifeTechSector", 3 },
             { "RealLifeGuide", 4 }, { "RealLifeSettings", 4 },
         };
         var wrong = want.Where(w => PhoneLayoutRules.DefaultOf(w.Key) != w.Value).Select(w => w.Key).ToList();
-        Check(wrong.Count == 0, "money (the banks, credit, the stocks, the paper, the bills), work and study, social and life, business (BizMan's add-ons, tech, the showroom), "
+        Check(wrong.Count == 0, "money (the banks, credit, the stocks, the paper, the bills), work and study, social and life (the calendar, the camera), business (BizMan's add-ons, tech, the showroom), "
                                 + "the Guide and the options each start in their folder (wrong: " + string.Join(", ", wrong) + ")");
         for (int f = 0; f < PhoneLayoutRules.FolderCount; f++)
         {

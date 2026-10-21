@@ -74,6 +74,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityStore.cs" Link="Mod\CityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CalendarRules.cs" Link="Mod\CalendarRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\CalendarList.cs" Link="Mod\CalendarList.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\MonthViewRules.cs" Link="Mod\MonthViewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WageRules.cs" Link="Mod\WageRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\DayRollRules.cs" Link="Mod\DayRollRules.cs" />

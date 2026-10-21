@@ -337,11 +337,16 @@ namespace RealLifeOverhaul.Family
             return s.Custody >= 2 || ((day - 1) / 7) % 2 == 0;
         }
 
-        // Once a week: seven days of what the children cost.
-        private static void Weekly()
+        /// <summary>
+        /// What the next week of the children costs, whole money: childcare for those under school age (a nursery's or a
+        /// nanny's), private school and pocket money, the parent's share of it. Read only: the week's charge (Weekly) and the
+        /// calendar's day for it (Scripts/Wiring) both ask it.
+        /// </summary>
+        internal static int WeekCharges(out int care, out int school, out int pocket)
         {
             FamilySave s = FamilyState.S;
-            int small = 0, privateSchool = 0, pocket = 0;
+            int small = 0, privateSchool = 0;
+            pocket = 0;
             for (int i = 0; i < s.Children.Count; i++)
             {
                 ChildRecord c = s.Children[i];
@@ -360,10 +365,9 @@ namespace RealLifeOverhaul.Family
                 if (c.Age >= FamilyBalance.PocketFrom && c.Pocket > 0)
                 {
                     pocket += FamilyBalance.PocketMoney[Mathf.Clamp(c.Pocket, 0, 3)];
-                    c.Closeness = Mathf.Min(100f, c.Closeness + 0.4f * c.Pocket);
                 }
             }
-            int care = 0;
+            care = 0;
             if (small > 0 && FamilyState.Care == Care.Nursery)
             {
                 care = FamilyBalance.NurseryPerDay * 7 * small;
@@ -373,7 +377,24 @@ namespace RealLifeOverhaul.Family
                 care = FamilyBalance.NannyPerDay * 7;
             }
             care = Mathf.RoundToInt(care * Share);
-            int school = Mathf.RoundToInt(FamilyBalance.PrivateSchoolPerDay * 7 * privateSchool * Share);
+            school = Mathf.RoundToInt(FamilyBalance.PrivateSchoolPerDay * 7 * privateSchool * Share);
+            return care + school + pocket;
+        }
+
+        // Once a week: seven days of what the children cost.
+        private static void Weekly()
+        {
+            FamilySave s = FamilyState.S;
+            int care, school, pocket;
+            WeekCharges(out care, out school, out pocket);
+            for (int i = 0; i < s.Children.Count; i++)
+            {
+                ChildRecord c = s.Children[i];
+                if (!c.Grown && c.Age >= FamilyBalance.PocketFrom && c.Pocket > 0)
+                {
+                    c.Closeness = Mathf.Min(100f, c.Closeness + 0.4f * c.Pocket);
+                }
+            }
             if (care > 0)
             {
                 FamilyTalk.Move(-care, "reallife_transaction_family_childcare");

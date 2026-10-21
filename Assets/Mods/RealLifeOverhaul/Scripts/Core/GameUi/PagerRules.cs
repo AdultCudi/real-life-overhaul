@@ -113,7 +113,7 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public static readonly string[] ModOrder =
         {
-            "RealLifePlanner", "RealLifeFlare", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
+            "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles",
             "RealLifeFinance", "RealLifeBanks", "RealLifeOwnBank", "RealLifeStocks",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",

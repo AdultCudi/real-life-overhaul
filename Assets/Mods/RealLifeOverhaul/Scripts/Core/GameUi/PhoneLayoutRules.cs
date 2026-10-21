@@ -41,12 +41,14 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>
         /// Where each app of <see cref="PagerRules.ModOrder"/> stands until the player moves it, name for name: the Planner and
         /// Flare in the dock, the rest in the folder of its group (money with the paper and the bills, work and study, the
-        /// camera and the gallery, business, the Guide and the options). The City Ledger's own page has no button; its place
+        /// calendar, the camera and the gallery, business, the Guide and the options). The Calendar stands in Social and
+        /// life, with the player's own days, beside the Planner's dock: it is the month of the player's life, money and
+        /// time together, where Money holds the apps that move money. The City Ledger's own page has no button; its place
         /// is kept for the table's sake.
         /// </summary>
         public static readonly int[] Defaults =
         {
-            Dock, Dock, Life, Life, Money, Money,
+            Dock, Dock, Life, Life, Life, Money, Money,
             Work, Work, Work,
             Money, Money, Money, Money,
             Business, Business, Business, Business, Business, Business, Business,
