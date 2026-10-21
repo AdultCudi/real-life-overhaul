@@ -26,7 +26,7 @@ internal static partial class Program
         string message = MemberText(text, "public static void Message(Contact contact, string key, in Args a, bool notify = true)");
         string send = MemberText(text, "private static void Send(Contact contact, string key, Dictionary<string, string> data, bool notify)");
         string hourly = MemberText(ModSource(@"Family\FamilyCalendar.cs"), "public static void Hourly(int day, int hour)");
-        Check(text.Contains("public const int TextFrom = 8, TextTo = 22;") && message.Contains("if (!Awake)") && message.Contains("Morning.Add("),
+        Check(text.Contains("public const int TextFrom = 8, TextTo = 22;") && message.Contains("if (!Awake)") && message.Contains("HeldTextRules.Keep(FamilyState.S.Held, "),
             "family home: a family text written between 22:00 and 08:00 or in a time skip is kept for the morning");
         Check(hourly.Contains("FamilyText.SendHeld();") && send.Contains("contact.SendMessage(new TextMessage(key, data), notify: notify, sendNotificationInstantly: notify);"),
             "family home: the kept texts go out hourly once it is day, each with its notice at once rather than in the hour's batch");

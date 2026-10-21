@@ -34,6 +34,7 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 | `FamilyPhone` | the Family, Someone special and in-laws contacts and their calls; `.Choices` (everything that can be done from a conversation) |
 | `FamilyPage` | the Family page's five pages |
 | `FamilyTalk / FamilyText / FamilyCalendar` | conversations and menus, text and its fillers, what happens by the hour and the day |
+| `HeldTextRules` | game-free (EconomyCheck, `FamilyHeldTextChecks.cs`): the family texts kept for the morning, how many, and how late one may still go out |
 
 ## How it talks to other features
 
@@ -63,6 +64,7 @@ None of this has been seen in the game.
 
 State is one JSON string in the save's modData (`reallife:family`, `FamilyState`); the moods are happiness modifiers with the mod's prefix, so `Core/ModState` takes them out of the save like the rest.
 A save made with the mod loads without it.
+A family text written between 22:00 and 08:00, or in a time skip (`FamilyText.Message`), is kept for the morning in that state (`FamilySave.Held`, `HeldTextRules`: at most 12, the oldest let go first, each sent at most a day after it was written), so a save and quit at night keeps it: it goes out with its notice on the first day hour, at once after a load made in the day. Each player's own save holds their own; nothing of it is sent over Going Public.
 What the save proper does keep is what the mod's other contacts already keep: three phone contacts (Family, Someone special, The in-laws) and transaction lines.
 
 ## What can be shown, and what is state
