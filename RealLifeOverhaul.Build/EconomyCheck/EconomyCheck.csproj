@@ -15,7 +15,7 @@
        franchised shop's day, every way an agreement ends, a shop under a city chain and the save's line, and (KeptPriceChecks.cs) prices kept for a chain or a brand: always
        inside the chain's range, the district's adjustment bounded, a price changed by something else put back, and (EstateChecks.cs) property:
        the market, a purchase on the existing mortgage, tenancies, works, a sale, the agency, a hotel's night, car hire,
-       the yearly returns and the save's line, and (MarketChecks.cs) the city's stock market: prices over thousands of days,
+       the yearly returns and the save's line, a building sold and put back as the player's for nothing handed back to its buyer (SoldBackChecks.cs), and (MarketChecks.cs) the city's stock market: prices over thousands of days,
        trading and what it costs, orders, dividends, splits, failures, candles, the analysis tools, the tape and the save's line, and
        (LedgerChecks.cs) the City Ledger: what each piece is, its headline, the subscription's round, the copy, the page's choices and the save's line, and
        (NewsstandChecks.cs) the City Ledger online: the titles' prices, the connection rule, the weeks, the pass, the editions kept, what each title prints and the save's line, and
@@ -50,6 +50,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\ChoreRules.cs" Link="Mod\ChoreRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HeldTextRules.cs" Link="Mod\HeldTextRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\CreditCatalogue.cs" Link="Mod\CreditCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditFile.cs" Link="Mod\CreditFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditScoring.cs" Link="Mod\CreditScoring.cs" />
@@ -124,6 +126,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateState.cs" Link="Mod\EstateState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.cs" Link="Mod\EstateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.Letting.cs" Link="Mod\EstateRules.Letting.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.Sold.cs" Link="Mod\EstateRules.Sold.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\AgencyRules.cs" Link="Mod\AgencyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HotelRules.cs" Link="Mod\HotelRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HireRules.cs" Link="Mod\HireRules.cs" />

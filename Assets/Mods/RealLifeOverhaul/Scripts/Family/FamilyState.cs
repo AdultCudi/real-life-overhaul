@@ -223,6 +223,13 @@ namespace RealLifeOverhaul.Family
         public int PSecondHomeWishDay;    // the day they asked for a second home; 0 not asked, or met
         public string PCarId;        // the id of the car handed to them (PartnerCar); null none
         public int PCarBackDay;      // the day the player last asked their car back
+
+        public int ChoreKind;        // the chore asked (ChoreKind); 0 none
+        public int ChoreDue;         // the last day it may be done on
+        public int ChoreDay;         // the day the last one was settled
+        public int ChoreAskStamp;    // day * 24 + hour it was raised at home, while it waits to be talked over; 0 agreed (or texted)
+
+        public List<HeldText> Held = new List<HeldText>();   // family texts written at night or in a time skip, for the morning (FamilyText.SendHeld); none in an older save
     }
 
     /// <summary>Family life's per-save state, as JSON under one key of modData, so that a save made with the mod loads without it.</summary>
@@ -308,6 +315,7 @@ namespace RealLifeOverhaul.Family
             {
                 S.SeenArguments = new List<int>();
             }
+            S.Held = HeldTextRules.Tidy(S.Held);
             S.Children.RemoveAll(c => c == null);
             S.Memories.RemoveAll(m => m == null || string.IsNullOrEmpty(m.Key));
             S.Errands.RemoveAll(e => e == null || string.IsNullOrEmpty(e.Kind));
@@ -323,7 +331,7 @@ namespace RealLifeOverhaul.Family
             S.Harmony = Mathf.Clamp(S.Harmony, 0f, 100f);
             S.PAffection = Mathf.Clamp(S.PAffection, 0f, 100f);
             Loaded = true;
-            Logger?.Info($"Family: state loaded (bond {Bond}, lives in {S.LivesIn}, children {S.Children.Count}, memories {S.Memories.Count}).");
+            Logger?.Info($"Family: state loaded (bond {Bond}, lives in {S.LivesIn}, children {S.Children.Count}, memories {S.Memories.Count}, texts kept for the morning {S.Held.Count}).");
         }
 
         /// <summary>Called on the game's save event, before the save is written.</summary>

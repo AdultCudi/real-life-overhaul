@@ -71,6 +71,42 @@ namespace RealLifeOverhaul.Texts
             return English;
         }
 
+        /// <summary>
+        /// Each of the seven as its native speakers write it, and how they address the player: the teacher's brief of data
+        /// v6 word for word (textmodel data/gen/v6/prompts6.py, LANGUAGE and YOU), so that an AI service writes a language
+        /// as the packs learnt it (Brazilian Portuguese with você, the Spanish of Spain, vous to a stranger). In the
+        /// order of <see cref="All"/>; English's way of address is the system turn's own.
+        /// </summary>
+        private static readonly string[] Natives =
+        {
+            "British English", "Brazilian Portuguese", "Simplified Chinese (Mandarin as spoken in mainland China)", "German", "French (France)", "Spanish (Spain)", "Russian"
+        };
+
+        private static readonly string[] Address =
+        {
+            "",
+            "Use você.",
+            "Use 你; 您 only for a formal or polite older speaker.",
+            "Use Sie with a stranger; du only for a cheeky or playful young speaker, or between friends.",
+            "Use vous with a stranger; tu only for a cheeky or playful young speaker, or between friends.",
+            "Use tú with most people in the street; usted only for a formal or older speaker talking to a stranger.",
+            "Use вы with a stranger; ты only between friends."
+        };
+
+        /// <summary>The language of one of the seven codes as its native speakers write it ("Brazilian Portuguese"); null for any other.</summary>
+        public static string Native(string code)
+        {
+            int at = Array.IndexOf(All, code);
+            return at >= 0 ? Natives[at] : null;
+        }
+
+        /// <summary>How a speaker of one of the seven addresses the player ("Use você."); empty for English, null for any other code.</summary>
+        public static string AddressOf(string code)
+        {
+            int at = Array.IndexOf(All, code);
+            return at >= 0 ? Address[at] : null;
+        }
+
         /// <summary>True for one of the seven codes, exactly as <see cref="All"/> writes it.</summary>
         public static bool Known(string code)
         {

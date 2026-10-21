@@ -258,8 +258,8 @@ internal static partial class Program
         TextJob job = serviceQ.Take(0.1, true);
         var sheet = new TextSheet();
         TextIntents.Build(TextIntents.Find("friend.crash", null, TextsHub.Newest), r.Who, r.Slots, r.History, sheet);
-        Check(job.Card == TextCard.Card(sheet) && job.Prompt == null && TextCard.ChatMl(sheet).Contains(job.Card) && TextCard.ChatMl(sheet).Contains(TextCard.System),
-            "your own AI, the route: the service is given the very card the pack's prompt holds, with the same system turn");
+        Check(job.Card == TextCard.Card(sheet) && job.Prompt == null && TextCard.ChatMl(sheet).Contains(job.Card) && job.System == TextCard.SystemOf(TextsHub.Newest),
+            "your own AI, the route: the service is given the very card the pack's prompt holds, with the system turn of the card's data");
         serviceQ.Done(job, "Heard about 5th Ave. You alright?", 0.8, null);
         hub.Look(1.0);
         Check(got == "Heard about 5th Ave. You alright?" && r.ByService && hub.ServiceShown == 1 && hub.Shown == 1, "your own AI, the route: the service's words come back checked by TextCheck, and are counted as the service's");

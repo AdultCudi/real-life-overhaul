@@ -8,14 +8,14 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// The property business's line in the save's modData. Game-free. "v=" and the version, then parts divided by '^',
     /// each a letter and a colon (h header, p buildings, u other units, g agency, d districts, i instructions, t hotels,
-    /// c car hire, v cars), records by ';' and fields by '|' as <see cref="Write"/> writes them. A later version only
+    /// c car hire, v cars, s buildings sold), records by ';' and fields by '|' as <see cref="Write"/> writes them. A later version only
     /// adds fields at a record's end or new parts. <see cref="TestKey"/> holds the line from before the first test tool.
     /// </summary>
     public static class EstateStore
     {
         public const string Key = "reallife:economy_estate";
         public const string TestKey = "reallife:economy_estate_before_tests";
-        public const int Version = 2;   // 2: part u, the units after the first
+        public const int Version = 3;   // 2: part u, the units after the first; 3: part s, the buildings sold
 
         private const int HoldingFields = 36, UnitFields = 15, ApplicantFields = 6;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -107,6 +107,14 @@ namespace RealLifeOverhaul.Economy
                 HireCar car = hire.Cars[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(car.Id)).Append('|').Append(Clean(car.Type)).Append('|');
                 Join(t, car.Price, car.Rate, car.State, car.Day, car.HireDays, car.HireRate, car.Deposit, car.HireSeed, car.X, car.Y, car.Z, car.Yaw, car.Takings, car.Hires, car.HireRating);
+            }
+            t.Append("^s:");
+            for (int i = 0; i < s.Sold.Count && i < EstateCatalogue.SoldMost; i++)
+            {
+                SoldBuilding b = s.Sold[i];
+                t.Append(i > 0 ? ";" : string.Empty).Append(Clean(b.Place)).Append('|');
+                Join(t, b.SoldDay, b.BoughtDay, b.Told ? 1 : 0);
+                t.Append('|').Append(Clean(b.Rival));
             }
             return t.ToString();
         }
@@ -247,6 +255,17 @@ namespace RealLifeOverhaul.Economy
                                         X = I(c, 10), Y = I(c, 11), Z = I(c, 12), Yaw = I(c, 13), Takings = Math.Max(0, I(c, 14)), Hires = Math.Max(0, I(c, 15)),
                                         HireRating = EstateCatalogue.Clamp(I(c, 16, -1), -1, 1000)
                                     });
+                                }
+                            }
+                            break;
+                        case 's':
+                            foreach (string record in Records(body))
+                            {
+                                string[] c = record.Split('|');
+                                int sold = I(c, 1);
+                                if (c.Length >= 4 && c[0].Length > 0 && sold > 0 && s.Sold.Count < EstateCatalogue.SoldMost && s.SoldOf(c[0]) == null)
+                                {
+                                    s.Sold.Add(new SoldBuilding { Place = c[0], SoldDay = sold, BoughtDay = Math.Max(0, I(c, 2)), Told = I(c, 3) != 0, Rival = c.Length > 4 ? c[4] : string.Empty });
                                 }
                             }
                             break;

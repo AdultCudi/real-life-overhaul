@@ -19,6 +19,7 @@ namespace RealLifeOverhaul
         {
             Logger?.Info("Home: '" + what + "' not started (" + key + (detail != null ? "; " + detail : string.Empty) + ").");
             Notifications.Show(NotificationType.Warning, key, null, 8f);
+            CookingTogether.Finish(false);   // (a meal together that did not get started)
         }
 
         private void Act(HomeWish wish, bool test)

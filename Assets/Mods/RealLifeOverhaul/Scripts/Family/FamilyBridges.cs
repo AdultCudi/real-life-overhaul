@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Entities;
 
 namespace RealLifeOverhaul.Family
 {
@@ -55,12 +56,15 @@ namespace RealLifeOverhaul.Family
         /// with nothing changed, when there is no partner or the key is not one of them.
         /// </summary>
         bool PartnerJob(string jobKey);
+        /// <summary>A chat face to face with the partner, Social's topics and answers; <paramref name="more"/> is the rest of the conversation. Null if Social cannot.</summary>
+        DialogEntry ChatInPerson(Func<DialogEntry> more, Action leave);
     }
 
     /// <summary>What Home implements. Each call is true if Home did it its own way; false and Family does a short default (a few lines and a mood).</summary>
     public interface IHomeBridge
     {
-        bool CookTogether(string partner);
+        /// <summary>A meal cooked together from what the home has in; done(true) once it is served, done(false) if nothing was cooked.</summary>
+        bool CookTogether(string partner, Action<bool> done);
         bool WatchTogether(string partner);
         /// <summary>The player is ill and the partner looks after them: Home shortens or eases the illness.</summary>
         bool CareWhenSick(string partner);
@@ -68,6 +72,16 @@ namespace RealLifeOverhaul.Family
         bool BrokenNight(int wakings);
         /// <summary>A health visit the player attends (a scan, a child's check-up); reason is a locale key.</summary>
         bool HealthVisit(string reason);
+        /// <summary>Units of food in the home's fridges and portions put by, read while the player is in the home; -1 otherwise.</summary>
+        int FoodUnits { get; }
+        /// <summary>How tidy the player's home is (0..100); -1 if not known.</summary>
+        float Tidiness { get; }
+        /// <summary>The player's hygiene (0..100); -1 if not known.</summary>
+        float Hygiene { get; }
+        /// <summary>The game's dirt on the dirtiest of the player's cars (0..1); -1 with no car.</summary>
+        float CarDirt { get; }
+        /// <summary>The partner cleaned: the player's home is tidier by so many points of a hundred. False if Home keeps no tidiness.</summary>
+        bool Tidied(float points);
     }
 
     /// <summary>What Travel implements: a trip for two. False and Family skips a few days with a mood.</summary>
