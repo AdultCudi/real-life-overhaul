@@ -3,7 +3,7 @@
 
 [b]Discord for help, bug reports and ideas: [url=https://discord.gg/tzCh2VXs9E]discord.gg/tzCh2VXs9E[/url][/b]
 [b]Languages: English, Brazilian Portuguese, Simplified Chinese, German, French, Spanish, Russian, Dutch and Turkish[/b]
-[b]Optional: [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820711613]RLO Texts[/url], [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820776564]Medium[/url] or [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820712020]Lite[/url]: a small model on your PC writes what people say, offline.[/b]
+[b]Optional: [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820711613]RLO Texts[/url], [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3824106911]Large[/url], [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820776564]Medium[/url] or [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820712020]Lite[/url]: a small model on your PC writes what people say, offline.[/b]
 
 [h1]Real Life Overhaul[/h1]
 Real Life Overhaul adds everyday life to the city of Big Ambitions: things happen in the street, to others and to you, and you can join in. Work your way up a career, stand for mayor, list your company, found a bank or a cloud, or just ride the bus. Every part can be switched off by itself, and four presets set how much of it happens to you.
@@ -30,13 +30,13 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*][b]Permadeath, if you want it.[/b] Off unless you switch it on: rare deaths after warnings, hunger among them, and an obituary in the City Ledger.
 [*][b]Tools.[/b] A Planner and a Guide on your phone, presets, tables that sort and filter, settings export and import, every key rebindable, and a tool that takes the mod out of a save.
 [/list]
-The Guide in the game has a page for every feature: what it is, how to start it and what it costs.
+The Guide in the game has a page for every feature.
 
 [h1]How to start[/h1]
 [list]
 [*]Subscribe, start the game and load a save or begin a new one. A notice appears once for each new version; click it to open the Guide.
 [*]The mod's options are in the game's Options, on the Mods tab, and on your phone in the Mod settings app. A search box finds any option. The mod starts on Standard.
-[*]The Guide and the Planner are apps on your phone. Scroll the mouse wheel over the apps for the next page.
+[*]The Guide and the Planner are apps on your phone.
 [/list]
 
 [h1]Performance[/h1]
