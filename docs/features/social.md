@@ -241,6 +241,16 @@ And to texts (none of it is asked of a pack now, so every card keeps the shape a
 - Cards of their own for the day after an outing that went badly (`friend.after.bad`), a date (`partner.date.good`, `partner.date.bad`) and Mom's (`mom.after.good`, `mom.after.bad`): each would be registered in `Texts/TextIntents.cs` as data 7 with fixtures, and `Texts/TextsMapRules.Phone` would map `reallife_social_text_nextday_*` to them. Until then their written lines are used.
 - `mom.dm.answer`, so a call back to Mom (and any call to her) could be typed.
 
+### Texting back (not built yet)
+
+A reply to a person's text from their thread, rather than a call, would take:
+
+- A button of the game's own under their newest text, as `Family/FamilySms` puts one under the partner's: the click is the mod's, so it comes off before each save and goes back on after, and a save that is read never has it. Only on a text of today or yesterday that has a subject (`SocialFollowCatalogue.Of`) and is not answered yet: the person would keep the minute of the text answered, as `FollowedAt` keeps the one a call opened on, and a call back and a reply would spend the same text.
+- Without a pack, two written answers to choose from, warm and cool, as a call's topic; with a pack and "Type your own words in calls" on, the player's own words through `Core/GameUi/TextBox`.
+- With a pack, a card of its own (`friend.dm.reply`, `partner.dm.reply`, `mom.dm.reply`, data 7, with fixtures in the generator's spec): the call's `*.dm.answer` cards are spoken, and the packs trained on them would answer as on a call.
+- The player's words in the thread as the player's (`TextMessage.isFromPlayer`), their answer a few game minutes later as theirs (in the morning if they are asleep), counted in the day's texts as every text of theirs but sent at the cap too, since the player asked. Worth what a topic's answer on a call is (`SocialTalk.Answer`: the day's chat once), never money.
+- Each player's own thread: nothing sent in a Going Public session.
+
 ## The City Ledger (`News`)
 
 `News.Report(NewsKind kind, Vector3 where, string detail = null, int amount = 0)` from any feature: a slot in a fixed array of 48, no allocation, no lookup, a return at once when neither the paper nor the social life is on.
