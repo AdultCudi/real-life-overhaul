@@ -1,3 +1,4 @@
+using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
 
 namespace RealLifeOverhaul.Designs
@@ -6,7 +7,8 @@ namespace RealLifeOverhaul.Designs
     public enum DesignWay
     {
         Copy,       // the game's own designs of a business that works as this one does, whole
-        Showroom    // the game's own designs with the middle of the floor cleared for the Car Showroom's lot
+        Showroom,   // the game's own designs with the middle of the floor cleared for the Car Showroom's lot
+        Branch      // the game's own shop designs cut to a bank's furniture: counters with a till for the teller, seats to wait on
     }
 
     /// <summary>Where the game keeps a kind of design it ships.</summary>
@@ -56,7 +58,7 @@ namespace RealLifeOverhaul.Designs
     /// </summary>
     public static class DesignCatalogue
     {
-        public const int RulesVersion = 1;          // raised whenever what a design is made of changes: every design is made again
+        public const int RulesVersion = 2;          // raised whenever what a design is made of changes: every design is made again (2: the bank branch)
         public const string Office = "ba:buildingtype_office";
         public const string Retail = "ba:buildingtype_retail";
         public const string Installer = "InteriorDesigns";   // the game's folder of the installation firms' designs, under StreamingAssets
@@ -83,6 +85,9 @@ namespace RealLifeOverhaul.Designs
             new DesignKind("reallife:businesstype_cybersecurity", Office, DesignWay.Copy, Offered("WebDevelopmentAgency")),
             new DesignKind("reallife:businesstype_ailab", Office, DesignWay.Copy, Offered("WebDevelopmentAgency")),
             new DesignKind("reallife:businesstype_academy", Office, DesignWay.Copy, Offered("travelagency"), Offered("eventplanningagency"), Offered("LawFirm")),
+            new DesignKind(BranchCatalogue.TypeName, Retail, DesignWay.Branch,
+                Offered("JewelryStore"), Offered("Hairdresser"), Offered("ElectronicsStore"), Offered("Bookstore"), Offered("LiquorStore"), Offered("GiftShop"),
+                Offered("Florist"), Offered("ClothingStore"), Offered("CoffeeShop"), Offered("Gym"), Offered("FruitAndVegetableStore"), Offered("Supermarket")),
             new DesignKind(DealerCatalogue.TypeName, Retail, DesignWay.Showroom,
                 new Donor(DonorRoot.Layouts, "CarDealership"), Offered("JewelryStore"), Offered("ElectronicsStore"), Offered("LiquorStore"), Offered("Bookstore"),
                 Offered("ClothingStore"), Offered("GiftShop"), Offered("Florist"), Offered("Hairdresser"), Offered("CoffeeShop"), Offered("FruitAndVegetableStore"),
@@ -123,6 +128,26 @@ namespace RealLifeOverhaul.Designs
             "cleaningstation", "uniformlocker", "securityguardlocker", "securitycamera", "securitycameraroof", "securitypanel",
             "securitysign", "jobboard", "exitsign", "wallradiator", "trashbin", "smallcabinet"
         };
+
+        /// <summary>
+        /// What a bank branch keeps of a shop design besides what a showroom keeps: the game's queue barriers, counters with
+        /// glass, more chairs and a bench to wait on, the paper holder. Every one is furniture the installation firms put in
+        /// for the game's own designs; shelves, display cases and products stay out, as for a showroom.
+        /// </summary>
+        public static readonly string[] BranchExtras =
+        {
+            "glassbarrier", "beltbarrier", "ropebarrier", "counterwithglass", "counterwithglasscornerleft", "eameschair",
+            "bench01", "paperholder"
+        };
+
+        /// <summary>Seats a branch's customers wait on: a branch's design with one of these is offered first.</summary>
+        public static readonly string[] BranchSeats =
+        {
+            "waitingroomchairs", "bench01", "armchair1", "armchair2", "cornersofa01", "cornersofa02left", "cornersofa02right", "modularsofa1l", "modularsofa1m",
+            "modularsofa1r", "sofawithblanket", "valenciachair", "eameschair", "multipurposechair"
+        };
+
+        public const int BranchMost = 4;            // designs a bank branch is offered for a size at most
 
         public const string Till = "cashregister";       // the game's point of sale: the showroom's salesperson waits by it (Economy/Dealer/Floor)
         public const string Toilet = "toiletstall";      // the washrooms

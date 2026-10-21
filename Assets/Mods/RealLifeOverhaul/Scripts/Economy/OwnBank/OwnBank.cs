@@ -89,6 +89,22 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] Crew = new int[OwnBankCatalogue.CrewKinds];
         public long FoundedLeast;               // the least capital when it was founded, cents at the start's prices (0: the least before the scale)
 
+        public long CounterFees;                // what the branches' counters charged since the last day was run: into the books with the next day
+        public int CounterHour = int.MinValue;  // the last hour the branches were worked (day x 24 + hour); int.MinValue: never
+        public readonly List<BankBranch> Branches = new List<BankBranch>(4);   // each branch's figures (Economy/OwnBank/Branch)
+
+        public BankBranch Branch(string place)
+        {
+            for (int i = 0; i < Branches.Count; i++)
+            {
+                if (Branches[i].Place == place)
+                {
+                    return Branches[i];
+                }
+            }
+            return null;
+        }
+
         public bool Running => State == OwnBankState.Running;
         public bool Exists => State != OwnBankState.None;
 
@@ -188,6 +204,7 @@ namespace RealLifeOverhaul.Economy
         public int Tax, Grants, Wages, Rent;   // the council's levers: -1, 0 or 1
         public bool Courts;             // the justice system takes a lender's claims
         public int Scale;               // the end game's share (Core/EndScale): 0 as before, 1000 at scale
+        public int Reach;               // thousandths more of the city's people the bank's branches bring it (Economy/OwnBank/Branch): 0 with none
 
         /// <summary>A quiet city at the start's prices: the bank rate as it begins, a steady cycle, the council as it came.</summary>
         public static BankCity Quiet(int yearDays)
@@ -207,13 +224,14 @@ namespace RealLifeOverhaul.Economy
         public long Interest, Reserve, Dividends, Recovered, Gains;    // in: takings
         public long Savers, Staff, Lost, Court, FundLost, Fees, Fine;  // out
         public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
+        public long Counter;                    // in: what the branches' counters charged their customers (OwnBankRules.Visit)
         public long Withdrawn, Deposited, Lent, Repaid, Defaulted, Cured, WrittenOff;
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;
         public ClosedWhy Why;
         public long WoundUp;                    // what winding it up left for the player
 
-        public long Income => Interest + Reserve + Dividends + Recovered + Gains;
+        public long Income => Interest + Reserve + Dividends + Recovered + Gains + Counter;
         public long Costs => Savers + Staff + Lost + Court + FundLost + Fees + Fine + Systems;
         public long Profit => Income - Costs;
 
@@ -221,6 +239,7 @@ namespace RealLifeOverhaul.Economy
         {
             Interest = Reserve = Dividends = Recovered = Gains = 0;
             Savers = Staff = Lost = Court = FundLost = Fees = Fine = Systems = 0;
+            Counter = 0;
             Withdrawn = Deposited = Lent = Repaid = Defaulted = Cured = WrittenOff = 0;
             Bought = Sold = FireSold = 0;
             RunStarted = RunEnded = Breached = Cured2 = Fined = Watched = Closed = false;

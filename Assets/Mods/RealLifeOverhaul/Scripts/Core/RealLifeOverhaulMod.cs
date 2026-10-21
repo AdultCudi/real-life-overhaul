@@ -55,6 +55,8 @@ namespace RealLifeOverhaul
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
             Careers.AcademyType.Logger = context.Logger;
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
+            Economy.BranchType.Logger = context.Logger;
+            Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // the player's bank branches, a business type, before any save that holds one is loaded (Scripts/Economy/OwnBank/Branch)
             Designs.DesignsDirector.Logger = context.Logger;
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker (Scripts/Designs).
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
@@ -898,6 +900,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_offices_test_list", () => Offices.Conversions.Instance?.TestList())
                 .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
                     v => Settings.EconomyBank = v)
+                .AddToggle(Settings.EconomyBranchId, "reallife_branch_enabled", Settings.EconomyBranch,
+                    v => Settings.EconomyBranch = v)
                 .AddToggle(Settings.EndScaleId, "reallife_endscale_enabled", Settings.EndScale,
                     v => Settings.EndScale = v)
                 .AddButton("reallife_endscale_test_phase", () => EndScaleTests.Phase(false))
@@ -928,6 +932,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ob_test_deadline", () => Economy.OwnBankDirector.Instance?.TestDeadline())
                 .AddButton("reallife_ob_test_fund", () => Economy.OwnBankDirector.Instance?.TestFund())
                 .AddButton("reallife_ob_test_back", () => Economy.OwnBankDirector.Instance?.TestBack())
+                .AddButton("reallife_branch_test_hour", () => Economy.OwnBankDirector.Instance?.TestBranchHour())
+                .AddButton("reallife_branch_test_floor", () => Economy.BranchFloor.Instance?.TestFloor())
                 .AddHeader("reallife_estate_header")
                 .AddToggle(Settings.EstateId, "reallife_estate_enabled", Settings.Estate,
                     v => Settings.Estate = v)
@@ -1192,6 +1198,7 @@ namespace RealLifeOverhaul
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // (furnished as the game's web development agency once its type is known)
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // (furnished as the game's recruitment office once its type is known)
+            Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // (dressed as the city's banks once their type is known)
             Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
             Guard.Step("GoingPublic", () => GoingPublic.Logger = context.Logger);
             Guard.Step("GoingPublicLink", () => GoingPublicLink.Logger = context.Logger);
@@ -1404,6 +1411,8 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.EstateApp", () => Economy.EstateApp.Logger = context.Logger);
             Guard.Step("Economy.EstateDirector", () => Guard.Add<Economy.EstateDirector>(_root));   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
             Guard.Step("Economy.OwnBankDirector", () => Economy.OwnBankDirector.Logger = context.Logger);
+            Guard.Step("Economy.BranchFloor", () => Economy.BranchFloor.Logger = context.Logger);
+            Guard.Step("Economy.BranchFloor", () => Guard.Add<Economy.BranchFloor>(_root));   // the bank branches' customers on the floor while the player is in one (Scripts/Economy/OwnBank/Branch)
             Guard.Step("Economy.OwnBankDirector", () => Guard.Add<Economy.OwnBankDirector>(_root));   // the player's own bank: a licence, savers, loans, a fund and a regulator, and its app (Scripts/Economy/OwnBank); after the company, so that its day's books come after the company's
             Guard.Step("Economy.Brands.BrandsDirector", () => Economy.Brands.BrandsDirector.Logger = context.Logger);
             Guard.Step("Economy.Brands.BrandsApp", () => Economy.Brands.BrandsApp.Logger = context.Logger);

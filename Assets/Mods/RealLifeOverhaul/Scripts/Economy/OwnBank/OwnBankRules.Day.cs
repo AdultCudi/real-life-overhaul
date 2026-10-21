@@ -117,6 +117,12 @@ namespace RealLifeOverhaul.Economy
                 into.Reserve += reserve;
             }
 
+            // What the branches' counters charged since the last day: cash in, and income (OwnBankRules.Visit).
+            long counter = Math.Max(0, b.CounterFees);
+            b.CounterFees = 0;
+            b.Reserves += counter;
+            into.Counter = counter;
+
             OwnBankFund.Day(b, c, day, quotes, into);
 
             // Staff: the hall and a share of what it holds, giving way at scale to its crews' wages, its systems and the
@@ -127,7 +133,7 @@ namespace RealLifeOverhaul.Economy
             long staff = s <= 0 ? before : before * (EndScaleRules.Full - s) / EndScaleRules.Full + Crews(b) * OwnBankCatalogue.CostYearDays / y * level / PriceRules.Start;
             long systems = s <= 0 ? 0 : EndScaleRules.Mix(0L, OwnBankCatalogue.SystemsDayCents * OwnBankCatalogue.CostYearDays / y * level / PriceRules.Start
                                                            + b.Savings * OwnBankCatalogue.InsuranceBp / (10000L * y), s);
-            long room = b.Capital + into.Interest + into.Reserve + into.Recovered - into.Savers - into.Lost - into.Court - Math.Min(before, staff);
+            long room = b.Capital + into.Interest + into.Reserve + into.Recovered + into.Counter - into.Savers - into.Lost - into.Court - Math.Min(before, staff);
             staff = Math.Min(before, staff) + EndScaleRules.Take(ref room, Math.Max(0, staff - before));
             systems = EndScaleRules.Take(ref room, systems);
             b.Reserves -= staff + systems;
@@ -135,7 +141,7 @@ namespace RealLifeOverhaul.Economy
             into.Systems += systems;
 
             // The fund's gains, losses and fees are in the capital already (OwnBankFund).
-            b.Capital += into.Interest + into.Reserve + into.Recovered - into.Savers - into.Lost - into.Court - into.Staff - into.Systems;
+            b.Capital += into.Interest + into.Reserve + into.Recovered + into.Counter - into.Savers - into.Lost - into.Court - into.Staff - into.Systems;
 
             if (b.Reserves < 0)
             {

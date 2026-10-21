@@ -175,6 +175,7 @@ namespace RealLifeOverhaul
         public const string EconomySaleId = "economy_sale";
         public const string OfficeConversionId = "office_conversion";
         public const string EconomyBankId = "economy_bank";
+        public const string EconomyBranchId = "economy_bank_branch";
         public const string EndScaleId = "economy_endscale";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
@@ -485,6 +486,9 @@ namespace RealLifeOverhaul
         public static bool OfficeConversion = true;      // some empty shops in the districts with offices are offices to rent while the mod runs: on the map, in BizMan, at an office's rent, for any office business; never written into the save (Scripts/Offices)
         public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
         public static bool EconomyBank = true;           // the player's own bank: a licence, savers, loans, a fund and a regulator, in its own app (off: it stands still, nothing is run, booked or charged) (Scripts/Economy/OwnBank)
+        // bank branches: a business type whose customers bank with the player's own bank and bring it more of the city;
+        // the player may work the counter (off: branches do nothing, the bank is as without them) (Economy/OwnBank/Branch)
+        public static bool EconomyBranch = true;
         public static bool EndScale = true;              // the end game at scale: data centres, the cloud and the hyperscaler, the broadband company and the player's own bank cost and earn at the size of the real thing, with upkeep, crews of staff by kind and income that grows with what is built; a save that already held one is brought to it over four game weeks (off: every figure as before) (Scripts/Core/EndScale)
         public static bool EconomyBrands = true;         // brands and franchises: a brand made from a shop, its recognition and standards, franchising it, and a shop under a city chain, with the Brands app (off: none of it runs, nothing is paid and footfall is without it) (Scripts/Economy/Brands)
         public static bool EconomyBanks = true;          // the Banks app: the city's three largest banks in one app on the phone, each bank's slice of the accounts, loans, card, offers and rating (off: no Banks app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
@@ -836,6 +840,7 @@ namespace RealLifeOverhaul
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
             OfficeConversion = Bool(modId, OfficeConversionId, OfficeConversion);
             EconomyBank = Bool(modId, EconomyBankId, EconomyBank);
+            EconomyBranch = Bool(modId, EconomyBranchId, EconomyBranch);
             EndScale = Bool(modId, EndScaleId, EndScale);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
