@@ -255,11 +255,11 @@ internal static partial class Program
         Check(TextPacks.Tier(0, 4, false, true) == TextPacks.LargeTier && TextPacks.Tier(2, 4, true, true) == TextPacks.LargeTier && TextPacks.Tier(2, 0, true, false) == TextPacks.FullTier
               && TextPacks.Tier(0, 5, false, true) == 0 && TextPacks.Tier(3, 4, true, true) == 0,
             "texts v6, RLO Texts Large: its tier 4 read (with no rank line, as an RLO before the tier line, or one before data v6, reads no pack at all); a rank alone is never Large");
-        var large = new TextPack { Name = "RLO Texts Large", Rank = TextPacks.LargeTier, ModelBytes = 5L << 30, Data = TextIntents.DataV6 };
+        var large = new TextPack { Name = "RLO Texts Large", Rank = TextPacks.LargeTier, ModelBytes = TextSpeed.LargeBytes, Data = TextIntents.DataV6 };
         var full = new TextPack { Name = "RLO Texts", Rank = TextPacks.FullTier, ModelBytes = 1L << 30, Data = TextIntents.DataV6 };
         var both = new List<TextPack> { large, full };
         var card = new List<TextDevice> { new TextDevice { Name = "Vulkan0", Label = "NVIDIA GeForce RTX 4080", TotalMiB = 16384, FreeMiB = 14000 } };
-        var small = new List<TextDevice> { new TextDevice { Name = "Vulkan0", Label = "NVIDIA GeForce RTX 3060", TotalMiB = 8192, FreeMiB = 7000 } };
+        var small = new List<TextDevice> { new TextDevice { Name = "Vulkan0", Label = "NVIDIA GeForce RTX 3060", TotalMiB = 8192, FreeMiB = 6000 } };
         var builtIn = new List<TextDevice> { new TextDevice { Name = "Vulkan0", Label = "Intel(R) UHD Graphics 770", TotalMiB = 16384, FreeMiB = 15000 } };
         bool runs = TextPacks.Pick(both, card, 0, null, out string why1) == large && why1 == null;
         bool processor = TextPacks.Pick(both, card, 1, null, out string why2) == full && why2 != null;
@@ -271,8 +271,16 @@ internal static partial class Program
         Check(TextSpeed.LargeTooSlow(1.21) && !TextSpeed.LargeTooSlow(TextSpeed.LargeSlow) && TextSpeed.LargeTooSlow(double.NaN) && !TextSpeed.LargeTooSlow(0.4),
             "texts v6, RLO Texts Large: too slow past " + TextSpeed.LargeSlow + " s a reply on its card (the next pack runs, and Large is not tried on that card again)");
         Check(TextSpeed.OfferLarge(TextPacks.FullTier, 0.3, true, true) && !TextSpeed.OfferLarge(TextPacks.FullTier, 0.3, true, false) && !TextSpeed.OfferLarge(TextPacks.FullTier, 0.6, true, true)
-              && !TextSpeed.OfferLarge(2, 0.3, true, true) && !TextSpeed.OfferLarge(TextPacks.FullTier, 0.3, false, true) && TextPacks.WorkshopItems[3] == string.Empty && !TextPacks.LargePublished,
-            "texts v6, RLO Texts Large: offered once where the full pack is fast on a card with the memory, and only once it is published (its Workshop id is the maintainer's to set: none yet)");
+              && !TextSpeed.OfferLarge(2, 0.3, true, true) && !TextSpeed.OfferLarge(TextPacks.FullTier, 0.3, false, true) && TextPacks.LargePublished == (TextPacks.WorkshopItems[3].Length > 0),
+            "texts v6, RLO Texts Large: offered once where the full pack is fast on a card with the memory, and only once it is published (its Workshop id set)");
+        // (the offer reckons Large at its published model, 2,708,804,096 bytes: twice that and the spare, 6,190 MB, free on the card,
+        // as Pick asks once it is installed. A 12 GB card beside the game has it; an 8 GB card with 6,000 MB free does not)
+        var fits = new TextDevice { Name = "Vulkan0", Label = "NVIDIA GeForce RTX 4070", TotalMiB = 12282, FreeMiB = 6190 };
+        var under = new TextDevice { Name = "Vulkan0", Label = "NVIDIA GeForce RTX 4070", TotalMiB = 12282, FreeMiB = 6189 };
+        Check(TextSpeed.LargeBytes == 2708804096L && TextSpeed.LargeFits(fits, TextSpeed.LargeBytes) && !TextSpeed.LargeFits(under, TextSpeed.LargeBytes)
+              && TextSpeed.LargeFits(card[0], TextSpeed.LargeBytes) && !TextSpeed.LargeFits(small[0], TextSpeed.LargeBytes),
+            "texts v6, RLO Texts Large: the offer reckons its published model (" + TextSpeed.LargeBytes + " bytes), so it asks "
+            + (TextSpeed.LargeBytes / (1024 * 1024) * 2 + TextPacks.SpareMiB) + " MB free on the card, as Pick does once the pack is installed");
         Check(TextSpeed.SuggestLite(2, 9) && TextSpeed.SuggestLite(TextPacks.FullTier, 9) && !TextSpeed.SuggestLite(TextPacks.LargeTier, 9) && !TextSpeed.SuggestLite(1, 9),
             "texts v6, RLO Texts Large: never told to try the Lite pack (too slow, it gives way by itself)");
         string folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rlo-large-" + System.Diagnostics.Process.GetCurrentProcess().Id);
