@@ -126,6 +126,11 @@ namespace RealLifeOverhaul.Markets
             host.Dues.AddRange(mine.Dues);
             host.Bots.AddRange(mine.Bots);
             host.Bonds.Take(mine.Bonds);
+            host.Derivs.Take(mine.Derivs);   // the player's own futures and options, on the host's exchange
+            if (host.Materials.Count == 0)
+            {
+                host.Materials.AddRange(mine.Materials);   // a host without the exchange: the guest's own goes on with the host's days
+            }
             Account a = host.Account, m = mine.Account;
             a.Margin = m.Margin;
             a.Cash = m.Cash;
