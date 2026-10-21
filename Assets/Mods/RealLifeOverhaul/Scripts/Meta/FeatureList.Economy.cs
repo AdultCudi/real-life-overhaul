@@ -286,6 +286,13 @@ namespace RealLifeOverhaul.Meta
                 .Data(Economy.RotaStore.Key)
                 .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back"));
 
+            // Its rows stand under the company's header too.
+            Economy.ManagerGuide.AddFacts(Features.Add("economy_managers", "reallife_meta_title_economy_managers")
+                .About("reallife_guide_economy_managers_about").Help("reallife_guide_economy_managers")
+                .Owns(Settings.EconomyManagersId)
+                .Data(Economy.ManagerStore.Key)
+                .Test("reallife_mgr_test_appoint", "reallife_mgr_test_decide", "reallife_mgr_test_undo"));
+
             Economy.EstateGuide.AddFacts(Features.Add("economy_estate", "reallife_meta_title_economy_estate")
                 .Group("reallife_estate_header")
                 .About("reallife_guide_economy_estate_about").Help("reallife_guide_economy_estate")

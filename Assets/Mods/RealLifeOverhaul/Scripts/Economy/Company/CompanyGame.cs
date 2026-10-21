@@ -94,6 +94,24 @@ namespace RealLifeOverhaul.Economy
 
         public static Action OpenListing;
 
+        /// <summary>Writes a shop's price of a product as the game's price cell does (place, product, price, district); false if it did not change.</summary>
+        public static Func<BuildingRegistration, string, float, string, bool> WritePrice;
+
+        /// <summary>True where a chain or a brand keeps a shop's prices (by its place): a manager leaves them alone.</summary>
+        public static Func<string, bool> PricesKept;
+
+        internal static bool PricesKeptAt(string place)
+        {
+            try
+            {
+                return PricesKept != null && !string.IsNullOrEmpty(place) && PricesKept(place);
+            }
+            catch (Exception)
+            {
+                return true;   // cannot tell: left alone
+            }
+        }
+
         internal static int EsteemNow()
         {
             try
@@ -127,6 +145,8 @@ namespace RealLifeOverhaul.Economy
             Esteem = null;
             ListingLine = null;
             OpenListing = null;
+            WritePrice = null;
+            PricesKept = null;
         }
     }
 
@@ -172,6 +192,7 @@ namespace RealLifeOverhaul.Economy
         public const string BackTaxKey = "reallife_transaction_co_backtax";
         public const string LicenceKey = "reallife_transaction_co_licence";
         public const string LicenceFineKey = "reallife_transaction_co_licence_fine";
+        public const string ManagerKey = "reallife_transaction_co_manager";
 
         // The game's business types by what they sell, as the end of their names ("ba:businesstype_...").
         private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore" };
