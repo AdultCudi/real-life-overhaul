@@ -22,6 +22,7 @@ internal static partial class Program
         CalendarSchedules();
         CalendarListChecks();
         CalendarSources();
+        CalendarPlannerYear();
         CalendarTexts();
     }
 
@@ -500,6 +501,43 @@ internal static partial class Program
             "calendar app: the sources are read in one place, when a month is shown (opened, turned, a new day)");
         string pagers = CalendarScripts(System.IO.Path.Combine("Core", "GameUi", "PagerRules.cs"));
         Check(pagers.Contains("\"RealLifeFlare\", \"RealLifeCalendar\", \"RealLifeCamera\""), "calendar app: the Calendar has its place in the phone's order, beside the Planner and Flare");
+    }
+
+    // ---------------------------------------------------------------- the Planner's year
+
+    // The Planner's day box once counted the year as the game's age does (day / daysPerYear), so it said the new year
+    // began on day 60 of a 60-day year, the day the game closes its tax year. The year and its next first day are now
+    // the calendar's alone (CalendarRules.YearOf, NextYearStart), checked here against the game's tax year: it is paid
+    // on each day that is a multiple of the year's length (TaxHelper), its period beginning the day after.
+    private static void CalendarPlannerYear()
+    {
+        bool agree = true;
+        string first = null;
+        for (int year = 8; year <= 400 && agree; year++)
+        {
+            for (int day = 1; day <= year * 3; day++)
+            {
+                int taxDay = (day + year - 1) / year * year;   // the game's next tax day from this one, this day included
+                int next = CalendarRules.NextYearStart(day, year);
+                bool ok = next == taxDay + 1 && CalendarRules.YearOf(day, year) == CalendarRules.YearOf(taxDay, year)
+                          && CalendarRules.YearOf(next, year) == CalendarRules.YearOf(day, year) + 1 && CalendarRules.YearOf(taxDay, year) == taxDay / year;
+                if (!ok)
+                {
+                    agree = false;
+                    first = year + "-day year, day " + day + ": next year from day " + next + ", tax day " + taxDay;
+                    break;
+                }
+            }
+        }
+        Check(agree, "calendar app: the year's end is the game's tax day and the next year begins the day after, for every year length from 8 to 400 days (" + (first ?? "none") + ")");
+        Check(CalendarRules.YearOf(60, 60) == 1 && CalendarRules.NextYearStart(60, 60) == 61 && CalendarRules.YearOf(61, 60) == 2 && CalendarRules.NextYearStart(1, 60) == 61
+              && CalendarRules.NextYearStart(61, 120) == 121 && CalendarRules.NextYearStart(365, 365) == 366,
+            "calendar app: in a 60-day year day 60 is still the first year and the second begins on day 61 (" + CalendarRules.NextYearStart(60, 60) + ")");
+        string box = CalendarScripts(System.IO.Path.Combine("Planner", "PlannerApp.Box.cs"));
+        string model = CalendarScripts(System.IO.Path.Combine("Planner", "PlannerModel.cs"));
+        Check(box.Contains("CalendarRules.YearOf(today, perYear)") && box.Contains("CalendarRules.NextYearStart(today, perYear)")
+              && box.Contains("\"year\", year.ToString()") && !Regex.IsMatch(box + model, @"/\s*(daysPerYear|perYear)\b"),
+            "calendar app: the Planner's day box reads the year and the new year's first day from the calendar's rule, and counts no year of its own");
     }
 
     // ---------------------------------------------------------------- the texts
