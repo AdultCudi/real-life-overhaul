@@ -553,8 +553,11 @@ namespace RealLifeOverhaul
 
         // Puts up the nearest places not yet up, once a second and on every tick while the last pass ran out of its slice
         // (about a millisecond in play; all of them behind a black screen). True if places were left for the next tick.
+        private static readonly int HotDressNear = HotSpots.Slot("Transport: TransitDirector.DressNear");
+
         private bool DressNear(Vector3 at)
         {
+            using var hotSpot = HotSpots.Time(HotDressNear);
             bool hidden = SceneFinds.Hidden;
             WorkSlice slice = hidden ? WorkSlice.Whole : WorkSlice.Of(PutsSliceMs, 1);
             for (int pass = 0; pass < PutsATick; pass++)

@@ -8,7 +8,7 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Runs the performance work in the city: switches the tweaks on and off as the options (or the benchmark)
     /// ask, gives each its timer tick, and starts the probe and the benchmark on their keys (Core/Keys: F7 and Shift+F7 unless rebound).
-    /// Its own cost per frame while nothing is being measured: one key test, four flags and one time compare. Tweaks are
+    /// Its own cost per frame while nothing is being measured: one key test, five flags and one time compare. Tweaks are
     /// switched one a frame (<see cref="Sync"/>): after a load, or when the options change, each switch has a frame of its
     /// own, where every tweak used to be switched in the same frame (a frame of 9 to 20 ms of this director in play).
     /// What each looks at in the scene is taken behind the loading screen (PerfTweaks.Prewarm).
@@ -148,6 +148,7 @@ namespace RealLifeOverhaul
             {
                 Tick(now);
             }
+            ModCulling.Frame();   // one comparison unless a thing of the mod's has changed band (Performance/ModCulling)
         }
 
         // A measurement that meets something unexpected is dropped, with everything it changed put back.
@@ -180,6 +181,15 @@ namespace RealLifeOverhaul
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
                 bool want = tweak.ShouldBeActive;
+                if (tweak.Stale)
+                {
+                    tweak.Stale = false;
+                    if (want && tweak.Active)
+                    {
+                        tweak.SetActive(false, Logger);   // its setting moved: the game's own state back, then the new value
+                        want = tweak.ShouldBeActive;
+                    }
+                }
                 if (want != tweak.Active)
                 {
                     tweak.SetActive(want, Logger);
@@ -246,6 +256,7 @@ namespace RealLifeOverhaul
             {
                 tweak.Shutdown(Logger);
             }
+            ModCulling.Reset();   // the city's things go with it
             if (Instance == this)
             {
                 Instance = null;

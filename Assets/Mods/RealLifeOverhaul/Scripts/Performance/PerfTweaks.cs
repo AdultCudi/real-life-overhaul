@@ -20,10 +20,25 @@ namespace RealLifeOverhaul
     /// pedestrian avoidance (they already use it). Decals (+0.11 ms) are visible and stay as they are.
     ///
     /// The entries marked as trials are measurements for the benchmark only: they are never on the options page
-    /// and never on outside a benchmark row.
+    /// and never on outside a benchmark row. The picture settings (the sun's shadow distance and cascades, the distance of
+    /// detailed models) are set by sliders and a choice of their own, the game's own until moved (Tweaks/ShadowReach.cs), each
+    /// with a trial row at a set value; the pipeline's often costly features (screen-space reflections and ambient
+    /// occlusion, volumetric fog and clouds, contact shadows) have a trial row each, listed as not in use where the game
+    /// has them off already.
     /// </summary>
     public static class PerfTweaks
     {
+        /// <summary>The picture settings' tweaks, which their sliders and choice tell when they move.</summary>
+        public static readonly ShadowReach ShadowOption = new ShadowReach(false);
+        public static readonly ShadowCascades CascadesOption = new ShadowCascades(false);
+        public static readonly LodReach LodOption = new LodReach(false);
+
+        private static readonly string[] CascadeChoices =
+        {
+            "reallife_render_cascades_game", "reallife_render_cascades_1", "reallife_render_cascades_2", "reallife_render_cascades_3",
+            "reallife_render_cascades_4"
+        };
+
         public static readonly PerfTweak[] All =
         {
             new RefractionOff(),
@@ -34,9 +49,21 @@ namespace RealLifeOverhaul
             new LayerCull("far_props", "reallife_perf_far_props2", 200f, "StreetProps", "InteractiveItems", "InteractiveItemsOutlined", "ParkedVehicles"),
             new FarDistricts(true),
             new TexturesWhole(),
+            new ModCull(),
+            ShadowOption,
+            CascadesOption,
+            LodOption,
             new FarObstacleTrial(),
             // What the render pipeline's passes cost, one group at a time (several change the picture while their row runs).
             new FrameSettingTrial("trial_no_custom_pass", "custom passes off: whatever the game injects (outlines, see-through of walls)", FrameSettingsField.CustomPass),
+            new ShadowReach(true),
+            new ShadowCascades(true),
+            new LodReach(true),
+            new FrameSettingTrial("trial_no_ssr", "screen-space reflections off", FrameSettingsField.SSR),
+            new FrameSettingTrial("trial_no_ssao", "the pipeline's screen-space ambient occlusion off", FrameSettingsField.SSAO),
+            new FrameSettingTrial("trial_no_volumetric_fog", "volumetric fog and lighting off", FrameSettingsField.Volumetrics),
+            new FrameSettingTrial("trial_no_volumetric_clouds", "volumetric clouds off", FrameSettingsField.VolumetricClouds),
+            new FrameSettingTrial("trial_no_contact_shadows", "contact shadows off", FrameSettingsField.ContactShadows),
         };
 
         /// <summary>Set whenever a choice (or the benchmark's override) changes; the director then brings the game in line.</summary>
@@ -57,7 +84,8 @@ namespace RealLifeOverhaul
         {
             foreach (PerfTweak tweak in All)
             {
-                tweak.Wanted = !tweak.Trial && UnityEngine.PlayerPrefs.GetInt("m:" + modId + ":" + OptionId(tweak), tweak.DefaultOn ? 1 : 0) != 0;
+                tweak.Wanted = tweak.BySetting ? tweak.SettingWants
+                    : !tweak.Trial && UnityEngine.PlayerPrefs.GetInt("m:" + modId + ":" + OptionId(tweak), tweak.DefaultOn ? 1 : 0) != 0;
             }
             StepTiming = UnityEngine.PlayerPrefs.GetInt("m:" + modId + ":" + StepTimingId, 1) != 0;
             Dirty = true;
@@ -69,7 +97,7 @@ namespace RealLifeOverhaul
             options.AddHeader("reallife_perf_header");
             foreach (PerfTweak tweak in All)
             {
-                if (tweak.Trial)
+                if (tweak.Trial || tweak.BySetting)
                 {
                     continue;
                 }
@@ -85,9 +113,24 @@ namespace RealLifeOverhaul
                 StepTiming = on;
                 FrameSteps.Refresh();   // the session record's own timestamps leave the engine's loop, or go back in, at once
             });
+            options.AddSlider(Settings.ShadowReachId, "reallife_render_shadow_reach", RenderLevelRules.Least, RenderLevelRules.Game, Settings.ShadowReach,
+                v => Moved(ShadowOption, () => Settings.ShadowReach = RenderLevelRules.Percent(v)), Meta.SettingsTable.SliderPercent);
+            options.AddDropdown(Settings.ShadowCascadesId, "reallife_render_shadow_cascades", CascadeChoices, Settings.ShadowCascades,
+                i => Moved(CascadesOption, () => Settings.ShadowCascades = RenderLevelRules.Cascades(i)));
+            options.AddSlider(Settings.LodReachId, "reallife_render_lod_reach", RenderLevelRules.Least, RenderLevelRules.Game, Settings.LodReach,
+                v => Moved(LodOption, () => Settings.LodReach = RenderLevelRules.Percent(v)), Meta.SettingsTable.SliderPercent);
             options.AddButton("reallife_perf_probe_button", () => PerfDirector.Instance?.StartProbe());
             options.AddButton("reallife_perf_bench_button4", () => PerfDirector.Instance?.StartBench());
             return options.AddSplitter();
+        }
+
+        // A picture setting moved: its tweak comes on, goes off, or is put on again with the new value (PerfDirector.Sync).
+        private static void Moved(PerfTweak tweak, System.Action set)
+        {
+            set();
+            tweak.Wanted = tweak.SettingWants;
+            tweak.Stale = tweak.Active;
+            Dirty = true;
         }
 
         /// <summary>Scenes loaded since the mod started: a tweak's look made behind the loading screen is good while this has not moved.</summary>
