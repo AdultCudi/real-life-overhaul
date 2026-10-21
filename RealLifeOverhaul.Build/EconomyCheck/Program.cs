@@ -162,7 +162,7 @@ internal static partial class Program
         TextsShownSix();       // what RLO Texts showed: the model's words against the written lines and why, by pack and intent, the hourly line, the hub counting every way (TextsShownChecks.cs)
         TextsMemorySix();      // what people remember: the lines, a card's choice the same in any order, whose keys, the save, caps and pruning, the topics (TextsMemoryChecks.cs)
         TextsCitySix();        // the city's new talk: the staff, life events, who texts, gossip, reviews, every written line, the save, RLO Texts Large, the sources (TextsCityChecks.cs)
-        TextsServiceSix();     // your own AI beside data v6: the English card finished as a pack's, a game in another language left to the pack, the pack's own card after a miss; Dutch and Turkish keep their written lines (TextsServiceSixChecks.cs)
+        TextsServiceSix();     // your own AI beside data v6: the card finished as a pack's in the game's language, the pack's own card after a miss; each of the seven languages asked, checked and fallen back in; Dutch and Turkish keep their written lines (TextsServiceSixChecks.cs, TextsServiceLanguageChecks.cs)
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
         ComposerChecks();   // a call's composer: the two answers without a pack, typed words worth the warm answer a day as before, the model's words read by no rule, cleaned (ComposerChecks.cs)
         TypedReadingChecks();   // what an answer typed on a call says, in every language, and what it gets back: never a sorry to good news (TypedReadingChecks.cs)

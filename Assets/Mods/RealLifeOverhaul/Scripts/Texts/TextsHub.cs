@@ -75,12 +75,15 @@ namespace RealLifeOverhaul.Texts
     /// by pack and intent with what was shown and why (<see cref="Tally"/>, TextShown).
     ///
     /// YOUR OWN AI: with an AI service of the player's running (<see cref="Service"/>), a request goes to it first, through
-    /// a queue of its own, with the newest cards (a card of data v6 finished in English, memory and all: the service
-    /// writes English, so a game in another language leaves it to the pack, <see cref="ServiceWhy"/>); its words are
-    /// checked by the same TextCheck, and when they fail, come too late for the service's queue, or the service fails or
-    /// rests, the request falls back to the pack (if one runs and has the card, with the time left, the pack's own card in
-    /// its language) and then to the written line. A shared request (Going Public's shared feed and paper, which must
-    /// agree on every machine) never goes to the service: the pack and the written lines only.
+    /// a queue of its own, with the newest cards (a card of data v6 finished in the game's language, memory and all, sent
+    /// with the packs' system turn and the language named as its natives write it, TextCard.ServiceSystem); its words are
+    /// checked by the same TextCheck in that language (JudgeSix: the language itself, the names, the facts and the rest),
+    /// and when they fail, come too late for the service's queue, or the service fails or rests, the request falls back to
+    /// the pack (if one runs, has the card and writes the language, with the time left, the pack's own card) and then to
+    /// the written line. The pack and the service each judge the language on their own (<see cref="WritesLanguage"/>,
+    /// <see cref="ServiceWrites"/>); Dutch and Turkish, which TextCheck cannot judge, keep their written lines.
+    /// A shared request (Going Public's shared feed and paper, which must agree on every machine) never goes to the
+    /// service: the pack and the written lines only.
     /// A SPOKEN LINE (face to face, the player waiting: <see cref="TextRequest.Spoken"/>) is held about a second for the
     /// pack, less than a service takes to answer. With the service up such a line waits for it instead, a short pause
     /// before the person answers, as people do (<see cref="SpokenWait"/>: the service's measured time and a margin, at
@@ -170,11 +173,11 @@ namespace RealLifeOverhaul.Texts
 
         private bool PackUp => Runner != null && Runner.State != TextServerState.Failed && Runner.State != TextServerState.Off;
 
-        /// <summary>Which uses may ask now (the options, the game's language, Going Public's rule); set by the director.</summary>
+        /// <summary>
+        /// Which uses may ask now (the options, Going Public's rule); set by the director. The language is the hub's own
+        /// (<see cref="WritesLanguage"/>, <see cref="ServiceWrites"/>).
+        /// </summary>
         public Func<TextUse, bool, bool> Allowed;
-
-        /// <summary>Why a use may not ask now, when <see cref="Allowed"/> says no (switched off, the language); null: Off.</summary>
-        public Func<TextUse, bool, TextShownWhy> Barred;
 
         /// <summary>
         /// The data version of the running pack's model (TextPack.Data): an intent of a later data version is never asked of
@@ -193,6 +196,9 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>The game's language as a card of data v6 writes it (TextLanguages.Of); set by the director.</summary>
         public string Language { get; set; } = TextLanguages.English;
+
+        /// <summary>True while the game shows English (TextsGame.English); set by the director with <see cref="Language"/>. A pack below data v6 writes English alone.</summary>
+        public bool English { get; set; } = true;
 
         /// <summary>The languages the running pack was trained and passed in (TextPack.Languages); English alone by default.</summary>
         public string[] Languages { get; set; } = { TextLanguages.English };
@@ -225,13 +231,25 @@ namespace RealLifeOverhaul.Texts
 
         public int Verdicts(TextVerdict v) => _verdicts[(int)v];
 
-        /// <summary>True when the running pack writes the game's language now (a pack below data v6 writes English alone).</summary>
-        public bool WritesLanguage => TextLanguages.Has(Languages, _packData >= TextIntents.DataV6 ? Language : TextLanguages.English);
+        /// <summary>
+        /// True when the running pack writes the game's language now: a pack of data v6 the languages it was trained and
+        /// passed in (Dutch and Turkish never: TextLanguages.Unwritten), an older pack English alone (<see cref="English"/>).
+        /// </summary>
+        public bool WritesLanguage => _packData >= TextIntents.DataV6 ? TextLanguages.Has(Languages, Language) : English;
+
+        /// <summary>
+        /// True when the AI service is asked in the game's language: one of the seven, which TextCheck judges in full. Dutch
+        /// and Turkish are not: TextCheck has no little words of theirs (TextCheck.InLanguage lets any line in Latin letters
+        /// pass as theirs, an English one too), no machine talk of theirs (MachineIn) and Flare's list no swearing of theirs,
+        /// so a reply in them could not be checked and their written lines are kept. A language the mod has no texts in
+        /// reads English (TextLanguages.Of), and the service writes English, as the packs do.
+        /// </summary>
+        public bool ServiceWrites => TextLanguages.Known(Language);
 
         /// <summary>True when a request of this use could go to the model now (asked before the card is built, so that nothing is built for nothing).</summary>
         public bool Wants(TextUse use, bool shared)
         {
-            return (PackUp || (ServiceUp && !shared)) && (Allowed == null || Allowed(use, shared));
+            return ((PackUp && WritesLanguage) || (ServiceUp && !shared && ServiceWrites)) && (Allowed == null || Allowed(use, shared));
         }
 
         /// <summary>
@@ -243,14 +261,15 @@ namespace RealLifeOverhaul.Texts
             Tally.Count(Pack, intent, Unwanted(use, shared));
         }
 
-        // Why Wants says no: no way to word it (no pack, or one that could not run, and no AI service for it), else off or the language.
+        // Why Wants says no: no way to word it (no pack, or one that could not run, and no AI service for it), else off, else
+        // the language (neither the pack nor the service writes it).
         private TextShownWhy Unwanted(TextUse use, bool shared)
         {
             if (!PackUp && !(ServiceUp && !shared))
             {
                 return Runner == null && Pack == NoPack ? TextShownWhy.NoPack : TextShownWhy.Failed;
             }
-            return Barred != null ? Barred(use, shared) : TextShownWhy.Off;
+            return Allowed != null && !Allowed(use, shared) ? TextShownWhy.Off : TextShownWhy.Language;
         }
 
         /// <summary>
@@ -326,8 +345,9 @@ namespace RealLifeOverhaul.Texts
         }
 
         // The request to the AI service, with the newest card: false, with why, when it cannot go (a value missing, no time in
-        // its queue). A card of data v6 is finished in English, as the service writes (ServiceWhy). A spoken line waits for
-        // the service (SpokenWait); the end of the wait is kept for the pack.
+        // its queue). A card of data v6 is finished in the game's language (one of the seven: ServiceWhy) and sent with the
+        // system turn of that language (TextCard.ServiceSystem). A spoken line waits for the service (SpokenWait); the end
+        // of the wait is kept for the pack.
         private bool ToService(TextRequest r, double now)
         {
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch, Newest);
@@ -343,9 +363,10 @@ namespace RealLifeOverhaul.Texts
             var w = new Waiting { Request = r, Intent = intent, Sheet = sheet, Job = job, ViaService = true, Until = now + waits };
             if (intent.Data >= TextIntents.DataV6)
             {
-                Six(r, intent, sheet, w, TextLanguages.English);
+                Six(r, intent, sheet, w, Language);
             }
             job.Card = w.Card = TextCard.Card(sheet);
+            job.System = TextCard.ServiceSystem(intent.Data, Language);
             GiveWay(r.Key);
             if (!_serviceQueue.Add(job, now))
             {
@@ -496,8 +517,9 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>
         /// Why a request would not go to the AI service now (null when it would): none chosen, a shared text (Going
-        /// Public), off for this kind of message, the game in a language other than the one the service writes (English, as
-        /// the mod reads in a language it has no texts in), the service not ready or resting, or no card of the intent.
+        /// Public), off for this kind of message, the game in a language whose replies TextCheck cannot judge (Dutch,
+        /// Turkish: <see cref="ServiceWrites"/>), the service not ready or resting, or no card of the intent in the game's
+        /// language (a card below data v6 has no lang line: English only).
         /// </summary>
         public string ServiceWhy(TextUse use, bool shared, string intent, string branch)
         {
@@ -513,15 +535,20 @@ namespace RealLifeOverhaul.Texts
             {
                 return "RLO Texts is off for this kind of message";
             }
-            if (Language != TextLanguages.English)
+            if (!ServiceWrites)
             {
-                return "your own AI writes English, and the game is in " + Language;
+                return "your own AI is not asked in " + Language + ": the mod cannot check a reply in it, so its written lines are kept";
             }
             if (!ServiceUp)
             {
                 return "your own AI service is " + (Service.State == TextServerState.Failed ? "stopped" : Service.Resting ? "resting after a fault" : "not ready yet");
             }
-            return TextIntents.Find(intent, branch, Newest) == null ? "no card " + intent : null;
+            TextIntent card = TextIntents.Find(intent, branch, Newest);
+            if (card == null)
+            {
+                return "no card " + intent;
+            }
+            return card.Data < TextIntents.DataV6 && Language != TextLanguages.English ? "the card " + intent + " is English only, and the game is in " + Language : null;
         }
 
         /// <summary>
@@ -551,9 +578,10 @@ namespace RealLifeOverhaul.Texts
         // The pack's own reasons, as before the AI service, with what the written line shown for it is counted as.
         private string PackWhy(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds, out TextShownWhy why)
         {
-            if (!PackUp || (Allowed != null && !Allowed(use, shared)))
+            bool off = Allowed != null && !Allowed(use, shared);
+            if (!PackUp || off || !WritesLanguage)
             {
-                why = !PackUp ? (Runner == null && Pack == NoPack ? TextShownWhy.NoPack : TextShownWhy.Failed) : Barred != null ? Barred(use, shared) : TextShownWhy.Off;
+                why = !PackUp ? (Runner == null && Pack == NoPack ? TextShownWhy.NoPack : TextShownWhy.Failed) : off ? TextShownWhy.Off : TextShownWhy.Language;
                 return why == TextShownWhy.Language ? "not asked: the pack does not write the game's language (" + Language + ")"
                     : "not asked: RLO Texts is off, has no pack or is not running";
             }
@@ -801,8 +829,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         // A request the AI service did not word (it failed, rested, or its words were refused) asked of the pack instead, in
-        // the time left to its deadline, with the pack's own card (of data v6: in the pack's language, with its grammar).
-        // False when the pack cannot take it: the written line.
+        // the time left to its deadline, with the pack's own card (of data v6: in the game's language, with its grammar).
+        // False when the pack cannot take it (none, off, too slow, or it does not write the game's language): the written line.
         private bool Fallback(int i, double now)
         {
             Waiting w = _waiting[i];
