@@ -285,6 +285,19 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextChatGpt.cs" Link="Mod\TextChatGpt.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextSignIn.cs" Link="Mod\TextSignIn.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextService.cs" Link="Mod\TextService.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextLanguages.cs" Link="Mod\TextLanguages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextSlotKinds.cs" Link="Mod\TextSlotKinds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextMemoryRules.cs" Link="Mod\TextMemoryRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextMemoryStore.cs" Link="Mod\TextMemoryStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextMemoryTopics.cs" Link="Mod\TextMemoryTopics.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextDecoding.cs" Link="Mod\TextDecoding.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextShown.cs" Link="Mod\TextShown.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextIntents.Six.cs" Link="Mod\TextIntents.Six.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextCheck.Six.cs" Link="Mod\TextCheck.Six.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextCityViews.cs" Link="Mod\TextCityViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsCityRules.cs" Link="Mod\TextsCityRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsCityStore.cs" Link="Mod\TextsCityStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsBridges.cs" Link="Mod\TextsBridges.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.cs" Link="Mod\FlareTextsMap.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.Comments.cs" Link="Mod\FlareTextsMap.Comments.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.Checks.cs" Link="Mod\FlareTextsMap.Checks.cs" />

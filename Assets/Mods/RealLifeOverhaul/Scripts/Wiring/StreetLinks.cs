@@ -84,6 +84,7 @@ namespace RealLifeOverhaul
                     f.PriceTrend = City.PriceTrend;
                     f.RateMove = City.RateMove;
                     f.EventToday = City.EventToday != null ? City.EventToday.GetLocalization() : null;
+                    f.EventWords = City.EventToday != null ? Texts.TextWords.EventWords(City.EventToday) : null;   // (RLO Texts' card: English in every language)
                     f.NewsDistrict = City.NewsDistrict != null ? Districts.DistrictGame.Name(City.NewsDistrict) : null;
                 }
                 catch (Exception e)

@@ -12,13 +12,14 @@ namespace RealLifeOverhaul.Texts
     public sealed class TextPack
     {
         public string Folder;
-        public string Name;          // "RLO Texts", "RLO Texts Medium", "RLO Texts Lite"
+        public string Name;          // "RLO Texts", "RLO Texts Medium", "RLO Texts Lite", "RLO Texts Large"
         public string Model;         // the .gguf, full path
         public string Exe;           // llama-server.exe, full path
-        public int Rank;             // the better model the higher: the pack's tier (Lite 1, Medium 2, the full pack 3)
+        public int Rank;             // the better model the higher: the pack's tier (Lite 1, Medium 2, the full pack 3, Large 4)
         public int Version;
         public int Data = TextIntents.DataV2;   // the training data its model learnt ("data=3"); a pack.txt without the line is v2's
         public long ModelBytes;
+        public string[] Languages = { TextLanguages.English };   // the languages it was trained and passed in ("languages=en,pt,zh-cn"): English alone without the line
     }
 
     /// <summary>A device llama.cpp can run on, as its --list-devices says it.</summary>
@@ -30,10 +31,13 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// Finding a pack and choosing where it runs. A pack is a folder with a pack.txt (name, model, exe, rank, tier, version and
-    /// data, each "key=value" on a line; paths relative to the folder). Data is the version of the training data its model
+    /// Finding a pack and choosing where it runs. A pack is a folder with a pack.txt (name, model, exe, rank, tier, version,
+    /// data and languages, each "key=value" on a line; paths relative to the folder). Data is the version of the training data its model
     /// learnt: 2 for the first packs (no data line), 3 for the retrained ones; the mod asks a pack only the intents of its
-    /// data version or older (TextIntent.Data, TextsHub.Data), so a v2 pack is never asked what it never learnt. The mod
+    /// data version or older (TextIntent.Data, TextsHub.Data), so a v2 pack is never asked what it never learnt. Languages
+    /// are the ones a pack of data 6 was trained and passed in (TextLanguages.Parse; English alone without the line). The
+    /// fourth pack, RLO Texts Large (tier <see cref="LargeTier"/>, a model of 4B to 9B), runs only on a graphics card that
+    /// has the memory for it and proves fast enough (<see cref="Pick"/>, TextSpeed.LargeFits and LargeTooSlow). The mod
     /// looks, once a session:
     ///
     ///   the fixed folder   "RLO Texts" in the game's own data folder (LocalLow/Hovgaard Games/Big Ambitions), a pack
@@ -59,10 +63,11 @@ namespace RealLifeOverhaul.Texts
         public const string Announced = "RealLifeOverhaul.TextPacks";   // the process's data slot the pack's mod writes its folder into ('|' between several)
         public const int SpareMiB = 1024;               // a GPU is ample with twice the model and this much more free
         public const int RankMost = 2;                  // the "rank" line's most, as RLO before 0.29.1 reads it (Lite 1; Medium and the full pack 2): none may claim more
-        public const int TierMost = 3;                  // the "tier" line's most (Lite 1, Medium 2, the full pack 3): none may claim more
+        public const int TierMost = 4;                  // the "tier" line's most (Lite 1, Medium 2, the full pack 3, Large 4): none may claim more
+        public const int LargeTier = 4;                 // RLO Texts Large: an RLO before data v6 (its most tier 3) takes it for no pack and never runs it
 
         /// <summary>
-        /// A pack's place among RLO's packs from its pack.txt: the "tier" line (1 Lite, 2 Medium, 3 the full pack) when
+        /// A pack's place among RLO's packs from its pack.txt: the "tier" line (1 Lite, 2 Medium, 3 the full pack, 4 Large) when
         /// there is one, else the "rank" line as the first packs wrote it (1 Lite, 2 the full pack, so 3); 0 when neither
         /// is one RLO knows (not a pack). The packs keep a "rank" of 1 or 2 beside their tier because RLO before 0.29.1
         /// refuses a rank above 2: it orders them by rank then version, so the full pack (rank 2, the newer version) still
@@ -78,19 +83,27 @@ namespace RealLifeOverhaul.Texts
             {
                 return tier >= 1 && tier <= TierMost ? tier : 0;
             }
-            return !hasRank ? 0 : rank == RankMost ? TierMost : rank;
+            return !hasRank ? 0 : rank == RankMost ? FullTier : rank;   // (a pack of before the tier line: the full pack at most, never Large)
         }
 
+        public const int FullTier = 3;                  // the full pack, RLO Texts: what a rank of 2 without a tier line is
+
         /// <summary>
-        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite, RLO Texts Medium), by their item ids. Only these
-        /// Workshop folders are ever looked in; an empty id is skipped (<see cref="WorkshopPacks"/>).
+        /// RLO's own pack items on the Workshop (RLO Texts, RLO Texts Lite, RLO Texts Medium, RLO Texts Large), by their item
+        /// ids. Only these Workshop folders are ever looked in; an empty id is skipped (<see cref="WorkshopPacks"/>). Large's is
+        /// empty until it is published, which is the maintainer's call: until then it is found only in the fixed folder or
+        /// ModsLocal, and never offered (TextSpeed.OfferLarge).
         /// </summary>
         public static readonly string[] WorkshopItems =
         {
             "3820711613",   // RLO Texts
             "3820712020",   // RLO Texts Lite
-            "3820776564"    // RLO Texts Medium
+            "3820776564",   // RLO Texts Medium
+            ""              // RLO Texts Large: not published yet
         };
+
+        /// <summary>True once RLO Texts Large has its Workshop id (it is published): only then is it offered.</summary>
+        public static bool LargePublished => !string.IsNullOrEmpty(WorkshopItems[3]) && IsDigits(WorkshopItems[3]);
 
         /// <summary>The folders of RLO's own pack items under the game's Workshop content folder (none while their ids are empty).</summary>
         public static List<string> WorkshopPacks(string workshopContent, string[] items)
@@ -212,6 +225,7 @@ namespace RealLifeOverhaul.Texts
                     case "tier": hasTier = true; int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out tier); break;
                     case "version": int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out pack.Version); break;
                     case "data": pack.Data = int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int data) && data >= TextIntents.DataV2 ? data : TextIntents.DataV2; break;
+                    case "languages": pack.Languages = TextLanguages.Parse(value); break;
                 }
             }
             pack.Rank = Tier(rank, tier, hasRank, hasTier);
@@ -396,6 +410,60 @@ namespace RealLifeOverhaul.Texts
                 }
             }
             return choice == 2 || Ample(best.FreeMiB, modelBytes) ? best.Name : null;
+        }
+
+        /// <summary>The graphics card of these devices with the most free memory (never graphics built into the processor); false with none.</summary>
+        public static bool Card(List<TextDevice> devices, out TextDevice card)
+        {
+            card = default(TextDevice);
+            bool found = false;
+            for (int i = 0; devices != null && i < devices.Count; i++)
+            {
+                if (!BuiltIn(devices[i].Label) && (!found || devices[i].FreeMiB > card.FreeMiB))
+                {
+                    card = devices[i];
+                    found = true;
+                }
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// The pack to run, of those whose runtime is llama.cpp's own, the best first: the first, but RLO Texts Large only
+        /// where it may run (and else the next): the device option not the processor (<paramref name="choice"/> 1), a graphics
+        /// card with the free memory for it (TextSpeed.LargeFits), and not found too slow on that card before
+        /// (<paramref name="largeSlow"/>: the card's name it was found too slow on, or null). <paramref name="why"/> says why
+        /// Large was passed over; null when it was not. Null with no pack.
+        /// </summary>
+        public static TextPack Pick(List<TextPack> verified, List<TextDevice> devices, int choice, string largeSlow, out string why)
+        {
+            why = null;
+            for (int i = 0; verified != null && i < verified.Count; i++)
+            {
+                TextPack p = verified[i];
+                if (p.Rank != LargeTier)
+                {
+                    return p;
+                }
+                if (choice == 1)
+                {
+                    why = why ?? "RLO Texts Large is not run on the processor (the option says the processor)";
+                    continue;
+                }
+                if (!Card(devices, out TextDevice card) || !TextSpeed.LargeFits(card, p.ModelBytes))
+                {
+                    why = why ?? "RLO Texts Large needs a graphics card with " + (p.ModelBytes / (1024 * 1024) * 2 + SpareMiB) + " MB free; "
+                          + (Card(devices, out TextDevice some) ? some.Label + " has " + some.FreeMiB + " MB" : "there is none");
+                    continue;
+                }
+                if (largeSlow != null && largeSlow == card.Label)
+                {
+                    why = why ?? "RLO Texts Large was too slow on " + card.Label + " before";
+                    continue;
+                }
+                return p;
+            }
+            return null;
         }
 
         /// <summary>Asks llama.cpp for its devices (a few seconds at most, once a session, off the game's thread).</summary>

@@ -40,6 +40,12 @@ namespace RealLifeOverhaul.Texts
         /// <summary>A friend's stage (SocialStage Acquaintance to CloseFriend) as the card's role starts.</summary>
         public static readonly string[] Stages = { "an acquaintance", "an acquaintance", "a friend", "a close friend" };
 
+        /// <summary>The partner's role on a card by the bond (Wiring/TextsPhone): dating, living together, engaged, married.</summary>
+        public static readonly string[] PartnerRoles = { "dating you", "your partner, living with you", "engaged to you", "married to you" };
+
+        /// <summary>What the partner's role adds while a baby is on the way.</summary>
+        public const string Expecting = ", expecting a baby";
+
         public static readonly string[] Weekdays = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 
         /// <summary>Small things of a friend's day, nice and annoying (world.HAPPENINGS_GOOD and _BAD): a small-talk card's one fact.</summary>
@@ -199,5 +205,67 @@ namespace RealLifeOverhaul.Texts
         private static string Two(int n) => n < 10 ? "0" + n : n.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         private static int Clamp(int v, int least, int most) => v < least ? least : v > most ? most : v;
+
+        // ---------------------------------------------------------------- data v6: the card's English words of what the game shows in the player's language
+
+        /// <summary>The kinds of place street talk is asked the way to, by StreetPlace (the English of Street/StreetLines.Whats' keys).</summary>
+        public static readonly string[] StreetWhats = { "a cafe", "a restaurant", "a bar", "a supermarket", "a clothes shop", "a gym", "a cinema", "a bank" };
+
+        /// <summary>Which way, by StreetRules.Way (the English of StreetLines.Ways' keys).</summary>
+        public static readonly string[] StreetWays = { "straight ahead", "off to your right", "back the way you came", "off to your left" };
+
+        /// <summary>A walk of so many minutes, as street talk's card says it ("a minute", "5 minutes").</summary>
+        public static string Walk(int minutes) => minutes == 1 ? "a minute" : minutes.ToString(System.Globalization.CultureInfo.InvariantCulture) + " minutes";
+
+        /// <summary>The street events' locale keys (Events/EventCalendar.Name) and their English words on a card.</summary>
+        public static readonly string[] StreetEvents =
+        {
+            "reallife_event_name_market", "Street market", "reallife_event_name_farmers", "Farmers' market", "reallife_event_name_parade", "Parade",
+            "reallife_event_name_protest", "Protest", "reallife_event_name_run", "Charity fun run", "reallife_event_name_film", "Film shoot",
+            "reallife_event_name_fireworks", "Fireworks"
+        };
+
+        /// <summary>A street event's English words by its locale key; null for another key.</summary>
+        public static string EventWords(string key)
+        {
+            for (int i = 0; key != null && i + 1 < StreetEvents.Length; i += 2)
+            {
+                if (StreetEvents[i] == key)
+                {
+                    return StreetEvents[i + 1];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The game's skills (their names in the game) and the job a card calls one of the player's staff by.</summary>
+        public static readonly string[] StaffJobs =
+        {
+            "ba:skill_customerservice", "shop assistant", "ba:skill_cleaning", "cleaner", "ba:skill_lawyer", "lawyer", "ba:skill_negotiation", "purchasing agent",
+            "ba:skill_logisticsmanager", "logistics manager", "ba:skill_deliverydriver", "delivery driver", "ba:skill_programmer", "programmer",
+            "ba:skill_hrmanager", "HR manager", "ba:skill_graphicdesigner", "graphic designer", "ba:skill_securityguard", "security guard", "ba:skill_headhunter", "headhunter"
+        };
+
+        /// <summary>The job a card calls one of the staff by, from their main skill's name; "member of staff" for one this table does not know.</summary>
+        public static string StaffJob(string skill)
+        {
+            for (int i = 0; skill != null && i + 1 < StaffJobs.Length; i += 2)
+            {
+                if (StaffJobs[i] == skill)
+                {
+                    return StaffJobs[i + 1];
+                }
+            }
+            return "member of staff";
+        }
+
+        /// <summary>The ways of writing of the player's staff (the contract lists them).</summary>
+        public static readonly string[] StaffStyles = { "polite", "warm", "brief", "nervous", "matter of fact", "cheerful" };
+
+        /// <summary>One of the player's staff's way of writing, from their own seed.</summary>
+        public static string StaffStyle(int seed) => StaffStyles[Roll(seed, 1, StaffStyles.Length)];
+
+        /// <summary>A review's word for one of the game's satisfaction figures (0 to 100): very good, good, fair or poor.</summary>
+        public static string Rating(int figure) => figure >= 75 ? "very good" : figure >= 55 ? "good" : figure >= 35 ? "fair" : "poor";
     }
 }

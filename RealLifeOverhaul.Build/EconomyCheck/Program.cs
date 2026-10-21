@@ -82,6 +82,10 @@ internal static partial class Program
         {
             return PretendLlama(args);   // (started by TextServer as a pretend llama-server: TextsStartChecks.cs)
         }
+        if (args.Length == 2 && args[0] == "--texts-spec")
+        {
+            return WriteTextsSpec(args[1]);   // (RLO Texts' contract of data v6 and its fixtures, written from the mod: TextsSpecWriter.cs)
+        }
         Catalogue();
         Start();
         CleanHistory();
@@ -152,6 +156,13 @@ internal static partial class Program
         Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
         TextsService();   // Your own AI: the services, each request and answer, faults and rests, the runner, the hub's fallback, Going Public, Sign in with ChatGPT end to end, the web client, the sealed keys, no secret in a log or a save (TextsServiceChecks.cs)
         TextsSpoken();    // a spoken line with your own AI: the wait for it, the pack in the end of the wait, a guess waited for, the first words, the stream read to its last word, the log naming the source (TextsSpokenChecks.cs)
+        TextsSix();   // RLO Texts' contract of data v6: the fixtures are the mod's cards now, built by the mod and rendered from the spec alone, its shape, seven languages, older packs untouched (TextsSixChecks.cs)
+        TextsLanguagesSix();   // RLO Texts in every language of the mod: the seven, a pack's languages, the length and tokens by script, the checker in each, the hub, Going Public's shared text (TextsLanguageChecks.cs)
+        TextsDecodingSix();    // RLO Texts' requests of data v6: the grammars read and tried, the tokens, the name kept out, the bodies, the hub's job (TextsDecodingChecks.cs)
+        TextsShownSix();       // what RLO Texts showed: the model's words against the written lines and why, by pack and intent, the hourly line, the hub counting every way (TextsShownChecks.cs)
+        TextsMemorySix();      // what people remember: the lines, a card's choice the same in any order, whose keys, the save, caps and pruning, the topics (TextsMemoryChecks.cs)
+        TextsCitySix();        // the city's new talk: the staff, life events, who texts, gossip, reviews, every written line, the save, RLO Texts Large, the sources (TextsCityChecks.cs)
+        TextsServiceSix();     // your own AI beside data v6: the English card finished as a pack's, a game in another language left to the pack, the pack's own card after a miss; Dutch and Turkish keep their written lines (TextsServiceSixChecks.cs)
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
         ComposerChecks();   // a call's composer: the two answers without a pack, typed words worth the warm answer a day as before, the model's words read by no rule, cleaned (ComposerChecks.cs)
         TypedReadingChecks();   // what an answer typed on a call says, in every language, and what it gets back: never a sorry to good news (TypedReadingChecks.cs)
