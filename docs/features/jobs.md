@@ -269,7 +269,7 @@ Shared by all:
 
 - **Flyers.** Canvasser uniform; the panel follows the passer-by in reach with "Offer a flyer", and stands over the player with "Let time pass" when nobody is in reach (10 game minutes a flyer, 85%, no busy bonus, no bundle bonus).
 - **Cleaner.** Cleaner uniform; "Go in" over the door, "Mop it up" and "Let time pass" over each spill in reach (30 game minutes a spill, 85%).
-- **Shelf stocker.** No uniform (the game has no shop assistant's outfit); "Pick up" and "Let time pass" over the pile, "Go in" over the door, "Put on the shelf" over the shelf (40 game minutes a box, 85%).
+- **Shelf stocker.** No uniform (the game has no shop assistant's outfit); "Pick up" and "Let time pass" over the pile, "Go in" over the door. "Shelf to stock" appears over the chosen shelf as soon as the box is carried in; "Put on the shelf" is enabled only within 1.3 metres, checked again when pressed (40 game minutes a box, 85%). Like the other job panels, it stands over the player while its place is behind the camera. Stepping outside clears the shelf marker before the street guider is used.
 - **Busker.** `JobStand` on the pitch (the guitar pose when the clip bundle has the strumming clip).
   The three songs, "Strum" and "More" (which has "Step away" and "Let time pass") are the panel's buttons.
   30 game minutes a song at 85% of `BuskerJob.AverageTip`, the song's own tip formula for the crowd and hour now, the middle song and `AveragePlay` of the strums in time; no uniform.

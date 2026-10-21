@@ -61,6 +61,12 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--stocker")
+        {
+            StockerFixes();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--client-hours")
         {
             ClientHours();
@@ -222,6 +228,7 @@ internal static partial class Program
         Apps();         // the apps' clicks: a table written as it scrolls, the Ledger's pages kept, a photo's small copy made a row at a time (AppsChecks.cs)
         CartQueue();
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
+        StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         Work();
         Desks();
         SetOff();       // a class's desk, the work desk and the computer at home: set off as the game's activities, stood up whatever fails, the keys (SetOffChecks.cs)

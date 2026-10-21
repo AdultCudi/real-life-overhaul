@@ -302,6 +302,7 @@ namespace RealLifeOverhaul
         {
             if (!inside)
             {
+                Unmark();
                 _step = Step.CarryIn;   // stepped back out with the box
                 _hint = -1;
                 return;
@@ -314,7 +315,8 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _nextTry = now + 1f;
-                if (!JobSites.ShelfSpot(Ctx.Player.transform.position, _shelves, Mathf.Min(_hand, MaxBoxes), _tries < 2 ? ShelvesApart : 0f, out _shelfStand, out _shelfAt))
+                if (!JobSites.ShelfSpot(Ctx.Player.transform.position, _shelves, Mathf.Min(_hand, MaxBoxes), _tries < 2 ? ShelvesApart : 0f,
+                        out _shelfStand, out _shelfAt, out string shelfName))
                 {
                     if (++_tries >= 5)
                     {
@@ -324,13 +326,16 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _hasShelf = true;
+                if (Meta.Dev.Verbose)
+                {
+                    Ctx.Logger?.Info("Jobs: stocker: shelf chosen '" + shelfName + "'; its standing point is "
+                                     + JobSpots.Flat(Ctx.Player.transform.position, _shelfStand).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " m from the player.");
+                }
                 Hint(2);
             }
             Mark(_shelfStand, _shelfLabel);
-            if (JobSpots.Flat(Ctx.Player.transform.position, _shelfStand) < ShelfReach)
-            {
-                Up(_panelShelf, ButtonStock, true, false, new Vector3(_shelfAt.x, _shelfStand.y + PanelUp, _shelfAt.z));
-            }
+            Up(_panelShelf, ButtonStock, JobSpots.Flat(Ctx.Player.transform.position, _shelfStand) < ShelfReach, false,
+                new Vector3(_shelfAt.x, _shelfStand.y + PanelUp, _shelfAt.z));
         }
 
         private void Act(string action)
@@ -364,7 +369,8 @@ namespace RealLifeOverhaul
                 _step = Step.CarryIn;
                 _hint = -1;
             }
-            else if (ReferenceEquals(action, ButtonStock) && _step == Step.ToShelf && _hasShelf)
+            else if (ReferenceEquals(action, ButtonStock) && _step == Step.ToShelf && _hasShelf
+                     && JobSites.Inside(_client) && JobSpots.Flat(Ctx.Player.transform.position, _shelfStand) < ShelfReach)
             {
                 _carry.Take();   // out of the arms: its contents go on the shelf, the box beside it
                 Ctx.TurnPlayer(_shelfAt);
