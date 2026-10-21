@@ -92,6 +92,11 @@ namespace RealLifeOverhaul
         public int LoanDue;          // negative once they have made their one excuse
         public int BirthdayYear = -1;   // the year (day / days per year) in which the player last remembered it
         public string Look;          // the look they had when met in the street (People/PersonLook's text); null: the seed's
+        public int FollowedAt = -1;  // game minute of their text a call back last opened on (SocialFollowRules): never twice; -1 none yet
+        public int AfterDay;         // the game day of an outing with them still to be texted about the day after (SocialFollowRules.NextDay); 0 none
+        public PlanKind AfterKind;   // ...what it was
+        public bool AfterWell;       // ...whether it went well
+        public string AfterPlace;    // ...where it was, as it was agreed; null if not known
         public readonly List<SocialMemory> Memories = new List<SocialMemory>(MaxMemories);
 
         public bool Has(SocialTrait trait) => (Traits & trait) != 0;

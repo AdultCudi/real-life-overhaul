@@ -8,7 +8,9 @@ namespace RealLifeOverhaul.Texts
     /// (TextMemoryStore, the save's "reallife:texts_memory"), and the store of the city's new talk (TextsCityStore,
     /// "reallife:texts_city"), each read with the save and written at every save only once a data 6 pack ran or it
     /// changed, so that a save played without one keeps its lines as they were. Facts are remembered only while a pack
-    /// of data 6 runs (<see cref="Six"/>): nothing is recorded, and no card carries memory, below it.
+    /// of data 6 runs (<see cref="Six"/>): nothing is recorded, and no card carries memory, below it. The player's life
+    /// events are noted with RLO Texts on, a pack or not (<see cref="Heard"/>, TextsDirector.City): the people of the
+    /// player's life text about them in either case, in the pack's words or their written lines.
     /// COST: nothing per frame; a dictionary's few facts when one is remembered or a card is built.
     /// </summary>
     public sealed partial class TextsDirector
@@ -54,10 +56,13 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>A life event of the player's the city hears of (a crash, an arrest: Wiring/TextsLinks from the paper's log), kept for the life's texts and gossip.</summary>
+        /// <summary>
+        /// A life event of the player's the city hears of (a crash, an arrest: Wiring/TextsLinks from the paper's log), kept for
+        /// the life's texts (a pack or not) and gossip (a pack of data 6).
+        /// </summary>
         public static void Heard(string kind, string value)
         {
-            if (!Six || kind == null)
+            if (!Settings.Texts || kind == null)
             {
                 return;
             }
@@ -122,14 +127,12 @@ namespace RealLifeOverhaul.Texts
             _memoryOk = _cityOk = _cityChanged = false;
         }
 
-        // Once a game day: facts past their lifetime and strangers past their day, events past theirs, and the marks of staff gone.
+        // Once a game day: facts past their lifetime and strangers past their day (with a pack of data 6: below it nothing is
+        // remembered, and its line is kept as it was), events past theirs and the marks of staff gone (always: the life's
+        // texts note events without a pack too).
         private static void PruneMemory(int day)
         {
-            if (!Six)
-            {
-                return;
-            }
-            int gone = MemoryStore.Prune(day);
+            int gone = Six ? MemoryStore.Prune(day) : 0;
             int city = CityStore.Prune(day);
             _cityChanged |= city > 0;
             if (Meta.Dev.Verbose && (gone > 0 || city > 0))

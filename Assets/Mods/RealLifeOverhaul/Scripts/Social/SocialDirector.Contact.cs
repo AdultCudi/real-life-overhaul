@@ -5,7 +5,10 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>The social director's part for who gets in touch, each hour, and the round of the day.</summary>
+    /// <summary>
+    /// The social director's part for who gets in touch, each hour, and the round of the day: the player's own news first, then
+    /// yesterday's outing (SocialFollowRules.NextDay), then the hour's chance of an invitation, a favour or their news.
+    /// </summary>
     public sealed partial class SocialDirector
     {
         private static readonly float[] WealthTiers = { 10000f, 50000f, 250000f, 1000000f, 5000000f };   // money they react to
@@ -74,6 +77,11 @@ namespace RealLifeOverhaul
                     SocialLife.SendText(who, SocialLines.Pick(SocialCatalogue.TextBreakIn), SocialLife.Data(who, "shop", shop ?? SocialLife.T("reallife_social_your_shop")));
                     return;
                 }
+            }
+            // Then yesterday's outing, as it went.
+            if (NextDayText(day, hour))
+            {
+                return;
             }
             if (Random.value > 0.09f + 0.02f * SocialState.MetCount)
             {
@@ -147,6 +155,48 @@ namespace RealLifeOverhaul
         private static float Keenness(SocialPerson p)
         {
             return 1f + p.Closeness / 25f + (p.Together ? 3f : 0f);
+        }
+
+        // The day after an outing, one of them texts about how it went (SocialFollowRules.NextDay): Mom's, the partner's after a
+        // date or a friend's line, good or bad, through the social life's own texts (its switch, the day's cap, the quiet hours
+        // and one a person a day; a text from any feature today counts). One an hour at most; true when one was sent.
+        private static bool NextDayText(int day, int hour)
+        {
+            for (int i = 0; i < SocialRules.CastSize; i++)
+            {
+                SocialPerson p = SocialState.Get(i);
+                if (p == null || !p.Met || p.AfterDay <= 0)
+                {
+                    continue;
+                }
+                int lastText = Mathf.Max(p.LastTextDay, SocialPhone.LastTextDay(p));
+                SocialFollowRules.NextDayStep step = SocialFollowRules.NextDay(p.AfterDay, day, hour, p.Asleep(hour), lastText, p.LastContactDay);
+                if (step == SocialFollowRules.NextDayStep.LetGo)
+                {
+                    p.AfterDay = 0;
+                    continue;
+                }
+                if (step != SocialFollowRules.NextDayStep.Text)
+                {
+                    continue;
+                }
+                Dictionary<string, string> data = SocialLife.Data(p);
+                data["t_place"] = p.AfterPlace ?? string.Empty;   // (for RLO Texts' card of a friend's good one: friend.thanks)
+                data["t_kind"] = p.AfterKind.ToString();
+                string key = SocialFollowRules.Line(SocialFollowRules.NextDayLines(p.IsFamily, p.Together, p.AfterWell), day, p.Seed);
+                bool sent = SocialLife.SendText(p, key, data);
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Social check (the day after): " + p.Name + "'s " + p.AfterKind + " of day " + p.AfterDay + (p.AfterWell ? " went well" : " went badly") + "; on day " + day
+                                 + " at " + hour + ":00 " + (sent ? "they text " + key + ": PASS" : "the text could not go now (the day's cap, the switch or one a person a day): PASS"));
+                }
+                if (sent)
+                {
+                    p.AfterDay = 0;
+                    return true;
+                }
+            }
+            return false;
         }
 
         // Only what they have a free hour for in the days ahead (the call that answers it looks again, PersonDialog.Asked).
@@ -239,6 +289,10 @@ namespace RealLifeOverhaul
                 if (p == null || !p.Met)
                 {
                     continue;
+                }
+                if (p.AfterDay > 0 && day > p.AfterDay + 1)
+                {
+                    p.AfterDay = 0;   // (an outing nobody could text about the day after: let go)
                 }
                 // Mostly fine, now and then rough or grand; a birthday is a good day.
                 float roll = Random.value;

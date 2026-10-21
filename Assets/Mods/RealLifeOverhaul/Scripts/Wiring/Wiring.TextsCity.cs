@@ -176,10 +176,13 @@ namespace RealLifeOverhaul
                         {
                             continue;
                         }
+                        // The day they last texted, whichever feature sent it (Mom's news from the family is not the social life's own
+                        // text): so one who has texted today is not the one who texts again about the same news.
+                        int lastText = p.Met ? Math.Max(p.LastTextDay, SocialPhone.LastTextDay(p)) : p.LastTextDay;
                         into.Add(new TextPerson
                         {
                             Index = p.Index, First = SocialLife.First(p), Seed = p.Seed, Stage = (int)p.Stage, Together = p.Together, Family = p.IsFamily, Met = p.Met,
-                            Drifted = p.Drifted, Asleep = p.Asleep(hour), District = p.District, Origin = (int)p.Origin, LastTextDay = p.LastTextDay, Closeness = p.Closeness
+                            Drifted = p.Drifted, Asleep = p.Asleep(hour), District = p.District, Origin = (int)p.Origin, LastTextDay = lastText, Closeness = p.Closeness
                         });
                     }
                 }

@@ -10,7 +10,8 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// A call to or from somebody the player knows: a chat, plans, what they asked, and the other things to say. A chat's
-    /// topic is answered with one of two answers, or with the player's own typed words (PersonDialog.Composer).
+    /// topic is answered with one of two answers, or with the player's own typed words (PersonDialog.Composer). A call to
+    /// somebody who just texted opens on what they wrote about, as its first topic (PersonDialog.CallBack).
     /// </summary>
     public sealed partial class PersonDialog : Dialog
     {
@@ -93,6 +94,11 @@ namespace RealLifeOverhaul
 
         private DialogEntry Root()
         {
+            DialogEntry callBack = CallBack();
+            if (callBack != null)
+            {
+                return callBack;   // (what they just texted about, as the call's first topic: PersonDialog.CallBack)
+            }
             string[] pool = _p.Drifted ? SocialCatalogue.CallDrifted
                 : _p.LastCallDay == SocialLife.Day ? SocialCatalogue.CallAgain
                 : _p.IsFamily ? SocialCatalogue.CallMom

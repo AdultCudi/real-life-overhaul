@@ -289,7 +289,9 @@ namespace RealLifeOverhaul
                     {
                         if (ReferenceEquals(save, SaveGameManager.Current))
                         {
-                            send(words != null ? SocialLinks.WordsKey : key, words != null ? new Dictionary<string, string>(1) { { "text", words } } : data);
+                            // The words keep the written line's key they stand for, so a call back knows what the text was about (SocialFollowRules.KeyField).
+                            send(words != null ? SocialLinks.WordsKey : key,
+                                words != null ? new Dictionary<string, string>(2) { { "text", words }, { SocialFollowRules.KeyField, key } } : data);
                         }
                     }
                 };

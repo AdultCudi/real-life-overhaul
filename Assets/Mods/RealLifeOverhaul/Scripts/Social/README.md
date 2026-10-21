@@ -8,6 +8,7 @@ The people in the player's life, outings with them, texts and calls, and the mor
 - `SocialModel.cs`: the records and the rules (game-free).
 - `SocialCatalogue.cs`: names, outings and every line (game-free).
 - `News.cs`: the log any feature reports to, and the paper.
+- `SocialFollowRules.cs` and `SocialFollowCatalogue.cs`: a call back opens on what the person just texted about, read from their thread; the text the day after an outing (game-free).
 
 ## Documentation
 

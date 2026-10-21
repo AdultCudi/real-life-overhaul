@@ -98,6 +98,81 @@ namespace RealLifeOverhaul
             return Add(person, false);
         }
 
+        /// <summary>
+        /// A person's thread as the game keeps it (Contact.messagesQueue, its twenty newest), oldest first, as a call back reads
+        /// it (SocialFollowRules): each message's written line's key (RLO Texts' words: the key they stand for), values, game
+        /// minute and whether the player wrote it. Every text of theirs is here, whichever feature sent it. Never makes the
+        /// contact: one the player deleted has no thread. COST: a pass over the save's contacts and one thread; the list's
+        /// slots and nothing else (the queue's own enumerator is a struct).
+        /// </summary>
+        public static void Thread(SocialPerson person, List<SocialThreadLine> into)
+        {
+            into.Clear();
+            Contact contact = Existing(person);
+            Queue<TextMessage> messages = contact != null ? contact.messagesQueue : null;
+            if (messages == null)
+            {
+                return;
+            }
+            foreach (TextMessage m in messages)
+            {
+                if (m != null && m.timestamp != null)
+                {
+                    into.Add(new SocialThreadLine(SocialFollowRules.KeyOf(m.messageKey, m.messageData), m.messageData, (int)m.timestamp.GetTotalMinutes(), m.isFromPlayer));
+                }
+            }
+        }
+
+        private static readonly List<SocialThreadLine> Scratch = new List<SocialThreadLine>(Contact.MaxMessages);
+
+        /// <summary>
+        /// The game day of the newest text a person sent, from any feature (the family's and life's texts are not the social
+        /// life's own, so its LastTextDay does not have them); -1 for none. COST: as <see cref="Thread"/>.
+        /// </summary>
+        public static int LastTextDay(SocialPerson person)
+        {
+            Thread(person, Scratch);
+            int day = -1;
+            for (int i = Scratch.Count - 1; i >= 0; i--)
+            {
+                if (!Scratch[i].Player && Scratch[i].Key != null)
+                {
+                    day = SocialFollowRules.DayOf(Scratch[i].Minute);
+                    break;
+                }
+            }
+            Scratch.Clear();
+            return day;
+        }
+
+        // The contact of somebody met as the save has it, never made anew (ContactOf makes one again): by its id and the
+        // description the social life gives it, else the first of that id (the game keeps no description in a save).
+        private static Contact Existing(SocialPerson person)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (person == null || !person.Met || save == null || save.Contacts == null)
+            {
+                return null;
+            }
+            string id = IdOf(person), description = SocialCatalogue.OriginDesc[(int)person.Origin];
+            Contact first = null;
+            List<Contact> all = save.Contacts;
+            for (int i = 0; i < all.Count; i++)
+            {
+                Contact c = all[i];
+                if (c == null || c.id != id)
+                {
+                    continue;
+                }
+                if (c.description == description)
+                {
+                    return c;
+                }
+                first = first ?? c;
+            }
+            return first;
+        }
+
         /// <summary>Callable, with the first message of their thread if it is empty.</summary>
         public static Contact Add(SocialPerson person, bool welcome)
         {

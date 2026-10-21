@@ -21,7 +21,8 @@ Eight people the player knows (Mom, an old friend and six met in the street), th
 | `SocialScene` | the base of a scene: talking face to face, walking off |
 | `MeetScene` | somebody walks up |
 | `OutingScene` | a plan kept, with parts `.Meeting` (getting there, hello), `.Walk`, `.Ride`, `.Boxes` (helping them move) and `.After` |
-| `PersonDialog` | the call to or from a person; its part `.Composer` (a topic answered in the player's own typed words) |
+| `PersonDialog` | the call to or from a person; its parts `.Composer` (a topic answered in the player's own typed words) and `.CallBack` (a call back opens on what they just texted) |
+| `SocialFollowRules`, `SocialFollowCatalogue` | a call back: which text it opens on, the subject of every text that reaches a person's thread, its line and answers; the day after an outing: game-free |
 | `SocialComposerRules` | when a call's topic is typed, what typed words are worth, what they say (its parts `.Reading` and `.Words`: the words of all nine languages) and what that gets back, which lines go on RLO Texts' card: game-free |
 | `SceneDialog` | the conversation in the street; SceneTalk |
 | `PeopleDialog` | the People page |
@@ -204,13 +205,26 @@ On a call, with an RLO Texts pack that can answer this person now and "Type your
 
 What the next pack would need for Mom, and for a call of its own, is said in [RLO Texts' notes below](#what-a-later-pack-could-add-to-calls).
 
-They get in touch themselves (`SocialDirector.Hourly`: each waking hour a chance of 9 % plus 2 % per person known): an invitation, a favour (a lift, a loan repaid or excused in five to nine days, help moving), news of their day, an introduction, or a reaction to the player's crash, break-in, arrest or wealth (10 k, 50 k, 250 k, 1 M, 5 M: the supportive are pleased, the envious are not).
+They get in touch themselves (`SocialDirector.Hourly`: each waking hour a chance of 9 % plus 2 % per person known): an invitation, a favour (a lift, a loan repaid or excused in five to nine days, help moving), news of their day, an introduction, or a reaction to the player's crash, break-in, arrest or wealth (10 k, 50 k, 250 k, 1 M, 5 M: the supportive are pleased, the envious are not). Before the hour's chance, the day after an outing with them they text about how it went (see below). With RLO Texts on, a pack or not, the partner, Mom or a close friend also texts after the player's own big news (a new business, a graduation, a wedding, a baby, the company listed, a court case, a big win or loss: `Texts/TextsDirector.City`), through these same texts and their limits, and whoever texted today, from any feature, is not the one asked.
 
 Texts are the game's own: a `TextMessage` in that contact's thread, with the game's "new message" notification.
 Never more than "Most texts in a day" (3) from everybody together, one a person a day, none from 22:00 to 08:00, none at all with the switch off (what must be said, such as a plan called off, is then a notification).
 
 Somebody close may ring instead: a prompt for 22 s, the interaction key answers, and the call opens in the contacts app with what they rang about.
 An invitation or favour is answered by calling them.
+
+### Calling back after a text (`PersonDialog.CallBack`)
+
+When somebody texts and the player rings them back, the call opens on what they wrote about, whichever feature sent the text:
+
+- The record is their own thread in the game's phone (`SocialPhone.Thread`, the game's `Contact.messagesQueue`): every text a person of the social life gets lands there, the social life's own, RLO Texts' news and gossip it sends, the family's (Mom, the partner, the old friend's wedding invitation), life's little moments (`reallife_ev_fr*`, `fm*`) and travel's (a nudge to take a break, a souvenir's thanks), each with its written line's key, its values and its time. When RLO Texts worded a text, its message keeps the written line's key beside the words (`t_key`, set in `Wiring/TextsPhone`), so its subject is known too. One choke point, read once a call, and no feature needs a bridge for it.
+- The subject (`SocialFollowCatalogue.Of`): of the newest of their texts that has one. Every text the four features can send has a subject but a welcome, an invitation or a favour asked (the call answers those already), plans and where somebody is waiting, a break-up, their own birthday (the call wishes it), the waters breaking, the partner's asks and wishes (talked over at home), the partner's answer to the player's own text about a new home, and the family's own contact's and the in-laws'. Each subject has a line of theirs that refers to it ("Did you get my message about the garage door? Your father still says he can fix it.") and two answers of a kind: one of the twenty topics' where they fit (the crash, the arrest, a bad day...), or a kind of its own (`reallife_social_follow_<kind>_a`, `_b`, `_ra`, `_rb`).
+- When (`SocialFollowRules.Pick`): on the day the text came or the next game day, and only a text newer than the last one a call opened on. The person keeps that text's game minute (`SocialPerson.FollowedAt`, saved), so it is spent once shown: hanging up or loading the save never plays it again.
+- What it is worth: it is the call's first topic, through the topics' own reckoning (`SocialTalk.Answer`): the day's chat once, two topics a call, the warm or the cool answer's worth. After the day's chat on an earlier call it is said and answered, and worth nothing more. It moves no money and settles nothing a text already settled; an invitation or favour still to answer and a plan that is on keep their own way, before it. A call they make (the phone ringing) is not a call back.
+- With a pack and "Type your own words in calls" on, the player types the answer, as to any topic: the card (`friend.dm.answer`, `partner.dm.answer`) has their line about the text in its thread, and with a pack of data 6 its memory says what they texted about ("texted you about the garage door, today"). Mom's calls keep their two answers, as before.
+- With Developer diagnostics on, one `Social check (call back)` line a call: the text it opened on (its day, hour, key, the feature that sent it, the subject and how it is answered), or why the call opened as always.
+
+The day after an outing they may text about how it went (`SocialFollowRules.NextDay`, `SocialDirector.NextDayText`): Mom's, the partner's after a date or a friend's line, good or bad, from 09:00 on the day after, while they are awake and have not texted or been in touch that day; a good one's thanks sent the same day says it already. The outing is kept on the person when it ends (`SocialPerson.AfterDay`, `AfterKind`, `AfterWell`, `AfterPlace`, saved) and let go after the day after. It is one of the social life's own texts, with their limits; with a pack, a friend's good one is worded as their thanks for the outing (`friend.thanks`, every pack's card), and the rest keep their written lines. Its call back opens on it too.
 
 ### What a later pack could add to calls
 
@@ -220,6 +234,12 @@ The packs' intents are fixed by their data version, so the composer uses what da
 - Better still, a call's own cards, `friend.call.said`, `partner.call.said` and `mom.call.said`: channel `spoken` (a call, not a Flare message), at most 140 characters, `write: spoken: on the phone`, history the last three lines of the call oldest first (their line, the player's, theirs, with the player's typed words last), and an optional fact `topic: {topic}` naming what they brought up (the crash, the shop's takings, their birthday coming). Trained on the same rows as `friend.dm.answer` with the call's framing, they would never speak of messages or Flare.
 
 Each would be registered in `Texts/TextIntents.cs` with its data version and the generator's fixtures, and `Texts/TextsMapRules.Answering` would name it; the composer asks `TextsHub.WhyNot` with the pack's data, so an older pack keeps the cards it has.
+
+And to texts (none of it is asked of a pack now, so every card keeps the shape and size the packs were trained on):
+
+- The last lines of the thread on a text's card (`history:` with one or two of their earlier texts, oldest first). Today a text's card carries what that person last texted about as a memory line (`talked`/`text`, `Wiring.TextsMemoryFacts.Texted`), the form data 6 knows: the packs answer a thread's last line, so a thread on a text's card would change what the text says.
+- Cards of their own for the day after an outing that went badly (`friend.after.bad`), a date (`partner.date.good`, `partner.date.bad`) and Mom's (`mom.after.good`, `mom.after.bad`): each would be registered in `Texts/TextIntents.cs` as data 7 with fixtures, and `Texts/TextsMapRules.Phone` would map `reallife_social_text_nextday_*` to them. Until then their written lines are used.
+- `mom.dm.answer`, so a call back to Mom (and any call to her) could be typed.
 
 ## The City Ledger (`News`)
 
@@ -234,6 +254,7 @@ The log, the paper and the fillers seen are in modData.
 ## Rules kept
 
 - Nothing in the save the game cannot load: `reallife:social*` strings in modData, and contacts made exactly as `Phone/PhoneContacts` makes its own (id, description key, the call dialog set again on every load).
+- Each person's record (`reallife:social_people`) ends with the minute of the text a call back last opened on and the outing still to be texted about the day after (fields 43 to 47, after the age's day): an older version reads the fields it knows and leaves these; an older save reads as no text taken up yet and no outing waiting.
 - Idle cost: three comparisons a frame; once a second a few more.
   A scene ticks five times a second; per frame only its marker, its key and (via the living city's service) a turn on the spot.
   No per-frame allocation.
@@ -251,6 +272,10 @@ Its label is `reallife_social_test_mom`, and its row is in the chain in `Core/Re
 "Test: a walk with the chosen person, here" does the same thing for the chosen person (Mom until another is chosen): it is agreed for the pavement where the player stands, and looks for a business only if there is no pavement within 8 m.
 
 "Call the chosen person now and type the chat" (`reallife_social_test_composer`, `SocialDirector.TestComposer`) opens a call at once, in the game's contacts app, with the chosen person or else anybody met whose chat today is still to come; press Chat and the first topic is the shop's loss ("Be honest, is {shop} holding up?"), whatever has happened, with "Type a reply": good news gets a glad line, bad news the sorry one, anything else a neutral line. It says why when it cannot: typing in calls switched off, no pack running (or RLO Texts' messages from people off, or the game in a language the pack does not write), or nobody it can be (Mom has no typed chat, and the others have had today's chat).
+
+"The chosen person texts me, and I call them back" (`reallife_social_test_followup`, `SocialDirector.TestFollowUp`) puts a text in their thread as each feature does, in turn the social life's, the family's, life's and travel's (where that feature texts this person, else the social life's), and opens the call at once: it should open on what they wrote about. An invitation, favour or plan of theirs comes first, and a notice says so.
+
+"The chosen person texts me about yesterday's outing" (`reallife_social_test_nextday`, `SocialDirector.TestNextDay`) sends the day after's text now, in turn as if the outing went well and as if it went badly; no outing is recorded.
 
 ## On screen: the game's own interface (Social)
 
@@ -279,6 +304,8 @@ How the marker on somebody looks beside an incident's marker (they are separate 
 The wording and length of the new notifications on screen.
 
 Typing on a call has not been seen in the game: that the game's text box opens over a call in the contacts app and hands its words back while the call is open, how "You: ..." and the model's answer look in the call's thread, and how long a pack takes to answer on the owner's machine (the hold is 6 s, then the written answer).
+
+A call back has not been seen in the game: that the person's thread in the game's phone holds every feature's texts as read here, how their line about a text reads in the contacts app's call, and the texts the day after an outing.
 
 ## Wish-list (drop in by id, no code change)
 
