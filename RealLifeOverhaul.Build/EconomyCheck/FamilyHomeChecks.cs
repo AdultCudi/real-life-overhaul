@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul;
 
 // The partner at home, from play: texts written while the player slept passed unseen in the skip's hourly batch of notices;
 // "Cook together" used no food and played nothing; "Watch together" left the partner standing, and a sofa with the player on
@@ -122,7 +123,7 @@ internal static partial class Program
         Check(draw.Contains("case CookKind: return hour >= 17 && hour < 21 ? 6f") && draw.Contains("case BedKind: return 0f;")
               && MemberText(at, "private static void Standing(FamilyDirector director, float now, Vector3 player)").Contains("int next = Next(_at, TimeHelper.CurrentHour);"),
             "family home: the partner goes where the hour draws them (dinner at the cooker, sport in the morning, the sofa at night), never to bed by day");
-        Check(MemberText(at, "private static void Standing(FamilyDirector director, float now, Vector3 player)").Contains("PartnerVoice.AnyAsk || (HasWord != null && HasWord())")
+        Check(MemberText(at, "private static void Standing(FamilyDirector director, float now, Vector3 player)").Contains("(Chores.Pending || PartnerVoice.AnyAsk)")
               && MemberText(at, "private static bool ComeOver(FamilyDirector director, float now, Vector3 player)").Contains("_at = ByYouAt;"),
             "family home: the partner comes over and waits facing the player only with something to say");
         string sitting = MemberText(at, "private static void Sitting(FamilyDirector director, float now, Vector3 player, bool staying)");
@@ -133,9 +134,23 @@ internal static partial class Program
             "family home: watching together is had when the player sits down with them, and an hour waited in vain is a text and a small cooling");
         string lie = MemberText(ModSource(@"CityLife\CityPerson.cs"), "public bool Lie(EntityController bed, Transform at)");
         Check(lie.Contains("Character.LayOnBed(bed, at);") && lie.Contains("agent.enabled = false;")
-              && MemberText(at, "private static bool LieDown(FamilyDirector director)").Contains("(!_bedForTwo && frame.Occupied)")
-              && at.Contains("if (where == Whereabouts.Asleep && LieDown(director))") && at.Contains("PutToBed(director, now);"),
+              && MemberText(at, "private static bool LieDown(FamilyDirector director, float now)").Contains("(!_bedForTwo && frame.Occupied)")
+              && at.Contains("if (where == Whereabouts.Asleep && LieDown(director, now))") && at.Contains("PutToBed(director, now);"),
             "family home: asleep, the partner lies in the home's bed by the game's own LayOnBed, and makes way from a bed for one while the player is in it");
+        string putToBed = MemberText(at, "private static void PutToBed(FamilyDirector director, float now)");
+        Check(putToBed.Contains("now < _bedTry") && !MemberText(at, "private static void ReleasePartner()").Contains("_bedTry")
+              && MemberText(at, "private static bool LieDown(FamilyDirector director, float now)").Contains("_bedTry = now + BedRetry;"),
+            "family home: a bed they could not lie in is tried again after a while, not a partner put there and let go each second");
+        Dictionary<string, string>[] words = LanguageWords(out string[] codes);
+        bool guide = codes.Length == ModLanguages.All.Length;
+        for (int l = 0; guide && l < codes.Length; l++)
+        {
+            string page = words[l].TryGetValue("reallife_guide_family", out string g) ? g : string.Empty;
+            guide &= page.Split('
+').Length == 26 && (codes[l] != "en" || (page.Contains("At night they sleep in your bed") && page.Contains("asks for a chore only when it is needed")
+                     && !page.Contains("They never lie down") && !page.Contains("they stand in the kitchen or the living room")));
+        }
+        Check(guide, "family home: the Guide's family page tells of the partner's routine, nights in bed and real chores, its 26 lines in every language");
         Check(at.Contains("case Mode.Sleeping:") && MemberText(at, "private static void WakeUp(FamilyDirector director, float now, Vector3 player)").Contains("_partner.Rise();"),
             "family home: in the morning the partner gets up out of bed");
         Check(ModSource(@"Family\FamilyBalance.cs").Contains("public const float HarmonyWaitedInVain = -2f;"),

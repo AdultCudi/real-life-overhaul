@@ -35,11 +35,12 @@ internal static partial class Program
             "family chores: the old question with a button for harmony is gone; the chores run hourly");
         Check(chores.Contains("ChoreRules.Done(kind, food, tidy, hygiene, car)") && chores.Contains("if (agreed)") && chores.Contains("FamilyState.Harmony(ChoreRules.HarmonyDone);"),
             "family chores: harmony comes only from a chore agreed and really done");
-        Check(at.Contains("(Chores.Pending || PartnerVoice.AnyAsk || (HasWord != null && HasWord()))") && at.Contains("Chores.Opening() ?? FamilyPhone.PartnerMenu(true)"),
+        Check(at.Contains("(Chores.Pending || PartnerVoice.AnyAsk)") && at.Contains("Chores.Opening() ?? FamilyPhone.PartnerMenu(true)"),
             "family chores: at home the partner comes over and opens the talk with the chore");
         string links = ModSource(@"Wiring\FamilyLinks.cs");
-        Check(links.Contains("HomePlace.ReadPantry(Pantry);") && links.Contains("most = Math.Max(most, car.dirtiness);") && links.Contains("? HomeState.Hygiene : -1f;"),
-            "family chores: the fridge, the car's dirt and the player's hygiene are read from the game and Home, not assumed");
+        Check(links.Contains("HomePlace.ReadPantry(Pantry);") && links.Contains("most = Math.Max(most, car.dirtiness);")
+              && links.Contains("GoingPublic.MineVehicle(cars[i])") && links.Contains("!Family.PartnerCar.Is(car)") && links.Contains("? HomeState.Hygiene : -1f;"),
+            "family chores: the fridge, the dirt of the player's own cars (not another player's, not the partner's) and the player's hygiene are read from the game and Home, not assumed");
         string[] pieces = { "it counts once it is really done", "conta quando está feito de verdade", "只有真正做完才算", "es zählt erst, wenn es wirklich erledigt ist",
                             "cela compte une fois vraiment fait", "cuenta cuando está hecho de verdad", "засчитывается, только когда действительно сделано",
                             "het telt pas als het echt gedaan is", "ancak gerçekten yapıldığında sayılır" };

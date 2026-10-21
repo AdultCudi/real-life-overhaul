@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Family
     /// <summary>
     /// The household chores, done for real (ChoreRules): the partner asks when something is really so (the fridge nearly
     /// empty, the home a tip, the player unwashed, a filthy car) and it counts once it has really changed (shopping in the
-    /// fridge, the home tidied, a shower, a car wash). Both at home, they come over and ask face to face (HomeLife.HasWord,
+    /// fridge, the home tidied, a shower, a car wash). Both at home, they come over and ask face to face (HomeLife.ComeOver,
     /// Opening): yes or not now; left unanswered a few hours, or asked while apart, it comes as a text, as agreed. Done in
     /// time: thanks and a warmer home; not done by its day: a text and a cooler one. One at a time, some days apart; with
     /// "Friction" off, none. COST: once a game hour, a few readings through the Home bridge.
@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.Family
             s.ChoreDue = ChoreRules.Due(kind, day);
             if (together)
             {
-                s.ChoreAskStamp = stamp;   // they come over to say it (HomeLife.HasWord)
+                s.ChoreAskStamp = stamp;   // they come over to say it (HomeLife.ComeOver)
             }
             else
             {

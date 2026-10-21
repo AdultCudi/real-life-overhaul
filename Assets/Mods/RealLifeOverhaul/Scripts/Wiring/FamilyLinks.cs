@@ -338,11 +338,12 @@ namespace RealLifeOverhaul
                         float most = -1f;
                         try
                         {
+                            // The player's own cars only: not another player's shown in a Going Public session, nor the one handed to the partner.
                             List<VehicleController> cars = Helpers.VehicleHelper.AllPlayerVehicles;
                             for (int i = 0; cars != null && i < cars.Count; i++)
                             {
-                                VehicleInstance car = cars[i] != null ? cars[i].vehicleInstance : null;
-                                if (car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle)
+                                VehicleInstance car = cars[i] != null && GoingPublic.MineVehicle(cars[i]) ? cars[i].vehicleInstance : null;
+                                if (car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle && !Family.PartnerCar.Is(car))
                                 {
                                     most = Math.Max(most, car.dirtiness);
                                 }

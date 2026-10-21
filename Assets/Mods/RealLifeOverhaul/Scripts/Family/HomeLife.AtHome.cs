@@ -57,12 +57,9 @@ namespace RealLifeOverhaul.Family
         private static bool _bedForTwo;            // ...a bed wide enough for both: they stay when the player lies down too
         private const float BedForTwo = 1.3f;      // metres across a bed for two
         private const float BesideInBed = 0.45f;   // metres from the bed's sleeping place to theirs in a bed for two
+        private const float BedRetry = 300f;       // seconds before a bed they could not lie in is tried again (not one put and taken away each second)
+        private static float _bedTry;              // when they may next be put to bed; kept when they are let go, unlike _nextSit
 
-        /// <summary>
-        /// True while the partner has something to say in person (an open ask, set by what keeps one); they then come over to the
-        /// player and wait, facing them, to be talked to. Null or false: they get on with the home.
-        /// </summary>
-        internal static Func<bool> HasWord = null;   // (set by whatever keeps an open ask)
         private static float _satAt;
         private static int _spotCount;
         private static int _at = -1;
@@ -222,7 +219,7 @@ namespace RealLifeOverhaul.Family
                 case Mode.Retiring:   // to bed (the bed, or the far end of the home), or out: gone there, out of sight, or when the walk is over
                     if (_partner.Near(_goneAt, 0.9f) || now >= _giveUp || !CitySpots.InView(_partner.Position))
                     {
-                        if (where == Whereabouts.Asleep && LieDown(director))
+                        if (where == Whereabouts.Asleep && LieDown(director, now))
                         {
                             break;   // asleep in the bed, shown
                         }
@@ -473,7 +470,7 @@ namespace RealLifeOverhaul.Family
                     return;
                 }
             }
-            if (_at != ByYouAt && now >= _nextWord && (Chores.Pending || PartnerVoice.AnyAsk || (HasWord != null && HasWord())) && sqr > TalkReach * TalkReach && ComeOver(director, now, player))
+            if (_at != ByYouAt && now >= _nextWord && (Chores.Pending || PartnerVoice.AnyAsk) && sqr > TalkReach * TalkReach && ComeOver(director, now, player))
             {
                 return;   // something to say: over to the player, to wait facing them
             }
@@ -588,17 +585,23 @@ namespace RealLifeOverhaul.Family
 
         // Into their bed, in the way the game lays the player down (CityPerson.Lie); in a bed for two beside its sleeping place,
         // so the player can lie down too. Whether they lie there now.
-        private static bool LieDown(FamilyDirector director)
+        private static bool LieDown(FamilyDirector director, float now)
         {
             int bed = BedAt;
             var frame = bed >= 0 ? Seats[bed] as BedController : null;
-            if (frame == null || !frame.isActiveAndEnabled || !BedPlace(frame) || (!_bedForTwo && frame.Occupied))
+            if (frame == null || !frame.isActiveAndEnabled || !BedPlace(frame))
             {
+                _bedTry = now + BedRetry;
                 return false;
+            }
+            if (!_bedForTwo && frame.Occupied)
+            {
+                return false;   // the player is in a bed for one: tried again once they are up (PutToBed)
             }
             Lower(_partner, director.Cast.Props);
             if (!_partner.Lie(frame, _bedPlace))
             {
+                _bedTry = now + BedRetry;
                 Seating.Check(FamilyDirector.Logger, "the partner could not lie down on " + frame.itemName, false);
                 return false;
             }
@@ -613,11 +616,11 @@ namespace RealLifeOverhaul.Family
         {
             int bed = BedAt;
             var frame = bed >= 0 ? Seats[bed] as BedController : null;
-            if (frame == null || now < _nextSit || (!_bedForTwo && frame.Occupied))
+            if (frame == null || now < _bedTry || (!_bedForTwo && frame.Occupied))
             {
                 return;
             }
-            _nextSit = now + 5f;   // (not tried every second while the bed is taken)
+            _bedTry = now + 5f;   // (not tried every second while the bed is taken)
             CityPerson person = director.Cast.Put(0, FamilyLook.Partner, Spots[bed], Faces[bed], AgentType);
             if (person == null)
             {
@@ -625,7 +628,7 @@ namespace RealLifeOverhaul.Family
             }
             _partner = person;
             _mode = Mode.Standing;
-            if (!LieDown(director))
+            if (!LieDown(director, now))
             {
                 ReleasePartner();
             }
