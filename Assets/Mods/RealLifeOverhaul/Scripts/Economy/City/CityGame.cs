@@ -28,6 +28,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Thousandths more (or less) of the price a district bears at one business, for its interior.</summary>
         public static Func<BuildingRegistration, int> Bears;
 
+        /// <summary>
+        /// A raw material's price against its own, set by the stock market's raw materials exchange in place of its kind's
+        /// factor and the price index (Markets/Derivatives); NaN for an item the exchange does not price now.
+        /// </summary>
+        public static Func<string, double> MaterialFactor;
+
         public delegate bool FootfallWriter(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written);
 
         public static void Reset()
@@ -36,6 +42,7 @@ namespace RealLifeOverhaul.Economy
             Footfall = null;
             Copycat = null;
             Bears = null;
+            MaterialFactor = null;
         }
     }
 
@@ -264,6 +271,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Factors[k] = CityModel.Wholesale(state, k);
             }
+            Func<string, double> exchange = CityBridges.MaterialFactor;
             for (int i = 0; i < Priced.Count; i++)
             {
                 Item item = Priced[i];
@@ -271,8 +279,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;   // unloaded by the game
                 }
-                int factor = Factors[PricedKind[i]];
-                float want = factor == 1000 ? PricedOwn[i] : PricedOwn[i] * (factor / 1000f);
+                float want = Want(i, Factors[PricedKind[i]], exchange);
                 if (item.wholesalePrice != want)
                 {
                     item.wholesalePrice = want;
@@ -280,6 +287,27 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             return written;
+        }
+
+        // A good's price today: a raw material at the exchange's price when it prices it, any other at its kind's factor.
+        private static float Want(int i, int factor, Func<string, double> exchange)
+        {
+            double material = exchange != null && Priced[i] != null ? exchange(Priced[i].itemName) : double.NaN;
+            if (material > 0.0 && !double.IsInfinity(material))
+            {
+                return (float)(PricedOwn[i] * material);
+            }
+            return factor == 1000 ? PricedOwn[i] : PricedOwn[i] * (factor / 1000f);
+        }
+
+        /// <summary>An item's own wholesale price as first seen, before any of the mod's; -1 for an item the city has not read.</summary>
+        public static float OwnPrice(string itemName)
+        {
+            if (string.IsNullOrEmpty(itemName) || !Goods.TryGetValue(itemName, out Good good) || good.Item == null)
+            {
+                return -1f;
+            }
+            return Own.TryGetValue(good.Item, out float own) ? own : good.Item.wholesalePrice;
         }
 
         /// <summary>Puts the own wholesale price back on every item ever seen, of any city. Safe at any time. Returns how many.</summary>
@@ -320,8 +348,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                int factor = state != null ? CityModel.Wholesale(state, PricedKind[i]) : 1000;
-                float want = factor == 1000 ? PricedOwn[i] : PricedOwn[i] * (factor / 1000f);
+                float want = state != null ? Want(i, CityModel.Wholesale(state, PricedKind[i]), CityBridges.MaterialFactor) : PricedOwn[i];
                 if (item.wholesalePrice != want)
                 {
                     if (wrong++ < 3)

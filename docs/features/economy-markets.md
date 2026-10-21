@@ -2,11 +2,11 @@
 
 ## In a sentence
 
-The city's stock market in the **Stocks** app: the player's own businesses listed as a company with shareholders, orders that wait (stop loss, take profit, limits) and trading bots the player can hire.
+The city's stock market in the **Stocks** app: the player's own businesses listed as a company with shareholders, orders that wait (stop loss, take profit, limits), trading bots the player can hire, and the raw materials exchange with its futures and options.
 
 ## Where the code is
 
-- Folder: [`Scripts/Markets`](../../Assets/Mods/RealLifeOverhaul/Scripts/Markets/), with [`Listing`](../../Assets/Mods/RealLifeOverhaul/Scripts/Markets/Listing/) and [`Bonds`](../../Assets/Mods/RealLifeOverhaul/Scripts/Markets/Bonds/).
+- Folder: [`Scripts/Markets`](../../Assets/Mods/RealLifeOverhaul/Scripts/Markets/), with [`Listing`](../../Assets/Mods/RealLifeOverhaul/Scripts/Markets/Listing/), [`Bonds`](../../Assets/Mods/RealLifeOverhaul/Scripts/Markets/Bonds/) and [`Derivatives`](../../Assets/Mods/RealLifeOverhaul/Scripts/Markets/Derivatives/).
 - Read first: `MarketDirector.cs` (the market on the game's clock), `MarketEngine.cs` (game-free) and `MarketApp.cs`.
 - How the market itself began is on the [investors](economy-investors.md#the-stock-market-market) page.
 
@@ -14,6 +14,7 @@ The city's stock market in the **Stocks** app: the player's own businesses liste
 
 - The market calls no other feature and none calls it: `Wiring/MarketLinks.cs` reads the city on a market day, the events that move prices, the game's rivals, the banks and the Planner's rows.
 - `Wiring/ListingLinks.cs` gives the listed company the player's books, its businesses and a sale's hand-over.
+- `Wiring/MarketLinks.cs` and `Wiring/CityLinks.cs` give the raw materials exchange the city's own prices of its goods and the city's economy the exchange's prices to write as the importers' ([Futures and options](#futures-and-options-scriptsmarketsderivatives)).
 
 ## Your company on the market (`Scripts/Markets/Listing`)
 
@@ -235,3 +236,131 @@ The line round trip and a line from before; two machines alike; the texts in eve
 ### Not verified (the game could not be run)
 
 That seven tabs fit the Stocks app's bar, and the Bots tab's box (four lines, three selectors and a row of buttons) the white box; the game's text box for the capital; the notifications on screen; the transactions' names in Finance and EconoView; how the bots feel over a long game.
+
+## Futures and options (`Scripts/Markets/Derivatives`)
+
+The raw materials exchange, futures on the raw materials factories buy, and options on those materials and on the city's larger companies, on the Stocks app's Futures tab (option "Futures and options", id `markets_derivatives`, under the stock market's header, on by default).
+
+No Update and no Harmony patch: the exchange's prices and every contract's money ride the market's own closes (`MarketEngine.Derivatives.cs`, called in `CloseBooks`), the option and the city are looked at on the market director's one-second timer, and the Futures tab is written when it is shown.
+
+### What the game already had, and what was therefore built
+
+The game's factories (`Buildings.Factory.FactoryBusinessSimulator`) make goods from recipes (`BigAmbitions.Factories.Recipes.Recipe`); 59 of their ingredients are made by no recipe and are bought from the importers (`Entities.ImportPartnership.DoDeliveries`, each day at 08:00, `ImportProduct.Price` = `ItemHelper.GetWholesalePrice` x the market event's multiplier).
+
+`GetWholesalePrice` multiplies the item's `wholesalePrice` by the item's import index and the save's price multiplier, but `ProductMarketHelper.UpdateMarketDemand` returns before it sets an index for an item that is not a demanded product (`CanItemHaveMarketDemand`), and none of the 59 is: no market entry is made for them, so their index is 1 and no shortage or backorder is ever drawn for them.
+In the game a raw material's price never moves.
+
+The city's economy (Economy/City) moved them only as general goods, all together, with the general kind's supply shocks (announced a day ahead) and the monthly price index.
+
+So the price movement was designed first, from the city's economy and the market's tape:
+
+| | Built here |
+| --- | --- |
+| The price | Each material on the exchange (`RawMaterial`, the city's, in part `m` of the market's line, the host's in a Going Public session) has `price = its own x the price level x e^x`. At every market close `x' = phi x + mu + sigma (rho zg + sqrt(1 - rho^2) zi)`: a Gaussian autoregression drawn from the day's secret (the tape's, so a replayed day sets the same prices and nobody knows a close before it is played), half its group's draw and half its own, `mu` set so the long-run mean is exactly its own price at the price level. |
+| The importers | The price a close sets is the importers' until the next: `CityBridges.MaterialFactor` gives `CityGame.ApplyWholesale` the exchange's factor for a raw material in place of its kind's factor and the index, and the market director asks the city to write it again after each close (`MarketBridges.MaterialsFixed`, `CityEconomyDirector.RewriteWholesale`). With the option off, the market stopped or the city's economy off, the city prices them as before. |
+| The groups | Farm and field (20 materials), dairy, meat and bakery (11), drinks and flavourings (7), metals, glass and stone (6), electronic parts (8), paper, cloth and plastic (7); any other is Other. |
+
+| Group | A day's move | Half-life | A week's move | The long run | Margin |
+| --- | --- | --- | --- | --- | --- |
+| Farm and field | 4.0% | 8 market days | 7.6% | 10.0% | 23% |
+| Dairy, meat and bakery | 3.0% | 10 | 5.9% | 8.3% | 18% |
+| Drinks and flavourings | 2.4% | 10 | 4.7% | 6.7% | 15% |
+| Metals, glass and stone | 3.2% | 14 | 6.5% | 10.4% | 20% |
+| Electronic parts | 2.6% | 14 | 5.3% | 8.5% | 16% |
+| Paper, cloth and plastic | 2.2% | 12 | 4.4% | 6.7% | 14% |
+| Other | 2.5% | 12 | 5.0% | 7.6% | 16% |
+
+(A week's move and the long run are one spread of the ln price; the margin is three spreads of a week's move, 10% to 40%.)
+
+### Contracts
+
+| Kind | What it is | Its price | At its day |
+| --- | --- | --- | --- |
+| A future bought or sold | a material's price fixed for the week after a Friday | the price expected at that close (`MaterialRules.Forward`, exact), 0.3% either side | settled at the price that close sets: a future bought with a place is delivered, any other in cash |
+| A call or a put on a material | the right to what that close's price is over (or under) its strike | Black on the exact forward and spread, 8% over and 0.15% of the price either side | paid in cash in the money, else it lapses |
+| A call or a put on shares | the same on a city company's share | the market's own moves to its day as the GARCH expects them, its results day, the business's own news at the opens, and jumps mixed in at their chances (a crisis, a windfall, a bid, a crash; `OptionRules.ShareFair`), the same markup | at the mean of the last hour of steps of its day; a company that leaves settles at what it paid out a share; a split changes strike and shares, worth the same |
+
+- **Days.** The next four Fridays at least two closes away (`DerivRules.Days`).
+  A material's contract is for the week from the Monday after: the importers charge that Friday close's price until the next.
+- **Strikes.** The price now (a material's forward, a share's price) and 5% and 10% either way, four figures kept.
+- **Quantities.** 500 to 25,000 units; 100 to 5,000 shares.
+- **Limits.** 40 contracts at once; 100,000 units under contract on one material; on a company at most half a day's usual volume and half the most a player may hold.
+- **Options on shares** only on the city's own companies, large or middling, 20 market days on the market, not under a bid, distress under 0.15, no property trust, no player's company, no rival's holding.
+- **Commission** the market's own (0.10%, never under its least) on a future's worth or an option's premium.
+- **Trading** only while the market trades (`MarketDirector.Trading`: in a session, caught up, not held after a load).
+
+### The margin account and the broker's rules
+
+A future's margin is taken from the cash into the account (`DerivBook.Balance`, in cents) when it is bought.
+At each close every future is marked to its new fair price and the day's move settled in the account, rounded against the player; what is over the margins is paid back to the cash.
+
+Under 75% of the margins at a close: a call for what brings it back to the margins, due by the next close (`MarketCatalogue.CallDays`), paid on the Futures tab (`PayCall`).
+
+Unmet at that close, or under 80% of the maintenance (`ForcedBelowPct`) at any close, the broker closes the futures at that close's prices, the largest margin first, until the account is a tenth over its maintenance; with none open, what the account owes is forced from the cash (`MarketMoney.Shortfall`).
+
+### Delivery
+
+A future bought may name one of the player's warehouses or factories (`MaterialGame.Places`: rented, theirs, `GoingPublic.Mine`).
+
+At its day's close the engine settles its money to the day's price and tells the director (`DerivNoteKind.Deliver`); after the frame's market work the director puts the goods on the place's pallets as the game's importers do (`ItemHelper.DeliverCargoToBuilding` with the warehouse-storage tag), as many as fit and as the cash pays for, and charges them to the place (`reallife_transaction_future_importdelivery`, deductible as an import).
+
+With what the future made, the goods cost the agreed price; what did not fit or could not be paid is settled in cash already.
+In a Going Public session every future settles in cash: the goods in a warehouse are the session's to move.
+
+### Fair and not to be played
+
+- The forward is the true expectation, so a future bought or sold and held loses the spread and the commission on average, whenever it is bought (EconomyCheck: 120,000 futures over eight seeds settle within 0.6% of their fair price; buying after a rise, after a fall or on a flat day earns nothing).
+- An option on a material is priced exactly, so every option of every kind, strike and week pays out less than it costs (1.2 million over eight seeds: 1.00 of their fair premium, 0.90 of what they cost).
+- An option on shares is priced from the market's own model; over four seeds of five years 1.7 million pay out 0.99 of their fair premium and 0.90 of what they cost, each strike and week's call and put together less than they cost, none far off its fair premium.
+- The exchange's draws are the tape's: a reload replays the same closes and nothing is traded until the market is past the furthest moment played (`HoldAfterLoad`), so a load gives no foresight and no second draw.
+- Nothing is traded at or after a close: the prices a close sets are known only once it is played, and the next contract is two closes away.
+- A share option settles at the last hour's mean price, so no trade at the close decides it; the shares under option are limited to half a day's usual volume.
+- Every sum is rounded against the player.
+
+### Going Public
+
+The exchange is the city's: part `m` is in the city's line a host sends (an older RLO reads past it), and every machine plays the host's closes with the host's secrets, so the prices are the same on each.
+
+A guest keeps the host's own prices for the materials it has; the market's checksum is unchanged, so an older guest is never asked to take the market again.
+
+Each player's contracts are their own (part `q`, never in the city's line), settled on their own machine against the shared prices; they move no price and nothing new is sent.
+
+### Files
+
+| File | What it is |
+| --- | --- |
+| `Derivatives/DerivCatalogue.cs` | every figure: the groups and their moves, the days, quantities and strikes, the spreads and markup, the margin, the limits, the share options' figures |
+| `Derivatives/DerivContract.cs` | `RawMaterial`, `DerivContract`, `DerivBook`, the enums, `DerivNote`, `DerivQuote` |
+| `Derivatives/MaterialRules.cs` | the price process: a close, the forward and spread after so many closes, the first price, the materials known |
+| `Derivatives/OptionRules.cs` | the bell curve and Black's price; a share's variance to its day, its jumps, its forward and its fair premium |
+| `Derivatives/DerivRules.cs` | the days, the money of a move, the spreads, the margin, the limits, which companies, the settlement price, a split |
+| `Derivatives/DerivStore.cs` | parts `m` and `q` of the market's line |
+| `MarketEngine.Derivatives.cs` | the engine's part: quotes, buying and closing, the call paid, the close's marks, settlements and margin, a company gone, leaving, the test tools |
+| `Derivatives/MaterialGame.cs` | the game's part: the raw materials from the recipes, the places, a delivery, what the factories use |
+| `MarketDirector.Derivatives.cs` | the director's part: the option and the city followed, the materials learned, the importers' prices written again, the tab's questions, the notifications, deliveries, the tests |
+| `MarketApp.Derivatives.cs`, `Derivatives/DerivText.cs`, `Derivatives/DerivGuide.cs` | the Futures tab and its tickets; the words; the Guide's figures |
+
+The first six are game-free and compiled by EconomyCheck (`DerivChecks.cs`, `DerivFairChecks.cs`; `--derivatives` runs them alone).
+
+### The save
+
+Part `m`, a record a material: name, group, its own price, x, the last price set, its day, the price level, the last 30 closes.
+
+Part `q`: the margin account's header (the next id, the balance, a call's day and amount, commission and results in all), then a record a contract (kind, material or company, units, price or strike, premium, mark, margin, days, the place and its name, the test mark, how it ended, its price, result, units delivered and fees).
+
+A line without them reads with no exchange and no contracts; a market with neither writes exactly what it did.
+
+### Tests (options page, the stock market's tests)
+
+"Open the Futures tab", "My futures and options settle now" (at today's prices, a delivery included), "My futures' materials move a tenth against me" (the margin looked at as at a close: a call, or the broker; refused in a Going Public session, where the exchange is everyone's).
+
+### Log lines
+
+- `Stock market: the raw materials exchange has 59 of the game's raw materials (59 new, 59 in the game's recipes).`
+- `Stock market: bought Barley, the week from day 50: 5000 at 252731 micros a unit, margin 290, to be delivered to Dockside Warehouse.`
+- `Stock market check (futures and options, day 47): Deliver ...; the margin account 0 for margins of 0: PASS`
+- `City economy check (wholesale written again): 59 price(s) to the raw materials exchange's or their kind's: PASS`
+
+### Not verified (the game could not be run)
+
+That nine tabs fit the Stocks app's bar and a ticket (five selectors, three lines and a button) the white box; the notifications on screen; the transactions' names in Finance and EconoView; that `ItemHelper.DeliverCargoToBuilding` puts a future's goods on a factory's pallets as it does a warehouse's; that the importers charge the exchange's price from the close (read from the game's code: `ImportProduct.Price`); how the prices feel over a long game.

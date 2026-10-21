@@ -181,6 +181,7 @@ internal static partial class Program
         BotTopUp();         // capital added to a running bot or taken out, nothing sold (BotTopUpChecks.cs)
         MarketDayMoves();   // the day's move of every company, the index and the sectors, in a session and between (MarketChecks6.cs)
         MarketIncome();     // the property trusts and the bonds (MarketChecks8.cs)
+        Derivatives();      // the raw materials exchange, its futures and the options on materials and shares (DerivChecks.cs)
         Console.WriteLine("  the stock market: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 }

@@ -55,6 +55,9 @@ namespace RealLifeOverhaul
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
             Careers.AcademyType.Logger = context.Logger;
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
+            Designs.DesignsDirector.Logger = context.Logger;
+            // The installation firms' designs for the mod's business types, put in place or taken away on a worker (Scripts/Designs).
+            Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -349,6 +352,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_business_resolve", () => BusinessDirector.Instance?.TestResolveAll())
                 .AddSplitter()
                 .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
+                .Guarded(o => Designs.DesignsOptions.AddDesigns(o))   // the installation firms' designs for the mod's types (Scripts/Designs)
                 .AddHeader("reallife_home_header")
                 .AddToggle(Settings.HomeLifeId, "reallife_home_enabled", Settings.HomeLife,
                     v => Settings.HomeLife = v)
@@ -836,6 +840,8 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsLarge = v)
                 .AddToggle(Settings.MarketsReinvestId, "reallife_mkt_inv_opt_reinvest", Settings.MarketsReinvest,
                     v => Settings.MarketsReinvest = v)
+                .AddToggle(Settings.MarketsDerivativesId, "reallife_mkt_drv_opt", Settings.MarketsDerivatives,
+                    v => Settings.MarketsDerivatives = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
@@ -843,6 +849,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mkt_bot_test_month", () => Markets.MarketDirector.Instance?.TestBotMonth())
                 .AddButton("reallife_mkt_bond_test_open", () => Markets.MarketDirector.Instance?.TestBonds())
                 .AddButton("reallife_mkt_bond_test_pay", () => Markets.MarketDirector.Instance?.TestBondPay())
+                .AddButton("reallife_mkt_drv_test_open", () => Markets.MarketDirector.Instance?.TestFutures())
+                .AddButton("reallife_mkt_drv_test_settle", () => Markets.MarketDirector.Instance?.TestSettle())
+                .AddButton("reallife_mkt_drv_test_call", () => Markets.MarketDirector.Instance?.TestCall())
                 .AddButton("reallife_mkt_inv_test_work", () => Markets.MarketDirector.Instance?.TestWorkedDay())
                 .AddButton("reallife_mkt_inv_test_back", () => Markets.MarketDirector.Instance?.TestPutBack())
                 .AddButton("reallife_mkt_inv_test_roll", () => Markets.MarketDirector.Instance?.TestRollover())
@@ -869,6 +878,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyLicences = v)
                 .AddToggle(Settings.EconomyRotaId, "reallife_rota_enabled", Settings.EconomyRota,
                     v => Settings.EconomyRota = v)
+                .AddToggle(Settings.EconomyManagersId, "reallife_mgr_enabled", Settings.EconomyManagers,
+                    v => Settings.EconomyManagers = v)
                 .AddToggle(Settings.EconomyCleaningId, "reallife_svc_cleaning_enabled", Settings.EconomyCleaning,
                     v => Settings.EconomyCleaning = v)
                 .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
@@ -898,6 +909,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_plans", () => Economy.CompanyDirector.Instance?.TestRotaPlans())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddButton("reallife_mgr_test_appoint", () => Economy.CompanyDirector.Instance?.TestManagerAppoint())
+                .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())
+                .AddButton("reallife_mgr_test_undo", () => Economy.CompanyDirector.Instance?.TestManagerUndoAll())
                 .AddButton("reallife_ob_test_found", () => Economy.OwnBankDirector.Instance?.TestFound())
                 .AddButton("reallife_ob_test_month", () => Economy.OwnBankDirector.Instance?.TestMonth())
                 .AddButton("reallife_ob_test_hard", () => Economy.OwnBankDirector.Instance?.TestHardMonth())
@@ -1440,6 +1454,8 @@ namespace RealLifeOverhaul
             Guard.Step("Districts.DistrictView", () => Guard.Add<Districts.DistrictView>(_root));   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
             Guard.Step("Interiors.InteriorDirector", () => Interiors.InteriorDirector.Logger = context.Logger);
             Guard.Step("CustomerDraw", () => CustomerDraw.Logger = context.Logger);
+            // With Developer diagnostics on, the installation firms' own lists checked against the designs written (Scripts/Designs).
+            Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
             Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));   // interiors and decor that matter: the scores once a game day, the BizMan tab (Scripts/Interiors)
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time

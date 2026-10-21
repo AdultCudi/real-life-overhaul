@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Markets
             _engine.BotTold = _botTold;
             HookBonds();
             HookInvest();
+            HookDerivs();
             _engine.Follow(frontier);
             _engine.TradeSink = _tradeSink;
             state.Following = true;   // the player's own company is set aside meanwhile (MarketShare.Adopt)

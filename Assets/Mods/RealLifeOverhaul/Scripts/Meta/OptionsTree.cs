@@ -322,20 +322,24 @@ namespace RealLifeOverhaul.Meta
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
-                S("markets").For("markets", "markets_listing", "markets_bots").Main("ventures_market")
-                    .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_large", "markets_reinvest")
+                S("markets").For("markets", "markets_listing", "markets_bots", "markets_derivatives").Main("ventures_market")
+                    .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_large", "markets_reinvest",
+                        "markets_derivatives")
                     .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit")
                     .Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
                     .Also("markets_bots", "bot bots robot automated algorithm strategy stop loss take profit limit order trend momentum")
                     .Also("markets_bonds", "bond bonds treasury gilt deposit certificate fixed income interest coupon reinvest savings rollover ladder")
                     .Also("markets_large", "large big block limit volume worked order algorithm vwap slice wealth investor")
-                    .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")),
+                    .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")
+                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",
                     "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
                     .Also("shop wages insurance advertising accountant permits"),
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
+                S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
+                    .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
@@ -366,7 +370,9 @@ namespace RealLifeOverhaul.Meta
                     .Also("interior design decor decoration plants paintings lighting wear refresh shabby furniture bizman tab income takings prices slider"),
                 S("interiorstd").For("interiors_standard").Need("interiors").Opts("interiors_standard_strength", "interiors_basket")
                     .Also("district standard minimum complaints basket products reward strength slider income customers"),
-                S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider")),
+                S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider"),
+                S("designs").For("designs").Opts("designs")
+                    .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop")),
 
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",

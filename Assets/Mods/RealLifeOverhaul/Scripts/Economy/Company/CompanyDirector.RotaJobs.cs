@@ -230,12 +230,16 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // A fill that ends with nothing written: said in the log, and to the player unless a test asked for it.
+        // A fill that ends with nothing written: said in the log, and to the player unless a test or a manager asked for it.
         private bool RotaUnwritten(RotaJob job, RotaPlace place, string why)
         {
             string name = place != null ? place.Name : job.Place;
             Logger?.Info("Company: the rota of " + name + " was not written: " + why + ".");
-            if (!job.Test)
+            if (job.Kind == JobManager)
+            {
+                ManagerRotaUnwritten(job.Place);
+            }
+            else if (!job.Test)
             {
                 Notify(NotificationType.Warning, "reallife_rota_changed", new Dictionary<string, string> { { "business", name } }, 8f);
             }
@@ -271,7 +275,11 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             Logger?.Warn("Company: " + place.Name + " kept changing while its rota was worked out (" + _rotaRestarts + " readings); nothing was written.");
-            if (job.Kind != JobShow && !job.Test)
+            if (job.Kind == JobManager)
+            {
+                ManagerRotaUnwritten(job.Place);
+            }
+            else if (job.Kind != JobShow && !job.Test)
             {
                 Notify(NotificationType.Warning, "reallife_rota_changed", new Dictionary<string, string> { { "business", place.Name } }, 8f);
             }

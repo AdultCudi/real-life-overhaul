@@ -372,6 +372,7 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             MarketBots.Split(state, s, ratio);   // the player's bots' shares and stops
+            DerivRules.Split(state.Derivs, s.Id, ratio);   // the player's options on it
             s.SplitDay = 0;
             s.SplitRatio = 0;
         }

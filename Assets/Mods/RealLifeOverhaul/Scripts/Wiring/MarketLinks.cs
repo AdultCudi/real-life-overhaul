@@ -34,6 +34,9 @@ namespace RealLifeOverhaul
         ///   Banks    the city's three largest banks (Economy/Lending, BankTerms.Banks): a deposit at each (Markets/Bonds)
         ///   NetWorth what the player is worth as the Finance app shows it (Economy/Finance, Books.NetWorth): the most of
         ///            one bond purchase is a share of it with what the market holds (Markets/Bonds)
+        ///   OwnWholesale, CityPrices, MaterialsFixed   the raw materials exchange (Markets/Derivatives) and the city's economy
+        ///            (Economy/City): an item's own wholesale price, whether the city writes the importers' prices, and the
+        ///            exchange's new prices written as the importers' after a close (CityEconomyDirector.RewriteWholesale)
         ///   Planner  results of the companies held or watched, dividends coming, a margin call, orders that lapse,
         ///            bonds' payments and ends (one set to roll over repays nothing into the cash)
         /// </summary>
@@ -56,6 +59,9 @@ namespace RealLifeOverhaul
                 MarketBridges.Poll = Poll;
                 MarketBridges.Banks = Banks;
                 MarketBridges.NetWorth = Books.NetWorth;
+                MarketBridges.OwnWholesale = CityGame.OwnPrice;
+                MarketBridges.CityPrices = CityPrices;
+                MarketBridges.MaterialsFixed = MaterialsFixed;
                 News.Reported += Reported;
                 FireLosses.Billed += Fire;
                 PlannerDirector.Instance?.AddSource(Source);
@@ -71,6 +77,17 @@ namespace RealLifeOverhaul
                 MarketBridges.Reset();
                 News.Reported -= Reported;
                 FireLosses.Billed -= Fire;
+            }
+
+            private static bool CityPrices()
+            {
+                CityEconomyDirector city = CityEconomyDirector.Instance;
+                return city != null && city.Running;
+            }
+
+            private static void MaterialsFixed()
+            {
+                CityEconomyDirector.RewriteWholesale();
             }
 
             // ---------------------------------------------------------------- the city on a market day
