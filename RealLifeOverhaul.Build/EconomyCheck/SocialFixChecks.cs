@@ -78,8 +78,8 @@ internal static partial class Program
     // Dealt without replacement: two people of a cast never share a job, the gym's trainer too, and nothing else of the cast moves.
     private static void SocialOneTrainer()
     {
-        var people = new SocialPerson[SocialRules.CastSize];
-        var again = new SocialPerson[SocialRules.CastSize];
+        var people = new SocialPerson[SocialRules.BaseCast];
+        var again = new SocialPerson[SocialRules.BaseCast];
         int trainer = Array.IndexOf(SocialCatalogue.Jobs, "reallife_social_job_trainer");
         int gym = (int)SocialOrigin.Gym, gymTrainers = 0, seeds = 0;
         bool apart = true, same = true;
@@ -134,7 +134,7 @@ internal static partial class Program
         // Nothing left to chance between the steps: the same person, outing and time give the same hour each time, and a
         // rough day's no is the call's one draw.
         bool same = true;
-        var cast = new SocialPerson[SocialRules.CastSize];
+        var cast = new SocialPerson[SocialRules.BaseCast];
         for (int seed = 1; seed <= 200; seed++)
         {
             SocialCatalogue.MakeCast(cast, seed, 0, 112, 9);

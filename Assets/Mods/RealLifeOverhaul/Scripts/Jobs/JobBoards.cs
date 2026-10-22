@@ -18,10 +18,12 @@ namespace RealLifeOverhaul
         private const float Reach = 1.5f;        // metres from its front to read it (the door beside it keeps its own key)
         private const float Aside = 2.4f;        // metres along the wall from the door
         private const string PropId = "job_board";
+        private const float CullRadius = 1.5f;   // metres round a board's foot: all of it (Performance/ModCulling)
 
         private readonly JobProps _props;
         private readonly IModLogger _logger;
         private readonly List<Transform> _boards = new List<Transform>(Most);
+        private readonly List<CullEntry> _culls = new List<CullEntry>(Most);   // the boards, not drawn beyond the game's far band
         private readonly List<Vector3> _fronts = new List<Vector3>(Most);       // where the reader stands
         private readonly HashSet<string> _kinds = new HashSet<string>();
         private readonly List<string> _kindOf = new List<string>(Most);        // the kind of service building each board stands at
@@ -112,6 +114,11 @@ namespace RealLifeOverhaul
 
         public void Dispose()
         {
+            for (int i = 0; i < _culls.Count; i++)
+            {
+                ModCulling.Remove(_culls[i]);   // drawn again before it goes back on the shelf
+            }
+            _culls.Clear();
             for (int i = 0; i < _boards.Count; i++)
             {
                 _props.Return(_boards[i]);
@@ -192,6 +199,7 @@ namespace RealLifeOverhaul
                     return false;
                 }
                 _boards.Add(board);
+                _culls.Add(ModCulling.Add(CullRules.Kind.JobBoard, board, at, CullRadius));
                 _fronts.Add(stand + outward * 0.5f);
                 _kindOf.Add(kind);
                 _names.Add(building.building.Address.ToFormattedString());

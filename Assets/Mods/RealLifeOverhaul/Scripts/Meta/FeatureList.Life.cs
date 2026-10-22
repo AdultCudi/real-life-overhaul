@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Meta
                 .Data("reallife:social", "reallife:social_*")
                 .Contact(SocialPhone.PeopleId)
                 .Objects("RealLifeOverhaul Shift Card")
-                .Fact("social_cast", () => SocialRules.CastSize.ToString(CultureInfo.InvariantCulture))
+                .Fact("social_cast", () => SocialRules.MaxCast.ToString(CultureInfo.InvariantCulture))
                 .ResetData(() =>
                 {
                     SocialState.Reset();   // the director reads the (now empty) save again on its next second
@@ -375,7 +375,7 @@ namespace RealLifeOverhaul.Meta
                 .Rows("reallife_garage_test_vehicles")   // the player's list of vehicles, not a test
                 .Data("reallife:garage_*")
                 .Fact("garage_resale", () => Guide.Percent(GarageCatalogue.Resale))
-                .Cleanup(GarageSummary.Close)
+                .Cleanup(GarageDirector.LetGo)   // the shop, the lists and the car held let go, also when the guard switches the feature off
                 .ResetData(() => GarageState.Load(SaveGameManager.Current.modData));   // no builds in the save: the director takes them off the cars
 
             SettingsTable.Declare(JusticeSettings.NoPrisonId, OptionType.Toggle, 0);

@@ -96,11 +96,14 @@ namespace RealLifeOverhaul.Economy
                 {
                     return;
                 }
-                Tell(NotificationType.Info, "reallife_co_note_claim_open", new Dictionary<string, string>
+                if (!Manages(shop.File.Place, ManagerTask.Claims))   // its manager looks at it at their hour
                 {
-                    { "business", shop.Name }, { "cover", CompanyText.Cover((int)kind) }, { "amount", CompanyText.Money(claim.Payout) },
-                    { "day", (claim.Day + CompanyCatalogue.ClaimWindowDays).ToString() }
-                }, TabCover, "claim:" + claim.Id);
+                    Tell(NotificationType.Info, "reallife_co_note_claim_open", new Dictionary<string, string>
+                    {
+                        { "business", shop.Name }, { "cover", CompanyText.Cover((int)kind) }, { "amount", CompanyText.Money(claim.Payout) },
+                        { "day", (claim.Day + CompanyCatalogue.ClaimWindowDays).ToString() }
+                    }, TabCover, "claim:" + claim.Id);
+                }
                 Changed();
             }
             catch (System.Exception e)

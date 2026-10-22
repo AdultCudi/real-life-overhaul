@@ -104,7 +104,7 @@ namespace RealLifeOverhaul
                         return;
                     }
                     int friends = 0;
-                    for (int i = 0; i < SocialState.People.Length; i++)
+                    for (int i = 0; i < SocialState.Count; i++)
                     {
                         SocialPerson p = SocialState.People[i];
                         if (p == null || !p.Met || string.IsNullOrEmpty(p.Name))

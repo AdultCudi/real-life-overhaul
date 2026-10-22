@@ -41,14 +41,16 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 
 - [Credit rating, lending and the Finance app](economy-credit.md): the core.
 - [Credit products, missed payments, the private lender and the ways out](economy-credit-products.md).
-- [Bank apps and your own bank](economy-banks.md).
+- [The Banks app and your own bank](economy-banks.md).
 - [The city's economy](economy-city.md), with the game's daily statement.
 - [Investors](economy-investors.md): investors, pitches and the lettings page.
 - [The stock market, your listed company and trading bots](economy-markets.md).
 - [Running a business](economy-company.md).
 - [The staff rota planner](economy-rota.md).
+- [Managers for your empire](economy-managers.md).
 - [Business pressure](business-pressure.md): rivals, inspections, the racket and more.
 - [Interiors and decor](interiors.md).
+- [Ready-made designs](designs.md): the interior installation firms' designs for the mod's own businesses.
 - [Districts](districts.md): the district view on the city map.
 
 `Scripts/Economy` also has `Brands`, `Dealer` (the Car Showroom), `Estate` (property), `Online` and `Services`, each with a `README.md` in its folder.
@@ -57,6 +59,8 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 
 - [Meta](meta.md): the Guide, presets, the options page and the save tools.
 - [The Planner](planner.md): the phone's agenda.
+- [The Calendar](calendar.md): the month on the phone, as the year you chose divides it.
+- [The phone](phone.md): folders on the home screen, a dock, moving apps, and the Banks app.
 
 ## Folders without a page
 

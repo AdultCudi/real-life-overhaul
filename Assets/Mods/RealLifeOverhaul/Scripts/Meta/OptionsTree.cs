@@ -225,13 +225,14 @@ namespace RealLifeOverhaul.Meta
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
-                    .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people").Also("friends dating date people calls typing"),
+                    .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
+                    .Opt("texts_city", "texts", "texts_people").Also("friends dating date people calls typing staff gossip"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),
                 S("flare").For("flare").Main("social_media")
                     .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
                     .Also("social media app followers posts likes selfie influencer"),
                 S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
-                    .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite"),
+                    .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite staff gossip memory language"),
                 S("textsai").For("textsai").Need("texts").Opts("texts_service")
                     .Buttons("reallife_textsai_key", "reallife_textsai_chatgpt", "reallife_textsai_model", "reallife_textsai_address", "reallife_textsai_forget",
                         "reallife_textsai_test", "reallife_textsai_status", "reallife_textsai_usage")
@@ -245,7 +246,8 @@ namespace RealLifeOverhaul.Meta
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
                 S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
-                S("phone").For("phone").Opts("phone_contacts", "phone_skin", "notice_look").Also("call numbers wallpaper notifications toast icons"),
+                S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_skin", "phone_folders", "notice_look").Buttons("reallife_phone_layout_reset")
+                    .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange"),
                 S("photos").For("photos").Main("phone_camera").Opts("phone_camera_grid").Also("camera gallery photo photos picture pictures selfie grid filter frame wallpaper")),
 
             G("city",
@@ -312,7 +314,8 @@ namespace RealLifeOverhaul.Meta
                         + "retirement options shares conflict interest"),
                 S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own")
                     .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
-                S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary calendar notes to do")),
+                S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary notes to do"),
+                S("calendar").For("calendar").Main("calendar").Also("calendar month months year date dates payday bills due birthday birthdays")),
 
             G("money",
                 S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Also("bank borrow score finance"),
@@ -321,23 +324,29 @@ namespace RealLifeOverhaul.Meta
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
-                S("markets").For("markets", "markets_listing", "markets_bots").Main("ventures_market")
-                    .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_large", "markets_reinvest")
+                S("markets").For("markets", "markets_listing", "markets_bots", "markets_derivatives").Main("ventures_market")
+                    .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_large", "markets_reinvest",
+                        "markets_derivatives")
                     .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit")
                     .Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
                     .Also("markets_bots", "bot bots robot automated algorithm strategy stop loss take profit limit order trend momentum")
                     .Also("markets_bonds", "bond bonds treasury gilt deposit certificate fixed income interest coupon reinvest savings rollover ladder")
                     .Also("markets_large", "large big block limit volume worked order algorithm vwap slice wealth investor")
-                    .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")),
+                    .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")
+                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",
                     "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
                     .Also("shop wages insurance advertising accountant permits"),
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
+                S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
+                    .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
+                S("bankbranch").For("economy_bank_branch").Need("economy").Opt("economy_bank_branch", "economy_bank")
+                    .Also("bank branch branches teller tellers counter customers accounts deposit withdraw loan high street"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
@@ -365,7 +374,9 @@ namespace RealLifeOverhaul.Meta
                     .Also("interior design decor decoration plants paintings lighting wear refresh shabby furniture bizman tab income takings prices slider"),
                 S("interiorstd").For("interiors_standard").Need("interiors").Opts("interiors_standard_strength", "interiors_basket")
                     .Also("district standard minimum complaints basket products reward strength slider income customers"),
-                S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider")),
+                S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider"),
+                S("designs").For("designs").Opts("designs")
+                    .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop")),
 
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",
@@ -378,7 +389,9 @@ namespace RealLifeOverhaul.Meta
 
             G("performance",
                 S("speed").For("performance").Opts("perf_refraction", "perf_sky_updates", "perf_stale_lights", "perf_far_districts", "perf_view_radius",
-                    "perf_far_props", "perf_textures_whole").Also("fps frame rate lag stutter slow faster"),
+                    "perf_far_props", "perf_textures_whole", "perf_mod_cull").Also("fps frame rate lag stutter slow faster"),
+                S("render").Guide("performance").Opts("render_shadow_reach", "render_shadow_cascades", "render_lod_reach")
+                    .Also("graphics shadows shadow distance cascades level of detail lod models quality fps"),
                 S("picture").For("visuals").Main("visuals_enabled").Opts("visuals_saturation", "visuals_contrast", "visuals_bloom", "visuals_detail")
                     .Also("graphics colour visuals quality")),
 

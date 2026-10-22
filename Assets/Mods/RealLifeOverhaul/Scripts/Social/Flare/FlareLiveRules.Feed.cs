@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Flare
 
         public const int DmGapDays = 2;
         public const int DmChance = 450;               // per mille a day after the gap
+        public const int ChatPostMinutes = 3 * 24 * 60;   // game minutes: a post of the player's this recent is what "saw your post earlier" means
 
         /// <summary>Who with a name reacts to a post of the player's, and when, as one short line kept on the post ("L:f3:12;R:c7:95").</summary>
         public static string Reactors(FlarePost p, IReadOnlyList<FlarePerson> people, IReadOnlyList<string> staff, bool boss, StringBuilder b)
@@ -342,11 +343,15 @@ namespace RealLifeOverhaul.Flare
             return b.Length > 0 ? b.ToString() : null;
         }
 
-        /// <summary>Whether one of the city's people writes to the player today, who and about what; once every two days at most.</summary>
-        public static bool CityDm(FlareFile f, int day, bool hiring, out string with, out string what)
+        /// <summary>
+        /// Whether one of the city's people writes to the player today, who, about what and at which minute (Now's); once every
+        /// two days at most. A chat ("saw your post earlier") comes only after a real post of the player's (PostedBefore).
+        /// </summary>
+        public static bool CityDm(FlareFile f, int day, bool hiring, out string with, out string what, out long at)
         {
             with = null;
             what = null;
+            at = Now(day, 10 + FlareRules.Roll(f.Seed, day, 842) % 10, FlareRules.Roll(f.Seed, day, 843) % 60);
             if (day - f.Net.DmDay < DmGapDays || FlareRules.Roll(f.Seed, day, 840) >= DmChance)
             {
                 return false;
@@ -380,7 +385,7 @@ namespace RealLifeOverhaul.Flare
             else
             {
                 with = "c" + who;
-                what = f.LastPostDay >= day - 3 ? "chat" : null;
+                what = PostedBefore(f, at) ? "chat" : null;
             }
             if (with == null || what == null)
             {
@@ -388,6 +393,30 @@ namespace RealLifeOverhaul.Flare
             }
             f.Net.DmDay = day;
             return true;
+        }
+
+        /// <summary>
+        /// Whether the player has a post of their own up at <paramref name="at"/> (Now's minutes) and at most ChatPostMinutes old: one
+        /// they posted, not a reply under another's post and not a sponsored post the company booked. The posts themselves are read,
+        /// so an account that has never posted (a new game's first days) has none. Cost: one walk over the posts, on the day's message.
+        /// </summary>
+        public static bool PostedBefore(FlareFile f, long at)
+        {
+            for (int i = f.Posts.Count - 1; i >= 0; i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.Author == FlareAuthor.Player && p.ReplyTo < 0 && p.Source != FlareSource.Reply && p.Source != FlareSource.Sponsored && p.At <= at && at - p.At <= ChatPostMinutes)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>What a city person's first message to the player is about: a chat about a recent post of theirs, or a hello that claims none.</summary>
+        public static string Opener(FlareFile f, long at)
+        {
+            return PostedBefore(f, at) ? "chat" : "hello";
         }
 
         /// <summary>A message added, the oldest going past the most.</summary>

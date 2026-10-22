@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.Economy
                 _picked = null;
                 BankSlice slice = desk.Slice(Bank, _work);
                 box.Title(FinanceText.T("reallife_bank_tab_loans"));
-                box.Subtitle(Bank.Name);
+                Which(box);
                 box.Section("reallife_ibox_sec_now");
                 box.Row("reallife_bank_owed_here", FinanceText.Money(slice.Owed));
                 box.Row("reallife_econ_over_leaves", FinanceText.Money(slice.Tomorrow));
@@ -300,6 +300,7 @@ namespace RealLifeOverhaul.Economy
             if (card == null)
             {
                 box.Title(FinanceText.T("reallife_econ_kind_card"));
+                Which(box);
                 string other = HeldWith(ProductKind.CreditCard);
                 if (other != null)
                 {
@@ -325,6 +326,7 @@ namespace RealLifeOverhaul.Economy
             string name = CreditDesk.Name(card);
             CardMovements(name, today);
             box.Title(name);
+            Which(box);
             FinanceApp.StandsLines(box, FinanceText.State(card), card.Ladder, false, !card.Frozen && card.Owed > 0);
             box.Row("reallife_bank_card_balance", FinanceText.Money(card.Owed));
             box.Row("reallife_econ_offer_limit", FinanceText.Money(card.Agreed));

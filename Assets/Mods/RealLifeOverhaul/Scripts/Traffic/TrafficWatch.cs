@@ -9,28 +9,36 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// A self-check on the traffic: a car the mod holds without driving or freezing it bounces on the spot (the springs have no
-    /// damper; the traffic system steadies only its own cars). Five times a second each vehicle's height is read; one bouncing
-    /// in place for 3 s is reported and taken off the road unseen, or frozen until it is. It also watches the response
-    /// vehicles that must not stand (Guard). Cost: a position a vehicle a look, nothing allocated.
+    /// damper; the traffic system steadies only its own cars). Every vehicle of the pool is looked at once a second, and one
+    /// that stands is watched five times a second (TrafficWatchRules); one bouncing in place for 3 s is reported and taken
+    /// off the road unseen, or frozen until it is. It also watches the response vehicles that must not stand (Guard).
+    /// Cost: five times a second, a position for a fifth of the pool and one for each vehicle standing; nothing allocated.
     /// </summary>
     public static class TrafficWatch
     {
-        private const float Interval = 0.2f;     // seconds
-        private const float Window = 1.5f;       // seconds a vehicle is watched before it is judged
-        private const int Windows = 2;           // ...and how many in a row must say "bouncing"
-        private const float MinTravel = 0.06f;   // metres up and down within a window
-        private const float MinStep = 0.008f;    // metres: a smaller change of height between two looks is no movement
-        private const float MaxDrift = 1f;       // metres along the ground within a window: further than this it is driving, not hopping
-        private const int MinTurns = 2;          // changes between rising and falling within a window
+        private const float Interval = TrafficWatchRules.Interval;   // seconds
+        private const float Window = TrafficWatchRules.Window;       // seconds, for the report
 
-        private struct Track
+        // The pool as the rules read it: one vehicle's place, or false if it is off the road or frozen.
+        private sealed class PoolSource : IBounceSource
         {
-            public float Since;      // when this window began; 0 if the vehicle is not being watched
-            public Vector3 Start;
-            public float Height, Low, High;
-            public sbyte Way;
-            public byte Turns;
-            public byte Bouncing;    // windows in a row
+            public List<VehicleComponent> Pool;
+
+            public bool Read(int index, out float x, out float y, out float z)
+            {
+                VehicleComponent car = Pool[index];
+                Rigidbody body = car != null && car.gameObject.activeInHierarchy ? car.rb : null;
+                if (body == null || body.isKinematic)
+                {
+                    x = y = z = 0f;
+                    return false;
+                }
+                Vector3 at = body.position;
+                x = at.x;
+                y = at.y;
+                z = at.z;
+                return true;
+            }
         }
 
         private struct Held
@@ -41,7 +49,12 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger => TrafficTools.Logger;
 
-        private static Track[] _tracks = new Track[0];
+        private static BounceTrack[] _tracks = new BounceTrack[0];
+        private static readonly PoolSource Source = new PoolSource();
+        private static readonly int[] Found = new int[4];
+        private static readonly float[] Travels = new float[4];
+        private static readonly float[] Middles = new float[4];
+        private static int _cursor;
         private static readonly List<Held> Frozen = new List<Held>(4);
         private static readonly Collider[] Under = new Collider[8];
         private static float _next;
@@ -189,65 +202,20 @@ namespace RealLifeOverhaul
             List<VehicleComponent> pool = Manager.GetVehicleList();
             if (_tracks.Length < pool.Count)
             {
-                _tracks = new Track[pool.Count];
+                System.Array.Resize(ref _tracks, pool.Count);
             }
-            for (int i = 0; i < pool.Count; i++)
+            Source.Pool = pool;
+            int found = TrafficWatchRules.Look(_tracks, pool.Count, ref _cursor, Source, now, Found, Travels, Middles);
+            Source.Pool = null;
+            for (int i = 0; i < found; i++)
             {
-                VehicleComponent car = pool[i];
-                Rigidbody body = car != null && car.gameObject.activeInHierarchy ? car.rb : null;
-                if (body == null || body.isKinematic)
+                VehicleComponent car = pool[Found[i]];
+                Rigidbody body = car != null ? car.rb : null;
+                if (body != null)
                 {
-                    _tracks[i].Since = 0f;   // off the road, or frozen: nothing to watch
-                    _tracks[i].Bouncing = 0;
-                    continue;
-                }
-                Vector3 at = body.position;
-                ref Track track = ref _tracks[i];
-                if (track.Since <= 0f)
-                {
-                    Begin(ref track, at, now);
-                    continue;
-                }
-                float step = at.y - track.Height;
-                if (step > MinStep || step < -MinStep)
-                {
-                    sbyte way = (sbyte)(step > 0f ? 1 : -1);
-                    if (track.Way != 0 && way != track.Way && track.Turns < byte.MaxValue)
-                    {
-                        track.Turns++;
-                    }
-                    track.Way = way;
-                }
-                track.Height = at.y;
-                track.Low = Mathf.Min(track.Low, at.y);
-                track.High = Mathf.Max(track.High, at.y);
-                if (now - track.Since < Window)
-                {
-                    continue;
-                }
-                float travel = track.High - track.Low;
-                float dx = at.x - track.Start.x;
-                float dz = at.z - track.Start.z;
-                bool bouncing = track.Turns >= MinTurns && travel >= MinTravel && dx * dx + dz * dz < MaxDrift * MaxDrift;
-                int running = bouncing ? track.Bouncing + 1 : 0;
-                float middle = (track.Low + track.High) * 0.5f;
-                Begin(ref track, at, now);
-                track.Bouncing = (byte)running;
-                if (running >= Windows)
-                {
-                    track.Bouncing = 0;
-                    Settle(car, body, travel, middle);
+                    Settle(car, body, Travels[i], Middles[i]);
                 }
             }
-        }
-
-        private static void Begin(ref Track track, Vector3 at, float now)
-        {
-            track.Since = now;
-            track.Start = at;
-            track.Height = track.Low = track.High = at.y;
-            track.Way = 0;
-            track.Turns = 0;
         }
 
         // Reports the vehicle and stops it: off the road if it cannot be seen, frozen at the middle of its bounce if it can.
@@ -261,7 +229,7 @@ namespace RealLifeOverhaul
                 _reports++;
                 string touch = TrafficTools.LastTouch(car, out float ago);
                 Logger?.Warn("Traffic watch: '" + TrafficTools.Name(car) + "' was bouncing on the spot (" + travel.ToString("F2", CultureInfo.InvariantCulture) + " m up and down for "
-                             + (Window * Windows).ToString("F0") + " s), " + TrafficTools.State(car) + "; "
+                             + (Window * TrafficWatchRules.Windows).ToString("F0") + " s), " + TrafficTools.State(car) + "; "
                              + (touch != null ? "the mod last touched it " + ago.ToString("F0") + " s ago: " + touch : "the mod has not touched it (ordinary traffic)")
                              + "; " + Standing(car, body) + "; "
                              + (seen ? "frozen where it stands until it is out of view." : "out of view: taken off the road.")

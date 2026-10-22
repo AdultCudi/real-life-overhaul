@@ -4,6 +4,7 @@ using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
+using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -57,7 +58,8 @@ namespace RealLifeOverhaul.Economy
         private int _parts;            // which parts were on at the last look, a bit each
         private EstateApp _view;
         private PhoneApp _app;
-        private Action _second, _onSave, _onHour, _onDay;
+        private Action _second, _onSave, _onHour, _onDay, _soldBack;   // (_soldBack: the hour's look at buildings sold)
+        private readonly List<string> _handedBack = new List<string>(2);
 
         public bool Running => _running;
 
@@ -79,6 +81,7 @@ namespace RealLifeOverhaul.Economy
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
+            _soldBack = () => SoldBack(false);
             EconomyDirector.Follow(StartSeats.Estate, _second);   // its first second after a load waits for its seat (Core/StartLine)
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
@@ -276,6 +279,7 @@ namespace RealLifeOverhaul.Economy
             int added = 0, dropped = 0;
             if (On(EstatePart.Property))
             {
+                SoldBack(true);   // a building sold and put back as the player's for nothing is the buyer's again before it is read as the player's
                 EstateGame.ReadHoldings(_state, out added, out dropped);
                 EstateGame.ReadAgency(_state.Agency);
                 ApplyProperty(today);
@@ -465,6 +469,7 @@ namespace RealLifeOverhaul.Economy
                         WriteRents(false);   // the game's nightly run may follow at once: it pays what stands now
                     }
                 }
+                Part(EstatePart.Property, "a sold building", _soldBack);   // (also first thing in the game's NewDay: before its daily run could sell it again)
                 if (_state.Hire.Cars.Count > 0)
                 {
                     try
@@ -539,6 +544,36 @@ namespace RealLifeOverhaul.Economy
             catch (Exception e)
             {
                 Fault("the day", e);
+            }
+        }
+
+        /// <summary>
+        /// Buildings sold that are among the player's again with no purchase since (EstateGame.HandBackSold): handed back to their
+        /// buyers, the player told once a sale. With <paramref name="books"/> (a start), the game's books are searched first for
+        /// sales made before they were remembered. Over the handful of sales remembered; nothing at all while there are none.
+        /// </summary>
+        private void SoldBack(bool books)
+        {
+            int found = books ? EstateGame.SalesInBooks(_state, Save.Day) : 0;
+            if (_state.Sold.Count == 0)
+            {
+                return;
+            }
+            _handedBack.Clear();
+            int back = EstateGame.HandBackSold(_state, _handedBack);
+            for (int i = 0; i < _handedBack.Count; i++)
+            {
+                Tell(NotificationType.Warning, "reallife_estate_note_sold_back", Data("building", _handedBack[i]), TabMine, null);
+            }
+            if (back > 0)
+            {
+                Changed();
+            }
+            if (Verbose && (books || back > 0))
+            {
+                Logger?.Info("Estate check (buildings sold, day " + Save.Day + (books ? ", a start" : string.Empty) + "): " + _state.Sold.Count + " sale(s) remembered"
+                             + (books ? ", " + found + " found in the game's books of buildings held again from before them" : string.Empty) + "; " + back
+                             + " handed back to their buyers (" + _handedBack.Count + " told): PASS");
             }
         }
 

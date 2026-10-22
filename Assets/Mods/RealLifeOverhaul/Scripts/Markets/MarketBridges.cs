@@ -45,6 +45,15 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The player's worth as the Finance app's Overview says it, counting nothing on the market; null: the game's alone.</summary>
         public static Func<long> NetWorth;
 
+        /// <summary>An item's own wholesale price before any of the mod's (Economy/City); under nothing for one it has not read.</summary>
+        public static Func<string, float> OwnWholesale;
+
+        /// <summary>Whether the city's economy runs, and so writes the raw materials exchange's prices as the importers'.</summary>
+        public static Func<bool> CityPrices;
+
+        /// <summary>The exchange has set new prices at a close, or its option changed: the importers' prices written again.</summary>
+        public static Action MaterialsFixed;
+
         public static void Reset()
         {
             City = null;
@@ -59,6 +68,9 @@ namespace RealLifeOverhaul.Markets
             Trade = null;
             Banks = null;
             NetWorth = null;
+            OwnWholesale = null;
+            CityPrices = null;
+            MaterialsFixed = null;
         }
     }
 

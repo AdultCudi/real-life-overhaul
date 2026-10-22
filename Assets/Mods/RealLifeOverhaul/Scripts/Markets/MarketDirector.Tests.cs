@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Markets
                     total += OwnSettled(log);   // the player's listed company taken private at its last price
                     total += BotsSettled(log);
                     total += BondsSettled(log);
+                    total += DerivsSettled(log);   // futures at their fair price, the margin account paid out, options at theirs
                     if (total > 0)
                     {
                         _world.Wallet.Give(total, MarketMoney.Sold, string.Empty);

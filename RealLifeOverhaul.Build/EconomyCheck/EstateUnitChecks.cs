@@ -274,8 +274,8 @@ internal static partial class Program
         Check(h.Units.Count == 4 && !h.Units[1].Let && !h.Units[3].Let && h.Units[0].Rent == 1200, "the game's count then gives it its other units, empty");
         string now = EstateStore.Write(s);
         string head = now.Substring(0, now.IndexOf("^u:", StringComparison.Ordinal));
-        Check(head == old.Substring(0, old.IndexOf("^g:", StringComparison.Ordinal)).Replace("v=1^", "v=2^"), "the building's record is written field for field as before units, so a version from before them reads the first unit's lease");
-        EstateState older = EstateStore.Read(now.Replace("v=2^", "v=1^"), out version);
+        Check(head == old.Substring(0, old.IndexOf("^g:", StringComparison.Ordinal)).Replace("v=1^", "v=" + EstateStore.Version + "^"), "the building's record is written field for field as before units, so a version from before them reads the first unit's lease");
+        EstateState older = EstateStore.Read(now.Replace("v=" + EstateStore.Version + "^", "v=1^"), out version);
         Check(older != null && EstateStore.Write(older) == now, "and this version reads its own line under the old number as well");
 
         // units through the save and back

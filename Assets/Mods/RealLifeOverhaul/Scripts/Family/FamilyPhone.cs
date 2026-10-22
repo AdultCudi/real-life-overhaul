@@ -258,6 +258,14 @@ namespace RealLifeOverhaul.Family
 
         private static DialogEntry Chat()
         {
+            if (Partner.UsesSocial && HomeLife.Present)
+            {
+                DialogEntry face = HomeLife.FaceChat();
+                if (face != null)
+                {
+                    return face;
+                }
+            }
             FamilySave s = FamilyState.S;
             s.LastTalkDay = TimeHelper.CurrentDay;
             s.LastChatDay = TimeHelper.CurrentDay;

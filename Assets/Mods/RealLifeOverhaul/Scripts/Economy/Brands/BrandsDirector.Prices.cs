@@ -21,6 +21,12 @@ namespace RealLifeOverhaul.Economy.Brands
             return Kept(shop, out b, out from);
         }
 
+        /// <summary>True while a chain or a brand keeps the prices of the shop at a place (for the company's managers, through a bridge).</summary>
+        public bool KeepsPrices(string place)
+        {
+            return _running && place != null && Kept(ShopAt(place));
+        }
+
         private bool Kept(BrandShop shop, out Brand b, out BrandShop from)
         {
             b = null;

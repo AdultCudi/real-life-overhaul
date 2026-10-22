@@ -635,15 +635,23 @@ internal static partial class Program
         string line = OwnBankStore.Write(b);
         OwnBank back = OwnBankStore.Read(line, out _);
         Check(back != null && back.Closures == 2 && back.State == OwnBankState.Closed && back.EndDay == 400 && OwnBankStore.Write(back) == line, "own bank, again: the closures are kept in the save");
-        string old = line.Replace("|2|" + int.MinValue + "|0^d:", "^d:");   // without the closures and the fields after them
+        string old = HeadCut(line, 32);   // without the closures and the fields after them
         OwnBank older = OwnBankStore.Read(old, out _);
         Check(old != line && older != null && older.Closures == 1 && OwnBankRules.AgainWhy(older, 400 + BankYear - 1, BankYear, false, 50) == wait
               && OwnBankRules.AgainWhy(older, 400 + BankYear, BankYear, false, 50) == null && OwnBankRules.CapitalLeast(c.Level, older.Closures) == OwnBankRules.CapitalLeast(c.Level, 1),
             "own bank, again: an older save with a closed bank follows the new rule: a year from its closure, then the stricter terms");
         OwnBank running = NewBank(c);
-        string oldRunning = OwnBankStore.Write(running).Replace("|0^d:", "^d:");
+        string oldRunning = HeadCut(OwnBankStore.Write(running), 32);
         OwnBank stillRunning = OwnBankStore.Read(oldRunning, out _);
         Check(stillRunning != null && stillRunning.Running && stillRunning.Closures == 0, "own bank, again: an older save with a bank that is running counts no closure");
+    }
+
+    // A line as an older version wrote it: its head record cut to its first fields, every part after it as it was.
+    private static string HeadCut(string line, int fields)
+    {
+        int from = line.IndexOf("^s:", StringComparison.Ordinal) + 3, to = line.IndexOf('^', from);
+        string[] head = line.Substring(from, to - from).Split('|');
+        return line.Substring(0, from) + string.Join("|", head, 0, Math.Min(fields, head.Length)) + line.Substring(to);
     }
 
     // ---------------------------------------------------------------- the save

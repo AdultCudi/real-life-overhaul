@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                int limit = kind == ProductKind.Overdraft ? ProductTerms.OverdraftLimit(score, BankTerms.OwnCapTotal) : ProductTerms.CardLimit(score, BankTerms.OwnCapTotal);
+                int limit = LimitAt(kind, score, bank);
                 CreditAccount a = AccountRules.Open(kind, limit, ProductTerms.RateBp(score, ownRate, ProductTerms.Points(kind), Multiplier), day);
                 a.Test = true;
                 a.Owed = limit / 2;   // as if half had been drawn: something to pay, to miss and to charge interest on

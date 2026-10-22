@@ -33,6 +33,12 @@ Meta/
   Guide           the guide's pages and texts (topics, facts, mark-up) and its phone contact
   GuideApp        the Guide as an app on the game's phone (GameUi.PhoneApp), asked for from the options page, the contact and the welcome notice
   GuideView       the app's panel in the game's frame (GameUi.AppShell): a table of pages, a table of the lines of a page
+  SettingsApp     the options as an app on the game's phone ("Mod settings"), asked for from the options page and BizMan
+  SettingsView    its page: the game's help screen (F1) in dark colours (GameUi.HelpFrame), the groups and sections in its
+                  list on the left, each option with a short description and the game's own control of its kind
+                  (GameUi.OptionRows: switch, slider, drop-down, button, key); .Rows, .Find (the search), .Presets
+  SettingsRules   its arithmetic: the groups and pages from the page's plan, the control of each line, a slider's ends,
+                  the presets against the choices, the search
   Welcome         the first-run / after-update notification, with a click that opens the Guide on "What changed"
   Changelog       what changed per version, for the Guide's What's new page
   SaveTools       prepare a save for removing the mod (.Steps: the backup and the purge), reset and repair (.Reset), the check after each load (.Load)
@@ -187,6 +193,7 @@ There is no "all saves" variant.
 - Guide: options page "Open the Guide on your phone" (the app opens when the menu is closed); the phone contact "Real Life Overhaul Guide"; "Check the mod's set-up" renders every page and lists unfilled `{facts}` and missing texts.
 - Welcome: "Show what changed" (opens the Guide on that page); or delete `m:<mod>:meta_seen_version` from PlayerPrefs.
 - Presets: the four buttons, then the guide's Presets page (the "Now" column) and the header "Preset in use".
+- Mod settings app (the phone, or "Open the mod's settings on your phone"): the game's help screen in dark colours; a group opens in the list on the left, a section shows on the right with each option's switch, slider, drop-down, button or key; a switch's change greys or frees the rows that need it at once; the search box finds rows from two letters; "Show test tools" on adds the Test tools group. How it is built: [game-ui.md, section 35](../../RealLifeOverhaul.Build/docs/game-ui.md).
 - Options page: open and close sections; "Show test tools" off hides the last section.
   Every button has a word on it ("Open", "Close", "Run", "Apply"), never "Your text here", and every slider its number beside it.
   Each section's label ends in its count ("(5 options, on)"); switch a feature's first toggle and the "on" becomes "off" at once.

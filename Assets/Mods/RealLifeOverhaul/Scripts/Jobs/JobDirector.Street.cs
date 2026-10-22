@@ -76,7 +76,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's own destination guider, so the place shows on the city map too; refused once, the mod's marker is all there is.
+        // The game's destination guider puts the place on the city map too; the job's world panels handle actions there.
         private void Guide()
         {
             if (_guiderBroken || _job == null)
@@ -85,7 +85,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                if (!_job.HasMarker || _context.Indoors)   // indoors the mod's own marker points the way: the game's arrow is for streets
+                if (!_job.HasMarker || _context.Indoors)   // indoors the job's world panel points the way: the game's arrow is for streets
                 {
                     Unguide();
                 }
@@ -103,7 +103,7 @@ namespace RealLifeOverhaul
                 _guiderBroken = true;
                 _guided = false;
                 Logger?.Error(e);
-                Logger?.Warn("Jobs: the game's destination guider could not be used; only the mod's own marker is shown.");
+                Logger?.Warn("Jobs: the game's destination guider could not be used; the job's panels are still available.");
             }
         }
 

@@ -217,6 +217,7 @@ namespace RealLifeOverhaul
                     _later = null;
                     what();
                 }
+                CookingTogether.Tick(this);
                 if (_plan != null)
                 {
                     TryCook(now);

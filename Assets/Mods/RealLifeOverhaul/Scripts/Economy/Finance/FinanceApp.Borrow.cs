@@ -113,7 +113,7 @@ namespace RealLifeOverhaul.Economy
             if (uis != null && uis.textInputUi != null)
             {
                 InfoBox.Button(entry, InfoBox.Additional, "reallife_econ_offer_type", () =>
-                    uis.textInputUi.Show("reallife_econ_offer_placeholder", "common_confirm", text => UiClone.Safe(() => Typed(text)), null, _amount.ToString(), false, TypedAmountLength));
+                    GameUi.TextBox.Ask("reallife_econ_offer_placeholder", "common_confirm", text => UiClone.Safe(() => Typed(text)), null, _amount.ToString(), false, TypedAmountLength));
             }
             box.Headline("reallife_econ_offer_cost");
             box.Row("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment));

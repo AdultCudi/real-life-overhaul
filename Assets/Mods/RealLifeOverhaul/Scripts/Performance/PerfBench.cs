@@ -65,6 +65,7 @@ namespace RealLifeOverhaul
         private readonly PerfLoop _loop;
         private readonly IModLogger _logger;
         private Item[] _items;
+        private string[] _notMeasured;   // items with nothing to change in this game now, and why
         private int _item, _window;
         private bool _measuring, _wasBusy;
         private float _phaseEnds, _busyUntil;
@@ -103,11 +104,21 @@ namespace RealLifeOverhaul
             }
 
             var items = new List<Item>(32);
+            var notMeasured = new List<string>(8);
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
+                // Nothing to measure: a feature the game has off already, or a picture setting left at the game's own value.
+                string unused = tweak.NotInUse ?? (tweak.BySetting && !tweak.SettingWants ? "at the game's own value: its trial row measures a set value" : null);
+                if (unused != null)
+                {
+                    notMeasured.Add(tweak.Id.PadRight(30) + unused);
+                    continue;
+                }
                 // Three pairs for an option, two for a trial.
-                items.Add(new Item { Label = tweak.Id, Tweak = tweak, Pairs = tweak.Trial || tweak.Id == "far_props" ? 2 : 3, CountsVisible = tweak is FarDistricts || tweak is LayerCull });
+                items.Add(new Item { Label = tweak.Id, Tweak = tweak, Pairs = tweak.Trial || tweak.Id == "far_props" ? 2 : 3,
+                                     CountsVisible = tweak is FarDistricts || tweak is LayerCull || tweak is ModCull });
             }
+            _notMeasured = notMeasured.ToArray();
             items.Add(new Item { Label = "ref: no interface", Reference = Ref.NoUi, Pairs = 2, Meaning = "Every interface canvas disabled." });
             foreach (string canvas in new[] { "Smartphone", "Topbar", "PlayerHUD", "IngameDebugConsole" })
             {
@@ -583,8 +594,15 @@ namespace RealLifeOverhaul
             string header = "item".PadRight(30) + Cell("off ms", 8) + Cell("ON ms", 8) + Cell("saved", 8) + "  " + "each pair".PadRight(22) + Cell("d.script", 9) + Cell("d.phys", 8) + Cell("d.nav", 7) + Cell("d.draw", 8)
                             + Cell("d.hdrp", 8) + Cell("d.other", 8) + Cell("cars", 6) + Cell("people", 7) + "   verdict";
             Section(text, header, "TWEAKS (options)", item => item.Tweak != null && !item.Tweak.Trial);
-            Section(text, header, "TRIALS (one feature off for the row; several change the picture; none is an option)", item => item.Tweak != null && item.Tweak.Trial);
+            Section(text, header, "TRIALS (one feature off, or one picture setting at a set value, for the row; several change the picture)",
+                item => item.Tweak != null && item.Tweak.Trial);
             Section(text, header, "REFERENCES", item => item.Tweak == null);
+            text.AppendLine("NOT MEASURED (nothing to change in this game now)");
+            foreach (string line in _notMeasured)
+            {
+                text.AppendLine("  " + line);
+            }
+            text.AppendLine();
             text.AppendLine("verdict: 'faster' / 'SLOWER' = every pair agrees and the mean is at least " + PerfText.F2(Shown) + " ms; otherwise 'not shown'. cars / people = traffic cars driving and pedestrians walking when the item began.");
             text.AppendLine("d.script = every script of the game and all mods; d.phys = physics; d.nav = navigation; d.draw = culling + render pipeline + hand-over to the render thread; d.hdrp = the part of d.draw inside the pipeline's own code; d.other = the rest.");
 
@@ -608,11 +626,14 @@ namespace RealLifeOverhaul
             text.AppendLine("tweaks as the player has them set (back in force now):");
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
-                if (!tweak.Trial)
+                if (!tweak.Trial && !tweak.BySetting)
                 {
                     text.AppendLine("  " + tweak.Id.PadRight(22) + (tweak.Wanted ? "on" : "off"));
                 }
             }
+            text.AppendLine("  " + "shadow_reach".PadRight(22) + Settings.ShadowReach + "% of the game's sun shadow distance");
+            text.AppendLine("  " + "shadow_cascades".PadRight(22) + (Settings.ShadowCascades > 0 ? Settings.ShadowCascades.ToString() : "the game's own"));
+            text.AppendLine("  " + "lod_reach".PadRight(22) + Settings.LodReach + "% of the game's level-of-detail distances");
             return text.ToString();
         }
 

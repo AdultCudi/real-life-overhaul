@@ -24,11 +24,13 @@ namespace RealLifeOverhaul.Careers
         // metres: clear of the driving school's desk at the school's door
         private static readonly float ReachAtSchool = CampusRules.DoorReachAt(CampusPlace.School, LicenceDesks.Aside, LicenceDesks.Reach);
         private const int WaitForOthers = 30;   // seconds to wait for the utilities office and the courthouse to choose theirs
+        private const float SignCullRadius = 2f;   // metres round the sign's foot: all of it (Performance/ModCulling)
         private static readonly float[] Aside = { -4.6f, 4.6f, -6.2f, 6.2f };   // metres along the front; the courthouse tries the other side first
 
         private readonly IModLogger _logger;
         private readonly Func<bool> _sitting;    // a class or exam of the mod's is being sat (CareersDirector.SittingNow)
         private GameObject _sign;
+        private CullEntry _cull;                  // the sign, not drawn beyond the game's far band (Performance/ModCulling)
         private bool _failed;
         private int _waited;
         private int _look;
@@ -206,6 +208,8 @@ namespace RealLifeOverhaul.Careers
 
         public void Dispose()
         {
+            ModCulling.Remove(_cull);
+            _cull = null;
             if (_sign != null)
             {
                 UnityEngine.Object.Destroy(_sign);
@@ -407,6 +411,8 @@ namespace RealLifeOverhaul.Careers
                 {
                     return false;
                 }
+                ModCulling.Remove(_cull);
+                _cull = ModCulling.Add(CullRules.Kind.BuildingSign, _sign.transform, at, SignCullRadius);
                 Front = reader;
                 Usable = true;
                 return true;

@@ -60,7 +60,7 @@ namespace RealLifeOverhaul
     ///
     ///   Session: a frame of 231 ms; none of the mod's large pieces of work was under way; where it went:
     ///   coroutines and timers 204 ms, rendering 14 ms, the rest 13 ms; the collector: no collection (41 so far),
-    ///   at work 0.0 ms, heap 731 MB before and 733 MB after; the game: its screen was black or fading (its own
+    ///   at work 0.0 ms, heap 731 MB before and 733 MB after; the game: its screen was black (its own
     ///   walk into or out of a building: not seen as a stutter), the player came out of a building in it, not
     ///   saving, no scene loaded or unloaded; the mod's navigation obstacles changed in the second before it and
     ///   in it: 0; the mod's last pieces of work: "people: a character being made" (3.1 ms) 41.0 s before; on
@@ -77,10 +77,12 @@ namespace RealLifeOverhaul
     /// method (Core/HotSpots). Time under "scripts' Update" or "coroutines and timers" that is not under the mod's
     /// own scripts is the game's, or another mod's.
     ///
-    /// "Its screen was black or fading" is said, and the frame is not counted as one the player saw, while the
-    /// game's black screen (UI.UiFader) or its loading screen (UI.Load.LoadingScreen) was up, or coming or going,
-    /// in the frame: the loading screen is still there, fading out for 0.8 s, after the game has said the save is
-    /// loaded (LoadScene.isLoading false), which is when the record starts counting frames again.
+    /// "Its screen was black" is said, and the frame is not counted as one the player saw, while the game's black
+    /// screen (UI.UiFader) was drawn at full strength as the frame began; "its screen was black or fading", likewise,
+    /// while its loading screen (UI.Load.LoadingScreen) was there: the loading screen is still there, fading out for
+    /// 0.8 s, after the game has said the save is loaded (LoadScene.isLoading false), which is when the record starts
+    /// counting frames again. "Its screen was fading, the picture showing through" is said, and the frame counted as
+    /// seen, while the black screen fades out or back in (0.2 s each way at a door): the picture stops there.
     ///
     /// With the step timing on, the frame is cut where the engine itself cuts it (just after it updates the time,
     /// Diagnostics/FrameSteps), so the parts add up to the frame: the named groups, "waiting for the last frame to be
@@ -178,6 +180,7 @@ namespace RealLifeOverhaul
         private long _grown;                   // bytes the managed heap grew by, frame over frame, in the minute
         private long _collectorNanos, _collectorWorst;
         private bool _insideLastFrame, _fadedLastFrame, _savingLastFrame;
+        private bool _coveredLastFrame;        // the game's black screen was drawn at full strength at the last look (Core/SceneFinds.Covered)
         private bool _loadingLastFrame;        // the game's loading screen was there (up or fading out) at the last look
         private bool _loadingUnread;           // this build's loading screen could not be read: left out from then on
         private float _buildingAt = -1000f;    // when the player was last seen to have gone into or come out of a building
@@ -270,7 +273,7 @@ namespace RealLifeOverhaul
                 long heap = GC.GetTotalMemory(false);
                 watch.Long(Time.unscaledDeltaTime, watch._collectionsLastFrame, collections, watch._heapLastFrame, heap,
                     watch._collector.Valid ? watch._collector.LastValue : 0L,
-                    FrameRules.Screen(UI.UiFader.isFading, watch._fadedLastFrame, watch.LoadingThere(), watch._loadingLastFrame), SaveGameManager.SavingGameInProgress);
+                    FrameRules.Screen(UI.UiFader.isFading, watch._fadedLastFrame, watch._coveredLastFrame, watch.LoadingThere(), watch._loadingLastFrame), SaveGameManager.SavingGameInProgress);
                 watch.Minute(collections);
                 PerfDirector.Notify("reallife_perf_test_session_done", 8f);
             }
@@ -590,12 +593,14 @@ namespace RealLifeOverhaul
             long collectorNanos = _collector.Valid ? _collector.LastValue : 0L;   // the frame before this one, complete
             bool inside = BuildingManager.IsInsideBuilding;
             bool faded = UI.UiFader.isFading;
+            bool covered = faded && SceneFinds.Covered;   // (its overlay read only while it fades)
             bool loading = LoadingThere();
             bool saving = SaveGameManager.SavingGameInProgress;
-            // The game's black screen or its loading screen was up, or coming or going, during the frame: the loading screen
-            // fades out for 0.8 s after the game has set isLoading false (UI.Load.LoadingScreen.LoadAsyncScenes).
-            FrameScreen screen = FrameRules.Screen(faded, _fadedLastFrame, loading, _loadingLastFrame);
-            bool hidden = screen != FrameScreen.Clear;
+            // The game's loading screen was there during the frame (it fades out for 0.8 s after the game has set isLoading
+            // false: UI.Load.LoadingScreen.LoadAsyncScenes), or its black screen was drawn at full strength as the frame began;
+            // its fades, with the picture showing through, are seen.
+            FrameScreen screen = FrameRules.Screen(faded, _fadedLastFrame, _coveredLastFrame, loading, _loadingLastFrame);
+            bool hidden = FrameRules.Unseen(screen);
             bool saved = saving || _savingLastFrame;
             if (inside != _insideLastFrame)
             {
@@ -605,6 +610,7 @@ namespace RealLifeOverhaul
             }
             _insideLastFrame = inside;
             _fadedLastFrame = faded;
+            _coveredLastFrame = covered;
             _loadingLastFrame = loading;
             _savingLastFrame = saving;
             if (UI.Load.LoadScene.isLoading || Time.timeScale <= 0f || !Application.isFocused)

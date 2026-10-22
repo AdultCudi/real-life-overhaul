@@ -84,6 +84,7 @@ namespace RealLifeOverhaul
                     f.PriceTrend = City.PriceTrend;
                     f.RateMove = City.RateMove;
                     f.EventToday = City.EventToday != null ? City.EventToday.GetLocalization() : null;
+                    f.EventWords = City.EventToday != null ? Texts.TextWords.EventWords(City.EventToday) : null;   // (RLO Texts' card: English in every language)
                     f.NewsDistrict = City.NewsDistrict != null ? Districts.DistrictGame.Name(City.NewsDistrict) : null;
                 }
                 catch (Exception e)
@@ -108,7 +109,8 @@ namespace RealLifeOverhaul
             // ---------------------------------------------------------------- People
 
             // The person of the cast somebody new would be when met: one not yet met, not being brought by a friend, not a star
-            // influencer's, of the sex given if one is (1 a woman, 0 a man, -1 either); null if nobody is left (as Flare's).
+            // influencer's, of the sex given if one is (1 a woman, 0 a man, -1 either), else somebody new while there is room;
+            // null if nobody is left (as Flare's).
             private static SocialPerson Stranger(int sex)
             {
                 if (!Settings.Social || !Settings.SocialMeetings || !SocialState.Loaded || SocialDirector.Instance == null)
@@ -117,7 +119,7 @@ namespace RealLifeOverhaul
                 }
                 FlareFile file = FlareDirector.Instance != null ? FlareDirector.Instance.File : null;
                 SocialPerson either = null;
-                for (int i = 0; i < SocialRules.CastSize; i++)
+                for (int i = 0; i < SocialState.Count; i++)
                 {
                     SocialPerson p = SocialState.Get(i);
                     if (p == null || p.Met || p.IsFamily || p.Origin == SocialOrigin.OldFriend || SocialDirector.Expected(p) || (file != null && FlareCast.IsOne(file, p.Index)))
@@ -130,7 +132,7 @@ namespace RealLifeOverhaul
                     }
                     either = either ?? p;
                 }
-                return either;
+                return SocialDirector.Newcomer(SocialOrigin.Street, sex) ?? either;
             }
 
             // Somebody new met in the street: who they were in the street, their face and clothes too.
@@ -155,7 +157,10 @@ namespace RealLifeOverhaul
 
             private static void MeetInStreet(SocialPerson p, StreetMeet m)
             {
-                p.Name = m.First + " " + m.Last;
+                if (!SocialState.NameTaken(m.First + " " + m.Last, p))
+                {
+                    p.Name = m.First + " " + m.Last;   // (one name is one contact: somebody else's stays theirs)
+                }
                 p.Female = m.Female;
                 p.Age = Mathf.Clamp(m.Age, 18, 85);
                 p.Job = m.Job;

@@ -196,6 +196,11 @@ namespace RealLifeOverhaul.Meta
             string vanId = RentalVanId();
             string converted = InConvertedShops();   // (asked before: the shops made offices are shops again once the features stop)
             RunCleanups(report);
+            int designs = Designs.DesignsDirector.TakeAway();   // the installation firms' designs for the mod's business types, out of the game's own folder (Scripts/Designs)
+            if (designs > 0)
+            {
+                report.Add(Designs.DesignsText.ReportRemoved.GetLocalization().Replace("{count}", designs.ToString(CultureInfo.InvariantCulture)));
+            }
             yield return null;
             yield return null;
 

@@ -318,12 +318,13 @@ internal static partial class Program
         Check(Math.Abs(low - high) * 10 < low + high, "Flare crowd: the people who react are picked evenly from all four hundred (" + low + " of the first half, " + high + " of the second)");
         // Messages: one every two days at most, from anybody.
         FlareFile m = FlareLiveFile(8);
-        m.LastPostDay = 1000;
+        var lately = new FlarePost { Id = 1, Author = FlareAuthor.Player, Source = FlareSource.Photo, Hour = 8 };   // a post of the player's the day before each day
+        m.Posts.Add(lately);
         int dms = 0, gaps = 0, last = -100, highDm = 0;
         for (int day = 0; day < 1000; day++)
         {
-            m.LastPostDay = day;
-            if (FlareLiveRules.CityDm(m, day, day % 3 == 0, out string with, out string what))
+            lately.Day = day - 1;
+            if (FlareLiveRules.CityDm(m, day, day % 3 == 0, out string with, out string what, out _))
             {
                 dms++;
                 gaps += day - last < FlareLiveRules.DmGapDays ? 1 : 0;
@@ -624,7 +625,7 @@ internal static partial class Program
 
     private static void CrowdFixedLooks()
     {
-        var people = new SocialPerson[SocialRules.CastSize];
+        var people = new SocialPerson[SocialRules.BaseCast];
         bool fixedAll = true, others = false;
         int firstOther = 0;
         for (int seed = 1; seed <= 2000; seed += 3)

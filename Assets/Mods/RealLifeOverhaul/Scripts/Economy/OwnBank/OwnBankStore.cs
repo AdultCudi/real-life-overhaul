@@ -9,12 +9,15 @@ namespace RealLifeOverhaul.Economy
     /// each a letter and a colon, its records divided by ';' and fields by '|'.
     ///   s  state|name|seed|founded|end day|end cents|why|last day|capital|reserves|strategy|fund limit|rebalance|scare|
     ///      run|run from|stage|deadline|strikes|fined|month from|month|month income|month costs|last income|last costs|
-    ///      month lost|last lost|lost in all|recovered in all|history count|test|closures|watch told|stood still
+    ///      month lost|last lost|lost in all|recovered in all|history count|test|closures|watch told|stood still|
+    ///      level|its record's day|level told|pay mode|pay share|fixed pay|paid this month|paid last month|paid in all
     ///   d  each kind of saver: deposits|points over the rivals
     ///   l  each kind of borrower: loans|arrears|recovering|its days|points over the rivals|lending
     ///   f  the fund's holdings: stock|ticker|name|shares|cost|last price|dividend
     ///   m  the months' profit, the oldest first
     ///   e  the end game's scale: the day it began|tellers|managers|loan officers|compliance officers|the least capital founded under
+    ///   k  the branches' counters: fees not yet booked|the last hour worked
+    ///   b  each branch: place|name|carry|month from|the week's seven days|their visits seen to|this month's figures|last month's
     /// A later version adds fields at the end of a record or a part with a new letter; an older line's missing fields read as none.
     /// </summary>
     public static class OwnBankStore
@@ -33,7 +36,8 @@ namespace RealLifeOverhaul.Economy
             {
                 (int)b.State, 0, b.Seed, b.FoundedDay, b.EndDay, b.EndCents, (int)b.Why, b.LastDay, b.Capital, b.Reserves, b.Strategy, b.FundLimit, b.Rebalance ? 1 : 0, b.Scare,
                 b.Run ? 1 : 0, b.RunFrom, (int)b.Stage, b.Deadline, b.Strikes, b.FinedCents, b.MonthFrom, b.Month, b.MonthIncome, b.MonthCosts, b.LastIncome, b.LastCosts,
-                b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0, b.Closures, b.WatchTold, b.Still ? 1 : 0
+                b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0, b.Closures, b.WatchTold, b.Still ? 1 : 0,
+                b.Tier, b.TierFrom, b.TierTold, b.PayMode, b.PayShare, b.PayFixed, b.PaidMonth, b.PaidLast, b.PaidAll
             };
             for (int f = 0; f < head.Length; f++)
             {
@@ -79,6 +83,15 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|').Append(b.Crew[k].ToString(Inv));
             }
             t.Append('|').Append(b.FoundedLeast.ToString(Inv));
+            t.Append("^k:").Append(b.CounterFees.ToString(Inv)).Append('|').Append(b.CounterHour.ToString(Inv));
+            if (b.Branches.Count > 0)
+            {
+                t.Append("^b:");
+                for (int i = 0; i < b.Branches.Count && i < BranchCatalogue.BranchesMost; i++)
+                {
+                    WriteBranch(t.Append(i > 0 ? ";" : string.Empty), b.Branches[i]);
+                }
+            }
             return t.ToString();
         }
 
@@ -169,6 +182,21 @@ namespace RealLifeOverhaul.Economy
                             }
                             b.FoundedLeast = Math.Max(0, L(scale, OwnBankCatalogue.CrewKinds + 1));
                             break;
+                        case 'k':
+                            string[] counter = body.Split('|');
+                            b.CounterFees = Math.Max(0, L(counter, 0));
+                            b.CounterHour = counter.Length > 1 && counter[1].Length > 0 ? I(counter, 1) : int.MinValue;
+                            break;
+                        case 'b':
+                            foreach (string record in body.Split(';'))
+                            {
+                                BankBranch br = ReadBranch(record.Split('|'));
+                                if (br != null && b.Branches.Count < BranchCatalogue.BranchesMost && b.Branch(br.Place) == null)
+                                {
+                                    b.Branches.Add(br);
+                                }
+                            }
+                            break;
                     }
                 }
             }
@@ -224,7 +252,75 @@ namespace RealLifeOverhaul.Economy
             }
             b.WatchTold = c.Length > 33 ? I(c, 33) : int.MinValue;   // a line written before it was kept: never told
             b.Still = I(c, 34) != 0;
+            ReadTier(c, b);
             return true;
+        }
+
+        // The level and the owner's pay (Economy/OwnBank/Tiers). A line written before levels has neither: its level is
+        // fitted to its bank when the director reads it (OwnBankRules.FitTier), and nothing is paid to the owner.
+        private const int TierAt = 35;
+
+        private static void ReadTier(string[] c, OwnBank b)
+        {
+            int tier = c.Length > TierAt && c[TierAt].Length > 0 ? I(c, TierAt) : BankTiers.Unknown;
+            b.Tier = tier >= BankTiers.Community && tier <= BankTiers.National ? tier : BankTiers.Unknown;   // one out of the table is fitted again
+            b.TierFrom = c.Length > TierAt + 1 ? I(c, TierAt + 1) : b.FoundedDay;
+            b.TierTold = c.Length > TierAt + 2 ? Clamp(I(c, TierAt + 2), BankTiers.Unknown, BankTiers.National) : BankTiers.Unknown;
+            b.PayMode = Clamp(I(c, TierAt + 3), BankTiers.PayShareMode, BankTiers.PayFixedMode);
+            b.PayShare = OwnBankRules.PayShareStep(I(c, TierAt + 4));
+            b.PayFixed = Math.Max(0, Math.Min(BankTiers.PayFixedMostCents, L(c, TierAt + 5)));
+            b.PaidMonth = Math.Max(0, L(c, TierAt + 6));
+            b.PaidLast = Math.Max(0, L(c, TierAt + 7));
+            b.PaidAll = Math.Max(0, L(c, TierAt + 8));
+        }
+
+        private static void WriteBranch(StringBuilder t, BankBranch br)
+        {
+            t.Append(Escape(br.Place)).Append('|').Append(Escape(br.Name)).Append('|').Append(br.Carry.ToString(Inv)).Append('|').Append(br.MonthFrom.ToString(Inv));
+            for (int i = 0; i < BranchCatalogue.WeekDays; i++)
+            {
+                t.Append('|').Append(br.Days[i].ToString(Inv));
+            }
+            for (int i = 0; i < BranchCatalogue.WeekDays; i++)
+            {
+                t.Append('|').Append(br.Week[i].ToString(Inv));
+            }
+            for (int i = 0; i < BranchFigure.Count; i++)
+            {
+                t.Append('|').Append(br.Month[i].ToString(Inv));
+            }
+            for (int i = 0; i < BranchFigure.Count; i++)
+            {
+                t.Append('|').Append(br.Last[i].ToString(Inv));
+            }
+        }
+
+        // A branch's record; null without its place. Figures a later version adds read as none on an older line.
+        private static BankBranch ReadBranch(string[] c)
+        {
+            if (c.Length < 4 || c[0].Length == 0)
+            {
+                return null;
+            }
+            var br = new BankBranch { Place = Unescape(c[0]), Name = Unescape(c[1]), Carry = Clamp(I(c, 2), 0, 999), MonthFrom = I(c, 3) };
+            int at = 4;
+            for (int i = 0; i < BranchCatalogue.WeekDays; i++, at++)
+            {
+                br.Days[i] = at < c.Length && c[at].Length > 0 ? I(c, at) : int.MinValue;
+            }
+            for (int i = 0; i < BranchCatalogue.WeekDays; i++, at++)
+            {
+                br.Week[i] = Math.Max(0, I(c, at));
+            }
+            for (int i = 0; i < BranchFigure.Count; i++, at++)
+            {
+                br.Month[i] = Math.Max(0, L(c, at));
+            }
+            for (int i = 0; i < BranchFigure.Count; i++, at++)
+            {
+                br.Last[i] = Math.Max(0, L(c, at));
+            }
+            return br;
         }
 
         /// <summary>A line read back that no longer balances has its reserves made what the books say. True if it had to be.</summary>

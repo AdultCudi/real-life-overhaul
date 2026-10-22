@@ -26,6 +26,18 @@ namespace RealLifeOverhaul
         /// <summary>A measurement for the benchmark only: no option, no label, never on outside a benchmark row.</summary>
         public virtual bool Trial => false;
 
+        /// <summary>
+        /// Set by a slider or a choice of its own (Core/Settings), not by a switch: no switch on the options page, and on
+        /// whenever <see cref="SettingWants"/> (the setting is not the game's own).
+        /// </summary>
+        public virtual bool BySetting => false;
+
+        /// <summary>For a tweak set by a setting: whether the setting asks for a change from the game's own now.</summary>
+        public virtual bool SettingWants => false;
+
+        /// <summary>Why the item has nothing to change in this game right now (the render pipeline has the feature off), or null.</summary>
+        public virtual string NotInUse => null;
+
         /// <summary>Seconds between calls of <see cref="Tick"/> while the tweak is on; zero for a tweak that needs none.</summary>
         public virtual float Interval => 0f;
 
@@ -45,6 +57,9 @@ namespace RealLifeOverhaul
         public bool Faulted { get; private set; }
 
         internal float NextTick;
+
+        /// <summary>Its setting changed while it was on: the director takes it off and puts it on again with the new value.</summary>
+        internal bool Stale;
 
         public bool ShouldBeActive => !Faulted && (Forced ?? Wanted);
 

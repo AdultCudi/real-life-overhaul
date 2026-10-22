@@ -55,6 +55,11 @@ namespace RealLifeOverhaul
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
             Careers.AcademyType.Logger = context.Logger;
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
+            Economy.BranchType.Logger = context.Logger;
+            Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // the player's bank branches, a business type, before any save that holds one is loaded (Scripts/Economy/OwnBank/Branch)
+            Designs.DesignsDirector.Logger = context.Logger;
+            // The installation firms' designs for the mod's business types, put in place or taken away on a worker (Scripts/Designs).
+            Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -190,6 +195,15 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_contacts_test_redraw", ContactPictures.TestRedraw)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
                     v => Settings.PhoneSkin = v)
+                .AddToggle(Settings.PhoneFoldersId, "reallife_phone_folders", Settings.PhoneFolders,
+                    v =>
+                    {
+                        Settings.PhoneFolders = v;
+                        GameUi.PhoneLayoutPrefs.Tell();   // the phones lay themselves out again at once
+                    })
+                .AddButton("reallife_phone_layout_reset", GameUi.PhoneMove.ResetAll)
+                .AddButton("reallife_phone_test_check", GameUi.PhoneMove.TestCheck)
+                .AddButton("reallife_phone_test_folder", GameUi.PhoneMove.TestFolder)
                 .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
@@ -349,6 +363,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_business_resolve", () => BusinessDirector.Instance?.TestResolveAll())
                 .AddSplitter()
                 .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
+                .Guarded(o => Designs.DesignsOptions.AddDesigns(o))   // the installation firms' designs for the mod's types (Scripts/Designs)
                 .AddHeader("reallife_home_header")
                 .AddToggle(Settings.HomeLifeId, "reallife_home_enabled", Settings.HomeLife,
                     v => Settings.HomeLife = v)
@@ -548,6 +563,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_test_call", () => SocialDirector.Instance?.TestCall())
                 .AddButton("reallife_social_test_composer", () => SocialDirector.Instance?.TestComposer())
                 .AddButton("reallife_social_test_text", () => SocialDirector.Instance?.TestText())
+                .AddButton("reallife_social_test_followup", () => SocialDirector.Instance?.TestFollowUp())
+                .AddButton("reallife_social_test_nextday", () => SocialDirector.Instance?.TestNextDay())
                 .AddButton("reallife_social_test_favour", () => SocialDirector.Instance?.TestFavour())
                 .AddButton("reallife_social_test_dropby", () => SocialDirector.Instance?.TestDropBy())
                 .AddButton("reallife_social_test_mom", () => SocialDirector.Instance?.TestOutingWithMom())
@@ -620,6 +637,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_pictures", () => Flare.FlareDirector.Instance?.TestPictures())
                 .AddButton("reallife_flare_test_report", () => Flare.FlareDirector.Instance?.TestReport())
                 .AddButton("reallife_flare_test_cityday", () => Flare.FlareDirector.Instance?.TestCityDay())
+                .AddButton("reallife_flare_test_review_now", () => Flare.FlareDirector.Instance?.TestReviewNow())
                 .AddButton("reallife_flare_test_reactions", () => Flare.FlareDirector.Instance?.TestReactions())
                 .AddButton("reallife_flare_test_pileon", () => Flare.FlareDirector.Instance?.TestPileOn())
                 .AddButton("reallife_flare_test_dm", () => Flare.FlareDirector.Instance?.TestDm())
@@ -750,6 +768,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
+                .Guarded(o => Calendar.CalendarOptions.AddCalendar(o))   // the month on the phone (Scripts/Calendar)
                 .AddHeader("reallife_econ_header")
                 .AddToggle(Settings.EconomyId, "reallife_econ_enabled", Settings.Economy,
                     v => Settings.Economy = v)
@@ -836,6 +855,8 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsLarge = v)
                 .AddToggle(Settings.MarketsReinvestId, "reallife_mkt_inv_opt_reinvest", Settings.MarketsReinvest,
                     v => Settings.MarketsReinvest = v)
+                .AddToggle(Settings.MarketsDerivativesId, "reallife_mkt_drv_opt", Settings.MarketsDerivatives,
+                    v => Settings.MarketsDerivatives = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
@@ -843,6 +864,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mkt_bot_test_month", () => Markets.MarketDirector.Instance?.TestBotMonth())
                 .AddButton("reallife_mkt_bond_test_open", () => Markets.MarketDirector.Instance?.TestBonds())
                 .AddButton("reallife_mkt_bond_test_pay", () => Markets.MarketDirector.Instance?.TestBondPay())
+                .AddButton("reallife_mkt_drv_test_open", () => Markets.MarketDirector.Instance?.TestFutures())
+                .AddButton("reallife_mkt_drv_test_settle", () => Markets.MarketDirector.Instance?.TestSettle())
+                .AddButton("reallife_mkt_drv_test_call", () => Markets.MarketDirector.Instance?.TestCall())
                 .AddButton("reallife_mkt_inv_test_work", () => Markets.MarketDirector.Instance?.TestWorkedDay())
                 .AddButton("reallife_mkt_inv_test_back", () => Markets.MarketDirector.Instance?.TestPutBack())
                 .AddButton("reallife_mkt_inv_test_roll", () => Markets.MarketDirector.Instance?.TestRollover())
@@ -869,6 +893,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyLicences = v)
                 .AddToggle(Settings.EconomyRotaId, "reallife_rota_enabled", Settings.EconomyRota,
                     v => Settings.EconomyRota = v)
+                .AddToggle(Settings.EconomyManagersId, "reallife_mgr_enabled", Settings.EconomyManagers,
+                    v => Settings.EconomyManagers = v)
                 .AddToggle(Settings.EconomyCleaningId, "reallife_svc_cleaning_enabled", Settings.EconomyCleaning,
                     v => Settings.EconomyCleaning = v)
                 .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
@@ -878,6 +904,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_offices_test_list", () => Offices.Conversions.Instance?.TestList())
                 .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
                     v => Settings.EconomyBank = v)
+                .AddToggle(Settings.EconomyBranchId, "reallife_branch_enabled", Settings.EconomyBranch,
+                    v => Settings.EconomyBranch = v)
                 .AddToggle(Settings.EndScaleId, "reallife_endscale_enabled", Settings.EndScale,
                     v => Settings.EndScale = v)
                 .AddButton("reallife_endscale_test_phase", () => EndScaleTests.Phase(false))
@@ -898,13 +926,19 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_plans", () => Economy.CompanyDirector.Instance?.TestRotaPlans())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddButton("reallife_mgr_test_appoint", () => Economy.CompanyDirector.Instance?.TestManagerAppoint())
+                .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())
+                .AddButton("reallife_mgr_test_undo", () => Economy.CompanyDirector.Instance?.TestManagerUndoAll())
                 .AddButton("reallife_ob_test_found", () => Economy.OwnBankDirector.Instance?.TestFound())
                 .AddButton("reallife_ob_test_month", () => Economy.OwnBankDirector.Instance?.TestMonth())
                 .AddButton("reallife_ob_test_hard", () => Economy.OwnBankDirector.Instance?.TestHardMonth())
                 .AddButton("reallife_ob_test_run", () => Economy.OwnBankDirector.Instance?.TestRun())
                 .AddButton("reallife_ob_test_deadline", () => Economy.OwnBankDirector.Instance?.TestDeadline())
                 .AddButton("reallife_ob_test_fund", () => Economy.OwnBankDirector.Instance?.TestFund())
+                .AddButton("reallife_ob_test_level", () => Economy.OwnBankDirector.Instance?.TestTierReady())
                 .AddButton("reallife_ob_test_back", () => Economy.OwnBankDirector.Instance?.TestBack())
+                .AddButton("reallife_branch_test_hour", () => Economy.OwnBankDirector.Instance?.TestBranchHour())
+                .AddButton("reallife_branch_test_floor", () => Economy.BranchFloor.Instance?.TestFloor())
                 .AddHeader("reallife_estate_header")
                 .AddToggle(Settings.EstateId, "reallife_estate_enabled", Settings.Estate,
                     v => Settings.Estate = v)
@@ -949,6 +983,7 @@ namespace RealLifeOverhaul
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
                 .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
+                .AddButton("reallife_vc_test_round", () => Tech.TechDirector.Instance?.TestRound())
                 .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
                 .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
                     v => Settings.TechSiteRooms = v)
@@ -1169,6 +1204,7 @@ namespace RealLifeOverhaul
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // (furnished as the game's web development agency once its type is known)
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // (furnished as the game's recruitment office once its type is known)
+            Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // (dressed as the city's banks once their type is known)
             Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
             Guard.Step("GoingPublic", () => GoingPublic.Logger = context.Logger);
             Guard.Step("GoingPublicLink", () => GoingPublicLink.Logger = context.Logger);
@@ -1272,6 +1308,10 @@ namespace RealLifeOverhaul
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
+            Guard.Step("GameUi.TextBox", () => GameUi.TextBox.Logger = context.Logger);
+            // What a conversation ended another way leaves behind put right: the game's text box closed once what it was for is
+            // over, the dialogue panel's handle given back after a call (Core/GameUi/ConversationWatch): one time comparison a frame.
+            Guard.Step("GameUi.ConversationWatch", () => Guard.Add<GameUi.ConversationWatch>(_root));
             Guard.Step("GameUi.GuideMark", () => GameUi.GuideMark.Logger = context.Logger);
             Guard.Step("GameUi.GuideMarkWatch", () => Guard.Add<GameUi.GuideMarkWatch>(_root));   // the mod's marks on the game's destination guider taken off once their owner is gone, stopped or past its time (Core/GameUi/GuideMarkWatch): one time comparison a frame
             Guard.Step("DayRollGuard", () => DayRollGuard.Logger = context.Logger);
@@ -1328,16 +1368,23 @@ namespace RealLifeOverhaul
             Guard.Step("GameUi.AppIconPainter", () => GameUi.AppIconPainter.Logger = context.Logger);
             Guard.Step("GameUi.PhoneApp", () => GameUi.PhoneApp.Logger = context.Logger);
             Guard.Step("GameUi.PhoneGridPager", () => GameUi.PhoneGridPager.Logger = context.Logger);
+            Guard.Step("GameUi.PhoneLayoutPrefs", () => GameUi.PhoneLayoutPrefs.Logger = context.Logger);
+            Guard.Step("GameUi.PhoneMove", () => GameUi.PhoneMove.Logger = context.Logger);
             Guard.Step("GameUi.AppShell", () => GameUi.AppShell.Logger = context.Logger);
             Guard.Step("GameUi.InfoBox", () => GameUi.InfoBox.Logger = context.Logger);
+            Guard.Step("GameUi.HelpFrame", () => GameUi.HelpFrame.Logger = context.Logger);
+            Guard.Step("GameUi.OptionRows", () => GameUi.OptionRows.Logger = context.Logger);
             Guard.Step("Planner.PlannerApp", () => Planner.PlannerApp.Logger = context.Logger);
             Guard.Step("Planner.PlannerDirector", () => Planner.PlannerDirector.Logger = context.Logger);
+            Guard.Step("Calendar.CalendarDirector", () => Calendar.CalendarDirector.Logger = context.Logger);
+            Guard.Step("Calendar.CalendarApp", () => Calendar.CalendarApp.Logger = context.Logger);
+            Guard.Step("Calendar.CalendarDirector", () => Guard.Add<Calendar.CalendarDirector>(_root));   // the Calendar: the month on the phone (Scripts/Calendar)
             Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)
             Guard.Step("Economy.EconomyDirector", () => Economy.EconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);
             Guard.Step("Economy.EconomyDirector", () => Guard.Add<Economy.EconomyDirector>(_root));   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
             Guard.Step("Economy.BanksDirector", () => Economy.BanksDirector.Logger = context.Logger);
-            Guard.Step("Economy.BanksDirector", () => Guard.Add<Economy.BanksDirector>(_root));   // the bank apps: one for each of the city's three largest banks, a front on the same credit desk (Scripts/Economy/Banks)
+            Guard.Step("Economy.BanksDirector", () => Guard.Add<Economy.BanksDirector>(_root));   // the Banks app: the three largest banks in one app, on the credit desk (Scripts/Economy/Banks)
             Guard.Step("Economy.CityEconomyDirector", () => Economy.CityEconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.CityEconomyDirector", () => Guard.Add<Economy.CityEconomyDirector>(_root));   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
             Guard.Step("Economy.Ventures.VenturesDirector", () => Economy.Ventures.VenturesDirector.Logger = context.Logger);
@@ -1377,6 +1424,8 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.EstateApp", () => Economy.EstateApp.Logger = context.Logger);
             Guard.Step("Economy.EstateDirector", () => Guard.Add<Economy.EstateDirector>(_root));   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
             Guard.Step("Economy.OwnBankDirector", () => Economy.OwnBankDirector.Logger = context.Logger);
+            Guard.Step("Economy.BranchFloor", () => Economy.BranchFloor.Logger = context.Logger);
+            Guard.Step("Economy.BranchFloor", () => Guard.Add<Economy.BranchFloor>(_root));   // the bank branches' customers on the floor while the player is in one (Scripts/Economy/OwnBank/Branch)
             Guard.Step("Economy.OwnBankDirector", () => Guard.Add<Economy.OwnBankDirector>(_root));   // the player's own bank: a licence, savers, loans, a fund and a regulator, and its app (Scripts/Economy/OwnBank); after the company, so that its day's books come after the company's
             Guard.Step("Economy.Brands.BrandsDirector", () => Economy.Brands.BrandsDirector.Logger = context.Logger);
             Guard.Step("Economy.Brands.BrandsApp", () => Economy.Brands.BrandsApp.Logger = context.Logger);
@@ -1438,6 +1487,8 @@ namespace RealLifeOverhaul
             Guard.Step("Districts.DistrictView", () => Guard.Add<Districts.DistrictView>(_root));   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
             Guard.Step("Interiors.InteriorDirector", () => Interiors.InteriorDirector.Logger = context.Logger);
             Guard.Step("CustomerDraw", () => CustomerDraw.Logger = context.Logger);
+            // With Developer diagnostics on, the installation firms' own lists checked against the designs written (Scripts/Designs).
+            Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
             Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));   // interiors and decor that matter: the scores once a game day, the BizMan tab (Scripts/Interiors)
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time

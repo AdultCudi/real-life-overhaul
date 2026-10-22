@@ -622,6 +622,25 @@ namespace RealLifeOverhaul.Economy
             return d != null && d._running ? CityModel.Trouble(d._state.Cycle, d._level) / 1000f : 1f;
         }
 
+        /// <summary>
+        /// The wholesale prices written again now: the raw materials exchange has set new prices at a close, or its option
+        /// changed. A comparison a good, a write where one differs. False while this is not running (nothing is written).
+        /// </summary>
+        public static bool RewriteWholesale()
+        {
+            CityEconomyDirector d = Instance;
+            if (d == null || !d._running || d._broken)
+            {
+                return false;
+            }
+            int written = CityGame.ApplyWholesale(d._state);
+            if (Verbose && written > 0)
+            {
+                Logger?.Info("City economy check (wholesale written again): " + written + " price(s) to the raw materials exchange's or their kind's: PASS");
+            }
+            return true;
+        }
+
         /// <summary>How often a rival undercuts against the ordinary, in thousandths; 1000 while this is not running.</summary>
         public static int UndercutScale()
         {
