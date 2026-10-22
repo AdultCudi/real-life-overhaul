@@ -12,43 +12,31 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The guard (Core/Guard) for the game's own calls into the mod, past its entry points: what the game asks of an
-    /// object of the mod's through an interface or a base class of its own, and the delegates of the mod's it keeps and
-    /// calls later. Each runs inside the guard of the class it is written in, so that a fault, or a feature switched off,
-    /// never reaches the game's code and never leaves the player in something that cannot go on or be left:
-    ///   asked        an activity of the game's work panel, an overlay, a call to action, a pointer, a table and its
-    ///                cells, a mesh, a drag or a scroll, a row of the options page: the method's body in a try whose
-    ///                catch is <see cref="Guard.Fail"/>, the game given <see cref="Failed{T}"/>'s answer instead; an
-    ///                activity whose feature is off <see cref="Ended"/> as its own Finish ends it, so the panel closes;
-    ///   dialogs      every page of the mod's dialogs as it goes to the game (<see cref="Entry"/>), and every dialog
-    ///                the game makes for a contact of the mod's (<see cref="Maker"/>): an answer that fails, or whose
-    ///                feature is off, ends the conversation with the game's own closing; a way out is never skipped;
-    ///   options      the options page as it is registered (<see cref="Rows"/>): every row's callback caught, never
-    ///                skipped, since a row of the page must go on working whatever is off;
-    ///   listeners    <see cref="Guard.Listener"/>, <see cref="Guard.Wrap(Action)"/> and <see cref="Way"/> for the rest.
-    /// ContractCheck reads the built mod to see that each of these is so (the game's calls, the callbacks, the dialogs
-    /// and the options page). Nothing here runs per frame but the try round a method; the wrappers are made once, as a
-    /// dialog's page, a row or a listener is made.
+    /// The guard's part for the game's own calls into the mod past its entry points: what it asks through its
+    /// interfaces and base classes, and the delegates it keeps. Each runs in the guard of the class it is written in, so
+    /// a fault or a feature switched off never reaches the game's code nor leaves the player stuck: a method the game
+    /// asks gets <see cref="Failed{T}"/>'s answer; an activity whose feature is off is <see cref="Ended"/>; a dialog's
+    /// pages (<see cref="Entry"/>, <see cref="Maker"/>) end with the game's own closing; the options page's rows
+    /// (<see cref="Rows"/>) are caught but never skipped; a way out (<see cref="Way"/>) always runs. ContractCheck reads
+    /// the built mod to see that each is so. COST: the try round a method; the wrappers are made once.
     /// </summary>
     public static partial class Guard
     {
-        // ---------------------------------------------------------------- what the game asks
-
-        /// <summary>A method the game called failed: said as <see cref="Fail"/> says it, and the answer the game is given instead.</summary>
+        /// <summary>A method the game called failed: said as <see cref="Fail"/> says it; returns the answer the game gets instead.</summary>
         public static T Failed<T>(FeatureGuard guard, Exception e, T answer)
         {
             Fail(guard, e);
             return answer;
         }
 
-        /// <summary>A mesh the game asked for failed: said, and the half made emptied, so that nothing broken is drawn.</summary>
+        /// <summary>A mesh the game asked for failed: said, and the half made emptied so nothing broken is drawn.</summary>
         public static void FailMesh(FeatureGuard guard, Exception e, VertexHelper mesh)
         {
             Fail(guard, e);
             NoMesh(mesh);
         }
 
-        /// <summary>A mesh with nothing in it, whose feature is off: the engine's helper it is made in is shared by every graphic, so it is emptied.</summary>
+        /// <summary>Empties the mesh of a graphic whose feature is off: the engine shares the helper between graphics.</summary>
         public static void NoMesh(VertexHelper mesh)
         {
             try
@@ -57,20 +45,19 @@ namespace RealLifeOverhaul
             }
             catch (Exception)
             {
-                // (nothing more to be done for the mesh)
+                // nothing more to be done for the mesh
             }
         }
 
-        /// <summary>A line of the game's panels with nothing in it: what a label that failed is shown as.</summary>
+        /// <summary>An empty line of the game's panels: what a label that failed shows.</summary>
         public static LabelInfo Blank()
         {
             return new LabelInfo(string.Empty, new Color32(255, 255, 255, 255), false);
         }
 
         /// <summary>
-        /// An activity of the mod's on the game's work panel whose feature is off, after its faults or on a game that lacks
-        /// what it stands on: it is ended once as its own Finish ends it (the player stands up, its hold on the player
-        /// goes), and then says Finished, so that the game's panel closes it as it closes its own.
+        /// An activity of the mod's on the game's work panel whose feature is off: ended once by its own Finish, then
+        /// Finished, so the panel closes it as it closes its own.
         /// </summary>
         public static PlayerActivityState Ended(IPlayerActivity activity)
         {
@@ -90,14 +77,10 @@ namespace RealLifeOverhaul
             return PlayerActivityState.Finished;
         }
 
-        // ---------------------------------------------------------------- dialogs
-
         /// <summary>
-        /// A page of one of the mod's dialogs as it goes to the game (DialogController.ShowEntry): its two answers run
-        /// inside the guard of the class they are written in, and so does each page they lead to, in turn; what runs as
-        /// it appears, its cancel and its forced cancel are caught too, and never skipped, since they are the way out. An
-        /// answer that fails, or whose feature is off, ends the conversation with the game's own closing (a phone call
-        /// hangs up, a talk in person can be left), so that no dialog is left that cannot go on. A page is wrapped once.
+        /// A page of one of the mod's dialogs as it goes to DialogController.ShowEntry, wrapped once: its answers, and
+        /// each page they lead to, run in their class's guard, and one that fails or is off ends with the game's own
+        /// closing; its cancels and on-show are caught, never skipped.
         /// </summary>
         public static DialogEntry Entry(DialogEntry entry)
         {
@@ -120,11 +103,7 @@ namespace RealLifeOverhaul
             return entry;
         }
 
-        /// <summary>
-        /// The game's maker of one of the mod's dialogs (CallDialogFactory.RegisterDialog): a dialog that cannot be made,
-        /// or whose feature is off, gives the game's own closing page instead of a fault in the middle of the game's
-        /// opening of the call.
-        /// </summary>
+        /// <summary>A maker of one of the mod's dialogs (CallDialogFactory.RegisterDialog): one that fails or is off gives the closing page.</summary>
         public static Func<Dialog> Maker(Func<Dialog> make)
         {
             if (make == null || !Ours(make))
@@ -150,10 +129,7 @@ namespace RealLifeOverhaul
             };
         }
 
-        /// <summary>
-        /// A way out the game calls (a dialog's cancel, what runs when a dialog stops): caught, never skipped, whatever is
-        /// off. A cancel that fails still ends the dialog, with the game's own.
-        /// </summary>
+        /// <summary>A way out the game calls, such as a dialog's cancel: caught, never skipped, whatever is off.</summary>
         public static Action Way(Action way)
         {
             return Way(way, false);
@@ -183,8 +159,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A question the game asks of the mod later (a row of the city map's filters: is it there, where is it): inside
-        /// the guard of the class it is written in; the given answer when it fails or its feature is off.
+        /// A question the game asks later (a city map filter's: where is it), in its class's guard;
+        /// <paramref name="otherwise"/> when it fails or is off.
         /// </summary>
         public static Func<T> Asked<T>(Func<T> ask, T otherwise)
         {
@@ -222,8 +198,7 @@ namespace RealLifeOverhaul
             return new Calls.Caught(way, OfHandler(way), leaves).Run;
         }
 
-        // A delegate of the mod's own: one whose method is not of an assembly the mod is built against (the game's, the
-        // engine's, the framework's: the game's own, such as its dialog's FinishDialog, is left as it is).
+        // A delegate whose method is not of an assembly the mod is built against: the game's own (FinishDialog) are left as they are.
         private static bool Ours(Delegate handler)
         {
             System.Reflection.Assembly home = handler?.Method.DeclaringType?.Assembly;
@@ -250,7 +225,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's own closing, as the mod's dialogs close (Phone/PhoneContacts.Closing), or nothing if even that fails.
+        // The game's own closing, as the mod's dialogs close; null if even that fails.
         private static DialogEntry Closing()
         {
             try
@@ -310,12 +285,9 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the options page
-
         /// <summary>
-        /// The options page as it goes to the game (OptionsService.Register): the same rows, each callback caught and
-        /// written to Player.log (a member this game lacks: once), and never skipped. The game calls a row's callback as
-        /// it draws the page, too, so a row that throws would cost the game the rest of the page.
+        /// The options page as it goes to OptionsService.Register: the same rows, each callback caught and never skipped.
+        /// The game calls them as it draws the page, so one that throws would cost the rest of the page.
         /// </summary>
         public static ModOptions Rows(ModOptions page)
         {
@@ -352,11 +324,9 @@ namespace RealLifeOverhaul
                 case DropdownOption dropdown when dropdown.OnValueChanged != null:
                     return new DropdownOption(dropdown.Id, dropdown.Label, dropdown.ChoiceKeys, dropdown.DefaultIndex, Calls.Row(dropdown.OnValueChanged, dropdown.Label));
                 default:
-                    return option;   // (a header, a splitter, a row of the mod's own: its SpawnUi is guarded where it is written)
+                    return option;   // a header, a splitter, a row of the mod's own (its SpawnUi is guarded where written)
             }
         }
-
-        // ---------------------------------------------------------------- the scene's events
 
         /// <summary>As <see cref="Listener(UnityAction)"/>, for the engine's scene loaded event (two arguments).</summary>
         public static UnityAction<T1, T2> Listener<T1, T2>(UnityAction<T1, T2> handler)
@@ -385,19 +355,17 @@ namespace RealLifeOverhaul
             };
         }
 
-        // ---------------------------------------------------------------- what is kept
-
-        // The statics that name the game's types, apart from Guard's own: Guard starts whatever the game has.
+        // The statics that name the game's types, apart from Guard's own, so Guard starts whatever the game has.
         private static class Calls
         {
             public static readonly object Mark = new object();
             public static readonly ConditionalWeakTable<DialogEntry, object> Pages = new ConditionalWeakTable<DialogEntry, object>();
             public static readonly ConditionalWeakTable<IPlayerActivity, object> Ended = new ConditionalWeakTable<IPlayerActivity, object>();
             public static readonly System.Collections.Generic.Dictionary<System.Reflection.Assembly, bool> Theirs = new System.Collections.Generic.Dictionary<System.Reflection.Assembly, bool>();
-            public static System.Collections.Generic.HashSet<string> Referenced;   // (the names of the assemblies the mod is built against)
+            public static System.Collections.Generic.HashSet<string> Referenced;   // the assemblies the mod is built against
             private static int _rowFaults;
 
-            // A way out: caught and said, never skipped; a cancel that failed still ends the dialog.
+            // A cancel that failed still ends the dialog.
             public sealed class Caught
             {
                 private readonly Action _way;
@@ -488,7 +456,7 @@ namespace RealLifeOverhaul
                 }
                 catch (Exception)
                 {
-                    // (the guard itself must never be the next fault)
+                    // the guard itself must never be the next fault
                 }
             }
         }
