@@ -11,63 +11,47 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The people of the living city: a pool of its own, apart from the six characters the
-    /// accident and crime scenes share (People/ActorPool), which it never touches.
-    ///
-    /// THE BUDGET, enforced here:
-    /// - Eight characters at most, ever (<see cref="MaxPeople"/>). Eight is what three sites of
-    ///   the largest kind need (a road crew of three, a coffee cart of three, two friends
-    ///   talking), and all but the jogger stand still, which is the cheap kind of character:
-    ///   no path, no steering, one animation.
-    /// - Building a character's look is the expensive part (the game merges its meshes), so the
-    ///   eight are made one at a time, seconds apart, after the city has loaded
-    ///   (<see cref="Warm"/>), kept, and handed out again in the same work clothes when possible.
-    ///   A change of clothes happens only when a site is being set up, which is out of view.
-    /// - People who are far away or behind the camera have their animation and rendering
-    ///   switched off (the game's own switch): a few comparisons per person per frame, and only
-    ///   while somebody is out. With nobody out this component is disabled.
-    /// - While the player is driving, the people who are out are compared with the car's box
-    ///   every other physics step, exactly as Ragdoll/CarStrikes does for the game's pedestrians
-    ///   (it cannot see these people, and is not edited): whoever is hit drops their tool and is
-    ///   handed to the mod's casualty system as one of its own.
+    /// The living city's own pool of people, apart from the scenes' (People/ActorPool), and its budget. Eight characters
+    /// at most (<see cref="MaxPeople"/>): what three of the largest sites need, nearly all standing still, the cheap kind.
+    /// A look is the costly part (the game merges meshes), so the eight are made one at a time seconds apart after the city
+    /// loads (<see cref="Warm"/>) and handed out again in the same clothes where they can be. Per frame, only while
+    /// somebody is out: a few comparisons a person to switch off animation and rendering far away or behind the camera,
+    /// and every other physics step the player's car box against them, as Ragdoll/CarStrikes does for the game's
+    /// pedestrians. With nobody out it is disabled.
     /// </summary>
     public sealed class CityPeople : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "CityPeople", typeof(CityPeople));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "CityPeople", typeof(CityPeople));
 
         public const int MaxPeople = 8;
 
         private const string CharacterPrefab = "Characters/HumanDefinitionLow";
         private const float HideDistance = 150f;   // metres from the camera
         private const float HideBehind = 6f;       // metres behind the camera's own plane
-        private const float StrikeSpeed = 1.4f;    // m/s: slower than this a car only nudges
-        private const float PersonRadius = 0.3f;
-        private const float CarHalfWidth = 0.95f;
-        private const float CarHalfLength = 2.3f;
+        private const float StrikeSpeed = 1.4f;    // metres a second: slower than this a car only nudges
+        private const float PersonRadius = 0.3f;   // metres
+        private const float CarHalfWidth = 0.95f;   // metres
+        private const float CarHalfLength = 2.3f;   // metres
         private const float MaxBuild = 0.55f;      // of the game's 0 (slim) to 1 (heavy): the clips are made for slim to average
 
         private static readonly AppearanceTag[] CasualWear = { AppearanceTag.Casual };
 
         private readonly List<CityPerson> _people = new List<CityPerson>(MaxPeople);
-        private readonly List<CityLook> _wanted = new List<CityLook>(4);   // looks asked for that nobody on the shelf had: made ready one at a time
+        private readonly List<CityLook> _wanted = new List<CityLook>(4);   // looks asked for that nobody on the shelf had, made ready one at a time
         private Coroutine _tending;
 
         /// <summary>
-        /// Set by the living city for its own pool (fires and street events, and the civic crew, keep the plain
-        /// behaviour: their scenes are few and dress their people as they are set up). A thrifty pool never builds
-        /// a look in the frame somebody is asked for (People/Looks has the rule):
-        /// - somebody on the shelf already dressed for the part is handed out, whoever came back longest ago first;
-        ///   a civilian keeps a look for a few outings and is then given a new one on the shelf, quietly;
-        /// - when nobody is dressed for the part, Take says no (as it does when nobody is free) and the look is
-        ///   made ready on the shelf for the next time it is asked for: whoever there are most of is re-dressed.
-        ///   People dressed for a job stay dressed for it, so in time the shelf holds what the street's sites use.
+        /// Set by the living city for its own pool; the scenes' pools dress people as they are set up. A thrifty pool never
+        /// builds a look in the frame somebody is asked for (People/Looks): it hands out somebody already dressed for the part,
+        /// whoever came back longest ago first, or says no and makes the look ready on the shelf for next time. A civilian's
+        /// look is changed on the shelf after a few outings.
         /// </summary>
         public bool Thrifty;
 
-        /// <summary>For a test button, which cannot wait: a thrifty pool builds a missing look on the spot while this is set.</summary>
+        /// <summary>For a test button, which cannot wait: a thrifty pool builds a missing look on the spot.</summary>
         public bool AtNeed;
 
-        /// <summary>Set when a thrifty pool has said no because a look was not ready (it is being made ready). Cleared by whoever reads it.</summary>
+        /// <summary>A thrifty pool said no because a look was not ready yet; cleared by whoever reads it.</summary>
         public bool Refused;
         private readonly List<Transform> _fallen = new List<Transform>(4);   // tools dropped by people who were hit, until their site clears them
         private CityProps _props;
@@ -87,10 +71,10 @@ namespace RealLifeOverhaul
         /// <summary>How many characters exist, in use or not.</summary>
         public int Count => _people.Count;
 
-        /// <summary>One of the characters that exist (0 to Count - 1), in use or not: for whoever must find this pool's people where they stand (People/CordonClear).</summary>
+        /// <summary>One of the characters, in use or not, for finding this pool's people where they stand (People/CordonClear).</summary>
         internal CityPerson At(int index) => _people[index];
 
-        /// <summary>How many of the characters that exist could be put on the street right now.</summary>
+        /// <summary>How many characters could be put on the street now.</summary>
         public int Free
         {
             get
@@ -107,13 +91,12 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Tools dropped by people who were knocked down. Whoever ends a site takes what lies near it.</summary>
+        /// <summary>Tools dropped by people who were knocked down; whoever ends a site takes what lies near it.</summary>
         public List<Transform> Fallen => _fallen;
 
         /// <summary>
-        /// Makes one more character if the pool is not full yet, dressed as a civilian and put
-        /// away. Called every few seconds after the city loads, so the cost of eight looks is
-        /// never paid in one frame. Returns true while there is more to make.
+        /// Makes one more character, dressed as a civilian and put away, called every few seconds after the city loads so eight
+        /// looks are never paid for in one frame. True while there is more to make.
         /// </summary>
         public bool Warm(Vector3 near)
         {
@@ -130,7 +113,7 @@ namespace RealLifeOverhaul
             {
                 fidgets.pauseBoredAnimations = true;
             }
-            // These people go where their route takes them; physics must not shove them about.
+            // They go where their route takes them: physics must not shove them about.
             if (character.characterRigidbody != null)
             {
                 character.characterRigidbody.isKinematic = true;
@@ -142,19 +125,15 @@ namespace RealLifeOverhaul
             return _people.Count < MaxPeople;
         }
 
-        /// <summary>
-        /// Puts a person on the pavement at a spot, facing a point, in the given clothes. Null if
-        /// nobody is free or the spot will not take them; callers must cope with that.
-        /// </summary>
+        /// <summary>Puts a person standing at a spot, facing a point, in the given clothes; null if nobody is free or fits there.</summary>
         public CityPerson Take(CityLook look, Vector3 spot, Vector3 face)
         {
             return Take(look, spot, face, true);
         }
 
         /// <summary>
-        /// The same; with <paramref name="fresh"/> false a civilian who has been out before keeps the
-        /// look they had (no rebuilding of their clothes, which is the costly part): for people who
-        /// come and go at a site every few seconds.
+        /// The same; with <paramref name="fresh"/> false a civilian who has been out keeps their look (no costly rebuild), for
+        /// people who come and go at a site every few seconds.
         /// </summary>
         public CityPerson Take(CityLook look, Vector3 spot, Vector3 face, bool fresh)
         {
@@ -165,14 +144,14 @@ namespace RealLifeOverhaul
                 if (thrifty && Free > 0)
                 {
                     Refused = true;
-                    Want(look);   // made ready on the shelf: the next time it is asked for it is there
+                    Want(look);   // made ready on the shelf for the next time it is asked for
                 }
                 return null;
             }
             try
             {
                 person.Character.gameObject.SetActive(true);
-                person.Reset(_props);   // whoever had them last (the casualty system, perhaps) left them as they were
+                person.Reset(_props);   // whoever had them last, the casualty system perhaps, left them as they were
                 if (!thrifty && (person.Look != look || (person.Stale && fresh)))
                 {
                     Dress(person, look);
@@ -206,7 +185,7 @@ namespace RealLifeOverhaul
             if (taken && person.Actor.InUse)
             {
                 person.Stale = true;
-                return;   // knocked down: the casualty system has them and puts them away itself when it is done
+                return;   // knocked down: the casualty system puts them away itself when it is done
             }
             person.Actor.InUse = false;
             person.ReleasedAt = Time.unscaledTime;
@@ -271,20 +250,20 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("CityLife: CityPeople.Update");
-        // Runs only while somebody is out: hides whoever cannot be seen, shows them again the frame they can.
+        // Only while somebody is out: hides whoever cannot be seen, and shows them the frame they can.
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -324,7 +303,7 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                // Hiding is only a saving: give it up rather than fault again next frame.
+                // Hiding is only a saving: given up rather than fault again next frame.
                 CityLifeDirector.Logger?.Error(e);
                 _hidingFailed = true;
                 for (int i = 0; i < _people.Count; i++)
@@ -343,14 +322,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnFixedUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -375,7 +354,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The player's car against the people who are out: positions, not collisions (see Ragdoll/CarStrikes).
+        // The player's car against the people who are out: by positions, not collisions (as Ragdoll/CarStrikes).
         private void Strikes()
         {
             float now = Time.time;
@@ -384,7 +363,7 @@ namespace RealLifeOverhaul
                 _nextLookup = now + 0.5f;
                 var game = InstanceBehavior<GameManager>.Instance;
                 CarController car = game != null && PlayerHelper.IsUsingVehicle ? game.selectedVehicle as CarController : null;
-                if (!ReferenceEquals(car, _carOf))   // looked up when the car changes, not twice a second
+                if (!ReferenceEquals(car, _carOf))   // looked up only when the car changes
                 {
                     _carOf = car;
                     _car = car != null ? car.GetComponent<Rigidbody>() : null;
@@ -425,7 +404,7 @@ namespace RealLifeOverhaul
                     incidents.StrikeActor(person.Actor, velocity, speed, _car);
                     if (!person.Lost)
                     {
-                        // The casualty system would not take them after all: they stand where they are, empty-handed, and their site ends.
+                        // The casualty system would not take them: they stand empty-handed where they are, and their site ends.
                         person.Stand();
                     }
                     CityLifeDirector.Logger?.Info($"City life: one of its people was hit by the player's car at {speed * 3.6f:F0} km/h" + (person.Lost ? " and is in the casualty system's hands." : "."));
@@ -434,9 +413,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- a thrifty pool's shelf
-
-        // Somebody on the shelf dressed for the part: sooner one whose look is not yet due a change, then whoever came back longest ago.
+        // Somebody on the shelf dressed for the part: sooner one whose look is not due a change, then whoever came back first.
         private CityPerson Ready(CityLook look)
         {
             CityPerson ready = null;
@@ -445,7 +422,7 @@ namespace RealLifeOverhaul
                 CityPerson person = _people[i];
                 if (!person.Valid)
                 {
-                    _people.RemoveAt(i);   // destroyed with a scene we did not unload ourselves
+                    _people.RemoveAt(i);   // destroyed with a scene the mod did not unload
                     continue;
                 }
                 if (person.InUse || person.Actor.InUse || person.Look != look)
@@ -477,7 +454,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Runs only while the shelf has something to see to: one look at a time, when People/Looks says one may be built.
+        // Only while the shelf has something to see to: one look at a time, when People/Looks allows one.
         private System.Collections.IEnumerator Tending()
         {
             while (_wanted.Count > 0 || AnyWorn())
@@ -549,8 +526,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Whoever on the shelf can best be spared: one of the look there are most of there; of those, sooner one whose
-        // look is due a change, then whoever came back longest ago.
+        // Whoever on the shelf can best be spared: of the look there are most of, sooner one due a change, then whoever came
+        // back longest ago.
         private CityPerson Spare()
         {
             CityPerson spare = null;
@@ -577,7 +554,7 @@ namespace RealLifeOverhaul
             return spare;
         }
 
-        // A look for someone on the shelf: awake only while it is put on, and never drawn in between.
+        // A look for someone on the shelf, awake only while it is put on.
         private void Redress(CityPerson person, CityLook look)
         {
             GameObject body = person.Character.gameObject;
@@ -593,7 +570,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // An idle character already dressed this way, else any idle one (it is re-dressed).
+        // An idle character already dressed this way, else any idle one, to be re-dressed.
         private CityPerson Choose(CityLook look)
         {
             CityPerson spare = null;
@@ -602,7 +579,7 @@ namespace RealLifeOverhaul
                 CityPerson person = _people[i];
                 if (!person.Valid)
                 {
-                    _people.RemoveAt(i);   // destroyed with a scene we did not unload ourselves
+                    _people.RemoveAt(i);   // destroyed with a scene the mod did not unload
                     continue;
                 }
                 if (person.InUse || person.Actor.InUse)
@@ -624,7 +601,7 @@ namespace RealLifeOverhaul
         // Who they are (age, build, face, hair) is rolled for everyone; workers then get their work clothes.
         private static void Dress(CityPerson person, CityLook look)
         {
-            Looks.Count("city life: a character's look being built (a mesh merge)");   // counted, and named for the long-frame line of the session record
+            Looks.Count("city life: a character's look being built (a mesh merge)");   // named for the long-frame line of the session record
             person.Look = look;
             person.Stale = false;
             person.Uses = 0;
@@ -634,8 +611,8 @@ namespace RealLifeOverhaul
             appearance.SetRandomAge();
             Gender gender = Random.value < 0.5f ? Gender.Male : Gender.Female;
             appearance.RandomizeElements(gender, SkinColorHelper.GetRandom(), CasualWear);
-            // The game holds a heavy character's arms wider through an animator layer of its own, which a clip
-            // of ours replaces: hands and tools made for an average build would sink into a big belly.
+            // The game holds a heavy character's arms wider by an animator layer that our clips replace: hands and tools made for
+            // an average build would sink into a big belly.
             appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
             CityOutfits.Wear(appearance, look, person.Dyes);
             appearance.UpdateVisuals();   // the one mesh merge for this outfit

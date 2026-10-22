@@ -7,33 +7,30 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Where the people of the living city may stand. Every place is found, never assumed:
-    /// on the pavement (the navigation mesh the game's pedestrians use, at the height of the
-    /// ground under it), clear of vehicles, street furniture, walls and other people, away from
-    /// doors, and for work on a shopfront at a measured distance from a wall that really is
-    /// there. All of it is asked when a site is being chosen (a handful of physics queries every
-    /// few seconds at most), never per frame, but for <see cref="Ground"/>: the cameras ask that
-    /// once a frame while they swing low (one ray). None of it allocates.
+    /// Where the living city's people may stand, always found and never assumed: on the pedestrians' navigation mesh at
+    /// ground height, clear of vehicles, street furniture, walls and people, away from doors, and for shopfront work at a
+    /// measured distance from a real wall. Asked only while a site is chosen (a few physics queries every few seconds), but
+    /// for <see cref="Ground"/>, which the cameras ask once a frame while they swing low (one ray). Nothing allocates.
     /// </summary>
     public static class CitySpots
     {
-        private const float GroundProbe = 2.5f;
-        private const float GroundTolerance = 0.45f;   // a walkable point further than this from the ground is a ledge, not the street
-        private const float BodyBottom = 0.35f;        // the clearance test starts this far up, so kerbs and the ground do not count
-        private const float BodyTop = 1.75f;
-        private const float DoorKeepOut = 2.4f;        // nobody works this close to something the player can use
-        private const float WallReach = 9f;            // how far from a point of pavement a shopfront is looked for: a wide pavement is six metres deep
+        private const float GroundProbe = 2.5f;   // metres
+        private const float GroundTolerance = 0.45f;   // metres: a walkable point further from the ground is a ledge, not the street
+        private const float BodyBottom = 0.35f;        // metres up the clearance test starts, so kerbs and the ground do not count
+        private const float BodyTop = 1.75f;   // metres
+        private const float DoorKeepOut = 2.4f;        // metres: nobody works this close to something the player can use
+        private const float WallReach = 9f;            // metres a shopfront is looked for from the pavement: a wide pavement is six deep
         private const int WallRays = 12;
-        private const float WallAgree = 0.12f;         // the probes at chest and head height and to either side must agree to within this
-        private const float PlinthMost = 0.3f;         // below the waist the wall may stand this much proud (a plinth, a sill) and no more
+        private const float WallAgree = 0.12f;         // metres the probes at chest and head height and to either side must agree within
+        private const float PlinthMost = 0.3f;         // metres a plinth or sill may stand proud below the waist
         private const int RingAttempts = 8;
 
-        // Metres: table, stools and approaches, including a 0.35 m pavement snap and 0.3 m of room for a person.
-        // The width also covers the optional onlooker 1.3 m to either side after the same snap and clearance.
+        // Metres: the table, stools and approaches with a 0.35 m pavement snap and 0.3 m of room for a person; the width also
+        // covers an onlooker 1.3 m to either side.
         private static readonly Vector3 ChessHalf = new Vector3(2f, 1.5f, 1.85f);
-        private static readonly Collider[] CrossingOverlaps = new Collider[64];   // one buffer for every crossing test: they run one at a time, on the main thread
+        private static readonly Collider[] CrossingOverlaps = new Collider[64];   // one buffer: crossing tests run one at a time, on the main thread
 
-        /// <summary>Why places were refused since the counts were last cleared: for saying in the log why a test found no room.</summary>
+        /// <summary>Why places were refused since the counts were last cleared, for the log to say why a test found no room.</summary>
         public static int OffPavement, Blocked, NearDoor, NoWall, Uneven;
 
         private static NavMeshQueryFilter _pavement;
@@ -44,7 +41,7 @@ namespace RealLifeOverhaul
         private static int _wallMask;
         private static int _crosswalkLayer;   // the game's marked crossings' triggers (CrosswalkTrigger); -1 matches nothing
         private static bool _ready;
-        private static bool _wallLogged;   // which layer shopfronts turned out to be on has been said this session
+        private static bool _wallLogged;   // the layer shopfronts are on has been logged this session
 
         private static void Setup()
         {
@@ -58,11 +55,11 @@ namespace RealLifeOverhaul
             _doorMask = LayerMask.GetMask("InteractiveItems", "InteractiveItemsOutlined");
             _wallMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls");
             _crosswalkLayer = LayerMask.NameToLayer("Crosswalk");
-            // Everything a person could be standing in: all layers but the ground itself and the ones that are only zones.
+            // Everything a person could stand in: all layers but the ground and the zones.
             _solidMask = ~(_groundMask | LayerMask.GetMask("UI", "Ignore Raycast", "AutoParkSpots", "ParkingArea", "TransparentFX", "Water"));
         }
 
-        /// <summary>The nearest point of pavement to a place, at street level. False if there is none within the radius.</summary>
+        /// <summary>The nearest point of pavement to a place, at street level; false if there is none within the radius.</summary>
         public static bool Pavement(Vector3 near, float radius, out Vector3 spot)
         {
             Setup();
@@ -77,7 +74,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>True if a place is pavement exactly there (within a step), so that what is put there stands on it.</summary>
+        /// <summary>Whether a place is pavement exactly there, within a step, so what is put there stands on it.</summary>
         public static bool OnPavement(Vector3 place, out Vector3 spot)
         {
             if (Pavement(place, 0.35f, out spot) && Flat(spot - place) < 0.35f * 0.35f)
@@ -88,7 +85,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>The height of the street under a point (road, pavement or open ground). False where there is none.</summary>
+        /// <summary>The height of the street under a point (road, pavement or open ground); false where there is none.</summary>
         public static bool Ground(Vector3 near, out float height)
         {
             Setup();
@@ -102,9 +99,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True if somebody can stand at a point with this much room round them: no vehicle, wall,
-        /// street furniture or person within the radius, and nothing the player can use (a door, a
-        /// bench, a machine) close by.
+        /// Whether somebody can stand at a point with this much room: no vehicle, wall, street furniture or person within the
+        /// radius, and nothing the player can use close by.
         /// </summary>
         public static bool Clear(Vector3 spot, float radius)
         {
@@ -112,7 +108,7 @@ namespace RealLifeOverhaul
             return Free(spot, radius, _solidMask);
         }
 
-        /// <summary>The same without counting a refusal: for places that are not part of what a test reports on.</summary>
+        /// <summary>The same without counting a refusal, for places a test does not report on.</summary>
         public static bool ClearQuietly(Vector3 spot, float radius)
         {
             int blocked = Blocked, door = NearDoor;
@@ -122,7 +118,7 @@ namespace RealLifeOverhaul
             return clear;
         }
 
-        /// <summary>True if somebody on foot can walk the whole way from one point of pavement to another.</summary>
+        /// <summary>Whether somebody on foot can walk the whole way from one point of pavement to another.</summary>
         public static bool Reachable(Vector3 from, Vector3 to)
         {
             Setup();
@@ -136,9 +132,8 @@ namespace RealLifeOverhaul
         private static readonly Vector3[] Corners = new Vector3[32];   // a route's corners, read into this one buffer
 
         /// <summary>
-        /// The same, and how many metres the walk is along the route's corners (-1 when there is no whole route). One path
-        /// asked of the navigation mesh, for when somebody is about to be sent somewhere; never per frame. A route of more
-        /// corners than the buffer holds is measured to its last corner read, straight on from there.
+        /// The same, and the walk's length in metres along the route's corners (-1 with no whole route). One path asked, never
+        /// per frame; a route of more corners than the buffer holds is measured straight on from its last corner read.
         /// </summary>
         public static bool Reachable(Vector3 from, Vector3 to, out float length)
         {
@@ -159,18 +154,17 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>A point on the pavement at a place, with room round it. The usual question an activity asks for each of its people and props.</summary>
+        /// <summary>A point on the pavement at a place with room round it: what an activity asks for each person and prop.</summary>
         public static bool Stand(Vector3 place, float room, out Vector3 spot)
         {
             return OnPavement(place, out spot) && Clear(spot, room);
         }
 
         /// <summary>
-        /// True if a box, turned by rotation, touches no marked crossing: the game's crossing is a trigger tagged "Crosswalk"
-        /// (CrosswalkToTrafficLightLink) on the Crosswalk layer, so triggers on every layer count, and either the layer or the
-        /// tag is enough. Full is true when more colliders met the box than the buffer holds; that refuses too, since one left
-        /// out may be a crossing. One non-allocating box query, asked when a place is chosen, never per frame; it does not
-        /// depend on the traffic features or the lights.
+        /// Whether a turned box touches no marked crossing. The game's crossing is a trigger tagged "Crosswalk" on the
+        /// Crosswalk layer, so triggers on every layer count and either the layer or the tag is enough. <paramref name="full"/>:
+        /// more colliders met the box than the buffer holds, which refuses too, in case one left out is a crossing. One
+        /// non-allocating box query, when a place is chosen.
         /// </summary>
         public static bool ClearOfCrossings(Vector3 centre, Vector3 halfExtents, Quaternion rotation, out bool full)
         {
@@ -190,10 +184,7 @@ namespace RealLifeOverhaul
             return !crossing && !full;
         }
 
-        /// <summary>
-        /// True if the whole chess setup misses crossings, including its approaches and possible onlookers.
-        /// One box query through <see cref="ClearOfCrossings"/>, when choosing a place.
-        /// </summary>
+        /// <summary>Whether the whole chess setup, its approaches and onlookers included, misses crossings.</summary>
         public static bool ChessClear(Vector3 table, Vector3 along)
         {
             bool clear = ClearOfCrossings(table + Vector3.up * 0.5f, ChessHalf, Quaternion.LookRotation(along), out bool full);
@@ -206,10 +197,7 @@ namespace RealLifeOverhaul
             return clear;
         }
 
-        /// <summary>
-        /// A random point of pavement between two distances from a centre. With unseen set, only
-        /// points the camera is not looking at will do.
-        /// </summary>
+        /// <summary>A random point of pavement between two distances from a centre; with unseen, only one out of view.</summary>
         public static bool PavementRing(Vector3 centre, float minDistance, float maxDistance, bool unseen, out Vector3 spot)
         {
             float low = minDistance * 0.8f;
@@ -234,10 +222,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// The direction a pavement runs in at a point: along its nearest edge (the kerb or the
-        /// building line). False where there is no edge near enough to tell.
-        /// </summary>
+        /// <summary>The direction the pavement runs at a point, along its nearest edge; false with no edge near enough.</summary>
         public static bool Along(Vector3 spot, out Vector3 direction)
         {
             Setup();
@@ -256,12 +241,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A shopfront to work on: the wall of a building that can be seen from a point of pavement
-        /// (twelve rays round it, as far as a wide pavement is deep), upright, with pavement to
-        /// stand on a given distance in front of it. The wall is then measured square on from that
-        /// standing place: flat from waist to head and across the width of a person (a plinth or
-        /// sill below the waist may stand a little proud, as real shopfronts have). Returns where
-        /// to stand and the wall's normal (pointing out of the wall, towards whoever stands there).
+        /// A shopfront to work at: an upright building wall seen from a point of pavement (twelve rays), with pavement a given
+        /// distance in front of it, then measured square on from there: flat from waist to head and across a person's width (a
+        /// plinth below the waist may stand a little proud). Gives where to stand and the wall's outward normal.
         /// </summary>
         public static bool Shopfront(Vector3 near, float distance, float room, out Vector3 stand, out Vector3 outward)
         {
@@ -291,8 +273,8 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                // Measured from where the feet really are (the mesh may have moved them a little): one
-                // correction, and then the wall must be the asked distance away to within five centimetres.
+                // Measured from where the feet really are (the mesh may have moved them): one correction, and then the wall must be
+                // the asked distance away to within five centimetres.
                 if (Mathf.Abs(gap - distance) > 0.03f
                     && (!OnPavement(found + normal * (distance - gap), out found) || !FlatWall(found, normal, distance, out gap, out face) || Mathf.Abs(gap - distance) > 0.05f))
                 {
@@ -324,8 +306,8 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The wall square on from a standing place: there at chest height, the same at head height and
-        // a forearm to either side, and nothing below the waist that stands further out than a plinth does.
+        // The wall square on from a standing place: there at chest height, the same at head height and a forearm to either
+        // side, and nothing below the waist further out than a plinth.
         private static bool FlatWall(Vector3 from, Vector3 normal, float distance, out float gap, out RaycastHit face)
         {
             gap = 0f;
@@ -342,7 +324,7 @@ namespace RealLifeOverhaul
                    && Wall(from, -normal, 0.45f, reach, out RaycastHit low) && low.distance >= gap - PlinthMost && low.distance <= gap + 0.5f;
         }
 
-        /// <summary>True if the camera is looking roughly towards a point that is near enough to notice someone appearing.</summary>
+        /// <summary>Whether the camera is looking roughly towards a point near enough to notice someone appearing.</summary>
         public static bool InView(Vector3 point)
         {
             Camera camera = GameManager.GetMainCamera();
@@ -367,7 +349,7 @@ namespace RealLifeOverhaul
             return Physics.Raycast(from + Vector3.up * height, direction, out hit, reach, _wallMask, QueryTriggerInteraction.Ignore);
         }
 
-        // Standing at arm's length from a wall: the wall itself must not count against the place.
+        // At arm's length from a wall, the wall itself must not count against the place.
         private static bool ClearBesideWall(Vector3 spot, float room)
         {
             return Free(spot, room, _solidMask & ~_wallMask);

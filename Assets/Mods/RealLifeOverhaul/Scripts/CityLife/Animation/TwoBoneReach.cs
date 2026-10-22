@@ -3,14 +3,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Puts the end of a two-bone limb (a hand) on a point by turning the two bones above it,
-    /// after the animation has posed them: the bend at the elbow is opened or closed to the
-    /// right length, then the whole arm is swung onto the target. The hand keeps the turn the
-    /// animation gave it. A dozen vector operations and no allocation.
+    /// Puts a hand on a point after the animation has posed the arm: the elbow opens or closes to the right length, then the
+    /// arm swings onto the target; the hand keeps its own turn. A dozen vector operations, no allocation.
     /// </summary>
     public static class TwoBoneReach
     {
-        private const float Epsilon = 0.0005f;
+        private const float Epsilon = 0.0005f;   // metres
 
         /// <param name="weight">0 leaves the animation alone, 1 puts the wrist on the target.</param>
         public static void Solve(Transform upper, Transform lower, Transform end, Vector3 target, float weight = 1f)

@@ -7,30 +7,22 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One of the people of the living city: a thin wrapper over the game's own character that
-    /// gives an activity what it needs (stand at a spot, walk, play a clip, hold a tool) and
-    /// keeps the promises every activity must keep:
-    ///
-    /// - They only ever move by their navigation agent, with the game's walk animation; a clip
-    ///   never moves them. While they stand, the agent stays on (stopped, top priority), so the
-    ///   game's pedestrians and the player walk round them instead of through them.
-    /// - A tool is in their hand only at the grip the clip being played was made with; the clip
-    ///   and the tool are asked for together (<see cref="Work"/>), and if the tool cannot be had
-    ///   the clip is not played.
-    /// - Hit by a car, they drop what they hold where they stand and are handed to the mod's
-    ///   ragdoll and casualty system whole (<see cref="Surrender"/>).
-    ///
-    /// Obtained from and returned to <see cref="CityPeople"/>; never created directly.
+    /// One of the living city's people: a thin wrapper over the game's character that lets an activity place, walk, play
+    /// clips and hand tools, and keeps three promises. They move only by their navigation agent with the game's walk, and
+    /// while standing the agent stays on (stopped, top priority) so others walk round them. A tool is in a hand only at the
+    /// grip of the clip playing, asked for with it (<see cref="Work"/>): no tool, no clip. Hit by a car, they drop what
+    /// they hold and go whole to the casualty system (<see cref="Surrender"/>). Taken from and returned to
+    /// <see cref="CityPeople"/>.
     /// </summary>
     public sealed class CityPerson
     {
         private const int Hands = 2;                // tool slots: right hand, left hand
-        private const int StationaryPriority = 0;   // other agents give way to somebody who is working
+        private const int StationaryPriority = 0;   // other agents give way to somebody working
 
-        /// <summary>What an outfit recoloured on this character, put back before the next outfit. The pool's business.</summary>
+        /// <summary>What an outfit recoloured on this character, put back by the pool before the next outfit.</summary>
         internal readonly List<CityOutfits.Dye> Dyes = new List<CityOutfits.Dye>(4);
 
-        /// <summary>This person as the casualty system knows people: what lets a car strike hand them over.</summary>
+        /// <summary>This person as the casualty system knows people, so a car strike can hand them over.</summary>
         internal readonly StreetActor Actor;
 
         private readonly HeldTool[] _held = { new HeldTool(), new HeldTool() };
@@ -56,10 +48,10 @@ namespace RealLifeOverhaul
         public CityLook Look { get; internal set; }
         public bool InUse { get; internal set; }
 
-        /// <summary>A civilian who has been seen in this look: the pool gives them a new one before they are used again (a thrifty pool: once the look is worn, quietly, on the shelf).</summary>
+        /// <summary>A civilian seen in this look: the pool gives them a new one before they are used again.</summary>
         internal bool Stale { get; set; }
 
-        /// <summary>How many times they have been out in the look they have, when it was put on and when they last came back (unscaled seconds).</summary>
+        /// <summary>Times out in this look, when it was put on and when they last came back (unscaled seconds).</summary>
         internal int Uses;
         internal float DressedAt;
         internal float ReleasedAt;
@@ -69,43 +61,38 @@ namespace RealLifeOverhaul
         public Vector3 Forward => Character.transform.forward;
 
         /// <summary>
-        /// True once this person is no longer the activity's: knocked down by a car and in the
-        /// casualty system's hands, or destroyed with the scene. The activity must not touch them again.
+        /// True once they are no longer the activity's: knocked down and with the casualty system, or destroyed with the scene.
+        /// The activity must not touch them again.
         /// </summary>
         public bool Lost => !Valid || !InUse || Taken;
 
-        /// <summary>True while the casualty system has them (knocked down, lying, being seen to, walking off hurt).</summary>
+        /// <summary>True while the casualty system has them: knocked down, lying, seen to, walking off hurt.</summary>
         internal bool Taken => Valid && (Actor.Lease != _lease || RagdollSystem.Holds(Character));
 
-        /// <summary>The name of the mod clip being played, or null while the game's own animation has them.</summary>
+        /// <summary>The mod clip being played, or null while the game's own animation has them.</summary>
         public string Playing { get; private set; }
 
-        /// <summary>The name of the clip on the masked layer (arms, one arm, upper body), or null.</summary>
+        /// <summary>The clip on the masked layer, or null.</summary>
         public string PlayingOver
         {
             get => _player != null && _player.Over != null ? _over : null;
             private set => _over = value;
         }
 
-        /// <summary>True when the masked layer has nothing on it any more (a one-off there has run out).</summary>
-        public bool OverDone => _player == null || _player.Over == null;
-
-        /// <summary>How fast they are moving over the ground, metres a second.</summary>
+        /// <summary>Their speed over the ground, metres a second.</summary>
         public float Speed => Character.navmeshAgent != null && Character.navmeshAgent.enabled ? Character.navmeshAgent.velocity.magnitude : 0f;
 
-        /// <summary>True when a clip that plays once has run out (the character is back with the game's animation, or holding its last pose).</summary>
+        /// <summary>True once a one-off clip has run out: back with the game's animation, or holding its last pose.</summary>
         public bool ClipOver => _player == null || _player.Current == null || !_player.Active;
 
-        // ---------------------------------------------------------------- where they are
-
-        /// <summary>Puts them on the pavement at a spot, facing a point, standing. False if the spot is not on the navigation mesh.</summary>
+        /// <summary>Puts them standing on the pavement at a spot, facing a point; false if the spot is off the navigation mesh.</summary>
         internal bool Place(Vector3 spot, Vector3 face)
         {
             NavMeshAgent agent = Character.navmeshAgent;
             agent.agentTypeID = NavMeshHelper.NpcAgentTypeId;
             if (!agent.enabled)
             {
-                // There first, then the agent: switched on at the shelf (off the mesh) the engine logs a warning every time.
+                // There first, then the agent: switched on at the shelf, off the mesh, the engine logs a warning each time.
                 Character.transform.position = spot;
             }
             agent.enabled = true;
@@ -122,7 +109,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Stops where they are and stays: an obstacle other people walk round.</summary>
+        /// <summary>Stops where they are and stays, an obstacle others walk round.</summary>
         public void Stand()
         {
             NavMeshAgent agent = Character.navmeshAgent;
@@ -134,21 +121,17 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- sitting (People/Seating)
-
-        private Transform _seat;            // the game's own sitting position they are on, or null
-        private Vector3 _stoodAt;           // where they stood before they sat down: on the navigation mesh, and where they stand up to
+        private Transform _seat;            // the game's sitting position they are on, or null
+        private Vector3 _stoodAt;           // on the navigation mesh, where they stand up to
         private Quaternion _stoodFacing;
 
         /// <summary>True while they sit on one of the game's seats.</summary>
         public bool Seated => _seat != null;
 
         /// <summary>
-        /// Sits them on one of the game's own sitting positions (a chair, a sofa, a street bench: <see cref="Seating"/> finds
-        /// them) exactly as the game seats its own people (<c>ThirdPersonCharacter.SitOnChair</c>): the game's sitting pose,
-        /// made for its seats; the navigation agent switched off, since a seat is not on the mesh; the seat told that it is
-        /// taken, so the game offers it to nobody else. Whatever they held is the caller's to put away first. False, and
-        /// nothing changed, if they cannot (lost, seated already, no such pose on this character).
+        /// Sits them on one of the game's sitting positions (<see cref="Seating"/> finds them) as the game seats its own people
+        /// (<c>ThirdPersonCharacter.SitOnChair</c>): its sitting pose, the agent off, the seat taken for anyone else. Whatever
+        /// they hold is the caller's to put away first. False, with nothing changed, if they cannot.
         /// </summary>
         public bool Sit(Transform seat)
         {
@@ -169,9 +152,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Stands them up where they stood before they sat, by the game's own way off a seat (<c>ThirdPersonCharacter.Reset</c>:
-        /// the agent on again, the seat told that it is free, the pose off). Safe at any time, seated or not; every way a
-        /// person is moved, played or put away goes through it, so nobody is ever left sitting on nothing.
+        /// Stands them up where they stood before they sat, by the game's own way off a seat (<c>ThirdPersonCharacter.Reset</c>).
+        /// Safe at any time; every way a person is moved, played or put away goes through it, so nobody is left sitting on
+        /// nothing.
         /// </summary>
         public void Rise()
         {
@@ -184,7 +167,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            // There first, then the agent: switched on at the seat (off the mesh) the engine logs a warning.
+            // There first, then the agent: switched on at the seat, off the mesh, the engine logs a warning.
             Character.transform.SetPositionAndRotation(_stoodAt, _stoodFacing);
             Character.Reset();
             NavMeshAgent agent = Character.navmeshAgent;
@@ -196,7 +179,7 @@ namespace RealLifeOverhaul
             Stand();
         }
 
-        /// <summary>Walks or jogs to a point on the navigation mesh. Any clip is ended first: nobody slides in a working pose.</summary>
+        /// <summary>Walks or jogs to a point on the navigation mesh, ending any clip first: nobody slides in a working pose.</summary>
         public bool WalkTo(Vector3 destination, bool jog = false)
         {
             if (Lost)
@@ -218,10 +201,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Walks up to (or back from) somebody so as to stop <paramref name="gap"/> metres from them on the line between
-        /// the two: the distance a clip made for two was made at (a handshake 0.80 m, a toast 1.05 m, the rings 1.10 m).
-        /// The agent's own stopping distance is allowed for. Afterwards check <see cref="Arrived"/>, <see cref="Speed"/>
-        /// and the gap that was really reached before playing anything: an agent stops where it can.
+        /// Walks up to or back from somebody so as to stop <paramref name="gap"/> metres from them, the distance a clip for two
+        /// was made at (a handshake 0.80 m, a toast 1.05 m), allowing for the agent's stopping distance. An agent stops where it
+        /// can: check <see cref="Arrived"/>, <see cref="Speed"/> and the gap reached before playing anything.
         /// </summary>
         public bool StepTo(Vector3 other, float gap)
         {
@@ -237,7 +219,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            // Coming nearer the agent stops its stopping distance short of the goal; backing off it walks that far short too.
+            // Coming nearer, the agent stops its stopping distance short; backing off, it walks that far short too.
             float stop = Mathf.Max(0f, agent.stoppingDistance);
             float aim = now > gap ? Mathf.Max(0.1f, gap - stop) : gap + stop;
             Vector3 goal = other + away * (aim / now);
@@ -254,19 +236,19 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True if they are within a distance of a point (flat).</summary>
+        /// <summary>Whether they are within a flat distance of a point.</summary>
         public bool Near(Vector3 point, float within)
         {
             return CitySpots.Flat(Position - point) <= within * within;
         }
 
-        /// <summary>Turns them on the spot to face a point over a moment, as somebody who has just walked up does. In view, this is the one to use.</summary>
+        /// <summary>Turns them to face a point over a moment, as somebody who has just walked up does: the one to use in view.</summary>
         public void Face(Vector3 point)
         {
             CityLifeDirector.Face(this, point);
         }
 
-        /// <summary>Turns them on the spot to face a point, at once. For people who are standing; done when they are placed, out of view.</summary>
+        /// <summary>Turns them to face a point at once, for placing them out of view.</summary>
         public void Turn(Vector3 face)
         {
             Vector3 flat = face - Character.transform.position;
@@ -277,15 +259,12 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- what they do
-
         /// <summary>
-        /// Plays one of the mod's clips, and puts the tool that clip was made for in their hand at
-        /// the clip's own grip. All or nothing: false (and nothing changed) if the clip or its
-        /// prop cannot be had, or the character cannot play it.
+        /// Plays one of the mod's clips with the tool it was made for in their hand at its grip. All or nothing: false, with
+        /// nothing changed, if the clip or its prop cannot be had.
         /// </summary>
-        /// <param name="tool">False plays the clip with empty hands (or with what they already hold): for a clip whose tool is picked up part of the way through (see <see cref="Take"/>).</param>
-        /// <param name="startAt">Seconds into the clip to start at: two people on the same loop need not move as one.</param>
+        /// <param name="tool">False plays it with the hands as they are, for a clip whose tool is picked up part-way (<see cref="Take"/>).</param>
+        /// <param name="startAt">Seconds into the clip: two people on the same loop need not move as one.</param>
         public bool Work(string clipName, CityProps props, float fade = 0.35f, ClipEnd end = ClipEnd.Return, bool tool = true, float startAt = 0f)
         {
             if (Lost || _player == null || !_player.Usable || !ClipLibrary.TryGet(clipName, out CityClip clip))
@@ -296,7 +275,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            Rise();   // (a whole-body clip is made for somebody on their feet: nobody plays one sitting on a seat of the game's)
+            Rise();   // a whole-body clip is made for somebody on their feet
             ClearPose();
             if (!_player.Play(clip.Clip, fade, 1f, end, startAt))
             {
@@ -308,11 +287,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Plays a clip on the masked layer: only the arms, one arm or the upper body are taken
-        /// from it (the mask the clip was made for unless one is given), over the game's walk or
-        /// idle or over a clip played with Work. Its tool goes in the hand as with Work. This is
-        /// how somebody carries a box, a cup or an umbrella while walking: nothing of the legs is
-        /// ours, so nothing slides.
+        /// Plays a clip on the masked layer (the clip's own mask unless one is given) over the game's walk or idle or a clip
+        /// played with Work, its tool in the hand as with Work: how somebody carries a box or an umbrella while walking.
         /// </summary>
         public bool WorkOver(string clipName, CityProps props, float fade = 0.3f, ClipEnd end = ClipEnd.Return, BodyMask mask = BodyMask.Full, bool tool = true)
         {
@@ -337,27 +313,23 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The masked layer fades out; what the hands held stays in them until put away or released.</summary>
+        /// <summary>The masked layer fades out; what the hands hold stays until put away or released.</summary>
         public void StopOver(float fade = 0.3f)
         {
-            if (_player != null)
-            {
-                _player.StopOver(fade);
-            }
+            _player?.StopOver(fade);
             PlayingOver = null;
             if (Playing == null)
             {
                 for (int hand = 0; hand < Hands; hand++)
                 {
-                    _held[hand].LetGo();   // nothing is played that holds anything with both hands
+                    _held[hand].LetGo();   // nothing playing holds anything with both hands
                 }
             }
         }
 
         /// <summary>
-        /// Puts a prop object that is already out (a cup on a counter) in the hand, at the grip of
-        /// the clip named: for taking something that somebody else put down. False if the clip
-        /// has no such tool or the hand cannot take it; the prop is then left where it is.
+        /// Puts a prop that is already out (a cup on a counter) in the hand at the named clip's grip; false, with the prop left
+        /// where it is, if the clip has no such tool or the hand cannot take it.
         /// </summary>
         public bool Take(Transform tool, string clipName, CityProps props)
         {
@@ -381,9 +353,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Something that goes where they go without being in a hand: on the ground in front (a
-        /// pushchair, a sack truck: bone null, the pose is in their own frame) or worn (a satchel
-        /// on a bone). Two at most. It is given back with everything else.
+        /// Something that goes with them without being in a hand, two at most: on the ground in front (a pushchair; bone null,
+        /// the pose in their own frame) or worn on a bone (a satchel). Given back with everything else.
         /// </summary>
         public bool Bring(Transform prop, HumanBodyBones? bone, Vector3 position, Quaternion rotation)
         {
@@ -411,7 +382,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Lets go of something brought along: it stays where it is in the world and is the caller's again. Null if they have no such thing.</summary>
+        /// <summary>Lets go of something brought along, where it is now; null if they have no such thing.</summary>
         public Transform Leave(string id)
         {
             for (int i = 0; i < _with.Length; i++)
@@ -429,7 +400,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>Puts the tool of a clip in the hand without playing the clip: for a second tool (the other hand's) that a later clip assumes.</summary>
+        /// <summary>Puts a clip's tool in the hand without playing the clip, for a second tool a later clip assumes.</summary>
         public bool Carry(string clipName, CityProps props)
         {
             if (Lost || !ClipLibrary.TryGet(clipName, out CityClip clip) || !clip.HasTool || !Hold(clip, props))
@@ -440,17 +411,14 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Back to the game's own animation (its idle, or walking).</summary>
+        /// <summary>Back to the game's own animation, its idle or walking.</summary>
         public void Idle(float fade = 0.35f)
         {
-            if (_player != null)
-            {
-                _player.Stop(fade);
-            }
+            _player?.Stop(fade);
             Playing = null;
             if (PlayingOver != null)
             {
-                return;   // the masked layer still holds what it holds, with both hands if that is how
+                return;   // the masked layer still holds what it holds, with both hands if so
             }
             for (int hand = 0; hand < Hands; hand++)
             {
@@ -459,8 +427,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Sets the speed of the walking clip being played (<see cref="Work"/>) from how fast they are really going, so the
-        /// planted foot stays put: clipSpeed is the clip's own (<see cref="CityClip.Speed"/>). Call it from the owner's tick, never per frame.
+        /// Sets the walking clip's speed from how fast they really go, so the planted foot stays put; clipSpeed is
+        /// <see cref="CityClip.Speed"/>. From the owner's tick, never per frame.
         /// </summary>
         public void KeepStep(float clipSpeed)
         {
@@ -470,7 +438,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Holds one of the game's own looping poses (on the phone, texting); handObject is an optional game prop name.</summary>
+        /// <summary>Holds one of the game's looping poses (on the phone, texting), with an optional game prop in the hand.</summary>
         public bool Pose(PermanentAnimationType pose, string handObject = null)
         {
             if (Lost || !Character.animator.HasParameter(pose.ToString()))
@@ -500,7 +468,7 @@ namespace RealLifeOverhaul
             Character.RemoveHandObject();
         }
 
-        /// <summary>Takes the tool out of a hand and gives it to the caller (to stand on a counter, say). Null if that hand is empty.</summary>
+        /// <summary>Takes the tool out of a hand and gives it to the caller; null if that hand is empty.</summary>
         public Transform Release(bool rightHand)
         {
             int hand = rightHand ? 0 : 1;
@@ -538,17 +506,13 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// About to be thrown down by a car: the clip ends at once, and whatever they hold falls
-        /// to the ground where it is and becomes the activity's to clear up (added to
-        /// <paramref name="dropped"/>). After this the casualty system may have them.
+        /// About to be thrown down by a car: the clip ends at once, and whatever they hold falls where it is and is added to
+        /// <paramref name="dropped"/> for the activity to clear up. The casualty system may have them after this.
         /// </summary>
         internal void Surrender(List<Transform> dropped)
         {
             Rise();
-            if (_player != null)
-            {
-                _player.Dispose();
-            }
+            _player?.Dispose();
             Playing = null;
             PlayingOver = null;
             CityLifeDirector.StopFacing(this);
@@ -567,7 +531,6 @@ namespace RealLifeOverhaul
                 prop.localScale = Vector3.one;
                 if (!worn)
                 {
-                    // On its wheels, upright, where it was.
                     Vector3 stands = prop.position;
                     if (CitySpots.Ground(stands, out float road))
                     {
@@ -593,7 +556,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                // Lying on the ground under where it was held, along the way it pointed.
+                // On the ground under where it was held, along the way it pointed.
                 Vector3 at = tool.position;
                 if (CitySpots.Ground(at, out float ground))
                 {
@@ -633,7 +596,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Whole again and with empty hands, for the next activity (or for the shelf).</summary>
+        /// <summary>Whole again with empty hands, for the next activity or the shelf.</summary>
         internal void Reset(CityProps props)
         {
             if (!Valid)
@@ -642,10 +605,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Rise();
-            if (_player != null)
-            {
-                _player.Dispose();
-            }
+            _player?.Dispose();
             Playing = null;
             PlayingOver = null;
             CityLifeDirector.StopFacing(this);
@@ -667,7 +627,7 @@ namespace RealLifeOverhaul
             int hand = clip.Grip.Hand == HumanBodyBones.RightHand ? 0 : 1;
             if (_tools[hand] != null && _tools[hand].name == clip.Prop)
             {
-                _held[hand].Regrip(clip.Grip);   // already in that hand, at the grip every clip made for this tool shares; the other hand may come or go
+                _held[hand].Regrip(clip.Grip);   // already in that hand at the grip every clip for this tool shares; the other hand may come or go
                 return true;
             }
             if (props == null)
@@ -679,11 +639,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            Transform before = Release(hand == 0);
-            if (before != null)
-            {
-                props.Return(before);
-            }
+            props.Return(Release(hand == 0));
             if (!_held[hand].Attach(Character.animator, tool, clip.Grip))
             {
                 props.Return(tool);

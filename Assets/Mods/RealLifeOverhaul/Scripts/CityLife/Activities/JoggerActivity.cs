@@ -3,10 +3,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Somebody out for a run: round a loop of three or four stretches of pavement at the game's
-    /// own jogging pace, with the game's own jogging animation, by their navigation agent like
-    /// everybody else on foot. The only one of the living city's people who is not standing
-    /// still, and so the only one that costs a path.
+    /// Somebody running a loop of three or four stretches of pavement at the game's own jogging pace and animation. The only
+    /// one of the living city's people who moves, and so the only one that costs a path.
     /// </summary>
     public sealed class JoggerActivity : CityActivity
     {

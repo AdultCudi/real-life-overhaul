@@ -2,7 +2,7 @@ using BigAmbitions.Characters;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>The three groups the options page can switch on and off, and the test buttons step through.</summary>
+    /// <summary>The kinds of activity the test buttons step through; the options page switches them in two groups.</summary>
     public enum CityFamily { Workers, Everyday, Stalls, Deliveries, Leisure }
 
     /// <summary>One thing that can happen on the street: who, when, how often, and the activity that plays it.</summary>
@@ -26,16 +26,10 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// THE CATALOGUE of the living city: every activity, one entry each. This is the one place
-    /// to look for what exists and the one place to add to: see "Adding an activity" in
-    /// docs/contributing/adding-things.md. Somebody working alone is a <see cref="SoloSpec"/> and needs no class of its own.
-    ///
-    /// Hours follow the day: sweepers and window cleaners early, the road crew in working
-    /// hours, leaflets and the coffee cart while shops are busy, joggers at both ends of the
-    /// day, smokers and people on the phone into the night. Between two and five in the morning
-    /// nothing starts at all. In the rain everybody who is out is taken off the street as soon as
-    /// nobody is looking, and the only thing that starts is people walking under umbrellas (the
-    /// entries marked Rain); those go in again when it stops.
+    /// Every activity of the living city, one entry each: the one place to add one (docs/contributing/adding-things.md).
+    /// Somebody working alone is a <see cref="SoloSpec"/> and needs no class. Hours follow the day; nothing starts between
+    /// two and five in the morning. In the rain the street empties once nobody is looking, and only the entries marked Rain
+    /// start.
     /// </summary>
     public static class CityCatalogue
     {
@@ -43,7 +37,6 @@ namespace RealLifeOverhaul
 
         public static readonly CityEntry[] All =
         {
-            // ---- people at work
             new CityEntry
             {
                 Id = "sweeper", Name = "reallife_city_name_sweeper", Family = CityFamily.Workers, Weight = 14, From = 6, To = 18,
@@ -89,7 +82,6 @@ namespace RealLifeOverhaul
                 Activity = new SoloActivity(new SoloSpec { Look = CityLook.Canvasser, Room = 0.7f, Work = "clipboard_write" })
             },
 
-            // ---- everyday people
             new CityEntry
             {
                 Id = "chat", Name = "reallife_city_name_chat", Family = CityFamily.Everyday, Cast = 2, Weight = 16, From = 8, To = 23,
@@ -116,13 +108,13 @@ namespace RealLifeOverhaul
             },
             new CityEntry
             {
-                // Lunch out of a carton by a wall: the carton on the left palm, a piece to the mouth every few seconds (eat_standing, with takeaway_box).
+                // Lunch from a carton on the left palm, a piece to the mouth every few seconds.
                 Id = "street_lunch", Name = "reallife_city_name_street_lunch", Family = CityFamily.Everyday, Weight = 9, From = 11, To = 15,
                 Activity = new SoloActivity(new SoloSpec { Place = SoloPlace.BackToWall, Wall = 0.6f, Room = 0.4f, Now = "eat_standing", HoldNow = true, NowMin = 4f, NowMax = 8f })
             },
             new CityEntry
             {
-                // Somebody from a shop or an office on the doorstep with a mug: held at the hip, a drink now and then (drink_stand, with mug).
+                // On a shop or office doorstep with a mug held at the hip.
                 Id = "mug_break", Name = "reallife_city_name_mug_break", Family = CityFamily.Everyday, Weight = 8, From = 7, To = 17,
                 Activity = new SoloActivity(new SoloSpec { Place = SoloPlace.BackToWall, Wall = 0.6f, Room = 0.4f, Now = "drink_stand", HoldNow = true, NowMin = 7f, NowMax = 14f })
             },
@@ -142,7 +134,6 @@ namespace RealLifeOverhaul
                 Activity = new BuskerAudienceActivity()
             },
 
-            // ---- stalls
             new CityEntry
             {
                 Id = "coffee_cart", Name = "reallife_city_name_coffee_cart", Family = CityFamily.Stalls, Cast = 2, Weight = 12, From = 7, To = 18, MinMinutes = 8f, MaxMinutes = 15f,
@@ -154,7 +145,6 @@ namespace RealLifeOverhaul
                 Activity = new StallActivity(StallKind.HotDogs)
             },
 
-            // ---- deliveries and trades: people who come, do something and go
             new CityEntry
             {
                 Id = "courier", Name = "reallife_city_name_courier", Family = CityFamily.Deliveries, Weight = 14, From = 8, To = 19, MinMinutes = 3f, MaxMinutes = 6f,
@@ -170,7 +160,7 @@ namespace RealLifeOverhaul
                 Id = "painter", Name = "reallife_city_name_painter", Family = CityFamily.Deliveries, Weight = 9, From = 8, To = 17,
                 Activity = new SoloActivity(new SoloSpec
                 {
-                    // On the first tread of the ladder, which stands between the painter and the wall (paint_roll: 0.80 m to the wall, the ladder 0.24 m ahead).
+                    // On the ladder's first tread, between the painter and the wall (paint_roll: 0.80 m to the wall, the ladder 0.24 m ahead).
                     Look = CityLook.Painter, Place = SoloPlace.Shopfront, Wall = 0.80f, Room = 0.5f, Work = "paint_roll",
                     Props = new[] { new SoloProp("step_ladder", 0f, 0.24f, 0f), new SoloProp("bucket", 0.62f, 0.15f, 0f) }
                 })
@@ -181,7 +171,6 @@ namespace RealLifeOverhaul
                 Activity = new TreeCareActivity()
             },
 
-            // ---- leisure: the park, the door, the weather
             new CityEntry
             {
                 Id = "chess", Name = "reallife_city_name_chess", Family = CityFamily.Leisure, Cast = 2, Weight = 9, From = 10, To = 20, MinMinutes = 8f, MaxMinutes = 15f,
@@ -209,7 +198,7 @@ namespace RealLifeOverhaul
             },
             new CityEntry
             {
-                // A traveller with a cabin case, walking the pavements on the clip's own full-body walk (carry_suitcase_walk, suitcase), kept in step with the ground.
+                // A cabin case pulled on the clip's own whole-body walk, kept in step with the ground.
                 Id = "traveller", Name = "reallife_city_name_traveller", Family = CityFamily.Leisure, Weight = 8, From = 6, To = 23, MinMinutes = 3f, MaxMinutes = 6f,
                 Activity = new StrollActivity(StrollKind.Suitcase)
             },
@@ -226,7 +215,7 @@ namespace RealLifeOverhaul
             new CityEntry
             {
                 Id = "doorman", Name = "reallife_city_name_doorman", Family = CityFamily.Leisure, Weight = 8, From = 9, To = 26,
-                // (Somebody on foot in front of him is shown the way in: an open hand swept round to the door.)
+                // Somebody on foot in front of him is shown the way in.
                 Activity = new SoloActivity(new SoloSpec { Look = CityLook.Doorman, Place = SoloPlace.BackToWall, Wall = 0.55f, Room = 0.4f, Work = "guard_stand", Greet = "point_show" })
             },
             new CityEntry

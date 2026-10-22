@@ -3,29 +3,19 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A delivery. The courier WALKS IN from out of view behind a sack truck with a parcel on it
-    /// (the game's own walk, the arms of the truck clip over it, the truck going with them),
-    /// stands the truck up on the pavement, goes round to its front, lifts the parcel off, carries
-    /// it to the shopfront, puts it down by the wall, walks back, takes the truck and walks away
-    /// out of view. The parcel stays where it was left until the site goes.
-    ///
-    /// Every place is measured before anybody is put out: where the truck stands, where the
-    /// courier stands behind it, beside it and in front of it, and the place at the wall. The
-    /// numbers are the ones the clips were made with (CityAssets/scripts/clips_life.py).
-    ///
-    /// Who has what, at every moment: the truck is the courier's (brought along) or stands in
-    /// the dressing; the parcel rides on the truck as its child, is in the courier's hands, or
-    /// stands in the dressing. End parts parcel from truck first, and then everything goes back
-    /// the usual way.
+    /// A delivery: the courier walks in from out of view behind a sack truck with a parcel on it, stands the truck on the
+    /// pavement, lifts the parcel off, sets it down by a shopfront, takes the truck and walks away out of view. Every place
+    /// is measured first, with the numbers the clips were made with (CityAssets/scripts/clips_life.py). The truck is the
+    /// courier's or the dressing's; the parcel rides on the truck as its child, is in the courier's hands, or is dressing.
     /// </summary>
     public sealed class CourierActivity : CityActivity
     {
-        private const float AxleAhead = 1.09f;      // the truck's axle ahead of whoever pushes it (hand_truck_push)
+        private const float AxleAhead = 1.09f;      // metres from whoever pushes to the axle (hand_truck_push)
         private const float TruckTilt = 38f;        // degrees it leans back on to the hands
-        private const float AxleUp = 0.11f;
-        private const float PlateAhead = 0.14f;     // the middle of the toe plate ahead of the axle, where the parcel rides
-        private const float BoxAhead = 0.40f;       // a box on the ground ahead of whoever picks it up or sets it down
-        private const float WallGap = 0.64f;        // the courier's feet from the wall when the parcel goes down against it
+        private const float AxleUp = 0.11f;   // metres
+        private const float PlateAhead = 0.14f;     // metres from the axle to the middle of the toe plate, where the parcel rides
+        private const float BoxAhead = 0.40f;       // metres from whoever picks up or sets down to the box on the ground
+        private const float WallGap = 0.64f;        // metres from the feet to the wall when the parcel goes down
         private const float Patience = 60f;         // seconds any one walk may take
 
         private const int Lifted = 1, Carrying = 2, Down = 3;
@@ -44,8 +34,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            // The truck is left out on the pavement a few steps from the wall, along the way the pavement runs; the
-            // courier goes round it on whichever side has room, never through it.
+            // The truck stands a few steps from the wall along the pavement; the courier goes round it on whichever side has room.
             for (int way = 0; way < 2; way++)
             {
                 Vector3 along = way == 0 ? _along : -_along;
@@ -112,7 +101,7 @@ namespace RealLifeOverhaul
             }
             if (!Over && _step != Step.Leaving && _step != Step.Lifting && _step != Step.Setting && now >= _until)
             {
-                // A walk that never got there (the way was blocked): they stop where they are and the site ends when nobody is looking.
+                // A walk that never got there (the way was blocked): they stop, and the site ends when nobody is looking.
                 CityLifeDirector.Logger?.Info($"City life: the courier gave up at step {_step} (did not get there in {Patience:F0} s).");
                 _courier.Stand();
                 Over = true;
@@ -132,7 +121,6 @@ namespace RealLifeOverhaul
                     }
                     break;
                 case Step.Parking:
-                    // The truck is stood up where it was measured to stand, and left.
                     _courier.StopOver(0.3f);
                     _courier.Leave("hand_truck");
                     _truck.SetPositionAndRotation(_truckAt, Quaternion.LookRotation(_along));
@@ -190,7 +178,7 @@ namespace RealLifeOverhaul
                     }
                     break;
                 case Step.Taking:
-                    // Facing it now: the truck goes back on to the hands where it stands, and away.
+                    // The truck goes back on to the hands where it stands, and away.
                     Dressing.Remove(_truck);
                     if (!Wheel())
                     {
@@ -243,7 +231,6 @@ namespace RealLifeOverhaul
                 case Down:
                     if (_step == Step.Setting)
                     {
-                        // Out of the hands and on the ground by the wall, where the clip put it.
                         Transform box = _courier.Release(true);
                         if (box != null)
                         {
@@ -263,14 +250,13 @@ namespace RealLifeOverhaul
 
         public override void End()
         {
-            // The parcel rides on the truck as its child until it is lifted: apart before either goes back to the shelf.
+            // The parcel rides on the truck as its child until lifted: part them before either goes back to the shelf.
             if (_parcel != null && _truck != null && _parcel.parent == _truck)
             {
                 _parcel.SetParent(null, true);
                 Props?.Return(_parcel);
             }
-            // The truck itself is always somebody's: the courier's (it goes back with them), the dressing's, or among
-            // what fell when the courier was knocked down (which Disturbed made the dressing's).
+            // The truck is always somebody's: the courier's, the dressing's, or among what fell when the courier was knocked down.
             _parcel = null;
             _truck = null;
             _courier = null;
@@ -284,7 +270,7 @@ namespace RealLifeOverhaul
             _until = now + Patience;
         }
 
-        // There; or stopped short of there, and then on again.
+        // There; or stopped short, and sent on again.
         private bool At(Vector3 place, float within)
         {
             if (!_courier.Arrived)
@@ -299,7 +285,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The truck in the courier's hands: leant back, its axle the clip's distance ahead, the arms of the pushing clip over the game's walk.
+        // The truck in the courier's hands: leant back, its axle the clip's distance ahead, the push clip's arms over the walk.
         private bool Wheel()
         {
             Quaternion lean = Quaternion.Euler(-TruckTilt, 0f, 0f);

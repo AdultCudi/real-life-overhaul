@@ -12,46 +12,33 @@ namespace RealLifeOverhaul
     public enum StallKind { Coffee, HotDogs }
 
     /// <summary>
-    /// A cart on the pavement with a real queue. The vendor is behind it keeping the counter.
-    /// Customers WALK UP from out of view one at a time, join the end of the queue, wait, move
-    /// up, are served at the counter (the vendor sets a cup down in front of them, they pay,
-    /// take the cup) and walk off with it out of view, where they go back into the pool.
-    /// The cart stands along the pavement with its counter towards the wider side; cart, vendor
-    /// and every place in the queue have tested room, or the cart is not here.
-    ///
-    /// Where people stand is what the clips were made for (CityAssets/README.md, "A counter"):
-    /// the vendor 0.68 m behind the cart's middle, the customer being served 0.72 m in front of
-    /// it; the cup is set down, and picked up, 0.10 m to the customers' side of the middle.
-    ///
-    /// The player can buy a coffee: walk up to the counter, press F. It costs a few dollars
-    /// through the game's own money call and gives a little energy through the game's own energy
-    /// call; nothing is stored, and with player interactions switched off it is only scenery.
+    /// A coffee or hot-dog cart on the pavement with a real queue: customers walk up from out of view, wait, are served at
+    /// the counter (a cup set down, paid for, taken) and walk off out of view. Cart, vendor and every queue place have tested
+    /// room, or the cart is not here. The player can buy a coffee at the counter for a few dollars and a little energy,
+    /// through the game's own calls; nothing is stored, and with player interactions off it is scenery.
     /// </summary>
     public sealed class StallActivity : CityActivity
     {
         public static int Price => Prices.At(4);
 
         private const float Energy = 5f;            // of the game's hundred
-        // Where the two stand is fixed by the hand-over clips (the vendor's cup goes down 0.78 m ahead of them, the
-        // customer's hand closes on it 0.62 m ahead of them: the same spot, 0.10 m to the customer's side of the middle).
-        // Checked against both carts as modelled: the counter is 0.80 m deep (0.40 either side of the middle) and the
-        // body under it 0.72 m; a person's toes are 0.18 m and chest 0.13 m ahead of where they stand, so the vendor is
-        // 0.10 m and the customer 0.14 m clear of the counter's edge, and neither is in the cart. (PropLibrary.SizeOf
-        // says 1.07 m for coffee_cart, but that is its awning, 1.8 m up and over their heads; vendor_cart is 0.84 m.)
+        // Where the two stand is fixed by the hand-over clips: the cup goes down 0.78 m ahead of the vendor and is taken 0.62 m
+        // ahead of the customer, 0.10 m to the customer's side of the middle. Against both carts as modelled (counter 0.80 m
+        // deep) both stand clear of the counter's edge. PropLibrary.SizeOf's 1.07 m for coffee_cart is its awning, overhead.
         private const float VendorBack = 0.68f;     // metres from the cart's middle to where the vendor stands
-        private const float CustomerOut = 0.72f;    // and to the customer at the counter
-        private const float QueueStep = 0.85f;      // between two people in the queue
-        private const float CartHalfLength = 0.75f; // the cart's body, along the pavement
-        private const float CartHalfDepth = 0.40f;  // ...and its counter, across it
+        private const float CustomerOut = 0.72f;    // metres from the cart's middle to the customer at the counter
+        private const float QueueStep = 0.85f;      // metres between two people in the queue
+        private const float CartHalfLength = 0.75f; // metres: the cart's body along the pavement
+        private const float CartHalfDepth = 0.40f;  // metres: its counter across it
         private const int QueueMost = 3;
         private const int PeopleMost = 4;           // vendor, queue and whoever is walking off, at once
-        private const float BuyWithin = 2.3f;
+        private const float BuyWithin = 2.3f;   // metres from the cart within which the player can buy
         private const float BuyGap = 8f;            // seconds between two coffees
 
-        // The moments of a sale, in seconds from its start (from the clips' own marks where they have one).
+        // The moments of a sale, in seconds from its start where the clips have no mark of their own.
         private const int CupDown = 1, Reach = 2, CupTaken = 3, WalkOff = 4, CupUp = 5;
-        private const float ReachAt = 2.0f;         // the customer has paid and goes for the cup
-        private const float ReachLength = 2.4f;
+        private const float ReachAt = 2.0f;         // seconds: the customer has paid and reaches for the cup
+        private const float ReachLength = 2.4f;   // seconds
 
         private readonly StallKind _kind;
         private readonly SolidFootprint _solid = new SolidFootprint();
@@ -59,7 +46,7 @@ namespace RealLifeOverhaul
         private readonly CityPerson[] _queue = new CityPerson[QueueMost];
         private readonly bool[] _settled = new bool[QueueMost];
         private readonly float[] _due = new float[QueueMost];   // when whoever is walking to a place should have got there
-        private const float WalkPatience = 55f;
+        private const float WalkPatience = 55f;   // seconds
         private Vector3 _cart;
         private Vector3 _vendor;
         private Vector3 _shade;
@@ -75,7 +62,6 @@ namespace RealLifeOverhaul
         private bool _prompted;
         private Transform _cup;         // the cup on the counter between the vendor's hand and the customer's
         private bool _buyerHasCup;
-        private CitySite _site;
 
         public StallActivity(StallKind kind)
         {
@@ -95,7 +81,7 @@ namespace RealLifeOverhaul
             for (int side = 0; side < 2; side++)
             {
                 Vector3 outwards = side == 0 ? across : -across;
-                Vector3 right = Vector3.Cross(Vector3.up, outwards);   // the cart's own right, once its counter faces outwards
+                Vector3 right = Vector3.Cross(Vector3.up, outwards);   // the cart's right once its counter faces outwards
                 // The four corners of the cart's footprint, the vendor behind and the customer in front.
                 if (!CitySpots.OnPavement(_cart + along * 0.85f + outwards * 0.5f, out _) || !CitySpots.OnPavement(_cart - along * 0.85f + outwards * 0.5f, out _)
                     || !CitySpots.OnPavement(_cart + along * 0.85f - outwards * 0.5f, out _) || !CitySpots.OnPavement(_cart - along * 0.85f - outwards * 0.5f, out _)
@@ -117,7 +103,7 @@ namespace RealLifeOverhaul
                 }
                 _counterSide = outwards;
                 _hasShade = _kind == StallKind.HotDogs && CitySpots.OnPavement(_cart - right * 1.15f - outwards * 0.55f, out _shade);
-                // The cart's own +Z is its counter side.
+                // The cart's +Z is its counter side.
                 _heading = Quaternion.LookRotation(outwards).eulerAngles.y;
                 Centre = _cart;
                 return true;
@@ -128,7 +114,6 @@ namespace RealLifeOverhaul
         public override bool Begin(CitySite site)
         {
             Start(site);
-            _site = site;
             for (int i = 0; i < QueueMost; i++)
             {
                 _queue[i] = null;
@@ -140,9 +125,8 @@ namespace RealLifeOverhaul
                 End();
                 return false;
             }
-            // Solid to everyone on foot, as the bus stops are (Core/SolidFootprint): a box on the pooled cart object that
-            // walkers steer round, and that cuts the navigation mesh only while the player is on foot near the cart (Tick).
-            // Its depth leaves the vendor's and the customer's places, 0.7 m from the cart's middle, on the mesh.
+            // Solid to everyone on foot, as the bus stops are (Core/SolidFootprint): walkers steer round it, and it cuts the mesh
+            // only while the player is on foot nearby (Tick). Its depth leaves the vendor's and customer's places on the mesh.
             _solid.Fit(Dressing[0], CartHalfLength, CartHalfDepth, Mathf.Min(VendorBack, CustomerOut));
             if (_hasShade)
             {
@@ -154,7 +138,6 @@ namespace RealLifeOverhaul
                 End();
                 return false;
             }
-            // The first customer is already on the way.
             if (!Join(site))
             {
                 End();
@@ -184,7 +167,7 @@ namespace RealLifeOverhaul
             }
             CityPerson vendor = Cast[0];
 
-            // Solid only while the player is on foot near it: nearer to become so than to stay so, never while driving past.
+            // Solid only while the player is on foot near it, nearer to become so than to stay so.
             PlayerController walker = PlayerHelper.PlayerController;
             float solidWithin = _solid.IsSolid ? SolidFootprint.Keep : SolidFootprint.Within;
             _solid.Solid(walker != null && !PlayerHelper.IsUsingVehicle && CitySpots.Flat(walker.transform.position - _cart) < solidWithin * solidWithin, now);
@@ -197,7 +180,7 @@ namespace RealLifeOverhaul
                                               + (cut && kept && way ? "PASS" : !kept || !way ? "FAIL (the cut is taken back: the cart is steered round, not solid)" : "FAIL (the cart can be walked through)") + ".");
             }
 
-            // The queue: forget whoever was knocked down, close up, and let people settle where they have arrived.
+            // The queue: forget whoever was knocked down, close up, and settle whoever has arrived.
             for (int i = 0; i < _placeCount; i++)
             {
                 if (_queue[i] != null && _queue[i].Lost)
@@ -208,7 +191,7 @@ namespace RealLifeOverhaul
             bool selling = now < _saleEnds;
             if (!selling && _cup != null)
             {
-                // A cup nobody took (its sale came apart): off the counter, or nothing could be sold again.
+                // A cup nobody took, its sale come apart: off the counter, or nothing could be sold again.
                 Dressing.Remove(_cup);
                 Props.Return(_cup);
                 _cup = null;
@@ -236,7 +219,7 @@ namespace RealLifeOverhaul
                 }
                 else if (waiting != null && !_settled[i] && now >= _due[i])
                 {
-                    // Never got to their place (the way was blocked): they give up and walk off, and the place is free again.
+                    // Never got to their place (the way was blocked): they walk off and the place is free again.
                     _queue[i] = null;
                     Depart(waiting);
                 }
@@ -246,7 +229,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A sale: the customer at the counter has settled and the vendor is free.
             if (!selling && now >= _vendorBusyUntil && _queue[0] != null && _settled[0] && _cup == null)
             {
                 CityPerson buyer = _queue[0];
@@ -267,7 +249,7 @@ namespace RealLifeOverhaul
             }
             else if (now >= _vendorBusyUntil && now >= _nextWipe)
             {
-                // Between customers: wipes the counter for a while, stands a while.
+                // Between customers: wipes the counter a while, stands a while.
                 bool wiping = vendor.Playing == "counter_wipe";
                 if (wiping)
                 {
@@ -280,7 +262,7 @@ namespace RealLifeOverhaul
                 _nextWipe = wiping ? In(4f, 8f) : In(6f, 12f);
             }
 
-            // Somebody else comes along, if there is a place at the end of the queue and somebody free to be them.
+            // Somebody else comes along if the end of the queue is free and somebody in the pool is too.
             if (now >= _nextArrival)
             {
                 _nextArrival = In(9f, 22f);
@@ -290,7 +272,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The player at the counter.
             PlayerController player = PlayerHelper.PlayerController;
             if (_kind == StallKind.Coffee && Settings.CityInteractions && player != null && !PlayerHelper.IsUsingVehicle && now >= _nextSale && !selling)
             {
@@ -302,7 +283,7 @@ namespace RealLifeOverhaul
                     if (!_prompted)
                     {
                         _prompted = true;
-                        // (Once per stall: the text names whatever the interaction key is bound to now.)
+                        // Once per stall; the text names the interaction key as it is bound now.
                         Notifications.Show(NotificationType.Info, "reallife_city_coffee_prompt",
                             new System.Collections.Generic.Dictionary<string, string>(2) { { "key", Keys.Label(KeyAction.Interact) }, { "price", ((float)Price).ToCurrencyFormat() } }, 6f);
                     }
@@ -332,14 +313,13 @@ namespace RealLifeOverhaul
                     }
                     break;
                 case CupDown:
-                    // The vendor lets go of the cup: it stands on the counter where the hand put it.
+                    // The vendor lets go: the cup stands on the counter where the hand put it.
                     if (!vendor.Lost)
                     {
                         _cup = vendor.Release(true);
                         if (_cup != null)
                         {
-                            Vector3 at = _cup.position;
-                            _cup.SetPositionAndRotation(at, Quaternion.Euler(0f, _cup.eulerAngles.y, 0f));
+                            _cup.SetPositionAndRotation(_cup.position, Quaternion.Euler(0f, _cup.eulerAngles.y, 0f));
                             Dressing.Add(_cup);
                         }
                     }
@@ -366,7 +346,7 @@ namespace RealLifeOverhaul
                         _settled[0] = false;
                         if (!who.Lost)
                         {
-                            // The cup stays in the hand, held by that arm alone, and the game walks them away.
+                            // The cup stays in that hand alone, and the game walks them away.
                             if (_buyerHasCup)
                             {
                                 who.WorkOver("cup_hold", Props, 0.3f, ClipEnd.Return, BodyMask.RightArm);
@@ -407,12 +387,12 @@ namespace RealLifeOverhaul
             }
             catch (System.Exception e)
             {
-                // The game's own money or energy call failed: no coffee, and the street carries on.
+                // The game's money or energy call failed: no coffee, and the street carries on.
                 CityLifeDirector.Logger?.Error(e);
                 return;
             }
             Notifications.Show(NotificationType.Success, "reallife_city_coffee_bought", null, 5f);
-            SocialHooks.BoughtCoffee();   // a regular at the cart gets noticed by another (Scripts/Social)
+            SocialHooks.BoughtCoffee();   // a regular at the cart gets noticed (Scripts/Social)
             if (now >= _vendorBusyUntil && Cast[0].Work("serve", Props, 0.25f))
             {
                 _vendorBusyUntil = now + 2.6f;
@@ -423,9 +403,8 @@ namespace RealLifeOverhaul
         public override void End()
         {
             PlayerAtCounter = false;
-            _solid.Clear();   // nothing is left cutting the mesh when the same cart object is next put out
-            _cup = null;   // if it was on the counter it is among the dressing and goes back with it
-            _site = null;
+            _solid.Clear();   // nothing left cutting the mesh when the cart object is next put out
+            _cup = null;   // on the counter it was dressing and goes back with it
             for (int i = 0; i < QueueMost; i++)
             {
                 _queue[i] = null;
@@ -433,7 +412,7 @@ namespace RealLifeOverhaul
             base.End();
         }
 
-        // One more customer walks up to the end of the queue. False if the queue is full, nobody is free, or there is no way in.
+        // One more customer walks up to the end of the queue; false if it is full, nobody is free, or there is no way in.
         private bool Join(CitySite site)
         {
             int place = -1;

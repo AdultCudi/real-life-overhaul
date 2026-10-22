@@ -4,20 +4,15 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Street works: a crew of three in hi-vis at a coned-off stretch of pavement. One digs, one
-    /// works a jackhammer, one stands at the end with a stop/slow paddle and waves people down.
-    /// The stretch runs along the pavement (the way its edge runs), about seven metres long,
-    /// and every person, cone and the toolbox is on pavement that was tested for room; if the
-    /// pavement is too narrow or cluttered here, the works are not here.
-    ///
-    /// This is on the pavement, not in the carriageway: closing a traffic lane is the business
-    /// of Traffic/SceneCordon, which the accident scenes own, and nothing here touches it.
+    /// Street works on about seven metres of pavement: a crew of three in hi-vis, one digging, one on a jackhammer, one with
+    /// a stop/slow paddle, with cones and a toolbox, each on pavement tested for room. Never in the carriageway: closing a
+    /// lane is Traffic/SceneCordon's.
     /// </summary>
     public sealed class RoadCrewActivity : CityActivity
     {
-        private const float DigAhead = 0.85f;      // the digger stands this far short of the hole
-        private const float HammerAhead = 1.55f;   // the jackhammer man this far beyond it, facing back
-        private const float FlagAhead = 3.0f;
+        private const float DigAhead = 0.85f;      // metres: the digger stands this far short of the hole
+        private const float HammerAhead = 1.55f;   // metres: the jackhammer this far beyond it, facing back
+        private const float FlagAhead = 3.0f;   // metres: the paddle this far short of it
         private const int Workers = 2;             // the two who alternate work and rest
 
         private static readonly string[] WorkClips = { "shovel_dig", "jackhammer" };
