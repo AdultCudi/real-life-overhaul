@@ -159,7 +159,7 @@ internal static partial class Program
     // for the shops the game's AI opens (retail buildings) and three named businesses that are no AI's.
     private static void HomeLayouts()
     {
-        string root = Path.Combine(Environment.GetEnvironmentVariable("BA_MANAGED")
+        string root = System.IO.Path.Combine(Environment.GetEnvironmentVariable("BA_MANAGED")
             ?? @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed", @"..\StreamingAssets\BusinessLayouts");
         if (!Directory.Exists(root))
         {
