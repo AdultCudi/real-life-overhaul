@@ -3,10 +3,9 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Somebody seated at a table for a clip made there (chess_sit: the stool's centre 0.62 m from the board's, the board
-    /// straight ahead) faces the board's centre, whichever stool they have and whichever way the table stands: the way is
-    /// from their own spot to the centre, never a stool's or the table's heading. Game-free, so NavCheck runs it
-    /// (TableSeatCheck.cs). A square root and an arc cosine when asked, once a second for each person seated.
+    /// Somebody seated for a clip made at a table (chess_sit: the stool 0.62 m from the board) faces the board's centre from
+    /// their own spot, whichever stool and heading. Game-free, so NavCheck runs it (TableSeatCheck.cs); a square root and an
+    /// arc cosine once a second for each person seated.
     /// </summary>
     public static class TableSeat
     {

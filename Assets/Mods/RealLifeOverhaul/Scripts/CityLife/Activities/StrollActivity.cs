@@ -12,11 +12,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Somebody walking a loop of three or four stretches of pavement with a pushchair, an umbrella in the rain, or a cabin
-    /// case. With the first two the walk is the game's and only the arms are a masked clip, so nothing slides. The case's
-    /// walk is a whole-body clip made for 1.3 m/s, so it plays only while they are really moving, its speed set from the
-    /// agent's once a tick (<see cref="CityPerson.KeepStep"/>), and gives way to the game's walk while they are held up. One
-    /// path per stretch, like the jogger.
+    /// Somebody walking a loop of pavement with a pushchair, an umbrella in the rain or a cabin case. With the first two the
+    /// walk is the game's and the arms a masked clip; the case's whole-body walk, made for 1.3 m/s, plays only while they really
+    /// move, kept in step once a tick (<see cref="CityPerson.KeepStep"/>). One path per stretch.
     /// </summary>
     public sealed class StrollActivity : CityActivity
     {

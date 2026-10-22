@@ -7,12 +7,9 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One of the living city's people: a thin wrapper over the game's character that lets an activity place, walk, play
-    /// clips and hand tools, and keeps three promises. They move only by their navigation agent with the game's walk, and
-    /// while standing the agent stays on (stopped, top priority) so others walk round them. A tool is in a hand only at the
-    /// grip of the clip playing, asked for with it (<see cref="Work"/>): no tool, no clip. Hit by a car, they drop what
-    /// they hold and go whole to the casualty system (<see cref="Surrender"/>). Taken from and returned to
-    /// <see cref="CityPeople"/>.
+    /// One of the living city's people, a thin wrapper over the game's character that keeps three promises: they move only by
+    /// their navigation agent, standing as an obstacle others walk round; a tool is in a hand only with the clip made for it
+    /// (<see cref="Work"/>); hit by a car they drop it and go whole to the casualty system (<see cref="Surrender"/>).
     /// </summary>
     public sealed partial class CityPerson
     {
@@ -124,10 +121,7 @@ namespace RealLifeOverhaul
 
         public bool Seated => _seat != null;
 
-        /// <summary>
-        /// Sits them on one of the game's sitting positions (<see cref="Seating"/>) as the game seats its people (SitOnChair),
-        /// the seat taken for anyone else; what they hold is the caller's to put away first. False, nothing changed, if not.
-        /// </summary>
+        /// <summary>Sits them on one of the game's seats (<see cref="Seating"/>) as the game does; the caller puts away what they hold first.</summary>
         public bool Sit(Transform seat)
         {
             if (Lost || seat == null || _seat != null || !Character.animator.HasParameter(PermanentAnimationType.Sitting.ToString()))
@@ -147,10 +141,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Lays them on a bed as the game lays the player down to sleep (LayOnBed) until <see cref="Rise"/>; the bed is not
-        /// marked taken, so the player can still lie in it. False, nothing changed, if they cannot.
-        /// </summary>
+        /// <summary>Lays them on a bed as the game lays the player down to sleep; the bed is not marked taken, so the player can still use it.</summary>
         public bool Lie(EntityController bed, Transform at)
         {
             if (Lost || bed == null || at == null || _seat != null || !Character.animator.HasParameter(PermanentAnimationType.Laying.ToString()))
@@ -176,10 +167,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Stands them up where they stood before they sat, the game's own way off a seat (Reset). Safe at any time: every way
-        /// a person is moved, played or put away goes through it, so nobody is left sitting on nothing.
-        /// </summary>
+        /// <summary>Stands them up where they stood before they sat; safe at any time, and every way they are moved goes through it.</summary>
         public void Rise()
         {
             if (_seat == null)
@@ -211,10 +199,7 @@ namespace RealLifeOverhaul
         // The table's navigation obstacle reaches inside the agent, a stopped agent still steers off an obstacle it overlaps,
         // and the game turns its people the way their agent's velocity points (ThirdPersonCharacter.HandleNpcMovement): so
         // their own avoidance and the agent's turning are off while they sit, and given back on every way off the stool.
-        /// <summary>
-        /// Keeps them on their spot facing a table's centre for a clip made sitting at it (chess_sit); others still go round
-        /// them. <see cref="KeepAtTable"/> mends any turn since.
-        /// </summary>
+        /// <summary>Keeps them on their spot facing a table's centre for a clip made sitting at it; <see cref="KeepAtTable"/> mends any turn.</summary>
         public void AtTable(Vector3 centre)
         {
             if (Lost)
@@ -241,10 +226,7 @@ namespace RealLifeOverhaul
             Turn(centre);
         }
 
-        /// <summary>
-        /// Once a second at a table: the degrees they faced off its centre, turned back to it if past TableSeat.FacedWithin
-        /// (smoothly in view, at once out of it); 0 when not at a table.
-        /// </summary>
+        /// <summary>Once a second at a table: the degrees they faced off its centre, turned back if past TableSeat.FacedWithin; 0 if not seated.</summary>
         public float KeepAtTable(bool inView)
         {
             if (!_atTable || Lost)
@@ -307,10 +289,7 @@ namespace RealLifeOverhaul
             return agent.SetDestination(destination);
         }
 
-        /// <summary>
-        /// Walks up to or back from somebody to stop <paramref name="gap"/> metres from them, as a clip for two was made (a
-        /// handshake 0.80 m); an agent stops where it can, so check <see cref="Arrived"/> and the gap before playing anything.
-        /// </summary>
+        /// <summary>Walks to stop gap metres from somebody, as a clip for two was made; check Arrived and the gap before playing anything.</summary>
         public bool StepTo(Vector3 other, float gap)
         {
             if (Lost)
@@ -364,10 +343,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// About to be thrown down by a car: the clip ends at once, and whatever they hold falls where it is and is added to
-        /// <paramref name="dropped"/> for the activity to clear up. The casualty system may have them after this.
-        /// </summary>
+        /// <summary>About to be thrown down by a car: the clip ends and what they hold falls, added to dropped for the activity to clear up.</summary>
         internal void Surrender(List<Transform> dropped)
         {
             LeaveTable();

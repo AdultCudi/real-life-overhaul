@@ -123,10 +123,7 @@ namespace RealLifeOverhaul.Events
             return true;
         }
 
-        /// <summary>
-        /// Walks the road back from an anchor and puts a pooled vehicle of a prefab at the far end, held by the unit with its
-        /// route filled in; null, with the reason, if it cannot.
-        /// </summary>
+        /// <summary>A pooled vehicle of a prefab at the far end of the road walked back from an anchor, its route filled in; null, with why.</summary>
         public static VehicleComponent Bring(ResponseUnit unit, GameObject prefab, Waypoint anchor, float routeLength, float minimum, out string refusal)
         {
             refusal = null;
@@ -172,10 +169,7 @@ namespace RealLifeOverhaul.Events
             return car;
         }
 
-        /// <summary>
-        /// The pooled vehicle a fire engine is made of, idle ones only: with the modelled body, the truck it is made to (the
-        /// same axles and length); otherwise a truck, the freight truck first, else a van, both repainted.
-        /// </summary>
+        /// <summary>The idle pooled vehicle a fire engine is made of: the truck the modelled body fits, else a truck, else a van, repainted.</summary>
         public static GameObject PickTruck(out bool van)
         {
             van = false;

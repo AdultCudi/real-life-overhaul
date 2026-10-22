@@ -11,10 +11,7 @@ namespace RealLifeOverhaul
     /// <summary>The living city's test buttons on the options page.</summary>
     public sealed partial class CityLifeDirector
     {
-        /// <summary>
-        /// Options-page test: the family's next activity on the pavement just ahead of the player, in view, in place of
-        /// whatever is out; each press steps to the next.
-        /// </summary>
+        /// <summary>Options-page test: the family's next activity just ahead of the player, in view, in place of whatever is out.</summary>
         public void Test(CityFamily family)
         {
             if (_failed)

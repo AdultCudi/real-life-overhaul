@@ -13,13 +13,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The living city: people at work and about their day on the pavements near the player. This decides what is out and
-    /// where; each activity plays itself (<see cref="CityActivity"/>) and the catalogue says what exists. The budget, kept
-    /// here and in CityPeople: three sites and eight people at most, 45 to 95 metres away, set up and taken away only out
-    /// of view (beyond 150 metres at once), and people who come and go walk in and off out of view. Cost: a tick once a
-    /// second and a new site tried every six (a few physics queries); per frame only somebody turning to face a point or a
-    /// moment due in a clip. Nothing is made or destroyed as sites come and go, and nothing is saved; indoors, a time skip
-    /// or a fault clears the street.
+    /// The living city: what is out and where, within its budget (three sites and eight people, 45 to 95 metres away), set
+    /// up and taken away only out of view; each activity plays itself. Cost: a tick a second and a new site tried every six (a
+    /// few physics queries); per frame only somebody turning or a moment due in a clip. Nothing is made or destroyed as sites
+    /// come and go, nothing is saved, and indoors, a time skip or a fault clears the street.
     /// </summary>
     public sealed partial class CityLifeDirector : MonoBehaviour
     {
@@ -115,10 +112,7 @@ namespace RealLifeOverhaul
             _nextWarm = Time.time + 8f;
         }
 
-        /// <summary>
-        /// Called once behind the loading screen: the pool's eight are made now, so none of it is paid for in play; failing
-        /// that they are made a person at a time once the city runs.
-        /// </summary>
+        /// <summary>Called once behind the loading screen: the pool's eight are made now, so none of it is paid for in play.</summary>
         public void Prewarm()
         {
             if (!Settings.CityLife || _failed)
@@ -220,10 +214,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Asks for <see cref="ICityActivity.Moment"/> on an activity in so many seconds, for the instant in a clip when
-        /// something changes hands; dropped if the activity has ended by then.
-        /// </summary>
+        /// <summary>Calls an activity's <see cref="ICityActivity.Moment"/> in so many seconds, unless it has ended by then.</summary>
         public static void After(float seconds, ICityActivity owner, int what, CityPerson who)
         {
             CityLifeDirector director = Instance;

@@ -152,10 +152,7 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        /// <summary>
-        /// Whether a kind of event goes without its notices (what is on, its start and its end): protests while their switch is
-        /// off. The event itself, its closed street and its City Bulletin line are the same either way.
-        /// </summary>
+        /// <summary>True for a kind whose notices go untold (protests with their switch off); the event and its Bulletin line are the same.</summary>
         public static bool Quiet(EventKind kind) => kind == EventKind.Protest && !Settings.StreetProtestNotes;
     }
 }

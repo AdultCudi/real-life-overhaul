@@ -362,10 +362,7 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        /// <summary>
-        /// For the accident director: sets one of its wrecks alight for so many seconds, dying down by itself; its own crews
-        /// attend and no engine is sent. Nothing while a fire or a street event is on.
-        /// </summary>
+        /// <summary>For the accident director: sets one of its wrecks alight for so many seconds, no engine sent; nothing while a scene is on.</summary>
         public static void CrashFire(VehicleComponent wreck, float seconds = 50f)
         {
             EventDirector director = Instance;

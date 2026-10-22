@@ -38,10 +38,7 @@ namespace RealLifeOverhaul
         private readonly List<CityLook> _wanted = new List<CityLook>(4);   // looks nobody on the shelf had, made ready one at a time
         private Coroutine _tending;
 
-        /// <summary>
-        /// Set for the living city's own pool: it never builds a look in the frame somebody is asked for, but hands out
-        /// somebody dressed for the part or says no and makes the look ready on the shelf for next time.
-        /// </summary>
+        /// <summary>Never builds a look in the frame somebody is asked for: hands out somebody dressed for it, or says no and makes it ready.</summary>
         public bool Thrifty;
 
         /// <summary>For a test button, which cannot wait: a thrifty pool builds a missing look on the spot.</summary>
@@ -123,10 +120,7 @@ namespace RealLifeOverhaul
             return Take(look, spot, face, true);
         }
 
-        /// <summary>
-        /// The same; with <paramref name="fresh"/> false a civilian who has been out keeps their look (no costly rebuild), for
-        /// people who come and go at a site every few seconds.
-        /// </summary>
+        /// <summary>The same; with fresh false a civilian who has been out keeps their look, for people who come and go every few seconds.</summary>
         public CityPerson Take(CityLook look, Vector3 spot, Vector3 face, bool fresh)
         {
             bool thrifty = Thrifty && !AtNeed && !Looks.Hidden;

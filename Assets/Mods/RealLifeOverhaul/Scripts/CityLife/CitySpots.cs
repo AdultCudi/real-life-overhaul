@@ -98,10 +98,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// Whether somebody can stand at a point with this much room: no vehicle, wall, street furniture or person within the
-        /// radius, and nothing the player can use close by.
-        /// </summary>
+        /// <summary>Whether somebody can stand here with this much room: nothing solid within the radius and nothing usable close by.</summary>
         public static bool Clear(Vector3 spot, float radius)
         {
             Setup();
@@ -161,10 +158,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether a turned box touches no marked crossing. The game's crossing is a trigger tagged "Crosswalk" on the
-        /// Crosswalk layer, so triggers on every layer count and either the layer or the tag is enough. <paramref name="full"/>:
-        /// more colliders met the box than the buffer holds, which refuses too, in case one left out is a crossing. One
-        /// non-allocating box query, when a place is chosen.
+        /// Whether a turned box misses every marked crossing, a trigger tagged "Crosswalk" on the Crosswalk layer (either counts);
+        /// a full buffer (<paramref name="full"/>) refuses too, in case one left out is a crossing. One query, as a place is chosen.
         /// </summary>
         public static bool ClearOfCrossings(Vector3 centre, Vector3 halfExtents, Quaternion rotation, out bool full)
         {

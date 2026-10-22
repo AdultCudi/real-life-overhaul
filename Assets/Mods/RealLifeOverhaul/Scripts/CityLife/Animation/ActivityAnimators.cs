@@ -5,15 +5,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The one place the mod's clip players and held tools are stepped from:
-    /// <code>
-    /// ActivityAnimator player = ActivityAnimators.For(character.animator);
-    /// player.Play(clip);   // cross-fades in; a loop runs until Stop, a one-off returns by itself
-    /// player.Stop();       // cross-fades back to the game's own animation
-    /// </code>
-    /// Update steps only players that are fading or counting down a one-off; LateUpdate keeps the second hand on two-handed
-    /// tools. Idle, it is switched off and costs nothing. A fault hands every character back to the game and switches the
-    /// service off for the session, reported once through <see cref="Fault"/>.
+    /// The one place the mod's clip players (<see cref="For"/>) and held tools are stepped from: Update steps only players fading
+    /// or counting down, LateUpdate keeps the second hand on two-handed tools, and idle it is switched off and costs nothing. A
+    /// fault hands every character back and switches it off for the session, reported through <see cref="Fault"/>.
     /// </summary>
     public sealed class ActivityAnimators : MonoBehaviour
     {

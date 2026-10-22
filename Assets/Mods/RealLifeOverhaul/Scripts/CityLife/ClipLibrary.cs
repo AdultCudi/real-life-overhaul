@@ -36,16 +36,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The mod's own Humanoid clips by name (listed in CityAssets/README.md), from the Bundles/reallife_anim bundle, read
-    /// once a session in the background and kept (about 1 MB). Nothing here runs per frame.
-    /// <code>
-    /// if (ClipLibrary.TryGet("kneel_work", out CityClip clip))
-    /// {
-    ///     ActivityAnimators.For(character.animator).Play(clip.Clip);   // and .Stop() to hand back
-    /// }
-    /// </code>
-    /// TryGet says no while loading, without the bundle, or for a clip it lacks (logged once); the caller then leaves the
-    /// character to the game's animations.
+    /// The mod's Humanoid clips by name (CityAssets/README.md), read once a session in the background from the reallife_anim
+    /// bundle and kept (about 1 MB). TryGet says no while loading, without the bundle or for a clip it lacks (logged once),
+    /// and the caller leaves the character to the game's animations. Nothing runs per frame.
     /// </summary>
     public static class ClipLibrary
     {
@@ -138,10 +131,7 @@ namespace RealLifeOverhaul
             return _state == State.Ready && name != null && Clips.ContainsKey(name);
         }
 
-        /// <summary>
-        /// Logs once per clip and player, with the verbose log on, that the clip is playing on <paramref name="by"/> ("the
-        /// player", "a street character"). Called after the clip has started.
-        /// </summary>
+        /// <summary>With the verbose log on, logs once per clip and player that it is playing on by ("the player", "a street character").</summary>
         public static void Played(string name, string by)
         {
             if (Meta.Dev.Verbose && PlayedLogged.Add(name + "|" + by))

@@ -86,10 +86,7 @@ namespace RealLifeOverhaul.Events
         /// <summary>True if the last Stage got as far as closing the road before it gave up (it moved traffic and took people).</summary>
         public bool Costly { get; private set; }
 
-        /// <summary>
-        /// Closes a stretch of road near a place and dresses it. False, the street left as it was, with no plain road there,
-        /// the place in view outside a test, or too little room for what the event needs.
-        /// </summary>
+        /// <summary>Closes a stretch of road near a place and dresses it; false, the street left as it was, where it does not fit.</summary>
         public bool Stage(EventKind kind, Vector3 near, bool test, int closesAt, float now)
         {
             _refusal = null;

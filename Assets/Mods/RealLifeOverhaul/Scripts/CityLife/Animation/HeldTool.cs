@@ -35,10 +35,7 @@ namespace RealLifeOverhaul
         public bool Held => _tool != null;
         public Transform Tool => _tool;
 
-        /// <summary>
-        /// Puts a tool in the character's hand at its life size, whatever scale the bones carry. False, with nothing changed, if
-        /// the character has no such bone.
-        /// </summary>
+        /// <summary>Puts a tool in the hand at its life size, whatever scale the bones carry; false, with nothing changed, without the bone.</summary>
         public bool Attach(Animator animator, Transform tool, ToolGrip grip)
         {
             Detach(null);

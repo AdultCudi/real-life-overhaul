@@ -61,10 +61,7 @@ namespace RealLifeOverhaul.Events
         /// <summary>The season a day falls in; the year starts in midwinter (GameCalendar).</summary>
         public static Season SeasonOf(int day) => GameCalendar.SeasonOf(day);
 
-        /// <summary>
-        /// The spell rolled for a day, the same each time it is asked, so nothing is saved and tomorrow's can be forecast: heat
-        /// only in summer, cold only in winter (ice one cold day in three), as often as the option's slider says.
-        /// </summary>
+        /// <summary>The day's spell, the same whenever asked so tomorrow's can be forecast: heat in summer, cold or ice in winter.</summary>
         public static Spell SpellOf(int day)
         {
             if (!Settings.WeatherMatters)

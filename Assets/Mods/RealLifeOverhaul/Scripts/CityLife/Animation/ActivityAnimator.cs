@@ -10,22 +10,18 @@ namespace RealLifeOverhaul
     public enum ClipEnd { Return, Hold }
 
     /// <summary>
-    /// The part of the body a clip played with <see cref="ActivityAnimator.PlayOver"/> takes, over whatever is underneath.
-    /// Upper is trunk, head and arms (a gesture made standing); Arms, LeftArm and RightArm are arms and fingers only, for
-    /// somebody walking.
+    /// The part of the body a clip played with <see cref="ActivityAnimator.PlayOver"/> takes: Upper is trunk, head and arms
+    /// (a gesture made standing); the arm masks take arms and fingers only, for somebody walking.
     /// </summary>
     public enum BodyMask { Full, Upper, Arms, LeftArm, RightArm }
 
     /// <summary>
-    /// Plays the mod's Humanoid clips on one of the game's characters without touching the game's animator controller. A
-    /// small playable graph goes on the Animator the first time something plays: two clip slots into a mixer, and an output
-    /// whose weight is how much of the pose is ours, faded in from whatever the controller is doing and out to hand the
-    /// character back, when the graph is destroyed. The clips are baked into the pose, so the character is never moved.
-    /// A second, masked layer (<see cref="PlayOver"/>) takes only the arms, one arm or the upper body, for carrying while
-    /// the game walks them: its output starts from the pose already reached, and a small animation job copies in only the
-    /// muscles the mask names (an AvatarMask on a layer mixer would reset the rest of the body).
-    /// Cost: a loop that has faded in runs in the engine with the Animator and needs no script; script runs only while a
-    /// weight changes or a one-off counts down (<see cref="ActivityAnimators"/> steps exactly those). Get one from
+    /// Plays the mod's Humanoid clips on one of the game's characters without touching its animator controller: a small
+    /// playable graph with two clip slots into a mixer, its output faded in over the controller and out to hand the
+    /// character back; clips never move the character. A second, masked layer (<see cref="PlayOver"/>) takes only the arms
+    /// or upper body over the game's walk, an animation job copying in just the masked muscles (an AvatarMask on a layer
+    /// mixer would reset the rest). Cost: a faded-in loop runs in the engine with no script; script runs only while a
+    /// weight changes or a one-off counts down (<see cref="ActivityAnimators"/>). Get one from
     /// <see cref="ActivityAnimators.For"/>.
     /// </summary>
     public sealed class ActivityAnimator
@@ -133,28 +129,16 @@ namespace RealLifeOverhaul
         /// <summary>The clip being played or faded towards; null when the game's controller has the character.</summary>
         public AnimationClip Current => _body.Current >= 0 && _body.WeightGoal > 0f ? _body.Clips[_body.Current] : null;
 
-        /// <summary>How much of the pose is this player's right now, 0 to 1.</summary>
-        public float Weight => _body.Weight;
-
         /// <summary>The clip on the masked layer; null when there is none.</summary>
         public AnimationClip Over => _over.Current >= 0 && _over.WeightGoal > 0f ? _over.Clips[_over.Current] : null;
 
-        /// <summary>The playback speed of the clip played with Play (1 = as authored).</summary>
-        public float Speed => _body.Speed;
-
-        /// <summary>
-        /// Cross-fades into a clip over <paramref name="fade"/> seconds. A loop plays until Stop; a one-off plays once, then
-        /// fades back to the game's controller or holds its last pose. False if nothing could be played.
-        /// </summary>
+        /// <summary>Cross-fades into a clip: a loop until Stop, a one-off once, then back to the game's controller or held on its last pose.</summary>
         public bool Play(AnimationClip clip, float fade = 0.25f, float speed = 1f, ClipEnd end = ClipEnd.Return, float startAt = 0f)
         {
             return Start(_body, clip, BodyMask.Full, fade, speed, end, startAt);
         }
 
-        /// <summary>
-        /// The same on the masked layer: the clip takes only the masked part of the body, over the game's own animation or a
-        /// clip played with Play. A loop runs until <see cref="StopOver"/>.
-        /// </summary>
+        /// <summary>The same on the masked layer, over the game's own animation or a clip played with Play.</summary>
         public bool PlayOver(AnimationClip clip, BodyMask mask, float fade = 0.25f, float speed = 1f, ClipEnd end = ClipEnd.Return, float startAt = 0f)
         {
             if (mask == BodyMask.Full)
@@ -182,17 +166,11 @@ namespace RealLifeOverhaul
             SetSpeed(_body, speed);
         }
 
-
-        /// <summary>
-        /// Keeps a walking clip in step with the ground: <paramref name="groundSpeed"/> is the agent's real speed,
-        /// <paramref name="clipSpeed"/> the one the clip was made for (CityClip.Speed). From the owner's tick, not per frame.
-        /// Returns the playback speed set; standing still slows the clip to its least, the cue for a standing clip.
-        /// </summary>
-        public float MatchSpeed(float groundSpeed, float clipSpeed, float least = 0.35f, float most = 1.6f)
+        /// <summary>Keeps a walking clip in step with the agent's real speed over the speed it was made for; from a tick, not per frame.</summary>
+        public void MatchSpeed(float groundSpeed, float clipSpeed, float least = 0.35f, float most = 1.6f)
         {
             float speed = clipSpeed > 0.01f ? Mathf.Clamp(groundSpeed / clipSpeed, least, most) : 1f;
             SetSpeed(_body, speed);
-            return speed;
         }
 
         /// <summary>Evaluates the graph now, for tests and for a pose shown in the same frame it is set.</summary>

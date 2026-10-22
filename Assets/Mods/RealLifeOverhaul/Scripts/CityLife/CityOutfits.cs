@@ -166,20 +166,13 @@ namespace RealLifeOverhaul
 
         private static readonly HashSet<string> Missing = new HashSet<string>();
 
-        /// <summary>
-        /// Puts the outfit on a character whose look is already rolled, recording what it recolours. The caller rebuilds the
-        /// visuals.
-        /// </summary>
+        /// <summary>Puts the outfit on a character whose look is rolled, recording what it recolours; the caller rebuilds the visuals.</summary>
         public static void Wear(AppearanceSetter appearance, CityLook look, List<Dye> dyes)
         {
             Wear(appearance, look, dyes, appearance.data.elements);
         }
 
-        /// <summary>
-        /// The same outfit written into the caller's own list instead of the character's data, for work clothes worn over
-        /// somebody's own for a while (Jobs/JobUniform): shown with AppearanceSetter.UpdateVisuals(list), gone with
-        /// UpdateVisuals(). The character's own colour entries are recoloured and recorded in <paramref name="dyes"/>.
-        /// </summary>
+        /// <summary>The same into the caller's own list, for work clothes worn over somebody's own for a while (Jobs/JobUniform).</summary>
         public static void Wear(AppearanceSetter appearance, CityLook look, List<Dye> dyes, List<AppearanceElementData> elements)
         {
             Garment[] outfit = look == CityLook.RoadWorker ? RoadWorker : look == CityLook.Sweeper ? Sweeper : look == CityLook.Cleaner ? Cleaner
@@ -236,11 +229,7 @@ namespace RealLifeOverhaul
             Recolour(entry, garment.Main, garment.Second, garment.Trim);
         }
 
-        /// <summary>
-        /// Puts the garment of that name in its slot and returns its first plain colour entry, chosen, for the caller to
-        /// recolour; null when it is not to be dyed or has only patterned colours. <paramref name="missing"/>: the game
-        /// has no garment of that name, and nothing was changed.
-        /// </summary>
+        /// <summary>Puts the named garment in its slot and returns its first plain colour entry to dye, or null; missing: no such garment.</summary>
         internal static AppearanceElementColor Choose(AppearanceSetter appearance, AppearanceElementType slot, string name, bool dyed,
             List<AppearanceElementData> elements, out bool missing)
         {

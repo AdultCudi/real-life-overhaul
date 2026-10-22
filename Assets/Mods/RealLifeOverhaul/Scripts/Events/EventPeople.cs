@@ -91,10 +91,7 @@ namespace RealLifeOverhaul.Events
             return person;
         }
 
-        /// <summary>
-        /// One more person, put on the pavement out of view a short walk away and already walking to a place, which may be on
-        /// a closed road; null if nobody is free or there is no way in.
-        /// </summary>
+        /// <summary>One more person put out of view a short walk away, walking to a place that may be on a closed road; null if not possible.</summary>
         public CityPerson WalkIn(CityLook look, Vector3 goal, bool road, bool jog = false)
         {
             for (int attempt = 0; attempt < 3; attempt++)
@@ -220,10 +217,7 @@ namespace RealLifeOverhaul.Events
             return agent.isOnNavMesh && agent.CalculatePath(goal, Path) && Path.status == NavMeshPathStatus.PathComplete;
         }
 
-        /// <summary>
-        /// Something worn on a bone, fitted as the character stands: the prop's pivot so far above and in front of the bone,
-        /// upright, facing their way. Two at most a person; false, with nothing changed, if it cannot be had.
-        /// </summary>
+        /// <summary>Something worn on a bone, fitted as the character stands so far above and ahead of it; two at most a person.</summary>
         public bool Wear(CityPerson person, string id, HumanBodyBones bone, float up, float forward)
         {
             if (person == null || person.Lost)
@@ -253,10 +247,7 @@ namespace RealLifeOverhaul.Events
             return true;
         }
 
-        /// <summary>
-        /// A staff (placard, banner) in the right hand at <see cref="StaffClip"/>'s grip, which the caller then plays standing
-        /// or lays over the walk.
-        /// </summary>
+        /// <summary>A staff (placard, banner) in the right hand at <see cref="StaffClip"/>'s grip, for the caller to play standing or walking.</summary>
         public bool CarryStaff(CityPerson person, string id)
         {
             if (person == null || person.Lost || !ClipLibrary.TryGet(StaffClip, out CityClip clip) || !clip.HasTool)

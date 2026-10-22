@@ -7,11 +7,7 @@ namespace RealLifeOverhaul
     /// <summary>A city person's clips and what is in their hands, worn or brought along.</summary>
     public sealed partial class CityPerson
     {
-        /// <summary>
-        /// Plays a clip with its tool in hand at the clip's grip, all or nothing. <paramref name="tool"/> false keeps the hands
-        /// as they are, for a tool picked up part-way (<see cref="Take"/>); <paramref name="startAt"/> is seconds into the
-        /// clip, so two people on one loop need not move as one.
-        /// </summary>
+        /// <summary>Plays a clip with its tool in hand at its grip, all or nothing; tool false keeps the hands as they are, startAt is seconds in.</summary>
         public bool Work(string clipName, CityProps props, float fade = 0.35f, ClipEnd end = ClipEnd.Return, bool tool = true, float startAt = 0f)
         {
             if (Lost || _player == null || !_player.Usable || !ClipLibrary.TryGet(clipName, out CityClip clip))
@@ -33,10 +29,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Plays a clip on the masked layer (its own mask unless one is given) over the game's walk or idle or a Work clip,
-        /// its tool in hand as with Work: how somebody carries a box or an umbrella while walking.
-        /// </summary>
+        /// <summary>The same on the masked layer, over the game's walk or idle or a Work clip: carrying a box or an umbrella while walking.</summary>
         public bool WorkOver(string clipName, CityProps props, float fade = 0.3f, ClipEnd end = ClipEnd.Return, BodyMask mask = BodyMask.Full, bool tool = true)
         {
             if (Lost || _player == null || !_player.Usable || !ClipLibrary.TryGet(clipName, out CityClip clip))
@@ -96,10 +89,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Something that goes with them without being in a hand, two at most: on the ground in front (a pushchair; bone null,
-        /// the pose in their own frame) or worn on a bone (a satchel). Given back with everything else.
-        /// </summary>
+        /// <summary>Something along with them but not in a hand, two at most: on the ground in front (bone null) or worn on a bone.</summary>
         public bool Bring(Transform prop, HumanBodyBones? bone, Vector3 position, Quaternion rotation)
         {
             if (Lost || prop == null)

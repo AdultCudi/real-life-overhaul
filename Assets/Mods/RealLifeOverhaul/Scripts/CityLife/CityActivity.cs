@@ -68,10 +68,7 @@ namespace RealLifeOverhaul
     /// <summary>One thing happening on the street: find room, begin, tick, end.</summary>
     public interface ICityActivity
     {
-        /// <summary>
-        /// Finds and remembers a place for every person and prop near the site's anchor, putting nothing out; false if there is
-        /// no room here.
-        /// </summary>
+        /// <summary>Finds and remembers room near the site's anchor for every person and prop, putting nothing out.</summary>
         bool Find(CitySite site);
 
         /// <summary>Puts people and props where Find found room; false, with everything given back, if it could not.</summary>
@@ -172,19 +169,16 @@ namespace RealLifeOverhaul
         {
         }
 
-        private const float ArriveNear = 24f;      // metres: people who walk in are put out of view between these distances
-        private const float ArriveFar = 46f;   // metres
+        private const float ArriveNear = 24f;   // metres: people who walk in are put out of view between these distances
+        private const float ArriveFar = 46f;
         private const float DepartNear = 38f;   // metres: people who walk off are sent between these distances
-        private const float DepartFar = 70f;   // metres
+        private const float DepartFar = 70f;
         private const int DepartTries = 4;
 
         private readonly List<CityPerson> _leaving = new List<CityPerson>(4);
         private readonly List<int> _leavingTries = new List<int>(4);
 
-        /// <summary>
-        /// One more person, put on the pavement out of view a short walk away and already walking to a place. Null if the pool
-        /// is empty or there is nowhere out of view with a path from it; the site's Refusal says which.
-        /// </summary>
+        /// <summary>One more person, put out of view a short walk away and walking to a place; null, with the site's Refusal saying why.</summary>
         protected CityPerson Arrive(CitySite site, CityLook look, Vector3 goal)
         {
             for (int attempt = 0; attempt < 3; attempt++)
@@ -217,9 +211,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>
-        /// Somebody walks off to pavement out of view, where they go back into the pool; they stay in the cast until then.
-        /// </summary>
+        /// <summary>Somebody walks off out of view, back into the pool there; they stay in the cast until then.</summary>
         protected void Depart(CityPerson person)
         {
             if (person == null || person.Lost || _leaving.Contains(person))
@@ -230,7 +222,6 @@ namespace RealLifeOverhaul
             _leavingTries.Add(0);
             SendOff(person);
         }
-
 
         /// <summary>Call from Tick: takes back whoever has walked out of view and sends on anyone who stopped in view.</summary>
         protected void TickDepartures()
@@ -300,10 +291,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Tick's answer for an activity whose people just carry on: true until one is lost or it is told to end, then only
-        /// while someone is looking.
-        /// </summary>
+        /// <summary>Tick's answer when the people just carry on: true until one is lost or it is told to end, then while anyone looks.</summary>
         protected bool Lasting()
         {
             for (int i = 0; i < Cast.Count; i++)
