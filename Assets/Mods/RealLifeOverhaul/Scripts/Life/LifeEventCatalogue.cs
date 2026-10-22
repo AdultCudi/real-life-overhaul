@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul
 {
-    // This file, the LifeEventCatalogue.*.cs content files and LifeEventDeck.cs deliberately use
-    // nothing from Unity or the game: tools\CatalogueCheck compiles them on their own to verify
-    // the catalogue against Locales\en.json. Everything that touches the game is in LifeEventRunner.
+    // This file, the LifeEventCatalogue.*.cs content files and LifeEventDeck.cs use nothing from Unity or the game:
+    // CatalogueCheck compiles them on their own against en.json. LifeEventRunner is the game's side.
 
     /// <summary>Conditions an event can ask for. All flags of an event must hold at once.</summary>
     [Flags]
@@ -45,10 +44,13 @@ namespace RealLifeOverhaul
         HasHome = 1 << 30        // a residential building rented or owned by the player
     }
 
+    /// <summary>How a notice of an outcome looks.</summary>
     internal enum Tone { Good, Info, Warn, Bad }
 
+    /// <summary>How an outcome reaches the player: a notice, or a text from the old friend or Mom.</summary>
     internal enum Via { Toast, Friend, Mom }
 
+    /// <summary>The mood an outcome leaves.</summary>
     internal enum Mood { None, Up, UpBig, Down, DownBig, Lucky, Generous, Robbed, Social, Family, Helped }
 
     /// <summary>One thing that can happen: a line of text plus its effects.</summary>
@@ -61,11 +63,11 @@ namespace RealLifeOverhaul
         public int MoneyMax;      // signed dollars; with MoneyPct set: the cap
         public float MoneyPct;    // signed share of the player's money, 0 for a plain range
         public string Txn;        // transaction key without the "reallife_transaction_" prefix
-        public float Energy;
-        public float Hunger;
+        public float Energy;      // points, signed
+        public float Hunger;      // points, signed
         public Mood Mood;
-        public int SickMin;
-        public int SickMax;
+        public int SickMin;       // hours
+        public int SickMax;       // hours
         public int HurtHours;
         public float HurtEnergy;
         public bool Cures;
@@ -154,9 +156,8 @@ namespace RealLifeOverhaul
         public int CostNow => Prices.At(Cost);
 
         /// <summary>
-        /// The sum a choice's texts quote besides its price ({sum}): the first fixed payout among the yes answer's outcomes
-        /// (a stranger's odd job, a bet's winnings, the gift card that is now and then real), so that the text and the money
-        /// are one figure. Nothing when there is none.
+        /// The {sum} a choice's texts quote besides its price: the first fixed payout among the yes outcomes, so the text
+        /// and the money are one figure; 0 when there is none.
         /// </summary>
         public int Quote { get; private set; }
 
@@ -201,9 +202,18 @@ namespace RealLifeOverhaul
         {
             get
             {
-                foreach (Outcome o in Outcomes) yield return o;
-                foreach (Outcome o in Yes) yield return o;
-                foreach (Outcome o in No) yield return o;
+                foreach (Outcome o in Outcomes)
+                {
+                    yield return o;
+                }
+                foreach (Outcome o in Yes)
+                {
+                    yield return o;
+                }
+                foreach (Outcome o in No)
+                {
+                    yield return o;
+                }
             }
         }
 
@@ -246,15 +256,14 @@ namespace RealLifeOverhaul
         public LifeEvent Poor(int maxMoney) { MaxMoney = maxMoney; return this; }
         public LifeEvent W(float weight) { Weight = weight; return this; }
 
-        /// <summary>Only while this holds (something the event is about that the player may not have: LifeAccounts).</summary>
+        /// <summary>Only while this holds: something the event is about that the player may not have (LifeAccounts).</summary>
         public LifeEvent Only(Func<bool> test) { Test = test; return this; }
 
         public Func<bool> Test { get; private set; }
 
         public bool Fits(in LifeContext context)
         {
-            // MinMoney 0 means "don't care": a player in debt still gets the events that cost nothing. (The bounds are the
-            // start's, as every figure here: at today's prices.)
+            // MinMoney 0 means any: a player in debt still gets the events that cost nothing. Bounds are at the start's prices.
             if ((Needs & context.Flags) != Needs || (MinMoney > 0 && context.Money < Prices.At(MinMoney))
                 || (MaxMoney >= 0 && context.Money > Prices.At(MaxMoney)) || (Test != null && !Test()))
             {
@@ -291,16 +300,28 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Conditions that follow from the effects, so the content files can't forget them.
+        // Conditions that follow from the effects, so the content files cannot forget them.
         private void Derive()
         {
             int worstLoss = 0;
             foreach (Outcome o in AllOutcomes)
             {
-                if (o.SickMax > 0) Needs |= Need.Healthy;
-                if (o.DrainsEnergy) Needs |= Need.EnergyReserve;
-                if (o.Via == Via.Friend) Needs |= Need.Friend;
-                if (o.Via == Via.Mom) Needs |= Need.Mom;
+                if (o.SickMax > 0)
+                {
+                    Needs |= Need.Healthy;
+                }
+                if (o.DrainsEnergy)
+                {
+                    Needs |= Need.EnergyReserve;
+                }
+                if (o.Via == Via.Friend)
+                {
+                    Needs |= Need.Friend;
+                }
+                if (o.Via == Via.Mom)
+                {
+                    Needs |= Need.Mom;
+                }
                 worstLoss = Math.Max(worstLoss, o.MaxLoss);
             }
             if (Cost > 0 || worstLoss > 0)
@@ -320,9 +341,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// All random life events. The content is split over the LifeEventCatalogue.*.cs files by
-    /// theme; ids are two letters for the theme plus a number and must never be reused, because
-    /// saves remember which ids they have already seen.
+    /// All random life events, split over the LifeEventCatalogue.*.cs files by theme. An id is two letters for the theme
+    /// and a number, never reused: saves remember the ids they have seen.
     /// </summary>
     internal static partial class LifeEventCatalogue
     {

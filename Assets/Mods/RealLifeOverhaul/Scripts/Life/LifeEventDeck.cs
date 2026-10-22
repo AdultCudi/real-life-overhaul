@@ -4,16 +4,12 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Picks the next life event like dealing from a deck: an event that has already come up in
-    /// this save is not dealt again until every event that fits the current situation has been
-    /// seen. Free of game types so tools\CatalogueCheck can exercise it.
+    /// Picks the next life event like dealing from a deck: one seen in this save is not dealt again until every event that
+    /// fits the situation has been. Game-free, for CatalogueCheck.
     /// </summary>
     internal static class LifeEventDeck
     {
-        /// <summary>
-        /// Returns the event to fire and records it in <paramref name="seen"/>, or null when
-        /// nothing fits. <paramref name="random01"/> returns a value from 0 to 1.
-        /// </summary>
+        /// <summary>The event to fire, recorded in <paramref name="seen"/>, or null when nothing fits; <paramref name="random01"/> gives 0 to 1.</summary>
         public static LifeEvent Draw(IReadOnlyList<LifeEvent> all, in LifeContext context, ISet<string> seen, string lastId,
             Func<float> random01)
         {
@@ -38,14 +34,14 @@ namespace RealLifeOverhaul
 
             if (fresh.Count == 0)
             {
-                // Everything that fits has been seen: reshuffle just those. Events for other
-                // situations stay marked, so they still won't repeat when their turn comes.
+                // Everything that fits has been seen: those alone are shuffled again, so events for other situations
+                // still do not repeat when their turn comes.
                 foreach (LifeEvent e in fitting)
                 {
                     seen.Remove(e.Id);
                     if (e.Id != lastId || fitting.Count == 1)
                     {
-                        fresh.Add(e);   // don't lead the new round with the event that ended the last one
+                        fresh.Add(e);   // the new round does not lead with the event that ended the last
                     }
                 }
             }

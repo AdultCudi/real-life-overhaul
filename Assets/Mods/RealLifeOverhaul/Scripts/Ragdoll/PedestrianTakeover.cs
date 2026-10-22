@@ -7,15 +7,9 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One of the game's own pedestrians, borrowed. The game's pedestrians are pooled: each has
-    /// a walking behaviour, a standing behaviour and a range check that teleports it back near
-    /// the player, and the pool hands the same object out again and again. While one is ours
-    /// those are switched off the way the pool itself switches them off, so nothing fights the
-    /// ragdoll. It goes back one of three ways: handed back walking (HandBack), put away through
-    /// the pool's own release (Remove), or simply let go when the game has already taken it
-    /// (Forget: the player went indoors and every pedestrian was released).
-    /// Nothing is added to the pedestrian. The one setting changed on it, the kind of ground
-    /// it may walk on, is put back on every one of those ways.
+    /// One of the game's pooled pedestrians, borrowed: its walking, standing and range check are switched off the way the
+    /// pool does it, so nothing fights the ragdoll. It goes back walking (HandBack), through the pool's own release
+    /// (Remove), or is let go when the game already has it (Forget); its agent type is put back on every one of those.
     /// </summary>
     public sealed class PedestrianTakeover
     {
@@ -45,8 +39,8 @@ namespace RealLifeOverhaul
             try
             {
                 pedestrian.OnRelease();        // walking and standing off, exactly as when the pool puts it away
-                // The pool then switches the object off, which also ends the timers its behaviours leave running
-                // on the character (one of them puts a phone in its hand a minute later). The same, by hand.
+                // The pool then switches the object off, which ends the timers its behaviours leave on the character
+                // (one puts a phone in its hand a minute later): the same, by hand.
                 pedestrian.tpc.StopAllCoroutines();
                 pedestrian.enabled = false;    // and no range check: the game will not teleport it while it lies there
                 return true;
@@ -59,10 +53,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// On its feet at a point that may be on the road, standing still. The ragdoll must have
-        /// ended and left the character at that point. False if it cannot stand there.
-        /// </summary>
+        /// <summary>Stands it still at a point that may be on the road, once the ragdoll has ended there. False if it cannot stand there.</summary>
         public bool StandUp(Vector3 at)
         {
             ThirdPersonCharacter character = Character;
@@ -115,10 +106,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Gives the pedestrian back to the game as an ordinary walker heading for a point on a
-        /// pavement. If it is not standing where a pedestrian can walk, it is put away instead.
-        /// </summary>
+        /// <summary>Gives it back as an ordinary walker heading for a point; put away instead if it is not where a pedestrian can walk.</summary>
         public void HandBack(Vector3 walkTo)
         {
             Pedestrian pedestrian = _pedestrian;
@@ -160,10 +148,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Takes the pedestrian off the street through the pool's own release, which is what
-        /// makes its next use an ordinary walking pedestrian. The game tops the street up again.
-        /// </summary>
+        /// <summary>Takes it off the street through the pool's own release, so its next use is an ordinary walker.</summary>
         public void Remove()
         {
             Pedestrian pedestrian = _pedestrian;
@@ -208,8 +193,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Back to the pavements-only agent type the pedestrian came with. A running agent is switched
-        // off for the change: it may be standing where its own type has no ground.
+        // Back to its pavements-only agent type; a running agent is switched off for it, as its own type may have no
+        // ground where it stands.
         private void RestoreAgentType(Pedestrian pedestrian)
         {
             if (!_onRoadAgent)
