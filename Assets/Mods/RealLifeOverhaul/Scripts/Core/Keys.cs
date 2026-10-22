@@ -431,31 +431,49 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Writes the key (or "press a key") after the action's name on its button, if the page is open.
+        /// <summary>
+        /// Told each time a key's row is written again: while a new key is waited for (true), and when it is chosen or the
+        /// wait ends (false). The Settings app listens while it is open.
+        /// </summary>
+        public static Action<KeyAction, bool> RowShown;
+
+        /// <summary>Waits for the next key for an action, as its row on the Mods tab does when clicked: Esc, or eight seconds, keep the key it has.</summary>
+        public static void Rebind(KeyAction action)
+        {
+            KeyCapture.Begin(action);
+        }
+
+        /// <summary>The key an action has now, and the game's or another mod's use of the same key when there is one: what its row shows.</summary>
+        public static string RowText(KeyAction action)
+        {
+            string clash = Clash(action, "   (", ")");
+            return clash == null ? All[(int)action].Label : All[(int)action].Label + clash;
+        }
+
+        /// <summary>Who else acts on an action's key ("the game also uses it: Sleep"), each part between the two words given; null when nobody does.</summary>
+        public static string Clash(KeyAction action, string before, string after)
+        {
+            Binding binding = All[(int)action];
+            string used = GameUse(binding.Key);
+            string other = EmpireMotors.KeyUse(binding.Key, binding.Modifier);   // another author's mod that acts on the key by itself (Core/EmpireMotors)
+            if (used == null && other == null)
+            {
+                return null;
+            }
+            string text = used != null ? before + "reallife_keys_conflict".GetLocalization() + " " + used + after : string.Empty;
+            return other != null ? text + before + other.GetLocalization() + after : text;
+        }
+
+        // Writes the key (or "press a key") after the action's name on its button, if the page is open, and tells the Settings app.
         private static void ShowRow(KeyAction action, bool waiting)
         {
+            RowShown?.Invoke(action, waiting);
             TextLocalizationComponent row = Rows[(int)action];
             if (row == null)
             {
                 return;
             }
-            Binding binding = All[(int)action];
-            string text;
-            if (waiting)
-            {
-                text = "reallife_keys_press".GetLocalization();
-            }
-            else
-            {
-                string used = GameUse(binding.Key);
-                text = used == null ? binding.Label : binding.Label + "   (" + "reallife_keys_conflict".GetLocalization() + " " + used + ")";
-                string other = EmpireMotors.KeyUse(binding.Key, binding.Modifier);   // another author's mod that acts on the key by itself (Core/EmpireMotors)
-                if (other != null)
-                {
-                    text += "   (" + other.GetLocalization() + ")";
-                }
-            }
-            row.Suffix = ":  " + text;
+            row.Suffix = ":  " + (waiting ? "reallife_keys_press".GetLocalization() : RowText(action));
         }
 
         // ---------------------------------------------------------------- waiting for a key

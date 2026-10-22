@@ -108,10 +108,35 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_rota_col_worth", 300f, TableSort.None)
             .Column("reallife_rota_col_staff", 300f, TableSort.None, right: true);
 
+        /// <summary>Managers, the list: 0 place, 1 manager, 2 skill, 3 decisions this month, 4 state.</summary>
+        public static readonly TableSpec Managers = new TableSpec("Company", "Managers")
+            .Column("reallife_mgr_col_place", 600f, TableSort.Text, flexible: true)
+            .Column("reallife_mgr_col_manager", 440f, TableSort.Text)
+            .Column("reallife_tab_co_col_skill", 200f, TableSort.Number)
+            .Column("reallife_mgr_col_month", 300f, TableSort.Number)
+            .Column("reallife_co_col_state", 300f, TableSort.Text, right: true)
+            .Empty("reallife_mgr_row_no_places");
+
+        // A place's kinds of decision, then its decisions, newest first: laid out by hand, nothing sorts.
+        public static readonly TableSpec ManagerPlace = new TableSpec("Company", "Managers: a place")
+            .Column("reallife_mgr_col_what", 420f, TableSort.None)
+            .Column("reallife_mgr_col_detail", 640f, TableSort.None, flexible: true)
+            .Column("reallife_mgr_col_day", 220f, TableSort.None)
+            .Column("reallife_co_col_state", 320f, TableSort.None, right: true);
+
+        /// <summary>Managers, who could be appointed: 0 name, 1 skill or place, 2 skill, 3 pay, 4 now.</summary>
+        public static readonly TableSpec ManagerHands = new TableSpec("Company", "Managers: who")
+            .Column("reallife_co_col_name", 520f, TableSort.Text, flexible: true)
+            .Column("reallife_mgr_col_where", 440f, TableSort.Text)
+            .Column("reallife_tab_co_col_skill", 200f, TableSort.Number)
+            .Column("reallife_co_col_pay", 300f, TableSort.Money)
+            .Column("reallife_co_col_state", 260f, TableSort.Text, right: true);
+
         public static TableSpec For(int tab)
         {
             switch (tab)
             {
+                case CompanyDirector.TabManagers: return Managers;
                 case CompanyDirector.TabStaff: return Staff;
                 case CompanyDirector.TabCover: return Cover;
                 case CompanyDirector.TabMarketing: return Marketing;

@@ -1,6 +1,6 @@
 # `Scripts/Meta`
 
-The mod about itself: the feature registry, the in-game Guide and welcome notice, realism presets, the options page in sections, the Settings app, the save tools and the bug report.
+The mod about itself: the feature registry, the in-game Guide and welcome notice, realism presets, the options page in sections, the Settings app (the game's help screen in dark colours), the save tools and the bug report.
 
 ## Read first
 

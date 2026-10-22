@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy
         private const double RotaSliceMs = 2.0;     // milliseconds of a frame a job may take
         private const int RotaStepsAtOnce = 2;      // steps between two looks at the clock, each a fraction of a millisecond
         private const int RotaRestartsMost = 3;     // times a job starts again because its business changed under it
-        private const int JobShow = 0, JobFill = 1, JobFillHours = 2, JobTell = 3;
+        private const int JobShow = 0, JobFill = 1, JobFillHours = 2, JobTell = 3, JobManager = 4;   // JobManager: a fill a place's manager asked for (CompanyDirector.ManagerDecisions)
         private const int StageRead = 0, StageAdvise = 1, StageRate = 2, StageWrite = 4, StageLadder = 5;
 
         private readonly List<RotaPlace> _rotaPlaces = new List<RotaPlace>(16), _rotaPool = new List<RotaPlace>(16);

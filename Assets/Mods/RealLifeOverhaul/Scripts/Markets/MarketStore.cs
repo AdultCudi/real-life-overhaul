@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Markets
     ///   results and candles (MarketCodec; today's step candles only for those the player follows), p positions, o orders,
     ///   t the account's history, w the watch list, a the account, n the news, d dividends owed, x the index, y the sectors.
     ///   Never in the city's line a host sends: l the player's way to the market and books, u their listed company while set
-    ///   aside as a guest, b their bots, f their bonds (BondStore), g worked orders and dividends to put back.
+    ///   aside as a guest, b their bots, f their bonds (BondStore), g worked orders and dividends to put back, q their futures
+    ///   and options (DerivStore). In both lines: m the raw materials exchange (DerivStore).
     /// A bot's shares are also written into the player's holding of part p, marked, and taken out again on reading, so an
     /// older reader takes them as the player's own. A bot's capital added or taken out is a deposit or withdrawal marked 1;
     /// worked orders are apart from part o so an older reader never fills one whole. A player's listed company is a k record
@@ -242,6 +243,16 @@ namespace RealLifeOverhaul.Markets
                 MarketCodec.WriteInts(t, s.SectorDaily[sec]);
                 D(t, s.SectorDayZ[sec]);
             }
+            if (s.Materials.Count > 0)
+            {
+                t.Append("~m:");
+                DerivStore.WriteMaterials(t, s.Materials);   // the city's exchange: in the line a host sends too
+            }
+            if (!city && !s.Derivs.Empty)
+            {
+                t.Append("~q:");
+                DerivStore.WriteBook(t, s.Derivs);
+            }
             if (!city && s.Bots.Count > 0)
             {
                 t.Append("~b:");
@@ -427,6 +438,12 @@ namespace RealLifeOverhaul.Markets
                         break;
                     case 'f':
                         BondStore.Read(body, s.Bonds);
+                        break;
+                    case 'm':
+                        DerivStore.ReadMaterials(body, s.Materials);
+                        break;
+                    case 'q':
+                        DerivStore.ReadBook(body, s.Derivs);
                         break;
                     case 'y':
                         {

@@ -548,7 +548,7 @@ namespace RealLifeOverhaul
                     SocialDirector social = SocialDirector.Instance;
                     SocialPerson stranger = social != null && Settings.Social && SocialState.Loaded ? SocialDirector.NextStranger() : null;
                     SocialPerson friend = null;
-                    for (int i = 0; stranger != null && i < SocialRules.CastSize && friend == null; i++)
+                    for (int i = 0; stranger != null && i < SocialState.Count && friend == null; i++)
                     {
                         SocialPerson p = SocialState.Get(i);
                         friend = p != null && p.Met && p.Stage >= SocialStage.Friend ? p : null;
@@ -574,7 +574,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                for (int i = 0; i < SocialRules.CastSize; i++)
+                for (int i = 0; i < SocialState.Count; i++)
                 {
                     SocialPerson p = SocialState.Get(i);
                     if (p == null || !p.Met)
@@ -598,7 +598,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                var met = new List<SocialPerson>(SocialRules.CastSize);
+                var met = new List<SocialPerson>(SocialRules.BaseCast);
                 SocialState.PeekMet(data, met);
                 for (int i = 0; i < met.Count; i++)
                 {

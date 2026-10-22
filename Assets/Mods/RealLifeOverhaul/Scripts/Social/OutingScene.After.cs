@@ -243,6 +243,11 @@ namespace RealLifeOverhaul
                 _who.Wants = (PlanKind)(((int)_who.Wants + 1 + Random.Range(0, 3)) % ((int)PlanKind.Walk + 1));
                 _who.WantsDay = SocialLife.Day;
                 SocialLife.Change(_who, familiarity, affection, trust);
+                // Kept for a text the day after about how it went (SocialFollowRules.NextDay, in the save).
+                _who.AfterDay = SocialLife.Day;
+                _who.AfterKind = _kind;
+                _who.AfterWell = wentWell;
+                _who.AfterPlace = _venue.Valid ? _venue.Name : null;
             }
             if (gift > 0)
             {

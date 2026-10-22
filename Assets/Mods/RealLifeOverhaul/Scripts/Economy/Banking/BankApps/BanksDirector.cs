@@ -9,31 +9,29 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The bank apps: one on the phone for each of the city's three largest banks (<see cref="BankApp"/>). No save data.
-    /// Cost: nothing per frame; once a second a few comparisons and at most one app built, and the badges after the economy's hour and day.
+    /// The Banks app: one app on the phone for the city's three largest banks (<see cref="BankApp"/>), the bank picked at
+    /// the head of its box with the game's own selector, its five tabs the same for each bank. (Until the phone had
+    /// folders each bank had an app of its own: three buttons that were one app in all but the bank. They are one now, as a
+    /// phone's banking app holds every account.) No save data.
+    /// Cost: nothing per frame; once a second a few comparisons and the app built at most once, and the badge after the economy's hour and day.
     /// </summary>
     public sealed class BanksDirector : MonoBehaviour
     {
-        public const string AppIdPrefix = "RealLifeBank";
+        public const string AppId = "RealLifeBanks";
 
         private static readonly string[] AppGlyphs = { "Icon-Coin", "Icon-Money", "Icon-Security" };
-        // the icon's two colours for each rank, top and bottom: three plain banking colours, none a real bank's
-        private static readonly Color32[] Tops = { new Color32(96, 156, 232, 255), new Color32(120, 196, 120, 255), new Color32(214, 120, 120, 255) };
-        private static readonly Color32[] Bottoms = { new Color32(34, 82, 170, 255), new Color32(40, 124, 64, 255), new Color32(150, 44, 56, 255) };
+        // the icon's two colours, top and bottom: a plain banking blue, no real bank's
+        private static readonly Color32 Top = new Color32(96, 156, 232, 255);
+        private static readonly Color32 Bottom = new Color32(34, 82, 170, 255);
         private static readonly int HotSecond = HotSpots.Slot("Economy: BanksDirector.Second");
         private static readonly int HotBadges = HotSpots.Slot("Economy: BanksDirector.Badges");
 
         public static IModLogger Logger;
         public static BanksDirector Instance { get; private set; }
 
-        private sealed class Slot
-        {
-            public string Name;         // the bank's name; null for an empty slot
-            public PhoneApp App;
-            public BankApp View;
-        }
-
-        private readonly Slot[] _slots = { new Slot(), new Slot(), new Slot() };
+        private PhoneApp _app;
+        private BankApp _view;
+        private readonly List<Lender> _banks = new List<Lender>(BankRules.AppsMost);   // the banks the app shows, largest first
         private readonly List<Debt> _work = new List<Debt>(16);
         private Action _second, _onHour, _onDay;
         private bool _gaveUp, _broken;
@@ -58,7 +56,7 @@ namespace RealLifeOverhaul.Economy
             EconomyDirector.Unfollow(_second);
             EconomyDirector.AfterHour -= _onHour;
             EconomyDirector.AfterDay -= _onDay;
-            RemoveAll(null);
+            Remove(null);
             if (Instance == this)
             {
                 Instance = null;
@@ -80,8 +78,8 @@ namespace RealLifeOverhaul.Economy
             {
                 _broken = true;
                 Logger?.Error(e);
-                RemoveAll(null);
-                Logger?.Warn("Banks: the bank apps are switched off for this session after an error. Every account and loan is as it was, and the Finance app still shows and offers everything.");
+                Remove(null);
+                Logger?.Warn("Banks: the Banks app is switched off for this session after an error. Every account and loan is as it was, and the Finance app still shows and offers everything.");
             }
         }
 
@@ -94,7 +92,7 @@ namespace RealLifeOverhaul.Economy
             EconomyDirector credit = EconomyDirector.Instance;
             if (!Settings.Economy || !Settings.EconomyBanks || credit == null || !credit.Running || credit.Desk == null || !credit.Desk.Running)
             {
-                RemoveAll(!Settings.EconomyBanks ? "the option is off" : "the credit rating is not running");
+                Remove(!Settings.EconomyBanks ? "the option is off" : "the credit rating is not running");
                 return;
             }
             if (_gaveUp)
@@ -103,32 +101,48 @@ namespace RealLifeOverhaul.Economy
             }
             IReadOnlyList<Lender> banks = BankTerms.Banks;
             int wanted = Mathf.Min(BankRules.AppsMost, banks.Count);
-            for (int i = 0; i < _slots.Length; i++)
+            if (wanted == 0)
             {
-                Slot slot = _slots[i];
-                Lender bank = i < wanted ? banks[i] : null;
-                if (slot.App != null && (bank == null || !string.Equals(slot.Name, bank.Name, StringComparison.Ordinal)))
+                Remove("the city has no bank");
+                return;
+            }
+            if (Changed(banks, wanted))
+            {
+                _banks.Clear();
+                for (int i = 0; i < wanted; i++)
                 {
-                    Remove(slot, "the city's banks changed");
+                    _banks.Add(banks[i]);   // (a bank read again is the new branch object: the app follows it)
                 }
-                if (bank == null)
-                {
-                    continue;
-                }
-                if (slot.App != null)
-                {
-                    slot.View.Bank = bank;   // the same bank read again: the app follows the new branch object
-                    continue;
-                }
-                Install(slot, bank, i, credit);
-                return;   // at most one app a second
+                _view?.Offer(_banks);
+            }
+            if (_app == null)
+            {
+                Install(credit);
+                return;
             }
             if (_toldBanks != banks.Count)
             {
                 _toldBanks = banks.Count;
-                Logger?.Info("Banks: " + banks.Count + " bank(s) in the city, " + wanted + " bank app(s) on the phone"
+                Logger?.Info("Banks: " + banks.Count + " bank(s) in the city, " + wanted + " in the Banks app"
                              + (banks.Count < BankRules.AppsMost ? " (the city has fewer than " + BankRules.AppsMost + " banks)" : string.Empty) + Names(wanted) + ".");
             }
+        }
+
+        // Whether the banks the app shows are not the city's (another bank, or a bank's branch object read again).
+        private bool Changed(IReadOnlyList<Lender> banks, int wanted)
+        {
+            if (_banks.Count != wanted)
+            {
+                return true;
+            }
+            for (int i = 0; i < wanted; i++)
+            {
+                if (!ReferenceEquals(_banks[i], banks[i]))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static string Names(int count)
@@ -144,19 +158,17 @@ namespace RealLifeOverhaul.Economy
             return names;
         }
 
-        private void Install(Slot slot, Lender bank, int index, EconomyDirector credit)
+        private void Install(EconomyDirector credit)
         {
-            string id = AppIdPrefix + (index + 1);
-            var view = new BankApp(credit, id) { Bank = bank };
+            var view = new BankApp(credit, AppId);
+            view.Offer(_banks);
             GameSprites.Want(AppGlyphs);
-            int rank = Mathf.Clamp(index, 0, Tops.Length - 1);
             bool tryAgain;
             PhoneApp app = PhoneApp.Install(new PhoneAppDef
             {
-                Id = id,
-                TitleKey = "reallife_bank_app",
-                TitleArguments = new Dictionary<string, string>(1) { { "bank", bank.Name } },   // read by the game as it is: no reflection, unlike an object with fields
-                Icon = like => AppIconPainter.Paint(like, Glyph(), Tops[rank], Bottoms[rank], 0.42f, "AppIcon-Bank" + (index + 1)),
+                Id = AppId,
+                TitleKey = "reallife_banks_app",
+                Icon = like => AppIconPainter.Paint(like, Glyph(), Top, Bottom, 0.42f, "AppIcon-Banks"),
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = () =>
@@ -170,17 +182,16 @@ namespace RealLifeOverhaul.Economy
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    Logger?.Warn("Banks: the game's phone is not built as this version expects, so the bank apps are left off. The Finance app still shows and offers everything.");
+                    Logger?.Warn("Banks: the game's phone is not built as this version expects, so the Banks app is left off. The Finance app still shows and offers everything.");
                 }
                 return;
             }
-            slot.Name = bank.Name;
-            slot.App = app;
-            slot.View = view;
-            Badge(slot);
+            _app = app;
+            _view = view;
+            Badges();
             if (Verbose)
             {
-                Logger?.Info("Bank check (app): '" + bank.Name + "' is on the phone as " + id + ", rank " + bank.Rank + ": PASS");
+                Logger?.Info("Bank check (app): the Banks app is on the phone as " + AppId + " with " + _banks.Count + " bank(s)" + Names(_banks.Count) + ": PASS");
             }
         }
 
@@ -197,41 +208,30 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        private void Remove(Slot slot, string why)
+        private void Remove(string why)
         {
-            if (slot.App == null)
+            _toldBanks = -1;
+            _banks.Clear();
+            if (_app == null)
             {
                 return;
             }
             if (Verbose && why != null)
             {
-                Logger?.Info("Banks: the app of '" + slot.Name + "' is taken off the phone (" + why + ").");
+                Logger?.Info("Banks: the Banks app is taken off the phone (" + why + ").");
             }
-            slot.App.Remove();
-            slot.App = null;
-            slot.View = null;
-            slot.Name = null;
+            _app.Remove();
+            _app = null;
+            _view = null;
         }
 
-        private void RemoveAll(string why)
-        {
-            for (int i = 0; i < _slots.Length; i++)
-            {
-                Remove(_slots[i], why);
-            }
-            _toldBanks = -1;
-        }
-
-        // The number on each bank's button: its debts behind or with a collections call waiting.
+        // The number on the app's button: the debts behind, or with a collections call waiting, at every bank it shows.
         private void Badges()
         {
             using var hotSpot = HotSpots.Time(HotBadges);
             try
             {
-                for (int i = 0; i < _slots.Length; i++)
-                {
-                    Badge(_slots[i]);
-                }
+                Badge();
             }
             catch (Exception e)
             {
@@ -239,26 +239,29 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private void Badge(Slot slot)
+        private void Badge()
         {
             EconomyDirector credit = EconomyDirector.Instance;
-            if (slot.App == null || slot.View == null || slot.View.Bank == null || credit == null || credit.Desk == null)
+            if (_app == null || credit == null || credit.Desk == null)
             {
                 return;
             }
-            if (slot.App.Showing)
+            if (_app.Showing)
             {
-                slot.App.SetBadge(0);
+                _app.SetBadge(0);
                 return;
             }
-            credit.Desk.Held(slot.View.Bank, _work);
             int behind = 0;
-            for (int i = 0; i < _work.Count; i++)
+            for (int b = 0; b < _banks.Count; b++)
             {
-                LadderState s = _work[i].Ladder;
-                behind += s.Misses > 0 || s.CallDue ? 1 : 0;
+                credit.Desk.Held(_banks[b], _work);
+                for (int i = 0; i < _work.Count; i++)
+                {
+                    LadderState s = _work[i].Ladder;
+                    behind += s.Misses > 0 || s.CallDue ? 1 : 0;
+                }
             }
-            slot.App.SetBadge(behind);
+            _app.SetBadge(behind);
         }
 
         /// <summary>Test: every bank's figures with what no bank holds must be what the Finance app counts, and under the threshold every bank refuses.</summary>
@@ -332,19 +335,18 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Test: the first bank's app, on its Apply tab.</summary>
+        /// <summary>Test: the Banks app on the largest bank's Apply tab.</summary>
         public void TestOpen()
         {
             try
             {
-                Slot slot = _slots[0];
-                if (slot.App == null || slot.View == null)
+                if (_app == null || _view == null)
                 {
                     Notice(NotificationType.Error, "reallife_bank_test_not_running", null);
                     return;
                 }
-                slot.View.Want(BankApp.Apply);
-                slot.App.Open();
+                _view.Want(BankApp.Apply, 0);
+                _app.Open();
             }
             catch (Exception e)
             {

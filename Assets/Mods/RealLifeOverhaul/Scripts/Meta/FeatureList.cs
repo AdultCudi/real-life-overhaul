@@ -26,10 +26,13 @@ namespace RealLifeOverhaul.Meta
             Street.StreetGuide.Register();
             Districts.DistrictGuide.Register();
             Economy.OwnBankGuide.Register();
+            Economy.BranchGuide.Register();
             EndScaleGuide.Register();
             Rivals.RivalGuide.Register();
             Photos.PhotosGuide.Register();
             Walking.WalkGuide.Register();
+            Calendar.CalendarGuide.Register();
+            Designs.DesignsGuide.Register();
         }
 
         private static void RegisterGameplay()
@@ -243,6 +246,13 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_test_notice_look")
                 .Repair(PhoneContacts.Setup);
 
+            Features.Add("phonefolders", "reallife_meta_title_phonefolders")
+                .About("reallife_guide_phonefolders_about").Help("reallife_guide_phonefolders")
+                .Owns(Settings.PhoneFoldersId)
+                .Fact("phone_dock", () => Whole(GameUi.PhoneLayoutRules.DockMost))
+                .Rows("reallife_phone_layout_reset")   // every app back in its folder: the player's, not a test
+                .Test("reallife_phone_test_check", "reallife_phone_test_folder");
+
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")
                 .About("reallife_guide_ragdoll_about").Help("reallife_guide_ragdoll")
                 .Fact("roadside_least", () => Guide.Money(JusticeLaw.FineFloor))
@@ -332,10 +342,11 @@ namespace RealLifeOverhaul.Meta
             Features.Add("performance", "reallife_meta_title_performance")
                 .Group("reallife_perf_header")
                 .About("reallife_guide_performance_about").Help("reallife_guide_performance")
+                .Owns(Settings.ShadowReachId, Settings.ShadowCascadesId, Settings.LodReachId)
                 .Test("reallife_perf_test_session", SessionWatch.TestSay);
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
-                if (!tweak.Trial)
+                if (!tweak.Trial && !tweak.BySetting)
                 {
                     SettingsTable.Declare("perf_" + tweak.Id, OptionType.Toggle, tweak.DefaultOn ? 1 : 0);
                 }

@@ -78,6 +78,8 @@ namespace RealLifeOverhaul
                 // the bank
                 .Fact("es_ob_licence", () => Cents(OwnBankCatalogue.LicenceCentsScale))
                 .Fact("es_ob_capital", () => Cents(OwnBankCatalogue.CapitalLeastCentsScale))
+                .Fact("es_ob_licence_community", () => Cents(BankTiers.LicenceCentsScale[BankTiers.Community]))   // a bank starts at the first level (Economy/OwnBank/Tiers)
+                .Fact("es_ob_capital_community", () => Cents(BankTiers.CapitalCentsScale[BankTiers.Community]))
                 .Fact("es_ob_pool", () => Whole(OwnBankCatalogue.PoolScale / 1000))
                 .Fact("es_ob_tellers", () => Cents(OwnBankCatalogue.TellerCents))
                 .Fact("es_ob_managers", () => Cents(OwnBankCatalogue.ManagerCents))

@@ -147,7 +147,7 @@ One line for a frame longer than 80 ms (12 a minute at most; the rest are in the
 ```
 Session: a frame of 231 ms; none of the mod's large pieces of work was under way; where it went: coroutines and timers
 204 ms, rendering 14 ms, the rest 13 ms; the collector: no collection (41 so far), at work 0.0 ms, heap 731 MB before and
-733 MB after; the game: its screen was black or fading (its own walk into or out of a building: not seen as a stutter),
+733 MB after; the game: its screen was black (its own walk into or out of a building: not seen as a stutter),
 the player came out of a building in it, not saving, no scene loaded or unloaded; the mod's own scripts in it: 0.6 ms
 (Transport: TransitDirector.Update 0.3 ms, People: ActorPool.Update 0.1 ms, Core: GoingPublicWatch.Update 0.1 ms); the
 mod's navigation obstacles changed in the second before it and in it: 0; the mod's last pieces of work: "people: a
@@ -164,7 +164,7 @@ How to read it:
 - **the mod's own scripts in it** is the time all of the mod's Updates, LateUpdates, FixedUpdates and event handlers took in that frame (`Core/HotSpots`), with the three that took the most.
   Time under "scripts' Update" that is not here is the game's or another mod's.
 - **the collector** says whether a collection finished between the record's two looks, how long the engine's collector worked in that frame, and the heap on both sides of it.
-- **the game** says whether its black screen was up, whether the player had just gone through a door, whether it was saving (`SaveGameManager.SavingGameInProgress`) and whether a scene had just been loaded or unloaded.
+- **the game** says whether its black screen was up ("black": drawn at full strength as the frame began, not seen; "fading, the picture showing through": its fade out or back in, 0.2 s each way at a door, seen, and counted as seen in the minute's line), whether the player had just gone through a door, whether it was saving (`SaveGameManager.SavingGameInProgress`) and whether a scene had just been loaded or unloaded.
 - **the mod's last pieces of work** are the last three named with `SessionWatch.Mark`, with how long each took where the place that named it also called `SessionWatch.Done`, and when it was, seen from the long frame.
 
 The test "Test: write the session record's lines now" (Options, Tests, under Performance) writes both lines at once, so every part can be read without waiting for a stutter.

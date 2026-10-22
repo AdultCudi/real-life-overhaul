@@ -342,6 +342,38 @@ namespace RealLifeOverhaul.Tech
             Notifications.ShowError("reallife_vc_test_no_holding");
         }
 
+        /// <summary>
+        /// The first startup the player holds raises its next round now, a venture firm leading all of it, so the follow-on it offers
+        /// can be seen at once: taken once, then gone for that round.
+        /// </summary>
+        public void TestRound()
+        {
+            if (!TestVentures())
+            {
+                return;
+            }
+            for (int i = 0; i < _venture.Startups.Count; i++)
+            {
+                Startup s = _venture.Startups[i];
+                int next = s.Stage + 1;
+                int lead = VentureRules.AnyLead(next);
+                if (s.Alive && Holds(s) && s.Stage < (int)RoundStage.Growth && lead >= 0)
+                {
+                    int mood = VentureRules.Mood(HiringGame.Cycle);
+                    long pre = System.Math.Max(s.Post, VentureRules.PreMoney(s.Mrr, VentureRules.Growth(s, mood, HypeNow), mood, next));
+                    _ventureNotes.Clear();
+                    VentureRules.Led(s, lead, pre, VentureRules.RoundSize(next), Save.Day, _ventureNotes);
+                    for (int n = 0; n < _ventureNotes.Count; n++)
+                    {
+                        Heard(_ventureNotes[n], Save.Day);
+                    }
+                    ChangedTech();
+                    return;
+                }
+            }
+            Notifications.ShowError("reallife_vc_test_no_holding");
+        }
+
         /// <summary>The board of the first firm of the player's with investors looks at its target now.</summary>
         public void TestBoard()
         {

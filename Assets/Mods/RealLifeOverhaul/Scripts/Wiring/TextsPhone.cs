@@ -58,7 +58,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    if (person == null || !TextsDirector.Words.Wants(TextUse.People, false))
+                    if (person == null)
                     {
                         return false;
                     }
@@ -66,6 +66,11 @@ namespace RealLifeOverhaul
                     string intent = TextsMapRules.Phone(key, from, out string branch);
                     if (intent == null)
                     {
+                        return false;
+                    }
+                    if (!TextsDirector.Words.Wants(TextUse.People, false))
+                    {
+                        TextsDirector.Words.NotAsked(TextUse.People, false, intent);   // (counted: the written line, and why)
                         return false;
                     }
                     TextRequest r = Request(intent, branch, "s:" + person.Index, key, data, send);
@@ -78,6 +83,8 @@ namespace RealLifeOverhaul
                         FriendWho(person, r.Who, intent.StartsWith("partner.", StringComparison.Ordinal), false);
                     }
                     Slots(r, data, person, key, intent);
+                    TextsMemory.Fill(r, person);
+                    TextsMemory.Spoke(r, "text");
                     return Ask(r);
                 }
                 catch (Exception e)
@@ -95,6 +102,7 @@ namespace RealLifeOverhaul
                 {
                     if (!TextsDirector.Words.Wants(TextUse.People, false))
                     {
+                        CountNotAsked(from, key);
                         return false;
                     }
                     TextsMapRules.From who;
@@ -174,12 +182,56 @@ namespace RealLifeOverhaul
                             break;
                     }
                     Slots(r, data, person, key, intent);
+                    r.Person = MemoryKey(who, person, r);
+                    TextsMemory.Fill(r, person);
+                    TextsMemory.Spoke(r, "text");
                     return Ask(r);
                 }
                 catch (Exception e)
                 {
                     Fault("RLO Texts, the phone (" + from + ")", e);
                     return false;
+                }
+            }
+
+            // The key a held text's speaker remembers under: a person of the social life by their place, the in-laws, the lender, a manager by the employer.
+            private static string MemoryKey(TextsMapRules.From who, SocialPerson person, TextRequest r)
+            {
+                if (who == TextsMapRules.From.Roommate)
+                {
+                    return r.Speaker;   // ("r:" and their name: a roommate may be nobody of the social life's own)
+                }
+                if (person != null)
+                {
+                    return "s:" + person.Index;
+                }
+                switch (who)
+                {
+                    case TextsMapRules.From.InLaws: return "inlaws";
+                    case TextsMapRules.From.Lender: return "lender";
+                    case TextsMapRules.From.Boss: return r.Who.Job != null ? "boss:" + r.Who.Job : null;
+                    default: return null;
+                }
+            }
+
+            // A held text with no model to ask: counted with why, under its card when its key has one.
+            private static void CountNotAsked(string from, string key)
+            {
+                TextsMapRules.From who;
+                switch (from)
+                {
+                    case "partner": who = TextsMapRules.From.Partner; break;
+                    case "mom": who = TextsMapRules.From.Mom; break;
+                    case "inlaws": who = TextsMapRules.From.InLaws; break;
+                    case "roommate": who = TextsMapRules.From.Roommate; break;
+                    case "boss": who = TextsMapRules.From.Boss; break;
+                    case "lender": who = TextsMapRules.From.Lender; break;
+                    default: return;
+                }
+                string intent = TextsMapRules.Phone(key, who, out string _);
+                if (intent != null)
+                {
+                    TextsDirector.Words.NotAsked(TextUse.People, false, intent);
                 }
             }
 
@@ -202,6 +254,7 @@ namespace RealLifeOverhaul
                     };
                     FriendWho(person, r.Who, person.Together, false);
                     r.Slots.Set("what", what).Set("place", place).Set("late", late.ToString());
+                    TextsMemory.Fill(r, person);
                     TextsDirector.Words.Ask(r, TextClock.Now);
                 }
                 catch (Exception e)
@@ -236,7 +289,9 @@ namespace RealLifeOverhaul
                     {
                         if (ReferenceEquals(save, SaveGameManager.Current))
                         {
-                            send(words != null ? SocialLinks.WordsKey : key, words != null ? new Dictionary<string, string>(1) { { "text", words } } : data);
+                            // The words keep the written line's key they stand for, so a call back knows what the text was about (SocialFollowRules.KeyField).
+                            send(words != null ? SocialLinks.WordsKey : key,
+                                words != null ? new Dictionary<string, string>(2) { { "text", words }, { SocialFollowRules.KeyField, key } } : data);
                         }
                     }
                 };
@@ -272,7 +327,7 @@ namespace RealLifeOverhaul
                 who.Age = p.Age;
                 who.Job = TextWords.Jobs[Math.Max(0, Math.Min(p.Job, TextWords.Jobs.Length - 1))];
                 who.District = SocialPlaces.District(p.District);
-                who.Role = partner ? PartnerRole(p) + (expecting ? ", expecting a baby" : string.Empty) : FriendRole(p);
+                who.Role = partner ? PartnerRole(p) + (expecting ? TextWords.Expecting : string.Empty) : FriendRole(p);
                 TextWords.TraitsOf((int)p.Traits, who.Traits);
                 who.Mood = TextWords.Mood(p.Mood);
                 who.Style = TextWords.FriendStyle(p.Seed, (int)p.Traits, partner);
@@ -300,15 +355,15 @@ namespace RealLifeOverhaul
             {
                 switch (FamilyState.Bond)
                 {
-                    case Bond.Married: return "married to you";
-                    case Bond.Engaged: return "engaged to you";
-                    default: return p.MovedIn || FamilyState.S.LivesIn ? "your partner, living with you" : "dating you";
+                    case Bond.Married: return TextWords.PartnerRoles[3];
+                    case Bond.Engaged: return TextWords.PartnerRoles[2];
+                    default: return p.MovedIn || FamilyState.S.LivesIn ? TextWords.PartnerRoles[1] : TextWords.PartnerRoles[0];
                 }
             }
 
             private static SocialPerson MomPerson()
             {
-                for (int i = 0; SocialState.Loaded && i < SocialState.People.Length; i++)
+                for (int i = 0; SocialState.Loaded && i < SocialState.Count; i++)
                 {
                     if (SocialState.People[i] != null && SocialState.People[i].IsFamily)
                     {
@@ -337,6 +392,8 @@ namespace RealLifeOverhaul
                     Copy(data, r.Slots, "days", "days");
                     Copy(data, r.Slots, "marks", "marks");
                     Copy(data, r.Slots, "day", "day");
+                    Copy(data, r.Slots, "degree", "degree");     // (data v6's life events: the degree, the company listed)
+                    Copy(data, r.Slots, "company", "company");
                     if (data.TryGetValue("name", out string name) && !string.IsNullOrEmpty(name))
                     {
                         r.Slots.Set("name", First(name));

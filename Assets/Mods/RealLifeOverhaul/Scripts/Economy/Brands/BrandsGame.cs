@@ -308,7 +308,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 {
                     return false;
                 }
-                uis.textInputUi.Show("reallife_brand_name_placeholder", "reallife_brand_name_confirm", done, null, initial ?? string.Empty, false, BrandCatalogue.NameMost);
+                GameUi.TextBox.Ask("reallife_brand_name_placeholder", "reallife_brand_name_confirm", done, null, initial ?? string.Empty, false, BrandCatalogue.NameMost);
                 return true;
             }
             catch (Exception e)

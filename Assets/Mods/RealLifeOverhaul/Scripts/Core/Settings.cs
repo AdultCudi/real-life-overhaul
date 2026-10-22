@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
         public const string TextsRivalsId = "texts_rivals";
         public const string TextsLedgerId = "texts_ledger";
         public const string TextsServiceId = "texts_service";
+        public const string TextsCityId = "texts_city";
         public const string PhoneCameraId = "phone_camera";
         public const string PhoneCameraGridId = "phone_camera_grid";
         public const string MouseLookId = "camera_mouselook";
@@ -64,6 +65,7 @@ namespace RealLifeOverhaul
         public const string CityDriversId = "city_drivers";
         public const string PhoneContactsId = "phone_contacts";
         public const string PhoneSkinId = "phone_skin";
+        public const string PhoneFoldersId = "phone_folders";
         public const string NoticeLookId = "notice_look";
         public const string CarSpeedId = "car_speed";           // the old single "car speed %" slider: dropped at load
         public const string CarTuningId = "car_tuning";
@@ -83,6 +85,9 @@ namespace RealLifeOverhaul
         public const string ContrastId = "visuals_contrast";
         public const string BloomId = "visuals_bloom";
         public const string DetailId = "visuals_detail";
+        public const string ShadowReachId = "render_shadow_reach";
+        public const string ShadowCascadesId = "render_shadow_cascades";
+        public const string LodReachId = "render_lod_reach";
         public const string CharacterHighDetailId = "character_high_detail";
         public const string CharacterHairId = "character_hair";
         public const string CharacterLightingId = "character_lighting";
@@ -121,6 +126,7 @@ namespace RealLifeOverhaul
         public const string PlannerId = "planner";
         public const string PlannerRemindersId = "planner_reminders";
         public const string PlannerMorningId = "planner_morning";
+        public const string CalendarId = "calendar";
         public const string EconomyId = "economy";
         public const string EconomyGradeUpNotesId = "economy_grade_up_notes";
         public const string EconomyProductsId = "economy_products";
@@ -140,6 +146,7 @@ namespace RealLifeOverhaul
         public const string MarketsBondSoFarId = "markets_bond_so_far";
         public const string MarketsLargeId = "markets_large";
         public const string MarketsReinvestId = "markets_reinvest";
+        public const string MarketsDerivativesId = "markets_derivatives";
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -150,6 +157,7 @@ namespace RealLifeOverhaul
         public const string EconomyCompanyHideId = "economy_company_hide";
         public const string EconomyCompanyLicencesId = "economy_company_licences";
         public const string EconomyRotaId = "economy_rota";
+        public const string EconomyManagersId = "economy_managers";
         public const string EstateId = "economy_estate";
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
@@ -171,6 +179,7 @@ namespace RealLifeOverhaul
         public const string EconomySaleId = "economy_sale";
         public const string OfficeConversionId = "office_conversion";
         public const string EconomyBankId = "economy_bank";
+        public const string EconomyBranchId = "economy_bank_branch";
         public const string EndScaleId = "economy_endscale";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
@@ -312,6 +321,7 @@ namespace RealLifeOverhaul
         private const int DecorChoiceWas = 1, DecorChoiceNow = 2;   // (the decor drop-down's 5% and 10%)
         public const string InteriorsStandingId = "interiors_standing";
         public const string InteriorsStaffId = "interiors_staff";
+        public const string DesignsId = "designs";
         public const string PermadeathId = "permadeath";
 
         public static bool CameraEnabled = true;
@@ -322,7 +332,7 @@ namespace RealLifeOverhaul
         public static bool CityFaults = true;       // real faults in the city, rolled at random as the game runs: dark lamps, potholes, litter, crime hot spots, unsafe places; Flare's reports are checked against them (Scripts/Faults)
         public static int CityFaultsCount = 1;      // ...how many at once: 0 a few, 1 some, 2 many (Faults/FaultRules.Most)
         public static bool CityFaultsFalseCost = true;   // ...a report of nothing costs a little Flare reputation, and many stop the crews for a few days
-        public static bool Texts = true;            // RLO Texts: a small text model on the player's own PC words the city's messages (Scripts/Texts); does nothing without a pack installed
+        public static bool Texts = true;            // RLO Texts: a small text model on the player's own PC words the city's messages (Scripts/Texts); without a pack, the news texts only
         public static int TextsDevice = 0;          // ...where it runs: 0 Auto (the processor unless a GPU has ample free memory), 1 the processor, 2 the GPU
         public static int TextsThreads = 0;         // ...processor threads: 0 Auto (by the cores, Texts/TextSpeed), 1 two, 2 three, 3 four
         public static bool TextsReplies = true;     // ...Flare comments and replies
@@ -332,6 +342,7 @@ namespace RealLifeOverhaul
         public static bool TextsRivals = true;      // ...the rival tycoons
         public static bool TextsLedger = true;      // ...the City Ledger's briefs
         public static int TextsService = 0;         // ...Your own AI: the AI service the cards go to (Texts/TextProviders: 0 off, the default)
+        public static bool TextsCity = true;        // ...people's texts after the player's news (a pack or not); with a pack of data 6, the staff's and gossip (Texts/TextsDirector.City)
         public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
         public static bool PhoneCamera = true;      // the Camera and Gallery apps on the phone: rear camera and selfie, photos kept per save (Scripts/Photos)
         public static bool PhoneCameraGrid = true;  // ...the viewfinder opens with the rule of thirds' grid showing
@@ -379,6 +390,7 @@ namespace RealLifeOverhaul
         public static int HandlingSteering = 100;    // ...the steering's reach at speed
         public static int HandlingBrakes = 100;      // ...how quickly the brakes build
         public static bool PhoneSkin = true;         // modern phone body, wallpaper and status bar
+        public static bool PhoneFolders = true;      // the mod's apps in folders on the home screen, and a dock (GameUi/PhoneLayoutRules); off, the plain pages of before
         public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour (Core/GameUi/NoticeLook); off: they look like the game's
         public static bool CarCamera = true;     // chase camera while driving
         public static int CarCameraDistance = 8; // metres behind the car
@@ -388,6 +400,9 @@ namespace RealLifeOverhaul
         public static int Contrast = 10;
         public static int Bloom = 0;             // percent; 0 leaves the game's bloom alone (bloom costs performance)
         public static int Detail = 100;          // LOD distance, percent of vanilla (above 100 costs performance)
+        public static int ShadowReach = RenderLevelRules.Game;       // the sun's shadows, percent of the game's distance
+        public static int ShadowCascades = RenderLevelRules.GameCascades;   // the sun's shadow cascades: 0 the game's own, else 1 to 4
+        public static int LodReach = RenderLevelRules.Game;          // level-of-detail distances, percent of the game's
         public static bool CharacterHighDetail = true;   // the player is drawn with the game's detailed character set in the city
         public static bool CharacterHair = true;         // solid base layer and calmer highlights for detailed hair and beards
         public static bool CharacterLighting = true;     // fill and rim light in character creation and the shop previews
@@ -425,6 +440,7 @@ namespace RealLifeOverhaul
         public static bool LicencePoints = true;         // booked offences put penalty points on the licence; twelve suspend it
         public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda (Scripts/Planner)
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
+        public static bool Calendar = true;              // the Calendar app: the month as the chosen year divides it, with the days money moves and the player's own time (Scripts/Calendar)
         public static bool PlannerMorning = true;        // ...and one line of the day on waking: how many entries, the first and when to leave for it (off: none)
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
         public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade (off: only a fall is told; the Finance app shows the rating either way)
@@ -445,6 +461,7 @@ namespace RealLifeOverhaul
         public static bool MarketsBonds = true;          // bonds and bank deposits may be bought in the Stocks app (off: none is bought; those held still pay, end and can be sold) (Scripts/Markets/Bonds)
         public static bool MarketsLarge = true;          // an order over one order's limit is worked a slice of each step at a time, and one bond purchase may be up to a share of what the player is worth (off: both limits as before; worked orders open are cancelled) (Scripts/Markets/InvestRules)
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open (off: every dividend is paid in cash) (Scripts/Markets/InvestRules)
+        public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab (off: prices as before, nothing new) (Markets/Derivatives)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Ventures/VenturesCatalogue)
         public static bool EconomyCompany = true;        // running a business: staff, insurance, marketing, tax and licences, with the Company app (off: none of it runs and nothing is charged) (Scripts/Economy/Company)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Company/CompanyCatalogue)
@@ -455,6 +472,7 @@ namespace RealLifeOverhaul
         public static bool EconomyCompanyHide = true;    // ...cash sales kept off the books (off: every share is nothing and none can be set)
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
         public static bool EconomyRota = true;           // the staff rota planner: a customer forecast, the hours worth opening, the people they take and a rota at a press, on the Company app's Rota tab (off: the tab says so and nothing is worked out) (Scripts/Economy/Company/CompanyDirector.Rota.cs)
+        public static bool EconomyManagers = true;       // managers deciding inside the player's limits (CompanyDirector.Managers)
         public static bool Estate = true;                // property: a market that moves, letting a building yourself, works, selling and an estate agency, with the Property app (off: every value and rent is the game's own) (Scripts/Economy/Estate)
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
         public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300) (Scripts/Economy/Estate/EstateRules.MarketRent)
@@ -476,9 +494,12 @@ namespace RealLifeOverhaul
         public static bool OfficeConversion = true;      // some empty shops in the districts with offices are offices to rent while the mod runs: on the map, in BizMan, at an office's rent, for any office business; never written into the save (Scripts/Offices)
         public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
         public static bool EconomyBank = true;           // the player's own bank: a licence, savers, loans, a fund and a regulator, in its own app (off: it stands still, nothing is run, booked or charged) (Scripts/Economy/OwnBank)
+        // bank branches: a business type whose customers bank with the player's own bank and bring it more of the city;
+        // the player may work the counter (off: branches do nothing, the bank is as without them) (Economy/OwnBank/Branch)
+        public static bool EconomyBranch = true;
         public static bool EndScale = true;              // the end game at scale: data centres, the cloud and the hyperscaler, the broadband company and the player's own bank cost and earn at the size of the real thing, with upkeep, crews of staff by kind and income that grows with what is built; a save that already held one is brought to it over four game weeks (off: every figure as before) (Scripts/Core/EndScale)
         public static bool EconomyBrands = true;         // brands and franchises: a brand made from a shop, its recognition and standards, franchising it, and a shop under a city chain, with the Brands app (off: none of it runs, nothing is paid and footfall is without it) (Scripts/Economy/Brands)
-        public static bool EconomyBanks = true;          // the bank apps: one app on the phone for each of the city's three largest banks, that bank's slice of the accounts, loans, card, offers and rating (off: no bank app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
+        public static bool EconomyBanks = true;          // the Banks app: the city's three largest banks in one app on the phone, each bank's slice of the accounts, loans, card, offers and rating (off: no Banks app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
@@ -626,6 +647,7 @@ namespace RealLifeOverhaul
         public static int InteriorsWearStrength = 100;      // per cent, 0 off to 200 double: how fast finishes wear and get dirty (Scripts/Interiors)
         public static bool InteriorsBasket = true;          // over the standard each customer takes more products the shop has in stock, by the size of their order (it adds to the game's own list of the hour's customers) (with Meaningful Interiors on: nothing) (Scripts/Interiors)
         public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way (Scripts/Interiors)
+        public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs (Scripts/Designs)
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids (Scripts/Interiors)
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
 
@@ -673,6 +695,7 @@ namespace RealLifeOverhaul
             TextsRivals = Bool(modId, TextsRivalsId, TextsRivals);
             TextsLedger = Bool(modId, TextsLedgerId, TextsLedger);
             TextsService = Int(modId, TextsServiceId, TextsService);
+            TextsCity = Bool(modId, TextsCityId, TextsCity);
             PhoneCamera = Bool(modId, PhoneCameraId, PhoneCamera);
             PhoneCameraGrid = Bool(modId, PhoneCameraGridId, PhoneCameraGrid);
             MouseLook = Bool(modId, MouseLookId, MouseLook);
@@ -708,6 +731,7 @@ namespace RealLifeOverhaul
             CityDrivers = Bool(modId, CityDriversId, CityDrivers);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
+            PhoneFolders = Bool(modId, PhoneFoldersId, PhoneFolders);
             NoticeLook = Bool(modId, NoticeLookId, NoticeLook);
             CarTuning = Bool(modId, CarTuningId, CarTuning);
             CarTopSpeed = Int(modId, CarTopSpeedId, CarTopSpeed);
@@ -730,6 +754,9 @@ namespace RealLifeOverhaul
             Contrast = Int(modId, ContrastId, Contrast);
             Bloom = Int(modId, BloomId, Bloom);
             Detail = Int(modId, DetailId, Detail);
+            ShadowReach = RenderLevelRules.Percent(Int(modId, ShadowReachId, ShadowReach));
+            ShadowCascades = RenderLevelRules.Cascades(Int(modId, ShadowCascadesId, ShadowCascades));
+            LodReach = RenderLevelRules.Percent(Int(modId, LodReachId, LodReach));
             CharacterHighDetail = Bool(modId, CharacterHighDetailId, CharacterHighDetail);
             CharacterHair = Bool(modId, CharacterHairId, CharacterHair);
             CharacterLighting = Bool(modId, CharacterLightingId, CharacterLighting);
@@ -772,6 +799,7 @@ namespace RealLifeOverhaul
             Planner = Bool(modId, PlannerId, Planner);
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
             PlannerMorning = Bool(modId, PlannerMorningId, PlannerMorning);
+            Calendar = Bool(modId, CalendarId, Calendar);
             Economy = Bool(modId, EconomyId, Economy);
             EconomyGradeUpNotes = Bool(modId, EconomyGradeUpNotesId, EconomyGradeUpNotes);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
@@ -791,6 +819,7 @@ namespace RealLifeOverhaul
             MarketsBondSoFar = Bool(modId, MarketsBondSoFarId, MarketsBondSoFar);
             MarketsLarge = Bool(modId, MarketsLargeId, MarketsLarge);
             MarketsReinvest = Bool(modId, MarketsReinvestId, MarketsReinvest);
+            MarketsDerivatives = Bool(modId, MarketsDerivativesId, MarketsDerivatives);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
@@ -801,6 +830,7 @@ namespace RealLifeOverhaul
             EconomyCompanyHide = Bool(modId, EconomyCompanyHideId, EconomyCompanyHide);
             EconomyCompanyLicences = Bool(modId, EconomyCompanyLicencesId, EconomyCompanyLicences);
             EconomyRota = Bool(modId, EconomyRotaId, EconomyRota);
+            EconomyManagers = Bool(modId, EconomyManagersId, EconomyManagers);
             Estate = Bool(modId, EstateId, Estate);
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);
@@ -822,6 +852,7 @@ namespace RealLifeOverhaul
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
             OfficeConversion = Bool(modId, OfficeConversionId, OfficeConversion);
             EconomyBank = Bool(modId, EconomyBankId, EconomyBank);
+            EconomyBranch = Bool(modId, EconomyBranchId, EconomyBranch);
             EndScale = Bool(modId, EndScaleId, EndScale);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
@@ -955,6 +986,7 @@ namespace RealLifeOverhaul
             InteriorsBasket = Bool(modId, InteriorsBasketId, InteriorsBasket);
             InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
             InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
+            Designs = Bool(modId, DesignsId, Designs);
         }
 
         /// <summary>

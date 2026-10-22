@@ -46,6 +46,22 @@ namespace RealLifeOverhaul.Economy
             return Revolving(score, ownCapTotal, ProductCatalogue.CardShareAtThreshold, ProductCatalogue.CardShareAtBest, ProductCatalogue.CardRound, ProductCatalogue.CardLeast);
         }
 
+        /// <summary>A bank's revolving offer within the borrower's average income, keeping the starter limit.</summary>
+        public static int IncomeLimit(ProductKind kind, int ratingLimit, float dailyIncome)
+        {
+            if (ratingLimit <= 0 || !ProductCatalogue.Revolving(kind))
+            {
+                return 0;
+            }
+            bool card = kind == ProductKind.CreditCard;
+            int days = card ? ProductCatalogue.CardIncomeDays : ProductCatalogue.OverdraftIncomeDays;
+            int round = card ? ProductCatalogue.CardRound : ProductCatalogue.OverdraftRound;
+            int least = card ? ProductCatalogue.CardLeast : ProductCatalogue.OverdraftLeast;
+            double means = Math.Min(ratingLimit, Math.Max(0f, dailyIncome) * (double)days);
+            int affordable = (int)Math.Floor(means / round) * round;
+            return Math.Min(ratingLimit, Math.Max(least, affordable));
+        }
+
         private static int Revolving(int score, float ownCapTotal, float low, float high, int round, int least)
         {
             LenderTerms terms = LendingTerms.For(score, ownCapTotal, 0);

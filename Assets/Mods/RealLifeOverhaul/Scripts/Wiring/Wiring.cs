@@ -61,6 +61,9 @@ namespace RealLifeOverhaul
     ///     RivalLinks      the rival tycoons with the stock market (their holdings, a stake, a bid, a takeover), the company
     ///                     (an offer to the staff), business pressure (footfall, a smear, inspections), property (prices),
     ///                     the courts (a claim), Standing, the City Ledger and the Finance app's page
+    ///     CalendarLinks   the Calendar with the Planner's dated sources and each feature's schedule of money and days:
+    ///                     bills, cards, cars, hosting, the paper, the company, the tech firms, a profession, the
+    ///                     trading bots, the central bank, birthdays and the children's week
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -130,6 +133,7 @@ namespace RealLifeOverhaul
             Step("empty shops as offices", OfficeLinks.Connect);
             Step("the player's bank", OwnBankLinks.Connect);   // after running a business: its pieces of the paper follow the company's
             Step("the end game at scale", EndScaleLinks.Connect);
+            Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("rival tycoons", RivalLinks.Connect);   // after the city's economy, the company, Flare and the interiors: what it wraps of theirs (footfall, the deal, the paper) is theirs already
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Logger?.Info("Wiring: the features are connected.");
@@ -143,6 +147,7 @@ namespace RealLifeOverhaul
             }
             Connected = false;
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped is put back before the others take theirs off
+            Step("the calendar", CalendarLinks.Disconnect);
             Step("rival tycoons", RivalLinks.Disconnect);   // next: what it wrapped is put back before the others take theirs off
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper is put back first
             Step("the end game at scale", EndScaleLinks.Disconnect);

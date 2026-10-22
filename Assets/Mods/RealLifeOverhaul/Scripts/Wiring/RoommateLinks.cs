@@ -117,7 +117,7 @@ namespace RealLifeOverhaul
                 int added = 0;
                 try
                 {
-                    for (int i = 0; PeopleOn && i < SocialRules.CastSize; i++)
+                    for (int i = 0; PeopleOn && i < SocialState.Count; i++)
                     {
                         SocialPerson p = SocialState.Get(i);
                         if (RoommateRules.FriendWould(p))

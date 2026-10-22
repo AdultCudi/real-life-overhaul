@@ -205,7 +205,7 @@ internal static partial class Program
             "Flare look: a press works out the next setting by the rule and writes the option flare_theme through OptionsLayout.AppSet, the Settings app's own path");
         Check(!theme.Contains("PlayerPrefs.SetInt") && !Regex.IsMatch(theme, @"Settings\.FlareTheme\s*=[^=]") && !theme.Contains("SettingsTable.Write"),
             "Flare look: the switch has no second way to write the option (no PlayerPrefs.SetInt, no Settings.FlareTheme set by hand, no preset's path)");
-        string settingsSet = FlareMethod(ReviewSource("Meta/SettingsView.Box.cs"), "private void Set(SettingsLine line, int value)");
+        string settingsSet = FlareMethod(ReviewSource("Meta/SettingsView.Rows.cs"), "private void Set(SettingsLine line, int value)");
         Check(settingsSet.Contains("OptionsLayout.AppSet(line, value)"), "Flare look: the Settings app writes an option through the same OptionsLayout.AppSet");
         string appSet = FlareMethod(ReviewSource("Meta/OptionsLayout.Book.cs"), "internal static bool AppSet(SettingsLine line, int value)");
         Check(appSet.Contains("Settings.PrefsKey(row.Id)") && appSet.Contains("UnityEngine.PlayerPrefs.SetInt(key, value)") && appSet.Contains("dropdown.OnValueChanged?.Invoke(value)"),

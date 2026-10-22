@@ -26,6 +26,7 @@ internal static partial class Program
         ("Careers/AcademyType.cs", "t", "ModdingAPI.RegisterModBusinessType(t)", "the academy's business type, registered with the game for the whole run"),
         ("Tech/Firms/TechTypes.cs", "t", "ModdingAPI.RegisterModBusinessType(t)", "the tech sector's business types, registered with the game for the whole run"),
         ("Economy/Dealer/DealerType.cs", "_type", "ModdingAPI.RegisterModBusinessType(_type)", "the dealership's business type, registered with the game for the whole run"),
+        ("Economy/OwnBank/Branch/BranchType.cs", "t", "ModdingAPI.RegisterModBusinessType(t)", "the bank branch's business type, registered with the game for the whole run"),
         ("Core/ModState.cs", "modifier", "registry[type] = modifier", "a happiness modifier type in the game's registry: once a type, for the whole run"),
         ("Careers/CampusInterior.cs", "_signLook", "private static Material _signLook", "one material for every room sign, made again only for another font"),
         ("Character/GridLooks.cs", "made", "foreach (Sprite sprite in _swatches.Values)", "a garment's swatch, kept by the screen and destroyed with its texture when the screen is let go"),

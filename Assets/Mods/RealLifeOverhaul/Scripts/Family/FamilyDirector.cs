@@ -129,6 +129,7 @@ namespace RealLifeOverhaul.Family
                     FamilyPhone.Setup();
                     Partner.Resync();
                     PartnerCar.Hourly();   // the load made the partner's car again: out of the city at once, as the hire's cars are
+                    FamilyText.SendHeld();   // texts the save kept from the night: now if it is day, else on the morning's hour
                     _lastHour = TimeHelper.CurrentHour;
                     if (FamilyState.S.LastDay <= 0)
                     {

@@ -420,7 +420,9 @@ namespace RealLifeOverhaul.Markets
         public readonly List<DividendDue> Dues = new List<DividendDue>(8);  // dividends worked out at a record day, to be paid
         public readonly List<Bot> Bots = new List<Bot>(4);                  // one a firm
         public readonly BondBook Bonds = new BondBook();                    // never in the city's line
-        public int BusinessDay;                  // the last day of the calendar the companies' business has been run for
+        public readonly List<RawMaterial> Materials = new List<RawMaterial>(64);  // the raw materials exchange, the city's (Derivatives)
+        public readonly DerivBook Derivs = new DerivBook();                 // the player's futures and options; never in the city's line
+        public int BusinessDay;                 // the last day of the calendar the companies' business has been run for
 
         // Me is a hash of this machine's player's save, set at every start and never saved: a listed company whose Own.Owner
         // is Me is theirs. Listing is their way to the market (saved, never shared); Following is set while this market

@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 int standing = f.Standing;
                 StaffNote note = StaffRules.Day(f, _level, day, CompanyBridges.ComfortAt(f.Place));
-                if (note == StaffNote.Asked)
+                if (note == StaffNote.Asked && !Manages(f.Place, ManagerTask.Raises, f.Id))   // a manager answers it: nobody is asked
                 {
                     asked++;
                     firstAsked = firstAsked ?? f;
@@ -137,10 +137,13 @@ namespace RealLifeOverhaul.Economy
             string rival = shop != null && CompanyBridges.Rival != null ? CompanyBridges.Rival(shop.Reg) : null;
             StaffRules.Offer(f, CompanyStore.Clean(string.IsNullOrEmpty(rival) ? CompanyText.T("reallife_co_rival_default") : rival), day);
             s.PoachRest = day + CompanyCatalogue.PoachCompanyRestDays;
-            Tell(NotificationType.Warning, "reallife_co_note_offer", new Dictionary<string, string>
+            if (!Manages(f.Place, ManagerTask.Offers, f.Id))
             {
-                { "name", f.Name }, { "rival", f.Rival }, { "wage", CompanyText.Wage(f.PoachOffer) }, { "days", CompanyCatalogue.PoachAnswerDays.ToString() }
-            }, TabStaff, "emp:" + f.Id);
+                Tell(NotificationType.Warning, "reallife_co_note_offer", new Dictionary<string, string>
+                {
+                    { "name", f.Name }, { "rival", f.Rival }, { "wage", CompanyText.Wage(f.PoachOffer) }, { "days", CompanyCatalogue.PoachAnswerDays.ToString() }
+                }, TabStaff, "emp:" + f.Id);
+            }
             if (Verbose)
             {
                 Logger?.Info("Company check (staff, a rival's offer): " + f.Name + " has skill " + f.Skill + " (from " + CompanyCatalogue.PoachSkill + "), is paid "
@@ -184,11 +187,14 @@ namespace RealLifeOverhaul.Economy
             if (shop.Staff > 0 && StaffRules.OvertimeOffered(file, busy, _state.Seed, _state.Age, at, day))
             {
                 file.OvertimeAsk = day;
-                Tell(NotificationType.Info, "reallife_co_note_overtime", new Dictionary<string, string>
+                if (!Manages(file.Place, ManagerTask.Overtime))
                 {
-                    { "business", shop.Name }, { "cost", CompanyText.Money(OvertimeCost(file.Place)) }, { "percent", CompanyCatalogue.OvertimeFootfall.ToString() },
-                    { "days", CompanyCatalogue.OvertimeDays.ToString() }
-                }, TabStaff, "ot:" + file.Place);
+                    Tell(NotificationType.Info, "reallife_co_note_overtime", new Dictionary<string, string>
+                    {
+                        { "business", shop.Name }, { "cost", CompanyText.Money(OvertimeCost(file.Place)) }, { "percent", CompanyCatalogue.OvertimeFootfall.ToString() },
+                        { "days", CompanyCatalogue.OvertimeDays.ToString() }
+                    }, TabStaff, "ot:" + file.Place);
+                }
             }
         }
 

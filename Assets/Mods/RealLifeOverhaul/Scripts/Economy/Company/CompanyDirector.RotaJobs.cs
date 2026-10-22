@@ -206,6 +206,10 @@ namespace RealLifeOverhaul.Economy
                     {
                         return RotaUnwritten(job, place, "the plan is no longer one that can be written");   // one that takes a hire, or no longer there
                     }
+                    if (job.Kind == JobManager && !ManagerRotaJudged(job.Place, sheet))
+                    {
+                        return true;   // a manager's week is written only whole, and only while the rota is theirs: nothing is touched
+                    }
                     return RotaWrite(job, place, sheet, rung != null ? rung.Plan : sheet.Ladder.Fill, rung)
                            || RotaUnwritten(job, place, "the plan no longer fits the stations and people there");
             }
@@ -230,12 +234,16 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        // A fill that ends with nothing written: said in the log, and to the player unless a test asked for it.
+        // A fill that ends with nothing written: said in the log, and to the player unless a test or a manager asked for it.
         private bool RotaUnwritten(RotaJob job, RotaPlace place, string why)
         {
             string name = place != null ? place.Name : job.Place;
             Logger?.Info("Company: the rota of " + name + " was not written: " + why + ".");
-            if (!job.Test)
+            if (job.Kind == JobManager)
+            {
+                ManagerRotaUnwritten(job.Place);
+            }
+            else if (!job.Test)
             {
                 Notify(NotificationType.Warning, "reallife_rota_changed", new Dictionary<string, string> { { "business", name } }, 8f);
             }
@@ -271,7 +279,11 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             Logger?.Warn("Company: " + place.Name + " kept changing while its rota was worked out (" + _rotaRestarts + " readings); nothing was written.");
-            if (job.Kind != JobShow && !job.Test)
+            if (job.Kind == JobManager)
+            {
+                ManagerRotaUnwritten(job.Place);
+            }
+            else if (job.Kind != JobShow && !job.Test)
             {
                 Notify(NotificationType.Warning, "reallife_rota_changed", new Dictionary<string, string> { { "business", place.Name } }, 8f);
             }
