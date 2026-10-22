@@ -26,7 +26,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/Ragdoll.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYield.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextServer.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/FlareLinks.cs	1
@@ -227,9 +226,7 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/Settings.cs	52
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/SharedCity.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/TestRefusal.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/WageRules.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/BlockTests.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarTuning.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/VehicleTow.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitPlanner.Zones.cs	1

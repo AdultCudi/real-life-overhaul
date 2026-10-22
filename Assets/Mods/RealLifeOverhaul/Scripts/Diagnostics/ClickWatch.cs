@@ -11,10 +11,9 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// With "Developer diagnostics" on: one line in the log for a left click in the city, saying what the click met.
-    /// It answers "I clicked a building and nothing happened": whether an interface element lay under the pointer
-    /// (the game then ignores the world), what the ray into the world hit first, what the game had as its target,
-    /// and whether the player's walking was blocked. With diagnostics off it does one flag test a frame and nothing more.
+    /// With "Developer diagnostics" on, one log line for a left click saying what it met, for "I clicked a building and
+    /// nothing happened": the interface under the pointer, what the ray hit, the game's target, whether walking was
+    /// blocked. Off, one flag test a frame.
     /// </summary>
     public sealed class ClickWatch : MonoBehaviour
     {
