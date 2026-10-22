@@ -11,21 +11,17 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The frame of a phone app, copied from the game's MyEmployees app (FullMenu.myEmployees, "Layout 30-70"): a
-    /// headline, on the left the white box that app shows an employee in, on the right two tabs over a table with
-    /// column headers, the game's virtual scroller and its scroll bar. The copy is made asleep, the scripts that make
-    /// it MyEmployees are taken off, what the new app has no use for is destroyed, and the rest is handed out by name.
-    /// Rows come from the same app: its table's row prefab, copied asleep (RowPrefab).
-    ///
-    /// Why this app: it is the one with every part an agenda needs (tabs, a table with headers, a detail box with
-    /// buttons, switches and a previous/next selector), and its table is the game's own BaTable, which any class can
-    /// derive from (see docs/game-ui.md).
+    /// The frame of a phone app, copied asleep from the game's MyEmployees app ("Layout 30-70"): a headline, the white box
+    /// on the left, and on the right two tabs over a table with column headers, the game's virtual scroller and its bar.
+    /// The scripts that make it MyEmployees are taken off, what is not needed destroyed, and the rest handed out by name;
+    /// rows are copies of its table's row prefab. MyEmployees is the one app with every part an agenda needs, and its
+    /// table is the game's BaTable, which any class can derive from (docs/game-ui.md).
     /// </summary>
     public sealed class AppShell
     {
         public static IModLogger Logger;
 
-        // What only draws or sounds stays on the copy; every other script of the game's is taken off.
+        // What only draws or sounds stays on the copy.
         internal static readonly string[] Harmless =
         {
             "ButtonEffects", "ToggleClickSound", "Badge", "HoverEffect", "ScrollBarDraggingComponent", "ScrollBarHandleSizeLimiter"
@@ -41,16 +37,16 @@ namespace RealLifeOverhaul.GameUi
         public Transform Headers { get; private set; }
         public EnhancedScroller Scroller { get; private set; }
         public GameObject RowPrefab { get; private set; }
-        /// <summary>The colour the game gives the row that is selected, read from its row.</summary>
+        /// <summary>The colour the game gives a selected row, read from its row.</summary>
         public Color RowSelected { get; private set; } = new Color(0.741f, 0.78f, 0.812f, 1f);
-        /// <summary>The game's drop-down that stands over MyEmployees' table, asleep and whole: what a table's filter is a copy of. Null if the game no longer has it.</summary>
+        /// <summary>The game's drop-down over MyEmployees' table, asleep and whole: what a table's filter copies. Null if the game lacks it.</summary>
         public GameObject FilterTemplate { get; private set; }
-        /// <summary>Whether the header cells are the game's buttons with their two arrows: without them no column sorts.</summary>
+        /// <summary>The header cells are the game's buttons with their two arrows; without them no column sorts.</summary>
         public bool CanSort { get; private set; }
-        /// <summary>Told which column's header was clicked (only the header of a column that sorts can be).</summary>
+        /// <summary>Told which column's header was clicked (only one that sorts can be).</summary>
         public Action<int> HeaderClicked;
 
-        // The header cells, read once: the cell, its button, its title and the two arrows the game shows the order with.
+        // The header cells, read once: the cell, its button, its title and the two arrows of the order.
         private readonly Transform[] _headCells = new Transform[TableSpec.MaxColumns];
         private readonly Button[] _headButtons = new Button[TableSpec.MaxColumns];
         private readonly Transform[] _headTitles = new Transform[TableSpec.MaxColumns];
@@ -58,7 +54,7 @@ namespace RealLifeOverhaul.GameUi
         private int _headCount;
         private TableSpec _columnsOf;   // the table whose columns the header cells show now
 
-        /// <summary>The copy, asleep under 'dormant'. Null, with one line in Player.log, if the game's app is not built as expected.</summary>
+        /// <summary>The copy, asleep under <paramref name="dormant"/>. Null, with one line in Player.log, if the game's app is not built as expected.</summary>
         public static AppShell Make(FullMenu menu, Transform dormant, string name)
         {
             try
@@ -73,7 +69,7 @@ namespace RealLifeOverhaul.GameUi
                 GameObject rowSource = RowOf(source);
                 GameObject root = UiClone.Asleep(source, dormant, name);
                 shell.Root = root;
-                // The drop-down over the table keeps its scripts: it is the game's own control, whole (see TakeFilter).
+                // The drop-down over the table keeps its scripts: it is the game's own control, whole (TakeFilter).
                 Transform filter = root.transform.Find("Layout 30-70/Right/MassActionDropdown");
                 UiClone.StripGameScripts(root, script => Array.IndexOf(Harmless, script.GetType().Name) >= 0 || (filter != null && script.transform.IsChildOf(filter)));
 
@@ -103,10 +99,10 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
 
-                shell.Box.SetAccent(LookRules.Accent(name));   // the colour of the app's icon, over each page's title
+                shell.Box.SetAccent(LookRules.Accent(name));   // the app icon's colour, over each page's title
                 shell.TakeFilter(filter, root.transform.Find("Templates"));
 
-                // The headline over the left column: wide enough for a sentence, cut with dots if it is longer still.
+                // The headline over the left column: wide enough for a sentence, cut with dots past that.
                 shell.Header = header;
                 var headline = header.GetComponent<TMP_Text>();
                 if (headline != null)
@@ -117,7 +113,7 @@ namespace RealLifeOverhaul.GameUi
                     headline.overflowMode = TextOverflowModes.Ellipsis;
                 }
 
-                // The buttons at the top right stand where MyEmployees has its "mass action" selector, level with the tabs.
+                // The top right buttons stand where MyEmployees has its mass action selector, level with the tabs.
                 Transform topButtons = shell.Box.ButtonRow(right);
                 if (topButtons != null)
                 {
@@ -144,7 +140,7 @@ namespace RealLifeOverhaul.GameUi
                     }
                 }
 
-                // Two tabs, as the game has them: the first with the rounded left corner, the second with the right one.
+                // Two tabs, as the game has them: the first with the rounded left corner, the second with the right.
                 shell.Tabs = new Button[2];
                 shell.TabLabels = new TMP_Text[2];
                 for (int i = 0; i < tabs.childCount && i < 2; i++)
@@ -174,8 +170,8 @@ namespace RealLifeOverhaul.GameUi
                 shell.Headers = headers;
                 shell.ReadHeaders();
                 UiClone.KeepOnly(list, "Headers", "ListBackground", shell.Scroller.name);
-                // Rows start at the list's left edge (MyEmployees leaves 127 for its tick boxes) and end 30 short of
-                // the right one, where the scroll bar is: the headers are 30 narrower than the list for the same reason.
+                // Rows start at the list's left edge (MyEmployees leaves 127 for its tick boxes) and end 30 short of the right, where
+                // the scroll bar is; the headers are 30 narrower than the list for the same reason.
                 shell.Scroller.padding = new RectOffset(0, 30, 0, 0);
 
                 shell.RowPrefab = UiClone.Asleep(rowSource, dormant, name + " Row");
@@ -191,9 +187,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The row MyEmployees fills its table with: the "prefab" of the table's controller (BaTable.prefab, public).
-        // Through the game contract (Core/GameContract), so that a change to those classes costs this app its rows and not
-        // the mod its start.
+        // The row MyEmployees fills its table with (BaTable.prefab), through the game contract, so that a change to those
+        // classes costs this app its rows and not the mod its start.
         private static GameObject RowOf(GameObject myEmployees)
         {
             Type table = GameContract.EmployeeTable.Type;
@@ -215,8 +210,7 @@ namespace RealLifeOverhaul.GameUi
             return null;
         }
 
-        // The colour field of a row's script, looked up once for each kind of row (the game's BaTableCellView<T>,
-        // checked by the game contract; null for a script that has none).
+        // A row script's colour field, looked up once per kind of row (BaTableCellView<T>; null for one without).
         private static readonly Dictionary<Type, FieldInfo> RowColourFields = new Dictionary<Type, FieldInfo>(4);
 
         private static FieldInfo RowColourOf(Type type)
@@ -243,8 +237,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The game's drop-down goes among the templates, asleep, as the white box's parts do: a table that filters
-        // copies it when it first needs one. Without it (a game update took it away) tables have no filter.
+        // The game's drop-down goes among the templates, asleep: a table that filters copies it when first needed. Without
+        // it tables have no filter.
         private void TakeFilter(Transform filter, Transform templates)
         {
             bool found = false;
@@ -270,11 +264,10 @@ namespace RealLifeOverhaul.GameUi
             FilterTemplate = filter.gameObject;
         }
 
-        // The game's table makes a header cell sort by giving its Button a click (BaTable.Start) and shows the order
-        // by switching the cell's ArrowUp or ArrowDown on (BaTable.ChangeSortOrder). The cells are kept as they are,
-        // button, hover effect and arrows; the click is the mod's (the order is worked out by GameUi.TableModel).
-        // The title is white and gets its dark colour from the button's tint, so the button stays on every cell: a
-        // column that does not sort has it switched to "not interactable", the game's own look for that.
+        // The game's table makes a header sort by giving its Button a click (BaTable.Start) and shows the order with the
+        // cell's ArrowUp or ArrowDown (BaTable.ChangeSortOrder). Cells stay as they are; the click is the mod's (TableModel).
+        // The title is white and darkened by the button's tint, so every cell keeps its button: a column that does not sort
+        // has it not interactable, the game's own look for that.
         private void ReadHeaders()
         {
             _headCount = 0;
@@ -301,7 +294,7 @@ namespace RealLifeOverhaul.GameUi
                     }
                 });
                 whole &= _headButtons[column] != null && up != null && down != null;
-                cell.name = "Column" + column;   // not a field of any row class: the game's own sort by reflection stays out of it
+                cell.name = "Column" + column;   // no field of any row class: the game's own sort by reflection stays out of it
             }
             CanSort = whole && _headCount > 0;
             if (!CanSort)
@@ -311,9 +304,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// Makes the table's columns from a specification: the first so-many header cells of the game's, each with
-        /// its title and width; a column that sorts keeps its button, one that does not has it switched off. May be
-        /// called again for another table of the same app (a tab, a page).
+        /// The table's columns from a specification: the first header cells of the game's, each with its title and width, the
+        /// button off where a column does not sort. May be called again for another table of the app.
         /// </summary>
         public bool SetColumns(TableSpec spec)
         {
@@ -325,7 +317,7 @@ namespace RealLifeOverhaul.GameUi
             }
             if (ReferenceEquals(spec, _columnsOf))
             {
-                return true;   // written again with the same columns: the header cells are as they should be
+                return true;   // the same columns: the header cells are as they should be
             }
             _columnsOf = spec;
             RowLayout(layout);
@@ -366,7 +358,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        /// <summary>Columns that do not sort, from plain lists (a table with no specification of its own).</summary>
+        /// <summary>Columns that do not sort, from plain lists.</summary>
         public bool SetColumns(string[] names, string[] titleKeys, float[] widths, int flexible)
         {
             var spec = new TableSpec("Plain", names.Length > 0 ? names[0] : string.Empty);
@@ -379,7 +371,7 @@ namespace RealLifeOverhaul.GameUi
             return made;
         }
 
-        /// <summary>Shows the order as the game's table does: the arrow of that column, up for ascending; -1 for none.</summary>
+        /// <summary>Shows the order as the game's table does: the column's arrow, up for ascending; -1 for none.</summary>
         public void ShowSort(int column, bool ascending)
         {
             for (int i = 0; i < _headCount; i++)
@@ -397,18 +389,16 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Whether the header row has what a specification asks for: its cells, and buttons with arrows where a column sorts.</summary>
+        /// <summary>The header row has what a specification asks for: its cells, and arrows where a column sorts.</summary>
         public bool HeadersFit(TableSpec spec)
         {
             return _headCount >= spec.Count && (CanSort || spec.Sortable == 0);
         }
 
         /// <summary>
-        /// The game's employee row made into a row of so many plain cells of text. The row has a tick box and ten
-        /// cells of different kinds; the first, the employee's name, is a text with a width of its own, so the cells
-        /// are copies of it ("Cell0", "Cell1"...) and everything else but the background goes. Which of them show,
-        /// and how wide, is the table's specification (DataCellView). False, with one line in Player.log, if the row
-        /// is not built as expected.
+        /// The game's employee row made a row of plain text cells: its first cell (the name, a text with a width of its own)
+        /// copied as "Cell0", "Cell1"..., everything else but the background gone. False, with one line in Player.log, if the
+        /// row is not built as expected.
         /// </summary>
         public static bool PrepareRow(GameObject row, int cells, string app)
         {
@@ -437,7 +427,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        /// <summary>The layout a row and the header row share, so that a column's cell stands under its header.</summary>
+        /// <summary>The layout a row and the header row share, so that a cell stands under its header.</summary>
         public static void RowLayout(HorizontalLayoutGroup layout)
         {
             layout.padding = new RectOffset(40, 30, layout.padding.top, layout.padding.bottom);
@@ -456,7 +446,7 @@ namespace RealLifeOverhaul.GameUi
             element.flexibleWidth = flexible ? 1f : 0f;
         }
 
-        /// <summary>One line, cut with dots where it does not fit: what a table cell's text does with a long name.</summary>
+        /// <summary>One line, cut with dots where it does not fit.</summary>
         public static void OneLine(TMP_Text text)
         {
             if (text != null)
@@ -467,11 +457,9 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// More tabs than the two MyEmployees has. The first keeps the rounded left corner and the last the rounded
-        /// right one; each tab between them is a copy of the first with no picture, which a sliced image draws as a
-        /// plain white box: a tab with square corners. The bar lays them out itself. Call it while the app is still
-        /// asleep (in Build), before the tabs are given their words and clicks. False, with one line in Player.log, if
-        /// a copy is not a tab.
+        /// More tabs than MyEmployees' two: the first keeps its rounded left corner and the last the right; each between is a
+        /// copy of the first without its picture, which a sliced image draws as a square-cornered tab. Call it while the app
+        /// is asleep, before the tabs get their words and clicks. False, with one line in Player.log, if a copy is not a tab.
         /// </summary>
         public bool SetTabCount(int count)
         {
@@ -510,7 +498,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        /// <summary>Marks a tab as the one showing, as MyEmployees.ChangeTab does: it cannot be clicked and its label is black.</summary>
+        /// <summary>Marks the tab showing, as MyEmployees.ChangeTab does: not clickable, its label black.</summary>
         public void ShowTab(int index)
         {
             var references = InstanceBehavior<GlobalReferences>.Instance;
