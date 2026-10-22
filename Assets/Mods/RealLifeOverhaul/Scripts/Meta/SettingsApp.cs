@@ -103,6 +103,10 @@ namespace RealLifeOverhaul.Meta
                 MetaLog.Warn("the options page could not be put in order, so the Settings app is left off; the options are on the Mods tab.");
                 return;
             }
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             GameSprites.Want(AppGlyphs);
             GameSprites.Want(SettingsView.Glyphs);
             var view = new SettingsView();

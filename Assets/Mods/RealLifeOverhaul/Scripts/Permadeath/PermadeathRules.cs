@@ -286,6 +286,48 @@ namespace RealLifeOverhaul.Permadeath
             return dead || (armed && diedElsewhere);
         }
 
+        /// <summary>
+        /// A character's id as the memorial's list holds it: the list is comma-separated, so a comma in the id is a space. Every
+        /// look-up goes through this too (<see cref="MemorialHas"/>), so an id is found as it was stored.
+        /// </summary>
+        public static string MemorialEntry(string id) => id == null ? string.Empty : id.Replace(',', ' ');
+
+        /// <summary>The list with this character on it: unchanged if they are there already.</summary>
+        public static string MemorialAdd(string list, string id)
+        {
+            if (MemorialHas(list, id))
+            {
+                return list ?? string.Empty;
+            }
+            string entry = MemorialEntry(id);
+            return string.IsNullOrEmpty(list) ? entry : list + "," + entry;
+        }
+
+        /// <summary>Whether the memorial's comma-separated list holds this character, by the entry <see cref="MemorialEntry"/> writes.</summary>
+        public static bool MemorialHas(string list, string id)
+        {
+            if (string.IsNullOrEmpty(list) || string.IsNullOrEmpty(id))
+            {
+                return false;
+            }
+            string entry = MemorialEntry(id);
+            int from = 0;
+            while (from <= list.Length)
+            {
+                int end = list.IndexOf(',', from);
+                if (end < 0)
+                {
+                    end = list.Length;
+                }
+                if (end - from == entry.Length && string.CompareOrdinal(list, from, entry, 0, entry.Length) == 0)
+                {
+                    return true;
+                }
+                from = end + 1;
+            }
+            return false;
+        }
+
         private static float Between(float from, float to, float value)
         {
             if (to <= from)

@@ -199,6 +199,10 @@ namespace RealLifeOverhaul.Planner
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new PlannerApp(this);
             PlannerText.WantIcons();   // before the one look through the game's pictures
             _app = PhoneApp.Install(new PhoneAppDef

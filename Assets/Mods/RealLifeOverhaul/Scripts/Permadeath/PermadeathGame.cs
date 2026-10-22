@@ -452,10 +452,9 @@ namespace RealLifeOverhaul.Permadeath
                 try
                 {
                     string list = UnityEngine.PlayerPrefs.GetString(ListKey, string.Empty);
-                    if (!Has(list, characterId))
+                    if (!PermadeathRules.MemorialHas(list, characterId))
                     {
-                        list = list.Length > 0 ? list + "," + characterId.Replace(",", " ") : characterId.Replace(",", " ");
-                        UnityEngine.PlayerPrefs.SetString(ListKey, list);
+                        UnityEngine.PlayerPrefs.SetString(ListKey, PermadeathRules.MemorialAdd(list, characterId));
                     }
                     UnityEngine.PlayerPrefs.SetString(RecordPrefix + characterId, story.Write());
                     UnityEngine.PlayerPrefs.Save();
@@ -475,7 +474,7 @@ namespace RealLifeOverhaul.Permadeath
                 }
                 try
                 {
-                    if (!Has(UnityEngine.PlayerPrefs.GetString(ListKey, string.Empty), characterId))
+                    if (!PermadeathRules.MemorialHas(UnityEngine.PlayerPrefs.GetString(ListKey, string.Empty), characterId))
                     {
                         return false;
                     }
@@ -486,23 +485,6 @@ namespace RealLifeOverhaul.Permadeath
                 {
                     return false;
                 }
-            }
-
-            private static bool Has(string list, string id)
-            {
-                if (string.IsNullOrEmpty(list))
-                {
-                    return false;
-                }
-                string[] ids = list.Split(',');
-                for (int i = 0; i < ids.Length; i++)
-                {
-                    if (ids[i] == id)
-                    {
-                        return true;
-                    }
-                }
-                return false;
             }
         }
     }

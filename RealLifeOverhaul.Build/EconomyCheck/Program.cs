@@ -117,6 +117,17 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--clean-fixes")
+        {
+            RagdollLifeFixes();   // (the clean-up's fixes alone, while working on them: RagdollFixChecks.cs and the rest named in Main)
+            BusinessInteriorFixes();
+            PhoneWorldFixes();
+            DiagnosticsFixes();
+            CalendarFixes();
+            TextsStreetFixes();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--probe-start")
         {
             return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
@@ -234,6 +245,12 @@ internal static partial class Program
         Fame();
         CrimeFixes();   // a hold-up empties the till, rewards at today's prices, a release in a session names no hours, no Crime.Pay dropped (CrimeFixChecks.cs)
         CityEventFixes();   // the spare hose by the engine, a guest's traffic left alone by the weather, arrivals past one who never came (CityEventFixChecks.cs)
+        RagdollLifeFixes();   // a kneeling medic struck as one standing and kneeling again if not, the memorial's ids with commas, the building manager tested (RagdollFixChecks.cs)
+        BusinessInteriorFixes();   // a smear's room tested with its own dip, an office's stations with no item list, a refresh that says why not, the wear test as play (BusinessFixChecks.cs)
+        PhoneWorldFixes();   // the level of detail put back only if it was set, the doctor's refused payment ends the call with a word (PhoneFixChecks.cs)
+        DiagnosticsFixes();   // the logs page on the graphics card's figures, no count of civic props nobody reads (DiagnosticsFixChecks.cs)
+        CalendarFixes();   // a failed calendar source leaves nothing behind, every app made only once the phone can take it (CalendarFixChecks.cs)
+        TextsStreetFixes();   // a raise thanked though first seen on another text's look, never "X and X", web requests let go, the packs said found by a barrier, a Done that asks again safe in the hub's look (TextsFixChecks.cs)
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)

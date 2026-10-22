@@ -236,6 +236,13 @@ namespace RealLifeOverhaul
                 return;
             }
             string typeName = type.vehicleTypeName;
+            if (!GoingPublic.MineVehicle(car))
+            {
+                // The handling's rule (CarHandling.Apply): another Going Public player's car keeps the figures its owner's
+                // machine gives it, whoever drives it here.
+                Note(typeName, "Car tuning: " + typeName + " is left as the game made it (it is another player's car, Going Public).");
+                return;
+            }
             var traits = new CarTraits(type.IsMotorVehicle, type.spawnInPlayerObject, type.maxSpeed, type.maxCargoCapacity, type.isLuxuryCar, body.mass);
             CarSpec spec = CarCatalogue.For(typeName, traits);
             if (spec.Kind == CarKind.Untouched)

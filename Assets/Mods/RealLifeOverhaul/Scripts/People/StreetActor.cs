@@ -319,6 +319,19 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
+            KneelByHand();
+        }
+
+        /// <summary>
+        /// The kneel set by hand (<see cref="KneelPose"/>), the animator off; also what puts it back after <see cref="ClearPose"/>
+        /// took it off for something that then did not happen (a car that could not throw them down after all).
+        /// </summary>
+        public void KneelByHand()
+        {
+            if (Limp || Kneeling)
+            {
+                return;
+            }
             if (_kneel == null)
             {
                 _kneel = new KneelPose();
@@ -409,6 +422,12 @@ namespace RealLifeOverhaul
         }
 
         public bool Kneeling => _kneel != null && _kneel.Active;
+
+        /// <summary>
+        /// Drawn and kneeling by hand: the animator is off only for the pose, and <see cref="ClearPose"/> switches it on again
+        /// (KneelPose.Clear). Someone hidden has it off for being hidden, and is not counted.
+        /// </summary>
+        public bool PosedByHand => Kneeling && Character != null && Character.visible;
 
         public void ClearPose()
         {

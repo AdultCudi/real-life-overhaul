@@ -25,6 +25,9 @@ namespace RealLifeOverhaul.Texts
 
         private static readonly HttpClient Client = Make();
 
+        // A request given up on still runs until its cancellation reaches it: its source is let go when it ends, not before.
+        private static readonly Action<Task, object> LetGo = (task, cancel) => ((CancellationTokenSource)cancel).Dispose();
+
         private static HttpClient Make()
         {
             var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };   // each request has its own, by its cancellation
@@ -35,10 +38,11 @@ namespace RealLifeOverhaul.Texts
         public TextWebAnswer Send(TextWebRequest request, int timeoutMs)
         {
             var answer = new TextWebAnswer();
-            var cancel = new CancellationTokenSource(Math.Max(1, timeoutMs));
+            var cancel = new CancellationTokenSource(Math.Max(1, timeoutMs));   // its timer and handle are let go on every way out (finally)
+            Task<TextWebAnswer> task = null;
             try
             {
-                Task<TextWebAnswer> task = Run(request, cancel.Token);
+                task = Run(request, cancel.Token);
                 if (!task.Wait(Math.Max(1, timeoutMs) + GraceMs))
                 {
                     cancel.Cancel();
@@ -59,6 +63,17 @@ namespace RealLifeOverhaul.Texts
             {
                 answer.Failure = "no connection (" + e.GetType().Name + ")";
                 return answer;
+            }
+            finally
+            {
+                if (task == null || task.IsCompleted)
+                {
+                    cancel.Dispose();
+                }
+                else
+                {
+                    task.ContinueWith(LetGo, cancel, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
             }
         }
 

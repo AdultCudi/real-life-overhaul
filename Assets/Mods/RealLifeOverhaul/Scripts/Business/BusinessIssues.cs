@@ -40,7 +40,7 @@ namespace RealLifeOverhaul
             {
                 case BusinessCatalogue.Undercut:
                 case BusinessCatalogue.Smear:
-                    return !BusinessGame.FootfallRoom(reg, BusinessCatalogue.UndercutDip) ? "reallife_biz_why_no_footfall"
+                    return !BusinessGame.FootfallRoom(reg, BusinessCatalogue.IssueFootfall(def.Id)) ? "reallife_biz_why_no_footfall"
                         : !test && BusinessGame.GameRivalActive(reg) ? "reallife_biz_why_game_rival" : null;
 
                 case BusinessCatalogue.Poach:
@@ -82,12 +82,12 @@ namespace RealLifeOverhaul
                 }
 
                 case BusinessCatalogue.Complaint:
-                    return !BusinessGame.FootfallRoom(reg, BusinessCatalogue.ComplaintDip) ? "reallife_biz_why_no_footfall"
+                    return !BusinessGame.FootfallRoom(reg, BusinessCatalogue.IssueFootfall(def.Id)) ? "reallife_biz_why_no_footfall"
                         : !test && BusinessGame.Satisfaction(reg) >= BusinessCatalogue.ComplaintBelow && BusinessGame.Cleanliness(reg) >= 55 && !Shabby(reg)
                             ? "reallife_biz_why_doing_well" : null;
 
                 case BusinessCatalogue.Praise:
-                    return !BusinessGame.FootfallRoom(reg, BusinessCatalogue.PraiseBoost) ? "reallife_biz_why_no_footfall"
+                    return !BusinessGame.FootfallRoom(reg, BusinessCatalogue.IssueFootfall(def.Id)) ? "reallife_biz_why_no_footfall"
                         : !test && BusinessGame.Satisfaction(reg) < BusinessCatalogue.PraiseAbove ? "reallife_biz_why_not_good_enough" : null;
 
                 case BusinessCatalogue.Audit:
@@ -98,7 +98,7 @@ namespace RealLifeOverhaul
                     return !test && BusinessGame.DailyRevenue(reg) < 100f ? "reallife_biz_why_small" : null;
 
                 case BusinessCatalogue.Feature:
-                    return BusinessGame.FootfallRoom(reg, BusinessCatalogue.FeatureBoost) ? null : "reallife_biz_why_no_footfall";
+                    return BusinessGame.FootfallRoom(reg, BusinessCatalogue.IssueFootfall(def.Id)) ? null : "reallife_biz_why_no_footfall";
 
                 case BusinessCatalogue.Award:
                     return !test && (BusinessGame.Satisfaction(reg) < BusinessCatalogue.AwardSatisfaction
@@ -434,8 +434,9 @@ namespace RealLifeOverhaul
                 case BusinessCatalogue.Feature:
                     if (option == 0)
                     {
-                        Director.Effect(reg, BusinessCatalogue.FeatureBoost, BusinessCatalogue.FeatureDays);
-                        data["percent"] = BusinessCatalogue.FeatureBoost.ToString();
+                        int boost = BusinessCatalogue.IssueFootfall(issue.Kind);   // the figure Why tested for room
+                        Director.Effect(reg, boost, BusinessCatalogue.FeatureDays);
+                        data["percent"] = boost.ToString();
                         data["length"] = BusinessCatalogue.FeatureDays.ToString();
                         return Done(issue, "reallife_biz_feature_done");
                     }

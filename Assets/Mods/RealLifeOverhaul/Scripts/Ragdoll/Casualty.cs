@@ -158,10 +158,20 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            actor.ClearPose();        // someone kneeling has their animator off, and a ragdoll needs it
-            actor.SetVisible(true);   // so does a hidden character
+            // Someone kneeling by hand has the animator off, which a ragdoll needs on: asked as it will be once the pose is
+            // cleared. Someone hidden (not drawn) is refused, as PedestrianIncidents.CanStrike refuses them.
+            bool byHand = actor.PosedByHand;
+            if (!ragdolls.CanBegin(actor.Character, byHand))
+            {
+                return false;
+            }
+            actor.ClearPose();
             if (!ragdolls.CanBegin(actor.Character) || !_role.Adopt(actor))
             {
+                if (byHand)
+                {
+                    actor.KneelByHand();   // not thrown after all: kneeling again, as the scene left them
+                }
                 return false;
             }
             return Throw(ragdolls, velocity, outcome, byPlayer, now);

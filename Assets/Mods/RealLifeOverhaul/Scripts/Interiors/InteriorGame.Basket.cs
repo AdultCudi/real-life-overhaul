@@ -73,7 +73,8 @@ namespace RealLifeOverhaul.Interiors
         private static int Stations(BuildingRegistration reg, BusinessType type, int hour)
         {
             ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
-            if (today == null || today.workShifts == null || type.employeePrimarySkills == null)
+            Dictionary<string, ItemInstance> placed = reg.itemInstances;   // may be null, as Items allows for it
+            if (today == null || today.workShifts == null || type.employeePrimarySkills == null || placed == null)
             {
                 return 0;
             }
@@ -82,7 +83,8 @@ namespace RealLifeOverhaul.Interiors
             {
                 ItemInstance station;
                 if (shift == null || string.IsNullOrEmpty(shift.employeeId) || shift.type == WorkShiftType.Cleaning || shift.startingHour > hour || shift.endingHour <= hour
-                    || !reg.itemInstances.TryGetValue(shift.itemInstanceId, out station) || ItemHelper.HasAnyMissingRequirements(station))
+                    || string.IsNullOrEmpty(shift.itemInstanceId) || !placed.TryGetValue(shift.itemInstanceId, out station) || station == null
+                    || ItemHelper.HasAnyMissingRequirements(station))
                 {
                     continue;
                 }

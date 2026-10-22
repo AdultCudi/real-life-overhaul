@@ -138,6 +138,10 @@ namespace RealLifeOverhaul.Calendar
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new CalendarApp(this);
             GameSprites.Want(AppGlyphs);   // asked for before the one look through the game's pictures
             bool tryAgain;
@@ -185,7 +189,10 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        /// <summary>Fills <see cref="List"/> for a month from every source; one that throws is logged and left out for the session.</summary>
+        /// <summary>
+        /// Fills <see cref="List"/> for a month from every source; one that throws is logged and left out for the session, and
+        /// nothing it added stays.
+        /// </summary>
         public void Look(int month)
         {
             float started = Time.realtimeSinceStartup;
@@ -199,7 +206,7 @@ namespace RealLifeOverhaul.Calendar
                 {
                     continue;
                 }
-                int before = List.Items.Count;
+                int before = List.Items.Count, nightsBefore = List.Nights.Count;
                 try
                 {
                     if (_sources[s].Available)
@@ -212,7 +219,7 @@ namespace RealLifeOverhaul.Calendar
                     _failed[s] = true;
                     Logger?.Error(e);
                     Logger?.Warn("Calendar: the source '" + _sources[s].Id + "' failed and is left out for this session.");
-                    List.Items.RemoveRange(before, List.Items.Count - before);
+                    List.Cut(before, nightsBefore);   // its entries and nightly lines alike, back to the pools
                 }
                 _counts[s] = List.Items.Count - before;
             }

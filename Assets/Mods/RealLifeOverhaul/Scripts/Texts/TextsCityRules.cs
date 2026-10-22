@@ -41,8 +41,9 @@ namespace RealLifeOverhaul.Texts
             {
                 return TextStaffSay.None;   // said something today already: a raise seen now is thanked tomorrow
             }
+            // The raise is marked seen only when it is thanked for: one first seen on a day they texted something else (off
+            // sick, asking for a raise) is thanked on a later look, once.
             int was = m.RaiseSeen;
-            m.RaiseSeen = s.Raise;
             TextStaffSay say = TextStaffSay.None;
             if (s.Sick && m.SickTold != day && hour >= SickFrom && hour < SickTo)
             {
@@ -51,8 +52,7 @@ namespace RealLifeOverhaul.Texts
             }
             else if (hour < StaffFrom || hour >= StaffTo)
             {
-                m.RaiseSeen = was;   // seen again in business hours
-                return TextStaffSay.None;
+                return TextStaffSay.None;   // seen again in business hours
             }
             else if (s.AskDay == day && s.AskTo > s.Paid && m.AskTold != day)
             {
@@ -62,11 +62,16 @@ namespace RealLifeOverhaul.Texts
             else if (s.Raise > was && s.Raise > 0)
             {
                 say = TextStaffSay.RaiseThanks;
+                m.RaiseSeen = s.Raise;   // thanked once for it
             }
             else if (s.MostHours > 0 && s.WeekHours > s.MostHours && !s.Complaining && m.HoursWeek != Week(day))
             {
                 say = TextStaffSay.Hours;
                 m.HoursWeek = Week(day);
+            }
+            if (s.Raise < was)
+            {
+                m.RaiseSeen = s.Raise;   // a raise taken back: nothing owed, and a later one is measured from here
             }
             if (say != TextStaffSay.None)
             {

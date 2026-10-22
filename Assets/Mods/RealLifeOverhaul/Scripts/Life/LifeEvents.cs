@@ -340,16 +340,18 @@ namespace RealLifeOverhaul
             {
                 yield return null;
             }
-            if (BuildingManager.IsInsideBuilding)
+            // Read once, as the custody trip does: the game's instance is looked for again (a whole-scene search) when it is gone.
+            var buildings = InstanceBehavior<BuildingManager>.Instance;
+            if (BuildingManager.IsInsideBuilding && buildings != null)
             {
-                InstanceBehavior<BuildingManager>.Instance.ExitFromBuilding(0);
+                buildings.ExitFromBuilding(0);
             }
 
             // Once the player is back on the street, their car is waiting in a space nearby.
             if (leftBehind != null)
             {
                 float exitWait = 0f;
-                while ((BuildingManager.IsInsideBuilding || InstanceBehavior<BuildingManager>.Instance.exitingBuilding) && exitWait < 10f)
+                while ((BuildingManager.IsInsideBuilding || (buildings != null && buildings.exitingBuilding)) && exitWait < 10f)
                 {
                     exitWait += Time.unscaledDeltaTime;
                     yield return null;

@@ -328,11 +328,12 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            if (BuildingManager.IsInsideBuilding)
+            var buildings = InstanceBehavior<BuildingManager>.Instance;   // read once: a gone instance is looked for again (a whole-scene search)
+            if (BuildingManager.IsInsideBuilding && buildings != null)
             {
-                InstanceBehavior<BuildingManager>.Instance.ExitFromBuilding(0, playFadeAnimation: false);
+                buildings.ExitFromBuilding(0, playFadeAnimation: false);
                 float waited = 0f;
-                while ((BuildingManager.IsInsideBuilding || InstanceBehavior<BuildingManager>.Instance.exitingBuilding) && waited < 10f)
+                while ((BuildingManager.IsInsideBuilding || buildings.exitingBuilding) && waited < 10f)
                 {
                     waited += Time.unscaledDeltaTime;
                     _hold.Beat();

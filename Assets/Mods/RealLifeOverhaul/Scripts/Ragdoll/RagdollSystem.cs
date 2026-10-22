@@ -54,10 +54,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True if a ragdoll could be started on this character now. Changes nothing.</summary>
-        public bool CanBegin(BaseHuman character)
+        /// <summary>
+        /// True if a ragdoll could be started on this character now. Changes nothing. <paramref name="animatorHeldOff"/>: its
+        /// animator is off only for a pose set by hand, which the caller clears first (<see cref="Ragdoll.CanTake"/>).
+        /// </summary>
+        public bool CanBegin(BaseHuman character, bool animatorHeldOff = false)
         {
-            if (_failed || !Settings.Ragdolls || !Ragdoll.CanTake(character) || Find(character) != null)
+            if (_failed || !Settings.Ragdolls || !Ragdoll.CanTake(character, animatorHeldOff) || Find(character) != null)
             {
                 return false;
             }

@@ -92,10 +92,13 @@ namespace RealLifeOverhaul
             Active && (_character == null || !_character.gameObject.activeInHierarchy
                        || (_capsule != null && _capsule.enabled) || (_agent != null && _agent.enabled));
 
-        /// <summary>The checks Begin makes before it changes anything, for callers that must prepare the character first.</summary>
-        public static bool CanTake(BaseHuman character)
+        /// <summary>
+        /// The checks Begin makes before it changes anything, for callers that must prepare the character first.
+        /// <paramref name="animatorHeldOff"/>: the caller switches the animator back on before it begins (a pose set by hand).
+        /// </summary>
+        public static bool CanTake(BaseHuman character, bool animatorHeldOff = false)
         {
-            if (character == null || !character.gameObject.activeInHierarchy || character.animator == null || !character.animator.enabled
+            if (character == null || !character.gameObject.activeInHierarchy || character.animator == null || (!character.animator.enabled && !animatorHeldOff)
                 || !character.animator.isHuman || character.animator.avatar == null)
             {
                 return false;

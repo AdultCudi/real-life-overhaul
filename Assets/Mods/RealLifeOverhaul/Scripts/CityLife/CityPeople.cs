@@ -379,7 +379,7 @@ namespace RealLifeOverhaul
                 }
                 Vector3 local = toCar * (person.Position - origin);
                 if (local.x > -side && local.x < side && local.z > back && local.z < front && local.y > -2f && local.y < 2f
-                    && person.Character.visible && ragdolls.CanBegin(person.Character))
+                    && person.Character.visible && ragdolls.CanBegin(person.Character, person.Actor.PosedByHand))
                 {
                     person.Surrender(_fallen);
                     incidents.StrikeActor(person.Actor, velocity, speed, _car);
