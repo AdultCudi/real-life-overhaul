@@ -3,13 +3,9 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Planner
 {
-    // Everything in this file is free of the game and of the engine: RealLifeOverhaul.Build/PlannerCheck compiles it
-    // as it is and runs it outside the game.
+    // Game-free: PlannerCheck compiles this file as it is.
 
-    /// <summary>
-    /// The game's clock as the Planner counts it. The game numbers days from 1, day 1 is a Monday, a week has seven
-    /// days and a year has as many days as the save says (TimeHelper, Timestamp.GetTotalMinutes: (day * 24 + hour) * 60 + minute).
-    /// </summary>
+    /// <summary>The game's clock as the Planner counts it: days from 1 (a Monday), minutes as Timestamp.GetTotalMinutes.</summary>
     public static class PlannerTime
     {
         public const int MinutesPerDay = 1440;
@@ -30,26 +26,26 @@ namespace RealLifeOverhaul.Planner
             return minutes - DayOf(minutes) * MinutesPerDay;
         }
 
-        /// <summary>0 = Monday ... 6 = Sunday, as TimeHelper.GetDayOfWeek(int) has it. Safe for any number.</summary>
+        /// <summary>0 = Monday ... 6 = Sunday, as TimeHelper.GetDayOfWeek(int); safe for any number.</summary>
         public static int Weekday(int day)
         {
             int index = (day - 1) % 7;
             return index < 0 ? index + 7 : index;
         }
 
-        /// <summary>The game's year of a day (TimeHelper.GetYearsByDays: day / daysPerYear).</summary>
+        /// <summary>The game's year of a day, as TimeHelper.GetYearsByDays.</summary>
         public static int Year(int day, int daysPerYear)
         {
             return daysPerYear > 0 && day > 0 ? day / daysPerYear : 0;
         }
 
-        /// <summary>The first day of the year after the one this day is in.</summary>
         public static int NextYearStart(int day, int daysPerYear)
         {
             return daysPerYear > 0 ? (Year(day, daysPerYear) + 1) * daysPerYear : 0;
         }
     }
 
+    /// <summary>The kind of an entry; its number is a bit of the saved hidden kinds.</summary>
     public enum PlannerCategory
     {
         Work = 0,
@@ -66,6 +62,7 @@ namespace RealLifeOverhaul.Planner
         Count = 11
     }
 
+    /// <summary>Where an entry stands against the clock.</summary>
     public enum PlannerState
     {
         Upcoming = 0,
@@ -75,11 +72,12 @@ namespace RealLifeOverhaul.Planner
         Over = 4      // past, and nothing was lost by it (a market that has packed up)
     }
 
+    /// <summary>What a row of the agenda's table is.</summary>
     public enum RowKind
     {
         Entry = 0,
         DayHeader = 1,
-        Info = 2      // an empty state or a calendar fact: a line of text nobody can open
+        Info = 2      // an empty state or a calendar fact: text that cannot be opened
     }
 
     /// <summary>Who an entry is, so that a reminder set today finds the same entry tomorrow. No strings are built for it.</summary>
@@ -112,10 +110,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>
-    /// One thing to do. Entries are taken from a pool (PlannerList.Add) and filled by a source; the numbers are always
-    /// filled, the texts only when the list asks for them (PlannerList.WantText), which the hourly look does not.
-    /// </summary>
+    /// <summary>One thing to do, from PlannerList's pool; a source fills the texts only when the list wants them.</summary>
     public sealed class PlannerEntry
     {
         public EntryId Id;
@@ -139,9 +134,9 @@ namespace RealLifeOverhaul.Planner
         public float X, Y, Z;
         public string Street;        // or one of the game's own addresses (street name and number)
         public int Number;
-        public float Owes;           // whole money the player has to pay on it, given with the texts where the source knows it; 0: nothing known
+        public float Owes;           // money the player has to pay on it, given with the texts; 0: nothing known
 
-        // where it is in the city: the point it has, or its address's door, found by the director when the texts are filled
+        // the point, or the address's door, found by the director with the texts
         public bool Placed;
         public float PlaceX, PlaceZ;
 
@@ -155,7 +150,6 @@ namespace RealLifeOverhaul.Planner
         /// <summary>When it begins, in game minutes; an all-day entry begins with its day, a deadline at its last moment.</summary>
         public int Begins => Day * PlannerTime.MinutesPerDay + (Start >= 0 ? Start : Deadline && End >= 0 ? End : 0);
 
-        /// <summary>When it is over, in game minutes.</summary>
         public int Ends
         {
             get
@@ -188,13 +182,13 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>The entries of one look at the sources. Its entries are reused from look to look.</summary>
+    /// <summary>The entries of one look at the sources, reused from look to look.</summary>
     public sealed class PlannerList
     {
         private readonly List<PlannerEntry> _pool = new List<PlannerEntry>(32);
         public readonly List<PlannerEntry> Items = new List<PlannerEntry>(32);
 
-        /// <summary>Whether sources should fill in the texts (the app is open, or a reminder is being written).</summary>
+        /// <summary>Whether sources fill in the texts: the app is open, or a reminder is being written.</summary>
         public bool WantText;
         public int FromDay, ToDay;
 
@@ -251,13 +245,12 @@ namespace RealLifeOverhaul.Planner
     /// <summary>Order, clashes, states and "next up". No allocation: it runs on the hourly look as well.</summary>
     public static class PlannerLogic
     {
-        /// <summary>A look never holds more than this: a source gone wrong cannot fill the phone.</summary>
-        public const int MostEntries = 400;
+        public const int MostEntries = 400;   // a source gone wrong cannot fill the phone
 
-        /// <summary>The agenda's order (made once): by day, then all day first, then by the clock, ties by who an entry is.</summary>
+        /// <summary>By day, all day first, then by the clock; ties by who an entry is.</summary>
         public static readonly Comparison<PlannerEntry> ByTime = Compare;
 
-        /// <summary>A number for a word that is the same in every session and every version of the runtime: part of who an entry is, kept in the save with its reminder.</summary>
+        /// <summary>A hash of a word that is the same in every session and runtime, as it is saved with a reminder.</summary>
         public static int Stable(string text)
         {
             unchecked
@@ -277,7 +270,7 @@ namespace RealLifeOverhaul.Planner
             {
                 return a.Day < b.Day ? -1 : 1;
             }
-            // Within a day: what lasts all day first, then by the clock; a deadline stands at its last moment.
+            // a deadline stands at its last moment
             int ka = a.AllDay ? -1 : a.Start >= 0 ? a.Start : a.End;
             int kb = b.AllDay ? -1 : b.Start >= 0 ? b.Start : b.End;
             if (ka != kb)
@@ -296,17 +289,11 @@ namespace RealLifeOverhaul.Planner
             return a.Id.A != b.Id.A ? (a.Id.A < b.Id.A ? -1 : 1) : a.Id.B.CompareTo(b.Id.B);
         }
 
-        /// <summary>Puts the list in order and works out every entry's state, the clashes (overlaps only) and the one that is next.</summary>
-        public static void Arrange(PlannerList list, int nowMinutes)
-        {
-            Arrange(list, nowMinutes, 0);
-        }
-
         /// <summary>
-        /// The same, and with a pace (hundredths of a metre a game minute, PlannerRules) two entries at places also
-        /// clash when the way from the one to the other is longer than the time between them. With 0 only overlaps count.
+        /// Sorts the list and works out every entry's state, its clashes and the one next. With a pace (hundredths of a
+        /// metre a game minute) two placed entries also clash when the way between them takes longer than the gap.
         /// </summary>
-        public static void Arrange(PlannerList list, int nowMinutes, int pace)
+        public static void Arrange(PlannerList list, int nowMinutes, int pace = 0)
         {
             List<PlannerEntry> items = list.Items;
             items.Sort(ByTime);
@@ -327,7 +314,7 @@ namespace RealLifeOverhaul.Planner
                 {
                     continue;
                 }
-                // In order, so only those after it: the same day and the next (a night shift runs past midnight).
+                // the list is in order: only the same day and the next (a night shift runs past midnight)
                 for (int j = i + 1; j < items.Count && items[j].Day <= a.Day + 1; j++)
                 {
                     PlannerEntry b = items[j];
@@ -358,17 +345,12 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // Two things clash only if the player has to be at both, both have an hour, and neither is over and done with.
         private static bool Blocks(PlannerEntry e)
         {
             return e.Attend && e.Start >= 0 && !e.Done && e.State != PlannerState.Missed && e.State != PlannerState.Over;
         }
 
-        /// <summary>
-        /// Whether two entries the player has to attend cannot both be kept: their hours overlap, or (with a pace, both
-        /// at known places) the later one begins sooner after the earlier ends than the way between them takes.
-        /// 'reach' says it is the way.
-        /// </summary>
+        /// <summary>Whether two entries overlap or, with a pace and both placed, the way between them is longer than the gap ('reach').</summary>
         public static bool Clashing(PlannerEntry a, PlannerEntry b, int pace, out bool reach)
         {
             reach = false;
@@ -386,7 +368,7 @@ namespace RealLifeOverhaul.Planner
             return reach;
         }
 
-        // An entry keeps the clash nearest in kind: an overlap is said before a way that is too long.
+        // an overlap is said before a way that is too long
         private static void Mark(PlannerEntry e, PlannerEntry with, bool reach)
         {
             if (!e.Clash || (e.ClashReach && !reach))
@@ -397,7 +379,7 @@ namespace RealLifeOverhaul.Planner
             e.Clash = true;
         }
 
-        /// <summary>How many pairs of the day's entries clash, as Arrange found them with the same pace: the day's box counts them.</summary>
+        /// <summary>How many pairs of a day's entries clash, as Arrange found them with the same pace.</summary>
         public static int ClashPairs(List<PlannerEntry> items, int day, int pace)
         {
             int pairs = 0;
@@ -429,7 +411,7 @@ namespace RealLifeOverhaul.Planner
             }
             if (nowMinutes >= e.Ends || (e.JoinBy >= 0 && !e.Deadline && nowMinutes > e.Day * PlannerTime.MinutesPerDay + e.JoinBy))
             {
-                return e.Attend || e.Deadline ? PlannerState.Missed : PlannerState.Over;   // (past the moment it could be begun: the same)
+                return e.Attend || e.Deadline ? PlannerState.Missed : PlannerState.Over;
             }
             if (e.Deadline)
             {
@@ -438,7 +420,7 @@ namespace RealLifeOverhaul.Planner
             return nowMinutes >= e.Begins ? PlannerState.Now : PlannerState.Upcoming;
         }
 
-        /// <summary>How many entries begin (or fall due) within the next minutes and are still to do: the number on the app's badge.</summary>
+        /// <summary>How many entries still to do begin or fall due within the minutes: the app's badge.</summary>
         public static int DueSoon(PlannerList list, int nowMinutes, int withinMinutes)
         {
             int count = 0;
@@ -463,10 +445,7 @@ namespace RealLifeOverhaul.Planner
             return count;
         }
 
-        /// <summary>
-        /// A number that changes when what is due soon changes: the badge comes back for something new and stays away
-        /// for what the player has already seen.
-        /// </summary>
+        /// <summary>Changes when what is due soon changes, so the badge comes back only for something not yet seen.</summary>
         public static int DueStamp(PlannerList list, int nowMinutes, int withinMinutes)
         {
             int stamp = 17;

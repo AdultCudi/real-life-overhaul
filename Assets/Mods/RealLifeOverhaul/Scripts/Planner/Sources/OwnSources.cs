@@ -2,10 +2,7 @@ using Helpers;
 
 namespace RealLifeOverhaul.Planner
 {
-    /// <summary>
-    /// The player's own entries (PlannerStore.Notes): one that is once on its day, one that repeats on each day of the
-    /// look it falls on, as (note, its number, the day).
-    /// </summary>
+    /// <summary>The player's own notes: a repeating one on each day it falls on, as (note, number, day).</summary>
     public sealed class NoteSource : IPlannerSource
     {
         public const string SourceId = PlannerStore.NoteSourceId;
@@ -51,11 +48,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>
-    /// The test button's samples: one marked entry of every category, today and tomorrow, so that every row, icon and
-    /// state can be looked at without living through a week. They are not in the save and go with the session or the
-    /// other test button.
-    /// </summary>
+    /// <summary>The test's samples: a marked entry of every kind around now, to see every row, icon and state; not saved.</summary>
     public sealed class SampleSource : IPlannerSource
     {
         public string Id => "sample";
@@ -67,7 +60,7 @@ namespace RealLifeOverhaul.Planner
             int hour = TimeHelper.CurrentHour;
             for (int c = 0; c < (int)PlannerCategory.Note; c++)
             {
-                // Spread round the clock from two hours ago: some are over or missed, one is on now, two clash, the rest are to come.
+                // from two hours ago: some over or missed, one on now, two clashing, the rest to come
                 int at = hour - 2 + c;
                 PlannerEntry e = into.Add(Id, c, 0, (PlannerCategory)c, at >= 24 ? today + 1 : today);
                 if (e == null)
@@ -92,10 +85,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>
-    /// The base game's tax bill (Helpers.TaxHelper): the day it is due, what is owed, and what the game does the day
-    /// after (TaxHelper.RunDaily: the amount is taken by force, belongings included).
-    /// </summary>
+    /// <summary>The game's tax bill (TaxHelper): due day and amount; the day after, TaxHelper.RunDaily takes it by force.</summary>
     public sealed class TaxSource : IPlannerSource
     {
         public string Id => "tax";

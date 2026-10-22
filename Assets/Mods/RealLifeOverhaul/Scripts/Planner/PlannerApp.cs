@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
-using Helpers;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI.Smartphone;
@@ -10,15 +9,7 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Planner
 {
-    /// <summary>
-    /// What the Planner shows. On the right three tabs: "Today" and "Upcoming" (the seven days after, each under its
-    /// day) are tables; "Week" is seven columns, a day each from today (PlannerWeek). Over them a filter by group
-    /// (work and study, money, family and life, business), kept for each tab while the game runs. On the left the
-    /// white box, which is one of four pages (PlannerApp.Box.cs): a day at a glance, one entry with what can be done
-    /// about it, one of the player's own entries being written (PlannerApp.Notes.cs), or the settings. Everything on
-    /// it is the game's (GameUi). The app does nothing while it is closed; it reads the sources when it opens and when
-    /// the player changes something.
-    /// </summary>
+    /// <summary>The Planner's panel: Today and Upcoming as tables, Week as columns, filtered by group; read only when opened or changed.</summary>
     public sealed partial class PlannerApp
     {
         public const int UpcomingDays = 7;
@@ -33,13 +24,12 @@ namespace RealLifeOverhaul.Planner
 
         private static readonly string[] TabKeys = { "common_today", "reallife_planner_tab_upcoming", "reallife_planner_tab_week" };
 
-        // The filter chosen on each tab (a PlannerGroup, -1 for everything): the player's, for as long as the game runs.
-        // The table's own memory goes back to "everything" while no entry of the group is listed; this one does not.
+        // Each tab's filter (a PlannerGroup, -1 all) for the game's run; the table's own goes back to all when its group is empty.
         private static readonly int[] Chosen = { -1, -1, -1 };
 
         private readonly PlannerDirector _director;
         private readonly List<PlannerRow> _rows = new List<PlannerRow>(32);
-        private readonly List<PlannerRow> _shown = new List<PlannerRow>(40);   // the rows in the table's order, with a heading over each day
+        private readonly List<PlannerRow> _shown = new List<PlannerRow>(40);   // in the table's order, with the day headings
         private readonly WeekGrid _grid = new WeekGrid();
         private TableView _view;
         private AppShell _shell;
@@ -50,7 +40,7 @@ namespace RealLifeOverhaul.Planner
         private Page _page;
         private EntryId _selected;
         private int _glanceDay;   // the day the box shows at a glance
-        private int _tabs;        // the tabs the panel has (two if the Week tab could not be made)
+        private int _tabs;        // two if the Week tab could not be made
         private readonly int[] _tabCounted = { -1, -1, -1 };   // the count each tab's name says
         private string _tabLanguage;
 
@@ -59,13 +49,11 @@ namespace RealLifeOverhaul.Planner
             _director = director;
         }
 
-        // ---------------------------------------------------------------- building it from the game's parts
-
-        /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
+        /// <summary>The app's panel, asleep; null if the game's parts are not as expected, as logged.</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             _menu = menu;
-            using var piece = SessionWatch.Piece("planner: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("planner: the app being built from the game's MyEmployees");   // once a city: a few hundred objects in one frame
             _shell = AppShell.Make(menu, dormant, PlannerDirector.AppId);
             if (_shell == null || !PrepareRow(_shell.RowPrefab))
             {
@@ -75,11 +63,11 @@ namespace RealLifeOverhaul.Planner
             {
                 return null;
             }
-            // The Week tab's rows are copies of the table's row, made before the table's own script goes on it.
+            // the Week tab copies the row before the table's own script goes on it
             _week = PlannerWeek.Make(_shell.RowPrefab, _shell.List);
             if (_week != null)
             {
-                _week.DayClicked = day => UiClone.Safe(() => WeekDay(day));
+                _week.DayClicked = day => UiClone.Safe(() => ShowDay(day));
                 _week.EntryClicked = entry => UiClone.Safe(() => WeekEntry(entry));
             }
             PlannerCellView.SelectedColour = _shell.RowSelected;
@@ -110,9 +98,7 @@ namespace RealLifeOverhaul.Planner
 
         private const float WhenWidth = 300f, WhatWidth = 600f, WhereWidth = 560f, StatusWidth = 300f;
 
-        // The agenda as a table (GameUi.TableSpec), one for each tab so that each keeps the order and the group the
-        // player last chose there: every column sorts, the filter is the group of the entry. It opens in time order.
-        // The Week tab is no table, but its filter is the table's drop-down all the same, with a specification of its own.
+        // One per tab, so each keeps its own order and filter; the Week tab uses only its filter.
         private static readonly TableSpec[] Tables = { Table("Today"), Table("Upcoming"), Table("Week") };
 
         private static TableSpec Table(string tab)
@@ -126,9 +112,7 @@ namespace RealLifeOverhaul.Planner
                 .Empty("reallife_tab_empty_planner");
         }
 
-        // The game's employee row has a tick box and ten cells. Four are kept and renamed: the name (the time), the
-        // task with its warning icon (what, with the category's icon), the business (where) and the satisfaction,
-        // which the game sets to the right (the status).
+        // The game's employee row keeps four cells: name (when), task and icon (what), business (where), satisfaction (status).
         private static bool PrepareRow(GameObject row)
         {
             Transform t = row.transform;
@@ -157,7 +141,7 @@ namespace RealLifeOverhaul.Planner
             var picture = holder != null ? holder.GetComponentInChildren<Image>(true) : null;
             if (picture != null)
             {
-                // the game's warning sign hangs a little low and to the left of its cell; an icon sits in the middle of it
+                // the game's warning sign hangs low and to the left; an icon sits in the middle
                 var rect = (RectTransform)picture.transform;
                 rect.anchoredPosition = new Vector2(0f, 0f);
                 rect.sizeDelta = new Vector2(48f, 48f);
@@ -166,8 +150,6 @@ namespace RealLifeOverhaul.Planner
             }
             return true;
         }
-
-        // ---------------------------------------------------------------- opening, reading, the tabs
 
         public void Opened()
         {
@@ -189,7 +171,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>Opens on one entry (a reminder was clicked).</summary>
+        /// <summary>Opens on one entry, for a reminder clicked.</summary>
         public void Select(EntryId id)
         {
             _selected = id;
@@ -214,7 +196,7 @@ namespace RealLifeOverhaul.Planner
             PlannerEntry selected = Selected;
             if (_page == Page.Entry && selected == null)
             {
-                _page = Page.Glance;   // what was open is no longer there (done elsewhere, cancelled, hidden)
+                _page = Page.Glance;   // done elsewhere, cancelled or hidden
             }
             if (selected != null && _page == Page.Entry)
             {
@@ -264,7 +246,6 @@ namespace RealLifeOverhaul.Planner
             Write();
         }
 
-        // The tab marked, and the table or the week where the table stands.
         private void Frame()
         {
             _shell.ShowTab(_tab);
@@ -286,8 +267,7 @@ namespace RealLifeOverhaul.Planner
 
         private bool OnTab(PlannerEntry e, int today) => PlannerRules.OnTab(e, _tab, today);
 
-        // Each tab's name with how many entries it lists under its own filter: "Today (3)". Written when the tables are
-        // filled (opening, a change, a filter picked), and only a name whose count has changed.
+        // "Today (3)": each tab's count under its own filter, written only when it changes
         private void TabCounts(int today)
         {
             for (int i = 0; i < _tabs && i < _tabCounted.Length; i++)
@@ -303,10 +283,9 @@ namespace RealLifeOverhaul.Planner
             _tabLanguage = LanguageNow;
         }
 
-        private static string LanguageNow => PlannerText.T("common_today");   // (a language change gives the tabs' names again)
+        private static string LanguageNow => PlannerText.T("common_today");   // a language change writes the names again
 
-        // The entries of the tab, in the order the director keeps them (by time). The headings over the days are
-        // put in when the rows are shown (Fill): they belong to the order, not to the entries.
+        // in the director's time order; the day headings belong to the order and are put in by Fill
         private void Rows(int today)
         {
             _rows.Clear();
@@ -339,16 +318,14 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // The rows go to the table in the order and under the filter its headers and its drop-down say
-        // (GameUi.TableView): each entry gives its moment, its words and its group. On the Week tab the same order
-        // and filter fill the seven columns instead.
+        // The rows in the order and filter of the table's headers and drop-down; on the Week tab they fill the columns.
         private void ShowRows(int today, string selectedId)
         {
             TableModel model = _view.Model;
             TableSpec spec = Tables[_tab];
             if (_view.CanFilter && spec.FilterCount > 0)
             {
-                spec.Filters[0].Chosen = Chosen[_tab];   // the player's choice on this tab, whatever the last look left
+                spec.Filters[0].Chosen = Chosen[_tab];   // whatever the last look left
             }
             _view.Begin(spec, _rows.Count);
             for (int r = 0; r < _rows.Count; r++)
@@ -376,8 +353,7 @@ namespace RealLifeOverhaul.Planner
             _table.Show(_shown, selectedId);
         }
 
-        // The rows as they are shown. In time order (as the tab opens, or by the Time column) each day of the
-        // upcoming entries has its heading; in any other order the day is written in the entry's own Time cell.
+        // In time order each upcoming day has a heading; in any other order the day goes in the entry's Time cell.
         private void Fill(int today)
         {
             TableModel model = _view.Model;
@@ -395,7 +371,12 @@ namespace RealLifeOverhaul.Planner
                     if (_tab == UpcomingTab && byTime && e.Day != headed)
                     {
                         headed = e.Day;
-                        _shown.Add(new PlannerRow { Id = "day:" + e.Day, Kind = RowKind.DayHeader, Day = e.Day, What = e.Day == today + 1 ? PlannerText.T("reallife_planner_day_tomorrow", "date", PlannerText.Date(e.Day)) : PlannerText.Date(e.Day) });
+                        string date = PlannerText.Date(e.Day);
+                        _shown.Add(new PlannerRow
+                        {
+                            Id = "day:" + e.Day, Kind = RowKind.DayHeader, Day = e.Day,
+                            What = e.Day == today + 1 ? PlannerText.T("reallife_planner_day_tomorrow", "date", date) : date
+                        });
                     }
                     row.When = _tab == UpcomingTab && !byTime ? PlannerText.Date(e.Day) + ", " + PlannerText.When(e) : PlannerText.When(e);
                 }
@@ -407,7 +388,6 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // The Week tab: the entries the filter lets through, each in its day's column in time order.
         private void FillWeek(int today)
         {
             TableModel model = _view.Model;
@@ -424,26 +404,21 @@ namespace RealLifeOverhaul.Planner
             _week.Fill(_grid, today, _page == Page.Entry ? Selected : null, _page == Page.Glance ? _glanceDay : -1);
         }
 
-        // The player clicked a header or picked a group. The entry that is open stays open if it still shows, and the
-        // table scrolls to it; if the filter took it out, the first entry shown is opened instead, or the day's
-        // summary when none is left.
+        // the open entry stays open if still shown, else the first entry shown, else the day at a glance
         private void Reordered(bool filter)
         {
-            if (filter)
-            {
-                Chosen[_tab] = Tables[_tab].Filters[0].Chosen;
-            }
             int today = TimeHelper.CurrentDay;
             if (filter)
             {
+                Chosen[_tab] = Tables[_tab].Filters[0].Chosen;
                 TabCounts(today);
             }
             if (_tab == WeekTab && _week != null)
             {
                 PlannerEntry open = _page == Page.Entry ? Selected : null;
-                if (open != null && Placed(open) < 0)
+                if (open != null && !Listed(open))
                 {
-                    _page = Page.Glance;   // the filter took it out: its day at a glance instead
+                    _page = Page.Glance;
                     _selected = default(EntryId);
                     Write();
                 }
@@ -479,21 +454,20 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // Where an entry stands among the rows the filter shows; -1 if it is not shown.
-        private int Placed(PlannerEntry entry)
+        private bool Listed(PlannerEntry entry)
         {
             TableModel model = _view.Model;
             for (int i = 0; i < model.Count; i++)
             {
                 if (_rows[model.RowAt(i)].Entry == entry)
                 {
-                    return i;
+                    return true;
                 }
             }
-            return -1;
+            return false;
         }
 
-        // The line over the left column: what is next, in the game's big letters.
+        // what is next, over the left column
         private void Headline(int today)
         {
             PlannerEntry next = null;
@@ -512,7 +486,7 @@ namespace RealLifeOverhaul.Planner
             UiClone.Words(_shell.Header, words);
         }
 
-        // A row of a table: an entry opens, a day's heading shows that day at a glance.
+        // an entry opens, a day's heading shows that day at a glance
         private void RowClicked(PlannerRow row)
         {
             if (row != null && row.Kind == RowKind.DayHeader)
@@ -530,13 +504,6 @@ namespace RealLifeOverhaul.Planner
             Show(Page.Entry);
         }
 
-        // A day's heading in the Week tab.
-        private void WeekDay(int day)
-        {
-            ShowDay(day);
-        }
-
-        // An entry in the Week tab.
         private void WeekEntry(PlannerEntry entry)
         {
             if (entry == null)
