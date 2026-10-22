@@ -4,42 +4,35 @@ using System.IO;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The arithmetic of the minimap's base picture (the city under the roads: buildings and water). No engine and no
-    /// game types: checked offline (RealLifeOverhaul.Build/NavCheck/BaseCheck.cs).
-    ///
-    /// The picture covers the same piece of the world as the road picture, from the same origin, so one conversion
-    /// serves both: a pixel is (world - origin) x pixels per metre, counted from the picture's lower left corner,
-    /// x to the east and z to the north. Nothing here runs per frame except what <see cref="NavView.Window"/> already
-    /// costs (four divisions when the player has moved).
+    /// The arithmetic of the minimap's base picture, the buildings and water under the roads; game-free and checked by
+    /// NavCheck. It covers the road picture's piece of the world from the same origin, so one conversion serves both: a
+    /// pixel is (world - origin) x pixels per metre from the lower left corner, x east and z north.
     /// </summary>
     public static class NavBaseMath
     {
-        public const int LongestSide = 2048;      // pixels: 3.6 km of city at 1.77 m a pixel; see NavBase's summary for why that is enough
-        public const float MostPerMetre = 1.25f;  // pixels a metre in a small city: what the road picture has
+        public const int LongestSide = 2048;      // pixels: 3.6 km of city at 1.77 m a pixel
+        public const float MostPerMetre = 1.25f;  // pixels a metre in a small city, as the road picture has
 
-        /// <summary>Where a place is on the picture, in pixels and parts of one, along one axis.</summary>
+        /// <summary>Where a place is on the picture, in pixels, along one axis.</summary>
         public static float ToPixel(float world, float origin, float perMetre)
         {
             return (world - origin) * perMetre;
         }
 
-        /// <summary>Where a pixel (or a part of one) is in the world, along one axis.</summary>
+        /// <summary>Where a pixel is in the world, along one axis.</summary>
         public static float ToWorld(float pixel, float origin, float perMetre)
         {
             return origin + pixel / perMetre;
         }
 
-        /// <summary>The pixel the graphics card reads for a place: the one it lies in, or the edge's when it lies outside (the picture is not repeated).</summary>
+        /// <summary>The pixel the graphics card reads for a place: the one it lies in, or the edge's outside the picture.</summary>
         public static int Texel(float pixel, int size)
         {
             int index = (int)Math.Floor(pixel);
             return index < 0 ? 0 : index > size - 1 ? size - 1 : index;
         }
 
-        /// <summary>
-        /// The opposite of <see cref="NavView.ToView"/>: the place in the world that is drawn at a point of the view
-        /// (in the view's units from its middle), for a view centred on (px, pz) and turned by <paramref name="turn"/> degrees.
-        /// </summary>
+        /// <summary>The opposite of <see cref="NavView.ToView"/>: the place in the world drawn at a point of the view.</summary>
         public static void FromView(float vx, float vy, float px, float pz, float turn, float unitsPerMetre, out float wx, out float wz)
         {
             double radians = turn * Math.PI / 180.0;
@@ -49,7 +42,7 @@ namespace RealLifeOverhaul.Nav
             wz = pz + (-vx * sin + vy * cos) / unitsPerMetre;
         }
 
-        /// <summary>The share of a window on the picture (texture coordinates: corner and size) that lies on the picture itself; the rest shows the edge's pixels drawn out.</summary>
+        /// <summary>The share of a window (texture coordinates: corner and size) that lies on the picture itself.</summary>
         public static float Inside(float u, float v, float width, float height)
         {
             if (width <= 0f || height <= 0f)
@@ -62,10 +55,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// How far (metres) the base picture draws a place from where the markers' layer draws it, for a view of
-        /// <paramref name="metres"/> a side centred on the player. The markers are placed in metres from the player;
-        /// the picture is placed by its window. The two must agree, whatever the view is turned by (both are turned
-        /// together).
+        /// Metres between where the base picture, placed by its window, and the markers, placed in metres from the player,
+        /// draw one place. Both turn together, so the turn does not count.
         /// </summary>
         public static float Misfit(float wx, float wz, float px, float pz, float originX, float originZ, float worldWidth, float worldHeight, float metres)
         {
@@ -78,9 +69,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// The outline round some points seen from above (their convex hull), anticlockwise, written from
-        /// <paramref name="at"/> on. The points are put in order where they lie (they are the caller's scratch).
-        /// Returns how many corners the outline has: fewer than 3 if the points are one place or one line.
+        /// The points' convex hull, anticlockwise, written from <paramref name="at"/> on; the points, the caller's scratch,
+        /// are sorted where they lie. Returns the corners: fewer than 3 if the points are one place or one line.
         /// </summary>
         public static int Hull(float[] x, float[] z, int count, float[] hullX, float[] hullZ, int at)
         {
@@ -155,9 +145,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// Three places far from one another, for a check that must not depend on one corner of the city: the one
-        /// furthest from the middle of them all, the one furthest from that, and the one furthest from both. Returns
-        /// how many were picked (all of them if there are three or fewer).
+        /// Three places far apart, for a check that must not depend on one corner of the city: the furthest from the middle,
+        /// the furthest from that, and the furthest from both. Returns how many were picked.
         /// </summary>
         public static int FarApart(float[] x, float[] z, int count, int[] picked)
         {
@@ -225,9 +214,9 @@ namespace RealLifeOverhaul.Nav
     }
 
     /// <summary>
-    /// What the base picture is drawn from, and what is kept on disk so that a city is measured once per version of
-    /// the game: the outline of every building (an anticlockwise polygon in metres) and a coarse grid that says where
-    /// water is. Some hundreds of outlines and a byte per 8 m square: about 150 KB. Written and read once per city load, never per frame.
+    /// What the base picture is drawn from, kept on disk so a city is measured once per version of the game: every
+    /// building's outline (anticlockwise, in metres) and a grid of where water is, about 150 KB. Written and read once per
+    /// city load.
     /// </summary>
     public sealed class NavBaseData
     {
@@ -235,18 +224,18 @@ namespace RealLifeOverhaul.Nav
         private const int Magic = 0x424D4C52;   // "RLMB"
 
         public int Build;                              // the game's build number
-        public float OriginX, OriginZ;                 // the world's corner the picture and the grid start at
+        public float OriginX, OriginZ;                 // the world's corner where the picture and the grid start
         public float WorldWidth, WorldHeight;          // metres, as the road graph gave them
         public int Hulls;
         public int[] HullStart = new int[1];           // Hulls + 1 entries into HullX and HullZ
-        public int[] HullOf = new int[0];              // which of the game's buildings (its place in the game's list) each outline is
+        public int[] HullOf = new int[0];              // each outline's building, by its place in the game's list
         public float[] HullX = new float[0];
         public float[] HullZ = new float[0];
         public int Columns, Rows;
         public float Cell;                             // metres a side
         public byte[] Cells = new byte[0];             // see NavBaseWater
 
-        /// <summary>Everything of it a picture is drawn from, into a print (Core/InputPrint): what the minimap's base picture is kept by across loads.</summary>
+        /// <summary>Everything a picture is drawn from, into the print the base picture is kept by across loads.</summary>
         public void AddTo(ref InputPrint print)
         {
             print.Add(Build);
@@ -312,8 +301,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// Reads it back. Null if the bytes are not such a file, are cut short or damaged, were made for another
-        /// build of the game, or for a city whose roads lie elsewhere (more than half a metre): it is then made again.
+        /// Reads it back; null, so it is made again, for bytes cut short or damaged, another build of the game, or a city
+        /// whose roads lie more than half a metre elsewhere.
         /// </summary>
         public static NavBaseData Decode(byte[] bytes, int build, float originX, float originZ, float worldWidth, float worldHeight)
         {
@@ -402,16 +391,14 @@ namespace RealLifeOverhaul.Nav
     }
 
     /// <summary>
-    /// Where the water is. The game has no water object to ask (Leisure's fishing found the same), so the city is
-    /// measured on a grid of 8 m squares: each square is ground the city stands on, or open (nothing to stand on
-    /// there), and the water is the open squares that can be reached from the picture's edge without crossing ground.
-    /// A courtyard or a lawn nobody walks on is open too, but roads and buildings shut it in, so it stays ground.
-    /// Nothing here runs per frame: Classify once per square while a city is measured, Settle once, At while the picture is drawn.
+    /// Where the water is. The game has no water object to ask, so the city is measured on a grid of squares, each ground
+    /// or open, and the water is the open squares reached from the picture's edge without crossing ground: a courtyard
+    /// shut in by roads and buildings stays ground. Run while a city is measured and its picture drawn, never per frame.
     /// </summary>
     public static class NavBaseWater
     {
-        public const float CellMetres = 8f;
-        public const float StreetDrop = 0.8f;   // metres below the nearest road that are still the ground beside it (the fishing rule's figure)
+        public const float CellMetres = 8f;     // metres a side
+        public const float StreetDrop = 0.8f;   // metres below the nearest road still the ground beside it, as fishing has it
 
         public const byte Land = 0;      // after Settle: not water
         public const byte Water = 1;     // after Settle: water
@@ -420,10 +407,8 @@ namespace RealLifeOverhaul.Nav
         public const byte Unasked = 255; // before the city has been asked
 
         /// <summary>
-        /// What one square is, from one look straight down at its middle. <paramref name="hit"/>: something solid was
-        /// there. <paramref name="named"/>: the game's name for it says water. <paramref name="built"/>: it is a road
-        /// or a building. <paramref name="walkable"/>: people can walk there (asked only when the others have not
-        /// decided). <paramref name="streetY"/>: the height of the nearest road, or not a number if none is near.
+        /// What one square is, from one look straight down at its middle: <paramref name="named"/> is the game's name saying
+        /// water, <paramref name="built"/> a road or a building, <paramref name="streetY"/> the nearest road's height or NaN.
         /// </summary>
         public static byte Classify(bool hit, bool named, bool built, bool walkable, float hitY, float streetY)
         {
@@ -448,7 +433,7 @@ namespace RealLifeOverhaul.Nav
             return !float.IsNaN(streetY) && hitY > streetY - StreetDrop;
         }
 
-        /// <summary>The squares whose middle lies in a building are ground without asking; the rest are still to be asked. Returns how many were settled.</summary>
+        /// <summary>Makes ground the squares whose middle lies in a building, the rest still to be asked. Returns how many.</summary>
         public static int Prepare(NavBaseData data)
         {
             byte[] cells = data.Cells;
@@ -495,9 +480,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// Decides: an open square is water if the picture's edge can be reached from it over open squares (step by
-        /// step, not across corners); a square the game names water is water where it lies and floods nothing; every
-        /// other square is ground. Afterwards the grid holds <see cref="Land"/> and <see cref="Water"/> only. Returns
+        /// An open square reaching the edge over open squares, not across corners, is water; a square the game names water
+        /// is water and floods nothing; the rest is ground. Leaves only <see cref="Land"/> and <see cref="Water"/>; returns
         /// how many squares are water.
         /// </summary>
         public static int Settle(byte[] cells, int columns, int rows)
@@ -554,7 +538,7 @@ namespace RealLifeOverhaul.Nav
             return water;
         }
 
-        /// <summary>How much water there is at a place, 0 to 1, read smoothly between the middles of the settled squares (so a coast is a line, not steps).</summary>
+        /// <summary>Water at a place, 0 to 1, read smoothly between the squares' middles so a coast is a line, not steps.</summary>
         public static float At(NavBaseData data, float x, float z)
         {
             float gx = (x - data.OriginX) / data.Cell - 0.5f;
@@ -576,180 +560,6 @@ namespace RealLifeOverhaul.Nav
         private static int Clamp(int value, int most)
         {
             return value < 0 ? 0 : value > most ? most : value;
-        }
-    }
-
-    /// <summary>
-    /// The base picture as numbers: four bytes a pixel (red, green, blue, how solid), buildings in one flat colour
-    /// over water in another, clear where there is neither (the minimap's ground tint shows through). It touches only
-    /// the arrays it is given, so it runs away from the main thread, as the road picture's drawing does.
-    /// </summary>
-    public static class NavBaseRaster
-    {
-        /// <summary>
-        /// Every building's outline into one byte a pixel (how much of the pixel it covers), with an edge one pixel
-        /// soft. The picture's outermost pixels are left empty, so that looking past the edge shows no building drawn
-        /// out. Returns how many outlines were drawn.
-        /// </summary>
-        public static int Buildings(byte[] cover, int width, int height, float originX, float originZ, float perMetre, NavBaseData data)
-        {
-            int drawn = 0;
-            for (int h = 0; h < data.Hulls; h++)
-            {
-                int start = data.HullStart[h];
-                int count = data.HullStart[h + 1] - start;
-                if (count >= 3)
-                {
-                    Polygon(cover, width, height, originX, originZ, perMetre, data.HullX, data.HullZ, start, count);
-                    drawn++;
-                }
-            }
-            return drawn;
-        }
-
-        /// <summary>One anticlockwise convex outline (metres) into the cover.</summary>
-        public static void Polygon(byte[] cover, int width, int height, float originX, float originZ, float perMetre, float[] x, float[] z, int start, int count)
-        {
-            float minX = float.MaxValue, minZ = float.MaxValue, maxX = float.MinValue, maxZ = float.MinValue;
-            for (int i = start; i < start + count; i++)
-            {
-                float px = (x[i] - originX) * perMetre;
-                float pz = (z[i] - originZ) * perMetre;
-                minX = Math.Min(minX, px);
-                maxX = Math.Max(maxX, px);
-                minZ = Math.Min(minZ, pz);
-                maxZ = Math.Max(maxZ, pz);
-            }
-            int x0 = Math.Max(1, (int)Math.Floor(minX - 1f));
-            int x1 = Math.Min(width - 2, (int)Math.Ceiling(maxX + 1f));
-            int y0 = Math.Max(1, (int)Math.Floor(minZ - 1f));
-            int y1 = Math.Min(height - 2, (int)Math.Ceiling(maxZ + 1f));
-            for (int py = y0; py <= y1; py++)
-            {
-                int row = py * width;
-                float cz = py + 0.5f;
-                for (int px = x0; px <= x1; px++)
-                {
-                    float cx = px + 0.5f;
-                    float inside = float.MaxValue;   // pixels from the nearest edge, inwards
-                    for (int i = 0; i < count; i++)
-                    {
-                        int a = start + i;
-                        int b = start + (i + 1) % count;
-                        float ax = (x[a] - originX) * perMetre;
-                        float az = (z[a] - originZ) * perMetre;
-                        float ex = (x[b] - originX) * perMetre - ax;
-                        float ez = (z[b] - originZ) * perMetre - az;
-                        float length = (float)Math.Sqrt(ex * ex + ez * ez);
-                        if (length < 0.0001f)
-                        {
-                            continue;
-                        }
-                        float d = (ex * (cz - az) - ez * (cx - ax)) / length;
-                        if (d < inside)
-                        {
-                            inside = d;
-                            if (inside <= -0.5f)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    float share = inside + 0.5f;
-                    if (share <= 0f || inside == float.MaxValue)
-                    {
-                        continue;
-                    }
-                    byte value = share >= 1f ? (byte)255 : (byte)(share * 255f);
-                    if (value > cover[row + px])
-                    {
-                        cover[row + px] = value;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// The picture itself from the buildings' cover and the settled water grid. Colours are red, green, blue and
-        /// how solid, each 0 to 255. A clear pixel beside a coloured one takes that one's colour (still clear), so
-        /// that the graphics card's smoothing between the two does not darken the edge.
-        /// </summary>
-        public static void Compose(byte[] rgba, byte[] cover, int width, int height, float originX, float originZ, float perMetre, NavBaseData data,
-                                   byte buildingR, byte buildingG, byte buildingB, byte buildingA, byte waterR, byte waterG, byte waterB, byte waterA)
-        {
-            float cellPixels = data.Cell * perMetre;
-            bool anyWater = false;
-            for (int i = 0; i < data.Cells.Length && !anyWater; i++)
-            {
-                anyWater = data.Cells[i] == NavBaseWater.Water;
-            }
-            for (int py = 0; py < height; py++)
-            {
-                float z = originZ + (py + 0.5f) / perMetre;
-                for (int px = 0; px < width; px++)
-                {
-                    int at = py * width + px;
-                    float building = cover[at] * (buildingA / 65025f);   // 255 x 255
-                    float water = 0f;
-                    if (anyWater)
-                    {
-                        float share = (NavBaseWater.At(data, originX + (px + 0.5f) / perMetre, z) - 0.5f) * cellPixels + 0.5f;
-                        water = share <= 0f ? 0f : (share >= 1f ? 1f : share) * (waterA / 255f) * (1f - building);
-                    }
-                    float solid = building + water;
-                    int o = at * 4;
-                    if (solid <= 0.002f)
-                    {
-                        rgba[o] = buildingR;
-                        rgba[o + 1] = buildingG;
-                        rgba[o + 2] = buildingB;
-                        rgba[o + 3] = 0;
-                        continue;
-                    }
-                    rgba[o] = (byte)((buildingR * building + waterR * water) / solid + 0.5f);
-                    rgba[o + 1] = (byte)((buildingG * building + waterG * water) / solid + 0.5f);
-                    rgba[o + 2] = (byte)((buildingB * building + waterB * water) / solid + 0.5f);
-                    rgba[o + 3] = (byte)(solid * 255f + 0.5f);
-                }
-            }
-            for (int py = 0; py < height; py++)
-            {
-                for (int px = 0; px < width; px++)
-                {
-                    int o = (py * width + px) * 4;
-                    if (rgba[o + 3] != 0)
-                    {
-                        continue;
-                    }
-                    int from = -1;
-                    byte most = 0;
-                    if (px > 0 && rgba[o - 4 + 3] > most)
-                    {
-                        most = rgba[o - 4 + 3];
-                        from = o - 4;
-                    }
-                    if (px < width - 1 && rgba[o + 4 + 3] > most)
-                    {
-                        most = rgba[o + 4 + 3];
-                        from = o + 4;
-                    }
-                    if (py > 0 && rgba[o - width * 4 + 3] > most)
-                    {
-                        most = rgba[o - width * 4 + 3];
-                        from = o - width * 4;
-                    }
-                    if (py < height - 1 && rgba[o + width * 4 + 3] > most)
-                    {
-                        from = o + width * 4;
-                    }
-                    if (from >= 0)
-                    {
-                        rgba[o] = rgba[from];
-                        rgba[o + 1] = rgba[from + 1];
-                        rgba[o + 2] = rgba[from + 2];
-                    }
-                }
-            }
         }
     }
 }
