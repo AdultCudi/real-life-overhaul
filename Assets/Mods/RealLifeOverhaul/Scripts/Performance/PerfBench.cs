@@ -4,45 +4,25 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using BAModAPI;
-using Streets.Pedestrians;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The benchmark. The frame rate of this game drifts by a millisecond and more within a minute while the
-    /// player stands still (traffic and people come and go), so two set-ups measured half a minute apart cannot
-    /// be compared: the second benchmark could not tell a 0.5 ms saving from nothing. This one therefore measures
-    /// every item against itself, back to back and several times over:
-    ///
-    ///     off  ON  off  ON  off  ON  off      one-second windows, the item switched between them
-    ///
-    /// Each ON window is compared with the mean of the two off windows either side of it, which cancels any
-    /// steady drift exactly; the saving reported is the mean of those paired differences, and the individual
-    /// differences are printed so their spread can be seen. Window values are medians of the frame times, which
-    /// a hitch does not move. The main thread's split (<see cref="PerfLoop"/>) is paired the same way, so an item
-    /// shows not only whether the frame got shorter but in which share. A tweak that works through the scene in
-    /// slices is waited for before its window opens.
-    ///
-    /// Items: every tweak; the trials (features of the render pipeline switched off for the row, to learn what
-    /// they cost); and references (nothing drawn, no interface, the street people's scripts, this mod's own
-    /// components, the game's own camera). Everything is put back after each window and on every way out; the
-    /// run stops at once if a menu opens, the game pauses or loses focus, or the player enters a building or a
-    /// vehicle. Written to RealLifeOverhaul_bench_HHmmss.txt.
-    ///
-    /// Not switched off for a row, because it cannot be put back exactly: the traffic system (its cars would
-    /// coast without steering or suspension), physics (forces would pile up and be applied in one step) and the
-    /// navigation mesh's obstacles (the mesh would be re-cut). Physics and navigation have their own columns.
+    /// The benchmark: each item against itself in one-second windows "off ON off ON ... off", every ON window's median
+    /// frame time against the off windows either side, which cancels the game's drift of a millisecond a minute. Everything
+    /// is put back after each window and on every way out; a menu, pause, lost focus, building or vehicle stops it. Traffic,
+    /// physics and navigation obstacles are never switched: they cannot be put back exactly.
     /// </summary>
     public sealed class PerfBench
     {
-        private const float WindowSeconds = 1f;
-        private const float SettleSeconds = 0.35f;     // after a switch, before the window opens
-        private const float CameraSettleSeconds = 2f;  // the camera travels
-        private const float BusySeconds = 40f;         // the longest a tweak may take to work through the scene
-        private const float Shown = 0.10f;             // ms: a saving smaller than this is not called one, however consistent
+        private const float WindowSeconds = 1f;   // seconds
+        private const float SettleSeconds = 0.35f;   // seconds after a switch, before the window opens
+        private const float CameraSettleSeconds = 2f;   // seconds: the camera travels
+        private const float BusySeconds = 40f;   // seconds: the longest a tweak may take to work through the scene
+        private const float Shown = 0.10f;   // ms: a smaller saving is not called one, however consistent
 
-        private enum Ref { None, NothingDrawn, NoUi, OneCanvas, NoPeopleScripts, NoMod, GameCamera }
+        private enum Ref { None, NoUi, OneCanvas, NoMod, GameCamera }
 
         private sealed class Item
         {
@@ -52,13 +32,13 @@ namespace RealLifeOverhaul
             public int Pairs;
             public string Meaning;
             public string Note = string.Empty;
-            public float[] Median;          // one per window; even windows are off, odd are ON
+            public float[] Median;   // one a window; even windows are off, odd ON
             public PerfLoopResult[] Loop;
             public int Cars, People;
-            public string Canvas;           // for Ref.OneCanvas: the root canvas (by name) that is switched off
-            public bool CountsVisible;      // count the renderers drawn after the last ON and the last off window
+            public string Canvas;   // for Ref.OneCanvas: the root canvas switched off, by name
+            public bool CountsVisible;   // count the renderers drawn after the last ON and off windows
             public int VisibleOn = -1, VisibleOff = -1;
-            public bool Unfinished;         // a sliced tweak was still working when its window had to open
+            public bool Unfinished;   // a sliced tweak was still working when its window had to open
         }
 
         private readonly PerfSampler _sampler;
@@ -71,10 +51,8 @@ namespace RealLifeOverhaul
         private float _phaseEnds, _busyUntil;
         private string _where;
 
-        // What a reference has changed, to be put back before the next window and on every way out.
+        // what a reference has changed, put back before the next window and on every way out
         private Ref _reference = Ref.None;
-        private Camera _camera;
-        private int _cameraMask;
         private bool _cameraOption;
         private readonly List<Behaviour> _switchedOff = new List<Behaviour>(256);
         private readonly List<MonoBehaviour> _scratch = new List<MonoBehaviour>(32);
@@ -107,14 +85,14 @@ namespace RealLifeOverhaul
             var notMeasured = new List<string>(8);
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
-                // Nothing to measure: a feature the game has off already, or a picture setting left at the game's own value.
+                // nothing to measure: a feature the game has off already, or a picture setting at the game's own value
                 string unused = tweak.NotInUse ?? (tweak.BySetting && !tweak.SettingWants ? "at the game's own value: its trial row measures a set value" : null);
                 if (unused != null)
                 {
                     notMeasured.Add(tweak.Id.PadRight(30) + unused);
                     continue;
                 }
-                // Three pairs for an option, two for a trial.
+                // three pairs for an option, two for a trial
                 items.Add(new Item { Label = tweak.Id, Tweak = tweak, Pairs = tweak.Trial || tweak.Id == "far_props" ? 2 : 3,
                                      CountsVisible = tweak is FarDistricts || tweak is LayerCull || tweak is ModCull });
             }
@@ -122,9 +100,11 @@ namespace RealLifeOverhaul
             items.Add(new Item { Label = "ref: no interface", Reference = Ref.NoUi, Pairs = 2, Meaning = "Every interface canvas disabled." });
             foreach (string canvas in new[] { "Smartphone", "Topbar", "PlayerHUD", "IngameDebugConsole" })
             {
-                items.Add(new Item { Label = "ref: canvas " + canvas, Reference = Ref.OneCanvas, Canvas = canvas, Pairs = 2, Meaning = "Only this canvas disabled: its share of the interface's cost." });
+                items.Add(new Item { Label = "ref: canvas " + canvas, Reference = Ref.OneCanvas, Canvas = canvas, Pairs = 2,
+                                     Meaning = "Only this canvas disabled: its share of the interface's cost." });
             }
-            items.Add(new Item { Label = "ref: this mod's components", Reference = Ref.NoMod, Pairs = 2, Meaning = "This mod's own per-frame code paused, except the two cameras and this test." });
+                items.Add(new Item { Label = "ref: this mod's components", Reference = Ref.NoMod, Pairs = 2,
+                                 Meaning = "This mod's own per-frame code paused, except the two cameras and this test." });
             items.Add(new Item { Label = "ref: the game's own camera", Reference = Ref.GameCamera, Pairs = 1, Meaning = "The game's top-down view instead of the third-person camera." });
             _items = items.ToArray();
             float total = 0f;
@@ -139,7 +119,7 @@ namespace RealLifeOverhaul
             _sampler.Follow(null);   // the sampler follows the engine's frame split by itself
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
-                tweak.Forced = false;   // everything off, except the item under test in its ON windows
+                tweak.Forced = false;   // everything off but the item under test in its ON windows
             }
             PerfTweaks.Dirty = true;
             _where = PerfGame.Where();
@@ -151,7 +131,7 @@ namespace RealLifeOverhaul
             PerfDirector.Notify("reallife_perf_bench_started4", 12f);
         }
 
-        /// <summary>Called every frame by the director while the test runs, and not otherwise.</summary>
+        /// <summary>Called each frame by the director while the test runs.</summary>
         public void Step()
         {
             string obstacle = Obstacle();
@@ -170,7 +150,7 @@ namespace RealLifeOverhaul
             Item item = _items[_item];
             if (!_measuring)
             {
-                // A tweak that works through the scene in slices is measured only once it has finished.
+                // a tweak working through the scene in slices is measured only once it has finished
                 if (Working(item))
                 {
                     if (now < _busyUntil)
@@ -251,7 +231,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Stops without a report and restores everything (the scene is going).</summary>
+        /// <summary>Stops without a report, everything restored: the scene is going.</summary>
         public void Cancel()
         {
             if (Running)
@@ -262,7 +242,7 @@ namespace RealLifeOverhaul
 
         private Renderer[] _renderers;
 
-        // How many renderers some camera or shadow pass drew in the frame just ended.
+        // how many renderers some camera or shadow pass drew in the frame just ended
         private int CountVisible()
         {
             _renderers ??= UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None);
@@ -277,7 +257,7 @@ namespace RealLifeOverhaul
             return visible;
         }
 
-        // True while the item's tweak has not yet reached the state this window wants, or is still working through the scene.
+        // the item's tweak has not reached this window's state yet, or is still working through the scene
         private bool Working(Item item)
         {
             if (PerfTweaks.Dirty)
@@ -293,7 +273,6 @@ namespace RealLifeOverhaul
             return tweak.Active != on || (on && tweak.Busy);
         }
 
-        // Sets the game up for the window about to be measured.
         private void Configure()
         {
             Item item = _items[_item];
@@ -317,7 +296,7 @@ namespace RealLifeOverhaul
                 }
                 catch (Exception e)
                 {
-                    // The window is measured anyway and says so; whatever was switched before the fault is in the list and goes back.
+                    // measured anyway and said so; what was switched before the fault is in the list and goes back
                     item.Note = "COULD NOT BE SET UP: " + e.Message;
                     _logger?.Error(e);
                 }
@@ -334,14 +313,6 @@ namespace RealLifeOverhaul
             _reference = item.Reference;
             switch (item.Reference)
             {
-                case Ref.NothingDrawn:
-                    _camera = GameManager.GetMainCamera();
-                    if (_camera != null)
-                    {
-                        _cameraMask = _camera.cullingMask;
-                        _camera.cullingMask = 0;
-                    }
-                    break;
                 case Ref.GameCamera:
                     _cameraOption = Settings.CameraEnabled;
                     Settings.CameraEnabled = false;   // in memory only: the saved option is not touched
@@ -369,27 +340,6 @@ namespace RealLifeOverhaul
                     }
                     item.Note = _switchedOff.Count + " canvas(es), " + graphics + " active graphics";
                     break;
-                case Ref.NoPeopleScripts:
-                    List<Pedestrian> walkers = PerfGame.Pedestrians;
-                    Assembly game = typeof(GameManager).Assembly;
-                    if (walkers != null)
-                    {
-                        for (int i = 0; i < walkers.Count; i++)
-                        {
-                            Pedestrian walker = walkers[i];
-                            if (walker == null)
-                            {
-                                continue;
-                            }
-                            SwitchOffScripts(walker.gameObject, game);
-                            if (walker.tpc != null && walker.tpc.gameObject != walker.gameObject)
-                            {
-                                SwitchOffScripts(walker.tpc.gameObject, game);
-                            }
-                        }
-                    }
-                    item.Note = _switchedOff.Count + " game scripts on " + (walkers != null ? walkers.Count : 0) + " pedestrians";
-                    break;
                 case Ref.NoMod:
                     PerfDirector director = PerfDirector.Instance;
                     if (director != null)
@@ -397,7 +347,7 @@ namespace RealLifeOverhaul
                         director.GetComponentsInChildren(false, _scratch);
                         foreach (MonoBehaviour script in _scratch)
                         {
-                            // Not the measuring itself and not the cameras (the view must stay the same).
+                            // not the measuring itself, and not the cameras: the view must stay the same
                             if (script != null && script.GetType().Assembly == typeof(PerfBench).Assembly && !(script is PerfDirector) && !(script is PerfSampler)
                                 && !(script is ThirdPersonCamera) && !(script is ChaseCamera) && Pausable(script.GetType()))
                             {
@@ -411,21 +361,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void SwitchOffScripts(GameObject host, Assembly assembly)
-        {
-            host.GetComponents(_scratch);
-            foreach (MonoBehaviour script in _scratch)
-            {
-                if (script != null && script.GetType().Assembly == assembly && Pausable(script.GetType()))
-                {
-                    SwitchOff(script);
-                }
-            }
-            _scratch.Clear();
-        }
-
-        // A script is paused for a window only if the engine calls it every frame or physics step, and only if it
-        // does nothing on being switched off or on: then pausing it is undone exactly by switching it on again.
+        // Paused for a window only if the engine calls it every frame or physics step and it does nothing on being switched
+        // off or on: then switching it on again undoes the pause exactly.
         private bool Pausable(Type type)
         {
             if (_pausable.TryGetValue(type, out bool known))
@@ -457,12 +394,6 @@ namespace RealLifeOverhaul
         {
             switch (_reference)
             {
-                case Ref.NothingDrawn:
-                    if (_camera != null)
-                    {
-                        _camera.cullingMask = _cameraMask;
-                    }
-                    break;
                 case Ref.GameCamera:
                     Settings.CameraEnabled = _cameraOption;
                     break;
@@ -476,7 +407,6 @@ namespace RealLifeOverhaul
             }
             _switchedOff.Clear();
             _reference = Ref.None;
-            _camera = null;
         }
 
         private void Stop()
@@ -500,7 +430,7 @@ namespace RealLifeOverhaul
             PerfTweaks.Dirty = true;
         }
 
-        // Why the test cannot run right now, or null.
+        // why the test cannot run now, or null
         private static string Obstacle()
         {
             if (!Application.isFocused)
@@ -526,11 +456,9 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // ---- the report ----
-
         private delegate float Share(PerfLoopResult loop);
 
-        // The mean over an item's pairs of (the two off windows either side) minus (the ON window between them).
+        // the mean over an item's pairs of (the two off windows either side) minus (the ON window between them)
         private static float Paired(Item item, Share share)
         {
             float sum = 0f;
@@ -556,12 +484,15 @@ namespace RealLifeOverhaul
             text.AppendLine("Real Life Overhaul performance test  " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  mod " + typeof(PerfBench).Assembly.GetName().Version);
             text.AppendLine("where: " + _where + "  screen " + Screen.width + "x" + Screen.height + "  quality level " + QualitySettings.GetQualityLevel()
                             + "  targetFrameRate " + Application.targetFrameRate + "  vSyncCount " + QualitySettings.vSyncCount);
-            text.AppendLine("method: each item is measured as  off ON off ON ... off  in windows of " + WindowSeconds + " s. A window's value is the MEDIAN frame time. Each ON window is compared with the mean of the off windows");
-            text.AppendLine("        either side of it (steady drift cancels); 'saved' is the mean of those paired differences and 'each pair' lists them: their spread is the uncertainty. Positive = the item makes the frame shorter.");
-            text.AppendLine("        The d.* columns are the same paired difference for each share of the main thread's frame (positive = that share got smaller). All tweaks and trials other than the item are off throughout.");
+            text.AppendLine("method: each item is measured as  off ON off ON ... off  in windows of " + WindowSeconds
+                            + " s. A window's value is the MEDIAN frame time. Each ON window is compared with the mean of the off windows");
+            text.AppendLine("        either side of it (steady drift cancels); 'saved' is the mean of those paired differences and 'each pair' lists them:"
+                            + " their spread is the uncertainty. Positive = the item makes the frame shorter.");
+            text.AppendLine("        The d.* columns are the same paired difference for each share of the main thread's frame (positive = that share got smaller)."
+                            + " All tweaks and trials other than the item are off throughout.");
             text.AppendLine();
 
-            // How steady the run was: every off window there is.
+            // how steady the run was: every off window there is
             float lowest = float.MaxValue, highest = 0f, first = _items[0].Median[0], last = 0f;
             double offSum = 0.0;
             int offCount = 0;
@@ -587,12 +518,13 @@ namespace RealLifeOverhaul
                 }
             }
             float typical = (float)(offSum / Mathf.Max(1, offCount));
-            text.AppendLine("the run: " + offCount + " windows with everything off, median frame " + PerfText.F2(lowest) + " to " + PerfText.F2(highest) + " ms (mean " + PerfText.F2(typical) + " ms = " + PerfText.F1(1000f / Mathf.Max(0.1f, typical))
-                            + " fps); first " + PerfText.F2(first) + ", last " + PerfText.F2(last) + ". That range is the drift the pairing is there to cancel.");
+            text.AppendLine("the run: " + offCount + " windows with everything off, median frame " + PerfText.F2(lowest) + " to " + PerfText.F2(highest) + " ms (mean "
+                            + PerfText.F2(typical) + " ms = " + PerfText.F1(1000f / Mathf.Max(0.1f, typical)) + " fps); first " + PerfText.F2(first) + ", last " + PerfText.F2(last)
+                            + ". That range is the drift the pairing is there to cancel.");
             text.AppendLine();
 
-            string header = "item".PadRight(30) + Cell("off ms", 8) + Cell("ON ms", 8) + Cell("saved", 8) + "  " + "each pair".PadRight(22) + Cell("d.script", 9) + Cell("d.phys", 8) + Cell("d.nav", 7) + Cell("d.draw", 8)
-                            + Cell("d.hdrp", 8) + Cell("d.other", 8) + Cell("cars", 6) + Cell("people", 7) + "   verdict";
+            string header = "item".PadRight(30) + Cell("off ms", 8) + Cell("ON ms", 8) + Cell("saved", 8) + "  " + "each pair".PadRight(22) + Cell("d.script", 9)
+                            + Cell("d.phys", 8) + Cell("d.nav", 7) + Cell("d.draw", 8) + Cell("d.hdrp", 8) + Cell("d.other", 8) + Cell("cars", 6) + Cell("people", 7) + "   verdict";
             Section(text, header, "TWEAKS (options)", item => item.Tweak != null && !item.Tweak.Trial);
             Section(text, header, "TRIALS (one feature off, or one picture setting at a set value, for the row; several change the picture)",
                 item => item.Tweak != null && item.Tweak.Trial);
@@ -603,22 +535,30 @@ namespace RealLifeOverhaul
                 text.AppendLine("  " + line);
             }
             text.AppendLine();
-            text.AppendLine("verdict: 'faster' / 'SLOWER' = every pair agrees and the mean is at least " + PerfText.F2(Shown) + " ms; otherwise 'not shown'. cars / people = traffic cars driving and pedestrians walking when the item began.");
-            text.AppendLine("d.script = every script of the game and all mods; d.phys = physics; d.nav = navigation; d.draw = culling + render pipeline + hand-over to the render thread; d.hdrp = the part of d.draw inside the pipeline's own code; d.other = the rest.");
+            text.AppendLine("verdict: 'faster' / 'SLOWER' = every pair agrees and the mean is at least " + PerfText.F2(Shown)
+                            + " ms; otherwise 'not shown'. cars / people = traffic cars driving and pedestrians walking when the item began.");
+            text.AppendLine("d.script = every script of the game and all mods; d.phys = physics; d.nav = navigation; d.draw = culling + render pipeline + hand-over to the render thread;"
+                            + " d.hdrp = the part of d.draw inside the pipeline's own code; d.other = the rest.");
 
             text.AppendLine();
-            text.AppendLine("where the main thread's frame goes with everything off (mean of " + splits + " windows), and the frame rate if a share were removed entirely (no fix removes a share entirely):");
+            text.AppendLine("where the main thread's frame goes with everything off (mean of " + splits
+                            + " windows), and the frame rate if a share were removed entirely (no fix removes a share entirely):");
             if (splits == 0)
             {
                 text.AppendLine("  the frame's steps could not be timed in this run");
             }
             else
             {
-                string[] names = { "all scripts (game and mods)", "physics", "animation", "navigation", "interface rebuilds", "all drawing work on the main thread", "  of it: the render pipeline's own code", "audio", "everything else" };
+                string[] names =
+                {
+                    "all scripts (game and mods)", "physics", "animation", "navigation", "interface rebuilds", "all drawing work on the main thread",
+                    "  of it: the render pipeline's own code", "audio", "everything else"
+                };
                 for (int i = 0; i < names.Length; i++)
                 {
                     float share = (float)(split[i] / splits);
-                    text.AppendLine("  " + names[i].PadRight(40) + PerfText.F2(share).PadLeft(6) + " ms = " + PerfText.F1(share / typical * 100f).PadLeft(5) + "% of the frame   without it: " + PerfText.F1(1000f / Mathf.Max(0.1f, typical - share)) + " fps");
+                    text.AppendLine("  " + names[i].PadRight(40) + PerfText.F2(share).PadLeft(6) + " ms = " + PerfText.F1(share / typical * 100f).PadLeft(5)
+                                    + "% of the frame   without it: " + PerfText.F1(1000f / Mathf.Max(0.1f, typical - share)) + " fps");
                 }
             }
 

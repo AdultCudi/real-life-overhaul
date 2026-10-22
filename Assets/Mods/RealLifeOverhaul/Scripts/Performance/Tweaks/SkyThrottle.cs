@@ -7,26 +7,13 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's TimeOfDayController writes the sky's three colours from the clock every frame (its Update
-    /// calls SetEnvironmentSettings, which sets GradientSky.top / middle / bottom). The render pipeline keeps a
-    /// small picture of the sky all round (a cubemap) for reflections and for the light the sky casts, and with
-    /// the sky set to update "on changed" it renders that cubemap again, blurs it for every roughness and
-    /// re-measures the sky's light whenever the colours differ from last frame: with a clock that never stands
-    /// still, every frame. This sets the skies to update on a period instead (every two seconds), and asks for an
-    /// immediate update at the moments the sky really jumps: entering and leaving a building, the city map, a new
-    /// hour. The sky you see is drawn fresh every frame as before; only its reflection and its light on things
-    /// follow up to two seconds behind a change far too slow to see.
-    ///
-    /// The skies are searched for behind the loading screen (Prewarm). A scene that arrives later is searched for
-    /// behind the next black screen, pause or loading screen (two searches of the whole scene, some 75 ms each: never in
-    /// play; until then a sky that scene brought keeps the game's own way of updating).
-    ///
-    /// Per frame: nothing (the timer is the director's: every five seconds, and four times a second while a scene that
-    /// arrived waits for the black screen, one test each).
+    /// Skies update every two seconds instead of every frame (the game's clock changes their colours each frame, so the
+    /// pipeline re-renders the cubemap), and at once on a door, the map or a new hour. No cost a frame: the director's
+    /// timer; scenes arriving in play are searched only behind a black screen.
     /// </summary>
     public sealed class SkyThrottle : PerfTweak
     {
-        private const float Seconds = 2f;
+        private const float Seconds = 2f;   // seconds between sky updates
 
         private struct Saved
         {
@@ -41,8 +28,7 @@ namespace RealLifeOverhaul
         private bool _stale;
         private bool _hooked;
 
-        // What the look behind the loading screen found (Prewarm), for the Sweep when the tweak comes on: good for the city
-        // it was found in (its PerfDirector) while no scene has arrived since.
+        // what the look behind the loading screen found, good for its city while no scene has arrived since
         private Volume[] _keptVolumes;
         private StaticLightingSky[] _keptSkies;
         private PerfDirector _keptFor;
@@ -50,14 +36,14 @@ namespace RealLifeOverhaul
 
         public override string Id => "sky_updates";
         public override string LabelKey => "reallife_perf_sky_updates";
-        public override bool DefaultOn => true;   // third benchmark: +0.13 ms, all three pairs agreed, all of it in the pipeline's share
+        public override bool DefaultOn => true;   // third benchmark: +0.13 ms, all three pairs agreed
         public override float Interval => _stale ? HiddenEvery : 5f;
 
-        private const float HiddenEvery = 0.25f;   // seconds between two looks at whether the screen is black, while a new scene's skies wait for it
+        private const float HiddenEvery = 0.25f;   // seconds between looks at whether the screen is black, while a new scene's skies wait
 
         protected override void Apply()
         {
-            _onBuilding = _onBuilding ?? Guard.Wrap<Address>(OnBuilding);   // (a fault here never reaches the game's own handlers: Core/Guard)
+            _onBuilding = _onBuilding ?? Guard.Wrap<Address>(OnBuilding);   // through the guard: a fault never reaches the game's handlers
             _onMap = _onMap ?? Guard.Wrap<bool>(OnMap);
             GlobalEvents.onEnterBuilding += _onBuilding;
             GlobalEvents.onExitBuilding += _onBuilding;
@@ -70,28 +56,26 @@ namespace RealLifeOverhaul
             }
             else
             {
-                _stale = true;   // switched on in play with nothing found behind the loading screen: searched for behind the next black screen
+                _stale = true;   // on in play with nothing found behind the loading screen: searched for behind the next black screen
             }
         }
 
-        // What the look behind the loading screen found is this city's, and no scene has arrived since.
         private bool Kept => _keptVolumes != null && _keptFor != null && ReferenceEquals(_keptFor, PerfDirector.Instance) && _keptArrivals == PerfTweaks.Arrivals;
 
-        internal override void WorldChanged(bool loaded) => _stale |= loaded;   // a scene that has gone brought no sky: nothing to look for
+        internal override void WorldChanged(bool loaded) => _stale |= loaded;   // a scene that has gone brought no sky
 
         protected override void Tick(float now)
         {
             if (_stale && SceneFinds.Hidden)
             {
-                Sweep();   // two searches of the whole scene: only where a long frame is not seen
+                Sweep();   // two whole-scene searches: only where a long frame is not seen
             }
         }
 
         private const string SkySearch = "performance: the skies being listed (two searches of the whole scene, after scenes arrive)";
 
-        // The two searches, made behind the loading screen when the tweak is wanted there (they were two frames' worth,
-        // 95 and 87 ms, in the frame the tweak came on). The components are kept, not their profiles: which profile a
-        // volume uses is read when the tweak comes on, as before.
+        // The two searches (95 and 87 ms) behind the loading screen; the components are kept, and the profile a volume
+        // uses is read when the tweak comes on.
         protected override void Prewarm()
         {
             _keptVolumes = SceneFinds.All<Volume>(SkySearch, FindObjectsInactive.Include);
@@ -100,7 +84,7 @@ namespace RealLifeOverhaul
             _keptArrivals = PerfTweaks.Arrivals;
         }
 
-        // Every sky a volume or a static-lighting component in the loaded scenes can put in front of the camera.
+        // every sky a volume or static-lighting component of the loaded scenes can put in front of the camera
         private void Sweep()
         {
             _stale = false;
@@ -171,7 +155,7 @@ namespace RealLifeOverhaul
 
         private void OnMap(bool open) => Refresh();
 
-        // The sky is about to be a different one: have the pipeline take it up on the next frame, not on the period.
+        // the sky is about to change: the pipeline takes it up on the next frame, not on the period
         private static void Refresh()
         {
             if (RenderPipelineManager.currentPipeline is HDRenderPipeline pipeline)
@@ -206,6 +190,7 @@ namespace RealLifeOverhaul
             Refresh();
         }
 
-        public override string Describe() => "skies updating every " + Seconds + " s instead of on every change: " + _saved.Count + (_saved.Count > 0 ? " (the first was set to " + _saved[0].Mode + ")" : string.Empty);
+        public override string Describe() => "skies updating every " + Seconds + " s instead of on every change: " + _saved.Count
+                                             + (_saved.Count > 0 ? " (the first was set to " + _saved[0].Mode + ")" : string.Empty);
     }
 }

@@ -1,11 +1,6 @@
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The mod's own things in the street that stand far from the player (bus stops, station fronts, signs, boards, kiosks)
-    /// are not drawn beyond the game's far band of 200 m, as the game's own lamps and benches are measured
-    /// (<see cref="ModCulling"/>, <see cref="CullRules"/>). On by default: the far plane is 300 m, so what goes is small and
-    /// far, and nothing but drawing changes. Its timer keeps the culling group on the game's camera and player.
-    /// </summary>
+    /// <summary>The mod's things in the street not drawn beyond 200 m (<see cref="ModCulling"/>); on by default, as the far plane is 300 m.</summary>
     public sealed class ModCull : PerfTweak
     {
         public override string Id => "mod_cull";

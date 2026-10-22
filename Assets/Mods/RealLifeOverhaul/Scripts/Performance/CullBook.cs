@@ -3,12 +3,8 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The book of <see cref="ModCulling"/>'s culling group: which thing holds which slot of the engine's sphere array, and
-    /// which things wait for a look at their band. A thing keeps its id while it is registered; slots stay packed (the
-    /// engine measures the first Count spheres), so when a thing leaves, the last slot's thing moves into its slot and is
-    /// looked at again: the engine's state for that slot was its predecessor's. A thing is looked at only in a frame after
-    /// it was queued, so the engine has culled once since and its band is the moved or new sphere's own.
-    /// Nothing is allocated except when the book grows; no Unity or game types: checked offline (NavCheck, CullCheck.cs).
+    /// The slots of <see cref="ModCulling"/>'s culling group, kept packed: a thing that leaves gives its slot to the last,
+    /// which is looked at again a frame later, once the engine has culled it. Checked offline (NavCheck, CullCheck.cs).
     /// </summary>
     public sealed class CullBook
     {
@@ -37,7 +33,7 @@ namespace RealLifeOverhaul
         /// <summary>Things registered: they hold slots 0 to Count - 1.</summary>
         public int Count { get; private set; }
 
-        /// <summary>Slots there is room for before the book grows (the sphere array must then grow with it).</summary>
+        /// <summary>Slots there is room for before the book grows, and the sphere array with it.</summary>
         public int Capacity => _idAt.Length;
 
         /// <summary>Things queued for a look.</summary>
@@ -58,10 +54,7 @@ namespace RealLifeOverhaul
             return id;
         }
 
-        /// <summary>
-        /// Takes a thing out. The thing of the last slot moves into its slot and is queued for a look; its id is returned, or
-        /// -1 if none moved (the thing was last). An id not in the book changes nothing and gives -1.
-        /// </summary>
+        /// <summary>Takes a thing out; the id of the last slot's thing, moved into its slot, or -1.</summary>
         public int Remove(int id, int frame)
         {
             int slot = SlotOf(id);
@@ -80,7 +73,7 @@ namespace RealLifeOverhaul
             }
             Count--;
             _slotOf[id] = -1;
-            _free[_freeCount++] = id;   // its place in the ring, if any, is skipped when reached (Next)
+            _free[_freeCount++] = id;   // its place in the ring, if any, is skipped when reached
             return moved;
         }
 
@@ -100,7 +93,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Every thing queued for a look (the city map opened or closed, the culling switched on).</summary>
+        /// <summary>Every thing queued for a look: the city map opened or closed, the culling switched on.</summary>
         public void QueueAll(int frame)
         {
             for (int slot = 0; slot < Count; slot++)
@@ -109,10 +102,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The next thing to look at, queued in a frame before <paramref name="frame"/>; false when none is ready. Things
-        /// taken out after they were queued are passed over.
-        /// </summary>
+        /// <summary>The next thing queued before <paramref name="frame"/>, passing over things taken out since; false if none.</summary>
         public bool Next(int frame, out int id)
         {
             while (_waiting > 0)
@@ -150,7 +140,7 @@ namespace RealLifeOverhaul
             _waiting = 0;
         }
 
-        // An id is in the ring at most once: queued again while it waits, it keeps its place and takes the later frame.
+        // an id is in the ring at most once: queued again while it waits, it takes the later frame
         private void Queue(int id, int frame)
         {
             if (_queuedAt[id] >= 0)
