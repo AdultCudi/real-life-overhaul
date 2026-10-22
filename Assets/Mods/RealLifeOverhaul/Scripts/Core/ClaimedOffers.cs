@@ -195,8 +195,7 @@ namespace RealLifeOverhaul
             {
                 _failed = true;
                 SpecialBuildings.Logger?.Error(e);
-                SpecialBuildings.Logger?.Warn("Special buildings: BizMan's presentation could not be kept after the error above; "
-                                              + "the mod's buildings are kept off the market by moving off any the player takes.");
+                SpecialBuildings.Logger?.Warn("Special buildings: BizMan's presentation could not be kept after the error above; the mod's buildings are kept off the market by moving off any the player takes.");
                 if (_line != null)
                 {
                     _line.SetActive(false);
