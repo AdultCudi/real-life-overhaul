@@ -17,6 +17,14 @@ internal static partial class Program
         InteriorStations();
         InteriorRefreshTold();
         InteriorWearTest();
+        Check(FixLineEverywhere("a smear campaign against your business can come", "uma campanha de difamação contra sua empresa", "针对你企业的抹黑行动", "Eine Rufmordkampagne gegen dein Geschäft",
+                                "une campagne de dénigrement contre votre entreprise", "una campaña de difamación contra tu negocio", "кампания очернения против вашего бизнеса",
+                                "een lastercampagne tegen je bedrijf", "işletmenize karşı bir karalama kampanyası"),
+            "business fix: What's new has the smear's line, with its fix mark, in some row of every language");
+        Check(FixLineEverywhere("refreshing the finishes says why", "renovar o acabamento diz por que", "无法翻新装修时会说明原因", "Das Auffrischen der Einrichtung sagt, warum",
+                                "la rénovation des finitions indique pourquoi", "renovar los acabados dice por qué", "обновление отделки объясняет", "het opknappen van de afwerking zegt waarom",
+                                "kaplamaları yenilemek mümkün olmadığında"),
+            "interiors fix: What's new has the refresh's and the wear test's line, with its fix mark, in some row of every language");
     }
 
     private static void BusinessFootfallRoom()

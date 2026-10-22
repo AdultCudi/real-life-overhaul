@@ -13,6 +13,10 @@ internal static partial class Program
         RagdollKneeling();
         PermadeathMemorialIds();
         LifeBuildingManager();
+        Check(FixLineEverywhere("no longer passes through a medic", "não atravessa mais um socorrista", "汽车不再穿过跪在街上的急救员", "fährt nicht mehr durch einen Sanitäter",
+                                "ne traverse plus un secouriste", "ya no atraviesa a un sanitario", "больше не проезжает сквозь медика", "rijdt niet meer door een hulpverlener",
+                                "diz çökmüş bir sağlık görevlisinin"),
+            "ragdoll fix: What's new has the kneeling medic's line, with its fix mark, in some row of every language");
     }
 
     private static void RagdollKneeling()

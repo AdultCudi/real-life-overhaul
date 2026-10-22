@@ -16,6 +16,20 @@ internal static partial class Program
         StreetNearestNames();
         TextsThreads();
         TextsHubAskAgain();
+        Check(FixLineEverywhere("staff thank you for a raise even when", "os funcionários agradecem um aumento mesmo", "他们之后也会为加薪道谢", "Angestellte bedanken sich für eine Gehaltserhöhung",
+                                "vos employés vous remercient pour une augmentation", "tus empleados te agradecen un aumento", "сотрудники благодарят вас за прибавку",
+                                "je personeel bedankt je voor een loonsverhoging", "size teşekkür ediyor"),
+            "texts fix: What's new has the raise's thanks line, with its fix mark, in some row of every language");
+        Check(FixLineEverywhere("a stranger never names the same business twice", "um desconhecido nunca cita a mesma empresa duas vezes", "陌生人不会把同一家店说两次",
+                                "nennt ein Fremder nie zweimal dasselbe Geschäft", "un inconnu ne cite jamais deux fois la même entreprise",
+                                "un desconocido nunca nombra dos veces el mismo negocio", "незнакомец никогда не называет одно и то же заведение дважды",
+                                "noemt een vreemde nooit twee keer hetzelfde bedrijf", "aynı işletmeyi asla iki kez söylemiyor"),
+            "street fix: What's new has the line of the two names, with its fix mark, in some row of every language");
+        Check(FixLineEverywhere("RLO Texts keeps going when a street conversation's next answer", "o RLO Texts continua funcionando quando a próxima resposta",
+                                "RLO Texts 会照常运行", "RLO Texts läuft weiter, wenn die nächste Antwort", "RLO Texts continue de fonctionner quand la réponse suivante",
+                                "RLO Texts sigue funcionando cuando la siguiente respuesta", "RLO Texts продолжает работать, если следующий ответ",
+                                "RLO Texts blijft werken als het volgende antwoord", "RLO Texts çalışmaya devam ediyor"),
+            "texts fix: What's new has the hub's line, with its fix mark, in some row of every language");
     }
 
     private static void TextsRaiseThanks()

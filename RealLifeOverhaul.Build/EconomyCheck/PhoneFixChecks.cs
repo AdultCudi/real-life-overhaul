@@ -30,5 +30,14 @@ internal static partial class Program
                   && words.TryGetValue("reallife_doctor_prescribe_no_money", out string desk) && desk.Contains("{amount}"),
                 "doctor fix (" + language + "): both closing lines are written and name the amount");
         }
+        Check(FixLineEverywhere("a payment refused at the doctor's", "um pagamento recusado no médico", "在医生处付款被拒时", "Eine abgelehnte Zahlung beim Arzt",
+                                "un paiement refusé chez le médecin", "un pago rechazado en el médico", "отклонённая оплата у врача", "een geweigerde betaling bij de dokter",
+                                "reddedilen bir ödeme"),
+            "doctor fix: What's new has the refused payment's line, with its fix mark, in some row of every language");
+        Check(FixLineEverywhere("driving another player's car no longer gives it this mod's engine figures", "dirigir o carro de outro jogador não dá mais",
+                                "驾驶其他玩家的车不再让它获得本模组的引擎数值", "nicht mehr die Motorwerte dieser Mod", "conduire la voiture d'un autre joueur ne lui donne plus",
+                                "conducir el coche de otro jugador ya no le da", "больше не получает параметры двигателя этого мода", "niet meer de motorwaarden van deze mod",
+                                "artık ona bu modun motor değerlerini vermiyor"),
+            "driving fix: What's new has the car tuning's Going Public line, with its fix mark, in some row of every language");
     }
 }
