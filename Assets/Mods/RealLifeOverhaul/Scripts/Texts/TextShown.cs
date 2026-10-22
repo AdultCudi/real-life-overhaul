@@ -22,9 +22,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// Every line the game had for RLO Texts, counted by pack and intent: the model's words shown against the written lines,
-    /// and why each written line was shown. Kept for the session, never saved. Read by the hourly line in Player.log and by
-    /// the test that shows it. Game-free. COST: two dictionary reads and an increment a line; a readout built when asked.
+    /// Every line the game had for RLO Texts, counted by pack and intent with why each written line was shown; kept for the
+    /// session. Game-free. COST: two dictionary reads and an increment a line.
     /// </summary>
     public sealed class TextShown
     {
@@ -147,7 +146,6 @@ namespace RealLifeOverhaul.Texts
             return packs;
         }
 
-        /// <summary>A reason's name as the log and the readout write it.</summary>
         public static string Name(TextShownWhy why)
         {
             switch (why)

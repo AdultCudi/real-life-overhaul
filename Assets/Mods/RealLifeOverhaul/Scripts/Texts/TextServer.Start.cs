@@ -72,11 +72,7 @@ namespace RealLifeOverhaul.Texts
         public const double BuiltCpuSeconds = 2.0;   // processor seconds of a GPU's first reply from which its shaders were built (about 0.05 s from the driver's cache, 10 s or more without)
         public const string ShaderMark = "gpu-shaders.txt";   // in the cache folder: the pack, device and runtime whose shaders were last built
 
-        /// <summary>
-        /// The driver's shader cache at the first reply, from the processor time the server used: building a GPU's shaders
-        /// takes seconds of it, a reply from kept shaders hundredths. Built again after <paramref name="builtBefore"/>: the
-        /// driver did not keep them.
-        /// </summary>
+        /// <summary>The driver's shader cache at the first reply, from the processor time used: building takes seconds, kept shaders hundredths.</summary>
         public static TextShaderCache ShaderCache(string device, double cpuSeconds, bool builtBefore)
         {
             if (device == null)
@@ -352,10 +348,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>
-        /// What a reply of the start took, for its log line: the model's own read and write times, the rest outside them and
-        /// the processor time used, so a slow first reply tells work (shaders built) from waiting to run.
-        /// </summary>
+        /// <summary>What a reply of the start took, for its log line, so a slow first reply tells work (shaders built) from waiting to run.</summary>
         public static string Timings(string answer, double seconds, double cpuSeconds)
         {
             double readN = TextJson.Number(answer, "prompt_n"), readMs = TextJson.Number(answer, "prompt_ms");

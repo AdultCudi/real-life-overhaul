@@ -11,11 +11,10 @@ namespace RealLifeOverhaul.Street
 {
     /// <summary>
     /// Talking to anybody in the street: the game's box over the person in front offers Talk, they stop and turn, and a
-    /// conversation of a few turns plays in the game's dialogue panel. The rules decide everything (StreetRules); the words
-    /// are written lines, or RLO Texts' when they come in time (<see cref="Words"/>). The jobs' and the social life's keys
-    /// come first. Off: no panel, nobody stops, the save's line kept as it is.
-    /// COST: per frame one time comparison; five times a second on foot out of doors a pass over the people out (a few
-    /// dozen distance tests); ten times a second during a conversation a few field reads. Nothing allocated per frame.
+    /// conversation plays in the game's dialogue panel. The rules decide everything; the words are written lines, or RLO
+    /// Texts' when they come in time. The jobs' and the social life's keys come first.
+    /// COST: per frame one time comparison; five times a second on foot out of doors a pass over the people out; ten times
+    /// a second during a conversation a few field reads. Nothing allocated per frame.
     /// </summary>
     public sealed partial class StreetDirector : MonoBehaviour
     {
@@ -29,10 +28,7 @@ namespace RealLifeOverhaul.Street
         public static IModLogger Logger;
         public static StreetDirector Instance { get; private set; }
 
-        /// <summary>
-        /// RLO Texts' words for a line (StreetTexts.Ask): true if asked, and then the words, or null for the written line,
-        /// come back through the action on the game's thread. Null or false: the written line at once.
-        /// </summary>
+        /// <summary>RLO Texts' words for a line: true if asked, the words or null coming back through the action; else the written line.</summary>
         public static Func<StreetChat, StreetLine, Dictionary<string, string>, string, Action<string>, bool> Words;
 
         /// <summary>RLO Texts: asks ahead for the opening line while the player looks at somebody. Null: none.</summary>

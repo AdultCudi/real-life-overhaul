@@ -5,15 +5,11 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// What the city's new talk of data v6 keeps in the save, so a load does not tell everything again: the life's mark, the
-    /// last weeks' life events, and each of the staff's mark. One line, records separated by '^', fields by '|', texts
-    /// escaped as TextsStore's:
+    /// What the city's new talk keeps in the save, so a load does not tell everything again; a line that cannot be read is
+    /// kept as it was. Game-free. COST: nothing unless a save is read or written.
     ///
     ///     v=1^n=day|children|marriedDay|degreeDay|court|listedDay|businessDay|worth|worthDay
     ///        ^e=kind|day|value|child|adopted|texted|done|gossiped^...^s=id|raise|asked|sick|hoursWeek|lastDay|seenDay^...
-    ///
-    /// A record of an unknown kind is passed over; a line that cannot be read is kept as it was (Core/SaveLines). Game-free.
-    /// COST: nothing unless a save is read or written.
     /// </summary>
     public sealed class TextsCityStore
     {

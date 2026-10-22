@@ -3,10 +3,7 @@ using RealLifeOverhaul.Street;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The words of what a person remembers talking with the player about (data v6's "talked" memory lines), as
-    /// Wiring/Wiring.TextsMemory records them; the contract lists every value. Game-free. COST: a switch.
-    /// </summary>
+    /// <summary>The words of what a person remembers talking with the player about, for "talked" memory lines. Game-free. COST: a switch.</summary>
     public static class TextMemoryTopics
     {
         /// <summary>The words of an outing with somebody of the social life, by the kind the social life keeps.</summary>

@@ -7,9 +7,8 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.Street
 {
     /// <summary>
-    /// Somebody of the street held for a conversation: a walker's behaviours paused and its agent stopped, somebody
-    /// standing turned on the spot (the game's standing figures have no turn of their own), somebody seated left as posed.
-    /// Everything is given back exactly as found, also when the game takes them meanwhile.
+    /// Somebody held for a conversation: a walker paused, somebody standing turned on the spot (the game's standing figures
+    /// have no turn), somebody seated left as posed; all given back exactly as found.
     /// COST: <see cref="Keep"/> is a few field reads on the conversation's tick; a turn is a coroutine of a few frames.
     /// </summary>
     public sealed class StreetHold
@@ -50,10 +49,7 @@ namespace RealLifeOverhaul.Street
         /// <summary>Why the last <see cref="Speak"/> showed nothing, for the check line.</summary>
         public string Why { get; private set; }
 
-        /// <summary>
-        /// They begin to talk with their hands, about to answer: the mod's talking clip over the upper body. False, with
-        /// nothing changed, for somebody seated or when the clip cannot play.
-        /// </summary>
+        /// <summary>They begin to talk with their hands, about to answer; false, nothing changed, for somebody seated or when the clip cannot play.</summary>
         public bool Speak()
         {
             Why = null;
@@ -169,7 +165,6 @@ namespace RealLifeOverhaul.Street
             _look = p.tpc.LookTarget;
         }
 
-        /// <summary>Turns them to face a point, as their kind allows.</summary>
         public void Face(Vector3 point)
         {
             if (_p != null)

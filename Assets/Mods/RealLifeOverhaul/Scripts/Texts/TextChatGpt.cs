@@ -14,11 +14,9 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The rules of Sign in with ChatGPT as OpenAI documents it for open-source apps (developers.openai.com/siwc): the first
-    /// sign-in registers the app (dynamic_agent_client) and gets its own client id, kept for later ones; PKCE with a fresh
-    /// state and nonce; a loopback callback; the ID token checked against OpenAI's keys; the grant must hold the plan's
-    /// scope before a card is sent. The tokens stay in <see cref="TextKeys"/>. Game-free.
-    /// COST: nothing per frame; a few strings at a sign-in or a refresh.
+    /// The rules of Sign in with ChatGPT as OpenAI documents it for open-source apps (developers.openai.com/siwc): app
+    /// registration, PKCE, a loopback callback, the ID token checked, and the plan's scope required. Game-free.
+    /// COST: a few strings at a sign-in or a refresh.
     /// </summary>
     public static class TextChatGpt
     {
@@ -65,10 +63,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The callback's address on this PC: 127.0.0.1, never localhost.</summary>
         public static string Redirect(int port) => "http://127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture) + CallbackPath;
 
-        /// <summary>
-        /// The address the browser opens; a null <paramref name="clientId"/> is a first sign-in, which registers the app.
-        /// Never logged: the hint is the player's.
-        /// </summary>
+        /// <summary>The address the browser opens, never logged; a null <paramref name="clientId"/> is a first sign-in, which registers the app.</summary>
         public static string AuthorizeUrl(string auth, string clientId, string appName, string hostId, string idTokenHint, string redirect,
             string state, string nonce, string verifier)
         {
@@ -116,10 +111,7 @@ namespace RealLifeOverhaul.Texts
 
         private static string Unescape(string s) => Uri.UnescapeDataString(s.Replace('+', ' '));
 
-        /// <summary>
-        /// The callback's verdict: null when it may be exchanged, else why not. A first sign-in must name the app's new
-        /// client id; a later one none or only the kept one.
-        /// </summary>
+        /// <summary>The callback's verdict: null when it may be exchanged, else why not.</summary>
         public static string Callback(Dictionary<string, string> q, string state, string keptClient, out string clientId)
         {
             clientId = null;
@@ -229,10 +221,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        /// <summary>
-        /// The ID token checked: signed with RS256 by one of OpenAI's published keys, its issuer, audience, expiry (Unix
-        /// seconds, with <see cref="Skew"/>) and nonce. Null when it passes, with its subject and email; else why not.
-        /// </summary>
+        /// <summary>The ID token checked against OpenAI's keys, issuer, audience, expiry and nonce: null when it passes, else why not.</summary>
         public static string CheckId(string idToken, string keysJson, string issuer, string clientId, string nonce, long now, out string subject, out string email)
         {
             subject = email = null;

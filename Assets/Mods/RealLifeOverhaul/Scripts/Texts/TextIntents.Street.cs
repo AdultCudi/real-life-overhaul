@@ -1,9 +1,8 @@
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The intents of street talk, data v4 (defs_v4.py BRANCHES) and v5 (defs_v5.py): a stranger stopped in the street
-    /// saying one spoken line, one intent per thing the game decides and a branch per outcome, written from the
-    /// generator's own table. Game-free. COST: none until asked.
+    /// The intents of street talk, data v4 (defs_v4.py BRANCHES) and v5: one intent per thing the game decides and a branch
+    /// per outcome, from the generator's own table. Game-free.
     /// </summary>
     public static partial class TextIntents
     {
@@ -111,10 +110,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Data v5: every v4 card again at data 5 with the optional facts, so a data 4 pack keeps v4's exact cards, and
-        /// eleven new branches.
-        /// </summary>
+        /// <summary>Data v5: every v4 card again with the optional facts, so a data 4 pack keeps v4's cards, and eleven new branches.</summary>
         private static void V5()
         {
             int v4 = List.Count;

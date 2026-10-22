@@ -9,10 +9,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Street
 {
     /// <summary>
-    /// One conversation in the street, in the game's dialogue panel: the person's line over the game's three buttons, the
-    /// choice that fits (blue), "Something else" (orange) and the player's own words (grey; the game's cancel key says
-    /// goodbye from it). The panel opens after a beat with the first line ready; each later line shows when its words come
-    /// or <see cref="StreetRules.Hold"/> is over, never later.
+    /// One conversation in the game's dialogue panel: the person's line over the choice that fits (blue), "Something else"
+    /// (orange) and the player's own words (grey). Each line shows when its words come or <see cref="StreetRules.Hold"/> is over.
     /// COST: on a press or a click, a few short strings; while open, the director's tick keeps the person stopped.
     /// </summary>
     public sealed partial class StreetDirector

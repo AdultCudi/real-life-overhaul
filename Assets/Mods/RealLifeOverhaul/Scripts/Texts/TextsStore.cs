@@ -18,14 +18,9 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// What RLO Texts keeps in a save: the model's words for what is worded again each time it is shown, such as Flare's
-    /// posts, so a load shows the same words. One line, records separated by '^', fields by '|', texts escaped:
-    ///
-    ///     v=1^w=key|day|intent|shared|words^...      (data v6's words: ...|words|lang)
-    ///
-    /// A record is kept while the game still has what it belongs to, at most <see cref="Most"/> in all. A line that cannot
-    /// be read is kept as it was (Core/SaveLines). Game-free.
-    /// COST: nothing unless a save is loaded or written, or words come back (a dictionary write).
+    /// What RLO Texts keeps in a save, the words of what is worded again each time it is shown, so a load shows the same:
+    /// v=1^w=key|day|intent|shared|words[|lang]^... A line that cannot be read is kept as it was. Game-free.
+    /// COST: nothing unless a save is loaded or written, or words come back.
     /// </summary>
     public sealed class TextsStore
     {
@@ -41,7 +36,6 @@ namespace RealLifeOverhaul.Texts
 
         public IReadOnlyList<TextKept> All => _order;
 
-        /// <summary>The words kept under a key; null if none.</summary>
         public string Words(string key)
         {
             return key != null && _byKey.TryGetValue(key, out TextKept k) ? k.Words : null;
@@ -84,10 +78,7 @@ namespace RealLifeOverhaul.Texts
             return k;
         }
 
-        /// <summary>
-        /// Lets go of the records whose post, message or edition the game no longer has; never by age alone, so words never
-        /// change once seen.
-        /// </summary>
+        /// <summary>Lets go of the records whose item the game no longer has; never by age, so words never change once seen.</summary>
         public int Prune(Func<string, bool> stillThere)
         {
             int gone = 0;
@@ -103,7 +94,6 @@ namespace RealLifeOverhaul.Texts
             return gone;
         }
 
-        /// <summary>Lets go of every text a host sent.</summary>
         public int ClearReceived()
         {
             int gone = 0;

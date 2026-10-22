@@ -1,9 +1,6 @@
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// What a card's {slot} holds (data v6), as the contract names it: a name the game shows as it is in every language, a
-    /// figure, or English words the model says in the card's language.
-    /// </summary>
+    /// <summary>What a card's {slot} holds (data v6): a name the game shows as it is, a figure, or English words the model translates.</summary>
     public enum TextSlotKind
     {
         Text,      // English words from the game ("the coffee machine at work broke")
@@ -17,11 +14,7 @@ namespace RealLifeOverhaul.Texts
         Day        // a day of the week in English ("Monday")
     }
 
-    /// <summary>
-    /// The kind of every slot a card of data v6 names, and what that means for a reply in another language: a must fact
-    /// that is a name, a figure or a time's clock is found as the card writes it; English words only in an English reply,
-    /// since the model says them in its own language. Game-free. COST: a switch.
-    /// </summary>
+    /// <summary>The kind of every slot of data v6, and so what a reply in another language must hold. Game-free. COST: a switch.</summary>
     public static class TextSlotKinds
     {
         /// <summary>The kind of a slot by its name; Text for one this table does not know.</summary>
@@ -124,7 +117,6 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>The kind's name as the contract writes it.</summary>
         public static string Name(TextSlotKind kind)
         {
             switch (kind)
@@ -165,9 +157,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The words a reply in a language must hold for a must fact of this kind: the fact itself for a name, a figure or
-        /// any fact in English, a time's clock alone in another language; null when the model says it in its own words, as it
-        /// does a place of common words ("the park", small where a name has a capital).
+        /// The words a reply in a language must hold for a must fact: a name or figure as it is, a time's clock; null when the
+        /// model says it in its own words, as it does a place of common words ("the park").
         /// </summary>
         public static string Needed(string fact, TextSlotKind kind, string lang)
         {

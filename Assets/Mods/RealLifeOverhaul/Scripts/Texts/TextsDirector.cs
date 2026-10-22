@@ -10,18 +10,11 @@ using UnityEngine;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// RLO Texts: a small text model on the player's own PC words the city's messages. The game decides everything as
-    /// before; the model is asked only for the words, from a card of the game's real state, and every word is checked
-    /// before it is shown. Whenever the model is not there, slow or wrong, the written lines are shown: the player never
-    /// waits on it.
-    ///
-    /// The model runs in llama.cpp's own server as a child process (TextServer), not as DLLs loaded into the game: a
-    /// native crash ends only the child, a second llama.dll of another mod cannot clash, a GPU back end does not share the
-    /// game's device state, and the model's memory stays outside the game's. Going Public: personal text is each player's
-    /// own, shared text is written once by the host and sent in part T, and a guest checks it again.
-    ///
-    /// COST: nothing per frame but one time comparison; a look twice a second while idle, ten times a second while
-    /// requests wait. The model runs in its own process, the socket on a background thread.
+    /// RLO Texts: a small text model on the player's own PC words the city's messages. The game decides everything; the
+    /// model is asked only for the words, every word is checked, and the written lines are shown whenever it is not there
+    /// in time. It runs in llama.cpp's own server as a child process, not as DLLs in the game: a native crash ends only the
+    /// child, and another mod's llama.dll cannot clash.
+    /// COST: per frame one time comparison; a look twice a second while idle, ten times while requests wait.
     /// </summary>
     public sealed partial class TextsDirector : MonoBehaviour
     {

@@ -3,10 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The machine's real cores, for the threads' choice (TextSpeed.Threads); where the system cannot say, the logical
-    /// processors, halved from four. Asked once, off the game's thread. Game-free.
-    /// </summary>
+    /// <summary>The machine's real cores, or the logical processors halved from four where Windows cannot say. Asked once, off the game's thread.</summary>
     public static class TextCores
     {
         private const int RelationProcessorCore = 0;

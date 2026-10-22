@@ -4,13 +4,9 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The heart of RLO Texts on the game's thread: a request becomes a card, a prompt and a job in a queue; at each
-    /// <see cref="Look"/> what came back is checked and handed to its asker, and what missed its deadline is handed over as
-    /// null, the written line. With the player's own AI service up a request goes to it first, with the newest card, and
-    /// falls back to the pack in the time left, then to the written line; shared text never goes to the service. A spoken
-    /// line with the service up waits for it a little longer, the end of the wait kept for the pack. Every line, asked or
-    /// not, is counted in <see cref="Tally"/>. Game-free.
-    /// COST: a request is a card of a few hundred characters; a look is a pass over the few waiting requests.
+    /// The heart of RLO Texts on the game's thread: a request becomes a card and a job; what comes back is checked and handed
+    /// over, what misses its deadline is the written line. With Your own AI up a request goes to it first and falls back to
+    /// the pack; shared text never goes to it. Game-free. COST: a card a request; a look is a pass over the few waiting.
     /// </summary>
     public sealed partial class TextsHub
     {
@@ -93,10 +89,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Which uses may ask now, by the options and Going Public's rule; set by the director.</summary>
         public Func<TextUse, bool, bool> Allowed;
 
-        /// <summary>
-        /// The data version of the running pack's model: an intent of a later version is never asked of it. Set by the
-        /// director when it starts a pack.
-        /// </summary>
+        /// <summary>The data version of the running pack's model, set by the director: a later intent is never asked of it.</summary>
         public int Data
         {
             get => ServiceUp ? Math.Max(_packData, Newest) : _packData;   // with the service up the newest cards; the pack's own when it falls back
@@ -123,7 +116,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Seconds a reply is expected to take on the route a request goes by now: the service's while it is up, else the pack's.</summary>
         public double Expect => ServiceUp ? _serviceQueue.Expect : _queue.Expect;
 
-        /// <summary>True when this machine writes only what is asked ahead.</summary>
         public bool AheadOnly { get; set; }
 
         /// <summary>Words were kept for a shared item on the host: the session's part has a new line.</summary>
@@ -148,11 +140,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>True when the running pack writes the game's language now; a pack below data v6 writes English alone.</summary>
         public bool WritesLanguage => _packData >= TextIntents.DataV6 ? TextLanguages.Has(Languages, Language) : English;
 
-        /// <summary>
-        /// True when the AI service is asked in the game's language: one of the seven, which TextCheck judges in full. A
-        /// reply in Dutch or Turkish could not be checked (no little words, machine talk or swearing list of theirs), so
-        /// their written lines are kept.
-        /// </summary>
+        /// <summary>True when the AI service is asked in the game's language: one of the seven, which TextCheck can judge.</summary>
         public bool ServiceWrites => TextLanguages.Known(Language);
 
         /// <summary>True when a request of this use could go to the model now, asked before the card is built.</summary>
@@ -177,10 +165,7 @@ namespace RealLifeOverhaul.Texts
             return Allowed != null && !Allowed(use, shared) ? TextShownWhy.Off : TextShownWhy.Language;
         }
 
-        /// <summary>
-        /// Asks for words. True: they come through the request's Done on a later look, words or null. False: not asked, and
-        /// the asker uses the written line now without Done. Either way the line is counted.
-        /// </summary>
+        /// <summary>Asks for words: true, and they come through Done later; false, not asked, and the written line now without Done.</summary>
         public bool Ask(TextRequest r, double now)
         {
             if (r == null || r.Done == null)
@@ -298,10 +283,7 @@ namespace RealLifeOverhaul.Texts
             w.Job.BanName = w.Untold != null && TextDecoding.NameForms(w.Untold) != null ? w.Untold : null;
         }
 
-        /// <summary>
-        /// Finishes a built card of data v6 as it is sent: its lang line, and its speaker's memory lines, none on a shared
-        /// card. The contract's fixtures are finished by the same.
-        /// </summary>
+        /// <summary>Finishes a card of data v6 as it is sent: its lang and memory lines, none on a shared card. The fixtures use it too.</summary>
         public static void Finish(TextIntent intent, TextSheet sheet, string lang, List<TextFact> memory, int today, bool shared)
         {
             sheet.Lang = lang;
@@ -315,10 +297,7 @@ namespace RealLifeOverhaul.Texts
         // A line the player waits for, face to face: never a guess (it waits for its click), never the options' test.
         private static bool Spoken(TextRequest r) => r.Spoken && !r.Guess && !r.ServiceOnly;
 
-        /// <summary>
-        /// How long a spoken line waits with the AI service up: the service's measured time, a margin and the time kept for
-        /// the pack, at most <see cref="SpokenMost"/> and never less than the line's own hold.
-        /// </summary>
+        /// <summary>How long a spoken line waits with the AI service up, at most <see cref="SpokenMost"/>, never less than its own hold.</summary>
         public static double SpokenWait(double hold, double serviceExpect, double packReserve)
         {
             return Math.Max(hold, Math.Min(SpokenMost, serviceExpect + SpokenMargin + packReserve));
@@ -335,10 +314,7 @@ namespace RealLifeOverhaul.Texts
             return Math.Min(r.Seconds, _queue.Expect + PackSlack);
         }
 
-        /// <summary>
-        /// True while a guess under this key is the AI service's and its words have not come yet, so its asker may wait for it
-        /// as the line itself (<see cref="Adopt"/>).
-        /// </summary>
+        /// <summary>True while the AI service is still writing a guess under this key, which its asker may <see cref="Adopt"/>.</summary>
         public bool Writing(string key)
         {
             for (int i = _waiting.Count - 1; key != null && i >= 0; i--)
@@ -354,9 +330,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Makes the guess under <paramref name="key"/>, which the AI service is still writing, request
-        /// <paramref name="r"/> of the same card, waited for as a spoken line from now. False when there is no such guess,
-        /// it guessed another card, or the service could not finish it in time: the guess is let go and the asker asks as usual.
+        /// Makes the guess the AI service is still writing request <paramref name="r"/>, waited for as a spoken line; false,
+        /// the guess let go, when there is none of the same card or it cannot be finished in time.
         /// </summary>
         public bool Adopt(string key, TextRequest r, double now)
         {
@@ -446,10 +421,7 @@ namespace RealLifeOverhaul.Texts
             return card.Data < TextIntents.DataV6 && Language != TextLanguages.English ? "the card " + intent + " is English only, and the game is in " + Language : null;
         }
 
-        /// <summary>
-        /// Why a request of this use, card and urgency would not be asked now, before anything is built; null when it would,
-        /// though the queue may still be full. For a feature that offers something only while words can come.
-        /// </summary>
+        /// <summary>Why a request would not be asked now, before anything is built; null when it would, though the queue may be full.</summary>
         public string WhyNot(TextUse use, bool shared, string intent, string branch, TextPriority priority, bool guess, double seconds)
         {
             return WhyNot(use, shared, intent, branch, priority, guess, seconds, out _);

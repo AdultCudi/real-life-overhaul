@@ -2,10 +2,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Street
 {
-    /// <summary>
-    /// The written lines of street talk, shown whenever the model's words are not there in time. Every key is written out
-    /// in full: the catalogue check reads them. Game-free. COST: none.
-    /// </summary>
+    /// <summary>The written lines of street talk, every key written out in full for the catalogue check. Game-free.</summary>
     public static class StreetLines
     {
         public static readonly string[][] Lines =
@@ -148,10 +145,7 @@ namespace RealLifeOverhaul.Street
 
         public const int SaidMost = 32;   // written lines a person remembers having said today
 
-        /// <summary>
-        /// One line of a kind, by the person's seed and the turn: never the one said last, nor one said today while the kind
-        /// has one unsaid; else the one said longest ago. COST: a pass over a few lines; nothing allocated.
-        /// </summary>
+        /// <summary>One line of a kind, by the person's seed: never the one said last, nor one said today while one is unsaid.</summary>
         public static string Pick(StreetLine line, int seed, int turn, string last, List<string> said)
         {
             string[] pool = Lines[(int)line];

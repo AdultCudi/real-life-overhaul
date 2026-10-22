@@ -27,10 +27,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The checker every model's words pass before anything is shown; the written line is used when they fail (see
-    /// <see cref="TextVerdict"/>). Data v6's replies are judged in the card's language by <see cref="JudgeSix"/>; the
-    /// player's own typed words are made fit to show by <see cref="Typed"/>. Game-free.
-    /// COST: one pass over a line of 200 characters.
+    /// The checker every model's words pass before anything is shown; the written line is used when they fail.
+    /// Game-free. COST: one pass over a line of 200 characters.
     /// </summary>
     public static partial class TextCheck
     {
@@ -77,11 +75,7 @@ namespace RealLifeOverhaul.Texts
             return c == '¿' || c == '«' || c == '»' || c == '„' || c == '‚' || c == '「' || c == '『' || c == '（';
         }
 
-        /// <summary>
-        /// What the player typed, fit to show and put on a card: one line, single spaces, the prompt's turn markers out, the
-        /// angle brackets of markup made harmless (‹ ›), cut at <paramref name="most"/> characters without splitting a
-        /// character in two. Null when nothing is left.
-        /// </summary>
+        /// <summary>What the player typed, fit to show and put on a card: one line, no turn markers or markup, cut whole; null if empty.</summary>
         public static string Typed(string text, int most)
         {
             string plain = TextIntents.Plain(text);

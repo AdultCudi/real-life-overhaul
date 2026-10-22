@@ -264,9 +264,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Whether a miss tells the budget the model is too busy: one the worker ran, or one of the kinds the budget lets
-        /// through. Never a background request the queue held back itself: counted, those would hold the budget at its lowest
-        /// steps for good.
+        /// Whether a miss tells the budget the model is too busy; never a background request the queue held back itself, which
+        /// would hold the budget at its lowest step for good.
         /// </summary>
         public bool BudgetMiss(TextJob job)
         {

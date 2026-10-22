@@ -27,9 +27,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The start's watch: the stage the worker is in, since when, and its limit. The runner's watchdog asks it twice a
-    /// second; a stage past its limit and <see cref="Grace"/> is overdue once, and the start then ends for certain, whatever
-    /// wait it is stuck in. Game-free and thread-safe. COST: a lock and a few numbers a stage; nothing on the game's thread.
+    /// The start's watch: a stage past its limit and <see cref="Grace"/> is overdue once, and the start then ends for
+    /// certain, whatever wait it is stuck in. Thread-safe; game-free. COST: a lock and a few numbers a stage.
     /// </summary>
     public sealed class TextStartWatch
     {
@@ -138,12 +137,9 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The runner: llama.cpp's own server (llama-server.exe) started as a child process on 127.0.0.1 with a key of its own,
-    /// so a native crash or leak stays in the child, and one worker thread that takes the queue's requests one at a time.
-    /// The start's stages (launch, load, first reply, head, speed test) are each timed, limited and watched. A missed reply
-    /// is followed by a probe of the server's slot, and a hung or stopped server is started again in the background, at
-    /// most TextHang.RestartsMost times a session. Game-free: the integration check runs it with the Lite model.
-    /// COST: nothing on the game's thread; a thread that sleeps until there is a request.
+    /// The runner: llama.cpp's own server started as a child process on 127.0.0.1, so a native crash stays in the child,
+    /// and one worker thread for the queue's requests. Each start's stage is timed, limited and watched; a hung server is
+    /// started again in the background. Game-free. COST: nothing on the game's thread; a thread that sleeps until asked.
     /// </summary>
     public sealed partial class TextServer : IDisposable, ITextRunner
     {
@@ -186,7 +182,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The fixed head of every prompt of the first packs: the system turn and the opening of the user's.</summary>
         public static string Head => HeadOf(TextCard.System);
 
-        /// <summary>The fixed head of every prompt of a system turn.</summary>
         public static string HeadOf(string system) => "<|im_start|>system\n" + system + "<|im_end|>\n<|im_start|>user\n";
 
         private string OwnHead => _head ?? (_head = HeadOf(_start.System ?? TextCard.System));
@@ -206,7 +201,6 @@ namespace RealLifeOverhaul.Texts
 
         public TextServerState State => _state;
 
-        /// <summary>Why it failed, for the status row and the log.</summary>
         public string Why { get; private set; }
 
         /// <summary>Seconds it took to be ready; 0 until it is.</summary>

@@ -21,10 +21,7 @@ namespace RealLifeOverhaul.Texts
         Dropped      // its owner no longer wants it
     }
 
-    /// <summary>
-    /// One request for words: the prompt, how urgent, the real time by which it must be shown, and what it is for. The
-    /// owner keeps it and reads its state; the queue and the worker fill in the rest. Game-free.
-    /// </summary>
+    /// <summary>One request for words; its owner reads its state, the queue and the worker fill in the rest. Game-free.</summary>
     public sealed class TextJob
     {
         public int Id;
@@ -50,11 +47,9 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The one queue every request goes through. The worker takes the most urgent request that can still be written by
-    /// its deadline, one at a time; one that can no longer make it is missed at once, and its owner shows the written
-    /// line. A budget a minute keeps the model from being kept busy, the background may use only part of it and waits
-    /// while the game is not quiet, and at most <see cref="Most"/> requests wait. Thread-safe: the game's thread adds and
-    /// drops, the worker takes. Game-free. COST: nothing per frame; a pass over at most <see cref="Most"/> a call.
+    /// The one queue every request goes through: the most urgent that can still make its deadline first, one past hope
+    /// missed at once, within a budget a minute. Thread-safe: the game's thread adds, the worker takes. Game-free.
+    /// COST: a pass over at most <see cref="Most"/> requests a call.
     /// </summary>
     public sealed class TextQueue
     {
@@ -85,10 +80,7 @@ namespace RealLifeOverhaul.Texts
             get { lock (_lock) { return _waiting.Count; } }
         }
 
-        /// <summary>
-        /// Sets the expected time from the speed test, so the first spoken lines are not refused for
-        /// <see cref="StartGuess"/>, which is past a spoken line's hold.
-        /// </summary>
+        /// <summary>Sets the expected time from the speed test, so the first spoken lines are not refused for <see cref="StartGuess"/>.</summary>
         public void Expected(double seconds)
         {
             if (seconds > 0 && seconds < ExpectedMost)   // NaN fails both
@@ -113,10 +105,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Queues a request; false when it cannot be written in time even now, and the owner shows the written line. One of
-        /// the same key waiting already is dropped.
-        /// </summary>
+        /// <summary>Queues a request, dropping one of its key; false when it cannot be written in time even now.</summary>
         public bool Add(TextJob job, double now)
         {
             lock (_lock)
@@ -158,7 +147,6 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>Takes out a request its owner no longer wants, if it waits.</summary>
         public void Drop(TextJob job)
         {
             lock (_lock)
@@ -181,7 +169,6 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>Drops every waiting request.</summary>
         public void Clear()
         {
             lock (_lock)
@@ -207,10 +194,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// The worker's next request, or null: the most urgent that can still be written by its deadline, within the
-        /// budget, the background only while <paramref name="quiet"/>. Requests past hope are missed on the way.
-        /// </summary>
+        /// <summary>The worker's next request within the budget, or null; requests past hope are missed on the way.</summary>
         public TextJob Take(double now, bool quiet)
         {
             lock (_lock)

@@ -21,10 +21,7 @@ namespace RealLifeOverhaul.Texts
         Employee         // data v6: one of the player's staff: "Dana Reyes, shop assistant at Sam's Deli", your employee, their style, the player
     }
 
-    /// <summary>
-    /// The speaker of a card, read from the game's state by the feature that asks, in the English words the models were
-    /// trained on (TextWords). Game-free; kept and cleared by its owner.
-    /// </summary>
+    /// <summary>The speaker of a card in the English words the models were trained on. Game-free; kept and cleared by its owner.</summary>
     public sealed class TextWho
     {
         public string Name;       // full name, an account's or a business's name
@@ -50,10 +47,7 @@ namespace RealLifeOverhaul.Texts
         }
     }
 
-    /// <summary>
-    /// The first lines of a card by its face, as the training generator wrote them (world.sheet_of and the sheets of
-    /// defs_people, defs_work and defs_flare). Game-free. COST: a few short strings a request.
-    /// </summary>
+    /// <summary>The first lines of a card by its face, as the training generator wrote them. Game-free. COST: a few short strings a request.</summary>
     public static class TextFaces
     {
         public static void Fill(TextFace face, TextWho w, TextSheet s)

@@ -71,10 +71,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// One trained intent: what a character says in one situation, with the card's lines as the training generator made
-    /// them and {slots} filled from the game. A branch tells apart the cards of one intent for outcomes the game decided;
-    /// a pack is asked only the intents of its own data version or older. Optional facts are left out when their slot
-    /// has no value, as the generator leaves them out. Game-free.
+    /// One trained intent: what a character says in one situation, its lines as the generator made them, a branch for each
+    /// outcome the game decided. Optional facts are left out when their slot has no value. Game-free.
     /// </summary>
     public sealed class TextIntent
     {
@@ -120,9 +118,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The intents the mod uses, and the card built for one from the intent's lines with the game's values put in;
-    /// byte-identical to the generator's own cards for the same values. {first} and {player} come from the speaker,
-    /// {self} is the speaker's own name and {company} a tycoon's company. Game-free. COST: a few short strings a request.
+    /// The intents the mod uses, and the card built for one, byte-identical to the generator's own for the same values.
+    /// Game-free. COST: a few short strings a request.
     /// </summary>
     public static partial class TextIntents
     {
@@ -164,10 +161,7 @@ namespace RealLifeOverhaul.Texts
             return null;
         }
 
-        /// <summary>
-        /// The intent of this key and branch of the highest data version not above the pack's, so an older pack keeps its
-        /// exact cards; null if the pack has none. COST: a pass over the table.
-        /// </summary>
+        /// <summary>The intent of this key and branch of the newest data version not above the pack's; null if none. COST: a pass over the table.</summary>
         public static TextIntent Find(string key, string branch, int data)
         {
             TextIntent best = null;
@@ -182,10 +176,7 @@ namespace RealLifeOverhaul.Texts
             return best;
         }
 
-        /// <summary>
-        /// Fills the sheet for this intent, the thread oldest first. False if a slot a line needs has no value: nothing is
-        /// invented, and the written line is used.
-        /// </summary>
+        /// <summary>Fills the sheet for this intent; false if a slot a line needs has no value, as nothing is invented.</summary>
         public static bool Build(TextIntent intent, TextWho who, TextSlots slots, IReadOnlyList<TextSaid> history, TextSheet sheet)
         {
             sheet.Clear();
@@ -235,10 +226,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>
-        /// A thread's line as a card may carry it: line breaks made spaces, and the prompt's turn markers taken out, so that
-        /// nothing typed can end the card's turn or start another.
-        /// </summary>
+        /// <summary>A thread's line as a card may carry it: one line, the turn markers out, so nothing typed can end the card's turn.</summary>
         public static string Plain(string text)
         {
             if (string.IsNullOrEmpty(text))

@@ -4,10 +4,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Street
 {
-    /// <summary>
-    /// The feature's entry in the feature list, and its Guide page's figures, each filled from <see cref="StreetRules"/>
-    /// when the page is opened.
-    /// </summary>
+    /// <summary>The feature's entry in the feature list, and its Guide page's figures from <see cref="StreetRules"/>.</summary>
     public static class StreetGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;

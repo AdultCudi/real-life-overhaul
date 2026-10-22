@@ -24,12 +24,9 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// Your own AI's runner: the cards RLO Texts would give its pack sent to the AI service the player chose, through a
-    /// queue of its own, by at most <see cref="Workers"/> threads of one request each. After a fault it rests as the rules
-    /// say and misses every waiting request at once, so the hub falls back without waiting; a refused key, sign-in or
-    /// model stops it until the player mends it, and a refused field is left out from then on. Keys and tokens are only
-    /// ever in the request's headers, and every log line is cleaned of them. Game-free.
-    /// COST: nothing on the game's thread; worker threads that sleep until there is a request.
+    /// Your own AI's runner: cards sent to the AI service the player chose, by at most <see cref="Workers"/> threads. After a
+    /// fault it rests and misses every waiting request at once; a refused key or model stops it until mended. Keys stay in
+    /// the request's headers, never the log. Game-free. COST: worker threads that sleep until there is a request.
     /// </summary>
     public sealed class TextService : IDisposable, ITextServiceRunner
     {
@@ -82,7 +79,6 @@ namespace RealLifeOverhaul.Texts
             set => _quiet = value;
         }
 
-        /// <summary>Why it failed or rests, for the status and the log.</summary>
         public string Why { get; private set; }
 
         /// <summary>The fault that stopped it or that it rests after; None while all is well.</summary>
@@ -136,10 +132,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Stops it taking anything more, at once and without waiting, before a runner of other options takes the same
-        /// queue; a request already under way ends by its own time.
-        /// </summary>
+        /// <summary>Stops it taking anything more at once, before another runner takes the queue; a request under way ends by its own time.</summary>
         public void Halt()
         {
             _stop = true;

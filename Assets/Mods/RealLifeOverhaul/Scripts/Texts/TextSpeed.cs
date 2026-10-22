@@ -35,11 +35,7 @@ namespace RealLifeOverhaul.Texts
         }
     }
 
-    /// <summary>
-    /// How fast this machine is, and what follows from it: the threads, the Lite pack suggested where the full one is slow,
-    /// only what is asked well ahead on a slow machine, and where RLO Texts Large may run and is offered. Game-free.
-    /// COST: arithmetic.
-    /// </summary>
+    /// <summary>How fast this machine is, and what follows: the threads, the Lite pack suggested, RLO Texts Large run or offered. Game-free.</summary>
     public static class TextSpeed
     {
         public const int GameKeeps = 2;          // real cores always left to the game
@@ -65,10 +61,7 @@ namespace RealLifeOverhaul.Texts
             return gpu ? Math.Min(threads, GpuThreads) : threads;
         }
 
-        /// <summary>
-        /// What a speed measured is for: the pack, the device and the threads, and on a GPU its normal priority, so a speed
-        /// measured below normal while the game starved the server is never used.
-        /// </summary>
+        /// <summary>What a speed measured is for; on a GPU "normal", so a speed measured below normal priority is never used.</summary>
         public static string For(string pack, string device, int threads)
         {
             return pack + ";" + (device ?? "cpu") + ";" + threads + (device != null ? ";normal" : string.Empty);
@@ -93,7 +86,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>True when the Lite pack should be suggested: Medium or the full pack is too slow here.</summary>
         public static bool SuggestLite(int rank, double estimate) => rank >= 2 && rank <= TextPacks.FullTier && estimate > FullSlow;
 
-        /// <summary>True when only what is asked ahead may be written.</summary>
         public static bool AheadOnly(double estimate) => estimate > AheadSlow;
 
         /// <summary>Whether a request may go to the model at this machine's speed.</summary>
@@ -112,18 +104,11 @@ namespace RealLifeOverhaul.Texts
         /// <summary>True when RLO Texts Large is too slow on its graphics card: the next pack runs instead, and Large is not tried there again.</summary>
         public static bool LargeTooSlow(double estimate) => !(estimate <= LargeSlow);
 
-        /// <summary>
-        /// True when RLO Texts Large should be offered: it is published, and the full pack runs fast enough on a graphics
-        /// card with the memory for Large that Large would keep up there.
-        /// </summary>
+        /// <summary>True when RLO Texts Large should be offered: published, and the full pack fast enough on a card with the memory for it.</summary>
         public static bool OfferLarge(int rank, double estimate, bool cardFits, bool published) => published && rank == TextPacks.FullTier && cardFits && estimate <= LargeOffer;
     }
 
-    /// <summary>
-    /// The budget that adapts: past <see cref="MissUp"/> per cent of the last requests missed it goes down a step (fewer
-    /// requests a minute, the least urgent kind left out), and after a window under <see cref="MissDown"/> per cent it
-    /// comes back up a step. Game-free. COST: a few comparisons a request.
-    /// </summary>
+    /// <summary>The budget that adapts: down a step when too many requests miss, back up after a good window. Game-free.</summary>
     public sealed class TextBudget
     {
         public const int Window = 20;            // requests looked back over

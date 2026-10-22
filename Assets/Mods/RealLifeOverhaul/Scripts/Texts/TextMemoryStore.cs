@@ -6,11 +6,9 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// What people remember of the player (data v6), in the save: v=1^m=person|kind|code|day|value|from^..., texts escaped
-    /// as TextsStore's. A record of an unknown kind or with more fields is read as far as it can be; a line that cannot be
-    /// read is kept as it was (Core/SaveLines). Capped in people and facts, kept in the order first remembered so a save
-    /// writes the same line every time. Each player's own: nothing of it is ever sent. Game-free.
-    /// COST: nothing unless a fact is remembered (a short list's pass), a card is built, or the game saves.
+    /// What people remember of the player, in the save: v=1^m=person|kind|code|day|value|from^...; a line that cannot be
+    /// read is kept as it was. Kept in the order first remembered, so a save writes the same line. Never sent. Game-free.
+    /// COST: nothing unless a fact is remembered, a card is built, or the game saves.
     /// </summary>
     public sealed class TextMemoryStore
     {
@@ -45,7 +43,6 @@ namespace RealLifeOverhaul.Texts
             return person != null && _byPerson.TryGetValue(person, out List<TextFact> list) ? list : null;
         }
 
-        /// <summary>Adds every fact of a person to a list, for a card.</summary>
         public void AddTo(string person, List<TextFact> into)
         {
             List<TextFact> list = Of(person);
@@ -55,10 +52,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Remembers a fact of a person; false for a key a memory may not be kept under or an unknown code. The same kind,
-        /// code and value again moves its day on.
-        /// </summary>
+        /// <summary>Remembers a fact of a person, the same again moving its day on; false for a key not allowed or an unknown code.</summary>
         public bool Remember(string person, TextFact fact)
         {
             if (!TextMemoryRules.KeyOk(person) || TextMemoryRules.Template(fact.Kind, fact.Code) == null)

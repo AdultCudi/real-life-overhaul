@@ -17,10 +17,7 @@ namespace RealLifeOverhaul.Texts
         }
     }
 
-    /// <summary>
-    /// The character sheet the text model reads, the fields the models were trained on, filled from the game's state and
-    /// never from a model's free text. Game-free; kept and cleared, so a request costs its strings only.
-    /// </summary>
+    /// <summary>The character sheet the text model reads, filled from the game's state, never a model's words. Game-free; kept and cleared.</summary>
     public sealed class TextSheet
     {
         public string Who, Role, Mood, Style, Player, When, News, Write;
@@ -46,10 +43,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The card and the prompt, byte for byte as the models were trained on them (the training data's common.py: SYSTEM,
-    /// card() and chatml()): the fields in a fixed order, empty ones left out, lists joined with "; ", the thread under
-    /// "history:", the whole in ChatML. Checked against cards the training generator made. Game-free.
-    /// COST: one string of a few hundred characters a request; nothing per frame.
+    /// The card and the prompt, byte for byte as the models were trained on them (common.py's SYSTEM, card() and chatml()).
+    /// Game-free. COST: one string of a few hundred characters a request.
     /// </summary>
     public static class TextCard
     {
@@ -71,9 +66,8 @@ namespace RealLifeOverhaul.Texts
         private static readonly string[] ServiceSix = new string[TextLanguages.All.Length];
 
         /// <summary>
-        /// The system turn Your own AI is sent with a card: the pack's, and for data v6 in another language one sentence more
-        /// naming the language as its native speakers write it, as the packs' teacher was told (a large model reads
-        /// "lang: pt" as any Portuguese; the packs learnt Brazilian Portuguese). COST: a string made once a language.
+        /// The system turn Your own AI is sent: the pack's, and in another language a sentence naming it as its natives write
+        /// it, since a large model reads "lang: pt" as any Portuguese. COST: a string made once a language.
         /// </summary>
         public static string ServiceSystem(int data, string lang)
         {
@@ -98,7 +92,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The exact text the model reads: system, the card as the user's turn, and the assistant's turn opened.</summary>
         public static string ChatMl(TextSheet s) => ChatMl(s, System);
 
-        /// <summary>The same with a system turn of its own.</summary>
         public static string ChatMl(TextSheet s, string system)
         {
             var t = new StringBuilder(1024);

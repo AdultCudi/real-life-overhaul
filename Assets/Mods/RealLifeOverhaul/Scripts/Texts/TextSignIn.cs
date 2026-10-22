@@ -17,10 +17,9 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// One Sign in with ChatGPT by TextChatGpt's rules: a callback listener on 127.0.0.1, then on a thread of its own the
-    /// wait for the callback, the code's exchange, the ID token and the grant checked, and the tokens kept in
-    /// <see cref="TextKeys"/>. Also the refresh of a kept sign-in and signing out, one at a time (<see cref="Gate"/>).
-    /// The caller opens the browser. Game-free. COST: nothing on the game's thread but <see cref="Begin"/>'s listener.
+    /// One Sign in with ChatGPT: a callback listener on 127.0.0.1, then on its own thread the exchange and checks, the
+    /// tokens kept in <see cref="TextKeys"/>; also refreshing and signing out, one at a time. Game-free.
+    /// COST: nothing on the game's thread but <see cref="Begin"/>'s listener.
     /// </summary>
     public sealed class TextSignIn
     {
@@ -47,7 +46,6 @@ namespace RealLifeOverhaul.Texts
 
         public volatile TextSignInState State = TextSignInState.Waiting;
 
-        /// <summary>Why it failed; null otherwise.</summary>
         public string Why { get; private set; }
 
         /// <summary>The account signed in to, as its ID token names it, for the notice.</summary>
@@ -93,7 +91,6 @@ namespace RealLifeOverhaul.Texts
             return url;
         }
 
-        /// <summary>Gives up the wait.</summary>
         public void Cancel()
         {
             _stop = true;
@@ -270,10 +267,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>True when a sign-in is kept here: a client id and a refresh token.</summary>
         public static bool SignedIn(TextKeys keys) => keys.Has(TextChatGpt.KClient) && keys.Has(TextChatGpt.KRefresh);
 
-        /// <summary>
-        /// The access token to send now, refreshed when it ends soon. Null with <paramref name="fault"/> when there is none:
-        /// Key when the refresh was refused for good and the tokens are cleared, Network or Busy when it could not be asked now.
-        /// </summary>
+        /// <summary>The access token to send now, refreshed when it ends soon; null with <paramref name="fault"/> when there is none.</summary>
         public static string Access(ITextWeb web, TextKeys keys, string auth, out TextFault fault, out string why)
         {
             fault = TextFault.None;
@@ -321,10 +315,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Signs out: the refresh token revoked, then the tokens cleared here, the client and host ids kept as OpenAI asks.
-        /// True when OpenAI confirmed it; the tokens are cleared all the same.
-        /// </summary>
+        /// <summary>Signs out, the refresh token revoked; true when OpenAI confirmed it. The tokens are cleared either way, the ids kept.</summary>
         public static bool SignOut(ITextWeb web, TextKeys keys, string auth)
         {
             lock (Gate)

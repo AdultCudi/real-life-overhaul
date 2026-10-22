@@ -70,10 +70,7 @@ namespace RealLifeOverhaul.Texts
         // A shared text this machine wrote itself as the host, not one a host sent it.
         private static bool Own(TextKept k) => k.Shared && !k.Received;
 
-        /// <summary>
-        /// A guest: reads the host's lines, checks each again, and keeps those that pass as received, never saved or sent on.
-        /// The host's whole part replaces every text received before it. How many were kept.
-        /// </summary>
+        /// <summary>A guest keeps the host's lines that pass its own check, never saved or sent on; a whole part replaces them all.</summary>
         public static int Apply(string text, TextsStore store, int day, List<string> refused, bool whole) => Apply(text, store, day, refused, whole, TextLanguages.English);
 
         /// <summary>The same for a guest whose game is in <paramref name="lang"/>: words in another language are not kept.</summary>
@@ -126,10 +123,7 @@ namespace RealLifeOverhaul.Texts
             return key != null && (key.StartsWith("fn:", System.StringComparison.Ordinal) || key.StartsWith("lp:", System.StringComparison.Ordinal)) && key.Length <= 40;
         }
 
-        /// <summary>
-        /// The key a host's text goes under to the guests: a post or comment of the host's own ("fp:12", "fc:12:3:c17") by
-        /// the session's number ("fn:12", "fn:12:3:c17"). An older RLO keeps such a comment's line under a key it never reads.
-        /// </summary>
+        /// <summary>The key a host's text goes under to the guests: its post or comment ("fp:12", "fc:12:3:c17") by the session's number ("fn:").</summary>
         public static string NetKey(string key)
         {
             return key != null && (key.StartsWith("fp:", System.StringComparison.Ordinal) || key.StartsWith("fc:", System.StringComparison.Ordinal)) ? "fn:" + key.Substring(3) : key;

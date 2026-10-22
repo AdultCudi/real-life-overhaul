@@ -6,10 +6,8 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// A whole JSON text read into plain objects (Dictionary&lt;string, object&gt;, List&lt;object&gt;, string, double,
-    /// bool, null) for an AI service's answers, which nest the words too deep for <see cref="TextJson.Field"/>. Never
-    /// throws: a text that is not JSON gives null. Game-free.
-    /// COST: one pass over an answer of a few kilobytes, once a reply; nothing per frame.
+    /// A whole JSON text read into plain objects, for AI services' answers, which nest too deep for
+    /// <see cref="TextJson.Field"/>. Never throws: what is not JSON gives null. Game-free. COST: one pass, once a reply.
     /// </summary>
     public static class TextJsonTree
     {

@@ -5,10 +5,8 @@ using System.Globalization;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The director's part that runs once a game hour: the line of what was shown, and the city's new talk. With a pack of
-    /// data 6 the staff text and gossip passes events on; with a pack or without one the people of the player's life text
-    /// after the player's own events, through the social life's own texts and caps. One life text and one piece of gossip
-    /// an hour at most. Each player's own: nothing of it is sent in a Going Public session.
+    /// The director's part that runs once a game hour: the line of what was shown, and the city's new talk, one life text
+    /// and one piece of gossip an hour at most, never sent in a Going Public session.
     /// COST: once a game hour, a pass over the staff and the people, a few dozen each.
     /// </summary>
     public sealed partial class TextsDirector

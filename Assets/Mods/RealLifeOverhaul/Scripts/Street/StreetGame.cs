@@ -18,10 +18,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Street
 {
     /// <summary>
-    /// The one place street talk touches the game: its crowd (the walkers the spawner keeps; nothing is searched), what it
-    /// shows of a person, its dialogue panel, text box, destination and notifications, and the city's businesses.
-    /// COST: <see cref="Facing"/> is a pass over the people out (a few dozen distance tests) five times a second on foot out
-    /// of doors; everything else runs on a press or a click. Nothing allocated per pass.
+    /// The one place street talk touches the game: its crowd (nothing is searched), its panels, destination and notices,
+    /// and the city's businesses. COST: <see cref="Facing"/> is a pass over the people out five times a second on foot out of
+    /// doors; the rest runs on a press or a click. Nothing allocated per pass.
     /// </summary>
     public static class StreetGame
     {
@@ -47,11 +46,7 @@ namespace RealLifeOverhaul.Street
         public static float NearSqr, NearCos;
         public static StreetFigure NearKind;
 
-        /// <summary>
-        /// The person in front of the player within reach, of the walkers and of the people standing and sitting; never one
-        /// another feature holds, hidden, busy, or another player's figure. <paramref name="walker"/> is null for somebody
-        /// standing or sitting.
-        /// </summary>
+        /// <summary>The person in front within reach, never one held, hidden, busy or another player's; <paramref name="walker"/> null if not a walker.</summary>
         public static BaseHuman Facing(Vector3 player, Vector3 forward, BaseHuman current, float now, out Pedestrian walker, out StreetFigure kind)
         {
             walker = null;
@@ -185,10 +180,7 @@ namespace RealLifeOverhaul.Street
                    && !HornReactions.Reacts(h);
         }
 
-        /// <summary>
-        /// The kind of a standing or sitting figure: a hangout spot's figure stands or sits, the bench pool's sits; a
-        /// performer, somebody homeless (the game's own box is theirs) and the other pools are busy. Told apart once a figure.
-        /// </summary>
+        /// <summary>The kind of a standing or sitting figure, told apart once: a performer or somebody homeless is busy (the game's box is theirs).</summary>
         public static StreetFigure FigureOf(BaseHuman h)
         {
             int id = h.GetInstanceID();
@@ -336,10 +328,7 @@ namespace RealLifeOverhaul.Street
         /// <summary>True while the game's dialogue panel is open, anybody's.</summary>
         public static bool DialogOpen => SocialPhone.DialogOpen;
 
-        /// <summary>
-        /// True in the frame the game's cancel key was pressed: the panel's grey button and the key share one action
-        /// (DialogUI.OnCancel), and this tells the key from a click.
-        /// </summary>
+        /// <summary>True in the frame the cancel key was pressed: the grey button and the key share one action, and this tells them apart.</summary>
         public static bool CancelKey => PlayerAction.Cancel.Pressed();
 
         public static bool CanType => TextBox.CanType;
@@ -492,7 +481,6 @@ namespace RealLifeOverhaul.Street
 
         public static string AddressKey(Address a) => a != null ? a.streetName + "~" + a.streetNumber : null;
 
-        /// <summary>The registration of the player's own business at an address key, or null.</summary>
         public static BuildingRegistration ShopAt(string key)
         {
             GameInstance save = SaveGameManager.Current;

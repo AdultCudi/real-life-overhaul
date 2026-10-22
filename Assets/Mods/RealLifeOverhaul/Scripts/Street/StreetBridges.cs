@@ -15,10 +15,7 @@ namespace RealLifeOverhaul.Street
         public string Look;        // the figure's look (People/PersonLook's text); null if it could not be read
     }
 
-    /// <summary>
-    /// What street talk asks of the rest of the mod, set by Wiring/StreetLinks. Each is asked on a press or a click, never
-    /// per frame; while one is not set its default holds.
-    /// </summary>
+    /// <summary>What street talk asks of the rest of the mod, set by Wiring/StreetLinks; asked on a press or a click, never per frame.</summary>
     public static class StreetBridges
     {
         /// <summary>Fills what the city knows of the player and the day. Default: a newcomer on a quiet day.</summary>

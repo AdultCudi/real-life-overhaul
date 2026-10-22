@@ -9,10 +9,7 @@ namespace RealLifeOverhaul.Texts
         public static readonly string[] ThreadKinds = { "accident", "fire", "market", "policy", "niche_fashion", "niche_tech", "niche_business" };
         public static readonly string[] ThreadTopics = { "an accident", "a fire", "the stock market", "a new council policy", "fashion", "tech", "business" };
 
-        /// <summary>
-        /// The comment kinds whose post is told in the news line and the facts (defs_v3.NEWS_KINDS): the kind, its news,
-        /// then its facts.
-        /// </summary>
+        /// <summary>The comment kinds whose post is told in the news and facts (defs_v3.NEWS_KINDS): the kind, its news, its facts.</summary>
         public static readonly string[][] NewsKinds =
         {
             new[] { "biz_late", "{shop} posted that it is open late tonight", "business: {shop}" },

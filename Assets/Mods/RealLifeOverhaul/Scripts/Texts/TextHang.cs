@@ -12,12 +12,9 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// When a server that did not answer is taken as hung, and how often it is started again. A slow machine looks alike
-    /// for one reply, so a missed reply is only a hang if the server's slot is still at work, or it does not answer, after
-    /// a probe of a few replies' time at the measured speed (a well server cancels within a second of the connection
-    /// closing). A hung or stopped server is started again in the background, at most <see cref="RestartsMost"/> times a
-    /// session; the written lines are used meanwhile. Game-free.
-    /// COST: arithmetic; the probe is the worker's, a few local requests after a missed reply, never on the game's thread.
+    /// When a server is taken as hung: a slow machine looks alike for one reply, so only when its slot is still at work, or
+    /// it does not answer, after a probe of a few replies' time. Game-free.
+    /// COST: arithmetic; the probe is the worker's, a few local requests after a missed reply.
     /// </summary>
     public static class TextHang
     {

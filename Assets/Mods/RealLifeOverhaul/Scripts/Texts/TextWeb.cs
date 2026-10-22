@@ -16,10 +16,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The web client of Your own AI: one HttpClient for the session, used only from worker threads. Every request has its
-    /// own time-out, and the wait is bounded again by the caller's clock, so no worker is held past its request's time. A
-    /// streamed answer is read line by line and left as soon as its text is whole. Nothing is logged here. Game-free.
-    /// COST: nothing on the game's thread.
+    /// The web client of Your own AI: one HttpClient, used only from worker threads, the wait bounded again by the caller's
+    /// clock so no worker is held past its time. Game-free. COST: nothing on the game's thread.
     /// </summary>
     public sealed class TextWeb : ITextWeb
     {

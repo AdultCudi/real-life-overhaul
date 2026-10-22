@@ -6,10 +6,7 @@ using Entities.Employee.JobDemands.Requirements;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The part of TextsGame for the city's new talk of data v6: the game's own employees, a message into the game's thread
-    /// with one of them, and a business's figures for a review. Called once a game hour or when a review is worded.
-    /// </summary>
+    /// <summary>The part of TextsGame for the city's new talk: the game's employees, their threads, a business's figures.</summary>
     public static partial class TextsGame
     {
         private static readonly Dictionary<string, EmployeeInstance> Employees = new Dictionary<string, EmployeeInstance>(64, StringComparer.Ordinal);
@@ -28,10 +25,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Reads the game's own facts of one of the staff, after <see cref="IndexEmployees"/>; false for an id the game has no
-        /// employee of.
-        /// </summary>
+        /// <summary>Reads the game's own facts of one of the staff, after <see cref="IndexEmployees"/>; false for no such employee.</summary>
         public static bool ReadEmployee(TextStaff s)
         {
             if (s == null || s.Id == null || !Employees.TryGetValue(s.Id, out EmployeeInstance e))
@@ -78,10 +72,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>
-        /// A business's figures for a review, each 0 to 100 as the game's insight page shows them, and how busy it was
-        /// yesterday against the week before (1 busy, -1 quiet, 0 neither). False when the game has too few days of figures.
-        /// </summary>
+        /// <summary>A business's review figures, 0 to 100, and yesterday's crowd (1 busy, -1 quiet); false with too few days of figures.</summary>
         public static bool Figures(BuildingRegistration reg, out int service, out int pricing, out int cleanliness, out int interior, out int crowd)
         {
             service = pricing = cleanliness = interior = crowd = 0;

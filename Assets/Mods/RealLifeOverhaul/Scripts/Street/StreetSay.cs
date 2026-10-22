@@ -23,9 +23,8 @@ namespace RealLifeOverhaul.Street
     }
 
     /// <summary>
-    /// The player's own words in a conversation, read with fixed rules (invitations as Flare reads them). The words change
-    /// the game only through what they are read as; anything else is just talk. Game-free.
-    /// COST: one pass over a line of at most <see cref="Most"/> characters, when the player sends it.
+    /// The player's own words in a conversation, read with fixed rules: they change the game only through what they are read
+    /// as. Game-free. COST: one pass over a line of at most <see cref="Most"/> characters, when sent.
     /// </summary>
     public static class StreetSay
     {

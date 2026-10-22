@@ -11,9 +11,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The mod's seven languages as RLO Texts writes them from data v6 (older packs write English only): the code a card's
-    /// lang line carries, its script, how long a line of it may be in units (a wide character counts two) and how many
-    /// tokens a reply may take. Game-free. COST: a pass over a line, or a few comparisons.
+    /// The seven languages RLO Texts writes from data v6: a card's lang code, its script, a line's length in units (a wide
+    /// character counts two) and a reply's tokens. Game-free. COST: a pass over a line, or a few comparisons.
     /// </summary>
     public static class TextLanguages
     {
@@ -24,16 +23,10 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The seven, in the mod's order (RealLifeOverhaul.Build/Shared/ModLanguages).</summary>
         public static readonly string[] All = { "en", "pt", "zh-cn", "de", "fr", "es", "ru" };
 
-        /// <summary>
-        /// The mod's other languages: no pack writes them, so a game in one of them keeps every written line rather than show
-        /// a model's English. A language joins <see cref="All"/> only with packs trained and passed in it.
-        /// </summary>
+        /// <summary>The mod's other languages, which no pack writes, so a game in one keeps every written line.</summary>
         public static readonly string[] Unwritten = { "nl", "tr" };
 
-        /// <summary>
-        /// The language a card is written in for the game's: one of <see cref="All"/> or <see cref="Unwritten"/> as itself,
-        /// else English, in which the mod reads any other language.
-        /// </summary>
+        /// <summary>The language a card is written in for the game's: a known one as itself, else English, as the mod reads it.</summary>
         public static string Of(string locale)
         {
             if (string.IsNullOrEmpty(locale))
@@ -57,11 +50,8 @@ namespace RealLifeOverhaul.Texts
             return English;
         }
 
-        /// <summary>
-        /// Each of the seven as its native speakers write it, and how they address the player: the teacher's brief of data
-        /// v6 word for word (prompts6.py, LANGUAGE and YOU), so an AI service writes a language as the packs learnt it. In
-        /// the order of <see cref="All"/>.
-        /// </summary>
+        // Each of the seven as its natives write it, and how they address the player: the teacher's brief of data v6 word for
+        // word (prompts6.py), so an AI service writes a language as the packs learnt it.
         private static readonly string[] Natives =
         {
             "British English", "Brazilian Portuguese", "Simplified Chinese (Mandarin as spoken in mainland China)", "German", "French (France)", "Spanish (Spain)", "Russian"
@@ -145,7 +135,6 @@ namespace RealLifeOverhaul.Texts
             return codes;
         }
 
-        /// <summary>True when a pack of these languages writes in this one.</summary>
         public static bool Has(string[] codes, string code)
         {
             return codes != null && code != null && Array.IndexOf(codes, code) >= 0;

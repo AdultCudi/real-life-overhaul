@@ -180,10 +180,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Keeps a child process of llama.cpp's offline and to the mod's own arguments: no LLAMA_ARG_ variable, which would
-        /// set any of its options, and no HF_ one reaches it.
-        /// </summary>
+        /// <summary>Keeps a child of llama.cpp's offline and to the mod's arguments: no LLAMA_ARG_ or HF_ variable reaches it.</summary>
         public static void Offline(ProcessStartInfo info)
         {
             var drop = new List<string>(4);
@@ -210,8 +207,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Gives a child process of llama.cpp's the GPU driver's own shader cache: under Steam's the driver kept no shader for
-        /// it, and every start built them all again (10 s against 0.05 s). The names taken out, for the log; empty for none.
+        /// Gives a child of llama.cpp's the driver's own shader cache: under Steam's none was kept and every start built them
+        /// again (10 s against 0.05 s). The names taken out, for the log.
         /// </summary>
         public static string OwnShaderCache(ProcessStartInfo info)
         {

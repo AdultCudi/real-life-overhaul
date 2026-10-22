@@ -8,10 +8,8 @@ using RealLifeOverhaul.GameUi;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// Your own AI: the people who answer through the packs answer through an AI service the player chose instead. This
-    /// part keeps its runner as the options say, started again only when the service, its model, address or key changes;
-    /// the options page's buttons; and its status. The key is typed hidden in the game's text box and kept only in
-    /// TextKeys, never in a save, the options or a log. COST: two comparisons a look; the rest on a press or the runner's threads.
+    /// Your own AI: its runner kept as the options say, the options page's buttons and its status. The key is typed hidden
+    /// and kept only in TextKeys. COST: two comparisons a look; the rest on a press or the runner's threads.
     /// </summary>
     public sealed partial class TextsDirector
     {
@@ -347,16 +345,12 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice(told == 1 ? "reallife_textsai_chatgpt_out" : "reallife_textsai_chatgpt_out_unconfirmed", null, 16f);
         }
 
-        /// <summary>Opens ChatGPT's own page for the plan's use in apps.</summary>
         public static void ManageUsage()
         {
             TextsGame.OpenUrl(TextChatGpt.UsageUrl);
         }
 
-        /// <summary>
-        /// Sends a friend's small talk to the chosen service only, checked as every reply is, and shows it as a notice with
-        /// what it took, or why not. A stopped service is started again first.
-        /// </summary>
+        /// <summary>Sends a friend's small talk to the chosen service only and shows it as a notice, or why not.</summary>
         public static void TestService()
         {
             TextProviderInfo p = Chosen;
@@ -403,7 +397,6 @@ namespace RealLifeOverhaul.Texts
 
         private static string Short(string why) => why == null ? "?" : why.Length <= WhyMost * 2 ? why : why.Substring(0, WhyMost * 2 - 1) + "\u2026";
 
-        /// <summary>Shows the service's status as one of the game's notices.</summary>
         public static void ShowServiceStatus()
         {
             TextProviderInfo p = Chosen;

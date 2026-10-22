@@ -7,10 +7,8 @@ namespace RealLifeOverhaul.Texts
     public enum TextStaffSay { None, RaiseAsk, Sick, RaiseThanks, Hours }
 
     /// <summary>
-    /// When the city's new talk of data v6 speaks, and who: the staff (one message a day each at most), the player's life
-    /// events since the last look, who texts about each, and gossip passed on once. Every rule takes the game's state, the
-    /// day and the hour, and gives the same answer on every machine: no random number but a hash. Game-free.
-    /// COST: a pass over the staff or the people, a few dozen, once a game hour.
+    /// When the city's new talk of data v6 speaks, and who; the same answer on every machine, no random number but a hash.
+    /// Game-free. COST: a pass over the staff or the people, a few dozen, once a game hour.
     /// </summary>
     public static class TextsCityRules
     {
@@ -26,10 +24,7 @@ namespace RealLifeOverhaul.Texts
         public const string LifeStem = "reallife" + "_texts_life_";
         public const string GossipStem = "reallife" + "_texts_gossip_";
 
-        /// <summary>
-        /// What one of the staff says now, the mark moved so nothing is said twice; a first sight only notes their raise.
-        /// Off sick is said in the morning, the rest in business hours.
-        /// </summary>
+        /// <summary>What one of the staff says now, the mark moved so nothing is said twice; a first sight only notes their raise.</summary>
         public static TextStaffSay Staff(TextStaff s, TextStaffMark m, int day, int hour)
         {
             if (s == null || m == null)
@@ -83,11 +78,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The game week a day falls in, seven days from day 1.</summary>
         public static int Week(int day) => day <= 0 ? 0 : (day - 1) / 7;
 
-        /// <summary>
-        /// Adds the player's life events since the last look and moves the mark to now; the first look of a save only notes
-        /// where things stand. A big win or loss moves the net worth by <see cref="BigShare"/> per cent and at least
-        /// <paramref name="floor"/>.
-        /// </summary>
+        /// <summary>Adds the player's life events since the last look, the first look only noting where things stand; how many.</summary>
         public static int Life(TextLife now, TextLifeMark mark, long floor, List<TextLifeEvent> into)
         {
             int before = into.Count;
@@ -154,10 +145,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Who texts about a kind of event, in order, each role with the card's intent; the first who may text now does.
-        /// Arrests and break-ins are texted by the social life already, and have none here.
-        /// </summary>
+        /// <summary>Who texts about a kind of event, in order, with the card's intent; none for what the social life texts itself.</summary>
         public static string[][] SenderOrder(string kind)
         {
             switch (kind)
@@ -189,10 +177,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Who texts about an event now: the first of its order who is free to; false for nobody, and the event's text is
-        /// let go. <paramref name="sender"/> holds the intent, branch and written line's key.
-        /// </summary>
+        /// <summary>Who texts about an event now: the first of its order who is free to; false for nobody.</summary>
         public static bool Sender(TextLifeEvent e, List<TextPerson> people, int day, out TextLifeSender sender)
         {
             sender = new TextLifeSender { Index = -1 };
@@ -300,10 +285,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The gossip branch of an event's kind: the court's two verdicts are one.</summary>
         public static string GossipKind(string kind) => kind == "court_guilty" || kind == "court_cleared" ? "court" : kind;
 
-        /// <summary>
-        /// Whether two people of the player's life know each other: the same district, met the player in the same place, or
-        /// one is the partner and the other Mom or a close friend.
-        /// </summary>
+        /// <summary>Whether two people of the player's life know each other, by the social life's own data.</summary>
         public static bool Knows(TextPerson a, TextPerson b)
         {
             if (a == null || b == null || a.Index == b.Index)
@@ -324,11 +306,7 @@ namespace RealLifeOverhaul.Texts
         // A place where two people the player met could have met each other too (SocialOrigin: Gym 2, Work 3, CoffeeCart 4, Neighbour 5, Customer 7, Event 9).
         private static bool SharedPlace(int origin) => origin == 2 || origin == 3 || origin == 4 || origin == 5 || origin == 7 || origin == 9;
 
-        /// <summary>
-        /// Who passes an event on now, at its hour in the days after it: the teller is who texted about it, or the closest
-        /// friend; the hearer, who texts, somebody free who knows them and is not the partner or Mom, by the lowest hash.
-        /// False for an event not public or passed on already.
-        /// </summary>
+        /// <summary>Who passes an event on now, at its hour in the days after it; false for one not public or passed on already.</summary>
         public static bool Gossip(TextLifeEvent e, List<TextPerson> people, int day, int hour, out int teller, out int hearer)
         {
             teller = hearer = -1;
@@ -408,10 +386,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The figure names of a review, in the order of the game's insight page.</summary>
         public static readonly string[] ReviewFigures = { "service", "prices", "cleanliness", "interior" };
 
-        /// <summary>
-        /// What a review of the player's business is mostly about: the best of the game's figures for four or five stars, the
-        /// worst for any other, a tie to the first.
-        /// </summary>
+        /// <summary>What a review is mostly about: the best figure for four or five stars, else the worst, a tie to the first.</summary>
         public static string ReviewAbout(int stars, int service, int pricing, int cleanliness, int interior)
         {
             int[] f = { service, pricing, cleanliness, interior };

@@ -4,10 +4,8 @@ using System.Text;
 namespace RealLifeOverhaul.Street
 {
     /// <summary>
-    /// What street talk keeps in a save: only the word of mouth for the player's businesses, so a load gives the same
-    /// customers. One line, records separated by '^': v=1^c=countedDay|counted^t=address|day|percent. A record of an
-    /// unknown kind is passed over; a line that cannot be read is kept as it was (Core/SaveLines). Game-free.
-    /// COST: nothing unless a save is loaded or written.
+    /// What street talk keeps in a save, the word of mouth: v=1^c=countedDay|counted^t=address|day|percent. A line that cannot
+    /// be read is kept as it was (Core/SaveLines). Game-free. COST: nothing unless a save is loaded or written.
     /// </summary>
     public static class StreetStore
     {

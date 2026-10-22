@@ -5,10 +5,8 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// How every request of data v6 is made so that a reply cannot break the rules, rather than only be refused after: a
-    /// GBNF grammar by the card's language and the speaker's style, n_predict from the intent's length in the language,
-    /// and the player's name banned through logit_bias when the speaker does not know it. The bodies are the contract's
-    /// (SPEC_v6.json: decoding). Game-free. COST: a string chosen and a few appended a request.
+    /// How a request of data v6 is made so a reply cannot break the rules: a GBNF grammar, n_predict by the language, and an
+    /// untold name banned through logit_bias, as SPEC_v6.json's decoding says. Game-free. COST: a few strings a request.
     /// </summary>
     public static class TextDecoding
     {
@@ -51,7 +49,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The names of the grammars, in the contract's order.</summary>
         public static readonly string[] Names = { Cased, Free, Uncased };
 
-        /// <summary>The grammar a request of this language and style takes.</summary>
         public static string GrammarName(string lang, bool lowercase)
         {
             if (!TextLanguages.Cased(lang))
@@ -79,10 +76,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The n_predict of a request of an intent in a language.</summary>
         public static int Tokens(TextIntent intent, string lang) => TextLanguages.Tokens(TextLanguages.MostUnits(intent.MaxLen, lang), lang);
 
-        /// <summary>
-        /// The forms of a name whose first token is banned: in a line and at its start. Null for a name too short to ban
-        /// without a common token, or the card's stand-in "you".
-        /// </summary>
+        /// <summary>The forms of a name whose first token is banned; null for one too short to ban without a common token, or "you".</summary>
         public static string[] NameForms(string name)
         {
             if (string.IsNullOrEmpty(name) || name.Length < 3 || name == "you" || name.IndexOf('<') >= 0)

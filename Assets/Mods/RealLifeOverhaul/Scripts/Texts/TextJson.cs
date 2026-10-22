@@ -3,10 +3,7 @@ using System.Text;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The little JSON the runner speaks with llama.cpp's server: a completion request's body and the fields read back
-    /// from the answer, with every escape. No library. Game-free. COST: one pass over a few hundred characters.
-    /// </summary>
+    /// <summary>The little JSON the runner speaks with llama.cpp's server, with no library. Game-free. COST: a pass over a few hundred characters.</summary>
     public static class TextJson
     {
         public const int Tokens = 70;               // tokens a reply at most, the tests' setting (200 characters are about 50)
@@ -86,7 +83,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>True when the server's answer says the reply was cut off at its most tokens.</summary>
         public static bool Cut(string json) => Field(json, "stop_type") == "limit";
 
-        /// <summary>Appends the text as a JSON string, quotes included.</summary>
         public static void Quote(string text, StringBuilder t)
         {
             t.Append('"');

@@ -4,9 +4,8 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The English words a card uses for the mod's people, as the models were trained on them (common.py's lists, in
-    /// SocialCatalogue's order), and each person's style of writing, drawn from their own seed by the generator's rule so a
-    /// person always writes the same way. Cards are always in English. Game-free. COST: a lookup or a few hashes.
+    /// The English words a card uses for the mod's people, as the models were trained on them, and each person's style of
+    /// writing from their own seed. Game-free. COST: a lookup or a few hashes.
     /// </summary>
     public static class TextWords
     {
@@ -108,10 +107,7 @@ namespace RealLifeOverhaul.Texts
             return "$" + amount.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        /// <summary>
-        /// A friend's, the partner's or a roommate's way of writing, from their own seed (world.friend). The supportive never
-        /// write coldly; the envious often dryly.
-        /// </summary>
+        /// <summary>A friend's, the partner's or a roommate's way of writing, from their own seed (world.friend).</summary>
         public static string FriendStyle(int seed, int traits, bool partner)
         {
             string main = FriendStyles[Roll(seed, 1, FriendStyles.Length)];

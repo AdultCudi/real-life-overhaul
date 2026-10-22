@@ -4,9 +4,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// Which trained intent each of the phone's written messages is, by the written line's own key: the game picks the line
-    /// as before, and its key says what the moment is. A key with no intent here keeps its written line. Flare's map is
-    /// its own. Game-free. COST: a few string comparisons a message.
+    /// Which trained intent each of the phone's written messages is, by the line's own key; a key with none keeps its
+    /// written line. Game-free. COST: a few string comparisons a message.
     /// </summary>
     public static class TextsMapRules
     {
@@ -150,10 +149,7 @@ namespace RealLifeOverhaul.Texts
             return null;
         }
 
-        /// <summary>
-        /// The card that answers the player's own typed words to somebody of the social life on a call: data v3's answer to
-        /// a message, for a friend and for the partner. Null for anybody else: no pack has a card for them.
-        /// </summary>
+        /// <summary>The card that answers the player's typed words on a call: data v3's, for a friend or the partner; null for anybody else.</summary>
         public static string Answering(From from)
         {
             switch (from)
@@ -179,10 +175,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// The key a piece's words are kept under: its edition's day, and its key and values hashed the same on every machine,
-        /// so a guest finds the host's words for the same piece.
-        /// </summary>
+        /// <summary>The key a piece's words are kept under: its day, and its key and values hashed alike on every machine.</summary>
         public static string LedgerKey(int day, string key, string[] data)
         {
             unchecked

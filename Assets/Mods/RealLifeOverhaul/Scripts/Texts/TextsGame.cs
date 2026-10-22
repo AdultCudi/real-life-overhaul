@@ -12,11 +12,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The only part of RLO Texts that touches the game: its folders, language, the player's name, the day and time, the
-    /// game's speed and quiet, its notices, and for Your own AI its text box with what is typed hidden, and the browser.
-    /// Each read is a property or two; nothing here runs per frame.
-    /// </summary>
+    /// <summary>The only part of RLO Texts that touches the game. Each read is a property or two; nothing here runs per frame.</summary>
     public static partial class TextsGame
     {
         public const string AppId = "1331550";   // the game's Steam app, for its Workshop folder
@@ -25,10 +21,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The fixed folder for packs, the speed file, the server's log and its cache: "RLO Texts" in the game's own data folder.</summary>
         public static string Home => Path.Combine(Application.persistentDataPath, TextPacks.Fixed);
 
-        /// <summary>
-        /// Every place a pack may be: the fixed folder, the folders the packs' own mod announced, ModsLocal, and on the
-        /// Workshop only RLO's own pack items, switched on or not. No other Workshop item is ever looked in.
-        /// </summary>
+        /// <summary>Every place a pack may be; on the Workshop only RLO's own pack items, switched on or not.</summary>
         public static List<string> Places()
         {
             var places = new List<string>(6) { Home };
@@ -39,7 +32,6 @@ namespace RealLifeOverhaul.Texts
             return places;
         }
 
-        /// <summary>True while the game shows English.</summary>
         public static bool English
         {
             get
@@ -104,10 +96,7 @@ namespace RealLifeOverhaul.Texts
             return Math.Min(3600.0, Math.Max(0.0, gameMinutes) / perSecond);
         }
 
-        /// <summary>
-        /// Quiet enough for the background: no loading screen, fast forward, time skip or police pursuit, and frames not slow
-        /// on average since the last look.
-        /// </summary>
+        /// <summary>Quiet enough for the background: no loading, fast forward or pursuit, and frames not slow since the last look.</summary>
         public static bool Quiet(float frameMs)
         {
             if (LoadScene.isLoading || Time.timeScale > 1.001f || frameMs > SlowFrameMs)
@@ -122,10 +111,7 @@ namespace RealLifeOverhaul.Texts
             return !(PolicePursuit.Instance != null && PolicePursuit.Instance.Busy);
         }
 
-        /// <summary>
-        /// Opens the game's text box, empty, for a key, what is typed shown as dots and the box put back as it was when it
-        /// closes. False without the box, as in the main menu; without the contract's field it works unhidden.
-        /// </summary>
+        /// <summary>Opens the game's text box for a key, what is typed shown as dots; false without the box, as in the main menu.</summary>
         public static bool AskSecret(string placeholderKey, string buttonKey, Action<string> done, int most)
         {
             if (!TextBox.CanType)
@@ -181,7 +167,6 @@ namespace RealLifeOverhaul.Texts
             return uis != null && uis.textInputUi != null && f != null ? f.GetValue(uis.textInputUi) as TMP_InputField : null;
         }
 
-        /// <summary>Opens an address in the player's browser.</summary>
         public static void OpenUrl(string url)
         {
             Application.OpenURL(url);

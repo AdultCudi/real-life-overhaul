@@ -4,10 +4,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The director's part for what people remember of the player and the city's new talk: both stores read with the save,
-    /// and written only once a data 6 pack ran or they changed, so a save played without one keeps its lines. Facts are
-    /// remembered only while a pack of data 6 runs (<see cref="Six"/>); life events are noted with RLO Texts on, a pack or not.
-    /// COST: nothing per frame; a dictionary's few facts when one is remembered or a card is built.
+    /// The director's part for what people remember and the city's new talk: both stores written only once a data 6 pack
+    /// ran or they changed, so a save played without one keeps its lines. COST: a dictionary's few facts when asked.
     /// </summary>
     public sealed partial class TextsDirector
     {

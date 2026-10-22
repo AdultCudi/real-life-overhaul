@@ -4,10 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The checker of data v6, in the card's language. What the request's grammar already rules out is checked again: the
-    /// checker has the last word. Game-free. COST: one pass over a line, a few short regular expressions.
-    /// </summary>
+    /// <summary>The checker of data v6, in the card's language, which has the last word over the grammar. Game-free. COST: a pass over a line.</summary>
     public static partial class TextCheck
     {
         public const int StrangeLeast = 2;     // words of another language a line must have, with none of its own, to be refused as written in it
@@ -65,10 +62,7 @@ namespace RealLifeOverhaul.Texts
             return sets;
         }
 
-        /// <summary>
-        /// The verdict on tidied words for a card of data v6 in the card's language. <paramref name="cut"/>: the reply
-        /// stopped at its most tokens; <paramref name="untold"/>: the player's name when the speaker does not know it.
-        /// </summary>
+        /// <summary>The verdict on tidied words of data v6; <paramref name="untold"/> is the player's name when the speaker does not know it.</summary>
         public static TextVerdict JudgeSix(string words, TextIntent intent, TextSheet card, string cardText, IReadOnlyList<string> recent, string lang, bool cut,
             string untold, bool lowercase, int filterStrength = 1)
         {
@@ -193,10 +187,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        /// <summary>
-        /// Whether a line is in its language: no letter of a script it does not write, its own script there for Russian and
-        /// Chinese, and a Latin-script line not plainly in another language by its little words.
-        /// </summary>
+        /// <summary>Whether a line is in its language: by its script, and for a Latin script by its little words.</summary>
         public static bool InLanguage(string words, string lang)
         {
             TextScript script = TextLanguages.Script(lang);
@@ -291,10 +282,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>
-        /// True when English's articles fit the word after them, by the sound for the words it knows ("a euro", "an hour").
-        /// A word beginning with u, a figure, or a short form in capitals ("an MBA") is let be.
-        /// </summary>
+        /// <summary>True when English's "a" and "an" fit the word after them, by its sound for the words known ("a euro", "an hour").</summary>
         public static bool Articles(string words)
         {
             int start = 0;

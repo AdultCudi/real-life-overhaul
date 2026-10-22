@@ -33,10 +33,7 @@ namespace RealLifeOverhaul.Texts
         public int SeenDay;          // the last day they were seen: marks of staff gone are let go
     }
 
-    /// <summary>
-    /// The player's life as the people in it could hear of it, read once a game hour (Wiring/Wiring.TextsCity). Game-free;
-    /// refilled each look.
-    /// </summary>
+    /// <summary>The player's life as the people in it could hear of it, read once a game hour. Game-free; refilled each look.</summary>
     public sealed class TextLife
     {
         public int Day;

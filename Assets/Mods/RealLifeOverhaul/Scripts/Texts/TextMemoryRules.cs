@@ -38,10 +38,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// What people remember of the player, as RLO Texts puts it on a card (data v6). The game records every fact
-    /// (TextsDirector.Remember); the model never writes one. A card's few "memory:" lines are chosen here the same way every
-    /// time for the same facts, whatever order they were recorded in. Game-free.
-    /// COST: a pass over a person's few facts and a sort of a handful, a card.
+    /// What people remember of the player, as a card of data v6 carries it: facts the game records, chosen the same way for
+    /// the same facts. Game-free. COST: a pass over a person's few facts and a sort of a handful, a card.
     /// </summary>
     public static class TextMemoryRules
     {
@@ -114,10 +112,7 @@ namespace RealLifeOverhaul.Texts
             return TextMemoryKinds.None;
         }
 
-        /// <summary>
-        /// Every code of every kind with its line in the card's English words: "{value}" is the fact's name or sum, and a
-        /// trailing '*' marks a standing fact, which takes no "how long ago".
-        /// </summary>
+        /// <summary>Every code of every kind with its line; a trailing '*' marks a standing fact, which takes no "how long ago".</summary>
         public static readonly string[][] Codes =
         {
             // met
@@ -219,10 +214,7 @@ namespace RealLifeOverhaul.Texts
             return days < 60 ? "a few weeks ago" : "months ago";
         }
 
-        /// <summary>
-        /// A fact as its memory line's words, an event as heard; null for an unknown code, or one that names a value it does
-        /// not have.
-        /// </summary>
+        /// <summary>A fact as its memory line's words; null for an unknown code, or one that names a value it does not have.</summary>
         public static string Line(TextFact f, int today)
         {
             string template = Template(f.Kind, f.Code);
@@ -247,10 +239,7 @@ namespace RealLifeOverhaul.Texts
             return standing ? text : text + ", " + Ago(today - f.Day);
         }
 
-        /// <summary>
-        /// The memory lines for a card, into <paramref name="lines"/>: of the facts its speaker may remember, fresh, not the
-        /// card's own <paramref name="subject"/>, the most relevant first, one of each kind and code.
-        /// </summary>
+        /// <summary>The memory lines for a card: fresh facts its speaker may remember, not its <paramref name="subject"/>, the most relevant first.</summary>
         public static int Select(List<TextFact> facts, TextIntent intent, int today, string subject, List<string> lines)
         {
             lines.Clear();
@@ -402,10 +391,7 @@ namespace RealLifeOverhaul.Texts
 
         private static bool Starts(string intent, string prefix) => intent.StartsWith(prefix, StringComparison.Ordinal);
 
-        /// <summary>
-        /// Whether a person's memory may be kept under a key: a person of the player's own game, the same alone or in a
-        /// Going Public session; never a key of the session's own numbers ("fn:", "lp:"), which name what everybody reads.
-        /// </summary>
+        /// <summary>Whether a memory may be kept under a key: a person of the player's own game, never a session's number ("fn:", "lp:").</summary>
         public static bool KeyOk(string key)
         {
             if (string.IsNullOrEmpty(key) || key.Length > 80 || key.IndexOf('|') >= 0 || key.IndexOf('^') >= 0)
@@ -438,7 +424,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>True for a stranger's key: remembered only for <see cref="StrangerDays"/> past their last fact.</summary>
         public static bool Stranger(string key) => key != null && key.StartsWith("sp:", StringComparison.Ordinal);
 
-        /// <summary>Whether a fact is still kept on this day.</summary>
         public static bool Kept(string key, TextFact f, int today)
         {
             int age = today - f.Day;

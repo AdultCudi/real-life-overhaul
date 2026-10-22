@@ -65,10 +65,7 @@ namespace RealLifeOverhaul.Street
     /// <summary>A place a stranger can be asked the way to: the businesses of the city by their kind.</summary>
     public enum StreetPlace { Coffee, Food, Drinks, Grocery, Clothes, Gym, Cinema, Bank, Count }
 
-    /// <summary>
-    /// Somebody in the street, worked out from a seed of the save, the day and the game's figure, so they are the same all
-    /// day; their sex and age are the figure's own. Game-free.
-    /// </summary>
+    /// <summary>Somebody in the street, worked out from a seed of the save, the day and the game's figure. Game-free.</summary>
     public sealed class StreetStranger
     {
         public int Key;            // the figure the game shows (its instance): one look, one person, for the session

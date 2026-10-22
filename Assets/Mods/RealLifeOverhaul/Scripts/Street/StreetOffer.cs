@@ -12,9 +12,8 @@ namespace RealLifeOverhaul.Street
     }
 
     /// <summary>
-    /// Who in the street is offered a talk: the nearest person roughly in front, weighed so somebody straight ahead beats
-    /// somebody a little nearer at the side; the one already offered keeps it to a wider reach and angle. Game-free.
-    /// COST: a few multiplications and one square root a person, on the director's tick.
+    /// Who is offered a talk: the nearest person roughly in front, straight ahead beating a little nearer at the side.
+    /// Game-free. COST: a few multiplications and one square root a person, on the director's tick.
     /// </summary>
     public static class StreetOffer
     {
@@ -70,9 +69,8 @@ namespace RealLifeOverhaul.Street
     }
 
     /// <summary>
-    /// Whom the box is aimed at, from tick to tick. A tick or two without them, while they are still near
-    /// (<see cref="StreetRules.Grace"/>), neither resets their time in front nor moves the box. Game-free.
-    /// COST: a few comparisons on the director's tick; nothing allocated.
+    /// Whom the box is aimed at; a tick or two out of the front within <see cref="StreetRules.Grace"/> changes nothing.
+    /// Game-free. COST: a few comparisons on the director's tick.
     /// </summary>
     public sealed class StreetAim
     {

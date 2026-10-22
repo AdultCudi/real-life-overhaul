@@ -31,12 +31,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// Finding a pack and choosing where it runs. A pack is a folder with a pack.txt of "key=value" lines (paths relative
-    /// to the folder); the mod looks in the fixed folder, RLO's own Workshop items only, the folders the pack's own mod
-    /// announced, and ModsLocal, once a session. A pack's exe and model must lie inside its folder, and its runtime must
-    /// be exactly llama.cpp's files as pinned in <see cref="TextRuntime"/> with no other .exe or .dll (<see cref="Verify"/>),
-    /// or it is not run. The best is the highest tier, then the newest version; RLO Texts Large runs only on a graphics
-    /// card with the memory for it (<see cref="Pick"/>). Game-free.
+    /// Finding a pack (a folder with a pack.txt) and choosing where it runs. A pack is run only when its exe and model lie
+    /// inside its folder and its runtime is exactly llama.cpp's pinned files (<see cref="Verify"/>). Game-free.
     /// COST: a listing of a few folders once a session, off the game's thread.
     /// </summary>
     public static class TextPacks
@@ -50,9 +46,8 @@ namespace RealLifeOverhaul.Texts
         public const int LargeTier = 4;                 // RLO Texts Large: an RLO before data v6 (most tier 3) takes it for no pack
 
         /// <summary>
-        /// A pack's tier from its pack.txt: the "tier" line when there is one, else the "rank" line as the first packs wrote
-        /// it; 0 when neither is one RLO knows. The packs keep a "rank" of 1 or 2 beside their tier for older RLO versions,
-        /// which refuse a rank above 2 and order packs by rank then version.
+        /// A pack's tier: its "tier" line, else its "rank" line as the first packs wrote it; 0 when neither is known. Packs
+        /// keep a rank of 1 or 2 for older RLO versions, which refuse more.
         /// </summary>
         public static int Tier(int rank, int tier, bool hasRank, bool hasTier)
         {
@@ -69,10 +64,7 @@ namespace RealLifeOverhaul.Texts
 
         public const int FullTier = 3;                  // the full pack, RLO Texts: what a rank of 2 without a tier line is
 
-        /// <summary>
-        /// RLO's own pack items on the Workshop, by their item ids: only these Workshop folders are ever looked in, and an
-        /// empty id is skipped. While Large's is empty it is found only in the fixed folder or ModsLocal, and never offered.
-        /// </summary>
+        /// <summary>RLO's own pack items on the Workshop, the only Workshop folders ever looked in; an empty id is skipped.</summary>
         public static readonly string[] WorkshopItems =
         {
             "3820711613",   // RLO Texts
@@ -84,7 +76,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>True once RLO Texts Large has its Workshop id: only then is it offered.</summary>
         public static bool LargePublished => !string.IsNullOrEmpty(WorkshopItems[3]) && IsDigits(WorkshopItems[3]);
 
-        /// <summary>The folders of RLO's own pack items under the game's Workshop content folder.</summary>
         public static List<string> WorkshopPacks(string workshopContent, string[] items)
         {
             var list = new List<string>(2);
@@ -110,7 +101,6 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>True if a full path lies inside a folder.</summary>
         public static bool Inside(string folder, string path)
         {
             if (string.IsNullOrEmpty(folder) || string.IsNullOrEmpty(path))
@@ -121,10 +111,7 @@ namespace RealLifeOverhaul.Texts
             return path.StartsWith(root, StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>
-        /// Null when a pack's runtime is exactly llama.cpp's pinned files by SHA-256, with no other .exe or .dll; else why
-        /// not. Reads about 82 MB: off the game's thread, once a session.
-        /// </summary>
+        /// <summary>Null when a pack's runtime is exactly llama.cpp's pinned files, nothing else; else why not. Reads about 82 MB, off the game's thread.</summary>
         public static string Verify(TextPack pack, string[] pinned)
         {
             string runtime = Path.GetDirectoryName(pack.Exe);
@@ -346,8 +333,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// True for graphics built into the processor, by the name llama.cpp gives it. Such a chip counts the PC's own memory
-        /// as free, so it can look roomier than a graphics card; Intel's Arc chips are named "Arc 140V", its cards "Arc A770".
+        /// True for graphics built into the processor, by its name: such a chip counts the PC's memory as free, so it looks
+        /// roomier than a card. Intel's Arc chips are named "Arc 140V", its cards "Arc A770".
         /// </summary>
         public static bool BuiltIn(string label)
         {
@@ -363,10 +350,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        /// <summary>
-        /// The device to run on, null for the processor; <paramref name="choice"/> 0 Auto (a GPU only if ample), 1 the
-        /// processor, 2 the GPU. Of several, a graphics card first, then the most free memory.
-        /// </summary>
+        /// <summary>The device to run on, null for the processor; <paramref name="choice"/> 0 Auto (a GPU only if ample), 1 the processor, 2 the GPU.</summary>
         public static string Choose(int choice, List<TextDevice> devices, long modelBytes)
         {
             if (choice == 1 || devices == null || devices.Count == 0)
@@ -402,9 +386,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The pack to run of those verified, the best first, but RLO Texts Large only on a graphics card with the memory for
-        /// it where it was not found too slow before (<paramref name="largeSlow"/>, the card's name); <paramref name="why"/>
-        /// says why Large was passed over. Null with no pack.
+        /// The best pack to run, RLO Texts Large only on a card with the memory for it where it was not too slow before;
+        /// <paramref name="why"/> says why Large was passed over. Null with no pack.
         /// </summary>
         public static TextPack Pick(List<TextPack> verified, List<TextDevice> devices, int choice, string largeSlow, out string why)
         {

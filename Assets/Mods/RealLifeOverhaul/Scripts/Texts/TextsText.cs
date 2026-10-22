@@ -2,10 +2,7 @@ using Localizor;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// RLO Texts' own words on screen, and the key a model's words are shown through on the phone. Every key is written out
-    /// in full for the locale check. Made when shown.
-    /// </summary>
+    /// <summary>RLO Texts' own words on screen, every key written out in full for the locale check.</summary>
     public static class TextsText
     {
         /// <summary>The key ("{text}", the words alone) a model's words go through where the game keeps a key and its values.</summary>

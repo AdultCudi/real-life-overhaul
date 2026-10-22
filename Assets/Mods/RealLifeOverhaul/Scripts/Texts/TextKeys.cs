@@ -7,10 +7,8 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// Your own AI's secrets on this PC, the API keys and the ChatGPT sign-in's tokens: one file outside every save, sealed
-    /// with DPAPI so only this Windows user on this PC can open it, written whole through a file that then takes its place.
-    /// Where Windows cannot seal it nothing is kept. Nothing here is logged or saved in a game. Thread-safe; game-free.
-    /// COST: a file read when the service starts, a write when a key or a token changes.
+    /// Your own AI's keys and tokens: one file outside every save, sealed with DPAPI for this Windows user only; where it
+    /// cannot be sealed nothing is kept. Never logged. Thread-safe; game-free. COST: a file read or write on a change.
     /// </summary>
     public sealed class TextKeys
     {
@@ -31,7 +29,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Why the last read or write failed, for the log; null when it did not.</summary>
         public string Why { get; private set; }
 
-        /// <summary>True when the file can be sealed here.</summary>
         public static bool Sealable()
         {
             try

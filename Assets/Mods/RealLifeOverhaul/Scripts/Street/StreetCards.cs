@@ -3,10 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul.Street
 {
-    /// <summary>
-    /// Which card of RLO Texts words a line of street talk, by the pack's data version, and how the model's words are made
-    /// fit to be said. Game-free. COST: a switch.
-    /// </summary>
+    /// <summary>Which card of RLO Texts words a line of street talk, and the model's words made fit to be said. Game-free. COST: a switch.</summary>
     public static class StreetCards
     {
         private static readonly Regex Chat = new Regex(@"\b(flare|messages?|dms?|inbox|followers?|following|posts?|posted|online|app|text me|texting|emoji|profile)\b|@",
@@ -143,10 +140,7 @@ namespace RealLifeOverhaul.Street
             return hour >= 17 ? "evening" : null;
         }
 
-        /// <summary>
-        /// Whether a stranger knows the player's name: told today, or famed. Never because they gave their own name or
-        /// numbers were swapped; words that name the player otherwise lose the name (<see cref="Spoken"/>).
-        /// </summary>
+        /// <summary>Whether a stranger knows the player's name: told today, or famed; never for their own name given or numbers swapped.</summary>
         public static bool KnowsName(bool famed, bool askedName, bool toldToday) => famed || askedName || toldToday;
 
         /// <summary>The card of data v3 that fits a line, and the mood's lean; null for the written line.</summary>
@@ -212,9 +206,8 @@ namespace RealLifeOverhaul.Street
         private static readonly Regex Starts = new Regex(@"([.?]\s+)([a-z])", RegexOptions.CultureInvariant);
 
         /// <summary>
-        /// The model's words made fit to be said: each sentence gets its capital (the v4 model leaves a slot's words in lower
-        /// case after a full stop), and the player's name, when <paramref name="untold"/>, goes when said in passing. Null
-        /// when the name is still in them: then the written line. COST: a few short regular expressions, when words come.
+        /// The model's words made fit to be said: each sentence capitalised (the v4 model leaves a slot's words in lower case),
+        /// an <paramref name="untold"/> name said in passing taken out; null when the name is still in them.
         /// </summary>
         public static string Spoken(string words, string untold)
         {
@@ -238,10 +231,7 @@ namespace RealLifeOverhaul.Street
             return w.Length > 0 && char.IsLower(w[0]) ? char.ToUpperInvariant(w[0]) + w.Substring(1) : w;
         }
 
-        /// <summary>
-        /// The model's last lines across all strangers: the v4 model greets most warm strangers with the same line, so one
-        /// said lately is not said again. Kept for the session. COST: a pass over a few short strings, when words come.
-        /// </summary>
+        /// <summary>The model's last lines across all strangers: the v4 model greets most of them alike, so one said lately is not said again.</summary>
         public sealed class Echoes
         {
             public const int Most = 8;   // lines remembered: about two conversations' worth

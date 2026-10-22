@@ -3,9 +3,8 @@ using System;
 namespace RealLifeOverhaul.Street
 {
     /// <summary>
-    /// The rules of talking to people in the street, every figure in one place. The model never decides any of it: it only
-    /// words the line the rules chose. Game-free.
-    /// COST: arithmetic and a few short lists, on a press or a click; nothing per frame.
+    /// The rules of talking to people in the street; the model only words the line the rules chose. Game-free.
+    /// COST: arithmetic and a few short lists, on a press or a click.
     /// </summary>
     public static partial class StreetRules
     {
@@ -140,10 +139,7 @@ namespace RealLifeOverhaul.Street
 
         public static bool RushHour(int hour, bool weekend) => !weekend && ((hour >= 7 && hour < 10) || (hour >= 17 && hour < 19));
 
-        /// <summary>
-        /// Whether they stop for the player, and how they take them. Rolled from the person's seed, the hour and the day's
-        /// talks, so asking twice in a row does not reroll; <paramref name="phone"/> is 0 nothing, 1 texting, 2 on a call.
-        /// </summary>
+        /// <summary>Whether they stop and how they take the player, rolled so asking twice does not reroll; <paramref name="phone"/> 0, 1 texting, 2 a call.</summary>
         public static StreetApproach Approach(StreetStranger s, StreetMemo memo, StreetFacts f, int option, int phone)
         {
             var a = new StreetApproach();
@@ -166,10 +162,7 @@ namespace RealLifeOverhaul.Street
 
         private const int Reputation55 = 55;   // the newcomer's public standing (Reputation.Start)
 
-        /// <summary>
-        /// -3 to 3: their mood today with what they make of the player. A stranger is at worst <see cref="CoolestStranger"/>
-        /// unless the player was rude or it went badly today, they know the player's bad name or record, or it is night.
-        /// </summary>
+        /// <summary>-3 to 3: their mood with what they make of the player; at worst <see cref="CoolestStranger"/> without a reason.</summary>
         public static int Warmth(StreetStranger s, StreetMemo memo, StreetFacts f, bool recognised)
         {
             int w = s.Mood;

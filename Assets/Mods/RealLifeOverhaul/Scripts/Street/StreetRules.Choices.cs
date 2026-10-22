@@ -14,9 +14,8 @@ namespace RealLifeOverhaul.Street
         private const int FitSize = 1000;         // ...and how well a choice suits the moment, within it (0 best)
 
         /// <summary>
-        /// The things the player can say now, in the order "Something else" goes through them, by tier and then by the
-        /// person's seed, so two people do not open the same way. The player's own words are not a choice of the round.
-        /// COST: a pass over the choices and an insertion into a list of at most twenty, on a click; nothing allocated.
+        /// The things the player can say now, in the order "Something else" goes through them: by tier, then by the person's
+        /// seed. COST: a pass over the choices and an insertion into a list of at most twenty, on a click.
         /// </summary>
         public static void Choices(StreetChat c, StreetFacts f, List<StreetAsk> into)
         {
@@ -76,10 +75,7 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        /// <summary>
-        /// The choice's place among the follow-ups of the line they said last (0 first), or -1. Where one plainly comes first
-        /// the order is fixed; where several would do, the person's seed turns it.
-        /// </summary>
+        /// <summary>The choice's place among the follow-ups of their last line (0 first), or -1; several are turned by the person's seed.</summary>
         public static int FollowUp(StreetLine last, StreetAsk ask, int seed)
         {
             int turn = Roll(seed, 400 + (int)last, 12);
@@ -163,7 +159,6 @@ namespace RealLifeOverhaul.Street
                    || line == StreetLine.AreaNews || line == StreetLine.AreaNothing;
         }
 
-        /// <summary>True when this can be said now.</summary>
         public static bool Offered(StreetChat c, StreetFacts f, StreetAsk ask)
         {
             StreetMemo m = c.Memo;
@@ -306,10 +301,7 @@ namespace RealLifeOverhaul.Street
             return o;
         }
 
-        /// <summary>
-        /// Whether they give the player their number: a good enough talk today, and never when the social life has nobody
-        /// of its cast left to meet.
-        /// </summary>
+        /// <summary>Whether they give their number: a good enough talk, and never when the social life has nobody left to meet.</summary>
         public static StreetLine Number(StreetChat c, StreetFacts f, bool nobodyNew)
         {
             if (c.Memo != null && c.Memo.Swapped)
@@ -329,10 +321,7 @@ namespace RealLifeOverhaul.Street
             return c.Who.Taken && c.Memo != null && c.Memo.Flirted ? StreetLine.NumberTaken : score <= 0 ? StreetLine.NumberNo : StreetLine.NumberLater;
         }
 
-        /// <summary>
-        /// An invitation to be decided as Flare decides one (FlareInviteRules.Decide), how the talk went standing in for the
-        /// messages exchanged; coffee, or dinner after a flirt that went well. The social life fills the rest.
-        /// </summary>
+        /// <summary>An invitation to be decided as Flare decides one, the talk standing in for the messages exchanged.</summary>
         public static FlareInviteAsk Invite(StreetChat c, StreetFacts f, bool flirted, long now)
         {
             StreetStranger s = c.Who;
@@ -394,6 +383,7 @@ namespace RealLifeOverhaul.Street
             return d < 45f || d >= 315f ? 0 : d < 135f ? 1 : d < 225f ? 2 : 3;
         }
 
+        /// <summary>Minutes on foot, at least one.</summary>
         public static int Minutes(float metres) => Math.Max(1, (int)Math.Round(metres / WalkMetresPerMinute));
 
         public static StreetLine Directions(bool found, float metres) => !found ? StreetLine.DirNone : metres > FarMetres ? StreetLine.DirFar : StreetLine.DirFound;

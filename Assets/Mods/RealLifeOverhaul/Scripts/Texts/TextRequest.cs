@@ -4,8 +4,7 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// What a feature asks of RLO Texts: the intent and branch, the speaker, the values, the thread for a reply, how urgent
-    /// and by when. Made by the asker on an event; handed back through <see cref="Done"/> on the game's thread exactly once,
+    /// What a feature asks of RLO Texts, on an event; <see cref="Done"/> is called on the game's thread exactly once, with
     /// the words or null for the written line.
     /// </summary>
     public sealed class TextRequest

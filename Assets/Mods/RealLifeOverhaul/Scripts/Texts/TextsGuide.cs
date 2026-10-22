@@ -4,10 +4,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The feature's entry in the feature list, and its Guide page's figures, each filled from the rules when the page is
-    /// opened.
-    /// </summary>
+    /// <summary>The feature's entry in the feature list, and its Guide page's figures from the rules.</summary>
     public static class TextsGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -54,7 +51,6 @@ namespace RealLifeOverhaul.Texts
     /// <summary>RLO Texts' blocks on the options page, as extensions so each is one line there.</summary>
     public static class TextsOptions
     {
-        /// <summary>The "RLO Texts" block of the options page.</summary>
         public static ModOptions AddTexts(this ModOptions options)
         {
             return options

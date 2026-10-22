@@ -3,10 +3,8 @@ using System;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The intents of data v6 (the contract SPEC_v6.json is written from this table by EconomyCheck's --texts-spec):
-    /// every older intent again at its latest card, in the game's language, with what the speaker remembers, and the
-    /// city's new talk (the staff, the people of the player's life, gossip, reviews). An older pack is never asked them.
-    /// Game-free. COST: none until asked.
+    /// The intents of data v6, from which EconomyCheck's --texts-spec writes SPEC_v6.json: every older intent again, and the
+    /// city's new talk. An older pack is never asked them. Game-free.
     /// </summary>
     public static partial class TextIntents
     {
@@ -141,7 +139,6 @@ namespace RealLifeOverhaul.Texts
             return null;
         }
 
-        /// <summary>The kind of message in the contract's words.</summary>
         public static string ShapeOf(TextIntent t)
         {
             switch (t.Channel)
@@ -175,9 +172,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// The player's event a card's own news tells, so its memory is left out and not said twice; null for none.
-        /// </summary>
+        /// <summary>The player's event a card's own news tells, so its memory is left out and not said twice; null for none.</summary>
         public static string Subject(string key, string branch)
         {
             if (key == null)

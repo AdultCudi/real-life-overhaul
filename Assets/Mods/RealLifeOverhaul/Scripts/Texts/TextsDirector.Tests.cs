@@ -4,10 +4,7 @@ using System.Text;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// RLO Texts' entries in Options > Tests: a sample message written now, what was shown this session, and with a pack of
-    /// data 6 the city's new talk made now rather than waited for.
-    /// </summary>
+    /// <summary>RLO Texts' entries in Options > Tests: each makes now what would otherwise be waited for.</summary>
     public sealed partial class TextsDirector
     {
         /// <summary>A friend's small talk written by the model now, shown as a notice when it comes back, or why not. Needs a save loaded.</summary>

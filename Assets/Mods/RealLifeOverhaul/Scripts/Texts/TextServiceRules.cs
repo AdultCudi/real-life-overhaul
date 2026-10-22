@@ -58,10 +58,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// Your own AI's rules: the request for a card to each kind of service, the words read back out of each kind of
-    /// answer, the faults and the rest after each, the models a service lists, and anything like a key or a token taken out
-    /// of a line before it is logged. Game-free.
-    /// COST: a few strings a request, on the runner's worker threads; nothing per frame.
+    /// Your own AI's rules: each kind of service's request and answer, the faults and rests, and anything like a key taken out
+    /// of a line before it is logged. Game-free. COST: a few strings a request, on the worker threads.
     /// </summary>
     public static class TextServiceRules
     {
@@ -82,10 +80,7 @@ namespace RealLifeOverhaul.Texts
         public const string AnthropicVersion = "2023-06-01";   // the Messages API's version header
         public const string AppName = "Real Life Overhaul";    // how the mod names itself to a service that asks
 
-        /// <summary>
-        /// The request for one card; <paramref name="secret"/> is the key or the access token, null for a program on this
-        /// PC, and the two flags leave out what the service refused before.
-        /// </summary>
+        /// <summary>The request for one card; <paramref name="secret"/> is null for a local program, the flags leave out what was refused.</summary>
         public static TextWebRequest Build(TextProviderInfo p, string baseUrl, string model, string system, string card, string secret, bool noReasoning, bool noTemperature)
         {
             var t = new StringBuilder(system.Length + card.Length + 256);
@@ -275,10 +270,7 @@ namespace RealLifeOverhaul.Texts
             return t.ToString();
         }
 
-        /// <summary>
-        /// The ChatGPT plan's streamed answer: its deltas' text, a success only once the text is whole (output_text.done or
-        /// completed), since a stream may start and still end in response.failed.
-        /// </summary>
+        /// <summary>The ChatGPT plan's streamed answer, a success only once whole, as a stream may start and still fail.</summary>
         public static TextServiceResult Stream(string body)
         {
             if (string.IsNullOrEmpty(body))
@@ -422,10 +414,7 @@ namespace RealLifeOverhaul.Texts
             return words.Trim();
         }
 
-        /// <summary>
-        /// The models of a list in the service's order: the ChatGPT plan's listed slugs, else the chat API's ids. Empty when
-        /// the answer is not a list.
-        /// </summary>
+        /// <summary>The models of a list in the service's order; empty when the answer is not a list.</summary>
         public static List<string> ModelList(string body)
         {
             var models = new List<string>(16);
@@ -456,10 +445,7 @@ namespace RealLifeOverhaul.Texts
             return models;
         }
 
-        /// <summary>
-        /// Seconds to rest after the <paramref name="times"/>-th fault in a row of its kind, doubled each time; a rate limit
-        /// as long as the service asked when longer. 0 for no rest.
-        /// </summary>
+        /// <summary>Seconds to rest after the <paramref name="times"/>-th fault in a row of its kind, doubled each time; 0 for none.</summary>
         public static double Rest(TextFault fault, int times, double asked)
         {
             int n = Math.Max(1, Math.Min(times, 8));
@@ -475,10 +461,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// True when a worker that ended with an exception of this type was told to: the engine aborts the mod's threads as
-        /// the game closes, or the service was being switched off. Neither is a fault of the service.
-        /// </summary>
+        /// <summary>True when a worker that ended with this exception was told to: the game closing, or the service switched off.</summary>
         public static bool Closing(string exceptionType, bool stopping) => stopping || exceptionType == "ThreadAbortException";
 
         /// <summary>True for the faults that stop the service until the player mends it.</summary>
@@ -487,10 +470,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Seconds a request may take: the time left to its deadline, at most <see cref="TimeOut"/>.</summary>
         public static double Limit(double deadline, double now) => Math.Min(TimeOut, deadline - now);
 
-        /// <summary>
-        /// A line fit for the log: each of <paramref name="secrets"/> taken out, and any word that looks like a key or a token
-        /// (32 or more letters and digits with both, or anything after "Bearer ") made "[hidden]".
-        /// </summary>
+        /// <summary>A line fit for the log: the <paramref name="secrets"/>, and any word that looks like a key, made "[hidden]".</summary>
         public static string Clean(string line, params string[] secrets)
         {
             if (string.IsNullOrEmpty(line))
@@ -553,9 +533,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// A streamed answer read as it comes, on the worker's thread: when the first words came, and when the text is whole,
-    /// so the web client stops reading there rather than when the service closes the answer. The words are read only from
-    /// the whole body: nothing partial is ever shown. Game-free. COST: one small parse an event, on the worker's thread.
+    /// A streamed answer read as it comes: when its first words came, and when it is whole, so the reading stops there.
+    /// Nothing partial is ever shown. Game-free. COST: one small parse an event, on the worker's thread.
     /// </summary>
     public sealed class TextStreamRead
     {

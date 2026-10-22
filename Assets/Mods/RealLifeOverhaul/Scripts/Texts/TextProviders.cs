@@ -55,10 +55,7 @@ namespace RealLifeOverhaul.Texts
         public bool Titled;              // the service is told the app's name in its own header (OpenRouter's X-Title)
     }
 
-    /// <summary>
-    /// The table of services as each one's documentation gives them: base addresses, the default models (a free or the
-    /// cheapest fast one; the player can name any other), and what each refuses. Game-free.
-    /// </summary>
+    /// <summary>The table of services as each one's documentation gives them; each default model a free or the cheapest fast one. Game-free.</summary>
     public static class TextProviders
     {
         public const string ChatGptAuth = "https://auth.openai.com";          // OpenAI's sign-in (Sign in with ChatGPT)
@@ -139,10 +136,7 @@ namespace RealLifeOverhaul.Texts
             return keys;
         }
 
-        /// <summary>
-        /// The address a service is asked at: its base, or for a program on this PC the player's own, http or https on this PC
-        /// only. Null if the player's address is not one.
-        /// </summary>
+        /// <summary>The address a service is asked at: its base, or a local program's own on this PC; null if the player's address is not one.</summary>
         public static string Base(TextProviderInfo p, string own)
         {
             if (p == null || p.Id == TextProvider.Off)

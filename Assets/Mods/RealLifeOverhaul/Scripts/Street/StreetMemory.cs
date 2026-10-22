@@ -3,10 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Street
 {
-    /// <summary>
-    /// The day's memory of who the player talked to: at most <see cref="StreetRules.MemoryMost"/> people, the one talked to
-    /// longest ago going first, all forgotten the next day. Not saved. Game-free. COST: a look-up per conversation.
-    /// </summary>
+    /// <summary>The day's memory of who the player talked to, never saved. Game-free. COST: a look-up per conversation.</summary>
     public sealed class StreetMemory
     {
         private readonly Dictionary<int, StreetMemo> _memos = new Dictionary<int, StreetMemo>(StreetRules.MemoryMost);
@@ -69,10 +66,7 @@ namespace RealLifeOverhaul.Street
         public int Percent;
     }
 
-    /// <summary>
-    /// Word of mouth for the player's businesses: who said they would go, capped per business and per day, each lasting
-    /// <see cref="StreetRules.MouthDays"/> days. Saved by StreetStore. Game-free.
-    /// </summary>
+    /// <summary>Word of mouth for the player's businesses, capped per business and per day; saved by StreetStore. Game-free.</summary>
     public sealed class StreetMouth
     {
         public readonly List<StreetTold> Told = new List<StreetTold>(8);
@@ -116,7 +110,6 @@ namespace RealLifeOverhaul.Street
             return Math.Min(StreetRules.MouthMost, sum);
         }
 
-        /// <summary>Drops what has run its days.</summary>
         public void Forget(int day)
         {
             for (int i = Told.Count - 1; i >= 0; i--)
