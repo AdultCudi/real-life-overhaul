@@ -285,7 +285,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The player's vehicle has run into one of the game's standing figures (StreetPeople).</summary>
         public Strike StrikeFigure(BaseHuman figure, Vector3 carVelocity, float speed, Rigidbody playerCar)
         {
             try
@@ -329,7 +328,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The player's vehicle has run into one of the mod's own people.</summary>
         public Strike StrikeActor(StreetActor actor, Vector3 carVelocity, float speed, Rigidbody playerCar)
         {
             try

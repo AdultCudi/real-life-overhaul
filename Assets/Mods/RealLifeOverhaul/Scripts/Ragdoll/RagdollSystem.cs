@@ -104,7 +104,8 @@ namespace RealLifeOverhaul
             if (!_stillLogged)
             {
                 _stillLogged = true;
-                Logger?.Info($"Ragdoll: all {MaxActive} are in use; the body that has lain longest keeps its pose without physics (up to {MaxStill} such, the oldest taken away out of view). (Logged once.)");
+                Logger?.Info($"Ragdoll: all {MaxActive} are in use; the body that has lain longest keeps its pose without physics "
+                             + $"(up to {MaxStill} such, the oldest taken away out of view). (Logged once.)");
             }
             return true;
         }

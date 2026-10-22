@@ -48,7 +48,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A traffic car has run into one of the game's standing figures (StreetPeople).</summary>
         public Strike StruckByTraffic(BaseHuman figure, Vector3 carVelocity, float speed, VehicleComponent car)
         {
             try
@@ -81,7 +80,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A traffic car has run into one of the mod's own people.</summary>
         public Strike StruckByTraffic(StreetActor actor, Vector3 carVelocity, float speed, VehicleComponent car)
         {
             try

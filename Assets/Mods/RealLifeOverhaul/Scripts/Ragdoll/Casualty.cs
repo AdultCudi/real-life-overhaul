@@ -57,10 +57,8 @@ namespace RealLifeOverhaul
 
         public float StruckAt { get; private set; }
 
-        /// <summary>True from the impact until the person is off our hands.</summary>
         public bool InUse => _stage != Stage.None;
 
-        /// <summary>True while lying as a ragdoll and come to rest.</summary>
         public bool Resting => _stage == Stage.Down && Mine && _ragdoll.Resting;
 
         public bool Present => _stage == Stage.Down && Mine;
