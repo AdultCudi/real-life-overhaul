@@ -8,36 +8,23 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The white box the game shows one employee in (MyEmployees, "Left/WhiteBox"), as a page that can be written
-    /// again and again: a title, lines of text, headlines over a grey rule, switches, previous/next selectors and
-    /// rows of buttons. Each of those is one of the box's own parts, kept asleep as a template and copied
-    /// when asked for:
+    /// The white box the game shows one employee in (MyEmployees, "Left/WhiteBox"), as a page written again and again.
+    /// Its own parts are kept asleep as templates and copied when asked for:
     ///
-    ///   title      EmployeePersonalData/EmployeeName        the employee's name
-    ///   line       EmployeePersonalData/EmployeeInfoRow1/Age  "Age: 31" (label, then the value in bold)
-    ///   headline   CurrentBusinessHeadline                  a word on a grey rule
-    ///   switch     Demands/DemandTemplate                   a demand's name and its tick box
-    ///   selector   AssignedAddress                          the arrows either side of the business an employee is assigned to
-    ///   buttons    Buttons                                  the positive, negative and additional action buttons, copied for a further one of a kind and laid out by ButtonFlow
+    ///   title      EmployeePersonalData/EmployeeName          the employee's name
+    ///   line       EmployeePersonalData/EmployeeInfoRow1/Age  "Age: 31"
+    ///   headline   CurrentBusinessHeadline                    a word on a grey rule
+    ///   switch     Demands/DemandTemplate                     a demand's name and its tick box
+    ///   selector   AssignedAddress                            the arrows either side of an assigned business
+    ///   buttons    Buttons                                    the action buttons, laid out by ButtonFlow
     ///
-    /// The box lays its children out itself (the game's vertical layout group), so a page is whatever was added, in order.
-    /// A page is rebuilt only when the player clicks something. A slider is the game's own too, from its settings menu
-    /// (InfoBox.Slider.cs), copied the first time a page asks for one.
+    /// The box's own layout group stacks what is added. A slider comes from the settings menu (InfoBox.Slider). On top
+    /// sits the mod's look (InfoBox.Look, InfoBox.Parts, LookRules): a header in the app's colour, sections, rows,
+    /// meters, ticks, notes and the Guide's foot, all copies of templates made once in From.
     ///
-    /// On top of the game's parts the box has a look of the mod's own (InfoBox.Look.cs, InfoBox.Parts.cs, LookRules): a
-    /// header with the app's colour, the title, a line of who and where and status chips; sections under a heading in
-    /// small capitals and a hairline, their rows indented; rows of a muted label and a value in the body's colour;
-    /// meters, ticks, notes and the Guide's page at the foot. Every part is a copy of a template made once from the
-    /// game's own texts, pictures and colours when the box is taken (From), and nothing of it runs per frame.
-    ///
-    /// PARTS ARE KEPT AND USED AGAIN. A page written again (every click in an app) once destroyed every part of the last
-    /// page and copied each template again: some thirty to forty copies of the game's objects a click. Now Clear lays the
-    /// parts of the box's own kinds (rows, lines, notes, headers, sections, meters, ticks, pairs, the foot, switches,
-    /// selectors and rows of buttons) aside, asleep among the templates, and the next page takes them back in the order it
-    /// writes them; only a part of a kind with none laid aside is copied. A part taken back is put as a new copy of its
-    /// template would be (<see cref="Restore"/>: whatever a page may have changed on it is set again from the template, and
-    /// what was added under it is taken away), then written as before, so a page looks exactly as it did. Pictures, chips
-    /// and anything written into another parent than the box are made and destroyed as before.
+    /// Parts are reused: Clear lays the parts of the box's own kinds aside among the templates and the next page takes them
+    /// back in order, each first set back as a new copy would be (<see cref="Restore"/>). Pictures, chips and anything
+    /// written into another parent are made and destroyed each page. A page is written only on a click; nothing runs a frame.
     /// </summary>
     public sealed partial class InfoBox
     {
@@ -78,9 +65,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// The same parts, taken from a copy of the white box, written into another object that lays its children out
-        /// itself (a scroll view's content): a page longer than the screen then scrolls. The copy is left empty but for
-        /// its background. Null if the parts no page can do without are missing.
+        /// The same parts, written into another object that lays out its children (a scroll view's content, so a long page
+        /// scrolls). The white box copy is left with its background only. Null if the parts no page can do without are missing.
         /// </summary>
         public static InfoBox Into(Transform whiteBox, Transform templates, Transform box)
         {
@@ -120,9 +106,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The selector is the game's drop-down with its script off: the two arrow buttons and the box between them.
-        // The box is a text field in the game (it searches the list); here it only shows the choice, so the field is
-        // taken off and its text kept, and the list that would drop down is destroyed.
+        // The selector is the game's drop-down with its script off: two arrow buttons and the box between. Here the box only
+        // shows the choice, so its text field (the game's search) goes, its text kept, and the list that would drop is destroyed.
         private void PrepareSelector()
         {
             if (_selector == null)
@@ -155,7 +140,7 @@ namespace RealLifeOverhaul.GameUi
             Transform arrow = middle.Find("Arrow");
             if (arrow != null)
             {
-                UnityEngine.Object.DestroyImmediate(arrow.gameObject);   // the arrow that says "this drops down"
+                UnityEngine.Object.DestroyImmediate(arrow.gameObject);   // "this drops down"
             }
             foreach (MonoBehaviour script in middle.GetComponents<MonoBehaviour>())
             {
@@ -206,8 +191,8 @@ namespace RealLifeOverhaul.GameUi
             AppShell.Width(main.Find("Name"), 520f, true);
         }
 
-        // The row of buttons lays its buttons out with the mod's ButtonFlow in place of the game's one-line layout, and
-        // asks for the height its lines take (the game's row keeps 120 whatever it holds). Every row is a copy of this one.
+        // The row lays its buttons out with ButtonFlow in place of the game's one-line layout, and asks for the height its
+        // lines take (the game's row keeps 120). Every row is a copy of this one.
         private static void PrepareButtons(GameObject buttons)
         {
             var line = buttons.GetComponent<HorizontalLayoutGroup>();
@@ -223,13 +208,11 @@ namespace RealLifeOverhaul.GameUi
             var size = buttons.GetComponent<LayoutElement>();
             if (size != null)
             {
-                size.minHeight = size.preferredHeight = -1f;   // the row is as tall as its lines (ButtonRules.RowHeight)
+                size.minHeight = size.preferredHeight = -1f;   // as tall as its lines (ButtonRules.RowHeight)
             }
         }
 
-        // ---------------------------------------------------------------- writing a page
-
-        /// <summary>Empties the box for a new page: its parts of the box's own kinds are laid aside for the next page (Keep), the rest destroyed.</summary>
+        /// <summary>Empties the box for a new page: parts of its own kinds are laid aside for the next page, the rest destroyed.</summary>
         public void Clear()
         {
             Begin();
@@ -255,8 +238,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // A copy of a template, in the box unless a parent is given. In the box, a part of a kind the box keeps is one laid
-        // aside by Clear if there is one (Restore puts it as a new copy would be), else a new copy.
+        // A copy of a template, in the box unless a parent is given. In the box, a kind the box keeps comes from what Clear
+        // laid aside if it can (Restore sets it as a new copy), else it is a new copy.
         private GameObject Add(GameObject template, Transform parent = null)
         {
             bool kept = parent == null && Kept(template);
@@ -276,16 +259,13 @@ namespace RealLifeOverhaul.GameUi
             return made;
         }
 
-        /// <summary>The page's title: the header of the page, with the app's colour over it (Header).</summary>
+        /// <summary>The page's title: its header, under the app's colour.</summary>
         public void Title(string words)
         {
             Header(words);
         }
 
-        /// <summary>
-        /// A title in the box, or (with a parent) anywhere else: in the box the page's header (Header), anywhere else a
-        /// plain copy of the box's own title.
-        /// </summary>
+        /// <summary>A title: in the box the page's header, anywhere else a plain copy of the box's title.</summary>
         public TMP_Text Title(string words, Transform parent)
         {
             using var own = Timed();
@@ -299,8 +279,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// A line of text where the page is being written. An old "Label <b>value</b>" line (FinanceText.Pair, the
-        /// game's own form) is written as a row (Row), so a page not yet written with rows reads as one that is.
+        /// A line of text. An old "Label <b>value</b>" line (FinanceText.Pair, the game's form) is written as a row, so a page
+        /// not yet written with rows reads as one that is.
         /// </summary>
         public TMP_Text Line(string words)
         {
@@ -313,7 +293,7 @@ namespace RealLifeOverhaul.GameUi
             return Line(words, CellTone.Plain);
         }
 
-        /// <summary>A line of text in the box, or (with a parent) anywhere else: the copy of the box's own, in its font and colour.</summary>
+        /// <summary>A line of text in the box, or anywhere else as a copy of the box's own.</summary>
         public TMP_Text Line(string words, Transform parent)
         {
             using var own = Timed();
@@ -327,8 +307,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// A picture in the box (a post's thumbnail), at a width and the height its texture's shape gives, never past the
-        /// height given. The texture is the caller's: the box only shows it, and its row goes with the page.
+        /// A picture (a post's thumbnail) at a width and its texture's shape, never taller than <paramref name="most"/>. The
+        /// texture stays the caller's; the row goes with the page.
         /// </summary>
         public RawImage Picture(Texture texture, float width, float most)
         {
@@ -351,20 +331,20 @@ namespace RealLifeOverhaul.GameUi
             return image;
         }
 
-        /// <summary>A headline: the start of a section (Section), the look every app's headings have.</summary>
+        /// <summary>A headline: the start of a section.</summary>
         public void Headline(string key)
         {
             Section(key);
         }
 
-        /// <summary>A headline with words already made (a name and a figure): the start of a section (SectionWords).</summary>
+        /// <summary>A headline of words already made (a name and a figure): the start of a section.</summary>
         public Transform HeadlineWords(string words)
         {
             using var own = Timed();
             return SectionWords(words);
         }
 
-        /// <summary>A headline: in the box the start of a section (Section), anywhere else the game's own over a grey rule. Returns what was made.</summary>
+        /// <summary>In the box the start of a section; anywhere else the game's headline over a grey rule.</summary>
         public Transform Headline(string key, Transform parent)
         {
             using var own = Timed();
@@ -381,7 +361,7 @@ namespace RealLifeOverhaul.GameUi
             if (text != null)
             {
                 UiClone.Key(text, key);
-                // the game's headline carries a small icon and a tooltip mark inside its text: not here
+                // The game's headline carries an icon and a tooltip mark inside its text: not here.
                 for (int i = text.transform.childCount - 1; i >= 0; i--)
                 {
                     text.transform.GetChild(i).gameObject.SetActive(false);
@@ -390,7 +370,7 @@ namespace RealLifeOverhaul.GameUi
             return headline.transform;
         }
 
-        /// <summary>A switch with its label. False if the game's switch row could not be had: the caller leaves the choice out.</summary>
+        /// <summary>A switch with its label. False without the game's switch row: the caller leaves the choice out.</summary>
         public bool Switch(string labelKey, bool on, Action<bool> changed)
         {
             using var own = Timed();
@@ -409,15 +389,15 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// A previous/next selector over a fixed number of choices; 'text' gives the words of a choice, 'changed' is
-        /// told the new one. It does not wrap round: the arrow at either end goes grey.
+        /// A previous/next selector over a fixed number of choices; <paramref name="text"/> gives a choice's words. It does
+        /// not wrap round: the arrow at either end goes grey.
         /// </summary>
         public bool Selector(int count, int index, Func<int, string> text, Action<int> changed)
         {
             return Selector(count, index, text, changed, null);
         }
 
-        /// <summary>The same in the box, or (with a parent) anywhere else.</summary>
+        /// <summary>The same in the box, or anywhere else.</summary>
         public bool Selector(int count, int index, Func<int, string> text, Action<int> changed, Transform parent)
         {
             using var own = Timed();
@@ -459,7 +439,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        // Every button under an arrow gets the click: the game's arrow is a button inside a button.
+        // The game's arrow is a button inside a button: each gets the click.
         private static void Hook(Transform arrow, Action click)
         {
             foreach (Button button in arrow.GetComponentsInChildren<Button>(true))
@@ -481,17 +461,15 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// The row of action buttons, in the box or (with a parent) anywhere else. The row has the game's three kinds:
-        /// index 0 the positive one, 1 the negative one, 2 the additional one; all start hidden, and each button the page
-        /// writes shows (Button below), as many of a kind as it writes. Its layout (ButtonFlow, ButtonRules) puts them in
-        /// the order written, on lines from the box's left edge to its right, on more lines when they do not fit one.
+        /// A row of action buttons, in the box or anywhere else. Kinds: 0 positive, 1 negative, 2 additional; each button a
+        /// page writes shows, as many of a kind as written, laid out by ButtonFlow in order on as many lines as they need.
         /// </summary>
         public Transform ButtonRow(Transform parent = null)
         {
             using var own = Timed();
             if (parent == null)
             {
-                EndSection();   // a row of buttons closes the section it follows: its buttons act on the page, not on its last rows
+                EndSection();   // it closes the section above: its buttons act on the page
             }
             GameObject row = Add(_buttons, parent);
             var flow = row.GetComponent<ButtonFlow>();
@@ -504,7 +482,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 row.transform.GetChild(i).gameObject.SetActive(false);
             }
-            // (The game's own layout, if the box's row could not be given its own: one line, a button of each kind.)
+            // The game's own layout, if the row could not be given ButtonFlow: one line, a button of each kind.
             var layout = row.GetComponent<HorizontalLayoutGroup>();
             if (layout != null)
             {
@@ -517,9 +495,8 @@ namespace RealLifeOverhaul.GameUi
         public const int Positive = 0, Negative = 1, Additional = 2;
 
         /// <summary>
-        /// Shows a button of a row with its word and its click: the kind's own button, or for a further button of a kind
-        /// already shown on the page a copy of it beside it, never in its place. Written again with the same kind and
-        /// word, it is the same button. A row with fewer kinds uses the last it has.
+        /// Shows a button of a row with its word and click: the kind's own button, or a copy beside it for a further one of the
+        /// kind. Written again with the same kind and word, it is the same button. A row with fewer kinds uses its last.
         /// </summary>
         public static Button Button(Transform row, int kind, string key, Action click)
         {
@@ -549,9 +526,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// How the page fits the box, for the log: the height the page asks for against the height the box has. The
-        /// box does not scroll, so a page taller than the box loses its foot. Works the layout out at once: call it
-        /// only where a line is being written anyway (diagnostics on, a click).
+        /// How the page fits, for the log: the height it asks for against the box's (the box does not scroll). Works the
+        /// layout out at once: only where a line is being written anyway.
         /// </summary>
         public string Fit()
         {
@@ -559,10 +535,11 @@ namespace RealLifeOverhaul.GameUi
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
             float asks = LayoutUtility.GetPreferredHeight(rect), has = rect.rect.height;
             float room = rect.parent is RectTransform outer ? outer.rect.height : has;
-            return "the page asks for " + Mathf.RoundToInt(asks) + " px, the box is " + Mathf.RoundToInt(has) + " px in " + Mathf.RoundToInt(room) + " px" + (asks > room + 1f ? ": ITS FOOT IS CUT OFF" : string.Empty);
+            return "the page asks for " + Mathf.RoundToInt(asks) + " px, the box is " + Mathf.RoundToInt(has) + " px in " + Mathf.RoundToInt(room) + " px"
+                   + (asks > room + 1f ? ": ITS FOOT IS CUT OFF" : string.Empty);
         }
 
-        /// <summary>The layout is worked out now, not next frame: a page is written in one go and shown at once.</summary>
+        /// <summary>Marks the layout for rebuilding: a page is written in one go and shown at once.</summary>
         public void Done()
         {
             using (Timed())

@@ -8,28 +8,24 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The box's slider: the game's own, the one its settings menu's slider rows have (UIs.options, ModOptionsSliderControl:
-    /// the control the Mod settings app's rows are made of, GameUi.OptionRows), copied once the first time a page asks for
-    /// one, with the row's own words taken off. On a page it is a row of its label and the words of the step it stands at,
-    /// then the slider the width of the box, its track, fill and knob in the box's colours as its meters have them. Dragged,
-    /// it writes its row again and tells the page each new step; the page itself is not written again for it, so a drag is
-    /// never cut short. A page that has one copies it afresh, and Clear takes it away with the page, as a picture is. Cost:
-    /// nothing per frame; a step dragged writes one row.
+    /// The box's slider: the game's own from its settings menu (ModOptionsSliderControl, as OptionRows uses), copied once
+    /// when a page first asks, without the row's words. On a page: a row of its label and the step's words, then the slider
+    /// in the box's colours. A drag writes only that row and tells the page each new step, so it is never cut short. A page
+    /// copies it afresh and Clear takes it away. Costs nothing a frame; a step dragged writes one row.
     /// </summary>
     public sealed partial class InfoBox
     {
-        private const float SliderHeightLeast = 36f;   // pixels: the room the slider is given at the least, as the settings menu's own
+        private const float SliderHeightLeast = 36f;   // pixels: the least room it is given, as the settings menu's own
 
         private static readonly string[] SliderHarmless = { "ButtonEffects", "ToggleClickSound", "HoverEffect" };   // the game's scripts that only sound or show a hover
 
-        private GameObject _sliderT;   // the game's slider, made the first time a page asks for one; null until then, or if it could not be had
+        private GameObject _sliderT;   // made the first time a page asks; null until then, or if it could not be had
         private bool _sliderTried;
 
         /// <summary>
-        /// A slider over whole steps from 0 to <paramref name="steps"/>, standing at <paramref name="index"/>: a row of its label
-        /// (a locale key) and <paramref name="text"/>'s words for the step, then the game's slider; <paramref name="changed"/>
-        /// is told each new step as it is dragged. False if the game's slider could not be had: the caller offers the choice
-        /// another way (a selector).
+        /// A slider over whole steps 0 to <paramref name="steps"/> at <paramref name="index"/>, under a row of its label and
+        /// <paramref name="text"/>'s words for the step; <paramref name="changed"/> hears each new step as it is dragged. False
+        /// without the game's slider: the caller offers the choice another way.
         /// </summary>
         public bool Slider(string labelKey, int steps, int index, Func<int, string> text, Action<int> changed)
         {
@@ -66,8 +62,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        // The game's slider, copied asleep among the templates once: the settings menu's slider row's own Slider with its
-        // track, fill and knob, and nothing of the row's words; laid out by the box at the width it has.
+        // Copied asleep among the templates once: the settings row's Slider with its track, fill and knob, none of its words.
         private bool SliderMade()
         {
             if (_sliderT != null)
@@ -93,7 +88,7 @@ namespace RealLifeOverhaul.GameUi
                 UiClone.StripGameScripts(copy, script => Array.IndexOf(SliderHarmless, script.GetType().Name) >= 0);
                 foreach (TMP_Text words in copy.GetComponentsInChildren<TMP_Text>(true))
                 {
-                    words.gameObject.SetActive(false);   // a number of the row's under the slider: the box writes the step in its own row
+                    words.gameObject.SetActive(false);   // the row's number: the box writes the step in its own row
                 }
                 var rect = (RectTransform)copy.transform;
                 var element = copy.GetComponent<LayoutElement>() ?? copy.AddComponent<LayoutElement>();
@@ -112,7 +107,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The slider in the box's colours: its track as a meter's, its fill in the app's colour, its knob in the box's ink.
+        // Its track as a meter's, its fill in the app's colour, its knob in the box's ink.
         private void PaintSlider(Slider slider)
         {
             Transform back = slider.transform.Find("Background");

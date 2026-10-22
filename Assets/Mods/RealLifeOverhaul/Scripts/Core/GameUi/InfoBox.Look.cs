@@ -7,40 +7,33 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The templates of the box's own look, made once when the box is taken (From), from what the game's white box is
-    /// built of: its line of text (font, size, colour), its title, its headline's font, grey and rule, the round sprite
-    /// and the green of its satisfaction bar, the tick of its switch, and the game's red, orange and green
-    /// (GlobalReferences.colors). Nothing here is shipped: no picture, font or colour of the mod's own but the apps'
-    /// accents (LookRules).
-    ///
-    /// Every part is one text of the game's where the old box had one: a row's label and value are one text (the
-    /// value set on the label's line by a line height of nought and aligned right), a section's heading carries its
-    /// hairline, a meter its bar, a need its tick, so that a page of the new look is as many objects as the same page
-    /// was before. Indents and the room above a heading are the texts' own margins. Costs nothing per frame; a page
-    /// copies these templates (InfoBox.Parts.cs).
+    /// The templates of the box's own look, made once in From from what the game's white box is built of: its line of
+    /// text, title, headline font, grey and rule, the round sprite and the satisfaction bar's green, the switch's tick,
+    /// and the game's red, orange and green (GlobalReferences.colors). Nothing is shipped but the apps' accents (LookRules).
+    /// Each part is one text where the old box had one (a row's label and value share a text; a heading carries its
+    /// hairline, a meter its bar), so a page is as many objects as before. Costs nothing a frame.
     /// </summary>
     public sealed partial class InfoBox
     {
-        // What the look is made of, read from the game's box before its parts are taken away.
+        // Read from the game's box before its parts are taken away.
         private Sprite _round, _tick;
         private TMP_FontAsset _headingFont;
         private Color _ink = new Color(0.067f, 0.082f, 0.098f, 1f);    // the box's own text (MyEmployees' EmployeeName and Age)
         private Color _muted = new Color(0.349f, 0.412f, 0.459f, 1f);  // the box's own headline grey
         private Color _rule = new Color(0.741f, 0.78f, 0.812f, 1f);    // the box's own grey rule (SplitterGray)
         private Color _good = new Color(0.369f, 0.651f, 0.376f, 1f);   // the satisfaction bar's green
-        private Color _warn = new Color(0.949f, 0.553f, 0.153f, 1f);   // the game's orange, as its tables use it for yellow on a light row
+        private Color _warn = new Color(0.949f, 0.553f, 0.153f, 1f);   // the game's orange, as its tables show yellow on a light row
         private Color _bad = new Color(0.929f, 0.251f, 0.341f, 1f);    // the box's own red (CalledInSickWarning)
         private Color _accent = new Color(0.349f, 0.412f, 0.459f, 1f);
-        private bool _medium;   // the body font has a medium weight of its own: values are set in it, otherwise in bold
+        private bool _medium;   // the body font has a medium weight: values in it, else in bold
 
-        // The mark-up a row is written with, made once: the label's size and grey, the value's weight, each tone's colour.
+        // A row's mark-up, made once: the label's size and grey, the value's weight, each tone's colour.
         private string _labelOpen, _valueOpen, _valueClose;
         private readonly string[] _toneOpen = new string[4];
 
-        // The templates, asleep among the box's.
         private GameObject _bodyT, _subT, _noteT, _headerT, _chipsT, _chipT, _headingT, _pairT, _meterT, _checkT, _footT;
 
-        /// <summary>The colour of the app the box belongs to: the bar over each page's title and its plain chips (LookRules.Accent).</summary>
+        /// <summary>The app's colour: the bar over each page's title and its plain chips (LookRules.Accent).</summary>
         public void SetAccent(int rgb)
         {
             _accent = Rgb(rgb);
@@ -51,7 +44,7 @@ namespace RealLifeOverhaul.GameUi
             return new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1f);
         }
 
-        // The game's own colours and pictures, read where the box shows them; each keeps its stand-in if the game moved it.
+        // Read where the box shows them; each keeps its stand-in if the game moved it.
         private void ReadLook(Transform whiteBox)
         {
             var line = _line != null ? _line.GetComponent<TMP_Text>() : null;
@@ -97,7 +90,7 @@ namespace RealLifeOverhaul.GameUi
             ReadGameColours();
         }
 
-        // Kept in a method of its own: a game without GlobalReferences' colours costs the look its tones, not the box.
+        // A method of its own: a game without GlobalReferences' colours costs the look its tones, not the box.
         private void ReadGameColours()
         {
             try
@@ -122,7 +115,7 @@ namespace RealLifeOverhaul.GameUi
             return weights != null && weights.Length > 5 && weights[5].regularTypeface != null;
         }
 
-        /// <summary>A tone's colour for words on the white box: the game's own, part of the way to the ink, so that green and orange read on white.</summary>
+        /// <summary>A tone's colour for words on white: the game's own, part way to the ink so that green and orange read.</summary>
         private Color Ink(CellTone tone)
         {
             switch (tone)
@@ -151,7 +144,7 @@ namespace RealLifeOverhaul.GameUi
             return "<color=#" + ColorUtility.ToHtmlStringRGB(colour) + ">";
         }
 
-        // The box's own spacing: one small gap between its parts; a heading, a header and the foot make their own room.
+        // One small gap between parts; a heading, a header and the foot make their own room.
         private void Space(Transform box)
         {
             var layout = box != null ? box.GetComponent<VerticalLayoutGroup>() : null;
@@ -162,10 +155,8 @@ namespace RealLifeOverhaul.GameUi
             var rect = box as RectTransform;
             var padding = layout != null ? layout.padding : null;
             float width = rect != null ? rect.rect.width - (padding != null ? padding.left + padding.right : 0) - LookRules.Indent : 0f;
-            _capacity = LookRules.Capacity(width > 200f ? width : LookRules.DefaultWidth, LookRules.BodySize);   // a box not laid out yet: the phone's
+            _capacity = LookRules.Capacity(width > 200f ? width : LookRules.DefaultWidth, LookRules.BodySize);   // a box not laid out yet: the phone's width
         }
-
-        // ---------------------------------------------------------------- the templates
 
         private void MakeLook(Transform templates)
         {
@@ -182,14 +173,14 @@ namespace RealLifeOverhaul.GameUi
             _subT.GetComponent<TMP_Text>().margin = new Vector4(0f, 0f, 0f, 6f);
             _noteT = Words(templates, "Note", LookRules.NoteSize, _muted, FontStyles.Normal, false);
 
-            // The header: the title, with the app's colour in a short bar over it; chips stand at its right.
+            // The header: the title under a short bar of the app's colour; chips at its right.
             _headerT = UnityEngine.Object.Instantiate(_title, templates, false);
             _headerT.name = "Header";
             Plain(_headerT);
             var titleLayout = _headerT.GetComponent<LayoutElement>();
             if (titleLayout != null)
             {
-                titleLayout.minHeight = -1f;   // the game's name keeps room for one line of 90; a title here is as tall as its lines
+                titleLayout.minHeight = -1f;   // the game's name keeps room for one line of 90; a title is as tall as its lines
             }
             _headerT.GetComponent<TMP_Text>().margin = new Vector4(0f, LookRules.AccentHeight + 16f, 0f, 0f);
             Image accent = Picture(_headerT.transform, "Accent", _round, _accent);
@@ -213,7 +204,7 @@ namespace RealLifeOverhaul.GameUi
             chipText.textWrappingMode = TextWrappingModes.NoWrap;
             chipText.alignment = TextAlignmentOptions.Center;
 
-            // A section's heading: small capitals in the grey, room above, the hairline under it.
+            // A section's heading: small capitals in grey, room above, the hairline under it.
             _headingT = Words(templates, "Heading", LookRules.HeadingSize, _muted, FontStyles.SmallCaps | FontStyles.Bold, true);
             var headingText = _headingT.GetComponent<TMP_Text>();
             headingText.characterSpacing = LookRules.HeadingTracking;
@@ -224,18 +215,18 @@ namespace RealLifeOverhaul.GameUi
             }
             Rule(_headingT.transform, false);
 
-            // Two rows side by side, each half of the line (the old pages' "Label value  Label value").
+            // Two rows side by side, each half the line.
             _pairT = Holder(templates, "RowPair", 40f, new RectOffset(0, 0, 0, 0), TextAnchor.UpperLeft);
             _pairT.GetComponent<HorizontalLayoutGroup>().childForceExpandWidth = true;
             for (int i = 0; i < 2; i++)
             {
                 GameObject half = Words(_pairT.transform, "Half", LookRules.BodySize, _ink, FontStyles.Normal, false);
                 var share = half.AddComponent<LayoutElement>();
-                share.minWidth = share.preferredWidth = 0f;   // the two halves share the line equally, whatever their words
+                share.minWidth = share.preferredWidth = 0f;   // the halves share the line equally, whatever their words
                 share.flexibleWidth = 1f;
             }
 
-            // A meter: a row (its label and figure) with a short bar of the game's round sprite under the figure.
+            // A meter: a row with a short bar of the round sprite under the figure.
             _meterT = Words(templates, "Meter", LookRules.BodySize, _ink, FontStyles.Normal, false);
             _meterT.GetComponent<TMP_Text>().margin = new Vector4(0f, 0f, 0f, LookRules.MeterHeight + 10f);
             Image track = Picture(_meterT.transform, "Bar", _round, Color.Lerp(_rule, Color.white, 0.35f));
@@ -249,7 +240,7 @@ namespace RealLifeOverhaul.GameUi
             fillRect.pivot = new Vector2(0f, 0.5f);
             fillRect.offsetMin = fillRect.offsetMax = Vector2.zero;
 
-            // A need and whether it is met: the game's tick before the words, or a dot in the tone that says it is not.
+            // A need: the game's tick before the words, or a dot in its tone.
             _checkT = Words(templates, "Check", LookRules.BodySize, _ink, FontStyles.Normal, false);
             _checkT.GetComponent<TMP_Text>().margin = new Vector4(LookRules.MarkSize + 14f, 0f, 0f, 0f);
             Image mark = Picture(_checkT.transform, "Mark", _tick ?? _round, _good);
@@ -263,8 +254,8 @@ namespace RealLifeOverhaul.GameUi
             Rule(_footT.transform, true);
         }
 
-        // A copy of the box's own line of text, set for one part of the look. Its localisation component is taken off
-        // (a part is written with final words, page by page) unless the part is written by key.
+        // A copy of the box's line of text set for one part. Its localisation component goes (parts are written in final
+        // words) unless the part is written by key.
         private GameObject Words(Transform parent, string name, float size, Color colour, FontStyles style, bool byKey)
         {
             GameObject made = UnityEngine.Object.Instantiate(_line, parent, false);
@@ -314,7 +305,7 @@ namespace RealLifeOverhaul.GameUi
         {
             var made = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(LayoutElement));
             made.transform.SetParent(parent, false);
-            made.GetComponent<LayoutElement>().ignoreLayout = true;   // a picture on a text, placed by its anchors, not by the box
+            made.GetComponent<LayoutElement>().ignoreLayout = true;   // on a text, placed by its anchors, not by the box
             var image = made.GetComponent<Image>();
             image.sprite = sprite;
             image.type = sprite != null ? Image.Type.Sliced : Image.Type.Simple;
@@ -331,7 +322,7 @@ namespace RealLifeOverhaul.GameUi
             rect.sizeDelta = size;
         }
 
-        // A sliced round sprite drawn as a pill of a height: its corners scaled to half the height.
+        // A sliced round sprite as a pill of a height: its corners scaled to half the height.
         private static void Round(Image image, float height)
         {
             if (image.sprite == null || image.sprite.border.x <= 0f)
@@ -342,7 +333,7 @@ namespace RealLifeOverhaul.GameUi
             image.pixelsPerUnitMultiplier = Mathf.Max(0.01f, image.sprite.border.x * 2f / height);
         }
 
-        // A hairline across a text, at its foot (a heading's) or its top (the foot's): a plain Image, a solid line in the game's rule grey.
+        // A solid hairline in the rule grey, at a text's foot (a heading) or top (the foot).
         private void Rule(Transform text, bool top)
         {
             Image line = Picture(text, "Rule", null, _rule);

@@ -6,25 +6,20 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A switch in the box as the Mod settings app has them: the game's own settings menu row (GameUi.OptionRows: the
-    /// menu's on and off switch, its sprites switch-off@2x and switch-on@2x, at the right), its name and the short line under
-    /// it set in the box's own words and colours, the control's column as wide as the switch rather than the menu's 700.
-    /// The template is made the first time a page asks for one (OptionRows.SwitchRow) and kept from page to page as the
-    /// box's other parts are (InfoBox.Keep.cs). Where the game's menu could not be copied it returns false and the page
-    /// uses the box's tick switch (Switch). Cost: nothing per frame; the first such page copies the menu's rows once.
+    /// A switch in the box as the Mod settings app has them: the settings menu's own row (OptionRows.SwitchRow, its switch
+    /// at the right), its name and the line under it in the box's words and colours. Made the first time a page asks and
+    /// kept from page to page (InfoBox.Keep); without the game's menu, false, and the page uses <see cref="Switch"/>.
+    /// Costs nothing a frame; the first such page copies the menu's rows once.
     /// </summary>
     public sealed partial class InfoBox
     {
-        private const float ToggleWidth = 80f, ToggleHeight = 40f;   // the menu's switch sprite (80 by 40) where its track cannot be measured
+        private const float ToggleWidth = 80f, ToggleHeight = 40f;   // the menu's switch sprite, where its track cannot be measured
 
         private Transform _templatesAt;   // the box's templates, asleep: where the toggle's is made
         private GameObject _toggleT;
         private bool _toggleTried, _toggleOn;
 
-        /// <summary>
-        /// A switch row with its label and, under it, a short line (none when empty). False if the settings menu's switch
-        /// row could not be had: the caller uses <see cref="Switch"/>.
-        /// </summary>
+        /// <summary>A switch row with its label and a short line under it (none when empty). False without the game's row.</summary>
         public bool Toggle(string labelKey, string note, bool on, Action<bool> changed)
         {
             using var own = Timed();
@@ -37,7 +32,7 @@ namespace RealLifeOverhaul.GameUi
                 return false;
             }
             GameObject row = Add(_toggleT);
-            TMP_Text[] words = row.transform.Find("Labels").GetComponentsInChildren<TMP_Text>(true);   // the name, then the line under it (as OptionRows.Make finds them)
+            TMP_Text[] words = row.transform.Find("Labels").GetComponentsInChildren<TMP_Text>(true);   // the name, then the line under it, as OptionRows.Make finds them
             TMP_Text line = words.Length > 1 ? words[1] : null;
             UiClone.Key(words[0], labelKey);
             bool noted = !string.IsNullOrEmpty(note);
@@ -57,8 +52,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        // The settings menu's switch row, set for the box: its words in the box's font, size and colours, indented as a
-        // section's rows are, the control's column the switch's own width.
+        // Words in the box's font, size and colours, indented as a section's rows, the control's column the switch's width.
         private void MakeToggle()
         {
             _toggleTried = true;
