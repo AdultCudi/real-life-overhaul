@@ -12,15 +12,10 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The arithmetic of living with Empire Motors (Core/EmpireMotors) that needs nothing of the game's: which of its
-    /// transactions are a dealership's takings and which its costs, by their type, and whether a vehicle's id is among
-    /// the records it keeps in the save. Game-free: the economy's command-line check compiles this file too.
-    ///
-    /// Read in its decompiled code: a car sold to a customer is paid with the game's own type "ba:transaction_itemsold" and
-    /// the dealership's address, its one transaction with an address; a sale with a trade-in is paid with the same type,
-    /// no address and no data (every item the game itself sells carries data). Everything else it books under types of
-    /// its own, "empiremotors:transaction_...", with no address and none of the game's categories, so neither the game's
-    /// statement nor its tax sees any of it.
+    /// The game-free side of Empire Motors (Core/EmpireMotors): which of its transactions are takings and which costs,
+    /// and whether a vehicle's id is in its save text. Checked by EconomyCheck. From its decompiled code: a car sold is
+    /// "ba:transaction_itemsold" with the dealership's address, a trade-in sale the same type with no address and no
+    /// data; the rest are types of its own with no address, which neither the game's statement nor its tax sees.
     /// </summary>
     public static class EmpireMotorsLines
     {
@@ -45,9 +40,8 @@ namespace RealLifeOverhaul
         };
 
         /// <summary>
-        /// What a transaction is to a dealership, by its type, whether it has an address and how many entries its data has.
-        /// A sold item with an address is a dealership's takings only if that address is a dealership's, which the caller
-        /// knows. A type of Empire Motors' this table does not have is nobody's (a later version's: it is not guessed).
+        /// What a transaction is to a dealership. The caller checks that a sale's address is a dealership's. A type of
+        /// a later version, not in the table, is not guessed.
         /// </summary>
         public static DealerLine Of(string type, bool hasAddress, int dataCount)
         {
@@ -75,16 +69,15 @@ namespace RealLifeOverhaul
             return line == DealerLine.Stock ? StockRow : line == DealerLine.Running ? RunningRow : null;
         }
 
-        /// <summary>One dealership's share of what was booked with no address: the same for each of them.</summary>
+        /// <summary>One dealership's equal share of what was booked with no address.</summary>
         public static float Share(float amount, int dealerships)
         {
             return dealerships > 0 ? amount / dealerships : 0f;
         }
 
         /// <summary>
-        /// Whether a vehicle's id is among Empire Motors' records, in the text it saves them as (Odin's JSON). The id is
-        /// looked for between quotes, as every string there is written, and with a slash written as "\/" too (the game's
-        /// ids are base 64, which has slashes).
+        /// True if a vehicle's id is in Empire Motors' save text (Odin's JSON): between quotes, a slash also as "\/"
+        /// (the game's ids are base 64).
         /// </summary>
         public static bool Holds(string saved, string id)
         {
@@ -100,8 +93,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// What the day's costs of the dealerships come to once refunds are taken off them: what the game's tax may deduct.
-        /// 'stock' and 'running' are the day's sums as booked (spent negative, refunded positive). Never below nothing.
+        /// The day's costs net of refunds, which the game's tax may deduct, from the sums as booked (spent negative);
+        /// never below 0.
         /// </summary>
         public static float Deductible(float stock, float running)
         {

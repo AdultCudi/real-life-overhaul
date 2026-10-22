@@ -12,31 +12,21 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The build of Big Ambitions this version of the mod is made for, and what follows from the build the running game
-    /// says it is: GameVersion.buildNumber (the game's resource Versioning/Current), the number its main menu shows and
-    /// Player.log gives as "Loaded Big Ambitions (Build N)".
-    ///
-    /// A game older than that can lack members the mod was compiled against, and Mono cannot compile a method that names
-    /// one: it throws at every call instead. Build 3675 lacked five (Helpers.FuneralHelper, Building.locatedInsidePrivateFenceIndex,
-    /// BuildingResume.TargetController, SubwayStation.GetNameKey and HudConfirm.Show with isNegative), and on it the mod's
-    /// apps did not open while the camera, careers and more failed every frame. Core/GameMembers and Core/GameConfirm
-    /// name those five in small methods of their own; they and every other piece of the game the mod relies on are lines
-    /// of the game contract (Core/GameContract), and Core/Guard says what this game lacks and switches off only what
-    /// stands on it; the notice in GameBuild.Notice.cs tells the player what to do.
-    ///
-    /// Game-free, checked offline (ContractCheck), which also holds <see cref="MadeFor"/> to the build of the game
-    /// installed for building the mod.
+    /// The build of Big Ambitions this version of the mod is made for, and what follows from the running game's build
+    /// (GameVersion.buildNumber, "Loaded Big Ambitions (Build N)" in Player.log). An older game can lack members the mod
+    /// names, and Mono then throws at every call of a method that names one; Core/GameMembers and Core/GameConfirm keep
+    /// those in small methods, and the notice (GameBuild.Notice.cs) tells the player what to do.
+    /// Game-free, checked by ContractCheck, which holds <see cref="MadeFor"/> to the installed game's build.
     /// </summary>
     public static partial class GameBuild
     {
         /// <summary>
-        /// The build the mod is compiled against and checked in, the one build number of the mod. ContractCheck reads the
-        /// build of the installed game the mod is built against and fails while it is another one: after a game update,
-        /// build and check the mod against it (docs/contributing/after-a-game-update.md), then change this number.
+        /// The build the mod is compiled against: its one build number. ContractCheck fails while the installed game is
+        /// another (docs/contributing/after-a-game-update.md).
         /// </summary>
         public const int MadeFor = 3682;
 
-        /// <summary>The way to bring the game up to date in Steam, as Player.log gives it (the notice says it in the player's language).</summary>
+        /// <summary>The steps to bring the game up to date in Steam, for Player.log; the notice says them in the player's language.</summary>
         public const string SteamSteps = "in Steam, Library, Big Ambitions, Properties, Betas set to None, then Installed Files, Verify integrity of game files";
 
         public static BuildKind Of(int running)
@@ -55,10 +45,7 @@ namespace RealLifeOverhaul
                    + " is made for Build " + MadeFor + ".";
         }
 
-        /// <summary>
-        /// The line for Player.log at game start: a warning for an older or a newer game and for one whose build could
-        /// not be read; null for the build the mod is made for (the check line of the developer diagnostics says that).
-        /// </summary>
+        /// <summary>The warning for Player.log at game start; null for the build the mod is made for.</summary>
         public static string Line(int running, string version)
         {
             switch (Of(running))
@@ -77,11 +64,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The member a missing member's exception names, as Mono writes them: "Method not found: void .HudConfirm.Show(string,bool)"
-        /// gives "HudConfirm.Show(string,bool)", "...get_TargetController()" the property's name, "Field not found: int
-        /// Buildings.Building.locatedInsidePrivateFenceIndex Due to: ..." the field's, and "Could not resolve type with token 010002a5
-        /// from typeref (expected class 'Helpers.FuneralHelper' in assembly ...)" the type's. Any other message is given as it is,
-        /// cut to a line.
+        /// The member a missing member's exception names, as Mono writes it: "Method not found: void
+        /// .HudConfirm.Show(string,bool)" gives "HudConfirm.Show(string,bool)", a getter its property, "expected class
+        /// 'Helpers.FuneralHelper'" the type. Any other message is given as it is, cut to a line.
         /// </summary>
         public static string MemberOf(string message)
         {

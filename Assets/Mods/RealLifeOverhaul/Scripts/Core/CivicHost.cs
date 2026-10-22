@@ -3,15 +3,13 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// City Utilities' building (Core/CityReserves says which and why: 13 7th Street): that address when it may serve,
-    /// else, meanwhile, the smallest other residential building of Midtown that may. Never one of the game's own buildings
-    /// (no special service, never an office or a shop), never one a player rents or owns, never one another feature holds
-    /// or reserves. The same city gives the same building on every machine. One walk over the city's list at a choice (once
-    /// a city load, and when a move is due); a few reads every five seconds while it stands meanwhile.
+    /// City Utilities' building: 13 7th Street when it may serve (<see cref="CityReserves"/>), else the smallest other
+    /// residential building of Midtown that may; the same on every machine. COST: one walk over the city's buildings
+    /// per choice.
     /// </summary>
     internal static class CivicHost
     {
-        /// <summary>The building, at 13 7th Street or meanwhile; null if none in the city may serve.</summary>
+        /// <summary>The building; null if none in the city may serve.</summary>
         public static CityBuildingController Pick(CityBuildingController[] buildings, out bool fixedOne)
         {
             fixedOne = false;
@@ -28,26 +26,22 @@ namespace RealLifeOverhaul
             int pick = CityReserves.PickSmallest(buildings.Length,
                 i => buildings[i] != null && buildings[i].building != null && buildings[i].building.Neighbourhood == CityReserves.UtilitiesDistrict && Serves(buildings[i]),
                 i => buildings[i].building.totalSqm, i => buildings[i].building.StreetName, i => buildings[i].building.StreetNumber,
-                (s, n) => SpecialBuildings.Holds(s, n) || CityReserves.IsUtilities(s, n));   // (every held or reserved one)
+                (s, n) => SpecialBuildings.Holds(s, n) || CityReserves.IsUtilities(s, n));
             return pick >= 0 ? buildings[pick] : null;
         }
 
-        /// <summary>True if 13 7th Street may serve now (an office standing meanwhile moves back once it does).</summary>
+        /// <summary>True if 13 7th Street may serve now.</summary>
         public static bool FixedServes(CityBuildingController[] buildings)
         {
             return buildings != null && Serves(Find(buildings));
         }
 
-        /// <summary>True for 13 7th Street.</summary>
         public static bool IsFixed(CityBuildingController b)
         {
             return b != null && b.building != null && CityReserves.IsUtilities(b.building.StreetName, b.building.StreetNumber);
         }
 
-        /// <summary>
-        /// An ordinary residential building with a door the player can walk to, no special service of the game's, nobody's,
-        /// and nothing of another feature's in it or reserved for another (CityReserves.HostServes).
-        /// </summary>
+        /// <summary>True for a building with a door the player can walk to that <see cref="CityReserves.HostServes"/> allows.</summary>
         public static bool Serves(CityBuildingController b)
         {
             if (b == null || b.building == null || b.entranceDoors == null || b.entranceDoors.Length == 0 || b.entranceDoors[0] == null || GameMembers.Fenced(b.building)

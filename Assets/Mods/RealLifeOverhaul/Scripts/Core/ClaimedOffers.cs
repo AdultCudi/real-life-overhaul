@@ -12,27 +12,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The mod's buildings off the market (Core/SpecialBuildings: every building a feature has made its own, whichever it
-    /// is at the moment, the university wherever it goes). Every way the game lets the player rent, buy or take over a
-    /// building ends in BizMan's presentation of it (BizManPresentation: RentBuilding, SendBuyBuildingOffer,
-    /// SendOvertakeOffer and the boxes that hold their buttons): the building's card (BuildingResume.ShowInfo), its
-    /// door (BuildingEntranceOverlay.OpenInBizMan), the Market Insider's list of real estate (RealEstateCellView) and the
-    /// city map all open it there. So the refusal is made there, in the game's own boxes, and in the two listings:
-    ///   the presentation  the offer to rent (RentView/AvailableForRent), the boxes to buy (ForSaleBox, BuyBuildingOfferBox
-    ///                     and the offer button of NotForSaleBox) and to take a business over (the two overtake panels)
-    ///                     are kept out of sight; NotForSaleBox stands instead, with the game's "not for sale" and one
-    ///                     line more, "Taken by" and the feature's name (<see cref="ClaimedPresentation"/>);
-    ///   real estate       the Market Insider's list of a district leaves the building out (<see cref="ClaimedRealEstate"/>);
-    ///   the city map      the game's rows of units to let and buildings for sale do not light it (ClaimedMap, building by
-    ///                     building as the game looks at each; SpecialBuildings.Unlist when the look ends, behind it);
-    ///   the front         no "For rent" on the building's own signs, and its own sign where it has none (FrontSigns).
-    /// What the player already rents or owns is never refused (SpecialNameBook.Refuses): the feature has moved off it.
-    /// Nothing is written into the save and nothing is sent in a Going Public session: every machine has the same
-    /// claims, so each refuses the same buildings for its own player.
-    ///
-    /// The cost: nothing while neither page is open; while BizMan's presentation is, one reference and one integer
-    /// comparison a frame, and eight active flags read while the building it shows is refused; while the real estate list
-    /// is, one reference comparison a frame. Looked for once a second until found, once per city load.
+    /// Keeps the mod's buildings (<see cref="SpecialBuildings"/>) off the market. Every way the game lets the player
+    /// rent, buy or take over a building ends in BizMan's presentation of it, so the refusal is made there
+    /// (<see cref="ClaimedPresentation"/>), in the Market Insider's real estate list (<see cref="ClaimedRealEstate"/>),
+    /// on the city map (<see cref="ClaimedMap"/>) and on the building's signs (<see cref="FrontSigns"/>). What the player
+    /// already rents or owns is never refused. Nothing is saved or sent: every machine has the same claims.
+    /// COST: nothing while neither page is open; a reference comparison a frame while one is.
     /// </summary>
     internal static class ClaimedOffers
     {
@@ -41,7 +26,7 @@ namespace RealLifeOverhaul
         private static bool _presentationMissing;
         private static bool _estateMissing;
 
-        /// <summary>Once a second (SpecialNames): the two watchers are put on the game's pages the first time they are there.</summary>
+        /// <summary>Called once a second by SpecialNames: puts the two watchers on the game's pages once they are there.</summary>
         internal static void Keep()
         {
             if ((_presentationMissing || _presentation != null) && (_estateMissing || _estate != null))
@@ -59,7 +44,7 @@ namespace RealLifeOverhaul
                 BizManPresentation page = business != null ? business.GetComponentInChildren<BizManPresentation>(true) : null;
                 if (page == null)
                 {
-                    return;   // (the phone's apps are not in yet)
+                    return;   // the phone's apps are not in yet
                 }
                 _presentation = page.gameObject.AddComponent<ClaimedPresentation>();
                 if (!_presentation.Bind(page, business))
@@ -77,7 +62,7 @@ namespace RealLifeOverhaul
                 RealEstateScrollerController table = insider != null ? insider.realEstateScrollerController : null;
                 if (table == null)
                 {
-                    _estateMissing = app != null;   // (the app is there without its list: not to be looked for again)
+                    _estateMissing = app != null;   // the app without its list: not looked for again
                     if (_estateMissing)
                     {
                         SpecialBuildings.Logger?.Warn("Special buildings: the Market Insider has no list of real estate; the mod's buildings stay in it.");
@@ -89,7 +74,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The city is going: looked for again in the next.</summary>
+        /// <summary>The city is unloading: the pages are looked for again in the next.</summary>
         internal static void Forget()
         {
             _presentation = null;
@@ -100,14 +85,13 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// On BizMan's presentation of a building (its own object, so it runs only while the page is open): a building the mod
-    /// has taken shows no offer to rent, to buy or to take over, and says whose it is. Each building is looked at once,
-    /// when the page shows it; the game's own boxes are kept out of sight while it does (the game shows them again from
-    /// its own buttons and on every new building), and put back as the game had them when it shows another.
+    /// On BizMan's presentation of a building: a building the mod has taken shows no offer to rent, buy or take over, and
+    /// says whose it is. The game's own boxes are kept hidden while it shows (the game shows them again from its own
+    /// buttons). COST: runs only while the page is open; two comparisons a frame, eight active flags while refused.
     /// </summary>
     internal sealed class ClaimedPresentation : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ClaimedPresentation", typeof(ClaimedPresentation));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ClaimedPresentation", typeof(ClaimedPresentation));
 
         private const string LineName = "RealLifeOverhaul TakenBy";
 
@@ -116,8 +100,8 @@ namespace RealLifeOverhaul
         private GameObject _rent, _forSale, _buy, _notForSale, _offer, _owner, _hamptons, _line;
         private BuildingRegistration _shown;   // the building last looked at
         private int _stamp = -1;
-        private string _taken;                 // whose it is, while it is refused
-        private string _words;                 // the line that says so
+        private string _taken;                 // whose it is, while refused
+        private string _words;
         private bool _ownerHidden;
         private bool _failed;
 
@@ -140,7 +124,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            // The line is the game's own "not for sale" line, copied asleep, under it.
+            // The game's own "not for sale" line, copied asleep, under it.
             Transform dormant = GameUi.UiClone.Dormant(transform, "RealLifeOverhaul Dormant");
             _line = GameUi.UiClone.Asleep(label, dormant, LineName);
             if (_line == null)
@@ -155,7 +139,7 @@ namespace RealLifeOverhaul
 
         private void OnEnable()
         {
-            _shown = null;   // the game has written the page afresh (OnEnable): looked at again
+            _shown = null;   // the game has written the page afresh
         }
 
         private void OnDisable()
@@ -172,7 +156,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -219,7 +203,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The building the page shows now: refused or not.
         private void Look(BuildingRegistration registration, bool same)
         {
             string taken = SpecialBuildings.TakenBy(registration);
@@ -235,14 +218,13 @@ namespace RealLifeOverhaul
                 }
                 if (was && same)
                 {
-                    // The same building is to let again (its feature is off now, or has moved): the game writes its page afresh.
+                    // The same building is free again: the game writes its page afresh.
                     gameObject.SetActive(false);
                     gameObject.SetActive(true);
                 }
                 return;
             }
-            // Whose the building is, as the game says it in this box when it is not for sale (BizManPresentation.LoadLeftSide);
-            // a building of the game's own services has no owner to say.
+            // The owner as BizManPresentation.LoadLeftSide says it; the game's own services have none.
             bool service = _business.building != null && _business.building.SpecialService != null;
             if (!service)
             {
@@ -265,7 +247,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Every frame while a refused building is shown: what the game may have put up since is taken down again.
+        // Every frame while a refused building shows: what the game put up since is taken down again.
         private void Hold()
         {
             Off(_rent);
@@ -282,7 +264,7 @@ namespace RealLifeOverhaul
             if (!_line.activeSelf)
             {
                 _line.SetActive(true);
-                GameUi.UiClone.Words(_line.GetComponent<TMPro.TMP_Text>(), _words);   // (again once awake: its own component writes on waking)
+                GameUi.UiClone.Words(_line.GetComponent<TMPro.TMP_Text>(), _words);   // again once awake: its component writes on waking
             }
         }
 
@@ -306,14 +288,13 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// On the Market Insider's list of a district's real estate (its own object, so it runs only while the list is open):
-    /// the mod's buildings are taken out of each list the game makes (RealEstateScrollerController sets a new one for
-    /// every filter and order), and the list is drawn again. One reference comparison a frame; a pass over the list,
-    /// with one dictionary look for each row, when the game has made a new one.
+    /// On the Market Insider's real estate list: the mod's buildings are taken out of each list the game makes (a new one
+    /// for every filter and order). COST: runs only while the list is open; one reference comparison a frame, and a
+    /// dictionary look per row when the game has made a new list.
     /// </summary>
     internal sealed class ClaimedRealEstate : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ClaimedRealEstate", typeof(ClaimedRealEstate));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ClaimedRealEstate", typeof(ClaimedRealEstate));
 
         internal RealEstateScrollerController Table;
 
@@ -332,7 +313,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try

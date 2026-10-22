@@ -14,45 +14,30 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Keeps the game's night whole (the why is in <see cref="DayRollRules"/>). The game calls its hour event first thing
-    /// in its new day, after the day is counted on and before it pays the day's wages and before the rivals' step
-    /// (GameManager.NewDay), and that call is the one with the hour at nothing. There, once a game day:
-    ///
-    ///   the market   goods in the city's market that the game no longer knows (a business type of a mod that is not
-    ///                loaded) are taken out of it, so the rivals' step that looks them up cannot throw and stop the
-    ///                night. Nothing else of the market is touched; were the mod loaded again, the game's own daily run
-    ///                puts its goods back (ProductMarketHelper.UpdateMarketDemands makes an entry for every item it has).
-    ///   the hours    where the night before stopped short of the employees' day (its day event never came), or an
-    ///                employee is counted more hours than a day has, the hours about to be paid are brought back to
-    ///                their shifts on the day that ended, and the week's hours and days to their shifts from its Monday
-    ///                to that day. And at the hour after a night that stopped before its day event, the counts its
-    ///                employees' day would have cleared are cleared: each one's hours of the day, and the week's hours
-    ///                and days on a Monday. A night that ran as the game meant is never touched.
-    ///
-    /// Whatever the cause, it is said once a session in a notice and every time in one line of Player.log. Only the
-    /// player's own employees are mended in a Going Public session (Core/GoingPublic.Foreign). The market is left alone on
-    /// a Going Public guest: the rivals' step runs on the host only (Going Public skips it on a guest), and the host's
-    /// market reaches the guest again with its next update; on the host, taking goods nobody can sell out of the market
-    /// is the same on every machine with the same mods.
-    ///
-    /// Cost: no Update. A one-second timer on the real clock keeps the two handlers on the game's events (one reference
-    /// comparison each); the hour handler is one comparison every game hour, and once a game day (twice after a stopped night) a pass over the market's
-    /// entries (a few hundred dictionary looks) and the employees (one schedule look each).
+    /// Keeps the game's night whole (the why is in <see cref="DayRollRules"/>). At the game's first hour event of a new
+    /// day, before the wages and the rivals' step, once a game day: goods in the city's market the game no longer knows
+    /// (from a mod not loaded) are taken out, so the rivals' step cannot throw; and where the night before stopped short,
+    /// the hours about to be paid are brought back to the shifts. At the hour after a stopped night, what the employees'
+    /// day would have cleared is cleared. A night that ran as the game meant is never touched.
+    /// Logged each time, a notice once a session. In a Going Public session only the player's own employees are mended,
+    /// and a guest leaves the market alone (the rivals' step runs on the host only).
+    /// COST: no Update; a one-second real-time timer keeps the two handlers; once a game day a pass over the market and
+    /// the employees.
     /// </summary>
     public sealed class DayRollGuard : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "DayRollGuard", typeof(DayRollGuard));   // its handlers and timer (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "DayRollGuard", typeof(DayRollGuard));   // its handlers and timer
 
         public static IModLogger Logger;
 
-        private const int NamesShown = 3;   // goods named in the log line: the rest are counted
+        private const int NamesShown = 3;   // goods named in the log line; the rest are counted
 
         private Action _onHour, _onDay, _hourSeen, _daySeen;
         private GameInstance _of;           // the save the days below belong to
-        private int _rollDay;               // the day whose night was last seen to start (its hour at nothing)
+        private int _rollDay;               // the day whose night was last seen to start
         private int _doneDay;               // the day whose day event was last seen
-        private int _clearedDay;            // the day whose stopped night's hours were cleared at its next hour
-        private bool _told;                 // the notice has been shown this session
+        private int _clearedDay;            // the day whose stopped night's hours were cleared
+        private bool _told;                 // the notice was shown this session
         private readonly List<string> _gone = new List<string>(4);
 
         private static GameInstance Save => SaveGameManager.Current;
@@ -91,7 +76,7 @@ namespace RealLifeOverhaul
             if (!ReferenceEquals(_of, Save))
             {
                 _of = Save;
-                _rollDay = _doneDay = _clearedDay = 0;   // (a save just loaded: nothing of its nights has been seen)
+                _rollDay = _doneDay = _clearedDay = 0;   // a save just loaded
             }
         }
 
@@ -141,10 +126,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The hour after the night: if the night stopped before its day event, the counts the employees' day it never reached
-        // would have cleared are cleared here as the game does it (EmployeeHelper.RunDaily: the day's hours, and the week's
-        // hours and days on a Monday). The stopped night took the game's first hour with it, so nothing has been counted
-        // since the wages were paid.
+        // After a night that stopped before its day event: clears what EmployeeHelper.RunDaily would have. The stopped
+        // night took the first hour with it, so nothing has been counted since the wages.
         private void AfterNight(GameInstance save)
         {
             int day = save.Day;
@@ -180,7 +163,7 @@ namespace RealLifeOverhaul
             return reg != null && GoingPublic.Foreign(reg);
         }
 
-        // Goods of the market the game cannot find, taken out; how many. (ItemsGetter.GetByName with its error kept quiet.)
+        // Takes out the goods the game cannot find; returns how many.
         private static int Market(GameInstance save, List<string> gone, out int entries)
         {
             List<ProductMarketEntry> market = save.productMarketEntries;
@@ -203,7 +186,7 @@ namespace RealLifeOverhaul
             return removed;
         }
 
-        // The hours about to be paid tonight, put right where the clearing was missed; how many employees were looked at.
+        // Puts right the hours about to be paid where the clearing was missed; returns the employees looked at.
         private static int Hours(GameInstance save, int day, bool missed, out int mended, out int before, out int after)
         {
             mended = before = after = 0;
@@ -220,7 +203,7 @@ namespace RealLifeOverhaul
                 int worked = e.workedHoursToday;
                 if (!DayRollRules.Suspect(worked, missed))
                 {
-                    continue;   // (a day the game counted as it meant: one comparison)
+                    continue;
                 }
                 BuildingRegistration reg = e.assignedAddress != null ? BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;
                 if (reg != null && GoingPublic.Foreign(reg))
@@ -237,7 +220,7 @@ namespace RealLifeOverhaul
                 }
                 before += Math.Max(0, worked);
                 after += kept;
-                e.workedHoursToday = kept;   // (a delivery driver's pay is a fixed day whatever this count: EmployeeInstance.PayWage)
+                e.workedHoursToday = kept;   // a delivery driver's pay is a fixed day whatever this count
                 e.workedHoursThisWeek = week;
                 e.workedDays = days;
                 mended++;
@@ -245,8 +228,7 @@ namespace RealLifeOverhaul
             return people;
         }
 
-        // An employee's shifts on a day, in hours, and from that week's Monday to the day, in hours and in days with a shift;
-        // nothing with no business or schedule.
+        // Hours of shift on the day, and from that week's Monday to it in hours and days; 0 without a schedule.
         private static int Shifts(EmployeeInstance e, BuildingRegistration reg, int day, out int sinceMonday, out int daysOn)
         {
             sinceMonday = daysOn = 0;
