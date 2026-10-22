@@ -50,10 +50,7 @@ namespace RealLifeOverhaul
         // A patrol car is coming for the player or after them: whatever else they do belongs to this stop.
         private bool Pursuing => _state == State.Summoned || _state == State.Signalled || _state == State.Fleeing;
 
-        /// <summary>
-        /// The player's car hit a traffic car during a stop or a chase: the damages go on this stop's bill, one settlement for
-        /// both. False if no such stop is on, and PolicePursuit deals with the crash itself.
-        /// </summary>
+        /// <summary>A crash during a stop or a chase goes on its bill. False if none is on: PolicePursuit deals with it.</summary>
         internal static bool TakeDamages(int liability)
         {
             PoliceAttention attention = Instance;
@@ -131,7 +128,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The officer at the window can tell: drink at the wheel goes on the bill of whatever the stop was for.
+        // Drink at the wheel goes on the bill of whatever the stop was for.
         private void Breathalyse()
         {
             if (Leisure.LeisureDirector.Tipsy)
@@ -172,7 +169,7 @@ namespace RealLifeOverhaul
                 // Indoors, or time is being skipped: whoever was after them has lost them.
                 if (_state == State.Signalled || _state == State.Fleeing)
                 {
-                    Escaped(announce: true);
+                    Escaped();
                 }
                 else
                 {
@@ -247,7 +244,7 @@ namespace RealLifeOverhaul
                     }
                     if (_patrol.IsLost || now >= _stateEnd || Unseen(now, position))
                     {
-                        Escaped(announce: true);
+                        Escaped();
                     }
                     else if (stopped && Held(now, position, 25f, BustHold))
                     {
@@ -269,7 +266,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The patrol car has been within reach of the stopped player for long enough.
         private bool Held(float now, Vector3 position, float within, float seconds)
         {
             if ((_patrol.Car.transform.position - position).sqrMagnitude > within * within)
@@ -285,14 +281,13 @@ namespace RealLifeOverhaul
             return now - _holdSince >= seconds;
         }
 
-        // True once the patrol cars have been without sight of the player for long enough, or are hopelessly far behind.
         private bool Unseen(float now, Vector3 position)
         {
             Vector3 from = _backup.Nearer(_patrol.Car.transform.position, position);
             return (from - position).sqrMagnitude > LostDistance * LostDistance || _sight.Lost(from, position, now);
         }
 
-        // True while a patrol car is close behind the player with them in sight: one line test, when the time runs out.
+        // A patrol car close behind with the player in sight: one line test, when the time runs out.
         private bool StillOn(Vector3 position)
         {
             Vector3 from = _backup.Nearer(_patrol.Car.transform.position, position);
@@ -315,7 +310,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A patrol car on the road the player came along, some way behind them, lights on.
         private bool SpawnPatrol(Vector3 position)
         {
             if (!_driving)
@@ -368,7 +362,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // They stopped: the officer walks up, and the ticket names the offence and the amount.
         private void Ticket(float now)
         {
             Breathalyse();
@@ -376,7 +369,6 @@ namespace RealLifeOverhaul
             int killed = _killed;
             int paid = fine + _owed + _hurt * PolicePursuit.InjuryFine + _killed * PolicePursuit.DeathFine;
             Justice.Summon(JusticeReports.Struck(_hurt, killed, true, paid - fine - _owed));   // a death on the way goes to court
-            // More than one kind of offence on the bill: the ticket says so.
             Settle(fine, false, (_booked & (_booked - 1)) != 0 ? "reallife_crime_ticket_several" : TicketKey(_first), "reallife_crime_ticket_crash");
             Logger?.Info($"Police attention: ticket for {_first}, {fine}.");
             Justice.PoliceContact(driving: true);   // a bench warrant is served, a suspended licence charged
@@ -411,8 +403,7 @@ namespace RealLifeOverhaul
             int hurt = _hurt, killed = _killed;
             bool crashed = _owed > 0;
             int paid = fine + _owed + hurt * PolicePursuit.InjuryRunFine + killed * PolicePursuit.DeathRunFine;
-            // A case is opened, crediting the fine. Its hours are these only when no precinct holds the player; a precinct's
-            // own reach the case when the cell door shuts.
+            // The case credits the fine; a precinct that holds the player gives the case its own hours.
             Justice.Arrest(JusticeReports.Fled(_hurt, _killed, fine, Law.Custody.Ready ? 0 : hours));
             Settle(fine, true, "reallife_crime_bust", "reallife_crime_bust_crash");
             Logger?.Info($"Police attention: caught after fleeing a stop for {_first}, {fine}, {hours} h in custody.");
@@ -435,8 +426,7 @@ namespace RealLifeOverhaul
             return _knownDay == TimeHelper.CurrentDay ? Mathf.RoundToInt(fine * 1.5f / 10f) * 10 : fine;
         }
 
-        // One charge and one message for the whole bill: the fines, the damages for a crash on the way and the fines for
-        // anyone hurt. The amount shown is all of it.
+        // One charge and one message for the whole bill: fines, damages, and the fines for anyone hurt.
         private void Settle(int fine, bool ran, string key, string keyWithCrash)
         {
             int owed = _owed;
@@ -483,19 +473,15 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void Escaped(bool announce)
+        private void Escaped()
         {
             bool fled = _state == State.Fleeing;
             Clear();
             _knownDay = TimeHelper.CurrentDay;
             Logger?.Info("Police attention: the player got away; their car is known for the rest of the day.");
-            if (announce)
-            {
-                Crime.Show(NotificationType.Warning, fled ? "reallife_crime_stop_escaped" : "reallife_crime_stop_dodged");
-            }
+            Crime.Show(NotificationType.Warning, fled ? "reallife_crime_stop_escaped" : "reallife_crime_stop_dodged");
         }
 
-        // Everything let go: afterwards nothing is after the player.
         private void Clear()
         {
             _state = State.Idle;

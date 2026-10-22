@@ -1,4 +1,3 @@
-using Helpers;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,9 +7,9 @@ namespace RealLifeOverhaul
     internal enum Offence { None, RedLight, Speeding, Reckless, WrongSide, Jaywalk, CrossOnRed, DrunkDriving }
 
     /// <summary>
-    /// Notices what the player does wrong on the road, on timers: the stop line ahead ten times a second, speed and position
-    /// twice a second, and on foot only with one of the mod's officers close enough to see. Each look is a few subtractions
-    /// against RoadMap's grid; the one physics query (a crossing?) runs only with an officer near.
+    /// Notices what the player does wrong on the road: the stop line ten times a second, speed and position twice a second,
+    /// on foot only with an officer near. Each look is a few subtractions against RoadMap; the one physics query (a
+    /// crossing?) runs only with an officer near.
     /// </summary>
     internal sealed class PlayerOffences
     {
@@ -20,9 +19,9 @@ namespace RealLifeOverhaul
         private const float CrawlSpeed = 1.5f;        // m/s: creeping over a stop line slower is not running the light
         private const float RedFor = 1f;              // seconds the light must have been red before the car crosses
         private const float PastLine = 1f;            // metres the car's middle must be past the stop line
-        private const float PavementSeconds = 2.5f;
-        private const float WrongSideSeconds = 3f;
-        private const float OnRoadSeconds = 1.2f;
+        private const float PavementSeconds = 2.5f;   // seconds on the pavement at speed
+        private const float WrongSideSeconds = 3f;    // seconds against the traffic
+        private const float OnRoadSeconds = 1.2f;     // seconds walking in the road
         private const float OfficerSight = 30f;       // metres
 
         private static readonly Collider[] Hits = new Collider[12];

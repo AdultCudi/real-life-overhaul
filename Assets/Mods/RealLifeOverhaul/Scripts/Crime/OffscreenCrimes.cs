@@ -12,10 +12,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The crimes against the player that nobody sees: a break-in at one of their shops overnight, their parked car broken
-    /// into, a scam call. Each is rolled at most once a day from the director's hourly look, behind the crimes against you
-    /// option, rests for days after, and is capped. A break-in takes stock the way the game's own theft does (off the
-    /// shelf, onto the shop's stolen value); a car gets a little damage, never moved or emptied; a scam costs only a yes.
+    /// Crimes against the player out of sight, behind the crimes against you option: a break-in at a shop overnight (stock
+    /// taken as the game's own theft takes it), a parked car broken into (a little damage), a scam call (only a yes costs).
+    /// Each is rolled at most once a day from the director's hourly look, capped, and rests for days after.
     /// </summary>
     internal sealed class OffscreenCrimes
     {
@@ -25,7 +24,7 @@ namespace RealLifeOverhaul
         private static float BreakInValueCap => Prices.At(2500f);
         private const float BreakInStockShare = 0.25f; // of what is on the shelves, at most
         private const float CarChance = 0.03f;         // per night
-        private const int CarRestDays = 7;
+        private const int CarRestDays = 7;             // in-game days
         internal const float CarRepairCap = 250f;      // dollars
         internal const int RepairLeast = 60, RepairMost = 350;     // a break-in's repair, dollars at the start's prices
         internal const int ScamLossLeast = 30, ScamLossMost = 400;

@@ -120,8 +120,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Deals crimes like cards (as LifeEventDeck deals life events): a kind is not dealt again until every kind that fits
-    /// has been seen, and no ending or line comes twice running. Nothing here allocates.
+    /// Deals crimes like cards: a kind comes again only once every kind that fits has been seen, and no ending or line comes
+    /// twice running. Nothing here allocates.
     /// </summary>
     internal static class CrimeDeck
     {
@@ -192,8 +192,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// One of an entry's endings by its odds; one with no odds is only reached by what happens in a scene. With three or
-        /// more, last time's is left out; with two, that would only make them take turns.
+        /// An ending by its odds (one with none is reached only by the scene); last time's is left out from three or more,
+        /// since with two that would make them take turns.
         /// </summary>
         public static CrimeEnding DrawEnding(CrimeEnding[] endings, string lastName, Func<float> random01)
         {

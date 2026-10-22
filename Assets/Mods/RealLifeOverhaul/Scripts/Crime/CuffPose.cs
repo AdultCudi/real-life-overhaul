@@ -4,9 +4,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Hands cuffed behind the back wherever none of the mod's cuffed clips has the body, and the handcuffs on the wrists in
-    /// either case. The game has no such animation: the arms are aimed by hand (People/BonePose) after the animator, in
-    /// LateUpdate. Per frame: at most two people, four bones each; switched off while nobody is cuffed.
+    /// Hands cuffed behind the back, aimed by hand after the animator (the game has no such animation) wherever no cuffed
+    /// clip has the body, and the handcuffs on the wrists. Per frame: two people at most, four bones each; off while
+    /// nobody is cuffed.
     /// </summary>
     public sealed class CuffPose : MonoBehaviour
     {

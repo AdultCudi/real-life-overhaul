@@ -47,10 +47,7 @@ namespace RealLifeOverhaul
             ShowAmount(NotificationType.Error, messageKey, amount, 10f);
         }
 
-        /// <summary>
-        /// Money taken by a criminal: a share of the cash in hand between a floor and a cap (at today's prices), never more
-        /// than they have. Returns what was taken.
-        /// </summary>
+        /// <summary>A criminal takes a share of the cash in hand, within a floor and a cap at today's prices. Returns what was taken.</summary>
         public static int Rob(float share, int atLeast, int atMost, string transactionKey)
         {
             if (SaveGameManager.Current == null)

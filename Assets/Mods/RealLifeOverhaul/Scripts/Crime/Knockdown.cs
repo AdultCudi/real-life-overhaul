@@ -3,8 +3,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One of a scene's people knocked off their feet: a ragdoll for a few seconds, then standing where they landed. With
-    /// no ragdoll to be had they stay standing and the scene carries on; letting the person go ends the ragdoll too.
+    /// One of a scene's people knocked down: a ragdoll for a few seconds, then standing where they landed, or no fall at all
+    /// with no ragdoll to be had. Letting the person go ends the ragdoll too.
     /// </summary>
     internal sealed class Knockdown
     {

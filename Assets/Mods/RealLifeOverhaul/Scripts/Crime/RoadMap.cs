@@ -7,10 +7,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The traffic system's road data in a coarse grid, so questions about the player's car are cheap: every lane point,
-    /// and the stop line of every lane at a traffic light with its red lamp (to tell red from amber). Built in one pass the
-    /// first time it is asked after a city load; a question then looks at the few entries around the car. Road data it
-    /// cannot read leaves it unusable, and the offences that need it are never detected.
+    /// The traffic system's lane points and stop lines (with each light's red lamp, to tell red from amber) in a coarse grid,
+    /// built in one pass the first time it is asked after a city load; a question looks only at the cells around the car.
+    /// Road data it cannot read leaves it unusable, and the offences that need it go undetected.
     /// </summary>
     internal static class RoadMap
     {
@@ -159,8 +158,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The stop line the car is about to cross or has just crossed: in its own lane, running its way, at most 30 m ahead
-        /// or 8 m behind. Gives its index and how far the car's middle is past it (negative while short of it).
+        /// The stop line in the car's lane, its way, 30 m ahead to 8 m behind: its index and how far past it the car's middle
+        /// is (negative while short of it).
         /// </summary>
         public static bool LineAt(Vector3 position, Vector3 heading, out int index, out float along)
         {
@@ -207,10 +206,7 @@ namespace RealLifeOverhaul
             return Lines[index];
         }
 
-        /// <summary>
-        /// The lane point nearest a position, not inside a junction, within 30 m or so: the distance to it, the way its lane
-        /// runs and its speed limit in km/h.
-        /// </summary>
+        /// <summary>The lane point nearest a position within about 30 m, outside junctions: how far, its way and its limit in km/h.</summary>
         public static bool NearestLane(Vector3 position, out float distance, out Vector3 runs, out float limitKmh)
         {
             return NearestLane(position, out distance, out runs, out limitKmh, out _);

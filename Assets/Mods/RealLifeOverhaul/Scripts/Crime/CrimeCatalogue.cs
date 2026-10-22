@@ -37,13 +37,10 @@ namespace RealLifeOverhaul
         public const float SpeedingSeenKnown = 0.35f;  // for a car that got away earlier today (any other offence: certain)
 
         public const int CustodyHoursMin = 2;          // hours
-        public const int CustodyHoursMax = 5;
+        public const int CustodyHoursMax = 5;          // hours
     }
 
-    /// <summary>
-    /// Every crime the mod can stage. A new one is an entry here, its lines in Locales\en.json and a scene in CrimeScenes
-    /// (docs/contributing/adding-things.md).
-    /// </summary>
+    /// <summary>Every crime the mod can stage: a new one is an entry here, its lines and a scene (docs/contributing/adding-things.md).</summary>
     internal static class CrimeCatalogue
     {
         public static readonly CrimeEntry[] All = Build();

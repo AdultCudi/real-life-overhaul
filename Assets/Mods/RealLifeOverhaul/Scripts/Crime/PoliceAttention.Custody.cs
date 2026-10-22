@@ -10,7 +10,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>Custody the old way, for when no precinct holds the player: the screen goes dark and the clock moves on.</summary>
+    /// <summary>Custody when no precinct holds the player: the screen goes dark and the clock moves on.</summary>
     public partial class PoliceAttention
     {
         private bool _custodyRunning;
@@ -39,8 +39,8 @@ namespace RealLifeOverhaul
             StartCoroutine(Guard.Routine(CustodyRoutine(hours)));
         }
 
-        // The officer gets to the window, the screen goes dark, the clock moves on with the game's own time skip (as its
-        // doctor and taxi do), and the player is let go where they were. The finally puts the game back whatever happens.
+        // The screen goes dark, the clock moves on by the game's own time skip (as its doctor and taxi do), and the player is
+        // let go where they were. The finally puts the game back whatever happens.
         private IEnumerator CustodyRoutine(int hours)
         {
             _custodyFaded = false;
@@ -73,7 +73,7 @@ namespace RealLifeOverhaul
                 EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.Hospital);   // a bench in a cell: a little rest, as in the game's waiting rooms
                 if (!GoingPublic.ClockShared)
                 {
-                    uis.timeMachine.StartTimeMachine(release, disableCancel: true, "reallife_crime_custody_info");   // in Going Public the hours pass at once
+                    uis.timeMachine.StartTimeMachine(release, disableCancel: true, "reallife_crime_custody_info");   // the clock is not skipped in Going Public
                 }
 
                 waited = 0f;

@@ -2,10 +2,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The scene that plays each catalogue entry, made once and reused. CatalogueCheck reads this file to match every
-    /// dealt entry to a scene.
-    /// </summary>
+    /// <summary>The scene for each catalogue entry, made once and reused. CatalogueCheck reads this file to match entries to scenes.</summary>
     internal static class CrimeScenes
     {
         public static Dictionary<string, ICrimeScene> Build()

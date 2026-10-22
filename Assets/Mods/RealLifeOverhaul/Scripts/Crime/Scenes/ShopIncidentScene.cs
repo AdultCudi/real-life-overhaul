@@ -1,7 +1,6 @@
 using Helpers;
 using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
@@ -141,7 +140,6 @@ namespace RealLifeOverhaul
                         End();
                         break;
                     }
-                    // The player standing squarely in a running thief's way.
                     if (!_holdUp && !Is("false_alarm") && !PlayerHelper.IsUsingVehicle && (First.Position - player).sqrMagnitude < 1.5f * 1.5f)
                     {
                         _fall.Begin(First, player, now, 3f);

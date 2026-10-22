@@ -18,8 +18,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// One crime played out near the player, started, ticked four times a second and ended by the director. Begin leaves
-    /// a running scene or nothing; End may be called at any moment, any number of times, and hands back everything borrowed.
+    /// One crime played out near the player, run by the director four times a second. Begin leaves a running scene or
+    /// nothing; End may be called at any time, any number of times, and hands back everything borrowed.
     /// </summary>
     internal interface ICrimeScene
     {
@@ -40,15 +40,13 @@ namespace RealLifeOverhaul
         bool Report(float now);
         /// <summary>True while the interaction key near the scene would do something. Asked every frame: a field read.</summary>
         bool Interactive { get; }
-        /// <summary>The player pressed the interaction key while the scene was interactive.</summary>
         void Interact(float now, Vector3 player);
         void End();
     }
 
     /// <summary>
-    /// What every scene shares: a cast of up to four, a step counter with a timer, the ending rolled from the catalogue and
-    /// its lines, an officer to send for, an arrest, the player's own catch, and the clearing up. A scene puts its people
-    /// out in Stage and moves them on in Run, a switch over its own steps.
+    /// What every scene shares: a cast of four, timed steps, the ending rolled from the catalogue, an officer, the arrest,
+    /// the player's catch and the clearing up. A scene puts its people out in Stage and moves them on in Run.
     /// </summary>
     internal abstract partial class CrimeScene : ICrimeScene
     {
@@ -215,8 +213,7 @@ namespace RealLifeOverhaul
             Clear();
         }
 
-        // Marked over before anything is touched, so that no failure in here can make the scene run again; each part is
-        // given back even if another fails.
+        // Over before anything is touched, so a failure here cannot run the scene again; each part goes back even if another fails.
         private void Clear()
         {
             Active = false;

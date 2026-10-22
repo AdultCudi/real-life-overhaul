@@ -1,4 +1,3 @@
-using System;
 using Helpers;
 using UI.Notification;
 using UnityEngine;

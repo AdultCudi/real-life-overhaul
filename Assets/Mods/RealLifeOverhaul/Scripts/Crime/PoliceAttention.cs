@@ -8,12 +8,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What the police do about the player's own offences. One counts only if somebody could have seen it: one of the mod's
-    /// officers nearby, or by a chance per offence (CrimeLaw) a patrol car that then has to come up behind them. Stopping is
-    /// a ticket at the window; driving on is a pursuit whose bill grows; getting away leaves the car known for the day; caught
-    /// after fleeing is a larger fine and some hours in custody. On foot, a shouted warning and now and then a small fine.
-    /// One patrol car and one officer at most. Idle it costs one time comparison per frame plus PlayerOffences' timed looks,
-    /// and nothing indoors.
+    /// What the police do about the player's own offences, when an officer nearby or, by chance, a patrol car saw: a ticket
+    /// at the window for stopping, a pursuit for driving on, a car known for the day for getting away, a fine and custody
+    /// for being caught; on foot a warning or a small fine. Idle it costs one time comparison a frame plus PlayerOffences'
+    /// timed looks, and nothing indoors.
     /// </summary>
     public partial class PoliceAttention : MonoBehaviour
     {
@@ -37,23 +35,17 @@ namespace RealLifeOverhaul
             (Instance != null && Instance._state != State.Idle) || (PolicePursuit.Instance != null && PolicePursuit.Instance.Busy)
             || Law.Custody.Active;
 
-        /// <summary>
-        /// True from the moment the player is told to stop by a patrol car behind them until that is settled: stopped for the
-        /// ticket, got away or caught. Not the car on its way, the ticket being written, custody, or PolicePursuit's wait.
-        /// </summary>
+        /// <summary>True from the patrol car's lights behind the player until they stop, get away or are caught.</summary>
         public static bool PulledOver =>
             Instance != null && (Instance._state == State.Signalled || Instance._state == State.Fleeing);
 
         /// <summary>
-        /// An officer has the player stopped for traffic offences: the ticket at the window (false) or caught after fleeing
-        /// (true). The first argument has one bit per kind of offence on the bill (1 &lt;&lt; (int)Offence).
+        /// The player was stopped for traffic offences: a bit per offence on the bill (1 &lt;&lt; (int)Offence), and true when
+        /// caught after fleeing.
         /// </summary>
         public static event Action<int, bool> Stopped;
 
-        /// <summary>
-        /// Some hours in custody, the way it is after a pursuit, for an arrest made by another feature (Licences). False if
-        /// custody is already running or this component is off.
-        /// </summary>
+        /// <summary>Hours in custody for an arrest made by another feature (Licences). False if custody is running or this is off.</summary>
         public static bool TakeIntoCustody(int hours)
         {
             PoliceAttention attention = Instance;
@@ -180,7 +172,6 @@ namespace RealLifeOverhaul
             Pursue(now);
         }
 
-        // Which car, if any, the player is driving.
         private void Lookup()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
@@ -241,8 +232,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Whether anyone saw: a patrol car about by a chance per offence, or an officer on foot with a clear view, likelier
-        // the nearer and the more on the lookout. With officers on most streets, nobody on foot is ever certain.
+        // A patrol car by a chance per offence, or an officer on foot with a clear view, likelier the nearer; never certain,
+        // with officers on most streets.
         private bool Seen(Offence offence, Vector3 at)
         {
             if (!Settings.Police)
@@ -283,8 +274,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Another feature knows of something at the wheel the road data cannot show (drink: Leisure); somebody has to see it,
-        /// as any offence. Safe to call every second: false at once during a stop or within 25 s of the last look.
+        /// An offence the road data cannot show (drink: Leisure), seen or not as any other. Safe to call every second: false
+        /// during a stop or within 25 s of the last look.
         /// </summary>
         internal static bool Report(Offence offence)
         {
@@ -304,7 +295,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The officer calls out; now and then it is a ticket.
         private void Shout(Offence offence)
         {
             StreetActor officer = _offences.Witness;

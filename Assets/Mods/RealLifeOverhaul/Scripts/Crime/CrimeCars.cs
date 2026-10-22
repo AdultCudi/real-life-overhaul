@@ -44,8 +44,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// An ordinary private car in traffic between two distances from the player, moving (or, with
-        /// <paramref name="stopped"/>, standing at a light), or null. Starts at a random car so the same one is not always picked.
+        /// An ordinary car in traffic between two distances from the player, moving (or, with <paramref name="stopped"/>,
+        /// standing at a light), or null. The search starts at a random car.
         /// </summary>
         public static VehicleComponent FindTrafficCar(Vector3 player, float minDistance, float maxDistance, bool stopped)
         {
@@ -76,10 +76,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>
-        /// Plain traffic: a car, not a truck, nobody's taxi or driver, held by nothing of the mod's, and not a vehicle with a
-        /// job (StreetRules.IsOrdinaryCarName). The reckless drivers pick by it too.
-        /// </summary>
+        /// <summary>Plain traffic: a car nobody holds, drives or works (StreetRules.IsOrdinaryCarName). The reckless drivers pick by it too.</summary>
         internal static bool IsOrdinary(VehicleComponent car)
         {
             if (car == null || !car.gameObject.activeInHierarchy || car.presetPath != null || car.prefab == null

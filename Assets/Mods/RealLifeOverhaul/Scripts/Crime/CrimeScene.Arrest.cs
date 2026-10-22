@@ -1,4 +1,3 @@
-using BigAmbitions.Characters;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -281,7 +280,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The held person runs off and everybody else goes home.
         private void LetGo(float now)
         {
             ActorRole who = _held;

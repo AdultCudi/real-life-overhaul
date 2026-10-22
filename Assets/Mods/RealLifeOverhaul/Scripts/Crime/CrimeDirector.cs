@@ -12,12 +12,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Decides when a crime happens near the player and which, and runs the one scene at a time: never while an accident or
-    /// a pursuit has the street, never a street scene indoors or a shop scene outside, never one the pool cannot cast.
-    /// Kinds are dealt from CrimeCatalogue like cards (CrimeDeck). It also acts out thefts the game books in the player's
-    /// own shop, hands the hourly roll to OffscreenCrimes and answers 911.
-    /// Idle it costs two time comparisons a frame; with a scene, the marker each frame and a tick four times a second.
-    /// A scene that throws is ended; after three faults in a session the director switches itself off.
+    /// Decides when and which crime happens near the player (dealt like cards by CrimeDeck) and runs the one scene at a
+    /// time, never while an accident or a pursuit has the street. It also acts out thefts the game books in the player's
+    /// own shop, hands the hourly roll to OffscreenCrimes and answers 911. Idle it costs two time comparisons a frame; with
+    /// a scene, the marker each frame and a tick four times a second. Three faults switch it off for the session.
     /// </summary>
     public class CrimeDirector : MonoBehaviour
     {
@@ -37,13 +35,9 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static CrimeDirector Instance { get; private set; }
 
-        /// <summary>True while a crime scene is running.</summary>
         public static bool IsActive => Instance != null && Instance._scene != null;
 
-        /// <summary>
-        /// True while a crime with a victim is going on in the street (an assault, a mugging, a snatch, not one done to the
-        /// player), and where: walking away from it in front of others is noticed (Wiring/StandingLinks).
-        /// </summary>
+        /// <summary>True while an assault, a mugging or a snatch is going on in the street, and where (Wiring/StandingLinks).</summary>
         public static bool Victim(out Vector3 where)
         {
             ICrimeScene scene = Instance != null ? Instance._scene : null;
@@ -378,10 +372,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Test button: stages a crime of one family at once, whatever the hour and the crimes against you option, in place
-        /// of whatever is running. Says so if nothing of that family can be staged here.
-        /// </summary>
+        /// <summary>Test button: a crime of one family at once, whatever the hour or the options; says so if none can be staged.</summary>
         public void StageNow(int family)
         {
             try
@@ -417,7 +408,7 @@ namespace RealLifeOverhaul
                         if (staged)
                         {
                             _lastId = entry.Id;
-                            // Several of these scenes show nothing for the first few seconds.
+                            // A test says what it staged: several scenes show nothing for the first few seconds.
                             var data = new Dictionary<string, string>(2)
                             {
                                 { "name", entry.Id },

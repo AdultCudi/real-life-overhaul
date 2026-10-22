@@ -1,9 +1,8 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// How the district the player stands in scales crime: patrols stepped up after a Flare report make street crime rarer
-    /// and an offence likelier to be seen; a dark street lamp makes street crime likelier. Set by Wiring once an hour or on a
-    /// change, read where the chances are rolled; nothing per frame.
+    /// How the player's district scales crime: patrols after a Flare report make street crime rarer and offences likelier
+    /// seen; a dark street lamp makes street crime likelier. Set by Wiring; nothing per frame.
     /// </summary>
     public static class CityWatch
     {
