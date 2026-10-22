@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using AI.Customers.CustomerEntries;
 using BAModAPI;
-using BigAmbitions.Characters.Skills;
 using BigAmbitions.Rivals;
 using BigAmbitions.Tags;
 using Buildings.BuildingTypes.Shared.Dirtiness;
@@ -14,22 +12,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Everything business pressure reads from or does to the game, in one place. Each change is to
-    /// a field or through a method the game itself uses for the same thing, is bounded by the
-    /// catalogue, and writes one line to the log saying what was changed from what to what (the
-    /// footfall of every feature's writes: one line a round, Core/CustomerDraw, and one for an
-    /// issue's own change, <see cref="Said"/>):
-    ///   money        GameManager.ChangeMoneySafe with the business's address, never forced;
-    ///   footfall     the business's promotion figure (recomputed by the game daily and whenever
-    ///                marketing changes, so it heals itself), then the game's own regeneration
-    ///                of the customers still to come today (Core/CustomerDraw: once, spread over
-    ///                frames within the hour, and not where they are drawn with the figure already);
-    ///   closure      BuildingRegistration.TemporarilyClose, the switch on the business's own page;
-    ///   theft        stolenItemsCost, which the game books as Theft and clears each night;
-    ///   wages        EmployeeInstance.hourlyWage, as the game's own poach counter-offer writes it;
-    ///   leaving      the game's own resignation path (what a complaint that is ignored does), once (Core/StaffLeave);
-    ///   deliveries   DeliveryContract.nextDeliveryDay.
-    /// Nothing here runs on a timer of its own.
+    /// Everything business pressure reads from or does to the game. Each change goes through the field or method the game
+    /// uses for the same thing, bounded by the catalogue, with one log line: money by ChangeMoneySafe (never forced), footfall
+    /// by the promotion figure the game recomputes daily, a closure by the business's own switch, theft by stolenItemsCost
+    /// (cleared each night), wages as the game's counter-offer writes them, leaving through Core/StaffLeave. No timer of its own.
     /// </summary>
     internal static class BusinessGame
     {
@@ -42,27 +28,16 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        /// <summary>
-        /// What the city's economy adds to a business's footfall, in per cent of customers, whatever else is running
-        /// there (set by Wiring/CityLinks; nothing while it is not set). It is asked each time the figure is written,
-        /// kept inside <see cref="BusinessCatalogue.AmbientMostDip"/> and <see cref="BusinessCatalogue.AmbientMostBoost"/>.
-        /// </summary>
+        /// <summary>What the city's economy adds to a business's footfall, in percent, asked at each write (set by Wiring/CityLinks).</summary>
         public static Func<BuildingRegistration, int> Ambient;
 
-        /// <summary>
-        /// What the business's interior adds to its footfall, in per cent of customers (set by Wiring/InteriorLinks; nothing
-        /// while it is not set): a part of its own beside the ambient one, kept inside <see cref="BusinessCatalogue.InteriorMostDip"/>
-        /// and <see cref="BusinessCatalogue.InteriorMostBoost"/>, so that the decor's strongest choice is not lost under what
-        /// the city's economy and the rest of the mod add.
-        /// </summary>
+        /// <summary>What the business's interior adds, in percent, a part with bounds of its own (set by Wiring/InteriorLinks).</summary>
         public static Func<BuildingRegistration, int> Interior;
 
         /// <summary>The last business <see cref="Footfall"/> wrote: its own promotion figure and what was written.</summary>
         public static int LastOwn, LastWritten;
 
         private static readonly List<EmployeeInstance> StaffScratch = new List<EmployeeInstance>(16);
-
-        // ---------------------------------------------------------------- which businesses
 
         /// <summary>A business of the player's that takes money: rented, named, of a type that generates revenue.</summary>
         public static bool IsBusiness(BuildingRegistration reg)
@@ -124,7 +99,7 @@ namespace RealLifeOverhaul
             return count;
         }
 
-        /// <summary>A business's place, as the save keeps it (BusinessState.PlaceKey). Made once a registration and kept while its street and number are the same: asked on every footfall write and look-up, it builds nothing then.</summary>
+        /// <summary>A business's place as the save keeps it, made once a registration and kept while its address stands.</summary>
         public static string Place(BuildingRegistration reg)
         {
             string street = reg.StreetName;
@@ -155,10 +130,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The player's building at a remembered place whatever business is in it, or null if it is no longer theirs.
-        /// A closure is looked up by this and not by <see cref="Find"/>: the utilities close any business of the
-        /// player's for want of power, water or a connection (a headquarters, a warehouse or a factory as well as a
-        /// shop), and whatever was closed has to be found again to be opened.
+        /// The player's building at a remembered place whatever is in it, or null. Closures use this, not <see cref="Find"/>:
+        /// the utilities close a headquarters or warehouse too, and it has to be found again to be opened.
         /// </summary>
         public static BuildingRegistration Held(string place)
         {
@@ -166,7 +139,7 @@ namespace RealLifeOverhaul
             return reg != null && GoingPublic.Mine(reg) ? reg : null;
         }
 
-        // The building registered at a remembered place, whoever has it; null if there is none.
+        // The registration at a place, whoever has it.
         private static BuildingRegistration At(string place)
         {
             GameInstance save = SaveGameManager.Current;
@@ -210,20 +183,15 @@ namespace RealLifeOverhaul
             return type != null && type.HasTag(TagRef.Businesstag.allowtheft);
         }
 
-        /// <summary>
-        /// A business whose customers follow a promotion figure the game recomputes itself (the building type has
-        /// marketing promotion), open, and with no footfall change of the mod's already running. Only on these
-        /// may the figure be touched: anywhere else the game would never put it back.
-        /// </summary>
+        /// <summary>Promoted, open and with no footfall change of the mod's running: only there may the figure be touched.</summary>
         public static bool HasFootfall(BuildingRegistration reg)
         {
             return Promoted(reg) && !reg.temporarilyClosed && BusinessState.EffectAt(Place(reg)) < 0;
         }
 
         /// <summary>
-        /// True if the game itself recomputes this business's promotion figure (BusinessHelper.UpdatePromotion's own test)
-        /// and its customers follow it. An Empire Motors dealership's do not: that mod makes up its customers itself
-        /// (Core/EmpireMotors), so a campaign or a change of footfall would cost or say something and change nothing.
+        /// True if the game recomputes this business's promotion figure and its customers follow it. An Empire Motors
+        /// dealership makes up its own customers, so a change there would do nothing.
         /// </summary>
         public static bool Promoted(BuildingRegistration reg)
         {
@@ -242,7 +210,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True if the business's own figure leaves room for a change of so many percent to show in full (the figure runs 0 to 100).</summary>
+        /// <summary>True if the figure (0 to 100) leaves room for a change of so many percent to show in full.</summary>
         public static bool FootfallRoom(BuildingRegistration reg, int percent)
         {
             if (!HasFootfall(reg))
@@ -255,11 +223,9 @@ namespace RealLifeOverhaul
             return percent < 0 ? wanted > 0 && wanted < own : wanted < 100 && wanted > own;
         }
 
-        // ---------------------------------------------------------------- the figures
-
         public static float Cash => SaveGameManager.Current != null ? Mathf.Max(0f, SaveGameManager.Current.Money) : 0f;
 
-        /// <summary>What the business took a day, on average over the last seven days it traded (the game's own order history). Zero if it has none.</summary>
+        /// <summary>What the business took a day on average over the last seven days it traded, from the game's order history; zero if none.</summary>
         public static float DailyRevenue(BuildingRegistration reg)
         {
             List<OrderHistoryEntry> history = reg.orderHistory;
@@ -342,8 +308,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- money
-
         /// <summary>Takes a charge from the player, booked at the business. False (and nothing taken) if they cannot pay it.</summary>
         public static bool Charge(BuildingRegistration reg, int amount, string transactionKey, string category = null)
         {
@@ -386,11 +350,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- footfall
-
-        // What was last written into a business's figure, and from what: while the game has not recomputed the figure (it
-        // makes a new Promotion each time, BusinessHelper.UpdatePromotion) and nothing it was worked out from has moved,
-        // writing it again would give the very same figure.
+        // What was last written into a business's figure, and from what. The game makes a new Promotion each time it
+        // recomputes, so while that object and every part are the same, writing again would give the same figure.
         private sealed class Wrote
         {
             public Promotion Promotion;
@@ -402,13 +363,10 @@ namespace RealLifeOverhaul
         private static GameInstance _writtenSave;   // the save those are of: another one starts afresh
 
         /// <summary>
-        /// Puts a business's promotion at what its own figure would be, changed by so many percent of customers (zero:
-        /// exactly its own), with whatever <see cref="Ambient"/> and <see cref="Interior"/> add. The game's figure is
-        /// recomputed first, so repeated calls never add up, unless the figure is still the one this wrote last time, the
-        /// game having recomputed nothing since, and every part is as it was then: then it is left as it stands (the hourly
-        /// round over every business, which only has to put the figure back where the game wrote its own over it, costs a
-        /// few look-ups a business). With <paramref name="regenerate"/> the customers still to come today are drawn again
-        /// with the figure (Core/CustomerDraw: once, spread, within the hour; not at all if they are drawn with it already).
+        /// Puts a business's promotion at its own figure changed by so many percent, plus <see cref="Ambient"/> and
+        /// <see cref="Interior"/>. The game's figure is recomputed first so calls never add up, unless nothing has moved
+        /// since the last write. With <paramref name="regenerate"/> today's customers still to come are drawn again
+        /// (Core/CustomerDraw).
         /// </summary>
         public static bool Footfall(BuildingRegistration reg, int percent, bool regenerate)
         {
@@ -445,7 +403,7 @@ namespace RealLifeOverhaul
                 LastWritten = w.Total;
                 if (regenerate)
                 {
-                    CustomerDraw.Rewritten(reg);   // the game's own redraw (Core/CustomerDraw keeps the hour under way while Meaningful Ambience is on)
+                    CustomerDraw.Rewritten(reg);
                 }
                 return true;
             }
@@ -456,7 +414,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Another save (a load): what was kept of the last one's registrations is dropped.
+        // A load drops what was kept of the last save's registrations.
         private static void Fresh()
         {
             GameInstance save = SaveGameManager.Current;
@@ -479,7 +437,7 @@ namespace RealLifeOverhaul
             return w;
         }
 
-        /// <summary>One line for a change of business pressure's own at a business (an issue's footfall begun or ended): what was written, from what.</summary>
+        /// <summary>Logs an issue's own footfall change: what was written, from what.</summary>
         public static void Said(BuildingRegistration reg, int percent)
         {
             Wrote w = reg != null && Written.TryGetValue(reg, out Wrote known) ? known : null;
@@ -493,12 +451,7 @@ namespace RealLifeOverhaul
                          + w.Total + ".");
         }
 
-        // ---------------------------------------------------------------- closure
-
-        /// <summary>
-        /// Closes a business of the player's with the game's own switch. False if it was closed already (it is then not
-        /// ours to reopen), or if the building is not the player's (sold with its lease, handed back, another player's).
-        /// </summary>
+        /// <summary>Closes a business with the game's own switch. False if it was closed already (not ours to reopen) or is not the player's.</summary>
         public static bool Close(BuildingRegistration reg)
         {
             if (!GoingPublic.Mine(reg) || reg.temporarilyClosed || InstanceBehavior<UI.UIs>.Instance == null)
@@ -511,12 +464,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A building the mod had closed, let go by the player since (its lease ended, it was sold with it): the game's
-        /// switch the mod set is cleared, as the game's own hand-over clears a tenant's fields, so the closure does not
-        /// pass to whoever has it next. Only while nobody rents it: in a Going Public session another player's building is
-        /// rented on this machine, and is never touched. The field is set directly, as selling a business does
-        /// (ServicesGame.Sale): TemporarilyClose would charge the player the licensing fees of a building not theirs.
-        /// True if it was cleared.
+        /// Clears the switch the mod set on a building the player has let go, so the closure does not pass to the next
+        /// tenant; only while nobody rents it (another player's building is rented on this machine). The field is set
+        /// directly, as a sale does: TemporarilyClose would charge licensing fees. True if it was cleared.
         /// </summary>
         public static bool Freed(string place)
         {
@@ -539,10 +489,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True if the game gives a business its own "temporarily closed" switch, so that the player may have closed it
-        /// by hand (the game's own test, BizManBusiness.ShouldShowTemporarilyClosedToggle: a type that generates
-        /// revenue, or a factory). A headquarters or a warehouse has none: the game never closes either, and the player
-        /// cannot open one.
+        /// True if the game gives the business a "temporarily closed" switch the player may have used (BizManBusiness's own
+        /// test: a revenue type or a factory). A headquarters or warehouse has none.
         /// </summary>
         public static bool HasSwitch(BuildingRegistration reg)
         {
@@ -556,8 +504,6 @@ namespace RealLifeOverhaul
                 return true;   // if it cannot be told, a closure is left as it is
             }
         }
-
-        // ---------------------------------------------------------------- cleanliness
 
         /// <summary>A contract clean: every dirty spot down to a third of what it was.</summary>
         public static void DeepClean(BuildingRegistration reg)
@@ -581,8 +527,6 @@ namespace RealLifeOverhaul
             }
             Logger?.Info("Business: contract clean at " + Name(reg) + ": cleanliness " + before + " -> " + Cleanliness(reg) + ".");
         }
-
-        // ---------------------------------------------------------------- staff
 
         /// <summary>The employees assigned to a business. A shared list: use it before asking again.</summary>
         public static List<EmployeeInstance> Staff(BuildingRegistration reg)
@@ -632,12 +576,12 @@ namespace RealLifeOverhaul
             return expected > 0.01f ? 1f - e.hourlyWage / expected : 0f;
         }
 
-        /// <summary>A wage brought up to a figure (a strike settled with a raise): never down, never past WageRules' cap of the game's own wage for the skill.</summary>
+        /// <summary>A wage brought up to a figure: never down, never past WageRules' cap.</summary>
         public static void SetWage(EmployeeInstance e, float wage)
         {
             float before = e.hourlyWage;
             int formula = Mathf.RoundToInt(ExpectedWage(e) * 100f);
-            e.hourlyWage = WageRules.UpTo(Mathf.RoundToInt(before * 100f), Mathf.RoundToInt(wage * 100f), formula) / 100f;   // a wage only ever goes up here, and never past the cap
+            e.hourlyWage = WageRules.UpTo(Mathf.RoundToInt(before * 100f), Mathf.RoundToInt(wage * 100f), formula) / 100f;
             Logger?.Info("Business: " + NameOf(e) + "'s wage " + before.ToString("F2", CultureInfo.InvariantCulture) + " -> " + e.hourlyWage.ToString("F2", CultureInfo.InvariantCulture) + ".");
         }
 
@@ -648,28 +592,19 @@ namespace RealLifeOverhaul
             Logger?.Info("Business: " + NameOf(e) + "'s satisfaction " + before.ToString("F0") + " -> " + e.satisfaction.ToString("F0") + ".");
         }
 
-        /// <summary>
-        /// The employee leaves the way the game has an employee leave whose complaint went unanswered, once, with one wage
-        /// and one notice, and off the game's list at once (Core/StaffLeave); a rival's offer to them loses its buttons at
-        /// once (Core/RivalOfferGuard). False, with nothing changed, for somebody who is not the player's to let go now.
-        /// </summary>
+        /// <summary>The employee resigns the game's way, through Core/StaffLeave. False, with nothing changed, if not the player's to let go.</summary>
         public static bool Leave(EmployeeInstance e)
         {
             return StaffLeave.Resign(e, "business pressure");
         }
 
-        /// <summary>
-        /// Whether the employee an offer was made to is still the player's to keep, by the rule that takes a rival
-        /// offer's buttons (Core/RivalOfferRules.Standing): gone, replaced by the headhunter, resigned, or theirs.
-        /// </summary>
+        /// <summary>Whether the employee an offer was made to is still the player's, by the rival offer's own rule.</summary>
         public static RivalOfferRules.State Standing(EmployeeInstance e, string name)
         {
             return RivalOfferGuard.Standing(e, name);
         }
 
-        // ---------------------------------------------------------------- rivals
-
-        /// <summary>True where one of the game's own special rivals is already active: the game is applying its own pressure there.</summary>
+        /// <summary>True where one of the game's own special rivals is already active.</summary>
         public static bool GameRivalActive(BuildingRegistration reg)
         {
             try
@@ -688,7 +623,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A rival of the game's own with businesses to its name, to put a name to a move; null if there is none.</summary>
+        /// <summary>A rival of the game's with businesses to its name, to name a move after; null if none.</summary>
         public static RivalData AnyRival(BuildingRegistration reg)
         {
             try
@@ -719,8 +654,6 @@ namespace RealLifeOverhaul
             }
             return null;
         }
-
-        // ---------------------------------------------------------------- deliveries
 
         /// <summary>The business's next wholesale delivery that is still to come, or null.</summary>
         public static DeliveryContract NextDelivery(BuildingRegistration reg)

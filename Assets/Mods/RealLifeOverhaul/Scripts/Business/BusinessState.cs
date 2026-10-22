@@ -39,14 +39,11 @@ namespace RealLifeOverhaul
         public ClosureSource Source;
     }
 
-    /// <summary>
-    /// Who keeps a business closed. Each has its own closure on it, ended by its own off switch; the business opens again
-    /// once none is left on it.
-    /// </summary>
+    /// <summary>Who keeps a business closed. Each maker's closure ends by its own off switch; the business opens once none is left.</summary>
     public enum ClosureSource
     {
-        Issue = 0,        // business pressure (an issue, the racket, and the company through it); every closure of a save from before the field
-        Utilities = 1     // a business without power, water or a connection, kept closed while it lacks them
+        Issue = 0,        // business pressure (and the company through it); also every closure saved before the field
+        Utilities = 1     // kept closed while it lacks power, water or a connection
     }
 
     /// <summary>Where the protection racket stands.</summary>
@@ -63,14 +60,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// What a savegame remembers of business pressure: the open issues, the footfall changes and
-    /// closures that are running (so each can be undone on its day; the closures the utilities
-    /// make are kept here too, each with its maker), the racket, and when each kind and each
-    /// business last had something. One line of text in the save's modData; the
-    /// base game carries it without reading it. Everything it describes is either the game's own
-    /// field with the game's own meaning (a promotion figure the game recomputes daily, the
-    /// "temporarily closed" switch) or nothing at all, so a save loads and plays without the mod.
-    /// Game-free.
+    /// What a save remembers of business pressure, as one line in modData: the open issues, the running footfall changes
+    /// and closures (the utilities' too, each with its maker), the racket, and when each kind and business last had
+    /// something. What it touches in the game is the game's own fields, so a save plays without the mod. Game-free.
     /// </summary>
     public static class BusinessState
     {
@@ -132,13 +124,8 @@ namespace RealLifeOverhaul
             Closures.Clear();
             Seen.Clear();
             Rested.Clear();
-            for (int i = 0; i < LastOfKind.Length; i++)
-            {
-                LastOfKind[i] = 0;
-            }
+            Array.Clear(LastOfKind, 0, LastOfKind.Length);
         }
-
-        // ---------------------------------------------------------------- questions
 
         public static BusinessIssue IssueAt(string place)
         {
@@ -248,8 +235,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // ---------------------------------------------------------------- changes
-
         public static BusinessIssue Open(string kind, string place, int day, int dueDay, int dueHour)
         {
             var issue = new BusinessIssue { Kind = kind, Place = place, StartDay = day, DueDay = dueDay, DueHour = dueHour };
@@ -285,10 +270,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A business just closed by one maker until an hour. Any closure still listed on it is dropped: the business was
-        /// open, so it was opened in the meantime (by hand, or by the game) and those closures were over.
-        /// </summary>
+        /// <summary>A business just closed by one maker until an hour. Any closure still listed is dropped: it was open, so those were over.</summary>
         public static void SetClosure(string place, ClosureSource source, int day, int hour)
         {
             for (int i = Closures.Count - 1; i >= 0; i--)
@@ -301,10 +283,7 @@ namespace RealLifeOverhaul
             Closures.Add(new Closure { Place = place, Day = day, Hour = hour, Source = source });
         }
 
-        /// <summary>
-        /// A business the mod keeps closed, kept so by one maker until at least an hour: that maker's closure on it made to
-        /// last until then if that is later, never shorter, and added if it had none. Another maker's is left as it is.
-        /// </summary>
+        /// <summary>One maker's closure on a business made to last at least until an hour (never shorter), added if it had none.</summary>
         public static void Hold(string place, ClosureSource source, int day, int hour)
         {
             int at = ClosureAt(place, source);
@@ -322,7 +301,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The closures whose hour has come, ended. Each place left with none is added to <paramref name="open"/>: its business opens again.</summary>
+        /// <summary>Ends the closures whose hour has come; each place left with none goes into <paramref name="open"/>.</summary>
         public static void EndDue(int day, int hour, List<string> open)
         {
             for (int i = Closures.Count - 1; i >= 0; i--)
@@ -334,7 +313,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>One maker's closures ended now (its off switch), or every one with <paramref name="all"/>. Each place left with none is added to <paramref name="open"/>.</summary>
+        /// <summary>Ends one maker's closures now, or every one with <paramref name="all"/>; places left with none go into <paramref name="open"/>.</summary>
         public static void EndOf(ClosureSource source, bool all, List<string> open)
         {
             for (int i = Closures.Count - 1; i >= 0; i--)
@@ -346,7 +325,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>One maker's closure on a business ended now (what kept it closed is over). Its place is added to <paramref name="open"/> if no other closure is left on it.</summary>
+        /// <summary>Ends one maker's closure on a business now; its place goes into <paramref name="open"/> if none is left.</summary>
         public static void EndAt(string place, ClosureSource source, List<string> open)
         {
             int at = ClosureAt(place, source);
@@ -356,11 +335,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Every closure on a business the player no longer holds (<paramref name="held"/> says which they do) dropped at
-        /// once, whoever made it and whenever it was to end: nothing of the mod keeps closed, or reopens as the player's, a
-        /// building that is somebody else's or nobody's now. Each place dropped is added once to <paramref name="dropped"/>.
-        /// </summary>
+        /// <summary>Drops every closure, whoever made it, on a place <paramref name="held"/> says the player no longer holds; each place once into <paramref name="dropped"/>.</summary>
         public static void DropWhere(Predicate<string> held, List<string> dropped)
         {
             for (int i = Closures.Count - 1; i >= 0; i--)
@@ -406,8 +381,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the save
-
         public static void Load(Dictionary<string, string> data, int day)
         {
             Clear();
@@ -421,7 +394,7 @@ namespace RealLifeOverhaul
                 catch (Exception)
                 {
                     Clear();   // a damaged line costs the open issues, never the load
-                    SaveLines.Unreadable(data, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
+                    SaveLines.Unreadable(data, Key, "it could not be read");
                 }
             }
             if (Racket == RacketStage.Demand && IssueOf(BusinessCatalogue.Racket) == null)
@@ -461,7 +434,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Closures.Count; i++)
             {
                 text.Append(Closures[i].Place).Append(',');
-                Join(text, Closures[i].Day, Closures[i].Hour, (int)Closures[i].Source);   // (the maker last: a version without it reads the first three)
+                Join(text, Closures[i].Day, Closures[i].Hour, (int)Closures[i].Source);   // the maker last: an older version reads the first three
                 text.Append(';');
             }
             text.Append('|');
@@ -544,8 +517,7 @@ namespace RealLifeOverhaul
                 string[] f = entry.Split(',');
                 if (f.Length >= 3 && Closures.Count < BusinessCatalogue.MostClosures)
                 {
-                    // A closure saved before its maker was kept counts as business pressure's: it ends on its hour either
-                    // way, and the utilities ask again within the hour for one of theirs that is still needed.
+                    // One saved without its maker counts as business pressure's; the utilities ask again within the hour.
                     var source = f.Length >= 4 && Int(f[3]) == (int)ClosureSource.Utilities ? ClosureSource.Utilities : ClosureSource.Issue;
                     Closures.Add(new Closure { Place = f[0], Day = Int(f[1]), Hour = Int(f[2]), Source = source });
                 }

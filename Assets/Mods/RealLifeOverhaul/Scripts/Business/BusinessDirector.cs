@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
-using Helpers;
 using UI;
 using UI.Load;
 using UI.Notification;
@@ -11,75 +10,50 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Pressure on the businesses the player runs: rival moves, a protection racket, inspections,
-    /// staff and supplier trouble, customer incidents, a tax audit, and opportunities. Each is a
-    /// small story with choices (BusinessIssues), listed with its deadline on the Business desk
-    /// (a phone contact), and each has a clear end.
-    ///
-    /// The game's own rivals are left to themselves: where one of its special rivals is already
-    /// active in a neighbourhood (price cuts, competitor openings, poaching in bulk), no rival
-    /// move of the mod's is started there, and the one poaching the mod does start is the game's
-    /// own offer to a single employee.
-    ///
-    /// It also keeps the closures the utilities make (a business without power, water or a
-    /// connection), each with its maker: those are kept and ended on their hour whether or not
-    /// business pressure is on, its off switch ends only its own, and the utilities' end when the
-    /// utilities are off.
-    ///
-    /// Cost: Update is two comparisons a frame. Once a second it looks at the clock and whether
-    /// the utilities are on; everything else happens when the game's hour changes (a handful of
-    /// list walks over at most two open issues, a few running effects, the closures and the
-    /// player's own businesses). A visitor in the shop is ticked four times a second, only while
-    /// there is one. A fault is logged once, everything the mod changed is put back, and the
-    /// feature stays off for the session.
-    ///
-    /// It also hosts the pace of every feature's customer redraws (Core/CustomerDraw, CustomerDrawPace:
-    /// switched off while none waits) and keeps the two handlers of the game's that pace needs, once a
-    /// second, whether or not business pressure is on: business pressure's writer is the mod's one
-    /// writer of a business's footfall, whoever asks.
+    /// Pressure on the player's businesses: rival moves, a protection racket, inspections, staff and supplier trouble,
+    /// customers, a tax audit and opportunities, each a small story with choices (BusinessIssues) on the Business desk.
+    /// No rival move starts where one of the game's own special rivals is active. It also keeps the utilities' closures,
+    /// ended on their hour whether or not business pressure is on, and hosts the pace of every feature's customer redraws
+    /// (CustomerDrawPace). Cost: two comparisons a frame; a clock check once a second; the real work once a game hour; a
+    /// visitor ticked four times a second while there is one. A fault puts everything back and stops it for the session.
     /// </summary>
-    public sealed class BusinessDirector : MonoBehaviour
+    public sealed partial class BusinessDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("business", "BusinessDirector", typeof(BusinessDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("business", "BusinessDirector", typeof(BusinessDirector));
 
-        private const float VisitTick = 0.25f;
-        private const int DefaultDueHour = 18;
+        private const float VisitTick = 0.25f;   // seconds between a visitor's ticks
+        private const int DefaultDueHour = 18;   // the game hour an issue is due on its last day
 
         public static IModLogger Logger;
         public static BusinessDirector Instance { get; private set; }
 
-        /// <summary>What the morning's chance that something comes up is multiplied by (the city's economy: Wiring/CityLinks). One while it is not set.</summary>
+        /// <summary>What the morning's chance of an issue is multiplied by (the city's economy); one while unset.</summary>
         public static Func<float> RollScale;
 
-        /// <summary>A kind's share of the deal, given its own (the city's economy makes rivals undercut more often in bad times). Its own while this is not set.</summary>
+        /// <summary>A kind's share of the deal, given its own (rivals undercut more in bad times); its own while unset.</summary>
         public static Func<string, int, int> WeightOf;
 
-        /// <summary>
-        /// True while the utilities run (Wiring/UtilityLinks): switched off, or stopped by a fault, every business they
-        /// closed is opened again, as their own off switch. While it is not set, their closures end on their hour.
-        /// </summary>
+        /// <summary>True while the utilities run: once false, every business they closed opens again. Unset, their closures end on their hour.</summary>
         public static Func<bool> UtilitiesOn;
 
         /// <summary>
-        /// What an official asks to make an inspection or a licence a formality (Wiring/StandingLinks: the player's standing
-        /// and its corruption option): the issue's kind, the business's place, what the catalogue would ask, and the issue's
-        /// seed, so that the same issue always gets the same answer. 0: nobody asks. While it is not set, nobody ever does.
+        /// What an official asks to wave an inspection or licence through (Wiring/StandingLinks), from the kind, the place,
+        /// the catalogue's fee and the issue's seed, so the same issue always gets the same answer. 0, or unset: nobody asks.
         /// </summary>
         public static Func<string, string, int, int, int> BribeAsk;
 
-        /// <summary>A bribe was paid at a business: the issue's kind, the place and the amount. Default: nobody hears of it.</summary>
+        /// <summary>A bribe was paid: the kind, the place and the amount.</summary>
         public static Action<string, string, int> Bribed;
 
-        /// <summary>True while a business falls short of its district's standard (Scripts/Interiors): a customer's complaint is then due whatever the satisfaction figures say. Default: never.</summary>
+        /// <summary>True while a business falls short of its district's standard, so a complaint is due whatever the figures say.</summary>
         public static Func<BuildingRegistration, bool> Shabby;
 
-        /// <summary>The cleanliness a health inspector judges, from the game's own figure (Scripts/Interiors: a worn place looks dirtier). Default: the game's figure.</summary>
+        /// <summary>The cleanliness a health inspector judges, from the game's figure (a worn place looks dirtier); the figure while unset.</summary>
         public static Func<BuildingRegistration, int, int> Inspected;
 
         /// <summary>
-        /// True while the company or the tech sector has its own rival's offer or a departure in hand for an employee (the
-        /// game's id; Wiring/CompanyLinks): business pressure's poaching, which makes the game's own offer, then goes to
-        /// somebody else. One rival's offer to an employee at a time. Default: nobody.
+        /// True while the company or the tech sector has an offer or a departure in hand for an employee (by the game's
+        /// id), so business pressure's poaching goes to somebody else. Unset: nobody.
         /// </summary>
         public static Func<string, bool> Held;
 
@@ -98,8 +72,8 @@ namespace RealLifeOverhaul
 
         private readonly BusinessVisit _visit = new BusinessVisit();
         private readonly List<BuildingRegistration> _shops = new List<BuildingRegistration>(8);
-        private readonly List<string> _opening = new List<string>(8);   // the businesses whose last closure of the mod's has just ended
-        private readonly List<string> _letGo = new List<string>(2);     // the businesses let go by the player whose closures were just dropped
+        private readonly List<string> _opening = new List<string>(8);   // whose last closure of the mod's has just ended
+        private readonly List<string> _letGo = new List<string>(2);     // let go by the player, whose closures were just dropped
         private readonly List<IssueDef> _deal = new List<IssueDef>(BusinessCatalogue.All.Length);
         private readonly int[] _testAt = new int[8];
         private float _nextSlow;
@@ -113,9 +87,9 @@ namespace RealLifeOverhaul
         {
             Instance = this;
             BusinessGame.Logger = Logger;
-            _onSave = OnSaveGame;   // one delegate for the session: hooking it again each second allocates nothing
+            _onSave = OnSaveGame;
             BusinessState.Reset();
-            gameObject.AddComponent<CustomerDrawPace>();   // the customers' redraws, a little a frame (off while none waits)
+            gameObject.AddComponent<CustomerDrawPace>();
         }
 
         private void OnDestroy()
@@ -135,14 +109,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -164,7 +138,7 @@ namespace RealLifeOverhaul
                     if (asking != null && !UiOpen())
                     {
                         _visit.Opened();
-                        BusinessDesk.OpenInPerson(asking);   // the visitor is standing in front of them and wants an answer
+                        BusinessDesk.OpenInPerson(asking);
                     }
                 }
                 if (Time.unscaledTime >= _nextSlow)
@@ -188,8 +162,6 @@ namespace RealLifeOverhaul
             return ThirdPersonCamera.IsUiOpen() || BusinessDesk.DialogOpen;
         }
 
-        // ---------------------------------------------------------------- once a second
-
         private void Slow()
         {
             GameInstance save = SaveGameManager.Current;
@@ -208,8 +180,8 @@ namespace RealLifeOverhaul
                 BusinessState.Load(save.modData, day);
                 BusinessDesk.Setup();
                 Unstick(save);
-                DropLetGo();   // (a closure kept in the save on a building given up while the mod was away)
-                _lastHour = hour;   // nothing is decided in the first hour of a session
+                DropLetGo();   // a building given up while the mod was away
+                _lastHour = hour;   // nothing is decided in a session's first hour
                 _lastDay = day;
                 Logger?.Info("Business pressure: ready. " + BusinessState.Issues.Count + " open issue(s), " + BusinessState.Effects.Count + " footfall change(s), "
                              + BusinessState.Closures.Count + " closure(s), racket " + BusinessState.Racket + ", first seen on day " + BusinessState.FirstDay + ".");
@@ -217,19 +189,18 @@ namespace RealLifeOverhaul
 
             if (Settings.Business && !BusinessDesk.Ready)
             {
-                BusinessDesk.Setup();   // switched on after the save was loaded: the contact is added now (tried once)
+                BusinessDesk.Setup();   // switched on after the load
             }
 
-            // The game clears its event hub on every load, so the save hook is kept attached.
-            SaveHook.Keep(_onSave);   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
-            CustomerDraw.Keep();      // the redraws waiting are made before a save and before the game's time skip
+            // The game clears its event hub on every load, so the hooks are kept attached.
+            SaveHook.Keep(_onSave);
+            CustomerDraw.Keep();
 
             bool turned = hour != _lastHour || day != _lastDay, newDay = day != _lastDay;
             _lastHour = hour;
             _lastDay = day;
 
-            // The closures are kept whether or not business pressure is on: the utilities' are made either way. Each ends
-            // on its hour, and the utilities' all end once the utilities are off.
+            // Closures are kept whether or not business pressure is on: the utilities make theirs either way.
             if (turned)
             {
                 DropLetGo();
@@ -250,7 +221,7 @@ namespace RealLifeOverhaul
                     || (BusinessState.Racket != RacketStage.None && BusinessState.Racket != RacketStage.Ended))
                 {
                     _visit.End();
-                    StandDown(true, false, false);   // the off switch: nothing of business pressure's own is left running on any business
+                    StandDown(true, false, false);
                 }
                 return;
             }
@@ -268,15 +239,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The businesses listed as having no closure of the mod's left on them, opened again; the list emptied, whatever happens.
-        // One the player has let go since is not theirs to open: the mod's switch on it is cleared for whoever has it next.
+        // Opens the businesses with no closure of the mod's left; one let go since only has the mod's switch cleared.
         private void ReopenListed()
         {
             try
             {
                 for (int i = 0; i < _opening.Count; i++)
                 {
-                    BuildingRegistration reg = BusinessGame.Held(_opening[i]);   // (Held, not Find: the utilities close a headquarters too, which takes no money)
+                    BuildingRegistration reg = BusinessGame.Held(_opening[i]);
                     if (reg != null)
                     {
                         BusinessGame.Reopen(reg);
@@ -295,10 +265,8 @@ namespace RealLifeOverhaul
 
         private static readonly Predicate<string> StillHeld = place => BusinessGame.Held(place) != null;
 
-        // Each closure on a building the player no longer holds (its lease ended, it was sold with it, shut down and handed
-        // back) dropped now rather than on its hour, and the switch it set cleared, so that nothing of the mod closes the
-        // building again, keeps it closed for its next tenant, or opens it as the player's. One line with Developer
-        // diagnostics on, for each building.
+        // Drops each closure on a building the player no longer holds and clears the switch it set, so the mod neither
+        // keeps it closed for the next tenant nor opens it as the player's.
         private void DropLetGo()
         {
             _letGo.Clear();
@@ -338,11 +306,9 @@ namespace RealLifeOverhaul
 
         private static readonly Predicate<string> StillOwned = place => BusinessGame.Find(place) != null;
 
-        // A business the game gives no switch to open (a headquarters, a warehouse), found closed as the save is read
-        // with no closure of the mod's behind it, is opened again: the game itself never closes one, and the player cannot
-        // open it. A closure the utilities made on one used to be dropped unopened (its business was looked for among
-        // those that take money), so a save may have some left so. One still without power, water or a connection is
-        // closed again within the hour, and told why.
+        // Opens a business with no switch of the game's (a headquarters, a warehouse) found closed at load with no closure
+        // of the mod's behind it: the game never closes one and the player cannot open it, but older saves can hold one.
+        // One still without its utilities is closed again within the hour.
         private static void Unstick(GameInstance save)
         {
             List<BuildingRegistration> all = save.BuildingRegistrations;
@@ -365,14 +331,9 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- once a game hour
-
         private void Hourly(int day, int hour, bool newDay)
         {
-            // (The closures have ended on their hour already, in Slow: they are kept whether or not business pressure is on.)
-
-            // Footfall changes: ended on their day; the rest put back on top of the game's own figure, which the game
-            // recomputes at midnight and whenever marketing changes.
+            // Footfall changes end on their day; the rest are put back over the figure the game recomputes at midnight.
             for (int i = BusinessState.Effects.Count - 1; i >= 0; i--)
             {
                 FootfallEffect effect = BusinessState.Effects[i];
@@ -405,7 +366,7 @@ namespace RealLifeOverhaul
                 _shops.Clear();
             }
 
-            // A group switched off (or "easy business" switched on) takes its open issues with it, without their outcome.
+            // A group switched off, or "easy business" on, takes its open issues with it, without their outcome.
             for (int i = BusinessState.Issues.Count - 1; i >= 0; i--)
             {
                 BusinessIssue open = BusinessState.Issues[i];
@@ -435,7 +396,6 @@ namespace RealLifeOverhaul
                 BuildingRegistration reg = BusinessGame.Find(issue.Place);
                 if (reg == null)
                 {
-                    // The business was sold or closed down: the issue went with it.
                     if (issue.Kind == BusinessCatalogue.Racket)
                     {
                         BusinessState.Racket = RacketStage.None;
@@ -519,12 +479,7 @@ namespace RealLifeOverhaul
             return WeightOf != null ? Mathf.Clamp(WeightOf(def.Id, def.Weight), 0, def.Weight * 4) : def.Weight;
         }
 
-        /// <summary>
-        /// For another feature (through Wiring): one kind of issue starts at a business now, if the rules that hold
-        /// for every issue allow it there today: the feature and the kind's group on, "easy business" off for anything
-        /// but an opportunity, past the grace days, under the most that may be open, the business and the kind rested,
-        /// and whatever the story itself needs. False, with nothing changed, if any of them says no.
-        /// </summary>
+        /// <summary>For another feature: starts one kind of issue at a business now if every issue's rules allow it; false, with nothing changed, if not.</summary>
         public bool StartIssue(string kind, BuildingRegistration reg)
         {
             try
@@ -547,12 +502,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// For another feature (through Wiring): a business's promotion figure is written again as it should stand
-        /// now: its own, an issue's change if one is running there, and whatever <see cref="BusinessGame.Ambient"/>
-        /// adds. With <paramref name="redraw"/> the customers still to come today are drawn again, unless it is a new
-        /// day and a change of this feature's own runs there: then this feature does exactly that itself within the
-        /// second. Works whether or not business pressure is switched on. False where the game keeps no promotion
-        /// figure for the business; otherwise the business's own figure and the one written.
+        /// For another feature: writes a business's promotion figure again as it should stand now, whether or not business
+        /// pressure is on. A redraw is left to this feature on a new day when a change of its own runs there. False where the
+        /// game keeps no figure; otherwise the business's own figure and the one written.
         /// </summary>
         public static bool Footfall(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written)
         {
@@ -581,7 +533,7 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                // Nothing half-started is left open.
+                // nothing half-started is left open
                 Logger?.Error(e);
                 if (def.Id == BusinessCatalogue.Racket)
                 {
@@ -593,17 +545,12 @@ namespace RealLifeOverhaul
             Logger?.Info("Business: '" + def.Id + "' opened at " + BusinessGame.Name(reg) + ", to be decided by day " + issue.DueDay + " " + issue.DueHour + ":00.");
             if (def.Id == BusinessCatalogue.Racket)
             {
-                Visit(BusinessVisit.Kind.Collector, reg, issue);   // in person, if the player is standing in the shop
+                Visit(BusinessVisit.Kind.Collector, reg, issue);   // in person, if the player is in the shop
             }
             return true;
         }
 
-        // ---------------------------------------------------------------- what issues ask of the director
-
-        /// <summary>
-        /// Sets a business's one footfall change: so many percent of customers for so many days (zero removes it).
-        /// Kept inside the catalogue's bounds, remembered with its end day, and applied now.
-        /// </summary>
+        /// <summary>Sets a business's one footfall change, so many percent for so many days (zero days removes it), and applies it now.</summary>
         internal void Effect(BuildingRegistration reg, int percent, int days)
         {
             percent = days > 0 ? BusinessCatalogue.ClampFootfall(percent) : 0;
@@ -615,19 +562,16 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Keeps a business closed for at least a few hours with the game's own switch, for one maker, and remembers when
-        /// to reopen it. An open business is closed. One the mod keeps closed already stays closed at least that long: the
-        /// maker's closure on it is made to last until then if that is later (never shorter), so a closure asked for again
-        /// each hour lasts while its cause does. True if the business is kept closed so. False if it is closed by someone
-        /// else (the player's own switch), or if the reopening could not be kept: before the save's closures are read
-        /// (reading them starts the list afresh) or after a fault (nothing reopens anything then).
+        /// Keeps a business closed with the game's switch for at least so many hours, for one maker; a closure asked for
+        /// again only ever lasts longer, so it holds while its cause does. False if someone else closed it (the player's
+        /// switch), before the save's closures are read, or after a fault: nothing would reopen it then.
         /// </summary>
         internal bool CloseFor(BuildingRegistration reg, int hours, ClosureSource source = ClosureSource.Issue)
         {
             hours = Mathf.Clamp(hours, 1, BusinessCatalogue.MostClosedHours);
             if (_broken || !BusinessState.Loaded || reg == null || !GoingPublic.Mine(reg))
             {
-                return false;   // (a building the player has let go is never closed, nor kept closed, by the mod)
+                return false;
             }
             string place = BusinessGame.Place(reg);
             int hour = TimeHelper.CurrentHour + hours, day = TimeHelper.CurrentDay + hour / 24;
@@ -648,28 +592,25 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// One maker's closure on a business ended now, as what kept it closed is over (the utilities: the business has its
-        /// power, water and connection again). It opens at once unless another closure of the mod's is left on it.
-        /// </summary>
+        /// <summary>Ends one maker's closure on a business now; it opens unless another closure of the mod's is left on it.</summary>
         internal void Release(BuildingRegistration reg, ClosureSource source)
         {
             if (_broken || !BusinessState.Loaded || reg == null || !BusinessState.Holds(source))
             {
-                return;   // (asked each hour of every business that has what it needs: nothing is worked out while the maker holds none)
+                return;   // asked hourly of every business: cheap while the maker holds none
             }
             BusinessState.EndAt(BusinessGame.Place(reg), source, _opening);
             ReopenListed();
         }
 
-        /// <summary>Says something about a business: a toast now, and a line in the Business desk's messages to read back.</summary>
+        /// <summary>A notice now, and a line in the Business desk's messages.</summary>
         internal void Tell(NotificationType type, string key, Dictionary<string, string> data)
         {
             Notifications.Show(type, key, data, 13f);
             BusinessDesk.Text(key, data);
         }
 
-        /// <summary>Somebody comes into the shop about it, if the player is standing in that shop. False if not (the issue goes on by phone).</summary>
+        /// <summary>Somebody comes into the shop about it if the player is there; false if not (it goes on by phone).</summary>
         internal bool Visit(BusinessVisit.Kind kind, BuildingRegistration reg, BusinessIssue issue)
         {
             try
@@ -684,11 +625,9 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Everything business pressure has running on any business is ended and put back: issues closed without their
-        // outcome, footfall back to the game's own figure, its closures ended (a business opens again once no closure of
-        // the mod's is left on it). The utilities' closures are theirs and stay, but for <everything>, after a fault: then
-        // nothing would ever end them. The racket goes quiet (a racket ended for good stays ended unless a test asks
-        // otherwise).
+        // Ends and puts back everything business pressure runs: issues without their outcome, footfall, its closures. The
+        // utilities' closures stay unless <everything> (after a fault nothing would end them). A racket ended for good stays
+        // ended unless <racketToo>.
         private void StandDown(bool quiet, bool racketToo, bool everything)
         {
             int day = TimeHelper.CurrentDay;
@@ -729,105 +668,6 @@ namespace RealLifeOverhaul
             {
                 Notifications.Show(NotificationType.Info, "reallife_biz_test_resolved", new Dictionary<string, string>(1) { { "days", BusinessCatalogue.BusinessRestDays.ToString() } }, 12f);
             }
-        }
-
-        // ---------------------------------------------------------------- test buttons
-
-        /// <summary>
-        /// Options page: starts the next kind of issue of a group on the business the player is standing in, or
-        /// their first one. The grace periods, rests, odds and the two-open limit are waived; what the story needs
-        /// to exist at all is not, and the button says which.
-        /// </summary>
-        public void Test(PressureGroup group)
-        {
-            TestRefusal why = _broken || !BusinessState.Loaded ? TestRefusal.NotLoaded : !Settings.Business ? TestRefusal.FeatureOff : TestRefusal.None;
-            if (why != TestRefusal.None)
-            {
-                TestRefusals.Tell(Logger, "Business issue", why);
-                return;
-            }
-            BuildingRegistration reg = BuildingManager.IsInsideBuilding ? InstanceBehavior<BuildingManager>.Instance.buildingRegistration : null;
-            if (!BusinessGame.IsBusiness(reg))
-            {
-                BusinessGame.Businesses(_shops);
-                reg = _shops.Count > 0 ? _shops[0] : null;
-                _shops.Clear();
-            }
-            if (reg == null)
-            {
-                Logger?.Info("Business issue test: not started (the player runs no business that takes money).");
-                Notifications.Show(NotificationType.Warning, "reallife_biz_test_no_business", null, 9f);
-                return;
-            }
-            string place = BusinessGame.Place(reg);
-            var data = new Dictionary<string, string>(2) { { "business", BusinessGame.Name(reg) } };
-            if (BusinessState.IssueAt(place) != null)
-            {
-                Logger?.Info("Business issue test: not started (" + BusinessGame.Name(reg) + " already has an open issue).");
-                Notifications.Show(NotificationType.Warning, "reallife_biz_test_busy", data, 9f);
-                return;
-            }
-            // The next kind of this group that can start here; if none can, the reason of the one whose turn it was.
-            IssueDef[] all = BusinessCatalogue.All;
-            _deal.Clear();
-            for (int i = 0; i < all.Length; i++)
-            {
-                if (all[i].Group == group)
-                {
-                    _deal.Add(all[i]);
-                }
-            }
-            string firstWhy = null;
-            IssueDef firstDef = null;
-            int start = _testAt[(int)group]++;
-            for (int k = 0; k < _deal.Count; k++)
-            {
-                IssueDef def = _deal[(start + k) % _deal.Count];
-                string reason = BusinessState.IssueOf(def.Id) != null ? "reallife_biz_test_kind_open" : BusinessIssues.Why(def, reg, true);
-                if (reason == null)
-                {
-                    if (Open(def, reg, TimeHelper.CurrentDay))
-                    {
-                        _deal.Clear();
-                        return;
-                    }
-                    reason = "reallife_biz_test_failed";
-                }
-                if (firstWhy == null)
-                {
-                    firstWhy = reason;
-                    firstDef = def;
-                }
-            }
-            _deal.Clear();
-            data["issue"] = firstDef != null ? JobText.T(firstDef.NameKey) : string.Empty;
-            Logger?.Info("Business issue test: not started (" + (firstDef != null ? firstDef.Id : group.ToString()) + ": " + firstWhy + ").");
-            Notifications.Show(NotificationType.Warning, firstWhy ?? "reallife_biz_test_failed", data, 10f);
-        }
-
-        /// <summary>Options page: every open issue closed, every footfall change and closure of business pressure's put back, the racket forgotten.</summary>
-        public void TestResolveAll()
-        {
-            if (_broken || !BusinessState.Loaded)
-            {
-                TestRefusals.Tell(Logger, "Business resolve", TestRefusal.NotLoaded);
-                return;
-            }
-            _visit.End();
-            StandDown(false, true, false);
-        }
-
-        /// <summary>Options page: the Business desk, face to face, wherever the player is.</summary>
-        public void TestDesk()
-        {
-            TestRefusal why = _broken || !BusinessState.Loaded ? TestRefusal.NotLoaded : !Settings.Business ? TestRefusal.FeatureOff
-                : UiOpen() ? TestRefusal.SceneActive : TestRefusal.None;
-            if (why != TestRefusal.None)
-            {
-                TestRefusals.Tell(Logger, "Business desk", why);
-                return;
-            }
-            BusinessDesk.OpenInPerson(null);
         }
     }
 }

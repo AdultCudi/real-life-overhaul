@@ -6,18 +6,12 @@ using Entities;
 using Extensions;
 using Localizor;
 using UI.Smartphone.Apps.Contacts;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The Business desk: a phone contact that lists what is open at the player's businesses, each
-    /// with its deadline and what can be done about it, and whose text messages are the record of
-    /// what has happened. Calling it goes through the open issues one at a time; each choice is
-    /// read out with what it costs before it is taken, and nothing is decided by closing the call.
-    /// The same conversation opens face to face when a visitor in the shop wants an answer.
-    /// (The game gives a mod no way to add a page of its own to the phone, so this is a contact,
-    /// like the Gig Line.)
+    /// The Business desk: a phone contact that goes through the open issues one at a time, each choice read out with its
+    /// cost before it is taken, and whose messages are the record. The same conversation opens face to face for a visitor.
     /// </summary>
     public static class BusinessDesk
     {
@@ -27,10 +21,10 @@ namespace RealLifeOverhaul
         private static Contact _contact;
         private static bool _tried;
 
-        /// <summary>True once the contact is there, or adding it has been tried with the options as they are (it is not tried every second).</summary>
+        /// <summary>True once the contact is there, or adding it has been tried with the options as they are.</summary>
         public static bool Ready => _contact != null || _tried || !Settings.PhoneContacts;
 
-        /// <summary>The issue the next dialogue opens on (a visitor is asking about it); null for the whole list. Read once.</summary>
+        /// <summary>The issue the next dialogue opens on, read once; null for the whole list.</summary>
         internal static BusinessIssue Focus;
 
         public static void Setup()
@@ -43,7 +37,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
+                ContactPictures.Add(ContactId);
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.Business, "reallife_contact_business_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogName);
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -70,7 +64,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                // A copy: the game keeps a message's data for as long as the message is listed.
+                // a copy: the game keeps a message's data while it is listed
                 _contact.SendMessage(new TextMessage(key, data != null ? new Dictionary<string, string>(data) : null), notify);
             }
             catch (Exception e)
@@ -79,7 +73,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True while one of the game's dialogue panels is open (ours or any other).</summary>
+        /// <summary>True while any of the game's dialogue panels is open.</summary>
         public static bool DialogOpen
         {
             get
@@ -97,14 +91,14 @@ namespace RealLifeOverhaul
             CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new BusinessDeskDialog()));
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
-
     }
 
+    /// <summary>The Business desk's conversation in the game's dialogue panel: the issues, their options, the racket.</summary>
     public class BusinessDeskDialog : Dialog
     {
         private static readonly IssueOption[] Options = new IssueOption[BusinessIssues.MostOptions];
 
-        // A button of the game's dialogue panel runs this: nothing thrown in here may reach the game's own UI code.
+        // A page for a button of the game's panel: nothing thrown here may reach the game's UI code.
         private static Func<DialogEntry> G(Func<DialogEntry> page)
         {
             return () =>
@@ -166,7 +160,6 @@ namespace RealLifeOverhaul
             return index < BusinessState.Issues.Count ? IssuePage(index) : RacketPage();
         }
 
-        /// <summary>A line with every value an issue's texts may name put in.</summary>
         private static string Fill(string key, Dictionary<string, string> data)
         {
             string text = key.GetLocalization();
@@ -236,7 +229,7 @@ namespace RealLifeOverhaul
             return entry;
         }
 
-        // One way of dealing with it at a time: what it means and costs, then "do this", "another way" or "decide later".
+        // One way at a time: what it means and costs, then "do this", "another way" or "decide later".
         private static DialogEntry OptionPage(BusinessIssue issue, int option)
         {
             BuildingRegistration reg = BusinessGame.Find(issue.Place);
@@ -298,12 +291,12 @@ namespace RealLifeOverhaul
             string key = BusinessIssues.Choose(issue, reg, option, out Dictionary<string, string> data);
             if (key != "reallife_biz_cannot" && key != "reallife_biz_desk_gone")
             {
-                BusinessDesk.Text(key, data, notify: false);   // for the record; they have just been told
+                BusinessDesk.Text(key, data, notify: false);   // for the record: they have just been told
             }
             return Say(key, data);
         }
 
-        // The racket between demands: what stands, and (while paying) the two ways out of it.
+        // The racket between demands: where it stands, and while paying the two ways out.
         private static DialogEntry RacketPage()
         {
             BuildingRegistration reg = BusinessGame.Find(BusinessState.RacketPlace);

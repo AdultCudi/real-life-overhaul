@@ -13,10 +13,7 @@ namespace RealLifeOverhaul
         Opportunities
     }
 
-    /// <summary>
-    /// One kind of thing that can happen to a business: a small story with a start, choices, a
-    /// deadline and an end. Game-free; what each does to the game is in BusinessIssues.
-    /// </summary>
+    /// <summary>One kind of thing that can happen to a business, with its choices and deadline. What each does is in BusinessIssues.</summary>
     public sealed class IssueDef
     {
         public readonly string Id;
@@ -25,7 +22,6 @@ namespace RealLifeOverhaul
         public readonly int Weight;        // share of the deal
         public readonly int DecideDays;    // days the player has to choose before the default happens
         public readonly int RestDays;      // days before this kind can come up again, anywhere
-
         public readonly string NameKey;    // what it is called on the Business desk
 
         public IssueDef(string id, string nameKey, PressureGroup group, bool positive, int weight, int decideDays, int restDays)
@@ -42,23 +38,12 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Every kind of business pressure and every number that bounds it. Game-free, like the job,
-    /// event and crime catalogues: nothing that balances a pressure is anywhere else.
-    ///
-    /// The rules that hold for all of them:
-    ///  - never on a business the mod has known for less than <see cref="NewBusinessDays"/> days, and
-    ///    nothing at all in the first <see cref="NewSaveDays"/> days after the mod first sees a save;
-    ///  - one open issue per business, <see cref="MostOpen"/> overall; after one ends, that business is
-    ///    left alone for <see cref="BusinessRestDays"/> days;
-    ///  - at most one new issue a day, rolled once, in the morning;
-    ///  - every charge is a share of what that business itself took a day (the game's order history, last
-    ///    seven days) between a floor and a ceiling; one the player did not choose (a fine, a repair, an
-    ///    adjustment) is also never more than <see cref="CashShare"/> of the cash
-    ///    in hand, never forced: a charge that cannot be paid falls back to the issue's other outcome;
-    ///  - footfall changes go through the game's promotion figure, between <see cref="MostDip"/> and
-    ///    <see cref="MostBoost"/> percent of customers, one per business, each with an end day;
-    ///  - a closure is the game's own "temporarily closed" switch for <see cref="MostClosedHours"/>
-    ///    hours at most, reopened by the mod (and by the player at any time).
+    /// Every kind of business pressure and every number that bounds it; game-free. The rules for all: nothing on a business
+    /// known for under <see cref="NewBusinessDays"/> days or in a save's first <see cref="NewSaveDays"/>; one open issue
+    /// a business and <see cref="MostOpen"/> in all; at most one new issue a morning; every charge a share of the business's
+    /// own day between a floor and a ceiling, and one the player did not choose at most <see cref="CashShare"/> of the
+    /// cash, never forced; footfall within <see cref="MostDip"/> to <see cref="MostBoost"/> percent; a closure is the game's
+    /// own switch for at most <see cref="MostClosedHours"/> hours.
     /// </summary>
     public static class BusinessCatalogue
     {
@@ -81,7 +66,7 @@ namespace RealLifeOverhaul
         public const string Feature = "feature";
         public const string Award = "award";
 
-        // ---- the rules for all
+        // The rules for all
         public const int NewSaveDays = 7;
         public const int NewBusinessDays = 7;
         public const int BusinessRestDays = 3;
@@ -100,7 +85,7 @@ namespace RealLifeOverhaul
         public const int MostClosures = 256;          // closures read back from a save: the utilities may close every business the player has at once
         public const float SatisfactionFloor = 20f;   // an employee's satisfaction is never pushed below this (the game makes them resign under 10)
 
-        // ---- rivals
+        // Rivals
         public const int UndercutDip = -10;
         public const int UndercutDays = 5;
         public const float UndercutMarketingShare = 0.6f;    // of a day's income: floor 80, ceiling 1200
@@ -115,7 +100,7 @@ namespace RealLifeOverhaul
         public const float SmearLawyerShare = 0.25f;         // floor 50, ceiling 500
         public const float SmearLawyerOdds = 0.55f;
 
-        // ---- protection racket
+        // Protection racket
         public const float RacketWeeklyShare = 0.28f;        // of a day's income, a week (4 % of the week): floor 60, ceiling 600
         public const float RacketCreep = 1.1f;               // what the collector asks grows by this each week paid...
         public const float RacketCreepMost = 1.5f;           // ...up to this much of the first demand
@@ -131,7 +116,7 @@ namespace RealLifeOverhaul
         public const int RacketRestDays = 14;                // after they are refused or back off
         public const int RacketStingHour = 14;
 
-        // ---- inspections
+        // Inspections
         public const int InspectionHour = 10;
         public const int HealthPass = 75;                    // the game's cleanliness figure, 0 to 100
         public const int HealthFail = 50;
@@ -150,7 +135,7 @@ namespace RealLifeOverhaul
         public const float LicenceLate = 1.5f;
         public const int LicenceClosedHours = 6;
 
-        // ---- staff
+        // Staff
         public const float StrikeGap = 0.12f;                // average shortfall against the game's own wage formula that starts it
         public const float StrikeRaiseTo = 0.95f;            // agreeing brings each underpaid wage to this share of the formula...
         public const float StrikeRaiseMost = 1.15f;          // ...but never by more than this at once
@@ -162,12 +147,12 @@ namespace RealLifeOverhaul
         public const float StaffTheftRepayOdds = 0.3f;
         public const float ArgumentLunchShare = 0.05f;       // floor 20, ceiling 120
 
-        // ---- suppliers
+        // Suppliers
         public const float ExpressShare = 0.15f;             // of the delivery's own price: floor 20, ceiling 400
         public const float SurchargeShare = 0.08f;           // floor 15, ceiling 500
         public const float NegotiateOdds = 0.3f;             // plus half the player's negotiation skill, in percent, to 0.8 at most
 
-        // ---- customers
+        // Customers
         public const int ComplaintBelow = 50;                // the game's overall satisfaction
         public const int ComplaintDip = -6;
         public const int ComplaintDays = 3;
@@ -177,12 +162,12 @@ namespace RealLifeOverhaul
         public const int PraiseDays = 3;
         public const int PraiseSharedDays = 5;
 
-        // ---- tax audit
+        // Tax audit
         public const float AuditAccountantShare = 0.07f;     // of a week's sales: floor 100, ceiling 800 (1 % of the week)
         public const float AuditAdjustShare = 0.14f;         // floor 100, ceiling 1500 (2 % of the week)
         public const float AuditRefundShare = 0.07f;         // ceiling 500
 
-        // ---- opportunities
+        // Opportunities
         public const float BulkShare = 0.4f;                 // floor 120, ceiling 2000
         public const int BulkHour = 12;
         public const int FeatureBoost = 8;
@@ -246,10 +231,7 @@ namespace RealLifeOverhaul
             return RollBase + RollPerStep * steps;
         }
 
-        /// <summary>
-        /// A charge: a share of a day's income between a floor and a ceiling, and never more than
-        /// <see cref="CashShare"/> of the cash in hand (which may take it under the floor, down to nothing).
-        /// </summary>
+        /// <summary>A share of a day's income between a floor and a ceiling, and at most <see cref="CashShare"/> of the cash (even under the floor).</summary>
         public static int Fee(float dailyIncome, float share, int floor, int ceiling, float cash)
         {
             float fee = dailyIncome * share;
@@ -269,10 +251,7 @@ namespace RealLifeOverhaul
             return percent < MostDip ? MostDip : percent > MostBoost ? MostBoost : percent;
         }
 
-        /// <summary>
-        /// The promotion figure (0 to 100) that gives a business so many percent more or fewer customers than
-        /// its own figure does, by the game's formula: customers go with base + 0.75 x promotion / 100.
-        /// </summary>
+        /// <summary>The promotion figure (0 to 100) that gives so many percent more or fewer customers, by the game's base + 0.75 x promotion / 100.</summary>
         public static int PromotionFor(int own, int percent, float baseMultiplier)
         {
             return PromotionFor(own, percent, 0, baseMultiplier);
@@ -291,29 +270,27 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The promotion figure the mod writes for a business: its own where nothing changes its footfall, otherwise
-        /// <see cref="PromotionFor(int, int, int, int, float)"/>. The one function behind every write of that figure
-        /// (BusinessGame.Footfall), and behind the staff rota planner's forecast of a day on which the parts will be
-        /// different, so that the forecast and what is written cannot drift apart.
+        /// The promotion figure the mod writes: the business's own where nothing changes it. Behind every write and the rota
+        /// planner's forecast alike, so the two cannot drift apart.
         /// </summary>
         public static int Written(int own, int percent, int ambient, float baseMultiplier)
         {
             return Written(own, percent, ambient, 0, baseMultiplier);
         }
 
-        /// <summary>The same with the business's interior's part on top (Scripts/Interiors).</summary>
+        /// <summary>The same with the interior's part on top.</summary>
         public static int Written(int own, int percent, int ambient, int interior, float baseMultiplier)
         {
             return percent != 0 || ambient != 0 || interior != 0 ? PromotionFor(own, percent, ambient, interior, baseMultiplier) : own;
         }
 
-        /// <summary>The same with the city's economy on top: an issue's change and the ambient one are each kept to their own bounds and added.</summary>
+        /// <summary>The same with the city's economy on top, each part kept to its own bounds.</summary>
         public static int PromotionFor(int own, int percent, int ambient, float baseMultiplier)
         {
             return PromotionFor(own, percent, ambient, 0, baseMultiplier);
         }
 
-        /// <summary>The same with the interior's part: each of the three is kept to its own bounds, and they are added.</summary>
+        /// <summary>The same with the interior's part, each of the three kept to its own bounds.</summary>
         public static int PromotionFor(int own, int percent, int ambient, int interior, float baseMultiplier)
         {
             float multiplier = baseMultiplier + 0.75f * own / 100f;
