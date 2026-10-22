@@ -10,40 +10,17 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Camera: the view through the phone, opened from the Camera app on the phone (or Flare's camera button) and shut
-    /// by its Close, the game's cancel key, or anything that takes the screen.
-    ///
-    ///   rear      first person from where the phone is held: the lens a third of a metre in front of the player's eyes and
-    ///             a little below, looking where the drag aims it (a full turn; up and down 60 degrees), the body turning
-    ///             with it (seated, the body stays and the lens turns 80 degrees either way); the wheel zooms 1x to 5x
-    ///   selfie    the lens turned to the player, who holds the phone out (photo mode's selfie, Leisure/Photo/Selfie: the arm
-    ///             reached to the lens, the head turned into it; no new animation); the drag moves the phone round the face
-    ///             within an arm's arc, the wheel nearer or farther; Pose goes through photo mode's poses
-    ///
-    /// The viewfinder (CameraView) has the grid, the filters (a grade of the camera's own, as photo mode's), the frames,
-    /// the shutter and the flip. A shot: the controls and the grid put away for one frame, the screen read at its end (the
-    /// one read on the main thread, measured: PhotosGame.Read), the controls back with the shutter's white and sound, and
-    /// on a worker thread the photo of about 1080 lines written as a JPG and its small copy beside it (PhotosGame.Develop).
-    /// Opened from Flare, the first photo goes back to Flare's compose sheet (PhotosBridges.ShareToFlare).
-    ///
-    /// EVERYTHING IS GIVEN BACK. Before anything is changed it is written in a CameraHold (the game's camera and its brain,
-    /// the lens, the player's walk and facing, the HUD, the pointer, the world's clicks, the game's own zoom and the turn of
-    /// its two cameras the mouse can move meanwhile); every way out (Close, the cancel key, a window or the phone opening, a
-    /// vehicle, the city unloading, the option off, a fault) gives each back once, in the hold's order (Close).
-    ///
-    /// COST: nothing while it is shut (the component is off). While it is open, a frame: the moment read (a dozen of the
-    /// game's flags), two keys, the drag and wheel taken, the lens placed after the animation (a few vector operations), and
-    /// texts set only when they change. Nothing is allocated but on a shot (its coroutine and its worker). It runs before
-    /// the game's own key handling, so the keys it takes (confirm, cancel, the two turn keys) do nothing else.
-    ///
-    /// Going Public: nothing of it is sent or shared; it moves only the player's own camera and body.
+    /// The Camera: the rear camera from where the phone is held, or the selfie through photo mode's own. Everything it
+    /// changes is first written in a <see cref="CameraHold"/> and given back once on every way out. Off while shut; while
+    /// open a frame reads a dozen of the game's flags and places the lens, allocating only on a shot. It runs before the
+    /// game's key handling, so the keys it takes do nothing else. Nothing of it is shared in Going Public.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     public sealed class CameraMode : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("photos", "CameraMode", typeof(CameraMode));   // its Update and LateUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("photos", "CameraMode", typeof(CameraMode));
 
-        private const float EyeHeight = 0.08f;   // metres from the head joint up to the eyes (as photo mode's selfie)
+        private const float EyeHeight = 0.08f;   // metres from the head joint up to the eyes
 
         public static IModLogger Logger;
         public static CameraMode Instance { get; private set; }
@@ -67,9 +44,9 @@ namespace RealLifeOverhaul.Photos
         private CameraFrame _frame;
         private string _toast;
         private float _toastUntil, _flashFrom = -10f;
-        private int _worldMask;                          // the mask the camera set on the world's clicks (PhotosGame.HoldWorld)
-        private PhotosGame.Shot _pendingShot;            // the screen's copy of a shot under way, until its coroutine lets it go
-        private Task _pendingWork;                       // ...and the worker that has it, if one does
+        private int _worldMask;                          // the mask the camera set on the world's clicks
+        private PhotosGame.Shot _pendingShot;            // a shot under way, until its coroutine lets it go
+        private Task _pendingWork;                       // the worker that has it, if one does
 
         private void Awake()
         {
@@ -97,8 +74,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The object switched off stops its coroutines too (the camera's own Close only turns the component off, which does
-        // not): a shot under way is let go here, as its coroutine's finally would have.
+        // Switching the object off stops its coroutines (turning the component off does not), so a shot is let go here.
         private void OnDisable()
         {
             try
@@ -114,9 +90,8 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The screen's copy of a shot whose coroutine the engine stopped (the component destroyed, its object switched off):
-        // the engine runs no finally of a stopped coroutine, and the copy (some 33 MB at 4K) is outside the managed heap. Let go
-        // now, or by its worker's end if a worker has it. A second call does nothing.
+        // A stopped coroutine runs no finally, and the screen's copy (some 33 MB at 4K) is outside the managed heap: it is let
+        // go now, or when its worker ends. A second call does nothing.
         private void FreeShot()
         {
             PhotosGame.Shot left = _pendingShot;
@@ -138,11 +113,9 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- opening
-
         /// <summary>
-        /// The camera opens, as the rear camera or the selfie; <paramref name="fromFlare"/>: its first photo goes back to
-        /// Flare's compose sheet. The phone must already be put away. None if it opened, else why not (nothing changed).
+        /// Opens the camera, with the phone already put away; from Flare, its first photo goes to Flare's compose sheet.
+        /// None if it opened, else why not, with nothing changed.
         /// </summary>
         public CameraRefusal Open(bool selfie, bool fromFlare)
         {
@@ -196,7 +169,7 @@ namespace RealLifeOverhaul.Photos
                 }
                 _view.Show(true);
                 _view.Busy(false);
-                _view.ForShot(false, _grid);   // (the controls back, whatever became of a shot an earlier opening left)
+                _view.ForShot(false, _grid);   // the controls back, whatever an earlier shot left
                 _view.Latest(PhotosDirector.Instance != null ? PhotosDirector.Instance.LatestTexture : null);
                 PhotosGame.Grade(_color, _filter);
                 Rear();
@@ -209,7 +182,7 @@ namespace RealLifeOverhaul.Photos
             catch (Exception e)
             {
                 Logger?.Error(e);
-                Close("a fault");   // (everything held given back now, not a frame later)
+                Close("a fault");   // everything given back now, not a frame later
                 return CameraRefusal.Gone;
             }
             Logger?.Info("Camera: open (" + (_inSelfie ? "selfie" : "rear") + (fromFlare ? ", from Flare" : string.Empty) + (_seated ? ", seated" : string.Empty) + ").");
@@ -221,7 +194,6 @@ namespace RealLifeOverhaul.Photos
             return CameraRefusal.None;
         }
 
-        // Everything changed is written first, as it was (CameraHold), then changed.
         private void Hold()
         {
             _hold.Take(HoldPart.Walk);
@@ -268,9 +240,7 @@ namespace RealLifeOverhaul.Photos
             return held;
         }
 
-        // ---------------------------------------------------------------- closing
-
-        /// <summary>The camera shuts: everything held given back once, in the hold's order. Safe when it is shut, and never throws.</summary>
+        /// <summary>Shuts the camera, everything held given back once. Safe when it is shut, and never throws.</summary>
         public void Close(string why)
         {
             if (!Active && !_hold.Any)
@@ -283,7 +253,7 @@ namespace RealLifeOverhaul.Photos
             {
                 if (_selfie != null && _inSelfie)
                 {
-                    _selfie.End();   // first: the body's facing and the near plane are the selfie's own
+                    _selfie.End();   // first: it puts back the facing and the near plane it changed
                 }
             }
             catch (Exception e)
@@ -307,7 +277,7 @@ namespace RealLifeOverhaul.Photos
             Logger?.Info("Camera: shut (" + why + "); the game's camera, the walk, the HUD and the pointer put back.");
         }
 
-        // Each part held given back, each in a try of its own: one that fails costs only itself.
+        // Each part in a try of its own, so one that fails costs only itself.
         private void GiveBack()
         {
             HoldPart[] order = CameraHold.GiveOrder;
@@ -387,8 +357,6 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- the frame
-
         private static readonly int HotUpdate = HotSpots.Slot("Photos: CameraMode.Update");
         private void Update()
         {
@@ -396,7 +364,7 @@ namespace RealLifeOverhaul.Photos
             if (FrameGuard.Off)
             {
                 Close("its feature was switched off after its faults");
-                enabled = false;   // (Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -439,13 +407,13 @@ namespace RealLifeOverhaul.Photos
             {
                 if (_selfie == null || !_selfie.On)
                 {
-                    _inSelfie = false;   // the selfie ended itself (a fault): back to the rear camera
+                    _inSelfie = false;   // the selfie ended itself on a fault
                     _hold.Give(HoldPart.Selfie, null);
                     Rear();
                 }
                 else
                 {
-                    _selfie.Steer(CameraRules.SelfieTurn(dx, lines), CameraRules.SelfieTurn(dy, lines), wheel, 0f);   // every frame: the lens follows the face
+                    _selfie.Steer(CameraRules.SelfieTurn(dx, lines), CameraRules.SelfieTurn(dy, lines), wheel, 0f);   // every frame, so the lens follows the face
                 }
             }
             else
@@ -474,13 +442,13 @@ namespace RealLifeOverhaul.Photos
         }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Photos: CameraMode.LateUpdate");
-        // After the animation: the rear camera at the phone, in front of the eyes, the body turned with it.
+        // After the animation, so the lens is placed at the head where it was drawn.
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -516,7 +484,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The toast and the flash fading on the real clock.
+        // On the real clock.
         private void Fades()
         {
             float now = Time.unscaledTime;
@@ -541,8 +509,6 @@ namespace RealLifeOverhaul.Photos
             _toastUntil = Time.unscaledTime + CameraRules.ToastSeconds;
         }
 
-        // ---------------------------------------------------------------- rear and selfie
-
         private void Rear()
         {
             _inSelfie = false;
@@ -563,7 +529,7 @@ namespace RealLifeOverhaul.Photos
                 {
                     Leisure.Selfie.Logger = Logger;
                 }
-                _selfie = gameObject.AddComponent<Leisure.Selfie>();   // switched off until a selfie is asked for
+                _selfie = gameObject.AddComponent<Leisure.Selfie>();
             }
             Vector3 ahead = _root.position + Quaternion.Euler(0f, _yaw, 0f) * Vector3.forward * 2f;
             if (!_selfie.Begin(_camera, PhotosGame.Player, ahead))
@@ -631,10 +597,8 @@ namespace RealLifeOverhaul.Photos
         private void Gallery()
         {
             Close("the Gallery button");
-            PhotosDirector.Instance?.OpenLatestPhoto();   // the newest photo shown whole, as a phone's camera opens it
+            PhotosDirector.Instance?.OpenLatestPhoto();
         }
-
-        // ---------------------------------------------------------------- the shot
 
         private void Shoot()
         {
@@ -658,9 +622,8 @@ namespace RealLifeOverhaul.Photos
             StartCoroutine(Guard.Routine(Shot(director.Folder, PhotosGame.SaveId, _inSelfie, PhotosGame.Day, PhotosGame.Hour)));
         }
 
-        // The controls away for the frame the screen is read in, the read, the controls back; the photo made on a worker.
-        // Whatever happens from the read on (a fault, the camera shut meanwhile), the screen's copy is let go: a finally
-        // round it all, on the worker when the worker has it.
+        // The controls away for the frame that is read, then the photo made on a worker. The finally lets the screen's copy
+        // go whatever happens, on the worker when the worker has it.
         private IEnumerator Shot(string folder, string saveId, bool selfie, int day, int hour)
         {
             PhotosGame.Shot shot = null;
@@ -670,8 +633,8 @@ namespace RealLifeOverhaul.Photos
             {
                 _view.Busy(true);
                 _view.ForShot(true, _grid);
-                yield return null;                       // a frame drawn without the controls...
-                yield return new WaitForEndOfFrame();    // ...and read at its end
+                yield return null;                       // a frame drawn without the controls,
+                yield return new WaitForEndOfFrame();    // read at its end
                 if (!Active)
                 {
                     yield break;
@@ -742,7 +705,7 @@ namespace RealLifeOverhaul.Photos
                 }
                 if (_view != null)
                 {
-                    _view.Busy(false);              // (open or shut: a camera shut in the shutter's frame opens next with its controls)
+                    _view.Busy(false);              // open or shut, so the next opening has its controls
                     _view.ForShot(false, _grid);
                 }
                 PhotosGame.Shot left = shot;
@@ -752,7 +715,7 @@ namespace RealLifeOverhaul.Photos
                 }
                 else
                 {
-                    PhotosGame.Drop(left);   // (Develop lets it go itself; a second drop does nothing)
+                    PhotosGame.Drop(left);   // Develop lets it go itself; a second drop does nothing
                 }
             }
         }

@@ -11,19 +11,14 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Gallery's grid: a scrolling column of rows (GalleryRules.Layout: a day's heading, strips of square photos, the
-    /// count at the foot) of which only those in view and half a screen either side are built, from pools, and placed where
-    /// the rules put them; and the photos' small copies, read a few at a time on a worker and made textures within
-    /// <see cref="GalleryRules.UploadBudgetMs"/> of a frame, kept while the app is open (those far out of view let go past
-    /// <see cref="GalleryRules.KeptMost"/>).
-    ///
-    /// COST: nothing while it stands still. While it scrolls, one look a frame at which rows are in view (a binary search),
-    /// and a row bound only as it comes into view. While small copies come in, a millisecond a frame at most.
+    /// The Gallery's grid part: only the rows in view and half a screen either side are built, from pools, and their small
+    /// copies read on a worker. Nothing while it stands still; while it scrolls, a binary search a frame; while small
+    /// copies come in, <see cref="GalleryRules.UploadBudgetMs"/> a frame at most.
     /// </summary>
     internal sealed partial class GalleryApp
     {
         private readonly List<GalleryRow> _rows = new List<GalleryRow>(PhotoStoreRules.Cap + 64);
-        private readonly List<string> _headings = new List<string>(PhotoStoreRules.Cap + 64);   // each row's day heading and count, written with the rows (null for a strip)
+        private readonly List<string> _headings = new List<string>(PhotoStoreRules.Cap + 64);   // each row's day heading and count, null for a strip
         private readonly List<string> _headCounts = new List<string>(PhotoStoreRules.Cap + 64);
         private readonly List<StripCell> _liveStrips = new List<StripCell>(24);
         private readonly Stack<StripCell> _freeStrips = new Stack<StripCell>(24);
@@ -33,9 +28,9 @@ namespace RealLifeOverhaul.Photos
         private readonly List<DayCell> _allDays = new List<DayCell>(8);
         private readonly Dictionary<string, Texture2D> _thumbs = new Dictionary<string, Texture2D>(GalleryRules.KeptMost + GalleryRules.ReadAtOnce);
         private readonly HashSet<string> _missing = new HashSet<string>();   // photos whose small copy could not be read
-        private readonly HashSet<string> _loading = new HashSet<string>();   // ...being read now
-        private readonly HashSet<string> _keep = new HashSet<string>();      // ...built now (in view, or in the viewer's strip)
-        private readonly List<string> _want = new List<string>(64);           // ...to be read, in the order they were seen
+        private readonly HashSet<string> _loading = new HashSet<string>();   // photos whose small copy is being read
+        private readonly HashSet<string> _keep = new HashSet<string>();      // photos built now, in view or in the viewer's strip
+        private readonly List<string> _want = new List<string>(64);           // photos to read, in the order they were seen
         private readonly List<string> _drop = new List<string>(64);
         private RectTransform _list, _viewport, _content, _foot;
         private ScrollRect _scroll;
@@ -46,7 +41,6 @@ namespace RealLifeOverhaul.Photos
         private bool _filling, _footLive;
         private int _readingFor = -1;          // the opening a reader of small copies is at work for, or -1
 
-        // A strip of photos: up to four squares.
         private sealed class StripCell
         {
             public RectTransform Rect;
@@ -54,7 +48,7 @@ namespace RealLifeOverhaul.Photos
             public readonly Slot[] Slots = new Slot[GalleryRules.ColumnsWide];
         }
 
-        // One square of a strip: the photo's small copy over a placeholder, and its two marks (favourite, wallpaper).
+        // A square: the small copy over a placeholder, and the favourite and wallpaper marks.
         private sealed class Slot
         {
             public Image Back, FavShade, Fav, WallShade, Wall;
@@ -63,7 +57,6 @@ namespace RealLifeOverhaul.Photos
             public int Index = -1;
         }
 
-        // A day's heading: its name and its count.
         private sealed class DayCell
         {
             public RectTransform Rect;
@@ -71,13 +64,11 @@ namespace RealLifeOverhaul.Photos
             public TextMeshProUGUI Label, Count;
         }
 
-        // ---------------------------------------------------------------- building
-
         private void BuildGrid()
         {
             _list = FlareKit.Rect(_library, "Grid");
             var catcher = _list.gameObject.AddComponent<Image>();
-            catcher.color = GalleryLook.Clear;   // takes the wheel and the drag everywhere over the grid
+            catcher.color = GalleryLook.Clear;   // takes the wheel and the drag over the whole grid
             _viewport = FlareKit.Rect(_list, "Viewport");
             FlareKit.Stretch(_viewport, 0f, 0f, 0f, 0f);
             _viewport.gameObject.AddComponent<RectMask2D>();
@@ -145,8 +136,6 @@ namespace RealLifeOverhaul.Photos
             return cell;
         }
 
-        // ---------------------------------------------------------------- laying out and painting
-
         private void LayGrid(float x, float y, float width, float height)
         {
             FlareKit.Place(_list, x, y, width, height - Margin);
@@ -198,10 +187,7 @@ namespace RealLifeOverhaul.Photos
             cell.Count.color = _look.Muted;
         }
 
-        // ---------------------------------------------------------------- the rows
-
-        // The album's rows worked out again and the cells in view bound; 'top' takes the grid back to its top, else it stays
-        // where it was (as far as the new rows allow).
+        // 'top' takes the grid back to its top; else it stays where it was, as far as the new rows allow.
         private void WriteGrid(bool top)
         {
             FreeAll();
@@ -231,7 +217,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The rows in view (and half a screen either side) get a cell; the others give theirs back.
+        // The rows in view and half a screen either side get a cell; the others give theirs back.
         private void Fill()
         {
             if (_filling || _gridWidth <= 0f)
@@ -343,7 +329,7 @@ namespace RealLifeOverhaul.Photos
                 cell.Slots[j].Index = -1;
                 if (cell.Slots[j].Picture != null)
                 {
-                    cell.Slots[j].Picture.texture = null;   // (the texture may be let go next)
+                    cell.Slots[j].Picture.texture = null;   // the texture may be let go next
                 }
             }
             _freeStrips.Push(cell);
@@ -421,7 +407,7 @@ namespace RealLifeOverhaul.Photos
             FlareKit.Set(cell.Count, _headCounts[r]);
         }
 
-        // Each day heading's words, made once when the rows are worked out, so a heading scrolled into view only sets them.
+        // Made with the rows, so a heading scrolled into view only sets them.
         private void WriteHeadings()
         {
             _headings.Clear();
@@ -435,7 +421,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // A small copy shown square: its middle, as a phone's grid crops it.
+        // A small copy shown square: its middle.
         private static void Picture(RawImage picture, Texture texture)
         {
             picture.texture = texture;
@@ -455,7 +441,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The grid scrolled, if need be, so that a photo's strip is in view (back from the viewer, which may have gone on).
+        // Back from the viewer, which may have gone on, the photo's strip is scrolled into view.
         private void Reveal(int index)
         {
             int r = GalleryRules.RowOf(_rows, index);
@@ -474,9 +460,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- the small copies
-
-        // The photos in view whose small copy is not made yet, asked for (in order, top first), and the reader started.
+        // The photos in view without a small copy yet, top first.
         private void WantInView()
         {
             _want.Clear();
@@ -509,8 +493,8 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // Small copies read a few at a time on a worker (each some 100 KB), then made textures here within a millisecond a
-        // frame, each shown as it is made; until none is wanted, or the app is closed or opened again.
+        // A few at a time on a worker, each some 100 KB, made textures within the budget a frame, until none is wanted or the
+        // app is closed or opened again.
         private IEnumerator ReadSmall(int opening)
         {
             int missing = 0;
@@ -546,7 +530,7 @@ namespace RealLifeOverhaul.Photos
                     {
                         if (opening != _opening || !Showing)
                         {
-                            yield break;   // closed, or opened again, meanwhile (Forget let the rest go)
+                            yield break;   // closed or opened again meanwhile: Forget let the rest go
                         }
                         _loading.Remove(names[i]);
                         Texture2D made = PhotosGame.SmallTexture(rows[i], widths[i], heights[i]);
@@ -585,11 +569,10 @@ namespace RealLifeOverhaul.Photos
             }
             if (opening == _opening && _want.Count > 0)
             {
-                StartReading();   // (wanted while the last of a batch was being made)
+                StartReading();   // wanted while the last of a batch was being made
             }
         }
 
-        // A small copy made: shown wherever it is wanted now (a square in view, the viewer's strip, the viewer's stand-in).
         private void ThumbCame(string name, Texture2D made)
         {
             for (int i = 0; i < _liveStrips.Count; i++)
@@ -606,7 +589,7 @@ namespace RealLifeOverhaul.Photos
             FilmCame(name, made);
         }
 
-        // Past the most kept, the small copies of photos built nowhere now let go (read again if they come back into view).
+        // Past the most kept, the small copies of photos built nowhere now are let go.
         private void Trim()
         {
             if (_thumbs.Count <= GalleryRules.KeptMost)
@@ -641,7 +624,6 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // Every small copy let go, and every square emptied.
         private void ForgetThumbs()
         {
             foreach (KeyValuePair<string, Texture2D> kept in _thumbs)
@@ -657,7 +639,7 @@ namespace RealLifeOverhaul.Photos
             ForgetFilm();
         }
 
-        // The parts made for a panel that is gone (the app taken off the phone): made again with the next panel.
+        // The app was taken off the phone: the parts are made again with the next panel.
         private void ForgetParts()
         {
             _liveStrips.Clear();

@@ -3,11 +3,8 @@ using System;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// What the camera borrows from the game, in the order it is given back (the order of this list is the order of
-    /// <see cref="CameraHold.GiveOrder"/>): the selfie's pose first (the body's facing and the camera's near plane are the
-    /// selfie's own), then the body's facing the rear camera turned, the grade, the lens, where the camera stood, the
-    /// engine's camera brain, the two cameras of the game's whose turn the mouse can move meanwhile, the hidden HUD, the
-    /// pointer, the world's clicks, and last the player's walk (so that nothing moves the player before all is back).
+    /// What the camera borrows from the game, in the order it is given back: the selfie's pose first, as it puts back its
+    /// own facing and near plane, and the player's walk last, so nothing moves the player before all is back.
     /// </summary>
     public enum HoldPart
     {
@@ -28,28 +25,20 @@ namespace RealLifeOverhaul.Photos
     }
 
     /// <summary>
-    /// THE RESTORE OF THE CAMERA'S STATE, AS A RULE. Everything the camera changes is first written here as it was
-    /// (<see cref="Take"/>), once: taking a part that is already held keeps the first values, so that turning from the rear
-    /// camera to the selfie and back, or a second shot, never overwrites what the game had. Leaving gives each part held
-    /// back exactly once, in <see cref="GiveOrder"/> (<see cref="Give"/> answers true once per part with its values, then
-    /// false), so that every way out (the close button, the cancel key, a window opening, the city unloading, the option
-    /// switched off, a fault) puts back the same things, and a second way out puts back nothing twice.
-    ///
-    /// No Unity or game type: the values are plain numbers (a rotation as its four parts, a switch as 1 or 0), so the
-    /// offline checks run it as it is (EconomyCheck, PhotoChecks.cs). CameraMode reads the game's values into it and writes
-    /// them back. Nothing is allocated after it is made.
+    /// The game's state the camera changed, as it was. A part is written once (<see cref="Take"/>), so switching to the
+    /// selfie and back never overwrites what the game had, and given back once (<see cref="Give"/>), so every way out puts
+    /// back the same things and a second one puts back nothing. Plain numbers only, checked offline; nothing is allocated
+    /// after it is made.
     /// </summary>
     public sealed class CameraHold
     {
         public const int Values = 8;
 
-        /// <summary>The order in which the parts are given back.</summary>
         public static readonly HoldPart[] GiveOrder = MakeOrder();
 
         private readonly bool[] _held = new bool[(int)HoldPart.Count];
         private readonly float[] _values = new float[(int)HoldPart.Count * Values];
 
-        /// <summary>True while any part is held.</summary>
         public bool Any
         {
             get
@@ -70,7 +59,7 @@ namespace RealLifeOverhaul.Photos
             return part >= 0 && part < HoldPart.Count && _held[(int)part];
         }
 
-        /// <summary>A part as it was, written once: true if it is held now for the first time, false (and nothing written) if it already was.</summary>
+        /// <summary>A part as it was: false, and nothing written, if it is already held.</summary>
         public bool Take(HoldPart part, float a = 0f, float b = 0f, float c = 0f, float d = 0f, float e = 0f, float f = 0f, float g = 0f, float h = 0f)
         {
             if (part < 0 || part >= HoldPart.Count || _held[(int)part])
@@ -90,16 +79,13 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>One of a held part's values (0 for a part not held).</summary>
+        /// <summary>One of a held part's values; 0 for a part not held.</summary>
         public float Value(HoldPart part, int index)
         {
             return Held(part) && index >= 0 && index < Values ? _values[(int)part * Values + index] : 0f;
         }
 
-        /// <summary>
-        /// A part given back: true once, with its values in <paramref name="into"/> (at least <see cref="Values"/> long), and the
-        /// part no longer held; false for a part that is not held (nothing to put back).
-        /// </summary>
+        /// <summary>A held part let go, its values copied into <paramref name="into"/>; false for a part not held.</summary>
         public bool Give(HoldPart part, float[] into)
         {
             if (!Held(part))
@@ -115,7 +101,7 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>A part let go without being put back (what it held is gone with the scene).</summary>
+        /// <summary>A part let go without being put back, when what it held is gone with the scene.</summary>
         public void Forget(HoldPart part)
         {
             if (part >= 0 && part < HoldPart.Count)
@@ -124,27 +110,21 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- the world's clicks
-
-        /// <summary>
-        /// A whole 32-bit mask (the game's mouse controller's layers) as two values a part can hold exactly: its low and its
-        /// high 16 bits (a float holds every whole number to 2^24, a mask needs 32).
-        /// </summary>
+        /// <summary>A 32-bit layer mask as two 16-bit halves, since a float holds whole numbers exactly only to 2^24.</summary>
         public static void Split(int mask, out float low, out float high)
         {
             low = mask & 0xFFFF;
             high = (mask >> 16) & 0xFFFF;
         }
 
-        /// <summary>The mask back from its two halves (<see cref="Split"/>).</summary>
         public static int Join(float low, float high)
         {
             return unchecked(((int)high << 16) | ((int)low & 0xFFFF));
         }
 
         /// <summary>
-        /// Whether the world's clicks are put back as they were held: only while the mask is still the camera's own (nothing
-        /// pointed at). If the game set another meanwhile (it ended the mop's cleaning, began a placement), the game's stands.
+        /// Whether the world's clicks are put back: only while the mask is still the camera's own. If the game set another
+        /// meanwhile (the mop's cleaning ended, a placement began), the game's stands.
         /// </summary>
         public static bool WorldBack(int now, int cameras)
         {

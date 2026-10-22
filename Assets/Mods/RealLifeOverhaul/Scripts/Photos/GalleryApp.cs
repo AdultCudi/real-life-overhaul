@@ -10,35 +10,15 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Gallery app on the phone: a photos app of its own look inside the game's phone (an exception to the
-    /// native rule, as Flare is, with its own idea). The frame is the game's (GameUi.AppShell: the app's panel among the
-    /// game's, its place and size on the full phone); inside it the Gallery draws its own two screens with the game's font:
-    ///
-    ///   the grid     the album's name and count at the top left, the albums (All photos, Selfies, Favourites) as a
-    ///                segmented control at the top right with a round camera button beside it; under them square photos
-    ///                edge to edge, four across (three in a narrow frame), under a heading for each of the game's days
-    ///                ("Today", "Yesterday", "Day 41"), newest first, and at the foot the photos kept against the most a
-    ///                save keeps. One tap shows a photo whole. An empty album says so, with a button to the camera.
-    ///   the viewer   dark: the photo fitted, a thin top bar (back, the day and hour it was taken, its place in the
-    ///                album), arrows either side, a strip of its neighbours, and a bar of icon buttons: share to Flare, set
-    ///                as wallpaper, favourite, delete (after the game's question). The arrow keys and the wheel go to the
-    ///                photo before or after; the game's cancel key or back returns to the grid where it was.
-    ///
-    /// Only the rows in view are built, from pools, and only their photos' small copies read (on a worker, made textures
-    /// within a millisecond a frame), at most <see cref="GalleryRules.KeptMost"/> kept while the app is open. The whole photo
-    /// is read on a worker and decoded once when it is shown (PhotosGame.Load), its small copy shown meanwhile; a texture
-    /// replaced or let go is destroyed (each load numbered: an earlier one's texture is destroyed when it comes). Closing the
-    /// app lets every texture go. The favourites are a file beside the photos (PhotosDirector), nothing in the save.
-    ///
-    /// PER FRAME: NOTHING while it stands still, open or shut. A screen is written on a click and when the photos change;
-    /// rows are bound as they scroll into view; the wheel glides the grid (FlareGlide, on only while it moves); the viewer's
-    /// keys are read only while a photo is shown whole (GalleryKeys).
+    /// The Gallery app: a photos app of its own look in the game's phone frame, an exception to the native rule as Flare
+    /// is. Two screens, the grid of the album by day and the viewer of one photo. Only the rows in view are built and
+    /// their small copies read; every texture is let go on closing. Nothing per frame while it stands still.
     /// </summary>
     internal sealed partial class GalleryApp
     {
         public const string AppId = "RealLifeGallery";
-        private const float Margin = 34f;           // canvas units round the frame's edge, as Flare's
-        private const float HeaderHeight = 200f;    // canvas units of the grid's header: the title, its count, the albums
+        private const float Margin = 34f;           // canvas units
+        private const float HeaderHeight = 200f;    // canvas units
 
         private static readonly string[] AlbumKeys = { "reallife_gallery_tab_all", "reallife_gallery_tab_selfies", "reallife_gallery_album_favourites" };
 
@@ -54,17 +34,15 @@ namespace RealLifeOverhaul.Photos
         private GalleryKeys _keys;
         private GalleryLook _look;
         private bool _gaveUp, _built, _writing;
-        private float _latestAskedAt = -1f;         // real seconds when the newest photo was asked for (the viewfinder's button), or -1
-        private int _opening;                       // counts the openings: a worker's answer for an earlier one is let go
+        private float _latestAskedAt = -1f;         // real seconds when the newest photo was asked for, or -1
+        private int _opening;                       // counts the openings, so a worker's answer for an earlier one is let go
         private float _laidWidth = -1f, _laidHeight = -1f;
 
-        // the header
         private TextMeshProUGUI _title, _count;
         private Image _segBack, _segPick, _cameraButton, _cameraIcon, _headerLine;
         private readonly Image[] _segHits = new Image[3];
         private readonly TextMeshProUGUI[] _segLabels = new TextMeshProUGUI[3];
 
-        // the empty album
         private RectTransform _empty;
         private Image _emptyIcon, _emptyButton;
         private TextMeshProUGUI _emptyTitle, _emptyBody, _emptyLabel;
@@ -76,7 +54,7 @@ namespace RealLifeOverhaul.Photos
 
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        /// <summary>Once a second while the Gallery runs: the app among the game's.</summary>
+        /// <summary>Called once a second until it takes.</summary>
         public void Install()
         {
             if (_app != null || _gaveUp)
@@ -120,7 +98,7 @@ namespace RealLifeOverhaul.Photos
             _gaveUp = false;
         }
 
-        /// <summary>The app opens (the Camera app's Gallery button, a test), or (latest) opens on the newest photo shown whole (the viewfinder's button).</summary>
+        /// <summary>Opens the app, with <paramref name="latest"/> on the newest photo shown whole.</summary>
         public void Open(bool latest)
         {
             if (_app == null || !_app.Installed)
@@ -138,7 +116,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>A photo was added or deleted, or the list was read: the screen is written again if it is showing.</summary>
+        /// <summary>A photo was added or deleted, or the list was read.</summary>
         public void Changed()
         {
             if (Showing && !_writing)
@@ -147,11 +125,9 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- building it
-
         private GameObject Build(FullMenu menu, Transform dormant)
         {
-            using var piece = SessionWatch.Piece("photos: the Gallery app being built in the game's frame");   // once per city: the frame copied, the Gallery's own parts made
+            using var piece = SessionWatch.Piece("photos: the Gallery app being built in the game's frame");   // once per city
             _shell = AppShell.Make(menu, dormant, AppId);
             if (_shell == null)
             {
@@ -165,12 +141,12 @@ namespace RealLifeOverhaul.Photos
             }
             for (int i = 0; i < layout.childCount; i++)
             {
-                layout.GetChild(i).gameObject.SetActive(false);   // the game's box and table: the Gallery draws its own screens in their place
+                layout.GetChild(i).gameObject.SetActive(false);   // the game's box and table: the Gallery draws its own
             }
             _root = FlareKit.Rect(layout, "Gallery");
             _root.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
             FlareKit.Stretch(_root, 0f, 0f, 0f, 0f);
-            _backdrop = FlareKit.Box(_root, "Back", Color.white, FlareKit.Radius, false, true);   // (takes every click that lands on the app: nothing under it is reached)
+            _backdrop = FlareKit.Box(_root, "Back", Color.white, FlareKit.Radius, false, true);   // takes every click that lands on the app
             FlareKit.Stretch(_backdrop.rectTransform, 0f, 0f, 0f, 0f);
             _library = FlareKit.Rect(_root, "Library");
             FlareKit.Stretch(_library, 0f, 0f, 0f, 0f);
@@ -226,8 +202,6 @@ namespace RealLifeOverhaul.Photos
             FlareKit.Show(_empty, false);
         }
 
-        // ---------------------------------------------------------------- opening and closing
-
         private void Opened()
         {
             if (!_built)
@@ -242,7 +216,7 @@ namespace RealLifeOverhaul.Photos
 
         private void Closed()
         {
-            _latestAskedAt = -1f;   // (an opening that never came does not open a later one on the newest photo)
+            _latestAskedAt = -1f;   // an opening that never came does not open a later one on the newest photo
             Forget();
             _nav.Back();
             if (_keys != null)
@@ -251,10 +225,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- writing it
-
-        // Everything shown written again: the look, the album read, the header, the grid and the viewer. 'top' takes the
-        // grid back to its top; otherwise it stays where it was.
+        // Everything shown written again; 'top' takes the grid back to its top.
         private void Refresh(bool top)
         {
             if (!_built || _writing)
@@ -289,7 +260,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The newest photo shown whole: on All photos, where every photo is.
+        // On All photos, where every photo is.
         private void OpenLatest()
         {
             if (_director.Count == 0)
@@ -316,7 +287,7 @@ namespace RealLifeOverhaul.Photos
             _director.OpenCamera(false, false);
         }
 
-        // Where each part of the grid's screen stands for the frame's size now: laid out again only when that size changes.
+        // Laid out again only when the frame's size changes.
         private void Lay()
         {
             float w = _root.rect.width, h = _root.rect.height;
@@ -355,7 +326,7 @@ namespace RealLifeOverhaul.Photos
             LayViewer(w, h);
         }
 
-        // The colours of everything made, for the look now (the grid's: light or dark; the viewer keeps its own).
+        // The grid's colours for the look now; the viewer keeps its own.
         private void Paint()
         {
             GalleryLook l = _look;
@@ -411,7 +382,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // Every texture let go (the small copies and the whole photo): reopening reads them again.
+        // Every texture let go; reopening reads them again.
         private void Forget()
         {
             _opening++;

@@ -25,14 +25,9 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The one place the Camera and the Gallery touch the game and the engine: what the moment is (on foot, in a vehicle, a
-    /// window open), the phone's menu, the HUD, the player's walk and body, the game's cameras, the pointer, the screen read
-    /// at the end of a frame and the photo made from it on a worker thread (the engine's JPG encoder, which may run on any
-    /// thread), a photo loaded for the full screen (its file read on a worker, decoded by the engine on the main thread), the
-    /// grade of a filter, the save's id and the folders, and the game's notifications.
-    ///
-    /// Per frame: nothing of its own. The camera's frame reads <see cref="Situation"/> (a dozen of the game's flags) and the
-    /// two keys; everything else runs on a click, at the camera's opening and closing, or once a second.
+    /// The one place the Camera and the Gallery touch the game and the engine. Nothing per frame of its own: the open
+    /// camera's frame reads <see cref="Situation"/> (a dozen of the game's flags) and two keys; the rest runs on a click,
+    /// as the camera opens and closes, or once a second.
     /// </summary>
     internal static class PhotosGame
     {
@@ -41,31 +36,26 @@ namespace RealLifeOverhaul.Photos
         private const NavigationBlocker Blocker = (NavigationBlocker)7319;   // a value of our own, so nobody else's is ever lifted
         private const int JpgQuality = 90;                                    // a 1080-line photo in some 500 KB
 
-        // ---------------------------------------------------------------- the save and the folders
-
         /// <summary>True while a city is loaded and its player is there.</summary>
         public static bool Loaded => SaveGameManager.Current != null && !LoadScene.isLoading && PlayerHelper.PlayerController != null;
 
-        /// <summary>The save's id (the game's character id, shared by every save file of one playthrough), or null.</summary>
+        /// <summary>The game's character id, shared by every save file of one playthrough, or null.</summary>
         public static string SaveId => SaveGameManager.Current != null ? SaveGameManager.Current.characterId : null;
 
         public static int Day => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
 
         public static int Hour => SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0;
 
-        /// <summary>persistentDataPath/RealLifeOverhaul/Photos (read on the main thread: the engine answers it nowhere else).</summary>
+        /// <summary>persistentDataPath/RealLifeOverhaul/Photos; main thread only, as the engine answers it nowhere else.</summary>
         public static string Root => Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", PhotoStoreRules.RootFolder);
 
-        /// <summary>The game's folder of saves, which the look over deleted saves only reads (SaveGamePathHelper.SaveGameFolderPath, which makes nothing).</summary>
+        /// <summary>The game's folder of saves; reading it makes nothing.</summary>
         public static string SaveGames => SaveGamePathHelper.SaveGameFolderPath;
 
-        // ---------------------------------------------------------------- the moment
-
         /// <summary>
-        /// What the moment is, for CameraRules. <paramref name="phoneCounts"/>: whether the phone's menu open counts as a
-        /// window (it does not while the camera is being asked for from the phone, which is then put away). A control left
-        /// chosen by a click (the phone's app button, a chip of the viewfinder) is let go first: the game takes a chosen
-        /// control for typing, and would read it as a window open.
+        /// The moment, for CameraRules. The phone's menu counts as a window only with <paramref name="phoneCounts"/>, since the
+        /// phone is put away when the camera is asked for from it. A control left chosen by a click is let go first: the game
+        /// takes it for typing, and would read it as a window open.
         /// </summary>
         public static CameraSituation Situation(bool phoneCounts)
         {
@@ -90,10 +80,9 @@ namespace RealLifeOverhaul.Photos
             return s;
         }
 
-        private static readonly FieldInfo BlockersField = GameContract.NavBlockers.Field;   // (resolved once: Core/GameContract)
+        private static readonly FieldInfo BlockersField = GameContract.NavBlockers.Field;
 
-        // Whether the only thing holding the player's walk is the camera's own blocker. Without the game's list (a game that
-        // changed it), the walk held while the camera holds it is taken for the camera's own, as before the list was read.
+        // Without the game's list of blockers, a walk held while the camera is open is taken for the camera's own.
         private static bool OwnHoldOnly(PlayerController player)
         {
             if (BlockersField?.GetValue(player) is HashSet<NavigationBlocker> blockers)
@@ -103,11 +92,9 @@ namespace RealLifeOverhaul.Photos
             return CameraMode.Active;
         }
 
-        // ---------------------------------------------------------------- the phone
-
         public static bool MenuOpen => FullMenu.IsOpen;
 
-        /// <summary>The phone is put away (the game's own close of the full menu).</summary>
+        /// <summary>Puts the phone away through the game's own close of the full menu.</summary>
         public static void CloseMenu()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -117,14 +104,11 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- the HUD
-
         public static bool HudShown => ScreenshotController.uiIsVisible;
 
         /// <summary>
-        /// The game's own "hide the interface" (its canvases go clear), put to the state asked for if it is not there already.
-        /// With no interface to toggle (the city unloading), the game's flag alone is set: it is static and only the engine's
-        /// start resets it, so the next city's interface would otherwise start hidden.
+        /// The game's own "hide the interface". With no interface to toggle, as the city unloads, the static flag alone is set:
+        /// only the engine's start resets it, so the next city's interface would otherwise start hidden.
         /// </summary>
         public static void Hud(bool shown)
         {
@@ -143,8 +127,6 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- the cameras
-
         public static Camera MainCamera => GameManager.GetMainCamera();
 
         public static CinemachineBrain BrainOf(Camera camera)
@@ -152,7 +134,7 @@ namespace RealLifeOverhaul.Photos
             return camera != null ? camera.GetComponent<CinemachineBrain>() : null;
         }
 
-        /// <summary>The game's street (0) or indoor (1) camera's turn and distance, which the mouse's right button and the turn keys move.</summary>
+        /// <summary>The game's street (0) or indoor (1) camera's turn and distance, which the mouse and the turn keys move.</summary>
         public static bool ReadTurn(int which, out float angle, out float distance)
         {
             PedestrianCam cam = Turnable(which);
@@ -184,9 +166,7 @@ namespace RealLifeOverhaul.Photos
             set => PedestrianCam.blockCameraZoom = value;
         }
 
-        // ---------------------------------------------------------------- the player
-
-        /// <summary>The player's walk held (the game's own blocker list, with a value of the camera's own) or let go.</summary>
+        /// <summary>The player's walk held or let go through the game's blocker list, with a value of the camera's own.</summary>
         public static void HoldWalk(bool hold)
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -223,7 +203,7 @@ namespace RealLifeOverhaul.Photos
 
         public static PlayerController Player => PlayerHelper.PlayerController;
 
-        /// <summary>True while the player sits (a bench, a chair): the body stays as the seat has it.</summary>
+        /// <summary>True while the player sits on a bench or a chair.</summary>
         public static bool Seated
         {
             get
@@ -233,11 +213,11 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        private static readonly FieldInfo WorldMaskField = GameContract.WorldMask.Field;   // (resolved once: Core/GameContract)
+        private static readonly FieldInfo WorldMaskField = GameContract.WorldMask.Field;
 
         /// <summary>
-        /// The world's clicks as they are: the layers the game's mouse points at (false if they cannot be read) and the cursor
-        /// it shows over them (the mop's while cleaning a floor: MopController sets both).
+        /// The layers the game's mouse points at, false if they cannot be read, and the cursor it shows over them (MopController
+        /// sets both while cleaning a floor).
         /// </summary>
         public static bool ReadWorld(out int mask, out int cursor)
         {
@@ -251,17 +231,16 @@ namespace RealLifeOverhaul.Photos
             return false;
         }
 
-        /// <summary>The world's clicks held: nothing in the world is pointed at or clicked, as in the game's placement. Returns the mask set.</summary>
+        /// <summary>Holds the world's clicks, as the game's placement does, and returns the mask set.</summary>
         public static int HoldWorld()
         {
             MouseController.SetRestrictedObjectTypes();
-            return 0;   // (no layer named: the empty mask)
+            return 0;   // no layer named: the empty mask
         }
 
         /// <summary>
-        /// The world's clicks put back as they were held (<paramref name="read"/>: the mask was read), if the mask is still the
-        /// camera's own (<paramref name="cameras"/>); one the game set meanwhile stands. Unread, the game's defaults are put
-        /// back and, while a mop is held, the mop's floor again (as the game's own city map does on closing).
+        /// Puts the world's clicks back as held while the mask is still the camera's own. A mask never read puts back the
+        /// game's defaults, with the mop's floor while a mop is held, as the game's city map does on closing.
         /// </summary>
         public static void GiveWorld(bool read, int mask, int cursor, int cameras)
         {
@@ -283,9 +262,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- keys
-
-        /// <summary>The game's confirm key pressed this frame: taken, so the game's own handling does nothing with it.</summary>
+        /// <summary>The game's confirm key pressed this frame, taken so the game's own handling does nothing with it.</summary>
         public static bool TakeConfirm()
         {
             if (!PlayerAction.Confirm.Pressed())
@@ -296,7 +273,7 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>The game's cancel key pressed this frame: taken, so the game's menu does not open too.</summary>
+        /// <summary>The game's cancel key pressed this frame, taken so the game's menu does not open too.</summary>
         public static bool TakeCancel()
         {
             if (!PlayerAction.Cancel.Pressed())
@@ -307,7 +284,7 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>The game's two turn keys taken (they would turn the game's camera behind the phone).</summary>
+        /// <summary>Takes the turn keys, which would turn the game's camera behind the phone.</summary>
         public static void TakeTurnKeys()
         {
             if (PlayerAction.RotateLeft.Pressed())
@@ -320,12 +297,11 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>The confirm and cancel keys as the game names them, for the viewfinder's line of keys.</summary>
         public static string ConfirmKey => PlayerAction.Confirm.GetDisplayName();
 
         public static string CancelKey => PlayerAction.Cancel.GetDisplayName();
 
-        /// <summary>Nothing of the viewfinder's stays chosen after a click (the game takes a chosen control for typing and holds its keys).</summary>
+        /// <summary>Lets go of a control chosen by a click: the game takes a chosen control for typing and holds its keys.</summary>
         public static void Unselect()
         {
             EventSystem events = EventSystem.current;
@@ -335,9 +311,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- the grade
-
-        /// <summary>A volume of the camera's own for its filter, over the mod's own grading, until it is taken away.</summary>
+        /// <summary>A volume of the camera's own for its filter, over the mod's own grading.</summary>
         public static GameObject MakeGrade(Transform parent, out ColorAdjustments color)
         {
             var made = new GameObject("RealLifeOverhaul Camera Grade");
@@ -384,23 +358,20 @@ namespace RealLifeOverhaul.Photos
             UnityEngine.Object.Destroy(grade);
         }
 
-        // ---------------------------------------------------------------- the screen and the photo
-
-        /// <summary>The screen as it is drawn, read at the end of a frame: its pixels a copy outside the managed heap, for the worker.</summary>
+        /// <summary>The screen read at the end of a frame, its pixels copied outside the managed heap for the worker.</summary>
         public sealed class Shot
         {
             public NativeArray<byte> Pixels;
             public int Width, Height, Bytes;
             public bool Bgr;
-            public double ReadMs;   // the main thread's share: the engine's read of the screen and one copy
+            public double ReadMs;   // the main thread's share
         }
 
         private static readonly int HotRead = HotSpots.Slot("Photos: PhotosGame.Read");
 
         /// <summary>
-        /// THE ONE READ OF THE SCREEN ON THE MAIN THREAD, measured: called after WaitForEndOfFrame, as "Report a bug" and
-        /// Flare's camera take it (ScreenCapture.CaptureScreenshotAsTexture); the pixels copied out, the texture let go at
-        /// once. Null when it cannot be taken or is of a kind of pixel the camera does not read.
+        /// The one read of the screen on the main thread, after WaitForEndOfFrame; the texture is let go at once. Null when it
+        /// cannot be taken or its pixels are of a kind the camera does not read.
         /// </summary>
         public static Shot Read()
         {
@@ -459,7 +430,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>The screen's pixels let go, whatever became of them (a second call does nothing).</summary>
+        /// <summary>Lets the screen's pixels go; a second call does nothing.</summary>
         public static void Drop(Shot shot)
         {
             if (shot != null && shot.Pixels.IsCreated)
@@ -471,17 +442,16 @@ namespace RealLifeOverhaul.Photos
         /// <summary>What the worker made of a shot.</summary>
         public sealed class Developed
         {
-            public int Width, Height;            // the photo
-            public byte[] Small;                 // its small copy's rows
+            public int Width, Height;
+            public byte[] Small;                 // the small copy's rows
             public int SmallWidth, SmallHeight;
             public long Bytes;                   // the JPG's size
-            public double Ms;                    // the worker's time
+            public double Ms;
         }
 
         /// <summary>
-        /// ON A WORKER THREAD: the shot made a photo of about 1080 lines (PhotoPixels, averaged), the engine's JPG encoder, the
-        /// file written whole at <paramref name="path"/>, and its small copy written where Flare reads it (PhotoThumbs.FileOf).
-        /// The shot's pixels are let go. Null if the photo could not be written (nothing is left half done).
+        /// On a worker thread: the shot made a JPG of about 1080 lines written whole at <paramref name="path"/>, and its small
+        /// copy where Flare reads it. The shot's pixels are let go. Null if the photo could not be written.
         /// </summary>
         public static Developed Develop(Shot shot, string path)
         {
@@ -500,7 +470,7 @@ namespace RealLifeOverhaul.Photos
                 {
                     return null;
                 }
-                Drop(shot);   // (the screen is done with: its megabytes go before the encoder's)
+                Drop(shot);   // its megabytes go before the encoder's
                 jpg = ImageConversion.EncodeNativeArrayToJPG(photo, GraphicsFormat.R8G8B8_SRGB, (uint)w, (uint)h, 0u, JpgQuality);
                 if (!jpg.IsCreated || jpg.Length == 0)
                 {
@@ -531,9 +501,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- pictures
-
-        /// <summary>A small copy's rows as a texture (one upload; the engine keeps no copy in memory). Null for none.</summary>
+        /// <summary>A small copy's rows as a texture, uploaded once with no copy kept in memory; null for none.</summary>
         public static Texture2D SmallTexture(byte[] rows, int width, int height)
         {
             if (rows == null || width <= 0 || height <= 0 || rows.Length < width * height * 3)
@@ -557,13 +525,9 @@ namespace RealLifeOverhaul.Photos
         private static readonly int HotLoaded = HotSpots.Slot("Photos: PhotosGame.Load");
 
         /// <summary>
-        /// A photo loaded whole for the full screen or the wallpaper: its file read on a worker thread by its path on disk
-        /// (PhotoStore.ReadPhoto; never a file URL, which a folder with '+', '#', '%' or a letter outside English could break),
-        /// then decoded and uploaded by the engine on the main thread (Texture2D.LoadImage, its copy in memory let go at once),
-        /// the texture handed to <paramref name="done"/> (null if it could not be read). The main thread's share, a 1080-line
-        /// JPG of some 500 KB decoded once on a click (about 10 to 20 ms), is timed under its own name (Core/HotSpots) and said
-        /// with Developer diagnostics on. <paramref name="wanted"/>, if given, is asked once the file is read: no longer wanted
-        /// (the player went on to another photo, or closed the app), nothing is decoded and <paramref name="done"/> gets null.
+        /// A whole photo: read on a worker by its path (never a file URL, which '+', '#', '%' or a letter outside English can
+        /// break), then decoded on the main thread, about 10 to 20 ms. <paramref name="done"/> gets null if it could not be
+        /// read, or if <paramref name="wanted"/>, asked after the read, says it is no longer wanted.
         /// </summary>
         public static IEnumerator Load(string path, Action<Texture2D> done, Func<bool> wanted = null)
         {
@@ -576,7 +540,7 @@ namespace RealLifeOverhaul.Photos
             byte[] bytes = work.Status == TaskStatus.RanToCompletion ? work.Result : null;
             if (wanted != null && !wanted())
             {
-                done(null);   // (not decoded: a stale load costs the main thread nothing)
+                done(null);   // not decoded: a stale load costs the main thread nothing
                 yield break;
             }
             if (bytes == null)
@@ -602,8 +566,7 @@ namespace RealLifeOverhaul.Photos
             done(texture);
         }
 
-        // THE ONE DECODE OF A WHOLE PHOTO ON THE MAIN THREAD (on a click): the engine's JPG decoder and one upload; the copy
-        // in memory let go (the texture is only drawn).
+        // The copy in memory is let go: the texture is only drawn.
         private static Texture2D Decode(byte[] bytes)
         {
             var texture = new Texture2D(2, 2, TextureFormat.RGB24, false) { name = "RealLifeOverhaul Photo", wrapMode = TextureWrapMode.Clamp };
@@ -621,8 +584,6 @@ namespace RealLifeOverhaul.Photos
             UnityEngine.Object.Destroy(texture);
             return null;
         }
-
-        // ---------------------------------------------------------------- notifications
 
         /// <summary>One of the game's notifications, its {names} filled from name and value pairs.</summary>
         public static void Tell(NotificationType type, string key, params string[] pairs)

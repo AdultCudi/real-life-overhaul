@@ -3,24 +3,18 @@ using System;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// A photo's pixels made smaller: the screen read by the camera (3 or 4 bytes a pixel, red or blue first, rows from the
-    /// bottom up as the engine keeps them) to the photo of about 1080 lines that is kept, and the photo to its small copy
-    /// (Core/PhotoThumbs' format: 256 pixels wide, RGB24, rows from the bottom up). Each pixel of the result is the plain
-    /// average of the block of the source it covers (a box filter), so a 4K screen is averaged two by two and nothing of
-    /// it is skipped; a source no larger than the result is copied as it is.
-    ///
-    /// Game-free: spans of bytes in and out, so the camera's worker hands it the engine's own copy of the screen (outside the
-    /// managed heap) and the offline checks hand it arrays (EconomyCheck, PhotoChecks.cs). Runs on a worker thread only; a
-    /// 4K screen to 1080 lines is some 8 million reads, about 30 ms there. Nothing is allocated.
+    /// A photo's pixels made smaller by a box filter: the screen to the photo kept, and the photo to its small copy (RGB24,
+    /// rows bottom up). Game-free spans in and out, so the worker hands it the engine's own buffer. Worker thread only:
+    /// a 4K screen is about 30 ms; nothing is allocated.
     /// </summary>
     public static class PhotoPixels
     {
-        public const int PhotoWidth = 1920;     // pixels: the widest photo kept...
-        public const int PhotoHeight = 1080;    // ...and the tallest: about 1080p
-        public const int SmallWidth = PhotoThumbs.Width;   // the small copy, as Flare and the Gallery read it
-        public const int SmallTallest = 1024;   // pixels: a small copy's height at most (a very tall screen)
+        public const int PhotoWidth = 1920;     // pixels
+        public const int PhotoHeight = 1080;    // pixels
+        public const int SmallWidth = PhotoThumbs.Width;
+        public const int SmallTallest = 1024;   // pixels, for a very tall screen
 
-        /// <summary>The size a picture is made to fit a box, its shape kept, never made larger: at least one pixel each way.</summary>
+        /// <summary>The size that fits a box with the shape kept, never larger, and at least one pixel each way.</summary>
         public static void Fit(int width, int height, int mostWidth, int mostHeight, out int fitWidth, out int fitHeight)
         {
             if (width <= 0 || height <= 0)
@@ -35,17 +29,15 @@ namespace RealLifeOverhaul.Photos
             fitHeight = Math.Min(fitHeight, mostHeight);
         }
 
-        /// <summary>The size of a photo's small copy: <see cref="SmallWidth"/> wide (or the photo's own width if it is narrower), its height in proportion.</summary>
+        /// <summary>A small copy's size: <see cref="SmallWidth"/> wide at most, the height in proportion.</summary>
         public static void SmallSize(int width, int height, out int smallWidth, out int smallHeight)
         {
             Fit(width, height, SmallWidth, SmallTallest, out smallWidth, out smallHeight);
         }
 
         /// <summary>
-        /// A picture made smaller by averaging: from <paramref name="source"/> (rows of <paramref name="width"/> pixels of
-        /// <paramref name="bytes"/> bytes, 3 or 4; <paramref name="bgr"/> for blue first) to RGB24 rows into
-        /// <paramref name="into"/>, <paramref name="toWidth"/> by <paramref name="toHeight"/>. The rows stay in the order they
-        /// came. False, with nothing written, when a size or a length does not add up.
+        /// Averages <paramref name="source"/> (3 or 4 bytes a pixel, blue first if <paramref name="bgr"/>) into RGB24 rows,
+        /// keeping the row order. False, with nothing written, when a size or a length does not add up.
         /// </summary>
         public static bool Shrink(ReadOnlySpan<byte> source, int width, int height, int bytes, bool bgr, Span<byte> into, int toWidth, int toHeight)
         {
