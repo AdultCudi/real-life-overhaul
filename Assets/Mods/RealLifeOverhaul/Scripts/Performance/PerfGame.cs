@@ -124,7 +124,8 @@ namespace RealLifeOverhaul
                 TrafficComponent traffic = InstanceBehavior<CityManager>.Instance != null ? InstanceBehavior<CityManager>.Instance.trafficComponent : null;
                 text.AppendLine("  traffic: pool of " + cars.Count + " vehicles (the traffic system reads every pooled wheel each frame and each physics step, driving or not), driving now "
                                 + driving + ", with a headlight on " + lit
-                                + (traffic != null ? ", spawned beyond " + PerfText.F1(traffic.minDistanceToAdd) + " m, removed beyond " + PerfText.F1(traffic.distanceToRemove) + " m" : string.Empty));
+                                + (traffic != null
+                                    ? ", spawned beyond " + PerfText.F1(traffic.minDistanceToAdd) + " m, removed beyond " + PerfText.F1(traffic.distanceToRemove) + " m" : string.Empty));
             }
             else
             {

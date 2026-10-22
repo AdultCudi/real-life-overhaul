@@ -183,7 +183,9 @@ namespace RealLifeOverhaul
             text.AppendLine("Real Life Overhaul performance probe  " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  mod " + typeof(PerfProbe).Assembly.GetName().Version
                             + "  Unity " + Application.unityVersion);
             text.AppendLine("where: " + PerfGame.Where()
-                            + (camera != null ? "  camera '" + camera.name + "' at " + camera.transform.position.ToString("F1") + " looking " + camera.transform.forward.ToString("F2") : "  no main camera"));
+                            + (camera != null
+                                ? "  camera '" + camera.name + "' at " + camera.transform.position.ToString("F1") + " looking " + camera.transform.forward.ToString("F2")
+                                : "  no main camera"));
             text.AppendLine("screen: " + Screen.width + "x" + Screen.height + "  quality level " + QualitySettings.GetQualityLevel());
 
             text.AppendLine();

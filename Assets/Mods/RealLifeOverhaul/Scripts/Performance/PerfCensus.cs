@@ -843,9 +843,8 @@ namespace RealLifeOverhaul
             }
             text.AppendLine("  enabled canvases: root " + roots + ", nested " + nested + "  world-space " + world + "  pixel-perfect " + pixelPerfect + "  active graphics "
                             + totalGraphics + "  raycast targets " + totalTargets + "  graphic raycasters "
-                            + UnityEngine.Object.FindObjectsByType<GraphicRaycaster>(FindObjectsSortMode.None).Length + "  layout groups "
-                            + UnityEngine.Object.FindObjectsByType<LayoutGroup>(FindObjectsSortMode.None).Length + "  content size fitters "
-                            + UnityEngine.Object.FindObjectsByType<ContentSizeFitter>(FindObjectsSortMode.None).Length);
+                            + UnityEngine.Object.FindObjectsByType<GraphicRaycaster>(FindObjectsSortMode.None).Length + "  layout groups " + UnityEngine.Object.FindObjectsByType<LayoutGroup>(FindObjectsSortMode.None).Length
+                            + "  content size fitters " + UnityEngine.Object.FindObjectsByType<ContentSizeFitter>(FindObjectsSortMode.None).Length);
             rows.Sort((a, b) => b.Key.CompareTo(a.Key));
             for (int i = 0; i < rows.Count && i < 25; i++)
             {
