@@ -8,33 +8,29 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The tiles a grid's pager (PhoneGridPager) lays its folders out with: one for each folder, the Back tile on a folder's
-    /// page, and the empty tiles that keep the HUD phone's dock row on the last row. Each folder's and the Back tile are
-    /// copies of the game's own app button of that phone (the template its apps are made from), with the game's scripts that
-    /// make it an app taken off (its hover, sound and badge kept, as on the More apps button), the folder's name where an
-    /// app shows its own, and a picture as the game's icons are painted (AppIconPainter): a slate tile under the small
-    /// pictures of the first nine apps in it, three rows of three, as a real phone's folder shows them; the Back tile a
-    /// light tile with the game's double chevron turned back and "Back" under the folder's name. Every tile carries a
-    /// PhoneTile, so no pager counts it as an app, and stands in the grid, so the grid's own layout places it.
-    ///
-    /// Made once for the grid, the first time folders are shown; taken away when the option is switched off, the pager
-    /// steps aside or goes. Nothing here runs per frame: the pager tells it what to show when it lays the grid out.
+    /// The tiles a pager lays its folders out with: one per folder, the Back tile on a folder's page, and the empty tiles
+    /// that keep the HUD phone's dock on the last row. Folder and Back tiles are copies of the phone's own app button
+    /// without the scripts that make it an app (its hover, sound and badge kept), the folder's name where an app shows its
+    /// own, and an icon painted as the game's are (AppIconPainter): a slate tile under the small pictures of its first nine
+    /// apps, or for Back a light tile with the game's chevrons turned back. Every tile carries a PhoneTile, so no pager
+    /// counts it as an app, and stands in the grid for its layout to place. Made once, the first time folders show; gone
+    /// with the option, a pager stepping aside or going. Costs nothing a frame: the pager says what to show.
     /// </summary>
     internal sealed class PhoneFolders
     {
-        private const string FolderPrefix = "RealLife Folder ";   // and the folder's id
+        private const string FolderPrefix = "RealLife Folder ";   // followed by the folder's id
         private const string BackName = "RealLife Folder Back";
         private const string GapName = "RealLife Folder Gap";
         private const string BackKey = "reallife_phone_folder_back";   // "Back", under the folder's name on the Back tile
         private const string FolderIconName = "AppIcon-PhoneFolder";
         private const string BackIconName = "AppIcon-PhoneBack";
-        private const float IconPixels = 160f;   // the game's app icons: 160 by 160, the tile 112 of it (AppIconPainter)
+        private const float IconPixels = 160f;   // the game's app icons are 160 by 160, the tile 112 of it (AppIconPainter)
         private const float TilePixels = 112f;
-        private const float TileLift = 4f;       // pixels: the tile sits this far above the picture's middle, its shadow below it
+        private const float TileLift = 4f;       // pixels the tile sits above the picture's middle, its shadow below
         private const float MiniInset = 12f;     // pixels between the tile's edge and its small pictures
-        private const float MiniFill = 0.84f;    // of a small picture's cell: its tile, the rest the gap to the next
+        private const float MiniFill = 0.84f;    // of a small picture's cell: its tile; the rest the gap to the next
 
-        private static readonly Color32 FolderTop = new Color32(138, 150, 170, 255);    // a folder's tile, upper left: a slate under the apps' own strong colours
+        private static readonly Color32 FolderTop = new Color32(138, 150, 170, 255);    // a folder's tile, upper left: a slate under the apps' strong colours
         private static readonly Color32 FolderBottom = new Color32(76, 86, 106, 255);   // ...lower right
 
         private sealed class Folder
@@ -66,8 +62,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// Every tile of a grid's folders, or null (and one line in Player.log) if the game's app button cannot be copied:
-        /// the grid then keeps its plain pages, and no app is lost to a folder with no tile.
+        /// Every tile of a grid's folders, or null (and one line in Player.log) if the game's app button cannot be copied: the
+        /// grid keeps its plain pages, and no app is lost to a folder without a tile.
         /// </summary>
         public static PhoneFolders Make(PhoneGridPager pager, Transform template, bool strip)
         {
@@ -143,7 +139,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        // The game's own app icon to paint a tile on, as every app of the mod's is painted (PhoneApp: Persona's); the template's own failing that.
+        // The game's icon to paint a tile on, as the mod's apps are painted (Persona's); else the template's.
         private Sprite Like(Sprite fallback)
         {
             Transform grid = _pager.transform;
@@ -166,8 +162,8 @@ namespace RealLifeOverhaul.GameUi
             return any != null ? any : fallback;
         }
 
-        // A copy of the phone's app button, asleep while it is made: the game's scripts that make it an app taken off (its
-        // hover, sound and badge kept), the open app's dot taken away, the click given, a PhoneTile on it; then in the grid, off.
+        // A copy of the phone's app button, made asleep: without the scripts that make it an app (hover, sound and badge
+        // kept) and the open app's dot, with the click and a PhoneTile; then in the grid, off.
         private Transform Copy(string name, Action click, out Image picture, out TextLocalizationComponent title, out global::UI.Elements.Badge badge)
         {
             picture = null;
@@ -181,7 +177,7 @@ namespace RealLifeOverhaul.GameUi
                 UnityEngine.Object.Destroy(dormant.gameObject);
                 return null;
             }
-            picture = PhoneGridPager.Picture(copy.transform);   // (through the game's own field, before its script is taken off)
+            picture = PhoneGridPager.Picture(copy.transform);   // through the game's own field, before its script is taken off
             title = copy.GetComponentInChildren<TextLocalizationComponent>(true);
             UiClone.StripGameScripts(copy, PhoneGridPager.KeptOnMore);
             Unmark(copy);
@@ -203,8 +199,7 @@ namespace RealLifeOverhaul.GameUi
             return copy.transform;
         }
 
-        // What a pager of the mod's puts on an app's button, off a copy made from a live button (the template failing): no
-        // page mark, no right click to move it, no wheel of the More apps button's.
+        // What a pager of the mod's puts on a button, off a copy of a live one: no page mark, right click or wheel.
         private static void Unmark(GameObject copy)
         {
             foreach (MonoBehaviour script in copy.GetComponentsInChildren<MonoBehaviour>(true))
@@ -216,7 +211,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The folder's small pictures over its tile, three rows of three, made once and left off until there is an app for them.
+        // Three rows of three over the tile, made once and off until there is an app for them.
         private static void Minis(Folder folder)
         {
             RectTransform under = folder.Picture.rectTransform;
@@ -230,13 +225,13 @@ namespace RealLifeOverhaul.GameUi
                 var mini = new GameObject("Mini" + k, typeof(RectTransform), typeof(Image));
                 var rect = (RectTransform)mini.transform;
                 rect.SetParent(under, false);
-                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);   // (from the picture's middle, whatever its pivot)
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);   // from the picture's middle, whatever its pivot
                 rect.pivot = new Vector2(0.5f, 0.5f);
                 rect.sizeDelta = new Vector2(each, each);
                 int column = k % PhoneLayoutRules.MiniRow, row = k / PhoneLayoutRules.MiniRow;
                 rect.anchoredPosition = new Vector2(-tile * 0.5f + inset + cell * (column + 0.5f), tile * 0.5f - inset - cell * (row + 0.5f) + TileLift * scale);
                 var image = mini.GetComponent<Image>();
-                image.raycastTarget = false;   // (the click is the tile's)
+                image.raycastTarget = false;   // the click is the tile's
                 image.preserveAspect = true;
                 mini.SetActive(false);
                 folder.Minis[k] = image;
@@ -260,8 +255,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// The small pictures of each folder: the icons of its first nine apps in the mod's order, written only where one
-        /// changed. <paramref name="apps"/> are the grid's buttons in the pages' order, with their kind and place.
+        /// Each folder's small pictures: the icons of its first nine apps in the mod's order, written only where one changed.
+        /// <paramref name="apps"/> are the grid's buttons in the pages' order.
         /// </summary>
         public void Fill(List<Transform> apps, int[] kind, int[] place, int count)
         {
@@ -330,7 +325,7 @@ namespace RealLifeOverhaul.GameUi
         {
             while (_gaps.Count < count)
             {
-                var gap = new GameObject(GapName, typeof(RectTransform));   // (no picture, nothing to click: a tile the grid's layout keeps empty)
+                var gap = new GameObject(GapName, typeof(RectTransform));   // no picture, nothing to click: a tile the layout keeps empty
                 gap.AddComponent<PhoneTile>();
                 gap.SetActive(false);
                 gap.transform.SetParent(_pager.transform, false);
@@ -352,7 +347,7 @@ namespace RealLifeOverhaul.GameUi
             return index >= 0 && index < _gaps.Count ? _gaps[index] : null;
         }
 
-        /// <summary>The number on a folder's tile (its apps' added up): written only when it changes.</summary>
+        /// <summary>A folder tile's number, its apps' added up: written only when it changes.</summary>
         public void Badge(int folder, int count)
         {
             Folder made = folder >= 0 && folder < _folders.Length ? _folders[folder] : null;
@@ -397,7 +392,7 @@ namespace RealLifeOverhaul.GameUi
             badge.UpdateBadge(count);
         }
 
-        /// <summary>Every tile taken away: the option off, the pager stepping aside or gone. The city's own unloading takes them with the interface.</summary>
+        /// <summary>Every tile taken away. The city's own unloading takes them with the interface.</summary>
         public void Destroy()
         {
             for (int f = 0; f < _folders.Length; f++)
@@ -414,7 +409,7 @@ namespace RealLifeOverhaul.GameUi
             _gaps.Clear();
         }
 
-        // Out of the grid at once, then destroyed: the pager counts at once what is left (a destroyed object stays a child until the frame is over).
+        // Out of the grid at once, then destroyed: the pager counts what is left at once (a destroyed object stays a child until the frame ends).
         private static void Retire(Transform tile)
         {
             if (tile == null)
@@ -432,7 +427,7 @@ namespace RealLifeOverhaul.GameUi
         }
     }
 
-    /// <summary>On each tile a pager of the phone makes for its folders (a folder's, the Back tile, an empty one): no pager counts it as an app. It has no Update: it costs nothing a frame.</summary>
+    /// <summary>On each tile a pager makes for its folders (a folder's, the Back tile, an empty one): no pager counts it as an app. Costs nothing a frame.</summary>
     public sealed class PhoneTile : MonoBehaviour
     {
     }
