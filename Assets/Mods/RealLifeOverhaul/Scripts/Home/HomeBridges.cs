@@ -2,7 +2,7 @@ using System;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>What home and health ask of the rest of the mod (Wiring/LifeLinks fills each in).</summary>
+    /// <summary>What home and health ask of the rest of the mod (Wiring/LifeLinks fills each in, and Wiring/MealsLinks <see cref="ServedAtTable"/>).</summary>
     public static class HomeBridges
     {
         /// <summary>
@@ -17,5 +17,12 @@ namespace RealLifeOverhaul
         /// through its time skip, or -1 when not. While it is 0 or more the hours count as sleep. Default: never.
         /// </summary>
         public static Func<int> SleepingAway;
+
+        /// <summary>
+        /// A dish cooked at home is ready and about to be eaten (its fill, of the game's 100): true when it is carried to a
+        /// free seat and eaten there, so the cooker's bite is left out. The meal's effect is the cooking's own either way.
+        /// Default: eaten at the cooker.
+        /// </summary>
+        public static Func<int, bool> ServedAtTable;
     }
 }

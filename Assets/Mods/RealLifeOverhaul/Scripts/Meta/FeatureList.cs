@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Meta
             Walking.WalkGuide.Register();
             Calendar.CalendarGuide.Register();
             Designs.DesignsGuide.Register();
+            Meals.MealsGuide.Register();
         }
 
         private static void RegisterGameplay()

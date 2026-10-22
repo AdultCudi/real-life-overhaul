@@ -57,6 +57,7 @@ namespace RealLifeOverhaul
             Step("the cleaning service and selling a business", ServicesLinks.Connect);
             Step("brands and franchises", BrandLinks.Connect);
             Step("the roommate", RoommateLinks.Connect);
+            Step("meals and music", MealsLinks.Connect);
             Step("power and water", UtilityLinks.Connect);
             Step("the social media app", FlareLinks.Connect);
             Step("the social media app's living network", FlareLiveLinks.Connect);   // after its own: its part of the paper follows the others'
@@ -105,6 +106,7 @@ namespace RealLifeOverhaul
             Step("the cleaning service and selling a business", ServicesLinks.Disconnect);
             Step("brands and franchises", BrandLinks.Disconnect);
             Step("power and water", UtilityLinks.Disconnect);
+            Step("meals and music", MealsLinks.Disconnect);
             Step("the roommate", RoommateLinks.Disconnect);
             Step("running a business", CompanyLinks.Disconnect);
             Step("education and careers", CareersLinks.Disconnect);

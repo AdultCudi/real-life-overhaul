@@ -211,6 +211,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("health sick sleep stress hygiene tired").Also("home_morning_news", "notification notifications summary news weather wake"),
                 S("routines").Guide("home").Need("home_life").Opts("home_routines", "home_fitness", "home_body", "home_jog")
                     .Also("cooking cook food kitchen exercise gym run diet"),
+                S("meals").For("meals").Opts("meals_seated").Opt("meals_cooked", "home_life", "home_routines").Opts("meals_dance")
+                    .Also("eat eating meal table seat chair sit plate tray dinner cook dance dancing music radio speaker loudspeaker mood"),
                 S("looks").For("character").Opts("character_new_looks", "character_high_detail", "character_hair", "character_skin", "character_lighting")
                     .Also("appearance beard face"),
                 S("outfit_m").Guide("character").Opts("look2_top_m", "look2_top_m_colour", "look2_legs_m", "look2_legs_m_colour", "look_feet_m")

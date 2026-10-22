@@ -1147,6 +1147,7 @@ namespace RealLifeOverhaul
                 .Guarded(o => o.AddPermadeath())   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
                 .Guarded(o => o.AddRoommates())
                 .Guarded(o => Walking.WalkOptions.AddWalking(o))
+                .Guarded(o => Meals.MealsOptions.AddMeals(o))
                 .Guarded(o => o.AddControls())
                 .Guarded(o => o.AddPerformance());
 
@@ -1255,6 +1256,7 @@ namespace RealLifeOverhaul
             Guard.Step("SolidGame", () => SolidGame.Logger = context.Logger);
             Guard.Step("CityDrivers", () => CityDrivers.Logger = context.Logger);
             Guard.Step("Walking.WalkDirector", () => Walking.WalkDirector.Logger = context.Logger);
+            Guard.Step("Meals.MealsDirector", () => Meals.MealsDirector.Logger = context.Logger);
             Guard.Step("DriverGame", () => DriverGame.Logger = context.Logger);
             Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
@@ -1347,6 +1349,7 @@ namespace RealLifeOverhaul
             Guard.Step("CityLifeDirector", () => Guard.Add<CityLifeDirector>(_root));   // its own pool of eight
             Guard.Step("JobDirector", () => Guard.Add<JobDirector>(_root));
             Guard.Step("HomeDirector", () => HomeDirector.Logger = context.Logger);
+            Guard.Step("Meals.MealsDirector", () => Guard.Add<Meals.MealsDirector>(_root));   // meals at a seat and dancing to the music
             Guard.Step("HomeDirector", () => Guard.Add<HomeDirector>(_root));   // after LifeEvents and CityLifeDirector, whose clip player it shares
             Guard.Step("Law.LawDirector", () => Guard.Add<Law.LawDirector>(_root));
             Guard.Step("TransitDirector", () => Guard.Add<TransitDirector>(_root));
