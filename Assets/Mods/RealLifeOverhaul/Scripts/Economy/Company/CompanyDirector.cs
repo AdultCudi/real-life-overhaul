@@ -409,6 +409,10 @@ namespace RealLifeOverhaul.Economy
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new CompanyApp(this);
             GameSprites.Want(AppGlyphs);
             bool tryAgain;

@@ -74,6 +74,24 @@ namespace RealLifeOverhaul.Calendar
             ToDay = toDay;
         }
 
+        /// <summary>
+        /// Takes off everything added since the list held so many entries and nightly lines, back to their pools: what a source
+        /// that failed part way through left behind (CalendarDirector.Look). Counts past what the list holds change nothing.
+        /// </summary>
+        public void Cut(int items, int nights)
+        {
+            for (int i = Items.Count - 1; i >= items && i >= 0; i--)
+            {
+                _pool.Add(Items[i]);
+                Items.RemoveAt(i);
+            }
+            for (int i = Nights.Count - 1; i >= nights && i >= 0; i--)
+            {
+                _nightPool.Add(Nights[i]);
+                Nights.RemoveAt(i);
+            }
+        }
+
         /// <summary>A blank entry on that day, already in the list; null for a day outside the look, or a full list.</summary>
         public CalendarEntry Add(string source, int a, int b, CalendarGroup group, int day)
         {

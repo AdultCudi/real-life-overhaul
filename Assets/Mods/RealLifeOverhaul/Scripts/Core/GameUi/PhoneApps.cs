@@ -99,24 +99,39 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
+        /// Whether the game's phone can take an app now: its parts are there and the full menu has made its buttons. Every app's
+        /// install asks this before it makes the app's page, so nothing is made over and over while the phone is still being
+        /// built; <see cref="Install"/> asks it first too. A look down the full menu's buttons: once a second at most, until on.
+        /// </summary>
+        public static bool PhoneUp
+        {
+            get
+            {
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                if (uis == null || uis.smartphoneUI == null || uis.fullMenu == null || uis.fullMenu.appsContainer == null)
+                {
+                    return false;
+                }
+                // FullMenu makes its buttons in Start: until one is there the menu has not been set up.
+                SmartphoneUI phone = uis.smartphoneUI;
+                return uis.fullMenu.GetComponentInChildren<FullMenuAppButton>(false) != null && phone.appButtons != null && phone.appButtons.Count > 0;
+            }
+        }
+
+        /// <summary>
         /// Puts the app on the phone. Null if the game's phone is not there yet (ask again later) or is not built as
         /// expected (one line in Player.log says what was missing; nothing is left behind).
         /// </summary>
         public static PhoneApp Install(PhoneAppDef def, out bool tryAgain)
         {
             tryAgain = true;
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            if (uis == null || uis.smartphoneUI == null || uis.fullMenu == null || uis.fullMenu.appsContainer == null)
+            if (!PhoneUp)
             {
                 return null;
             }
+            UIs uis = InstanceBehavior<UIs>.Instance;
             SmartphoneUI phone = uis.smartphoneUI;
             FullMenu menu = uis.fullMenu;
-            // FullMenu makes its buttons in Start: until one is there the menu has not been set up.
-            if (menu.GetComponentInChildren<FullMenuAppButton>(false) == null || phone.appButtons == null || phone.appButtons.Count == 0)
-            {
-                return null;
-            }
             tryAgain = false;
             var app = new PhoneApp(def) { _phone = phone, _menu = menu };
             try

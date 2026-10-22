@@ -84,6 +84,10 @@ namespace RealLifeOverhaul.Meta
 
         private static void TryInstall()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             GameSprites.Want("Icon-Info", "Icon-Edit", "Icon-Notifications");
             var view = new GuideView();
             _app = PhoneApp.Install(new PhoneAppDef

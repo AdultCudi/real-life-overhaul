@@ -534,6 +534,10 @@ namespace RealLifeOverhaul.Careers
 
         private void InstallCareer()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new CareerApp(this);
             GameSprites.Want(CareerGlyphs);
             bool tryAgain;
