@@ -20994,5 +20994,7 @@
   "reallife_law_court_released_desk_shared": "Signed out at the front desk of the {precinct}. In a Going Public session no time passes in a cell: the court's order counts as served.",
   "reallife_justice_custody_released_shared": "Released from custody. In a Going Public session no time passes in a cell: your custody counts as served.",
   "reallife_interior_wear_off": "Wear is switched off in the options, so the finishes do not age and need no refresh.",
-  "reallife_interior_refresh_unknown": "The finishes at {business} cannot be refreshed: its interior has not been looked over yet. Try again in an hour."
+  "reallife_interior_refresh_unknown": "The finishes at {business} cannot be refreshed: its interior has not been looked over yet. Try again in an hour.",
+  "reallife_doctor_call_no_money": "The consultation is {amount}, and the payment did not go through. Call again when you can pay.",
+  "reallife_doctor_prescribe_no_money": "That comes to {amount}, and the payment did not go through. Come back when you can pay, and rest until then."
 }

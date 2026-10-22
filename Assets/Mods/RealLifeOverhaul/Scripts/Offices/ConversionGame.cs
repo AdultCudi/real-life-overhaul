@@ -103,8 +103,12 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
-        /// <summary>On or off the game's list of addresses its rivals leave alone. Returns whether it is on it now.</summary>
-        public static bool Ignore(Address address, bool on)
+        /// <summary>
+        /// On or off the game's list of addresses its rivals leave alone, by <see cref="ConversionRules.IgnoreChange"/>: only an
+        /// entry the mod added is ever taken off. <paramref name="ours"/> says whether the entry there was the mod's; returns
+        /// whether it is the mod's now.
+        /// </summary>
+        public static bool Ignore(Address address, bool on, bool ours)
         {
             List<Address> list = RivalsHelper.IgnoredAddresses;
             if (address == null || list == null)
@@ -112,15 +116,16 @@ namespace RealLifeOverhaul.Offices
                 return false;
             }
             int at = list.IndexOf(address);
-            if (on && at < 0)
+            int change = ConversionRules.IgnoreChange(on, at >= 0, ref ours);
+            if (change > 0)
             {
                 list.Add(address);
             }
-            else if (!on && at >= 0)
+            else if (change < 0)
             {
                 list.RemoveAt(at);
             }
-            return on;
+            return ours;
         }
 
         /// <summary>The map's filters applied again, as the game does after a building is rented.</summary>

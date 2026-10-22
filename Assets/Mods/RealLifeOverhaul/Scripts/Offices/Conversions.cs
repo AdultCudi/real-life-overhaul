@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Offices
             public Building B;      // the city's building asset: what is put back, whatever became of the scene's object
             public CityBuildingController C;
             public string Was;      // the type as the game made it
-            public bool Ignored;    // on the game's list of addresses its rivals leave alone
+            public bool Ignored;    // put on the game's list of addresses its rivals leave alone by the mod: only then taken off
         }
 
         // Static, so another feature's choice can ask without a reference: the buildings that are offices because of this.
@@ -161,7 +161,7 @@ namespace RealLifeOverhaul.Offices
             {
                 if (m.Ignored && !ConversionGame.Vacant(m.C.buildingRegistration))
                 {
-                    m.Ignored = ConversionGame.Ignore(m.B.Address, false);
+                    m.Ignored = ConversionGame.Ignore(m.B.Address, false, m.Ignored);
                     _dirty = true;
                 }
             }
@@ -311,7 +311,7 @@ namespace RealLifeOverhaul.Offices
                     bool ignore = ConversionGame.Vacant(reg) && ConversionGame.NoLandlord(reg);
                     if (ignore != m.Ignored)
                     {
-                        m.Ignored = ConversionGame.Ignore(c.building.Address, ignore);
+                        m.Ignored = ConversionGame.Ignore(c.building.Address, ignore, m.Ignored);   // one listed by another stays not the mod's
                     }
                 }
             }
@@ -358,7 +358,7 @@ namespace RealLifeOverhaul.Offices
             {
                 if (m.Ignored)
                 {
-                    m.Ignored = ConversionGame.Ignore(m.B.Address, false);
+                    m.Ignored = ConversionGame.Ignore(m.B.Address, false, m.Ignored);
                 }
             }
             catch (Exception e)

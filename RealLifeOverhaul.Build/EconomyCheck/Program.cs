@@ -121,6 +121,7 @@ internal static partial class Program
         {
             RagdollLifeFixes();   // (the clean-up's fixes alone, while working on them: RagdollFixChecks.cs and the rest named in Main)
             BusinessInteriorFixes();
+            PhoneWorldFixes();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -243,6 +244,7 @@ internal static partial class Program
         CityEventFixes();   // the spare hose by the engine, a guest's traffic left alone by the weather, arrivals past one who never came (CityEventFixChecks.cs)
         RagdollLifeFixes();   // a kneeling medic struck as one standing and kneeling again if not, the memorial's ids with commas, the building manager tested (RagdollFixChecks.cs)
         BusinessInteriorFixes();   // a smear's room tested with its own dip, an office's stations with no item list, a refresh that says why not, the wear test as play (BusinessFixChecks.cs)
+        PhoneWorldFixes();   // the level of detail put back only if it was set, the doctor's refused payment ends the call with a word (PhoneFixChecks.cs)
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)

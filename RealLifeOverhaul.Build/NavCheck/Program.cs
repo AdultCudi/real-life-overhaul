@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -58,6 +58,7 @@ internal static partial class Program
         Tow();
         TechSites();
         OfficeConversions();
+        DrivingOfficeFixes();   // the car tuning on the player's own car only, the rivals' list changed only where the mod added to it (DrivingFixCheck.cs)
         FrontSigns();
         Fits();
         FitPresets();

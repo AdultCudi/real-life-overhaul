@@ -20,7 +20,8 @@ namespace RealLifeOverhaul
         private VolumeProfile _profile;
         private ColorAdjustments _color;
         private Bloom _bloom;
-        private float _vanillaLodBias;
+        private float _vanillaLodBias;   // the game's level of detail before the mod first set it
+        private bool _lodBiasHeld;       // the mod has set it, and _vanillaLodBias is what it was: only then is it put back
 
         // The values last pushed to the engine.
         private bool _appliedOn;
@@ -31,8 +32,7 @@ namespace RealLifeOverhaul
 
         private void Start()
         {
-            _vanillaLodBias = QualitySettings.lodBias;
-            Logger?.Info($"Visuals: vanilla lodBias={_vanillaLodBias} aniso={QualitySettings.anisotropicFiltering}");
+            Logger?.Info($"Visuals: vanilla lodBias={QualitySettings.lodBias} aniso={QualitySettings.anisotropicFiltering}");
 
             _profile = ScriptableObject.CreateInstance<VolumeProfile>();
             _color = _profile.Add<ColorAdjustments>();
@@ -94,12 +94,20 @@ namespace RealLifeOverhaul
             _bloom.intensity.overrideState = bloom;
             _bloom.intensity.value = Settings.Bloom / 100f;
 
+            if (!_lodBiasHeld)
+            {
+                _vanillaLodBias = QualitySettings.lodBias;   // recorded where it is first set, so what is put back is what it was
+                _lodBiasHeld = true;
+            }
             QualitySettings.lodBias = on ? _vanillaLodBias * Settings.Detail / 100f : _vanillaLodBias;
         }
 
         private void OnDestroy()
         {
-            QualitySettings.lodBias = _vanillaLodBias;
+            if (_lodBiasHeld)
+            {
+                QualitySettings.lodBias = _vanillaLodBias;   // never set (gone before its first frame): the game's own stays
+            }
             CodeAssets.DropProfile(_profile);   // its colour and bloom settings with it
         }
     }
