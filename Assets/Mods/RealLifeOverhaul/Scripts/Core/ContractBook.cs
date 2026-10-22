@@ -244,8 +244,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        public static bool Resolved => _resolved;
-
         /// <summary>Resolves the contract among the loaded assemblies if nothing has yet.</summary>
         public static void EnsureResolved()
         {

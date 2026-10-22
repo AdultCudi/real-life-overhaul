@@ -20,8 +20,6 @@ namespace RealLifeOverhaul
         private static bool _tried;
         private static bool _failed;
 
-        internal static bool On => _game != null && !_failed;
-
         /// <summary>Called once a second by SpecialNames; wraps the queue on the first call of a session.</summary>
         internal static void Keep()
         {
