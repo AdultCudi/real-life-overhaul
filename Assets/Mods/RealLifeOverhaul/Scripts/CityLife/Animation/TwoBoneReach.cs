@@ -10,7 +10,7 @@ namespace RealLifeOverhaul
     {
         private const float Epsilon = 0.0005f;   // metres
 
-        /// <param name="weight">0 leaves the animation alone, 1 puts the wrist on the target.</param>
+        /// <summary>Turns upper and lower so the end is on the target, by weight: 0 leaves the animation alone, 1 puts it there.</summary>
         public static void Solve(Transform upper, Transform lower, Transform end, Vector3 target, float weight = 1f)
         {
             if (weight <= 0f)

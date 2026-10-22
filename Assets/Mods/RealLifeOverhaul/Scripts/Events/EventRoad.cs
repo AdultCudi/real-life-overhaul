@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using GleyTrafficSystem;
 using UnityEngine;
-using Object = UnityEngine.Object;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Events
 {

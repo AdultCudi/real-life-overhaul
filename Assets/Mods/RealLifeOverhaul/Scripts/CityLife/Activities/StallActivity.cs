@@ -3,7 +3,6 @@ using Extensions;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul

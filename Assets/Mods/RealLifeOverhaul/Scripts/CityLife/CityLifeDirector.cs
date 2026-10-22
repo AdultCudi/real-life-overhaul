@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.DayNightCycle;
 using Helpers;
-using Localizor;
 using UI;
 using UI.Load;
-using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
