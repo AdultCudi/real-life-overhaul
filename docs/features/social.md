@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-Eight people the player knows (Mom, an old friend and six met in the street), things to do with them, texts and calls, and the morning paper, the City Ledger.
+Up to 400 people the player knows (Mom, an old friend, and everybody met in the street, at work, online and at evenings out), things to do with them, texts and calls, and the morning paper, the City Ledger.
 
 ## Where the code is
 
@@ -45,7 +45,7 @@ Everything is on the street or on the phone: the cast is never put indoors (the 
 
 ## The cast
 
-Eight people per save, rolled once from a seed and then stored whole (name, look, traits, job, district, free hours, birthday), so a later change to the name lists renames nobody.
+A save starts with eight people (`SocialRules.BaseCast`), rolled once from a seed and then stored whole (name, look, traits, job, district, free hours, birthday), so a later change to the name lists renames nobody.
 One per way of meeting:
 
 | who | met | how |
@@ -54,7 +54,17 @@ One per way of meeting:
 | Alex | known from the start (`reallife-friend`) | an old friend |
 | six others | walking up to the player in the street | after leaving a gym (35 %), after a job shift that paid (30 %), after the second coffee bought at a cart (50 %), outside the player's home (15 %) or own shop (20 %), after a `ModState.Helped` moment (60 %); or brought along by a friend |
 
-A new face comes at most every other day.
+Once a place's first person is met, the place keeps bringing somebody new (`SocialDirector.Newcomer`, rolled by `SocialCatalogue.MakeNew` from the cast's seed and the slot, `SocialRules.SlotSeed`), and so do meetings online, at an evening, through a friend or a roommate, in the street and on Flare, up to `SocialRules.MaxCast` (400) people a save.
+
+A new person is made only when they are about to be met, with a full name nobody of the cast has (each name is one contact); one made but not met is the next met from that place.
+A new face comes at most once a game day (`SocialRules.MeetGapDays`).
+
+With a big cast only the circle gets in touch of its own accord (`SocialRules.InCircle`): family, a partner, anyone met in the last 14 days and the twelve closest (`SocialRules.CircleBar`).
+
+The others are kept and can be called, but never text, ring, wish their own birthday or drift away with a notice; with twelve or fewer met everybody is in the circle, as before.
+The chance an hour that somebody gets in touch grows with the circle and stops at twelve (`SocialRules.TextChance`).
+
+Flare's friends follow and like posts by a bit each, so only the first 31 people of the cast can follow the player there.
 Whoever comes walks in from pavement out of view, stops in front of the player, waves and waits to be spoken to (45 s; they follow a little if the player moves on, then give up).
 
 The conversation is the game's own dialogue panel with both of them facing and talking (`talk_a` / `talk_b` in turn); "Swap numbers" puts them in the phone as a contact whose id is their name.
@@ -264,6 +274,8 @@ The log, the paper and the fillers seen are in modData.
 ## Rules kept
 
 - Nothing in the save the game cannot load: `reallife:social*` strings in modData, and contacts made exactly as `Phone/PhoneContacts` makes its own (id, description key, the call dialog set again on every load).
+- The first eight are in `reallife:social_people` as every version wrote them, and a save loads if all eight are there; everybody after them is in `reallife:social_more`, one line each with the same fields, which an older version never reads or writes, so going back a version and forward again keeps them. A line of it that cannot be read is kept as it was read and its slot stays taken.
+- A roommate who is one of the later people is saved in full in the roommate's field 15, and as no friend in field 14, which is what an older version reads.
 - Each person's record (`reallife:social_people`) ends with the minute of the text a call back last opened on and the outing still to be texted about the day after (fields 43 to 47, after the age's day): an older version reads the fields it knows and leaves these; an older save reads as no text taken up yet and no outing waiting.
 - Idle cost: three comparisons a frame; once a second a few more.
   A scene ticks five times a second; per frame only its marker, its key and (via the living city's service) a turn on the spot.

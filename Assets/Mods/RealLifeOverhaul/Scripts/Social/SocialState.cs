@@ -5,26 +5,40 @@ using System.Text;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>The social part of a save, kept as plain strings in its modData: a save made with it loads without the mod.</summary>
+    /// <summary>
+    /// The social part of a save, kept as plain strings in its modData: a save made with it loads without the mod. The first
+    /// <see cref="SocialRules.BaseCast"/> people are in one record, as every version has written them; everybody met after
+    /// them is in a record of their own, which a version that knows only the first eight never reads or writes, so going
+    /// back a version keeps them for the next load with this one.
+    /// </summary>
     public static class SocialState
     {
         private const string KeyMain = "reallife:social";
         private const string KeyPeople = "reallife:social_people";
+        private const string KeyMore = "reallife:social_more";
         private const string KeyPlan = "reallife:social_plan";
         private const string KeyOffer = "reallife:social_offer";
         private const int Version = 1;
+        private const int ReadFields = 41;   // a person's fields every version has written
         private const char Field = '|';
         private const char Record = '\n';
 
-        public static readonly SocialPerson[] People = new SocialPerson[SocialRules.CastSize];
+        public static readonly SocialPerson[] People = new SocialPerson[SocialRules.MaxCast];
         public static readonly SocialPlan Plan = new SocialPlan();
         public static readonly SocialOffer Offer = new SocialOffer();
 
+        // Lines of the later people's record this version could not read, written back as they were read.
+        private static readonly List<string> KeptMore = new List<string>(4);
+
         public static bool Loaded { get; private set; }
+
+        /// <summary>One past the highest slot taken: every loop over the cast stops here. A field read.</summary>
+        public static int Count { get; private set; }
+
         public static int CastSeed;
         public static int Day;               // the day the daily round was last done for
         public static int TextsDay, TextsToday;
-        public static int LastMeetDay;       // a new face at most every other day
+        public static int LastMeetDay;       // the day of the last new face
         public static int LastDropByDay;
         public static int LastCallInDay;     // the day one of them last rang
         public static int CoffeeBuys;        // coffees bought at a cart: a regular is noticed by another
@@ -39,6 +53,8 @@ namespace RealLifeOverhaul
             {
                 People[i] = null;
             }
+            Count = 0;
+            KeptMore.Clear();
             Plan.Clear();
             Offer.Clear();
             CastSeed = 0;
@@ -58,12 +74,29 @@ namespace RealLifeOverhaul
         /// <summary>Null while nothing is loaded, or outside the cast.</summary>
         public static SocialPerson Get(int index)
         {
-            return Loaded && index >= 0 && index < People.Length ? People[index] : null;
+            return Loaded && index >= 0 && index < Count ? People[index] : null;
         }
 
+        /// <summary>
+        /// Somebody new joins the cast in the next free slot, which becomes their <see cref="SocialPerson.Index"/>. False, and
+        /// nothing changed, once <see cref="SocialRules.MaxCast"/> are known.
+        /// </summary>
+        public static bool Add(SocialPerson person)
+        {
+            if (!Loaded || person == null || Count >= People.Length)
+            {
+                return false;
+            }
+            person.Index = Count;
+            People[Count] = person;
+            Count++;
+            return true;
+        }
+
+        /// <summary>The first person of that origin, met or not, or null.</summary>
         public static SocialPerson ByOrigin(SocialOrigin origin)
         {
-            for (int i = 0; Loaded && i < People.Length; i++)
+            for (int i = 0; Loaded && i < Count; i++)
             {
                 if (People[i] != null && People[i].Origin == origin)
                 {
@@ -73,12 +106,39 @@ namespace RealLifeOverhaul
             return null;
         }
 
+        /// <summary>The first person of that origin not met yet, or null.</summary>
+        public static SocialPerson Unmet(SocialOrigin origin)
+        {
+            for (int i = 0; Loaded && i < Count; i++)
+            {
+                if (People[i] != null && !People[i].Met && People[i].Origin == origin)
+                {
+                    return People[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Whether somebody other than <paramref name="except"/> has that name: each name is one contact on the phone.</summary>
+        public static bool NameTaken(string name, SocialPerson except)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                SocialPerson p = People[i];
+                if (p != null && p != except && string.Equals(p.Name, name, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static int MetCount
         {
             get
             {
                 int count = 0;
-                for (int i = 0; Loaded && i < People.Length; i++)
+                for (int i = 0; Loaded && i < Count; i++)
                 {
                     if (People[i] != null && People[i].Met)
                     {
@@ -94,7 +154,7 @@ namespace RealLifeOverhaul
         {
             get
             {
-                for (int i = 0; Loaded && i < People.Length; i++)
+                for (int i = 0; Loaded && i < Count; i++)
                 {
                     if (People[i] != null && People[i].Together)
                     {
@@ -125,6 +185,7 @@ namespace RealLifeOverhaul
                 if (SaveLines.IsKept(data, KeyMain))
                 {
                     SaveLines.Unreadable(data, KeyPeople, "its record could not be read");
+                    SaveLines.Unreadable(data, KeyMore, "its record could not be read");
                     SaveLines.Unreadable(data, KeyPlan, "its record could not be read");
                     SaveLines.Unreadable(data, KeyOffer, "its record could not be read");
                 }
@@ -134,6 +195,7 @@ namespace RealLifeOverhaul
                 Reset();
                 CastSeed = seed;
                 SocialCatalogue.MakeCast(People, seed, day, daysPerYear, districts);
+                Count = SocialRules.BaseCast;
                 Day = day;
             }
             Loaded = true;
@@ -153,7 +215,42 @@ namespace RealLifeOverhaul
             data[KeyMain] = text.ToString();
 
             text.Length = 0;
-            for (int i = 0; i < People.Length; i++)
+            AppendPeople(text, 0, Math.Min(Count, SocialRules.BaseCast));
+            data[KeyPeople] = text.ToString();
+
+            text.Length = 0;
+            AppendPeople(text, SocialRules.BaseCast, Count);
+            for (int i = 0; i < KeptMore.Count; i++)
+            {
+                text.Append(text.Length > 0 ? Record.ToString() : string.Empty).Append(KeptMore[i]);
+            }
+            if (text.Length > 0)
+            {
+                data[KeyMore] = text.ToString();
+            }
+            else
+            {
+                data.Remove(KeyMore);
+            }
+
+            SocialPlan plan = Plan;
+            data[KeyPlan] = !plan.Active
+                ? string.Empty
+                : string.Join(Field.ToString(), plan.Person.ToString(inv), ((int)plan.Kind).ToString(inv), plan.Time.ToString("F0", inv), Clean(plan.Street),
+                    plan.Number.ToString(inv), Clean(plan.Place), plan.X.ToString("F2", inv), plan.Y.ToString("F2", inv), plan.Z.ToString("F2", inv),
+                    plan.TheirIdea ? "1" : "0", plan.Reminded ? "1" : "0", plan.Checked ? "1" : "0", plan.Arrives.ToString("F0", inv), Clean(plan.ToStreet),
+                    plan.ToNumber.ToString(inv));
+            SocialOffer offer = Offer;
+            data[KeyOffer] = !offer.Active
+                ? string.Empty
+                : string.Join(Field.ToString(), offer.Person.ToString(inv), offer.Kind.ToString(inv), offer.Amount.ToString(inv), offer.Expires.ToString("F0", inv));
+        }
+
+        // One line a person of slots from to to, by slot.
+        private static void AppendPeople(StringBuilder text, int from, int to)
+        {
+            CultureInfo inv = CultureInfo.InvariantCulture;
+            for (int i = from; i < to; i++)
             {
                 SocialPerson p = People[i];
                 if (p == null)
@@ -192,19 +289,6 @@ namespace RealLifeOverhaul
                 text.Append(Field).Append(p.FollowedAt).Append(Field).Append(p.AfterDay).Append(Field).Append((int)p.AfterKind).Append(Field).Append(p.AfterWell ? 1 : 0)
                     .Append(Field).Append(Clean(p.AfterPlace));
             }
-            data[KeyPeople] = text.ToString();
-
-            SocialPlan plan = Plan;
-            data[KeyPlan] = !plan.Active
-                ? string.Empty
-                : string.Join(Field.ToString(), plan.Person.ToString(inv), ((int)plan.Kind).ToString(inv), plan.Time.ToString("F0", inv), Clean(plan.Street),
-                    plan.Number.ToString(inv), Clean(plan.Place), plan.X.ToString("F2", inv), plan.Y.ToString("F2", inv), plan.Z.ToString("F2", inv),
-                    plan.TheirIdea ? "1" : "0", plan.Reminded ? "1" : "0", plan.Checked ? "1" : "0", plan.Arrives.ToString("F0", inv), Clean(plan.ToStreet),
-                    plan.ToNumber.ToString(inv));
-            SocialOffer offer = Offer;
-            data[KeyOffer] = !offer.Active
-                ? string.Empty
-                : string.Join(Field.ToString(), offer.Person.ToString(inv), offer.Kind.ToString(inv), offer.Amount.ToString(inv), offer.Expires.ToString("F0", inv));
         }
 
         /// <summary>The people met as the save holds them, the loaded state untouched: for Flare's faces drawn behind the loading screen.</summary>
@@ -222,16 +306,26 @@ namespace RealLifeOverhaul
                 return;
             }
             var found = new bool[People.Length];
-            int count = 0;
-            foreach (string record in people.Split(Record))
+            if (Peek(people, 0, SocialRules.BaseCast, found, into) != SocialRules.BaseCast)
             {
-                string[] f = record.Split(Field);
-                if (f.Length < 41)
-                {
-                    continue;
-                }
-                int index = Int(f[0]);
-                if (index < 0 || index >= People.Length || found[index] || string.IsNullOrEmpty(f[1]))
+                into.Clear();
+                return;
+            }
+            if (data.TryGetValue(KeyMore, out string more) && !string.IsNullOrEmpty(more))
+            {
+                Peek(more, SocialRules.BaseCast, People.Length, found, into);
+            }
+        }
+
+        // The met of one record's slots from to to into the list; how many people of those slots were read.
+        private static int Peek(string record, int from, int to, bool[] found, List<SocialPerson> into)
+        {
+            int count = 0;
+            foreach (string line in record.Split(Record))
+            {
+                string[] f = line.Split(Field);
+                int index = f.Length >= ReadFields ? Int(f[0]) : -1;
+                if (index < from || index >= to || found[index] || string.IsNullOrEmpty(f[1]))
                 {
                     continue;
                 }
@@ -253,10 +347,7 @@ namespace RealLifeOverhaul
                     into.Add(p);
                 }
             }
-            if (count != People.Length)
-            {
-                into.Clear();
-            }
+            return count;
         }
 
         private static bool Readable(SocialPerson p)
@@ -330,61 +421,31 @@ namespace RealLifeOverhaul
             LastArrestDay = Int(m[10]);
             TestPerson = Int(m[11]);
 
+            // Every one of the first eight, or the cast is not this save's.
             int found = 0;
             foreach (string record in people.Split(Record))
             {
-                string[] f = record.Split(Field);
-                if (f.Length < 41)
+                SocialPerson p = ReadPerson(record.Split(Field), day);
+                if (p != null && p.Index < SocialRules.BaseCast && People[p.Index] == null)
                 {
-                    continue;
+                    People[p.Index] = p;
+                    found++;
                 }
-                int index = Int(f[0]);
-                if (index < 0 || index >= People.Length || People[index] != null || string.IsNullOrEmpty(f[1]))
-                {
-                    continue;
-                }
-                var p = new SocialPerson
-                {
-                    Index = index, Name = f[1], Female = f[2] == "1", Age = Int(f[3]), Seed = Int(f[4]), Origin = (SocialOrigin)Int(f[5]),
-                    Traits = (SocialTrait)Int(f[6]), Job = Int(f[7]), District = Int(f[8]), FreeFrom = Int(f[9]), FreeTo = Int(f[10]), Birthday = Int(f[11]),
-                    Compatible = f[12] == "1", Met = f[13] == "1", MetDay = Int(f[14]), Familiarity = Float(f[15]), Affection = Float(f[16]), Trust = Float(f[17]),
-                    Stage = (SocialStage)Int(f[18]), StageDay = Int(f[19]), MovedIn = f[20] == "1", Drifted = f[21] == "1", Mood = Int(f[22]),
-                    LastContactDay = Int(f[23]), LastCallDay = Int(f[24]), LastTextDay = Int(f[25]), LastOutingDay = Int(f[26]), Shared = Int(f[27]),
-                    Dates = Int(f[28]), Wants = (PlanKind)Int(f[29]), WantsDay = Int(f[30]), LastSaid = f[31], LastTopic = Int(f[32]), AsksInWindow = Int(f[33]),
-                    AskDay = Int(f[34]), Debt = Int(f[35]), DebtDay = Int(f[36]), Loan = Int(f[37]), LoanDue = Int(f[38]), BirthdayYear = Int(f[39])
-                };
-                if (!Readable(p))
-                {
-                    continue;
-                }
-                ReadLook(p, f);
-                p.AgeDay = AgeDayOf(f, day);
-                ReadFollow(p, f);
-                SocialCatalogue.FixLook(p);   // before a later version's origin is read as an old friend below
-                if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
-                {
-                    p.Origin = SocialOrigin.OldFriend;   // a later version's place of meeting: never a number past the tables
-                }
-                foreach (string memory in f[40].Split(','))
-                {
-                    string[] parts = memory.Split(':');
-                    if (parts.Length == 2 && p.Memories.Count < SocialPerson.MaxMemories)
-                    {
-                        p.Memories.Add(new SocialMemory { Code = (MemoryCode)Int(parts[0]), Day = Int(parts[1]) });
-                    }
-                }
-                People[index] = p;
-                found++;
             }
-            if (found != People.Length)
+            if (found != SocialRules.BaseCast)
             {
                 return false;
+            }
+            Count = SocialRules.BaseCast;
+            if (data.TryGetValue(KeyMore, out string more) && !string.IsNullOrEmpty(more))
+            {
+                ReadMore(more, day);
             }
 
             if (data.TryGetValue(KeyPlan, out string planText) && !string.IsNullOrEmpty(planText))
             {
                 string[] f = planText.Split(Field);
-                if (f.Length >= 15 && Int(f[0]) >= 0 && Int(f[0]) < People.Length)
+                if (f.Length >= 15 && Known(Int(f[0])))
                 {
                     Plan.Person = Int(f[0]);
                     Plan.Kind = (PlanKind)Int(f[1]);
@@ -406,7 +467,7 @@ namespace RealLifeOverhaul
             if (data.TryGetValue(KeyOffer, out string offerText) && !string.IsNullOrEmpty(offerText))
             {
                 string[] f = offerText.Split(Field);
-                if (f.Length >= 4 && Int(f[0]) >= 0 && Int(f[0]) < People.Length)
+                if (f.Length >= 4 && Known(Int(f[0])))
                 {
                     Offer.Person = Int(f[0]);
                     Offer.Kind = Int(f[1]);
@@ -415,6 +476,79 @@ namespace RealLifeOverhaul
                 }
             }
             return true;
+        }
+
+        // The people after the first eight. A line that cannot be read is kept as it was read, and its slot stays taken.
+        private static void ReadMore(string more, int day)
+        {
+            foreach (string line in more.Split(Record))
+            {
+                if (line.Length == 0)
+                {
+                    continue;
+                }
+                string[] f = line.Split(Field);
+                SocialPerson p = ReadPerson(f, day);
+                if (p != null && p.Index >= SocialRules.BaseCast && People[p.Index] == null)
+                {
+                    People[p.Index] = p;
+                    Count = Math.Max(Count, p.Index + 1);
+                    continue;
+                }
+                KeptMore.Add(line);
+                int slot = Int(f[0]);
+                if (slot >= SocialRules.BaseCast && slot < People.Length)
+                {
+                    Count = Math.Max(Count, slot + 1);
+                }
+            }
+        }
+
+        private static bool Known(int index) => index >= 0 && index < Count && People[index] != null;
+
+        // A person's line as every version has written it, and what later fields it has; null if it cannot be read.
+        private static SocialPerson ReadPerson(string[] f, int day)
+        {
+            if (f.Length < ReadFields)
+            {
+                return null;
+            }
+            int index = Int(f[0]);
+            if (index < 0 || index >= People.Length || string.IsNullOrEmpty(f[1]))
+            {
+                return null;
+            }
+            var p = new SocialPerson
+            {
+                Index = index, Name = f[1], Female = f[2] == "1", Age = Int(f[3]), Seed = Int(f[4]), Origin = (SocialOrigin)Int(f[5]),
+                Traits = (SocialTrait)Int(f[6]), Job = Int(f[7]), District = Int(f[8]), FreeFrom = Int(f[9]), FreeTo = Int(f[10]), Birthday = Int(f[11]),
+                Compatible = f[12] == "1", Met = f[13] == "1", MetDay = Int(f[14]), Familiarity = Float(f[15]), Affection = Float(f[16]), Trust = Float(f[17]),
+                Stage = (SocialStage)Int(f[18]), StageDay = Int(f[19]), MovedIn = f[20] == "1", Drifted = f[21] == "1", Mood = Int(f[22]),
+                LastContactDay = Int(f[23]), LastCallDay = Int(f[24]), LastTextDay = Int(f[25]), LastOutingDay = Int(f[26]), Shared = Int(f[27]),
+                Dates = Int(f[28]), Wants = (PlanKind)Int(f[29]), WantsDay = Int(f[30]), LastSaid = f[31], LastTopic = Int(f[32]), AsksInWindow = Int(f[33]),
+                AskDay = Int(f[34]), Debt = Int(f[35]), DebtDay = Int(f[36]), Loan = Int(f[37]), LoanDue = Int(f[38]), BirthdayYear = Int(f[39])
+            };
+            if (!Readable(p))
+            {
+                return null;
+            }
+            ReadLook(p, f);
+            p.AgeDay = AgeDayOf(f, day);
+            ReadFollow(p, f);
+            SocialCatalogue.FixLook(p);   // before a later version's origin is read as an old friend below
+            if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
+            {
+                p.Origin = SocialOrigin.OldFriend;   // a later version's place of meeting: never a number past the tables
+            }
+            foreach (string memory in f[40].Split(','))
+            {
+                string[] parts = memory.Split(':');
+                if (parts.Length == 2 && p.Memories.Count < SocialPerson.MaxMemories)
+                {
+                    p.Memories.Add(new SocialMemory { Code = (MemoryCode)Int(parts[0]), Day = Int(parts[1]) });
+                }
+            }
+            return p;
         }
 
         // Nothing a record is split on may be inside a field.

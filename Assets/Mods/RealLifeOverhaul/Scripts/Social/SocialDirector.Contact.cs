@@ -13,6 +13,8 @@ namespace RealLifeOverhaul
     {
         private static readonly float[] WealthTiers = { 10000f, 50000f, 250000f, 1000000f, 5000000f };   // money they react to
 
+        private static readonly int[] CircleScratch = new int[SocialRules.CircleSize];
+
         private bool _reactArrest;
         private int _reactedCrashDay, _reactedBreakInDay;
 
@@ -23,7 +25,7 @@ namespace RealLifeOverhaul
                 return;
             }
             SocialState.LastArrestDay = SocialLife.Day;
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson person = SocialState.Get(i);
                 if (person == null || !person.Met)
@@ -83,7 +85,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (Random.value > 0.09f + 0.02f * SocialState.MetCount)
+            if (Random.value > SocialRules.TextChance(CircleCount(day)))
             {
                 return;
             }
@@ -102,11 +104,11 @@ namespace RealLifeOverhaul
             {
                 AskFavour(person, real, -1);
             }
-            else if (roll < 0.58f && person.Stage >= SocialStage.Friend && Settings.SocialMeetings && day - SocialState.LastMeetDay >= 2 && NextStranger() != null
-                     && _introStranger == null)
+            else if (roll < 0.58f && person.Stage >= SocialStage.Friend && Settings.SocialMeetings && day - SocialState.LastMeetDay >= SocialRules.MeetGapDays
+                     && _introStranger == null && AnyStranger())
             {
                 SocialPerson stranger = NextStranger();
-                if (SocialLife.SendText(person, SocialLines.Pick(SocialCatalogue.TextIntro), SocialLife.Data(person, "other", stranger.Name)))
+                if (stranger != null && SocialLife.SendText(person, SocialLines.Pick(SocialCatalogue.TextIntro), SocialLife.Data(person, "other", stranger.Name)))
                 {
                     QueueIntroduction(person, stranger);
                 }
@@ -119,15 +121,16 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Somebody awake who has not texted today; the closer, the likelier.
+        // Somebody of the circle awake who has not texted today; the closer, the likelier.
         private static SocialPerson Contactor(int hour)
         {
             float total = 0f;
             int day = SocialLife.Day;
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            int bar = CircleBar();
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
-                if (p != null && p.Met && !p.Drifted && !p.Asleep(hour) && p.LastTextDay != day)
+                if (p != null && Reachable(p, hour, day, bar))
                 {
                     total += Keenness(p);
                 }
@@ -137,10 +140,10 @@ namespace RealLifeOverhaul
                 return null;
             }
             float roll = Random.value * total;
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
-                if (p != null && p.Met && !p.Drifted && !p.Asleep(hour) && p.LastTextDay != day)
+                if (p != null && Reachable(p, hour, day, bar))
                 {
                     roll -= Keenness(p);
                     if (roll <= 0f)
@@ -150,6 +153,26 @@ namespace RealLifeOverhaul
                 }
             }
             return null;
+        }
+
+        private static bool Reachable(SocialPerson p, int hour, int day, int bar)
+        {
+            return !p.Drifted && !p.Asleep(hour) && p.LastTextDay != day && SocialRules.InCircle(p, day, bar);
+        }
+
+        // The closeness the closest people of the cast have (SocialRules.CircleBar). One pass; nothing allocated.
+        private static int CircleBar() => SocialRules.CircleBar(SocialState.People, SocialState.Count, CircleScratch);
+
+        // How many of those met get in touch of their own accord.
+        private static int CircleCount(int day)
+        {
+            int bar = CircleBar(), count = 0;
+            for (int i = 0; i < SocialState.Count; i++)
+            {
+                SocialPerson p = SocialState.Get(i);
+                count += p != null && SocialRules.InCircle(p, day, bar) ? 1 : 0;
+            }
+            return count;
         }
 
         private static float Keenness(SocialPerson p)
@@ -162,7 +185,7 @@ namespace RealLifeOverhaul
         // and one a person a day; a text from any feature today counts). One an hour at most; true when one was sent.
         private static bool NextDayText(int day, int hour)
         {
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
                 if (p == null || !p.Met || p.AfterDay <= 0)
@@ -283,7 +306,8 @@ namespace RealLifeOverhaul
             SocialPerson mom = SocialState.ByOrigin(SocialOrigin.Family);
             bool reminded = false;
             ISocialLaw law = SocialLinks.Law;
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            int bar = CircleBar();
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
                 if (p == null || !p.Met)
@@ -331,9 +355,13 @@ namespace RealLifeOverhaul
                     }
                     if (!p.Drifted && !p.IsFamily && p.Stage == SocialStage.Acquaintance && p.Familiarity < SocialRules.DriftFamiliarity && day - p.LastContactDay > 10)
                     {
+                        bool told = SocialRules.InCircle(p, day, bar);   // somebody the player hardly knew goes without a notice
                         p.Drifted = true;
-                        SocialLife.Toast(NotificationType.Info, "reallife_social_drifted", SocialLife.Data(p), 9f);
-                        Logger?.Info("Social: " + p.Name + " has drifted away.");
+                        if (told)
+                        {
+                            SocialLife.Toast(NotificationType.Info, "reallife_social_drifted", SocialLife.Data(p), 9f);
+                        }
+                        Logger?.Info("Social: " + p.Name + " has drifted away" + (told ? "." : ", quietly (not one of the closest)."));
                     }
                     else if (!p.Drifted && p.Stage >= SocialStage.Friend && day - p.LastContactDay == SocialRules.Grace(p) + 2)
                     {
@@ -396,7 +424,7 @@ namespace RealLifeOverhaul
                 }
 
                 // Their birthday today (they say so), or a friend's tomorrow (Mom says so).
-                if (Settings.SocialContact && p.Birthday == today && p.BirthdayYear != (day - 1) / perYear)
+                if (Settings.SocialContact && p.Birthday == today && p.BirthdayYear != (day - 1) / perYear && SocialRules.InCircle(p, day, bar))
                 {
                     SocialLife.SendText(p, SocialLines.Pick(SocialCatalogue.TextBirthdayOwn), SocialLife.Data(p), true);
                 }

@@ -62,6 +62,28 @@ namespace RealLifeOverhaul
             "Yoon", "Marchetti", "Dupree", "Kaplan"
         };
 
+        // More names for the people met after the first eight, who also draw on the lists above. Kept apart from them, so
+        // the first eight are dealt as they always were.
+        internal static readonly string[] LaterWomen =
+        {
+            "Abigail", "Amara", "Astrid", "Beatriz", "Camille", "Daphne", "Elena", "Esme", "Fatima", "Gemma", "Harriet", "Ingrid", "Isla", "Jasmine",
+            "Kaia", "Lucia", "Maeve", "Mira", "Naomi", "Olivia", "Paloma", "Petra", "Rania", "Rhea", "Saoirse", "Selma", "Talia", "Thandi", "Ursula",
+            "Valeria", "Wendy", "Ximena", "Yasmin", "Zara", "Anya", "Clara", "Elif", "Freya", "Lorna", "Noor"
+        };
+        internal static readonly string[] LaterMen =
+        {
+            "Aaron", "Ade", "Ali", "Ben", "Bruno", "Caleb", "Dario", "Eamon", "Elias", "Femi", "Gareth", "Hassan", "Ivan", "Jonah", "Kenji", "Lars",
+            "Leon", "Mateo", "Mikhail", "Nate", "Oscar", "Pablo", "Rafael", "Rohan", "Sean", "Silas", "Tomas", "Umar", "Vikram", "Wesley", "Xavier",
+            "Yusuf", "Zane", "Arjun", "Callum", "Diego", "Gabriel", "Henrik", "Joel", "Stefan"
+        };
+        internal static readonly string[] LaterSurnames =
+        {
+            "Abbott", "Adeyemi", "Almeida", "Andersen", "Bauer", "Bianchi", "Carver", "Chen", "Costa", "Dalton", "Dimitriou", "Ellison", "Eze",
+            "Fischer", "Garrow", "Gupta", "Hartley", "Hoang", "Jensen", "Kaur", "Keane", "Larsen", "Lowell", "Mahmoud", "Mendes", "Moreau", "Navarro",
+            "Osei", "Park", "Pereira", "Ramsey", "Rinaldi", "Rossi", "Santos", "Schmidt", "Sato", "Thorne", "Ueda", "Varga", "Walsh", "Weber",
+            "Wolfe", "Xu", "Yilmaz", "Zielinski", "Kim", "Lopez", "Okoro"
+        };
+
         /// <summary>What they do for a living, as it is said after "a".</summary>
         public static readonly string[] Jobs =
         {
@@ -132,12 +154,17 @@ namespace RealLifeOverhaul
             new[] { SocialTrait.Punctual, SocialTrait.Careful }, new[] { SocialTrait.Late, SocialTrait.Homebody }, new[] { SocialTrait.Flaky, SocialTrait.Generous }
         };
 
-        /// <summary>Rolls the cast of a new save: Mom, Alex and one person to be met at each place. The same cast for a seed.</summary>
+        /// <summary>
+        /// Rolls the first <see cref="SocialRules.BaseCast"/> people of a new save into the start of
+        /// <paramref name="people"/>: Mom, Alex and one person to be met at each place. The same people for a seed, whatever
+        /// the array's length; the slots after them are left as they are.
+        /// </summary>
         public static void MakeCast(SocialPerson[] people, int seed, int day, int daysPerYear, int districts)
         {
             var random = new Random(seed);
             daysPerYear = Math.Max(8, daysPerYear);
             districts = Math.Max(1, districts);
+            int count = Math.Min(people.Length, SocialRules.BaseCast);
 
             // Dealt without replacement: no two share a first name or a surname.
             int[] first = Shuffled(random, Math.Min(Women.Length, Men.Length));
@@ -146,7 +173,7 @@ namespace RealLifeOverhaul
             int[] jobs = Shuffled(random, Jobs.Length - 1);   // the last job is "retired": Mom's
             int romances = 0;
 
-            for (int i = 0; i < people.Length; i++)
+            for (int i = 0; i < count; i++)
             {
                 var origin = (SocialOrigin)i;
                 var p = new SocialPerson { Index = i, Origin = origin, Seed = random.Next(1, int.MaxValue) };
@@ -201,7 +228,7 @@ namespace RealLifeOverhaul
                         p.FreeFrom = shape == 0 ? 17 : shape == 1 ? 14 : 11;
                         p.FreeTo = shape == 0 ? 23 : shape == 1 ? 22 : 18;
                         // About half could become more than friends, and never fewer than two.
-                        p.Compatible = (p.Age < 50 && random.Next(2) == 0) || (romances < 2 && i >= people.Length - 2);
+                        p.Compatible = (p.Age < 50 && random.Next(2) == 0) || (romances < 2 && i >= SocialRules.BaseCast - 2);
                         if (p.Compatible)
                         {
                             romances++;
@@ -227,7 +254,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            for (int i = 0; i < people.Length; i++)
+            for (int i = 0; i < Math.Min(people.Length, SocialRules.BaseCast); i++)
             {
                 SocialPerson p = people[i];
                 if (i != gym && p != null && p.Origin != SocialOrigin.Family && p.Job == trainer)
@@ -235,6 +262,88 @@ namespace RealLifeOverhaul
                     p.Job = jobs[gym];
                 }
             }
+        }
+
+        private const int NameTries = 24;   // rolled names tried for one nobody has, before the lists are walked in turn
+
+        /// <summary>
+        /// Somebody new for slot <paramref name="index"/> past the first eight, to be met at <paramref name="origin"/>: a woman
+        /// (<paramref name="sex"/> 1), a man (0) or either (-1), with a full name none of the first <paramref name="count"/>
+        /// of <paramref name="people"/> has. Everything else is rolled from the cast's seed and the slot, so the same slot of
+        /// a save is the same person on every machine. Never the gym's trainer or retired: the first eight hold those.
+        /// Allocates the person and a few name strings; made once, when somebody is about to be met.
+        /// </summary>
+        public static SocialPerson MakeNew(int index, SocialOrigin origin, int sex, int castSeed, int day, int daysPerYear, int districts,
+            SocialPerson[] people, int count)
+        {
+            var random = new Random(SocialRules.SlotSeed(castSeed, index));
+            daysPerYear = Math.Max(8, daysPerYear);
+            districts = Math.Max(1, districts);
+            bool rolledFemale = random.Next(2) == 0;
+            var p = new SocialPerson { Index = index, Origin = origin, Seed = random.Next(1, int.MaxValue), Female = sex < 0 ? rolledFemale : sex == 1 };
+            SocialTrait[] pair = TraitPairs[random.Next(TraitPairs.Length)];
+            p.Traits = pair[0] | pair[1];
+            if (origin == SocialOrigin.Gym)
+            {
+                p.Traits |= SocialTrait.Sporty;
+            }
+            p.District = random.Next(districts);
+            p.Birthday = 1 + random.Next(daysPerYear);
+            p.Wants = (PlanKind)random.Next((int)PlanKind.Walk + 1);
+            p.WantsDay = day;
+            p.Age = 22 + random.Next(34);
+            int trainer = Array.IndexOf(Jobs, "reallife_social_job_trainer");
+            p.Job = random.Next(Jobs.Length - 2);   // neither retired (the last) nor the trainer, skipped below
+            p.Job += p.Job >= trainer ? 1 : 0;
+            int shape = p.Has(SocialTrait.NightOwl) ? 2 : random.Next(3);
+            p.FreeFrom = shape == 0 ? 17 : shape == 1 ? 14 : 11;
+            p.FreeTo = shape == 0 ? 23 : shape == 1 ? 22 : 18;
+            p.Compatible = p.Age < 50 && random.Next(2) == 0;
+            p.Name = FreeName(random, p.Female, people, count);
+            p.LastContactDay = day;
+            p.StageDay = day;
+            p.AgeDay = day;
+            return p;
+        }
+
+        // A first name and a surname from both lists that nobody of the cast has yet.
+        private static string FreeName(Random random, bool female, SocialPerson[] people, int count)
+        {
+            string[] firsts = female ? Women : Men, laterFirsts = female ? LaterWomen : LaterMen;
+            int firstCount = firsts.Length + laterFirsts.Length, lastCount = Surnames.Length + LaterSurnames.Length;
+            for (int t = 0; t < NameTries; t++)
+            {
+                string name = Pick(firsts, laterFirsts, random.Next(firstCount)) + " " + Pick(Surnames, LaterSurnames, random.Next(lastCount));
+                if (!Taken(people, count, name))
+                {
+                    return name;
+                }
+            }
+            int start = random.Next(firstCount * lastCount);
+            for (int k = 0; k < firstCount * lastCount; k++)
+            {
+                int at = (start + k) % (firstCount * lastCount);
+                string name = Pick(firsts, laterFirsts, at / lastCount) + " " + Pick(Surnames, LaterSurnames, at % lastCount);
+                if (!Taken(people, count, name))
+                {
+                    return name;
+                }
+            }
+            return Pick(firsts, laterFirsts, 0) + " " + Pick(Surnames, LaterSurnames, 0);   // more people than names: never with these lists
+        }
+
+        private static string Pick(string[] first, string[] then, int at) => at < first.Length ? first[at] : then[at - first.Length];
+
+        private static bool Taken(SocialPerson[] people, int count, string name)
+        {
+            for (int i = 0; i < Math.Min(count, people.Length); i++)
+            {
+                if (people[i] != null && string.Equals(people[i].Name, name, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Mom and Alex get the look that is the same in every game (Phone/Contacts/FixedLooks). True if anything changed.</summary>
