@@ -396,7 +396,6 @@ namespace RealLifeOverhaul
             }
         }
 
-
         /// <summary>What a stage 1 engine tune costs on this kind of car; every performance part is a multiple of it.</summary>
         public static int PartBase(CarKind kind)
         {

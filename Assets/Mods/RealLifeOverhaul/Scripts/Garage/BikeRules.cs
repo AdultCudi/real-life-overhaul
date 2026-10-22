@@ -38,7 +38,6 @@ namespace RealLifeOverhaul
         public const float BackMost = 1.0f;             // m/s backwards, a slow walk
         public const float WalkingPace = 1.4f;          // m/s, 5 km/h
 
-
         /// <summary>
         /// The air's hold, N per (m/s) squared, that settles steady pedalling at the cruising speed once the tyres'
         /// rolling (N) is paid.
@@ -76,7 +75,6 @@ namespace RealLifeOverhaul
         {
             return drag * speed * speed;
         }
-
 
         public enum Pose { Ride, Coast, Stand }
 
@@ -139,7 +137,6 @@ namespace RealLifeOverhaul
             return shown + (target - shown) * (1f - (float)Math.Exp(-dt / seconds));
         }
 
-
         public const float LeanMostDeg = 33f;           // the game's scooter's full lean
         public const float FullLeanAt = 10f;            // m/s (36 km/h) from which it may lean fully
         public const float LeanRateSlow = 90f;          // degrees a second at a standstill (the game's scooter: 220)
@@ -158,7 +155,6 @@ namespace RealLifeOverhaul
             float fast = speed < 0f ? -speed : speed;
             return LeanRateSlow + (LeanRateFast - LeanRateSlow) * Clamp01(fast / FullLeanAt);
         }
-
 
         /// <summary>A box in the bike's own space (metres; origin on the road, +Z forwards, +Y up): its middle and its size.</summary>
         public struct Box
@@ -255,7 +251,6 @@ namespace RealLifeOverhaul
             sy = Math.Abs(m10) * x + Math.Abs(m11) * y + Math.Abs(m12) * z;
             sz = Math.Abs(m20) * x + Math.Abs(m21) * y + Math.Abs(m22) * z;
         }
-
 
         public const float LeastInertia = 0.001f;   // kg m2: a component at or under this is the engine's lock on a frozen turn, not a body's own
 

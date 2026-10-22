@@ -8,29 +8,28 @@ namespace RealLifeOverhaul
     {
         public BikeKind Kind;
         public string Name;            // locale key
-        public string Prop;            // the modelled body: this id is the whole bike as one mesh, and <id>_frame, _fork, ... are its parts (PropAssets/README.md, "Garage")
-        public string Ride, Coast, Stand;   // the rider's clips by what they are doing (CityAssets/README.md, "Garage"); Coast is a bicycle's only
+        public string Prop;            // the whole bike as one mesh; <id>_frame, _fork, ... are its parts (PropAssets/README.md, "Garage")
+        public string Ride, Coast, Stand;   // the rider's clips (CityAssets/README.md, "Garage"); Coast is a bicycle's only
         public bool Motor;
-        public int Price;                // at the start's prices: what it costs is Cost
+        public int Price;              // at the start's prices: Cost is today's
 
-        /// <summary>What it costs today (Core/Prices).</summary>
         public int Cost => Prices.At(Price);
-        public int Colour;             // 0xRRGGBB of the frame or tank: the colour the modelled bike is painted in the atlas, and the tint of its paint parts
+        public int Colour;             // 0xRRGGBB of the frame or tank, as painted in the atlas, and the tint of its paint parts
 
-        // a bicycle: human-powered
-        public BikeRules.Ride Push;    // the rider's push (BikeRules: checked offline)
-        public float EnergyPerSecond;  // of pedalling
+        // a bicycle
+        public BikeRules.Ride Push;    // the rider's push (BikeRules)
+        public float EnergyPerSecond;  // energy a second of pedalling
 
-        public float CruiseKmh => Push.CruiseKmh;   // what steady pedalling holds on the flat
+        public float CruiseKmh => Push.CruiseKmh;   // km/h
 
         // a motorbike: targets for the car model
         public float Seconds;          // 0-100 km/h
-        public float TopKmh;
+        public float TopKmh;           // km/h
 
         // where the rider meets it, in the vehicle's own space (metres, origin on the ground, +Z forwards)
         public float RearZ, FrontZ, WheelRadius;
         public Vector2 Seat;           // (height of the seat's top, z)
-        public Vector3 Grip;           // (x half width, height, z) of the middle of a hand grip, which lies along X: per model, measured on its bar by PropAssets/scripts/checks_garage.py
+        public Vector3 Grip;           // (x half width, height, z) of a grip's middle, along X; measured per model by PropAssets/scripts/checks_garage.py
         public Vector2 Crank;          // bicycle: (height, z) of the bottom bracket
         public Vector3 Peg;            // motorbike: (x half width, height, z) of a footpeg
         public Vector2 HeadTop, HeadBottom;   // the steering axis: (height, z) of its two ends
@@ -41,8 +40,8 @@ namespace RealLifeOverhaul
     /// <summary>The four two-wheelers.</summary>
     public static class BikeCatalogue
     {
-        public const float CrankLength = 0.17f;
-        public const float PedalOut = 0.13f;      // a pedal's middle from the centre line
+        public const float CrankLength = 0.17f;   // metres
+        public const float PedalOut = 0.13f;      // metres: a pedal's middle from the centre line
         public static int HelmetPrice => Prices.At(120);
         public static int DockFee => Prices.At(15);            // a hire from a bike-share dock, until the end of the next day
         public static int LateFee => Prices.At(25);            // a hired bicycle not brought back
@@ -51,7 +50,7 @@ namespace RealLifeOverhaul
         public static int ExhaustFine => Prices.At(120);
         public const float EnergyFloor = 14f;     // pedalling never takes the player below this (the game faints them near zero)
 
-        // The game's scooter, as its prefab is built: where its two wheel controllers are.
+        // The game's scooter prefab: where its two wheel controllers are (metres).
         public const float ScooterRearZ = -0.651f;
         public const float ScooterFrontZ = 0.723f;
 
@@ -70,7 +69,7 @@ namespace RealLifeOverhaul
                 Kind = BikeKind.RoadBicycle, Name = "reallife_bike_name_road", Prop = "bicycle_road", Price = 900, Colour = 0x9E090A,
                 Ride = "cycle_ride_road", Coast = "cycle_coast_road", Stand = "cycle_stand_road",
                 Push = BikeRules.Road, EnergyPerSecond = 0.08f,
-                // the grips are the TOPS of its drop bar, either side of the stem: the one part of a drop bar that lies along X
+                // the grips are the tops of its drop bar, either side of the stem: the one part of it that lies along X
                 RearZ = -0.49f, FrontZ = 0.55f, WheelRadius = 0.34f, Seat = new Vector2(0.95f, -0.29f), Grip = new Vector3(0.13f, 1.00f, 0.42f),
                 Crank = new Vector2(0.28f, -0.07f), HeadTop = new Vector2(0.99f, 0.36f), HeadBottom = new Vector2(0.72f, 0.43f)
             },
@@ -278,27 +277,17 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The bodies the two-wheelers wear. A modelled body from the prop bundle when it has one
-    /// (<c>bicycle_city</c>, <c>bicycle_road</c>, <c>motorbike_standard</c>, <c>motorbike_sport</c>): put
-    /// together from its parts (<c>_frame</c>, <c>_fork</c>, <c>_wheel</c> or <c>_wheel_front</c> and
-    /// <c>_wheel_rear</c>, <c>_crank</c>, <c>_pedal</c>), each hung on the object that turns it, so that the
-    /// wheels spin, the cranks go round with the pedals level and the bars and front wheel steer; what is
-    /// painted in the bike's colour is a part of its own on a neutral swatch (<c>_frame_paint</c>,
-    /// <c>_fork_paint</c>) drawn with <see cref="PropLibrary.Tinted"/>, one shared material a colour. A bike
-    /// that only stands on show in the model's own colour is the whole model as one mesh instead (one draw
-    /// call). Until the bundle has a model, a stand-in built here from tubes, rings and boxes that still
-    /// reads as what it is: a diamond frame, two spoked wheels, handlebar, saddle, cranks and pedals; or a
-    /// tank, seat, engine, forks, exhaust and fat tyres. Each stand-in is a few shared meshes in three
-    /// colours (paint, black, metal), made once per kind; a bike in the world is about a dozen renderers
-    /// with nothing of their own. The parts that move are separate objects: the steering assembly, the two
-    /// wheels, the crank. Nothing here runs per frame: <see cref="BikeMount"/> turns them, and only while ridden.
+    /// The bodies the two-wheelers wear. A modelled body from the prop bundle, put together from its parts each on the
+    /// object that turns it (wheels spin, cranks go round with the pedals level, bars steer), the paint parts drawn
+    /// with <see cref="PropLibrary.Tinted"/>; a bike only on show in its own colour is the one whole mesh. Without the
+    /// model, a stand-in of tubes, rings and boxes: a few shared meshes in three colours made once per kind. Nothing
+    /// runs per frame: <see cref="BikeMount"/> turns the parts, only while ridden.
     /// </summary>
     public sealed class BikeBody
     {
         private const int Paint = 0, Black = 1, Metal = 2;
 
-        // The neutral swatch the paint parts are modelled on (the atlas's "garage_white"): a tint is divided by
-        // it, so that what is drawn is the colour asked for.
+        // The neutral swatch the paint parts are modelled on (the atlas's "garage_white"): a tint is divided by it.
         private static readonly Color PaintBase = new Color(0.90f, 0.90f, 0.88f);
 
         private sealed class Meshes
@@ -325,8 +314,8 @@ namespace RealLifeOverhaul
         public bool Modelled;
 
         /// <summary>
-        /// Builds a body under a parent, standing on the parent's origin and facing its +Z. colour is 0xRRGGBB,
-        /// or negative for the model's own. still: it only stands on show and nothing of it will ever turn.
+        /// Builds a body under a parent, on its origin facing +Z. colour is 0xRRGGBB, or negative for the model's own;
+        /// still: it only stands on show and never turns.
         /// </summary>
         public static BikeBody Build(BikeDef def, Transform parent, int colour, bool still = false)
         {
@@ -346,10 +335,9 @@ namespace RealLifeOverhaul
             body.HandLeft = Child("Left Hand", body.Steer, new Vector3(-def.Grip.x, def.Grip.y, def.Grip.z) - headTop);
             body.HandRight = Child("Right Hand", body.Steer, new Vector3(def.Grip.x, def.Grip.y, def.Grip.z) - headTop);
 
-            // A modelled body. In parts whenever it may move or is another colour than the model's; as the one
-            // complete mesh when it only stands on show in its own colour, or when the bundle has no parts (an older
-            // one): its wheels do not turn then and its bars do not steer. The rider's hands and feet are placed
-            // the same either way.
+            // In parts whenever it may move or is not the model's colour; the one whole mesh when it only stands on
+            // show in its own colour or the bundle has no parts (an older one), so its wheels and bars do not move. The
+            // hands and feet go the same either way.
             int rgb = colour >= 0 ? colour : def.Colour;
             bool parts = HasParts(def);
             if ((!parts || (still && rgb == def.Colour)) && PropLibrary.Has(def.Prop)
@@ -398,10 +386,9 @@ namespace RealLifeOverhaul
                        : PropLibrary.Has(id + "_wheel_front") && PropLibrary.Has(id + "_wheel_rear"));
         }
 
-        // The modelled parts, each on the object BikeMount turns: frame on the root, fork on the steering assembly
-        // (its pivot is the top of the steering axis), a wheel on each axle (the front one a child of the fork),
-        // the crank set on the bottom bracket, a pedal either side kept level by Pedals. The paint parts are the
-        // same pivots as frame and fork, in the tint. Nine renderers at most, all shared meshes and materials.
+        // The modelled parts, each on the object BikeMount turns: the fork's pivot is the top of the steering axis, the
+        // front wheel a child of the fork, the crank set on the bottom bracket, the pedals kept level by Pedals. Nine
+        // renderers at most, all shared.
         private bool Assemble(BikeDef def, Transform root, Vector3 headTop, int rgb)
         {
             Color wanted = GarageCar.FromRgb(rgb);
@@ -433,7 +420,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // One part, if the bundle has it (a bike need not have every paint part: the road bicycle's fork is black).
+        // One part, if the bundle has it (not every bike has every paint part: the road bicycle's fork is black).
         private static Transform Part(string id, Transform parent, Material tint)
         {
             if (!PropLibrary.Has(id) || !PropLibrary.TryGet(id, out Mesh mesh, out Material atlas) || mesh == null || atlas == null)
@@ -461,7 +448,7 @@ namespace RealLifeOverhaul
             return new Vector3(side * BikeCatalogue.PedalOut, def.Crank.x + Mathf.Sin(angle) * BikeCatalogue.CrankLength, def.Crank.y + Mathf.Cos(angle) * BikeCatalogue.CrankLength);
         }
 
-        /// <summary>A helmet as its own object (it follows the rider's head; it is never put on the character's bones).</summary>
+        /// <summary>A helmet as its own object: it follows the rider's head, never put on the character's bones.</summary>
         public static GameObject Helmet(Transform parent)
         {
             if (!Shapes.Available)
@@ -548,8 +535,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the stand-ins
-
         private static Meshes Make(BikeDef def)
         {
             var meshes = new Meshes();
@@ -591,7 +576,6 @@ namespace RealLifeOverhaul
             Vector3 rear = P(0f, r, def.RearZ);
             Vector3 front = P(0f, r, def.FrontZ);
 
-            // the frame
             paint.Tube(crank, cluster, tube);
             paint.Tube(cluster, Vector3.Lerp(headBottom, headTop, 0.85f), tube);
             paint.Tube(crank, Vector3.Lerp(headBottom, headTop, 0.12f), tube * 1.15f);

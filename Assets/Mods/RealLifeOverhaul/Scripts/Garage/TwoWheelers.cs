@@ -5,9 +5,7 @@ using BAModAPI;
 using Helpers;
 using Localizor;
 using RealLifeOverhaul.GameUi;
-using UI.MiniMenu;
 using UI.Notification;
-using UI.Smartphone;
 using UnityEngine;
 using Vehicles.VehicleTypes;
 

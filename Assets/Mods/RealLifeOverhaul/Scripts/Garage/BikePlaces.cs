@@ -61,7 +61,6 @@ namespace RealLifeOverhaul
             _owner = owner;
         }
 
-
         public int Count => _places.Count;
 
         /// <summary>Every place, for the city map (World/MapLinks). Read only.</summary>
@@ -510,7 +509,6 @@ namespace RealLifeOverhaul
             return best;
         }
 
-
         /// <summary>Once a second: shows what is near the player and hides the rest, building at most one place a call.</summary>
         public void Tick(Vector3 player, bool on)
         {
@@ -588,7 +586,6 @@ namespace RealLifeOverhaul
             _stands = null;
             _found = false;
         }
-
 
         private void Dress(BikePlace place)
         {

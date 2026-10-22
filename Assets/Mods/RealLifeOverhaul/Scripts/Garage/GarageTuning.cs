@@ -310,7 +310,6 @@ namespace RealLifeOverhaul
             }
         }
 
-
         /// <summary>
         /// What this car does with a build on it, by the model: 0-100 and top speed while CarTuning drives it, and the
         /// stop from 100 km/h (by the handling's own model with car handling on). Runs the sums: for a click in the
@@ -403,7 +402,6 @@ namespace RealLifeOverhaul
             }
             return figures;
         }
-
 
         /// <summary>Reads the car into <see cref="Physics"/>. Returns why the model cannot drive it, or null.</summary>
         private static string Read(NwhVehicle vehicle, Rigidbody body, out int firstForward)
