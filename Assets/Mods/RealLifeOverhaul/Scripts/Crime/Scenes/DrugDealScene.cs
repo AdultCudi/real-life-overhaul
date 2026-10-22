@@ -3,9 +3,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Two people standing a little too close in a quiet spot, something changing hands. An
-    /// officer breaks it up and both run (one may not get far), the officer finds nothing worth
-    /// the paperwork, or nobody comes and they simply part.
+    /// Two people standing too close, something changing hands: an officer breaks it up and both run (one may be caught),
+    /// the officer finds nothing, or nobody comes and they part.
     /// </summary>
     internal sealed class DrugDealScene : CrimeScene
     {
@@ -69,8 +68,7 @@ namespace RealLifeOverhaul
                     }
                     else if (!Is("nothing") && Within(Cop, First, 14f))
                     {
-                        // Seen coming: one each way.
-                        First.Quiet();
+                        First.Quiet();   // the officer is seen coming: one runs each way
                         Second.Quiet();
                         RunFor(First, Cop.Position);
                         Flee(Second, First.Position);
@@ -129,7 +127,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Their separate ways, at a walk.
         private void Part(float now, string ending)
         {
             First.Quiet();

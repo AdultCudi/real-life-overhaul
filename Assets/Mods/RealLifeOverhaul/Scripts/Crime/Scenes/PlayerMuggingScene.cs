@@ -7,21 +7,18 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The player is mugged: at night, on foot, somebody steps out and wants their money. They
-    /// choose. Handing it over costs a capped share of the cash they carry and nothing else.
-    /// Refusing is a coin toss between the mugger losing their nerve and the player being hurt
-    /// (the same injury life events give) and losing a little anyway. Walking briskly away
-    /// before the mugger reaches them works too. With Permadeath on the demand says what refusing
-    /// can cost, the first time it ends hurt is a near miss, and after that a hurt may end the life.
+    /// The player is mugged at night on foot. Handing it over costs a capped share of the cash; refusing is a coin toss
+    /// between the mugger losing their nerve and the player hurt and robbed of a little anyway; walking away in time works
+    /// too. With Permadeath on, the first hurt is a near miss and a later one may end the life.
     /// </summary>
     internal sealed class PlayerMuggingScene : CrimeScene
     {
         private const int Approach = 0, Demand = 1, Getaway = 2;
-        internal const float Share = 0.15f;
-        internal const int Least = 20;
-        internal const int Most = 400;
+        internal const float Share = 0.15f;   // of the cash carried
+        internal const int Least = 20;        // dollars at the start's prices
+        internal const int Most = 400;        // dollars at the start's prices
 
-        private int _asked;        // goes up with every prompt, so an answer to an old one is ignored
+        private int _asked;        // one more with every prompt, so an answer to an old one is ignored
         private bool _answered;
         private bool _complied;
         private bool _promptOpen;
@@ -62,8 +59,7 @@ namespace RealLifeOverhaul
                 case Approach:
                     if (PlayerHelper.IsUsingVehicle || now >= StepEnd || gapSqr > 45f * 45f)
                     {
-                        // Out-walked, or into a car: the mugger thinks better of it.
-                        Conclude("avoided");
+                        Conclude("avoided");   // out-walked, or into a car
                         Flee(First, player, 40f);
                         Go(StepLeaving, now, 15f);
                     }
@@ -85,8 +81,7 @@ namespace RealLifeOverhaul
                     }
                     else if (now >= StepEnd || gapSqr > 12f * 12f)
                     {
-                        // No answer (the prompt was dismissed some other way), or the player simply ran.
-                        CloseStalePrompt();
+                        CloseStalePrompt();   // no answer, or the player ran
                         Conclude("avoided");
                         Flee(First, player, 40f);
                         Go(StepLeaving, now, 15f);
@@ -106,7 +101,7 @@ namespace RealLifeOverhaul
         {
             if (HudConfirm.isOpen || !LifeEvents.IsSafeForEvent())
             {
-                StepEnd = Mathf.Min(StepEnd, now + 3f);   // something else has the player's attention: a few more seconds, then off
+                StepEnd = Mathf.Min(StepEnd, now + 3f);   // something else has the player's attention: soon off
                 return;
             }
             First.Stand(player);
@@ -120,7 +115,7 @@ namespace RealLifeOverhaul
             Go(Demand, now, 40f);
         }
 
-        // Arrives later, from the game's UI: the scene may be long over.
+        // From the game's UI, later: the scene may be long over.
         private void Answer(int asked, bool comply)
         {
             if (Active && asked == _asked && Step == Demand)
@@ -159,7 +154,6 @@ namespace RealLifeOverhaul
             }
             else
             {
-                // A shove, a fall, and a hand in the jacket on the way down.
                 Permadeath.Verdict fate = Permadeath.Mortality.Judge(Permadeath.DeathCause.Mugging);
                 int taken = Crime.Rob(Share * 0.5f, Least, Most / 2, "reallife_transaction_mugging");
                 First.Gesture(Punch);
@@ -173,8 +167,7 @@ namespace RealLifeOverhaul
                 CrimeEnding hurt = Entry.Ending("hurt");
                 if (life != null && hurt != null && hurt.Texts.Length > 0)
                 {
-                    // Never enough to make a tired player faint.
-                    float energy = SaveGameManager.Current.Energy > 35f ? 8f : 0f;
+                    float energy = SaveGameManager.Current.Energy > 35f ? 8f : 0f;   // never enough to make a tired player faint
                     life.Injure(12, energy, hurt.Texts[Random.Range(0, hurt.Texts.Length)]);
                 }
                 if (fate == Permadeath.Verdict.NearMiss)

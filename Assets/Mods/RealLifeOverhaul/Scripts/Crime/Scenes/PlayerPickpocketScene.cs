@@ -6,20 +6,17 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The player is the mark. Someone comes up behind them on the pavement, brushes past and
-    /// takes a modest share of the cash they carry (never more than they have, and capped).
-    /// Sometimes the player feels it: the thief jogs off with a marker over their head, and
-    /// catching up with them gets the money back. Sometimes they do not, and find out a little
-    /// later; even then, walking into the thief before they are gone gets it back.
+    /// Someone brushes past the player and takes a capped share of the cash they carry. Felt, the thief jogs off marked and
+    /// catching them gets it back; unfelt, the player finds out later, and walking into the thief in time still does.
     /// </summary>
     internal sealed class PlayerPickpocketScene : CrimeScene
     {
         private const int Approach = 0, Chase = 1, Unnoticed = 2, Caught = 3;
-        internal const float Share = 0.06f;
-        internal const int Least = 10;
-        internal const int Most = 250;
-        private const float GrabReach = 1.5f;
-        private const float CatchReach = 2.3f;
+        internal const float Share = 0.06f;   // of the cash carried
+        internal const int Least = 10;        // dollars at the start's prices
+        internal const int Most = 250;        // dollars at the start's prices
+        private const float GrabReach = 1.5f;     // metres
+        private const float CatchReach = 2.3f;    // metres
 
         private int _taken;
         private float _liftedAt;
@@ -65,7 +62,7 @@ namespace RealLifeOverhaul
                 case Approach:
                     if (PlayerHelper.IsUsingVehicle || now >= StepEnd)
                     {
-                        First.WalkAwayFrom(player, Pace.Walk);   // the chance has gone; just another pedestrian
+                        First.WalkAwayFrom(player, Pace.Walk);   // the chance has gone
                         Go(StepLeaving, now, 20f);
                     }
                     else if (gapSqr < GrabReach * GrabReach)
@@ -133,14 +130,13 @@ namespace RealLifeOverhaul
             }
             if (Is("noticed"))
             {
-                // Felt it. They are quick, but not quicker than someone who wants their wallet back.
-                First.Go(far, Pace.Jog, far, 30f);
+                First.Go(far, Pace.Jog, far, 30f);   // a jog: a player who wants their money back can catch them
                 ConcludeAmount("noticed", _taken, NotificationType.Error);
                 Go(Chase, now, 26f);
             }
             else
             {
-                First.Go(far, Pace.Walk, far, 40f);   // (Go, not WalkOff: they must still be there to be walked into)
+                First.Go(far, Pace.Walk, far, 40f);   // Go, not WalkOff: they must still be there to be walked into
                 Go(Unnoticed, now, 14f, 24f);
             }
         }
@@ -153,7 +149,7 @@ namespace RealLifeOverhaul
             _taken = 0;
             if (Random.value < 0.5f)
             {
-                HoldForPolice(First, now, player);   // held for an officer; the base class takes it from here
+                HoldForPolice(First, now, player);   // the base class takes it from here
                 return;
             }
             First.Stand(player);
@@ -172,7 +168,7 @@ namespace RealLifeOverhaul
             _taken = 0;
         }
 
-        // Cut short with the money still gone (the player went indoors, the scene timed out): they are at least told.
+        // Cut short with the money still gone: the player is at least told.
         protected override void Release()
         {
             if (_taken > 0 && SaveGameManager.Current != null)

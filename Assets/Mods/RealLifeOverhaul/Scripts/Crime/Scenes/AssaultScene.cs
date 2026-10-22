@@ -4,9 +4,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A fight: an argument that ends with one of them on the ground. The one who threw the
-    /// punch is arrested, runs for it, is pulled away by a passer-by, or the two of them pick
-    /// themselves up and leave it at that.
+    /// A fight that ends with one of them on the ground: the puncher is arrested, runs, is pulled away by a passer-by, or
+    /// both walk off.
     /// </summary>
     internal sealed class AssaultScene : CrimeScene
     {
@@ -105,8 +104,7 @@ namespace RealLifeOverhaul
                     }
                     if (now >= StepEnd)
                     {
-                        // No officer after all, or none was ever coming: it ends with the two of them walking off.
-                        First.WalkAwayFrom(Second.Position, Pace.Walk);
+                        First.WalkAwayFrom(Second.Position, Pace.Walk);   // no officer came
                         Second.WalkAwayFrom(First.Position, Pace.Walk);
                         Conclude(Is("pulled_apart") && Third.Present ? "pulled_apart" : "walked_off");
                         Go(Aftermath, now, 4f);

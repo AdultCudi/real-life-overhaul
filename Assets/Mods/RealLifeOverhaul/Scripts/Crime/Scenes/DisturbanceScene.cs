@@ -24,7 +24,6 @@ namespace RealLifeOverhaul
             First.Repeat(Arguing, 3.5f, 6.5f, CharacterEmojiName.CommonRedAngry, 0.6f);
             Second.Repeat(Arguing, 4f, 7f, CharacterEmojiName.CommonRedAngry, 0.5f);
 
-            // With no officer to be had, they simply run out of steam.
             bool officer = !Is("fizzled") && SendOfficer(setup.Spot, 22f, 34f);
             Go(Quarrel, now, officer ? 38f : Random.Range(20f, 30f));
             return true;
@@ -32,7 +31,6 @@ namespace RealLifeOverhaul
 
         protected override void OnNear(Vector3 player)
         {
-            // Stepping in between two strangers is the decent thing to do.
             if (Step == Quarrel && !PlayerHelper.IsUsingVehicle)
             {
                 ModState.AddModifier(ModState.Helped);
@@ -70,7 +68,6 @@ namespace RealLifeOverhaul
                         Arrest(First, now);
                         break;
                     }
-                    // Sent their separate ways.
                     First.WalkAwayFrom(Second.Position, Pace.Walk);
                     Second.WalkAwayFrom(First.Position, Pace.Walk);
                     Conclude(Cop.Present ? "calmed" : "fizzled");

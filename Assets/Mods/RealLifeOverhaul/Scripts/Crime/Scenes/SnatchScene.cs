@@ -5,9 +5,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A pickpocket or bag snatcher: someone on their phone, a thief walking up behind them,
-    /// a grab and a sprint. The victim may give chase, a passer-by may bring the thief down,
-    /// an officer may be near enough to run them in, or it may all have been a misunderstanding.
+    /// A grab from someone on their phone, and a sprint: the victim gives chase, a passer-by brings the thief down, an
+    /// officer runs them in, or it was a misunderstanding.
     /// </summary>
     internal sealed class SnatchScene : CrimeScene
     {
@@ -37,8 +36,7 @@ namespace RealLifeOverhaul
             Second.Hold(TextPose, PhoneProp);
             First.Go(Crime.Short(Second.Position, First.Position, 0.9f), Pace.Walk, Second.Position, 14f);
 
-            // The passer-by who will step in stands further along the thief's way out.
-            if (Is("bystander"))
+            if (Is("bystander"))   // the passer-by who steps in, further along the thief's way out
             {
                 Third.Enter(Vector3.Lerp(Second.Position, _far, 0.35f), ActorLook.Civilian, 4f, onRoad: false);
                 Third.Stand(Second.Position);
@@ -82,8 +80,7 @@ namespace RealLifeOverhaul
                     Second.Drop();
                     if (Is("false_alarm"))
                     {
-                        // Tapped on the shoulder: they had dropped something.
-                        Second.Stand(First.Position);
+                        Second.Stand(First.Position);   // tapped on the shoulder: they had dropped something
                         Second.Emote(CharacterEmojiName.CommonGreenHappy);
                         Conclude();
                         Go(Aftermath, now, 4f, 6f);
@@ -124,8 +121,7 @@ namespace RealLifeOverhaul
                         }
                         else
                         {
-                            // Nobody to hand them to: they scramble up and are gone.
-                            Flee(First, Third.Position);
+                            Flee(First, Third.Position);   // nobody to hand them to
                             Conclude("escaped");
                             Go(Aftermath, now, 5f);
                         }
@@ -181,7 +177,6 @@ namespace RealLifeOverhaul
         {
             if (!First.Present)
             {
-                // Out of sight and gone.
                 Conclude("escaped");
                 Second.Stand(_far);
                 Second.Hold(PhonePose, PhoneProp);
@@ -220,8 +215,7 @@ namespace RealLifeOverhaul
             }
             else if (Is("victim_chase") && Second.Present)
             {
-                // Caught up with: a tug of war, and the thief lets go.
-                First.Stand(Second.Position);
+                First.Stand(Second.Position);   // caught up with: a tug of war, and the thief lets go
                 Second.Stand(First.Position);
                 First.Repeat(Arguing, 1.5f, 2.5f);
                 Second.Repeat(Arguing, 1.5f, 2.5f, CharacterEmojiName.CommonRedAngry, 0.7f);

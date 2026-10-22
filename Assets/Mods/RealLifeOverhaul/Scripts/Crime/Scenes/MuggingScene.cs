@@ -5,9 +5,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A mugging: one person with their hands up, another far too close to them. The mugger gets
-    /// away with it, is knocked flat by a victim who had had enough, runs into an officer, or
-    /// bolts because the player walked up.
+    /// A mugging, the victim's hands up: the mugger gets away, is knocked flat by the victim, runs from an officer, or bolts
+    /// as the player walks up.
     /// </summary>
     internal sealed class MuggingScene : CrimeScene
     {
@@ -36,7 +35,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Somebody walking straight at them is a witness too many.
         protected override void OnNear(Vector3 player)
         {
             if (Step != Threat || PlayerHelper.IsUsingVehicle)
@@ -74,7 +72,6 @@ namespace RealLifeOverhaul
                     }
                     if (Cop.Present && (Cop.Settled || Within(Cop, First, 9f)))
                     {
-                        // Seen. The mugger runs and the officer goes after them.
                         First.Quiet();
                         Second.Quiet();
                         RunFor(First, Cop.Position);
@@ -153,7 +150,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The victim swings. False if nobody can be knocked down just now: then it goes the mugger's way.
+        // The victim swings. False if nobody can be knocked down just now: the mugger's way it goes.
         private bool Floor(float now)
         {
             Second.Gesture(Punch);

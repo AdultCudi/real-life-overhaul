@@ -15,20 +15,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// One person doing something they should not on the pavement, and what comes of it. The
-    /// same few endings serve several crimes; which of them a crime can have, how likely each
-    /// is and what is said are all in its catalogue entry:
-    ///   ran        an officer comes, they run and get away
-    ///   caught     an officer comes, they run and do not get away
-    ///   arrested   an officer comes and takes them in where they stand
-    ///   moved_on   an officer has a word and they walk off
-    ///   ticketed   a longer word, a ticket, and they walk off
-    ///   cleared    an officer has a word and it turns out to be nothing
-    ///   told_off   a passer-by gives them a piece of their mind and they slink off
-    ///   friend     somebody who knows them turns up and takes them home
-    ///   collapsed  they go over, get up again and stagger off
-    ///   alone      nobody comes at all
-    /// A new crime of this kind is a catalogue entry and one line in CrimeScenes.
+    /// One person doing something they should not on the pavement. Several crimes share its endings, each choosing its
+    /// own in the catalogue: with an officer ran, caught, arrested, moved_on, ticketed, cleared; without one told_off (a
+    /// passer-by), friend (taken home), collapsed, alone.
     /// </summary>
     internal sealed class LoneOffenderScene : CrimeScene
     {
@@ -56,7 +45,6 @@ namespace RealLifeOverhaul
             switch (_style)
             {
                 case OffenderStyle.AtParkedCar:
-                    // The pavement side of a parked car: whichever side has pavement beside it.
                     if (!CrimeCars.FindParked(spot, 30f, out Vector3 centre, out Vector3 forward, out float halfWidth))
                     {
                         return false;
@@ -67,11 +55,11 @@ namespace RealLifeOverhaul
                     {
                         return false;
                     }
-                    _faces = centre;
+                    _faces = centre;   // at the car's pavement side
                     break;
 
                 case OffenderStyle.AtWall:
-                    // Away from the road is, near enough, towards the buildings.
+                    // Away from the road is near enough towards the buildings.
                     Waypoint lane = TrafficTools.Ready ? TrafficTools.ClosestWaypoint(spot, 30f) : null;
                     if (lane != null)
                     {
@@ -118,8 +106,7 @@ namespace RealLifeOverhaul
 
             if (NeedsOfficer)
             {
-                // Sent for a little later, so the offender is seen at it first.
-                Go(Busy, now, 6f, 14f);
+                Go(Busy, now, 6f, 14f);   // the officer is sent later, so the offender is seen at it first
             }
             else if (Is("told_off") || Is("friend"))
             {
@@ -138,8 +125,8 @@ namespace RealLifeOverhaul
         {
             if (Active && !Reported && Step == Busy && !Cop.Present)
             {
-                StepEnd = now;   // whoever was coming comes now; if nobody was, an officer is sent
-                if (!NeedsOfficer && SendOfficer(Scene, 18f, 28f))   // nobody was coming: the call sends someone, and that changes how it ends
+                StepEnd = now;   // whoever was coming comes now
+                if (!NeedsOfficer && SendOfficer(Scene, 18f, 28f))   // nobody was: the call sends someone, and that changes the ending
                 {
                     Ending = Entry.Ending("moved_on") ?? Entry.Ending("cleared") ?? Ending;
                     Go(CopComing, now, 34f);
@@ -179,7 +166,6 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
-                        // Nobody came. They finish what they were doing and go.
                         First.Quiet();
                         First.Drop();
                         First.WalkAwayFrom(player, Pace.Walk);
@@ -197,7 +183,6 @@ namespace RealLifeOverhaul
                     }
                     if ((Is("ran") || Is("caught")) && Within(Cop, First, 13f))
                     {
-                        // Seen coming.
                         First.Quiet();
                         First.Drop();
                         RunFor(First, Cop.Position);
@@ -217,7 +202,7 @@ namespace RealLifeOverhaul
                     if (Is("ticketed") && !_writing && now >= StepEnd - 6f)
                     {
                         _writing = true;
-                        Cop.Hold(TextPose, PhoneProp);   // writing it out
+                        Cop.Hold(TextPose, PhoneProp);   // writing the ticket
                     }
                     if (now < StepEnd)
                     {
@@ -277,7 +262,6 @@ namespace RealLifeOverhaul
                     First.Drop();
                     if (Is("friend") && Third.Present)
                     {
-                        // An arm round the shoulder, and home.
                         if (StreetSpots.AwayFrom(Scene, player, 30f, onRoad: false, out Vector3 home))
                         {
                             First.WalkOff(home, Pace.Walk, 28f);
