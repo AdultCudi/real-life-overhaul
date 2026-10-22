@@ -15,14 +15,12 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// One part of the mod that stands on pieces of the game that are not the game's modding interface (a private
-    /// field, a method read by name). When one of its pieces is missing or has changed after a game update, the part
-    /// is off for the session and says so once; every other part runs. <see cref="Feature"/> is the id of its feature in
-    /// Meta/FeatureList, for the options page; the name players read is the locale key <see cref="NameKey"/>.
+    /// A part of the mod that stands on pieces of the game read by name. When one is missing after a game update, the
+    /// part is off for the session; every other part runs. <see cref="Feature"/> is its Meta/FeatureList id.
     /// </summary>
     public sealed class GamePart
     {
-        public const string KeyPrefix = "reallife" + "_contract_part_";   // (apart, so that the locale check does not take a prefix for a key)
+        public const string KeyPrefix = "reallife" + "_contract_part_";   // split, so the locale check does not take a prefix for a key
 
         public readonly string Id;
         public readonly string Feature;
@@ -40,7 +38,7 @@ namespace RealLifeOverhaul
         private bool _off;
         private string _why;
 
-        /// <summary>True when a piece of the game it needs is missing or has changed: the part does nothing this session.</summary>
+        /// <summary>True when a piece of the game it needs is missing or has changed: the part is off this session.</summary>
         public bool Off
         {
             get
@@ -64,16 +62,16 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// One piece of the game the mod reaches by name. Resolved once, when the mod starts (<see cref="ContractBook.Resolve"/>);
-    /// the code that uses it reads <see cref="Field"/>, <see cref="Property"/>, <see cref="Method"/> or <see cref="Type"/>,
-    /// which are null when the piece is missing or not what the mod expects. Nothing is looked up again after that.
+    /// A piece of the game the mod reaches by name, resolved once at start (<see cref="ContractBook.Resolve"/>). Its
+    /// <see cref="Field"/>, <see cref="Property"/>, <see cref="Method"/> or <see cref="Type"/> is null when the piece is
+    /// missing or not as expected.
     /// </summary>
     public sealed class GameMember
     {
         public readonly GameMemberKind Kind;
         public readonly string Assembly;     // the game's assembly, by its simple name ("BigAmbitions")
         public readonly string TypeName;     // full name, a nested type after '+'
-        public readonly string Name;         // the member's name (empty for a type)
+        public readonly string Name;         // empty for a type
         public readonly bool Static;
         public readonly string ValueType;    // a field's or property's type, or a method's return type, as ContractBook.TypeText writes it; null: any
         public readonly string[] Parameters; // a method's parameter types, in order, as TypeText writes them
@@ -81,7 +79,7 @@ namespace RealLifeOverhaul
 
         internal bool NeedsSetter;
 
-        /// <summary>The code has another way when it is gone: said in the log, nothing is switched off.</summary>
+        /// <summary>The code has another way when it is gone: logged, nothing switched off.</summary>
         public bool Optional { get; private set; }
 
         internal void MakeOptional()
@@ -99,11 +97,11 @@ namespace RealLifeOverhaul
             Static = isStatic;
             ValueType = valueType;
             Parameters = parameters;
-            Optional = optional;   // (a line of the table makes it optional with MakeOptional)
+            Optional = optional;
             Parts = parts ?? new GamePart[0];
             if (register)
             {
-                ContractBook.Add(this);   // (ContractCheck makes members of its own that are not in the table)
+                ContractBook.Add(this);   // ContractCheck makes members of its own outside the table
             }
         }
 
@@ -116,8 +114,7 @@ namespace RealLifeOverhaul
         private bool _missing;
         private string _problem;
 
-        // Each is resolved before it is first read: a class that reads its piece in a static initialiser before the
-        // mod's start has resolved the contract still gets it (one test of a flag after that).
+        // Each resolves the contract on first read, for a static initialiser that runs before the mod's start.
         public Type Type
         {
             get
@@ -154,7 +151,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The property's setter, private ones too (for a member made with NeedsSetter).</summary>
+        /// <summary>The property's setter, private ones too.</summary>
         public MethodInfo Setter
         {
             get
@@ -164,7 +161,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True when it was found as expected.</summary>
         public bool Ok
         {
             get
@@ -174,10 +170,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True when it was looked for and the game does not have it as the mod expects; false while it is there, and
-        /// when it could not be looked for at all (then the code that names it finds out as it is used).
-        /// </summary>
+        /// <summary>True when it was looked for and is not as expected; false too when it could not be looked for at all.</summary>
         public bool Missing
         {
             get
@@ -213,7 +206,7 @@ namespace RealLifeOverhaul
             _problem = problem;
             _ok = problem == null;
             _missing = problem != null && lookedFor;
-            _type = _ok || Kind != GameMemberKind.Type ? type : null;   // (for a missing member the type may still be there)
+            _type = _ok || Kind != GameMemberKind.Type ? type : null;   // a missing member's type may still be there
             _field = _ok ? info as FieldInfo : null;
             _property = _ok ? info as PropertyInfo : null;
             _method = _ok ? info as MethodInfo : null;
@@ -222,15 +215,10 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The register behind <see cref="GameContract"/>: every piece of the game the mod reaches by name, which parts
-    /// stand on it, and the one resolution of all of them when the mod starts. A piece that is missing or has changed
-    /// switches off only the parts that stand on it (<see cref="GamePart.Off"/>); each such part is named once in
-    /// Player.log by the caller (Core/Guard), the rest of the mod runs.
-    ///
-    /// No Unity or game types: the offline checker (RealLifeOverhaul.Build/ContractCheck) compiles this file and the
-    /// table, checks every member against the game's assemblies on disk, and tests the switching off with types of
-    /// its own. The build the mod is checked against is Core/GameBuild's MadeFor, the mod's one build number. Cost: one
-    /// pass over about 140 members at start; nothing after that.
+    /// The register behind <see cref="GameContract"/>: every piece of the game reached by name, the parts that stand on
+    /// it, and their one resolution at start. A missing piece switches off only its parts (<see cref="GamePart.Off"/>).
+    /// No Unity or game types: ContractCheck compiles it and checks every member against the game's assemblies.
+    /// COST: one pass over the members at start; nothing after.
     /// </summary>
     public static class ContractBook
     {
@@ -256,9 +244,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        public static bool Resolved => _resolved;
-
-        /// <summary>Resolves the contract among the loaded assemblies if nothing has yet (a piece read before the mod's start).</summary>
+        /// <summary>Resolves the contract among the loaded assemblies if nothing has yet.</summary>
         public static void EnsureResolved()
         {
             if (!_resolved && !_resolving)
@@ -281,22 +267,9 @@ namespace RealLifeOverhaul
             return part;
         }
 
-        public static GamePart FindPart(string id)
-        {
-            foreach (GamePart part in Parts)
-            {
-                if (part.Id == id)
-                {
-                    return part;
-                }
-            }
-            return null;
-        }
-
         /// <summary>
-        /// Looks every member up once, with the given way of finding a type (an assembly's simple name and the type's
-        /// full name; null when it is not there), and switches off the parts that stand on what is missing. Safe to call
-        /// again: each call starts afresh.
+        /// Looks every member up, <paramref name="findType"/> taking an assembly's simple name and a type's full name,
+        /// and switches off the parts that stand on what is missing. Each call starts afresh.
         /// </summary>
         public static void Resolve(Func<string, string, Type> findType)
         {
@@ -322,8 +295,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The same switching off from problems found another way (ContractCheck reads the game's assemblies on disk):
-        /// <paramref name="problemOf"/> answers null for a member that is there as expected. Nothing is resolved.
+        /// The same switching off from problems found another way (ContractCheck reads the assemblies on disk);
+        /// <paramref name="problemOf"/> answers null for a member as expected.
         /// </summary>
         public static void Mark(Func<GameMember, string> problemOf)
         {
@@ -335,7 +308,6 @@ namespace RealLifeOverhaul
             });
         }
 
-        // Every member's problem (null: there as expected) switches off the parts that stand on it, unless it is optional.
         private static void Apply(Func<GameMember, string> problemOf)
         {
             _resolving = true;
@@ -376,7 +348,7 @@ namespace RealLifeOverhaul
             _resolved = true;
         }
 
-        /// <summary>The usual way of finding a type: among the assemblies loaded in this process (one not loaded yet is loaded by its name).</summary>
+        /// <summary>Finds a type among the loaded assemblies, loading its assembly by name if it is not loaded yet.</summary>
         public static Type FindLoaded(string assembly, string typeName)
         {
             bool seen = false;
@@ -402,13 +374,13 @@ namespace RealLifeOverhaul
             }
             catch (Exception)
             {
-                return null;   // (an assembly the game no longer has: the type is not there)
+                return null;   // an assembly the game no longer has
             }
         }
 
         private const BindingFlags Declared = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
-        /// <summary>Null when the member is there on the given type as expected; otherwise what is wrong with it, in English.</summary>
+        /// <summary>Null when the member is on the type as expected; otherwise what is wrong, in English.</summary>
         internal static string Check(GameMember m, Type type, out MemberInfo info)
         {
             info = null;
@@ -505,10 +477,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A type as the contract writes it: its name without namespace or generic arity, a nested type after its outer
-        /// one's name and a dot, generic arguments in angle brackets without spaces, "[]" for an array and "&amp;" for a
-        /// reference ("Dictionary&lt;String,Toggle&gt;", "List&lt;SmartPhoneFrame.FrameData&gt;"). ContractCheck writes a
-        /// type read from the game's files on disk the same way.
+        /// A type as the contract and ContractCheck write it: no namespace or arity, nested after "Outer.", generic
+        /// arguments without spaces ("Dictionary&lt;String,Toggle&gt;"), "[]" for an array, "&amp;" for a reference.
         /// </summary>
         public static string TypeText(Type t)
         {
@@ -586,7 +556,7 @@ namespace RealLifeOverhaul
             return bad;
         }
 
-        /// <summary>The features (Meta/FeatureList ids) with at least one part off.</summary>
+        /// <summary>The Meta/FeatureList ids with at least one part off.</summary>
         public static HashSet<string> FeaturesHit()
         {
             var hit = new HashSet<string>(StringComparer.Ordinal);

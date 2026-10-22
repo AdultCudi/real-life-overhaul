@@ -5,44 +5,21 @@ using System.Diagnostics;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Where the mod's own share of a frame goes, by feature and method, for the session record's lines
-    /// (Diagnostics/SessionWatch). Every Update, LateUpdate and FixedUpdate of the mod's, and its handlers of the
-    /// game's events (a new hour, a new day, going in or out of a building, the city map), open a scope on their
-    /// first line:
-    ///
-    ///     private static readonly int HotUpdate = HotSpots.Slot("Transport: TransitDirector.Update");
-    ///     private void Update()
-    ///     {
-    ///         using var hotSpot = HotSpots.Time(HotUpdate);
-    ///
-    /// The directors' one-second timers open one in the method their tick calls ("Tech: TechDirector.Tick", and each
-    /// follower of the credit side's second, "Economy: EstateDirector.Second"), never round a yield, so that the time
-    /// the engine counts under "coroutines and timers" has the mod's names too. Every step of a coroutine started through
-    /// Core/Guard.Routine, and every handler Core/Guard wraps (the game's events, UnityEvent listeners, the questions the
-    /// game asks the mod), is timed by the guard itself under "Coroutine: Class.Method", "Event: ...", "Listener: ...",
-    /// "Asked: ..." and "Callback: ..." (Guard.RoutineSlot, Guard.HandlerSlot): nothing the mod runs is left out.
-    ///
-    /// While the session record is off (as the mod ships) a scope is one flag test and nothing else. While it is
-    /// on, a scope is two reads of the clock and one of the frame count, and a few additions into fixed arrays:
-    /// for the mod's hundred-odd scopes a frame, some five microseconds. One frame in <see cref="SampleEvery"/> is
-    /// also a sample of the managed heap: two reads round each scope, which say how much of the heap's growth
-    /// happened under the mod's scripts. Where the runtime counts what each thread allocates, that count is read and
-    /// every frame is a sample (exact); otherwise the heap's size is read, one frame in eight (an estimate: the heap
-    /// grows in the blocks the collector hands out, not object by object). Diagnostics/SessionWatch finds out which
-    /// when the record starts. Nothing is allocated after the arrays are made, whether it is on or off.
-    ///
-    /// The time of a scope opened inside another (an event of the game's that one of the mod's Updates set off)
-    /// is counted under both names, and once in the mod's total.
-    ///
-    /// The frame before this one is kept whole (<see cref="FrameMs"/>, <see cref="FrameTop"/>); the reader adds
-    /// the frames it counts as play into a stretch (<see cref="Keep"/>), which it reads and clears once a minute.
-    ///
-    /// No Unity or game types: the frame count and the heap's size are handed in (<see cref="FrameSource"/>,
-    /// <see cref="HeapSource"/>), and it is checked offline (NavCheck, HitchCheck.cs).
+    /// Where the mod's own share of a frame goes, by feature and method, for the session record (Diagnostics/SessionWatch).
+    /// Every Update, LateUpdate and FixedUpdate opens a scope on its first line:
+    /// <c>using var hotSpot = HotSpots.Time(HotUpdate);</c>, with
+    /// <c>private static readonly int HotUpdate = HotSpots.Slot("Transport: TransitDirector.Update");</c>
+    /// Coroutines and handlers Core/Guard wraps are timed by the guard itself ("Coroutine: Class.Method", "Event: ...").
+    /// A scope inside another counts under both names, once in the total. The frame before is kept whole
+    /// (<see cref="FrameMs"/>); the reader adds frames of play into a stretch (<see cref="Keep"/>) read once a minute.
+    /// One frame in <see cref="SampleEvery"/> also samples the managed heap round each scope (every frame where the
+    /// runtime counts each thread's allocations). Game-free (the frame count and heap are handed in), checked by NavCheck.
+    /// COST: one flag test a scope while the record is off, as the mod ships; while on, about five microseconds a frame;
+    /// nothing allocated after the arrays.
     /// </summary>
     public static class HotSpots
     {
-        public const int Most = 768;       // names that can be told apart (the Updates, and every coroutine and handler the guard wraps); any more share the last one
+        public const int Most = 768;       // names that can be told apart; any more share the last one
         public const int AllocEvery = 8;   // one frame in this many is a sample of the heap, where only its size can be read
 
         /// <summary>One frame in this many is a sample of the heap: <see cref="AllocEvery"/>, or 1 where the reads are exact.</summary>
@@ -51,10 +28,10 @@ namespace RealLifeOverhaul
         /// <summary>True while the session record runs: only then is anything measured.</summary>
         public static bool On;
 
-        /// <summary>The engine's frame count (Diagnostics/SessionWatch hands it in).</summary>
+        /// <summary>The engine's frame count, handed in by Diagnostics/SessionWatch.</summary>
         public static Func<int> FrameSource;
 
-        /// <summary>Bytes of the managed heap in use (Diagnostics/SessionWatch hands it in).</summary>
+        /// <summary>Bytes of the managed heap in use, handed in by Diagnostics/SessionWatch.</summary>
         public static Func<long> HeapSource;
 
         private static readonly string[] Names = new string[Most];
@@ -80,7 +57,7 @@ namespace RealLifeOverhaul
         private static int _lastFrame = int.MinValue;
         private static bool _lastSampled;
 
-        // The stretch the reader keeps (a minute of play).
+        // The stretch the reader keeps: a minute of play.
         private static readonly long[] Sum = new long[Most];
         private static readonly long[] Worst = new long[Most];
         private static readonly long[] Bytes = new long[Most];
@@ -88,8 +65,8 @@ namespace RealLifeOverhaul
         private static int _frames, _sampled;
 
         /// <summary>
-        /// The number for a name ("Feature: Class.Method", a constant text). The same name always gets the same
-        /// number, so a component made again with every city keeps its own. Made once, in a static field.
+        /// The number for a name ("Feature: Class.Method"), the same for the same name, so a component made again with
+        /// every city keeps its own. Kept in a static field.
         /// </summary>
         public static int Slot(string name)
         {
@@ -115,15 +92,12 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The name a number was given.</summary>
         public static string Name(int slot) => slot >= 0 && slot < Most && Names[slot] != null ? Names[slot] : "unnamed";
 
         /// <summary>
-        /// "Class.Method" as the code is written, for a slot of a coroutine or a handler (Core/Guard.RoutineSlot and
-        /// HandlerSlot): out of the classes the compiler makes for lambdas and coroutines ("&lt;&gt;c", "&lt;&gt;c__DisplayClass4_0",
-        /// "&lt;Tick&gt;d__12") to the class they are written in, and a method the compiler made ("&lt;Awake&gt;b__12_0") by the method
-        /// it is written in. A coroutine (no method given) is named by the method its class was made from; a class written by
-        /// hand as an IEnumerator by its MoveNext. Asked once per coroutine or handler method, never per frame.
+        /// "Class.Method" as the code is written, out of the compiler's classes for lambdas and coroutines
+        /// ("&lt;Tick&gt;d__12") and its methods ("&lt;Awake&gt;b__12_0"); a hand-written IEnumerator is named by its MoveNext.
+        /// Asked once per coroutine or handler method, never per frame.
         /// </summary>
         public static string Written(Type type, string method)
         {
@@ -149,7 +123,7 @@ namespace RealLifeOverhaul
             return open >= 0 && close > open + 1 ? compiled.Substring(open + 1, close - open - 1) : null;
         }
 
-        /// <summary>One scope: what <see cref="Time"/> returns, closed at the end of its using block.</summary>
+        /// <summary>What <see cref="Time"/> returns, closed at the end of its using block.</summary>
         public readonly struct Scope : IDisposable
         {
             private readonly int _slot;
@@ -172,7 +146,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Opens a scope for the slot. While nothing is measured it is an empty value and closing it does nothing.</summary>
+        /// <summary>Opens a scope for the slot; while nothing is measured, an empty value that does nothing.</summary>
         public static Scope Time(int slot)
         {
             if (!On || slot < 0 || slot >= Most)
@@ -195,7 +169,7 @@ namespace RealLifeOverhaul
             long spent = Stopwatch.GetTimestamp() - began;
             if (spent < 1L)
             {
-                spent = 1L;   // (a slot that ran is never 0: 0 means it did not run in the frame)
+                spent = 1L;   // 0 means it did not run in the frame
             }
             if (_depth > 0)
             {
@@ -203,7 +177,7 @@ namespace RealLifeOverhaul
             }
             if (Now[slot] == 0L)
             {
-                NowTouched[_nowCount++] = slot;   // (each slot once a frame: the list cannot overrun)
+                NowTouched[_nowCount++] = slot;   // each slot once a frame: the list cannot overrun
             }
             Now[slot] += spent;
             if (_depth == 0)
@@ -224,7 +198,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A new frame has begun: the one before it becomes "the frame before".
         private static void Roll(int frame)
         {
             for (int i = 0; i < _lastCount; i++)
@@ -254,10 +227,7 @@ namespace RealLifeOverhaul
             _sampling = SampleEvery <= 1 || frame % SampleEvery == 0;
         }
 
-        /// <summary>
-        /// Brings the record up to this frame before it is read: afterwards "the frame before" is the last frame in which
-        /// any scope ran. Called once a frame by the reader, whether or not anything of the mod's ran yet in this one.
-        /// </summary>
+        /// <summary>Called once a frame by the reader before reading: "the frame before" is then the last one any scope ran in.</summary>
         public static void Settle(int frame)
         {
             if (frame != _frame)
@@ -266,10 +236,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The reader counts a frame (after <see cref="Settle"/>) as one of play: it goes into the stretch, whether or not
-        /// anything of the mod's ran in it. A loading screen or a pause the reader leaves out is simply not kept.
-        /// </summary>
+        /// <summary>The reader counts a frame (after <see cref="Settle"/>) as one of play: it goes into the stretch.</summary>
         public static void Keep(int frame)
         {
             _frames++;
@@ -309,10 +276,7 @@ namespace RealLifeOverhaul
         /// <summary>Milliseconds the mod's scopes took in a frame (after <see cref="Settle"/>); 0 if none ran in it.</summary>
         public static double FrameMs(int frame) => frame == _lastFrame ? Ms(_lastTotal) : 0.0;
 
-        /// <summary>
-        /// The slot that took the most of a frame's time after <paramref name="skip"/> larger ones (0 the largest), with
-        /// its milliseconds. False when there is no such slot, or nothing ran in that frame.
-        /// </summary>
+        /// <summary>The slot with the most of a frame's time after <paramref name="skip"/> larger ones; false when there is none.</summary>
         public static bool FrameTop(int frame, int skip, out int slot, out double ms)
         {
             slot = -1;
@@ -332,8 +296,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Bytes the heap grew by under the mod's scopes in a frame (after <see cref="Settle"/>), the inner scopes counted once;
-        /// <paramref name="sampled"/> false (and 0) when that frame was not a sample of the heap or nothing of the mod's ran in it.
+        /// Bytes the heap grew by under the mod's scopes in a frame; <paramref name="sampled"/> false (and 0) when the frame
+        /// was not a sample or nothing ran in it.
         /// </summary>
         public static long FrameBytes(int frame, out bool sampled)
         {
@@ -341,7 +305,7 @@ namespace RealLifeOverhaul
             return sampled ? _lastBytesTotal : 0L;
         }
 
-        /// <summary>The slot under which the heap grew the most in a frame, after <paramref name="skip"/> larger ones. False when there is none.</summary>
+        /// <summary>The slot under which the heap grew most in a frame, after <paramref name="skip"/> larger ones; false when none.</summary>
         public static bool FrameTopBytes(int frame, int skip, out int slot, out long bytes)
         {
             slot = -1;
@@ -371,10 +335,7 @@ namespace RealLifeOverhaul
         /// <summary>Bytes the heap grew by under the mod's scopes in the sampled frames of the stretch.</summary>
         public static long SampledBytes => _bytesTotal;
 
-        /// <summary>
-        /// The slot after <paramref name="skip"/> larger ones by the stretch's time (<paramref name="byBytes"/>: by the heap's
-        /// growth under it instead), with its sums. False when there is no such slot.
-        /// </summary>
+        /// <summary>The slot after <paramref name="skip"/> larger ones by the stretch's time (or heap growth), with its sums.</summary>
         public static bool StretchTop(int skip, bool byBytes, out int slot, out double totalMs, out double worstMs, out long bytes)
         {
             slot = Rank(byBytes ? Bytes : Sum, null, _named < Most ? _named : Most, skip);
@@ -390,8 +351,8 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The slot of the (skip + 1)th largest value above 0, ties to the lower slot; -1 if there are not that many. The
-        // slots looked at are those listed, or the first "count" slots when there is no list.
+        // The slot of the (skip + 1)th largest value above 0, ties to the lower slot; -1 if there are not that many. Over
+        // the slots listed, or the first count slots without a list.
         private static int Rank(long[] values, int[] listed, int count, int skip)
         {
             long bound = long.MaxValue;
@@ -421,7 +382,7 @@ namespace RealLifeOverhaul
             return boundSlot;
         }
 
-        /// <summary>The stretch's sums start again (the line a minute has been written).</summary>
+        /// <summary>The stretch's sums start again, its line written.</summary>
         public static void ClearStretch()
         {
             Array.Clear(Sum, 0, Most);
@@ -431,7 +392,7 @@ namespace RealLifeOverhaul
             _frames = _sampled = 0;
         }
 
-        /// <summary>Everything measured is forgotten (the record starts or stops). The names stay.</summary>
+        /// <summary>Forgets everything measured as the record starts or stops; the names stay.</summary>
         public static void Reset()
         {
             ClearStretch();

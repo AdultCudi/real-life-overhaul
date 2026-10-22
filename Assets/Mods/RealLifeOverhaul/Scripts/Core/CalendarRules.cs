@@ -4,24 +4,19 @@ using RealLifeOverhaul.Economy;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The calendar's rules, game-free (checked by EconomyCheck). The game counts days and has a year of so many of
-    /// them, chosen when a game is started (60 to 365; 60 in a save that says nothing) but no months, no seasons and
-    /// no dates. The mod's month is a twelfth of that year, three days at least (5 days in a 60-day year, 30 in a
-    /// 365-day one: MacroCatalogue.MonthDays), and its seasons are the weather's: the year begins in midwinter, winter
-    /// is its last twelfth and first sixth, spring runs to five twelfths, summer to two thirds, autumn to eleven
-    /// twelfths. Something paid by the month is priced by the day and paid a month's worth at a time, so that a longer
-    /// year makes nothing dearer or cheaper by the day, as the game's own daily rent and wages are not. The calendar's
-    /// months (MonthOf, MonthStart, the Calendar app's) are twelfths of the year by the day of the year, as the stock
-    /// market's are; what is paid by the month counts its month of MonthDays from its own first day.
+    /// The calendar's rules, game-free (checked by EconomyCheck). The game has days and a year of 60 to 365 of them, but
+    /// no months or seasons. The mod's months are twelfths of the year, as the stock market's are; its seasons are the
+    /// weather's (the year begins in midwinter). Monthly costs are priced by the day and paid <see cref="MonthDays"/> at
+    /// a time, so a longer year makes nothing dearer by the day.
     /// </summary>
     public static class CalendarRules
     {
-        public const int YearDefault = 60;
-        public const int YearLeast = 8;
+        public const int YearDefault = 60;   // days: the game's year in a save that says nothing
+        public const int YearLeast = 8;      // days
 
         public const int Winter = 0, Spring = 1, Summer = 2, Autumn = 3;
 
-        /// <summary>The year in days from what a save says: the save's own when it is a year at all, else the game's default.</summary>
+        /// <summary>The year in days from what a save says, else the game's default.</summary>
         public static int Year(int saved)
         {
             return saved >= YearLeast ? saved : YearDefault;
@@ -65,8 +60,6 @@ namespace RealLifeOverhaul
             return perDay * MonthDays(year);
         }
 
-        // ---------------------------------------------------------------- the months of the calendar
-
         public const int MonthsPerYear = 12;
 
         /// <summary>The months of a year of so many days: twelve, or one a day in a year shorter than twelve days.</summary>
@@ -75,11 +68,7 @@ namespace RealLifeOverhaul
             return Math.Max(1, Math.Min(MonthsPerYear, year));
         }
 
-        /// <summary>
-        /// The month a day is in, counted from 0 over the years (twelve a year): the day of the year in twelfths of the
-        /// year, as the stock market counts its months (MarketCatalogue.MonthOf). A 60-day year has twelve months of 5
-        /// days, a 365-day one months of 30 and 31. The days are the game's, from 1.
-        /// </summary>
+        /// <summary>The month a day (from 1) is in, counted from 0 over the years, as MarketCatalogue.MonthOf counts.</summary>
         public static int MonthOf(int day, int year)
         {
             year = Math.Max(1, year);
@@ -88,7 +77,7 @@ namespace RealLifeOverhaul
             return y * months + (day - 1 - y * year) * months / year;
         }
 
-        /// <summary>The first day of a month as <see cref="MonthOf"/> counts them: the first whose twelfth of the year is the month's.</summary>
+        /// <summary>The first day of a month as <see cref="MonthOf"/> counts them.</summary>
         public static int MonthStart(int month, int year)
         {
             year = Math.Max(1, year);
@@ -98,13 +87,11 @@ namespace RealLifeOverhaul
             return y * year + (inYear * year + months - 1) / months + 1;
         }
 
-        /// <summary>The last day of a month: the day before the next one's first.</summary>
         public static int MonthEnd(int month, int year)
         {
             return MonthStart(month + 1, year) - 1;
         }
 
-        /// <summary>How many days a month has.</summary>
         public static int MonthLength(int month, int year)
         {
             return MonthEnd(month, year) - MonthStart(month, year) + 1;
@@ -130,10 +117,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The first day of the year after the one a day is in: the day after the year's last. The game closes its tax
-        /// year on that last day (TaxHelper: the day a multiple of the year's length, the period from the day after the
-        /// last one), so day 60 of a 60-day year is still the first year and day 61 begins the second, as the calendar,
-        /// the weather and the stock market count it. The Planner's day box reads it from here.
+        /// The first day of the year after the one a day is in. The game's TaxHelper closes the year on a multiple of its
+        /// length, so day 60 of a 60-day year is still the first year.
         /// </summary>
         public static int NextYearStart(int day, int year)
         {

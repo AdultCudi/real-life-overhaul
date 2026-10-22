@@ -9,10 +9,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Per-savegame state, stored in the save's modData dictionary, plus the mod's own
-    /// happiness modifiers. The game crashes on load if a save contains a happiness modifier
-    /// type it doesn't know, so ours are taken out of the save while it is written and kept
-    /// in modData instead: a save made with this mod still loads without it.
+    /// Per-save state in the save's modData, and the mod's own moods (happiness modifiers). The game crashes on loading
+    /// a mood type it does not know, so the mod's are taken out of the save while it is written and kept in modData: a
+    /// save made with the mod still loads without it.
     /// </summary>
     public static class ModState
     {
@@ -26,7 +25,7 @@ namespace RealLifeOverhaul
         public const string Helped = "reallife_happinessmodifier_helped";
         public const string Remorse = "reallife_happinessmodifier_remorse";   // someone died under the player's wheels
 
-        // Home life and health (Scripts/Home): held on for as long as their cause lasts, or set on waking.
+        // Home life and health (Scripts/Home): held while their cause lasts, or set on waking.
         public const string Unwashed = "reallife_happinessmodifier_unwashed";
         public const string Stressed = "reallife_happinessmodifier_stressed";
         public const string Relaxed = "reallife_happinessmodifier_relaxed";
@@ -38,21 +37,21 @@ namespace RealLifeOverhaul
         public const string InShape = "reallife_happinessmodifier_in_shape";
         public const string GoodDiet = "reallife_happinessmodifier_good_diet";
         public const string PoorDiet = "reallife_happinessmodifier_poor_diet";
-        public const string NoPower = "reallife_happinessmodifier_no_power";     // at a home of the player's whose power is cut (Utilities)
+        public const string NoPower = "reallife_happinessmodifier_no_power";     // at a home whose power is cut (Utilities)
         public const string NoWater = "reallife_happinessmodifier_no_water";
         public const string BackPain = "reallife_happinessmodifier_back_pain";
         public const string Burnout = "reallife_happinessmodifier_burnout";
         public const string HomeCooked = "reallife_happinessmodifier_home_cooked";
         public const string Starving = "reallife_happinessmodifier_starving";   // Permadeath: a day and more on an empty stomach
 
-        // Generic moods shared by the many life events, so each event doesn't need a modifier of its own.
+        // Moods shared by the life events, so each needs no modifier of its own.
         public const string MoodUp = "reallife_happinessmodifier_mood_up";
         public const string MoodUpBig = "reallife_happinessmodifier_mood_up_big";
         public const string MoodDown = "reallife_happinessmodifier_mood_down";
         public const string MoodDownBig = "reallife_happinessmodifier_mood_down_big";
         public const string Tipsy = "reallife_happinessmodifier_tipsy";   // two or more drinks (Leisure): a small lift for a few hours
 
-        // Civic life (Scripts/Civic): kept up hour by hour while a policy or a site next door gives cause.
+        // Civic life (Scripts/Civic): kept up hourly while a policy or a site next door gives cause.
         public const string CivicClean = "reallife_happinessmodifier_civic_clean";
         public const string CivicLitter = "reallife_happinessmodifier_civic_litter";
         public const string CivicFestive = "reallife_happinessmodifier_civic_festive";
@@ -85,7 +84,7 @@ namespace RealLifeOverhaul
         public static bool Loaded { get; private set; }
         public static bool ModifiersReady { get; private set; }
 
-        /// <summary>Game time (total minutes) until which the player is sick; 0 when healthy.</summary>
+        /// <summary>Game time in total minutes until which the player is sick; 0 when healthy.</summary>
         public static float SickUntil;
         public static int LastFriendCallDay;
         public static int LastMomCallDay;
@@ -93,7 +92,7 @@ namespace RealLifeOverhaul
 
         /// <summary>Money owed for a hit-and-run the player got away from; 0 when nothing is owed.</summary>
         public static int PendingFine;
-        /// <summary>Game time (total minutes) at which the pending fine is charged.</summary>
+        /// <summary>Game time in total minutes at which the pending fine is charged.</summary>
         public static float PendingFineDue;
 
         /// <summary>Ids of the life events this save has already had; see LifeEventDeck.</summary>
@@ -115,7 +114,7 @@ namespace RealLifeOverhaul
             SeenEvents.Clear();
             LastEventId = null;
             Leisure.LeisureState.Reset();
-            CharacterCatalogue.Leave();   // no save: no picks of the mod's looks (the next save read brings its own)
+            CharacterCatalogue.Leave();   // no save, no picks of the mod's looks
         }
 
         public static void Load()
@@ -132,14 +131,14 @@ namespace RealLifeOverhaul
             LastFriendCallDay = (int)ReadFloat(data, KeyFriendDay);
             LastMomCallDay = (int)ReadFloat(data, KeyMomDay);
             LastMomGiftDay = (int)ReadFloat(data, KeyMomGiftDay);
-            // Absent in saves from before police pursuits: nothing is owed.
+            // Absent from older saves: nothing is owed.
             PendingFine = Mathf.Max(0, (int)ReadFloat(data, KeyPendingFine));
             PendingFineDue = ReadFloat(data, KeyPendingFineDue);
 
             Leisure.LeisureState.ReadSave(data);   // records, landmarks, the clothes bought, outfits
             CharacterCatalogue.ReadSave(data);   // the player's picks of the mod's own hair and clothes, by id
 
-            // Absent in saves from before the event catalogue: every event simply counts as unseen.
+            // Absent from older saves: every event counts as unseen.
             SeenEvents.Clear();
             if (data.TryGetValue(KeySeenEvents, out string seen) && !string.IsNullOrEmpty(seen))
             {
@@ -157,10 +156,7 @@ namespace RealLifeOverhaul
             Logger?.Info($"State loaded. sick={IsSick} modifiers={ModifiersReady} seenEvents={SeenEvents.Count}/{LifeEventCatalogue.All.Length}");
         }
 
-        /// <summary>
-        /// Called from the game's save event, just before the save is serialised. Returns our
-        /// modifiers, which were taken out of the save and must be put back afterwards.
-        /// </summary>
+        /// <summary>From the game's save event, just before the save is written: returns the mod's moods taken out, to put back after.</summary>
         public static List<HappinessModifierData> BeforeSave()
         {
             var removed = new List<HappinessModifierData>();
@@ -196,9 +192,8 @@ namespace RealLifeOverhaul
             string stash = string.Join(";", parts);
             if (!ModifiersReady && data.TryGetValue(KeyModifiers, out string waiting) && !string.IsNullOrEmpty(waiting))
             {
-                // The game's register of mood types could not be reached this session (Core/GameContract, "moods"), so the
-                // moods this save had waiting were not put back: they stay waiting for a version that can, not lost (each
-                // type once: the line does not grow from save to save).
+                // The game's register of mood types could not be reached this session, so the moods waiting were not put
+                // back: they keep waiting, each type once so the line does not grow.
                 var types = new HashSet<string>(StringComparer.Ordinal);
                 var kept = new List<string>();
                 foreach (string entry in parts)
@@ -251,7 +246,7 @@ namespace RealLifeOverhaul
             PendingFineDue = 0f;
         }
 
-        /// <summary>Raised when the player has just helped somebody (the "helped" mood, newly earned): Standing hears it through Wiring/StandingLinks.</summary>
+        /// <summary>Raised when the "helped" mood is newly earned; Standing hears it through Wiring/StandingLinks.</summary>
         public static event Action HelpedNow;
 
         public static void AddModifier(string type, int hours = -1)
@@ -265,10 +260,10 @@ namespace RealLifeOverhaul
                 HappinessHelper.AddModifier(type, hours);
                 if (type == Helped)
                 {
-                    SocialHooks.Helped();   // somebody the player helped may come and say so (Scripts/Social)
+                    SocialHooks.Helped();   // somebody the player helped may come and say so
                     if (hours < 0)
                     {
-                        Law.Reputation.GoodDeed();   // (a deed of its own length only; a saved mood is put back without coming here, RestoreModifiers)
+                        Law.Reputation.GoodDeed();   // a deed of its own length only
                         HelpedNow?.Invoke();
                     }
                 }
@@ -296,11 +291,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Puts the moods a save carried back into the game's list, each with the hours it was saved with: written there as the
-        /// game's AddModifier writes a new one, never through it. AddModifier is what Going Public scales (a positive mood's hours
-        /// times its morale factor, on every add), so putting them back through it multiplied them again on every load; it also
-        /// played the "happier" face and told Social the player had just helped somebody. A mood over its cap (a save from
-        /// before the cap) is trimmed to it here, once, with a check line. Cost: once a load, a few operations a mood.
+        /// Puts a save's moods back into the game's list with their saved hours, written as the game writes a new one but
+        /// never through its AddModifier, which Going Public scales on every add. A mood over its cap is trimmed once,
+        /// with a check line. COST: once a load, a few operations a mood.
         /// </summary>
         private static void RestoreModifiers(GameInstance save, string stashed)
         {
@@ -319,7 +312,7 @@ namespace RealLifeOverhaul
             }
             List<HappinessModifierData> list = save.happinessModifiers;
             int restored = 0, trimmed = 0;
-            // Any of the mod's moods the save's own list already holds (none, as BeforeSave takes them out): held to the cap too.
+            // Any of the mod's moods the save's own list holds is held to the cap too.
             for (int i = 0; i < list.Count; i++)
             {
                 HappinessModifierData held = list[i];
@@ -335,7 +328,7 @@ namespace RealLifeOverhaul
                     if (!MoodRules.TryRead(entry, out string type, out int hours) || !registry.TryGetValue(type, out HappinessModifier modifier)
                         || Holds(list, type))
                     {
-                        continue;   // not a mood, none left, a type this session has not registered, or one the list already has
+                        continue;   // not a mood, none left, an unregistered type, or one the list has
                     }
                     var data = new HappinessModifierData { type = type, hideDuration = modifier.hideDuration };
                     trimmed += Trim(data, hours, modifier.maxHoursDuration, "saved");
@@ -354,7 +347,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Sets a mood's hours to what it had, trimmed to its cap; 1 if it had to be trimmed (and says so), else 0.
+        // Sets a mood's hours, trimmed to its cap; 1 if it had to be trimmed (and says so), else 0.
         private static int Trim(HappinessModifierData data, int hours, int cap, string where)
         {
             int kept = MoodRules.Kept(hours, cap);
@@ -379,8 +372,8 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The game has no public way to add a happiness modifier type, so they go into its private registry. Family's and
-        // travel's moods go in with the mod's others here, so a save's moods always find their types when they are put back.
+        // The game has no public way to add a mood type, so they go into its private registry; family's and travel's go
+        // in here too, so a save's moods always find their types.
         private static void RegisterModifiers()
         {
             ModifiersReady = false;
@@ -405,14 +398,13 @@ namespace RealLifeOverhaul
 
         private static Dictionary<string, HappinessModifier> Registry()
         {
-            FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
+            FieldInfo field = GameContract.HappinessRegistry.Field;
             return field?.GetValue(null) as Dictionary<string, HappinessModifier>;
         }
 
         /// <summary>
-        /// Puts one table of the mod's moods into the game's registry (Core/ModState, Family/FamilyModifiers, Travel/TravelEffects
-        /// all register through here). Each has the cap its own length gives (Core/MoodRules.Cap), which the game's AddModifier
-        /// holds every add to, Going Public's scaled ones included. A type already there is left as it is.
+        /// Puts a table of the mod's moods into the game's registry, each capped by its length (MoodRules.Cap), which the
+        /// game holds every add to, Going Public's scaled ones too. A type already there is left as it is.
         /// </summary>
         internal static void Enter(Dictionary<string, HappinessModifier> registry, (string type, int amount, int hours)[] defs)
         {
@@ -431,21 +423,19 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- for Meta (the save tools)
-
         /// <summary>Every key the mod writes into a save's modData starts with this; nothing else of the save's is the mod's.</summary>
         public const string DataPrefix = "reallife:";
 
         /// <summary>The modData key under which the mod's happiness modifiers wait while a save is written.</summary>
         public const string ModifierStashKey = KeyModifiers;
 
-        /// <summary>True for a happiness modifier type that is one of the mod's, whether this version still has it or not.</summary>
+        /// <summary>True for a mood type of the mod's, whether this version still has it or not.</summary>
         public static bool IsModModifier(string type)
         {
             return type != null && type.StartsWith(ModifierPrefix, StringComparison.Ordinal);
         }
 
-        /// <summary>True for a modifier type this version of the mod registers: its own, family's and travel's.</summary>
+        /// <summary>True for a mood type this version registers: its own, family's and travel's.</summary>
         public static bool KnowsModifier(string type)
         {
             return InTable(ModifierDefs, type) || InTable(RealLifeOverhaul.Family.FamilyModifiers.Defs, type) || InTable(TravelEffects.Modifiers, type);
@@ -463,7 +453,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>Puts the mod's modifier types into the game's registry again if they have gone. Returns whether they are there.</summary>
+        /// <summary>Puts the mod's mood types into the game's registry again if they have gone; true when they are there.</summary>
         public static bool RepairModifiers()
         {
             RegisterModifiers();

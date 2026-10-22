@@ -51,7 +51,8 @@ internal static partial class Program
         }
         string locales = Path.Combine(scripts, "..", "Locales");
         Dictionary<string, string> en = MapTexts(locales, "en"), pt = MapTexts(locales, "pt"), zh = MapTexts(locales, "zh-cn");
-        string places = Source(scripts, @"Core\MapPlaces.cs");
+        string places = Source(scripts, @"Core\MapPlaces.cs") + Source(scripts, @"Core\MapPlaces.Rows.cs") + Source(scripts, @"Core\MapPlaces.Choices.cs")
+                        + Source(scripts, @"Core\MapPlaces.Names.cs") + Source(scripts, @"Core\MapPlaces.Driver.cs") + Source(scripts, @"Core\MapPlaces.Glyphs.cs");
         string links = Source(scripts, @"World\MapLinks.cs");
         List<MapRow> rows = MapRowsDeclared(scripts, links);
         MapRowKinds(rows, places, en, pt, zh);
