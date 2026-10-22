@@ -5,20 +5,13 @@ using System.Text;
 namespace RealLifeOverhaul.Permadeath
 {
     /// <summary>
-    /// Permadeath's part of one save, in the save's modData under keys the base game ignores (a save made with it loads
-    /// without the mod). Game-free: read and written by the director (<see cref="Read"/>, <see cref="Write"/>).
-    ///
-    ///   reallife:permadeath_state    v1|on|dead|warned bits|flu began at|flu warnings shown|day it was switched on|
-    ///                                the minute the hunger bar reached its bottom|its warnings shown (the last two came
-    ///                                later: a line without them reads as fed)
+    /// Permadeath's part of one save, in its modData (a save made with it loads without the mod). Game-free.
+    ///   reallife:permadeath_state    v1|on|dead|warned bits|flu began at|flu warnings shown|day switched on|
+    ///                                minute the hunger bar reached its bottom|its warnings shown (a line without the
+    ///                                last two reads as fed)
     ///   reallife:permadeath_record   the life as it ended (<see cref="LifeStory"/>), only once it has
-    ///   reallife:permadeath_seen     the businesses this save has run, by address, so that the obituary can count the
-    ///                                ones that closed or were sold (kept whether the switch is on or not)
-    ///
-    /// The switch is kept here and not in the options: switching it on in one save arms no other. A save read for the
-    /// first time with this feature (<see cref="Fresh"/>) starts with it off, unless it is a game just begun and the
-    /// switch was moved on in the main menu (PermadeathRules.FirstArmed). Once dead, a save stays dead: nothing here
-    /// can be set back, and a reset of the save's data keeps the death and its record.
+    ///   reallife:permadeath_seen     the businesses this save has run, by address, for the obituary's count of those closed
+    /// The switch is per save, not an option. Once dead a save stays dead: nothing here can be set back.
     /// </summary>
     public static class PermadeathState
     {
@@ -45,10 +38,7 @@ namespace RealLifeOverhaul.Permadeath
         public static readonly LifeStory Record = new LifeStory();   // only while Dead
         public static readonly HashSet<string> Seen = new HashSet<string>();
 
-        /// <summary>
-        /// The switch moved on in the main menu, for the next game begun in this run of the game; taken by the first save
-        /// read after it, whatever that save is (Permadeath/PermadeathDirector). Not saved anywhere.
-        /// </summary>
+        /// <summary>The switch moved on in the main menu, for the next game begun in this run; taken by the first save read. Not saved.</summary>
         public static bool ArmNext;
 
         public static void Reset()
@@ -104,7 +94,7 @@ namespace RealLifeOverhaul.Permadeath
                 }
                 else
                 {
-                    Fresh = true;   // a line of no version this knows: taken as never seen (off), never as dead
+                    Fresh = true;   // a version this does not know: taken as never seen (off), never as dead
                 }
             }
             if (Dead && (data == null || !data.TryGetValue(RecordKey, out string record) || !Record.Read(record)))
@@ -168,7 +158,7 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        /// <summary>No flu, or a flu that was treated: its warnings are over.</summary>
+        /// <summary>No flu, or one treated: its warnings are over.</summary>
         public static void NoFlu()
         {
             IllSince = -1f;
@@ -185,7 +175,7 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        /// <summary>Something eaten (or the bar above its bottom): going without food's danger and its warnings are over.</summary>
+        /// <summary>Something eaten, or the bar above its bottom: the danger and its warnings are over.</summary>
         public static void Fed()
         {
             EmptySince = -1f;

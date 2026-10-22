@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Permadeath
         Notice
     }
 
-    /// <summary>The figures of the box down the side, each with its own way of being written (a count, a sum of money, a span of time).</summary>
+    /// <summary>The figures of the box down the side, each written its own way (a count, money, a span of time).</summary>
     public enum ObitFact { None, Age, Span, Worth, Founded, Owned, Employees, Properties, Friends, Followers, Elections, Arrests, Convictions }
 
     /// <summary>One line of the obituary: where it goes, its locale key, and for a figure which fact is its value.</summary>
@@ -37,14 +37,12 @@ namespace RealLifeOverhaul.Permadeath
     }
 
     /// <summary>
-    /// What the obituary says, as locale keys in the order of the page, chosen from the life's story: a sentence is in
-    /// it only when the record has something for it to say (no word of a business for somebody who never ran one, of a
-    /// record for somebody who never had one), and a count of one has its own sentence. The words themselves, and every
-    /// {name} in them, are filled in by Permadeath/PermadeathText from the same story. Game-free: the checks run it.
+    /// What the obituary says, as locale keys in page order: a sentence only where the story has something for it to say,
+    /// and a count of one has its own. <see cref="PermadeathText"/> fills in the words. Game-free: the checks run it.
     /// </summary>
     public static class PermadeathStory
     {
-        private const string P = "reallife" + "_pd_obit_";   // (apart, so that the locale check does not take a prefix for a key)
+        private const string P = "reallife" + "_pd_obit_";   // apart, so the locale check does not take a prefix for a key
 
         /// <summary>The page for a story; <paramref name="test"/> is the options page's rehearsal, whose notice says nobody died.</summary>
         public static void Draft(LifeStory s, bool test, List<ObitLine> into)
@@ -55,7 +53,7 @@ namespace RealLifeOverhaul.Permadeath
             into.Add(new ObitLine(ObitPart.Head, P + "head"));
             into.Add(new ObitLine(ObitPart.Stand, P + "stand_" + Word(cause)));
 
-            // ---- the lead: how long they lived here, what happened, the paper's sympathy
+            // The lead: how long they lived here, what happened, the paper's sympathy.
             into.Add(new ObitLine(ObitPart.Body, P + "lived"));
             if (cause != DeathCause.Test && cause != DeathCause.None)
             {
@@ -63,7 +61,6 @@ namespace RealLifeOverhaul.Permadeath
             }
             into.Add(new ObitLine(ObitPart.Body, P + "close"));
 
-            // ---- a life in business
             into.Add(new ObitLine(ObitPart.Label, P + "sec_work"));
             if (s.Career.Length > 0)
             {
@@ -102,7 +99,6 @@ namespace RealLifeOverhaul.Permadeath
                 into.Add(new ObitLine(ObitPart.Text, P + "debt"));
             }
 
-            // ---- family and friends
             into.Add(new ObitLine(ObitPart.Label, P + "sec_people"));
             if (s.Partner.Length > 0 && s.Bond > 0)
             {
@@ -125,7 +121,6 @@ namespace RealLifeOverhaul.Permadeath
                 into.Add(new ObitLine(ObitPart.Text, P + (s.Close.Count > 0 ? "friends_close" : "friends_count")));
             }
 
-            // ---- in the city
             into.Add(new ObitLine(ObitPart.Label, P + "sec_city"));
             if (s.Arrests > 0 && s.Convictions > 0)
             {
@@ -152,7 +147,7 @@ namespace RealLifeOverhaul.Permadeath
                 into.Add(new ObitLine(ObitPart.Text, P + (s.Elections == 1 ? "voted_one" : "voted_many")));
             }
 
-            // ---- the box: a life in figures, and who mourns them
+            // The box: a life in figures, and who mourns them.
             into.Add(new ObitLine(ObitPart.BoxLabel, P + "box"));
             into.Add(new ObitLine(ObitPart.Figure, "reallife_pd_fig_age", ObitFact.Age));
             into.Add(new ObitLine(ObitPart.Figure, "reallife_pd_fig_years", ObitFact.Span));
@@ -169,7 +164,7 @@ namespace RealLifeOverhaul.Permadeath
             into.Add(new ObitLine(ObitPart.BoxLabel, P + "mourned"));
             into.Add(new ObitLine(ObitPart.Mourned, s.Partner.Length > 0 || s.Children.Count > 0 || s.Family.Count > 0 || s.Close.Count > 0 ? P + "mourners" : P + "mourned_none"));
 
-            // ---- the notice at the foot: what has become of the save
+            // The notice at the foot: what has become of the save.
             into.Add(new ObitLine(ObitPart.NoticeHead, P + (test ? "notice_head_test" : "notice_head")));
             into.Add(new ObitLine(ObitPart.Notice, P + (test ? "notice_test" : "notice")));
         }
@@ -180,7 +175,7 @@ namespace RealLifeOverhaul.Permadeath
             return s.Founded > s.Owned ? s.Founded : s.Owned;
         }
 
-        /// <summary>The word a cause's keys end in. None is a death with no cause of its own (the options page's real test, a record that could not be read).</summary>
+        /// <summary>The word a cause's keys end in; "none" for a death with no cause of its own (the real test, an unreadable record).</summary>
         public static string Word(DeathCause cause)
         {
             switch (cause)
