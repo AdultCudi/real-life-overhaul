@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>Who has one of the city's buildings, as the count of the office supply reads its registration.</summary>
+    /// <summary>Who has one of the city's buildings, as the office supply count reads its registration.</summary>
     public enum LetState
     {
         ToLet,      // standing empty and to let: nobody's, no business, nothing left in it
@@ -15,11 +15,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The count of the city's buildings of one kind (offices, shops, warehouses) by who has them, and of the empty ones
-    /// the mod's features hold (Core/SpecialBuildings), written once a city load (Core/OfficeCensus): how many stood empty
-    /// and to let before the mod held any, how many it holds, and how many are left for the player, in all and by
-    /// district. If the mod held every empty office a player could find none to rent; this line says at a
-    /// glance whether that can happen again. No Unity or game types: checked offline (EconomyCheck, SpecialNameChecks.cs).
+    /// The city's buildings of one kind counted by who has them, and the empty ones the mod's features hold: how many
+    /// stood empty before the mod held any and how many are left for the player, in all and by district, so the log
+    /// shows whether a player can still find one to rent. Game-free.
     /// </summary>
     public sealed class OfficeTally
     {
@@ -28,21 +26,17 @@ namespace RealLifeOverhaul
         private readonly SortedDictionary<string, int> _heldBusy = new SortedDictionary<string, int>(StringComparer.Ordinal);   // others held, by feature
         private readonly SortedDictionary<string, int[]> _districts = new SortedDictionary<string, int[]>(StringComparer.Ordinal);   // empty, left for the player
 
-        /// <summary>Buildings counted.</summary>
         public int Count { get; private set; }
 
         /// <summary>Standing empty and to let, held by the mod or not: the supply before the mod held any.</summary>
         public int Empty => _states[(int)LetState.ToLet];
 
-        /// <summary>Empty ones a feature of the mod holds.</summary>
         public int Held { get; private set; }
 
-        /// <summary>Empty ones left for the player to rent.</summary>
         public int Free => Empty - Held;
 
         public int Of(LetState state) => _states[(int)state];
 
-        /// <summary>The state of a building from its registration.</summary>
         public static LetState Classify(bool rentedByPlayer, bool ownedByPlayer, string rivalId, string businessType, bool forRent, bool layout, int items)
         {
             if (rentedByPlayer || ownedByPlayer)
@@ -88,7 +82,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>One building: its district, its state, and the id of the feature that holds it now (null for none).</summary>
+        /// <summary>Counts one building; <paramref name="holder"/> is the book id of the feature holding it, or null.</summary>
         public void Add(string district, LetState state, string holder)
         {
             Count++;
@@ -115,7 +109,6 @@ namespace RealLifeOverhaul
             row[1] += feature != null ? 0 : 1;
         }
 
-        /// <summary>The empty ones of a district, and those left for the player.</summary>
         public void District(string district, out int empty, out int free)
         {
             empty = free = 0;

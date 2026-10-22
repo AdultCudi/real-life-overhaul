@@ -4,28 +4,14 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The shortest way over a directed graph of points from any of several starts to any of
-    /// several ends (A*, straight-line distance to the ends' middle less their reach ahead).
-    /// Nothing of the game or the engine in it, so it is also run on made-up graphs in a console
-    /// test. Several features use it, each with a search of its own over the one road graph of
-    /// the city (<see cref="RoadGraph"/>.Shared, its places and edges shared: <see cref="Over"/>):
-    /// <see cref="TransitMap"/> lays the bus network out with one behind the loading screen and
-    /// lets go of it when that is done; the GPS (Scripts/Navigation) keeps one for the city.
-    ///
-    /// Why several starts and ends: a bus line's end is "at this subway station", not "on this
-    /// one lane point". The single nearest lane point is often on a piece of road that leads
-    /// only one way (a one-way street, a slip road, the lane heading away), and from such a
-    /// point the other end cannot be reached, or it can be left but never come back to.
-    /// An edge may carry an extra cost: a change of lane is allowed, but costs as much as a
-    /// stretch of road, so it is only taken where following the lane does not get there.
-    ///
-    /// A search can be done in one call (<see cref="Find"/>) or a slice at a time
-    /// (<see cref="Begin"/>, then <see cref="Advance"/> until it no longer answers Searching), so
-    /// that a long one never takes more of a frame than its caller allows.
+    /// The shortest way over a directed graph of points from any of several starts to any of several ends (A*, straight
+    /// line to the ends' middle less their reach). Several starts and ends because the single nearest lane point is
+    /// often on a one-way piece of road. An edge may carry an extra cost (a lane change costs a stretch of road). A
+    /// search runs in one call (<see cref="Find"/>) or a slice at a time (<see cref="Begin"/>, <see cref="Advance"/>).
+    /// Game-free.
     /// </summary>
     public sealed class RouteSearch
     {
-        /// <summary>What <see cref="Advance"/> answers.</summary>
         public enum Outcome { Searching, Found, NoWay }
 
         public readonly int Count;
@@ -47,7 +33,7 @@ namespace RealLifeOverhaul
         private float _gx, _gy, _gz, _reach;   // the search under way: the ends' middle and how far from it an end may be
         private bool _begun;
 
-        /// <summary>Points the last search got to at all.</summary>
+        /// <summary>Points the last search reached at all.</summary>
         public int Reached { get; private set; }
 
         /// <summary>Points the last search went on from.</summary>
@@ -68,7 +54,7 @@ namespace RealLifeOverhaul
             _goal = new int[count];
         }
 
-        /// <summary>A second search over the same points (other edges, its own search under way): the places are shared, not copied.</summary>
+        /// <summary>A second search over the same points, which are shared, not copied.</summary>
         public RouteSearch(RouteSearch samePoints)
         {
             Count = samePoints.Count;
@@ -82,10 +68,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A search of its own over the same roads: the places and the edges of <paramref name="roads"/> shared, not copied,
-        /// and with <paramref name="ownCosts"/> a copy of the edges' extra costs for a caller that changes them (the bus
-        /// network counts the streets its lines run along for less: TransitMap.Corridor), so that the roads' own stay as
-        /// they are for everyone else. What it finds is what a search over a graph built the same way finds.
+        /// A search of its own over the same roads, places and edges shared; with <paramref name="ownCosts"/> a copy of
+        /// the extra costs for a caller that changes them (TransitMap.Corridor).
         /// </summary>
         public static RouteSearch Over(RouteSearch roads, bool ownCosts)
         {
@@ -95,17 +79,14 @@ namespace RealLifeOverhaul
             return search;
         }
 
-        /// <summary>
-        /// Gives up the search under way as <see cref="Find"/> does at its limit (<see cref="HitLimit"/> true, nothing more
-        /// to advance): for a caller that advances a search a slice at a time and holds it to a number of steps in all.
-        /// </summary>
+        /// <summary>Gives up the search under way as <see cref="Find"/> does at its limit.</summary>
         public void GiveUp()
         {
             HitLimit = true;
             _begun = false;
         }
 
-        /// <summary>The edges, as three arrays: where each point's edges begin, where each edge leads, and what it costs over its length.</summary>
+        /// <summary>The edges: where each point's edges begin, where each leads, and its cost over its length.</summary>
         public void SetEdges(int[] edgeStart, int[] edgeTo, float[] edgeExtra)
         {
             _edgeStart = edgeStart;
@@ -113,7 +94,7 @@ namespace RealLifeOverhaul
             _edgeExtra = edgeExtra;
         }
 
-        /// <summary>The edges as they were set (read only: whoever draws the roads or derives another graph from this one).</summary>
+        /// <summary>The edges as set; read only.</summary>
         public int[] EdgeStart => _edgeStart;
         public int[] EdgeTo => _edgeTo;
         public float[] EdgeExtra => _edgeExtra;
@@ -124,9 +105,7 @@ namespace RealLifeOverhaul
             return node >= 0 && node < Count && _seen[node] == _search && _search > 0;
         }
 
-        /// <summary>
-        /// Finds the shortest way. <paramref name="path"/> is filled start to end (a start and an end included).
-        /// </summary>
+        /// <summary>Finds the shortest way; <paramref name="path"/> is filled start to end, both included.</summary>
         /// <param name="gx">The middle of the ends (the station), for the estimate ahead.</param>
         /// <param name="goalReach">No end is further than this from that middle.</param>
         public bool Find(IList<int> starts, IList<int> goals, float gx, float gy, float gz, float goalReach, int maxExpansions, List<int> path)
@@ -139,16 +118,12 @@ namespace RealLifeOverhaul
             Outcome outcome = Advance(maxExpansions, path);
             if (outcome == Outcome.Searching)
             {
-                HitLimit = true;
-                _begun = false;
+                GiveUp();
             }
             return outcome == Outcome.Found;
         }
 
-        /// <summary>
-        /// Sets a search up without doing any of it. False if there is nothing to search (no edges, no start, no end).
-        /// A search begun before and not finished is given up.
-        /// </summary>
+        /// <summary>Sets a search up, giving up one under way; false if there is nothing to search.</summary>
         public bool Begin(IList<int> starts, IList<int> goals, float gx, float gy, float gz, float goalReach)
         {
             Reached = 0;
@@ -191,9 +166,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Goes on with the search begun until it is decided or <see cref="Expanded"/> has come to
-        /// <paramref name="expandedLimit"/> (pass Expanded + a slice to do a slice). On Found,
-        /// <paramref name="path"/> is filled start to end.
+        /// Goes on with the search until it is decided or <see cref="Expanded"/> reaches <paramref name="expandedLimit"/>
+        /// (pass Expanded plus a slice). On Found, <paramref name="path"/> is filled start to end.
         /// </summary>
         public Outcome Advance(int expandedLimit, List<int> path)
         {
@@ -257,7 +231,7 @@ namespace RealLifeOverhaul
             return (float)Math.Sqrt(x * x + y * y + z * z);
         }
 
-        // Never more than the road still to drive: the straight line to the ends' middle, less how far from it an end may be.
+        // Never more than the road still to drive.
         private float Ahead(int node)
         {
             float x = X[node] - _gx;

@@ -4,15 +4,9 @@ using Streets;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city's office buildings counted once a city load, when the mod's features have chosen theirs (Tech/Sites, after
-    /// the towers): standing empty and to let, a business of the game's, a rival's, the player's (or another player's in a
-    /// Going Public session), and held by the mod, by feature; how many stood empty before the mod held any, and how many
-    /// are left for the player, in all and by district (Core/OfficeSupply). The shops and the warehouses are counted the
-    /// same way, the other buildings an office business may be started in. Only the city's own buildings that may be had
-    /// are counted: no special service, none behind a private fence, none that needs a DLC, no villa of the Hamptons.
-    ///
-    /// Nothing is changed and nothing is kept: one look at the city's buildings (a few hundred registrations read), and
-    /// three lines in the log.
+    /// The city's offices, shops and warehouses counted once a city load, after the features have chosen theirs: how
+    /// each stands (<see cref="OfficeTally"/>) and how many are left for the player, written as three log lines. Only
+    /// buildings a player may have are counted. Nothing is changed or kept; one pass over the city's buildings.
     /// </summary>
     internal static class OfficeCensus
     {
@@ -48,7 +42,7 @@ namespace RealLifeOverhaul
                 }
                 LetState state = OfficeTally.Classify(reg.RentedByPlayer, reg.BuildingOwnedByPlayer, reg.businessOwnerRivalId, reg.businessTypeName, reg.AvailableForRent,
                     reg.Layout != null, reg.itemInstances != null ? reg.itemInstances.Count : 0);
-                string holder = SpecialBuildings.TakenBy(reg) != null ? SpecialBuildings.HolderOf(b) : null;   // (held and refused now: its feature is on)
+                string holder = SpecialBuildings.TakenBy(reg) != null ? SpecialBuildings.HolderOf(b) : null;   // held and refused now: its feature is on
                 into.Add(b.building.Neighbourhood, state, holder);
             }
             logger.Info(offices.Line("office"));
@@ -57,8 +51,7 @@ namespace RealLifeOverhaul
             KeptCheck(buildings, logger);
         }
 
-        // The two largest office buildings a player can rent or buy are still the two the mod keeps for the player
-        // (Core/CityReserves), and none of the mod's features holds them: one line, a warning if the game's city changed.
+        // The two largest offices are still the two CityReserves keeps for the player, and no feature holds them.
         private static void KeptCheck(CityBuildingController[] buildings, IModLogger logger)
         {
             CityReserves.TopTwo(buildings.Length,

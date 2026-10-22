@@ -4,10 +4,9 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// How a business's list of the day's customers stood after a draw: the list itself, how many it held and the last of
-    /// them. The game's own redraw (anyone's) takes every customer not yet served out of the list and puts the new ones at
-    /// its end, so while the list, its length and its last customer are all the same, nobody has drawn it again since.
-    /// Serving a customer (the game's simulator, its spawner) changes none of the three.
+    /// How a business's list of the day's customers stood after a draw: the list, its length and its last customer. A
+    /// redraw replaces the unserved customers and appends the new ones, and serving changes none of the three, so while
+    /// all three are the same nobody has drawn it again.
     /// </summary>
     public struct DrawPrint
     {
@@ -27,34 +26,22 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The redraws of the customers still to come today at the player's businesses (Core/CustomerDraw), as rules: who
-    /// waits, with which figure, and which list is already drawn with the figure its business has.
-    ///
-    /// Why: in the frame a game day starts the game has just drawn every business's customers itself, and then the city's
-    /// economy, the company, the brands, the interiors and business pressure each wrote their part of a business's footfall
-    /// figure and had the day drawn again at once, so one business was drawn three or four times in that frame and hundreds
-    /// of businesses in all. Here a business waits once, however often it is asked for, with
-    /// the figure of the last asking (as the last of those redraws had it); and a business whose list was last drawn with
-    /// the figure it has now, by the game's day or by the mod, nobody having drawn it since, is not drawn at all (a draw is
-    /// random: a second one with the same figure changes nothing but which customers come).
-    ///
-    /// A wish "always" (the rota planner's and the brands' opening hours: the list is out of date whatever the figure) is
-    /// never left out. Waiting businesses come out in the order they were first asked for, the same on every run.
-    ///
-    /// No Unity or game types: the business is any key compared by reference, the list a print of objects. Checked
-    /// offline (EconomyCheck, MorningChecks.cs). Cost: a dictionary look-up an asking, nothing allocated once the pool
-    /// of wishes has grown to the most that ever waited at once.
+    /// The redraws of today's remaining customers at the player's businesses (<see cref="CustomerDraw"/>). Several
+    /// features change a business's footfall figure in the frame a day starts; a business waits once with the figure of
+    /// the last asking, and one whose list stands drawn with that figure is not drawn again. A wish "always" (the list is
+    /// out of date whatever the figure) is never left out. Waiting businesses come out in the order first asked.
+    /// Game-free; a dictionary look-up an asking, nothing allocated once the pool has grown.
     /// </summary>
     public sealed class RedrawQueue<T> where T : class
     {
         private sealed class Wish
         {
             public T Key;
-            public int Figure;     // the business's figure at the last asking: the one it is drawn with
-            public bool Always;    // asked for whatever the figure (the list is out of date)
+            public int Figure;     // the figure at the last asking: the one it is drawn with
+            public bool Always;    // asked for whatever the figure
             public int Hour;       // the game hour (day * 24 + hour) of the first asking: it is drawn within it
             public object List;    // the list it was asked against (the game makes a new one for its day's draw)
-            public bool Live;      // false once drawn or dropped: its place in the order is passed over
+            public bool Live;      // false once drawn or dropped
         }
 
         private struct Drawn
@@ -63,19 +50,17 @@ namespace RealLifeOverhaul
             public DrawPrint Print;
         }
 
-        private readonly List<Wish> _order = new List<Wish>(64);          // first asked first, with dropped ones passed over
+        private readonly List<Wish> _order = new List<Wish>(64);          // first asked first, dropped ones passed over
         private readonly Dictionary<T, Wish> _waiting = new Dictionary<T, Wish>(64, ReferenceComparer<T>.Instance);
         private readonly Dictionary<T, Drawn> _drawn = new Dictionary<T, Drawn>(64, ReferenceComparer<T>.Instance);
         private readonly List<Wish> _pool = new List<Wish>(64);
         private int _head;   // the first place in _order that may still be live
 
-        /// <summary>How many businesses wait.</summary>
         public int Waiting => _waiting.Count;
 
         /// <summary>
-        /// A business is asked for with the figure it has now. True if it waits for its draw (asked now, or its wish brought
-        /// up to this figure); false if nothing is to be drawn: its list stands drawn with this very figure (a wish of it that
-        /// waited without "always" is dropped, as the redraw it stood for would have been undone by this one).
+        /// Asks for a business's redraw with its figure now. True if it waits; false if its list stands drawn with this
+        /// figure, and a waiting wish without "always" is dropped.
         /// </summary>
         public bool Ask(T key, int figure, bool always, int hour, DrawPrint now)
         {
@@ -112,7 +97,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The business first asked for of those that wait, taken out to be drawn. False if none waits.</summary>
+        /// <summary>Takes out the first-asked waiting business to be drawn; false if none waits.</summary>
         public bool Next(out T key, out int figure, out int hour)
         {
             while (_head < _order.Count)
@@ -133,7 +118,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>One business taken out to be drawn now, if it waits (its list is about to be read).</summary>
+        /// <summary>Takes one business out to be drawn now, if it waits (its list is about to be read).</summary>
         public bool Take(T key, out int figure, out int hour)
         {
             if (key != null && _waiting.TryGetValue(key, out Wish wish))
@@ -153,8 +138,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The game has made the business a new list and drawn it (its day's draw): a wish asked against the list before
-        /// is dropped, as the redraw made at its asking was, wiped by the game's own. True if one was.
+        /// The game made the business a new list (its day's draw): a wish asked against the old list is dropped. True if
+        /// one was.
         /// </summary>
         public bool Replaced(T key, object listNow)
         {
@@ -181,7 +166,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>A business's list was drawn with a figure (by the mod, or by the game's own day) and stands so now.</summary>
+        /// <summary>A business's list was drawn with a figure, by the mod or the game's day, and stands so now.</summary>
         public void Drew(T key, int figure, DrawPrint print)
         {
             if (key != null)
@@ -190,10 +175,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The mod added to a business's list itself (an office's extra clients): if the list stood as last drawn just
-        /// before, it stands drawn with the same figure now.
-        /// </summary>
+        /// <summary>The mod added to a list itself (an office's extra clients): if it stood as drawn before, it still does.</summary>
         public void Added(T key, DrawPrint before, DrawPrint now)
         {
             if (key != null && _drawn.TryGetValue(key, out Drawn d) && d.Print.Same(before))
@@ -202,13 +184,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True if the business's list stands drawn with this figure: last drawn with it, and nobody drew it since.</summary>
+        /// <summary>True if the list was last drawn with this figure and nobody drew it since.</summary>
         public bool Stands(T key, int figure, DrawPrint now)
         {
             return key != null && _drawn.TryGetValue(key, out Drawn d) && d.Figure == figure && d.Print.Same(now);
         }
 
-        /// <summary>What is known of a business's list is forgotten (another session, another save).</summary>
+        /// <summary>Forgets what is known of a business's list (another session, another save).</summary>
         public void Forget(T key)
         {
             if (key != null)
@@ -217,7 +199,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Nothing waits and nothing is known: a city is going.</summary>
+        /// <summary>A city is going: nothing waits and nothing is known.</summary>
         public void Clear()
         {
             for (int i = _head; i < _order.Count; i++)
@@ -246,8 +228,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Every wish in the order goes back to the pool once nothing waits: the order starts afresh, so it never grows past
-        // the most that waited at once.
+        // Once nothing waits every wish goes back to the pool, so the order never grows past the most that waited at once.
         private void Compact()
         {
             if (_waiting.Count > 0)
@@ -273,19 +254,11 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// When the redraws are made (Core/CustomerDraw): spread over the frames that follow, a little time each, or at once.
-    ///
-    /// A redraw asked for in a game hour must be made within it, before the game's own simulation of that hour reads the
-    /// list at the hour's end (BusinessSimulatorHelper.RunHourly), as the redraws made at once always were. So they are
-    /// spread only while the clock is known to take small steps: alone (no Going Public session, whose clock can be moved
-    /// on by an hour in a frame), at the game's normal speed (not fast forward), not in the game's time skip (sleep, the
-    /// time machine), and while the hour has at least <see cref="SettleMinutes"/> game minutes left, many times the
-    /// largest step one frame can make: the engine gives no frame more than its largest step of time
-    /// (Time.maximumDeltaTime, a third of a second), and the game moves its clock by that times its minutes a second. Out
-    /// of those, whatever waits is made at once. Each frame they run, they take <see cref="BudgetMs"/> of it at most, and
-    /// always at least one, so that a morning's few hundred end in a few seconds of play, well inside the first game minutes.
-    ///
-    /// No Unity or game types: checked offline (EconomyCheck, MorningChecks.cs).
+    /// When the redraws are made: spread over the frames that follow, or at once. A redraw asked in a game hour must be
+    /// made before BusinessSimulatorHelper.RunHourly reads the list at its end, so they are spread only while the clock
+    /// takes small steps: alone, at normal speed, not in a time skip, and with at least <see cref="SettleMinutes"/> left
+    /// in the hour, many times the largest step a frame can make (Time.maximumDeltaTime). Each frame takes at most
+    /// <see cref="BudgetMs"/>, and always at least one. Game-free.
     /// </summary>
     public static class RedrawRules
     {
@@ -295,8 +268,8 @@ namespace RealLifeOverhaul
         public const float MinutesInHour = 60f;    // the game's clock: minutes an hour
 
         /// <summary>
-        /// The most game minutes one frame can move the clock on: the engine's largest step of a frame (seconds), at the
-        /// game's speed (the time scale, never counted under one), times the game's minutes a second of game time.
+        /// The most game minutes one frame can move the clock: the engine's largest frame step (seconds), times the time
+        /// scale (never under one), times the game's minutes a second.
         /// </summary>
         public static float StepMost(float maximumDeltaTime, float timeScale, float minutesASecond)
         {
@@ -304,9 +277,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The game minutes a second of game time the clock was seen to run at between two looks a frame apart (the larger of
-        /// the two frames' steps taken, so that a long frame before a short one is not read as a fast clock). Nothing if it
-        /// did not move forward within the hour's span.
+        /// The game minutes a second the clock ran at between two looks a frame apart, over the larger of the two steps so
+        /// a long frame is not read as a fast clock; 0 if it did not move forward within an hour.
         /// </summary>
         public static float Seen(double clockBefore, double clockNow, float stepBefore, float stepNow)
         {
@@ -315,23 +287,19 @@ namespace RealLifeOverhaul
             return moved > 0.0 && moved < MinutesInHour && step > 0f ? (float)(moved / step) : 0f;
         }
 
-        /// <summary>
-        /// True if the redraws may wait for the frames to come: alone, the game's time skip not running, at no more than
-        /// the normal speed, with a clock whose largest step the margin holds <see cref="StepsKept"/> times over, and the
-        /// hour's last <see cref="SettleMinutes"/> not begun. Otherwise everything waiting is drawn at once.
-        /// </summary>
+        /// <summary>True if the redraws may wait for the frames to come; otherwise everything waiting is drawn at once.</summary>
         public static bool Spread(bool alone, bool skipping, float timeScale, float stepMost, float minute)
         {
             return alone && !skipping && timeScale <= 1.001f && stepMost * StepsKept < SettleMinutes && minute >= 0f && minute < MinutesInHour - SettleMinutes;
         }
 
-        /// <summary>True if another redraw fits into this frame: always the first, then while the frame's share is under the budget.</summary>
+        /// <summary>True if another redraw fits into this frame: always the first, then while under the budget.</summary>
         public static bool More(int done, double ms)
         {
             return done == 0 || ms < BudgetMs;
         }
 
-        /// <summary>True if a redraw asked for in one game hour (day * 24 + hour) is being made in a later one: the hour turned first.</summary>
+        /// <summary>True if a redraw asked in one game hour (day * 24 + hour) is being made in a later one.</summary>
         public static bool Late(int askedHour, int hourNow)
         {
             return hourNow != askedHour;
