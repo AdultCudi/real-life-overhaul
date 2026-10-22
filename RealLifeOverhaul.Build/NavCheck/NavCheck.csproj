@@ -64,6 +64,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitRules.cs" Link="Mod\FitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.cs" Link="Mod\FitPlanner.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.Zones.cs" Link="Mod\FitPlanner.Zones.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.Work.cs" Link="Mod\FitPlanner.Work.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.Walkway.cs" Link="Mod\FitPlanner.Walkway.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\DeskReach.cs" Link="Mod\DeskReach.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WhoseCar.cs" Link="Mod\WhoseCar.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Offices\ConversionRules.cs" Link="Mod\ConversionRules.cs" />

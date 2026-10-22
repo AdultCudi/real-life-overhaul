@@ -15,30 +15,25 @@ namespace RealLifeOverhaul.FitOut
     }
 
     /// <summary>
-    /// Which desk of a fitted-out floor is the player's (Scripts/FitOut): a working day of a job is worked at a desk of
-    /// the employer's (Careers), and where that employer's floor is one the mod fits out (a tech company's headquarters,
-    /// or a preset desk where the building has no station of the game's that suits the job), one of the floor's desks is
-    /// kept for the player: nobody of the cast sits there, and the careers make it a thing to click.
-    ///
-    /// Asked once when a floor begins to go up (<see cref="Wanted"/>, wired from Careers in Scripts/Wiring), told once when
-    /// it stands and when it is taken down. The desk is the same every visit: the plan is the same for the same room, and
-    /// the desk is its seats' one picked by the seed given. Nothing is saved, nothing runs by itself.
+    /// Which desk of a fitted-out floor is the player's, for a job worked at the employer's desk: nobody of the cast sits
+    /// there, and the careers make it a thing to click. Asked once as a floor goes up, told when it stands and when it goes.
+    /// The same room gives the same plan and the seed the same desk, so it is the same every visit. Nothing is saved.
     /// </summary>
     public static class FitDesks
     {
-        /// <summary>The seed of the player's desk on the floor of a building (its place key), or -1 if none of its desks is theirs. Default: none.</summary>
+        /// <summary>The seed of the player's desk in a building (by its place key), or -1 if none is theirs.</summary>
         public static Func<string, int> Wanted;
 
-        /// <summary>The player's desk stands. Default: nobody is told.</summary>
+        /// <summary>The player's desk stands.</summary>
         public static Action<FitDesk> Made;
 
-        /// <summary>...and is taken down with its floor. Default: nobody is told.</summary>
+        /// <summary>The player's desk is taken down with its floor.</summary>
         public static Action<FitDesk> Gone;
 
         /// <summary>The player's desk standing now, or null.</summary>
         public static FitDesk Current { get; private set; }
 
-        /// <summary>The building a floor that keeps a desk for the player is going up in (its place key), or null.</summary>
+        /// <summary>The place key of the building where a floor keeping the player's desk is going up, or null.</summary>
         public static string Building { get; private set; }
 
         /// <summary>The seed of the player's desk in a building, or -1.</summary>
@@ -51,7 +46,7 @@ namespace RealLifeOverhaul.FitOut
             catch (Exception e)
             {
                 FitOutDirector.Logger?.Error(e);
-                Wanted = null;   // (asked no more this session)
+                Wanted = null;   // asked no more this session
                 return -1;
             }
         }

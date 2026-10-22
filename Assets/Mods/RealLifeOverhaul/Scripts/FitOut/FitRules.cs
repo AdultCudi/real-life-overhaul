@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.FitOut
 {
@@ -11,8 +10,8 @@ namespace RealLifeOverhaul.FitOut
         CivicOffice,   // a city office or the back of a police station: desks, filing, an interview table, a break corner, waiting seats
         DataCentre,    // the floor of a data centre round its server hall: stores, a workbench, a staff desk, a break corner
 
-        // The presets of a working day's desk (Careers: a job whose employer's building has no station of the game's that
-        // suits it): one small room of its kind on the floor the building leaves free, round what the game furnished it with.
+        // A working day's desk where the employer's building has no station of the game's for the job: one small room
+        // of its kind on the floor left free.
         OfficeRow,     // an office's: a row of desks, each with a computer and a chair, colleagues at some
         Ward,          // a hospital's nurses' station: two desks with computers and chairs, medical cabinets
         Classroom,     // the school's teacher's desk: a computer, a chair, a cabinet
@@ -60,10 +59,7 @@ namespace RealLifeOverhaul.FitOut
         }
     }
 
-    /// <summary>
-    /// One piece of a fit-out: where its pivot goes on the floor (the game's axes inside the building), how high above the
-    /// floor and turned how far, and the floor it takes along the room's axes. Plain numbers and the game's name for it.
-    /// </summary>
+    /// <summary>One piece of a fit-out: its pivot, height and turn in the building's axes, and the floor it takes along the room's.</summary>
     public struct FitPiece
     {
         public string Prefab;            // the game's item (its id, as the game names its prefabs), or a model of the mod's ("rlo:...")
@@ -247,11 +243,9 @@ namespace RealLifeOverhaul.FitOut
     }
 
     /// <summary>
-    /// What the game's items are to a fit-out, by their ids: pure rules on the names the game gives its prefabs. Which
-    /// pieces of a design are left out of every fit-out (a business's trade: tills, signs, delivery spots), which stand,
-    /// sit, hang or light, what a chair is drawn up to, what somebody walks up to, and the small things that go first when
-    /// a design has more pieces than a visit is given. And the plan's own figure for the size of the pieces it lays out,
-    /// until the game side has measured them.
+    /// What the game's items are to a fit-out, by the names of their prefabs: which are a business's trade and left out,
+    /// which stand, sit, hang or light, what a chair is drawn up to, what goes first when a design has too many, and the
+    /// plan's own size for a piece until the game side has measured it.
     /// </summary>
     public static class FitRoles
     {
@@ -391,11 +385,7 @@ namespace RealLifeOverhaul.FitOut
         private static bool Has(string id, string part) => id != null && id.IndexOf(part, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
-    /// <summary>
-    /// Who works in a fitted-out building while the player is in it, by its kind and its seats: some at desks, a pair at a
-    /// meeting table, somebody in the lounge, one or two walking about, somebody waiting; never more than the mod's people
-    /// to spare (People/ActorPool), the desks first.
-    /// </summary>
+    /// <summary>Who works in a fitted-out building while the player is in it, by its kind and seats, within the people to spare.</summary>
     public struct FitCrew
     {
         public int AtDesks, InMeeting, InLounge, Waiting, Walking;
@@ -419,7 +409,7 @@ namespace RealLifeOverhaul.FitOut
                     crew.Walking = stops >= 2 ? 1 : 0;
                     break;
                 case FitKind.OfficeRow:
-                    crew.AtDesks = Clamp(deskSeats, 0, 3);   // (the player's own desk is not among the seats given)
+                    crew.AtDesks = Clamp(deskSeats, 0, 3);   // the player's own desk is not among the seats given
                     break;
                 case FitKind.Ward:
                 case FitKind.ServiceDesk:
@@ -433,7 +423,7 @@ namespace RealLifeOverhaul.FitOut
                     crew.AtDesks = deskSeats > 0 ? 1 : 0;
                     break;
             }
-            // Within what there is to spare: the walkers, the lounge, the meeting and the waiting go before the desks.
+            // Within what there is to spare: the lounge, the waiting, the meeting and the walkers go before the desks.
             most = Math.Max(0, most);
             while (crew.Total > most)
             {
@@ -447,7 +437,7 @@ namespace RealLifeOverhaul.FitOut
                 }
                 else if (crew.InMeeting > 0)
                 {
-                    crew.InMeeting = 0;   // (a meeting is a pair or nobody)
+                    crew.InMeeting = 0;   // a meeting is a pair or nobody
                 }
                 else if (crew.Walking > 0)
                 {
