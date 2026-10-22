@@ -217,7 +217,7 @@ internal static partial class Program
 
     private static void StreetOfferSources()
     {
-        string director = TextsSource(@"Street\StreetDirector.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs");
+        string director = TextsSource(@"Street\StreetDirector.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs") + TextsSource(@"Street\StreetHold.cs");
         string horn = TextsSource(@"People\HornReactions.cs"), tests = TextsSource(@"Street\StreetDirector.Tests.cs");
         int offer = director.IndexOf("private void Offer(float now)", StringComparison.Ordinal);
         int offerEnd = offer >= 0 ? director.IndexOf("private void Aim(", offer, StringComparison.Ordinal) : -1;

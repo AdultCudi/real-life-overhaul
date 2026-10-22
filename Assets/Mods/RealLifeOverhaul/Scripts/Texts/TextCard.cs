@@ -17,11 +17,7 @@ namespace RealLifeOverhaul.Texts
         }
     }
 
-    /// <summary>
-    /// The character sheet the text model reads: one fact per line, the same fields the models were trained on. Filled by
-    /// the game's state (TextFaces for who is speaking, TextIntents for what happened), never by free text from a model.
-    /// Game-free. Kept and cleared, not made anew, so a request costs its strings only.
-    /// </summary>
+    /// <summary>The character sheet the text model reads, filled from the game's state, never a model's words. Game-free; kept and cleared.</summary>
     public sealed class TextSheet
     {
         public string Who, Role, Mood, Style, Player, When, News, Write;
@@ -31,7 +27,7 @@ namespace RealLifeOverhaul.Texts
         public readonly List<string> Memory = new List<string>(3);       // data v6: what the speaker remembers of the player, one line each
         public readonly List<TextSaid> History = new List<TextSaid>(3);
         public readonly List<string> Must = new List<string>(3);
-        public readonly List<TextSlotKind> MustKinds = new List<TextSlotKind>(3);   // ...what each must fact is (a name is kept in every language, a word in English only)
+        public readonly List<TextSlotKind> MustKinds = new List<TextSlotKind>(3);   // ...what each must fact is: a name is kept in every language, a word in English only
 
         public void Clear()
         {
@@ -47,14 +43,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The card and the prompt, byte for byte as the models were trained on them (the training data's common.py: SYSTEM,
-    /// card() and chatml()): the fields in a fixed order (who, role, traits, mood, style, player, when, news, facts,
-    /// history, write, must, lang), empty ones left out, a list joined with "; ", the thread under "history:" one line each
-    /// as "  Name: line", and the whole in ChatML. Proved identical to the Python for every voice and channel used
-    /// (EconomyCheck, TextsChecks.cs, against cards made by the training generator itself). Data v6 (the contract,
-    /// SPEC_v6.json): the same order with a "memory:" line of what the speaker remembers, after the facts and joined like them, a lang
-    /// line of any of the seven languages, and the system turn of <see cref="SystemSix"/> (TextsSixChecks.cs). Game-free.
-    /// COST: one string of a few hundred characters a request; nothing per frame.
+    /// The card and the prompt, byte for byte as the models were trained on them (common.py's SYSTEM, card() and chatml()).
+    /// Game-free. COST: one string of a few hundred characters a request.
     /// </summary>
     public static class TextCard
     {
@@ -63,33 +53,28 @@ namespace RealLifeOverhaul.Texts
                                      + "given and add no new events, money, times or promises. Plain British English, no dashes. One short message, "
                                      + "nothing else.";
 
-        /// <summary>The system turn of data v6: the card's lang line names the language, English in plain British English.</summary>
+        /// <summary>The system turn of data v6, where the card's lang line names the language.</summary>
         public const string SystemSix = "You write one message for a character in the game Big Ambitions. Stay in character. Use only the facts "
                                         + "given and add no new events, money, times or promises. Write in the language the lang line names; English "
                                         + "in plain British English. No dashes and no exclamation marks. One short message, nothing else.";
 
         public const string Stop = "<|im_end|>";   // where the model's reply ends (ChatML)
 
-        /// <summary>The system turn of a pack of this data version.</summary>
         public static string SystemOf(int data) => data >= TextIntents.DataV6 ? SystemSix : System;
 
         // The service's system turns of data v6, one a language in TextLanguages.All's order, made the first time each is asked.
         private static readonly string[] ServiceSix = new string[TextLanguages.All.Length];
 
         /// <summary>
-        /// The system turn Your own AI is sent with a card (TextServiceRules.Build): a pack's of the card's data version
-        /// (<see cref="SystemOf"/>), and for a card of data v6 in a language other than English one sentence more, which
-        /// names the card's lang line as its native speakers write it and how they address the player
-        /// (TextLanguages.Native, AddressOf), as the teacher that wrote the packs' lines was told: a large model reads
-        /// "lang: pt" as any Portuguese, the packs learnt Brazilian Portuguese. The card itself stays as the packs read it.
-        /// COST: a string made once a language; then an array read.
+        /// The system turn Your own AI is sent: the pack's, and in another language a sentence naming it as its natives write
+        /// it, since a large model reads "lang: pt" as any Portuguese. COST: a string made once a language.
         /// </summary>
         public static string ServiceSystem(int data, string lang)
         {
             int at = Array.IndexOf(TextLanguages.All, lang);
             if (data < TextIntents.DataV6 || at <= 0)
             {
-                return SystemOf(data);   // (English, or a code that is none of the seven: the pack's own turn)
+                return SystemOf(data);   // English, or a code that is none of the seven
             }
             return ServiceSix[at] ?? (ServiceSix[at] = SystemSix + " The lang line here is " + lang + ": write " + TextLanguages.Native(lang)
                                                       + " as a native speaker talks in a big city today, in everyday words, never like a translation. "
@@ -107,7 +92,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The exact text the model reads: system, the card as the user's turn, and the assistant's turn opened.</summary>
         public static string ChatMl(TextSheet s) => ChatMl(s, System);
 
-        /// <summary>The same with a system turn of its own (data v6's: <see cref="SystemSix"/>).</summary>
         public static string ChatMl(TextSheet s, string system)
         {
             var t = new StringBuilder(1024);

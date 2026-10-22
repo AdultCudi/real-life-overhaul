@@ -10,70 +10,48 @@ using UnityEngine;
 namespace RealLifeOverhaul.Street
 {
     /// <summary>
-    /// Talking to anybody in the street (Scripts/Street). Walk up to one of the game's own walkers, or somebody standing about
-    /// or sitting on a bench, and face them: the game's own panel over them (the box the game puts over a petrol pump:
-    /// GameUi.DoorPanel) offers Talk on the interact key. Who is offered is the nearest roughly in front within talking
-    /// distance (StreetOffer), once they have been in front a moment, counted on the same person and kept for a short grace
-    /// when a passer-by steps out of the front, so somebody walking by can be caught. The jobs' and the social life's own
-    /// boxes and keys come first: street talk offers nothing while either has the key.
-    /// They stop and turn to the player (StreetHold: a walker by the game's own turn, somebody standing on the spot,
-    /// somebody seated stays as posed), and a conversation of a few turns plays in the
-    /// game's own dialogue panel (StreetDialog, StreetDirector.Talk.cs): their line on top, the player's choices below.
-    /// The game decides everything (StreetRules); the words are written lines, or the model's when RLO Texts has them in
-    /// time (StreetTexts, through <see cref="Words"/>). What comes of it: the day's memory of the person (StreetMemory),
-    /// their number (they join People, met in the street), an outing booked, the way to a place with the game's marker, word
-    /// of mouth for the player's business (kept in the save: StreetStore), the police on a threat.
-    ///
-    /// Off (Settings.StreetTalk): no panel, nobody stops; the save's line is kept as it is.
-    /// COST: per frame one time comparison. Five times a second on foot out of doors a pass over the people that are out
-    /// (StreetGame.Facing: a few dozen distance tests); ten times a second while a conversation waits to open, a few field
-    /// reads; texts and choices only on a press or a click. Nothing allocated per frame; with Developer diagnostics on, one
-    /// check line at most every five seconds (<see cref="CheckEvery"/>).
+    /// Talking to anybody in the street: the game's box over the person in front offers Talk, they stop and turn, and a
+    /// conversation plays in the game's dialogue panel. The rules decide everything; the words are written lines, or RLO
+    /// Texts' when they come in time. The jobs' and the social life's keys come first.
+    /// COST: per frame one time comparison; five times a second on foot out of doors a pass over the people out; ten times
+    /// a second during a conversation a few field reads. Nothing allocated per frame.
     /// </summary>
     public sealed partial class StreetDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("street", "StreetDirector", typeof(StreetDirector));   // its Update (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("street", "StreetDirector", typeof(StreetDirector));
         private static readonly int HotUpdate = HotSpots.Slot("Street: StreetDirector.Update");
         private static readonly int HotLook = HotSpots.Slot("Street: StreetDirector.Look");
 
         private const float Busy = 0.1f;            // real seconds between two ticks while a conversation is about to open or is open
-        private const float CheckEvery = 5f;        // real seconds between two of the offer's check lines while nothing is offered (Developer diagnostics)
+        private const float CheckEvery = 5f;        // real seconds between two of the offer's check lines (Developer diagnostics)
 
         public static IModLogger Logger;
         public static StreetDirector Instance { get; private set; }
 
-        /// <summary>
-        /// RLO Texts' words for a line (set by Wiring/StreetLinks: StreetTexts.Ask): asked with the line the rules chose and what the
-        /// player said; true if asked, and then the words (or null for the written line) come back through the action within
-        /// <see cref="StreetRules.Hold"/> seconds, on the game's thread. Null or false: the written line at once.
-        /// </summary>
+        /// <summary>RLO Texts' words for a line: true if asked, the words or null coming back through the action; else the written line.</summary>
         public static Func<StreetChat, StreetLine, Dictionary<string, string>, string, Action<string>, bool> Words;
 
-        /// <summary>RLO Texts: the opening line guessed while the player looks at somebody (asked ahead, taken at the press). Null: none.</summary>
+        /// <summary>RLO Texts: asks ahead for the opening line while the player looks at somebody. Null: none.</summary>
         public static Action<StreetChat, StreetLine, Dictionary<string, string>> Guess;
 
-        /// <summary>RLO Texts: the guessed opening line, taken at the press: the words, or null for the written line.</summary>
+        /// <summary>RLO Texts: the guessed opening line, taken at the press; null for the written line.</summary>
         public static Func<StreetChat, string> TakeGuess;
 
-        /// <summary>
-        /// RLO Texts: the answer to the blue button, asked as soon as it is shown (the line the rules would choose and the
-        /// player's words), on a machine where a reply takes more than half the hold. Null: never.
-        /// </summary>
+        /// <summary>RLO Texts: asks for the blue button's answer as soon as it is shown, where a reply is slow. Null: never.</summary>
         public static Action<StreetChat, StreetLine, Dictionary<string, string>, string> Ahead;
 
-        /// <summary>RLO Texts: the answer asked ahead, taken at the click: the words, or null (then it is asked as usual).</summary>
+        /// <summary>RLO Texts: the answer asked ahead, taken at the click; null, and it is asked as usual.</summary>
         public static Func<StreetChat, string> TakeAhead;
 
-        /// <summary>RLO Texts (data v6): a line the stranger has just said, its words shown however they came, for what they will remember. Null: none.</summary>
+        /// <summary>RLO Texts (data v6): a line the stranger has just said, for what they will remember. Null: none.</summary>
         public static Action<StreetChat, StreetLine, Dictionary<string, string>> Spoken;
 
-        /// <summary>True while the interact key is street talk's (its panel is up, or its button ran this frame): the mod's own key stands aside.</summary>
+        /// <summary>True while the interact key is street talk's (its panel is up, or its button ran this frame).</summary>
         public static bool TakesInteractKey => Instance != null && Instance._door.TakesKey;
 
-        /// <summary>True while somebody is stopped for the player or talking to them.</summary>
         public static bool Talking => Instance != null && Instance._chat != null;
 
-        /// <summary>True while this figure is stopped for a talk: another feature's reactions (a horn's look round) leave them alone.</summary>
+        /// <summary>True while this figure is stopped for a talk, so other features' reactions leave them alone.</summary>
         public static bool Holds(BaseHuman figure) => Instance != null && Instance._hold.Holds(figure);
 
         private DoorPanel _door;
@@ -83,13 +61,13 @@ namespace RealLifeOverhaul.Street
         private float _next, _nextHook;
         private bool _failed;
         private GameInstance _save;
-        private BaseHuman _offered;           // who the panel is (about to be) over
+        private BaseHuman _offered;           // who the panel is, or is about to be, over
         private Pedestrian _offeredWalker;    // ...their walker, or null for somebody standing or sitting
         private StreetFigure _offeredKind;
         private string _offeredLine;          // the panel's words for them
         private int _offeredKey;
         private readonly StreetAim _aim = new StreetAim();
-        private bool _shown;                  // the box went up over them (its check line written)
+        private bool _shown;                  // the box went up over them, its check line written
         private float _nextCheck;             // when the offer's check line may be written again
         private readonly StreetMemory _memory = new StreetMemory();
         private readonly StreetFacts _facts = new StreetFacts();
@@ -129,14 +107,12 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        // ---------------------------------------------------------------- running
-
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -200,7 +176,6 @@ namespace RealLifeOverhaul.Street
             Offer(now);
         }
 
-        // Who stands in front of the player: the game's panel over them with Talk, once they have been in front a moment.
         private void Offer(float now)
         {
             PlayerController player = StreetGame.Player;
@@ -215,7 +190,7 @@ namespace RealLifeOverhaul.Street
             }
             else
             {
-                _aim.Clear();   // (a gate closed: no grace)
+                _aim.Clear();
             }
             bool near = closed == null && _offered != null && StreetGame.Near(_offered, _offeredWalker, at);
             bool moved = _aim.Step(body != null ? StreetGame.Key(body) : 0, near, now);
@@ -225,7 +200,7 @@ namespace RealLifeOverhaul.Street
             }
             else if (body != null && ReferenceEquals(body, _offered))
             {
-                _offeredKind = kind;   // (sat down or stood up: the panel's height follows)
+                _offeredKind = kind;   // sat down or stood up: the panel's height follows
             }
             if (_offered == null || !_aim.Ready())
             {
@@ -258,7 +233,7 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        // The aim moved: the panel's words for the new person (or the panel goes), their opening line guessed ahead.
+        // The aim moved: the panel's words for the new person, or the panel goes; their opening line is guessed ahead.
         private void Aim(BaseHuman body, Pedestrian walker, StreetFigure kind)
         {
             if (ReferenceEquals(body, _offered))
@@ -281,7 +256,7 @@ namespace RealLifeOverhaul.Street
             GuessFor(body);
         }
 
-        // The first gate that keeps the box away, in the order they win: the game's own state, then the jobs, then the social life; null when none.
+        // The first gate that keeps the box away; null when none.
         private static string Closed()
         {
             string why = StreetGame.NotOnFoot();
@@ -312,8 +287,7 @@ namespace RealLifeOverhaul.Street
             return null;
         }
 
-        // The offer's check line while nothing is offered, on foot out of doors, at most every CheckEvery seconds: which gate is
-        // closed, how many people are out, the nearest one's distance, angle and whether they could be talked to.
+        // The offer's check line while nothing is offered, on foot out of doors, at most every CheckEvery seconds.
         private void Check(float now, string closed, Vector3 at, Vector3 forward)
         {
             if (!Meta.Dev.Verbose || now < _nextCheck || !StreetGame.OutOfDoorsOnFoot)
@@ -345,14 +319,14 @@ namespace RealLifeOverhaul.Street
                 verdict = shouldHave ? "FAIL (the nearest is in reach and in front and was not offered)" : "PASS";
             }
             string nearest = closed != null ? "not looked for"
-                : StreetGame.NearFound ? Mathf.Sqrt(StreetGame.NearSqr).ToString("0.0", CultureInfo.InvariantCulture) + " m away, " + StreetOffer.Degrees(StreetGame.NearCos) + " deg off the facing, " + KindName(StreetGame.NearKind)
+                : StreetGame.NearFound ? Mathf.Sqrt(StreetGame.NearSqr).ToString("0.0", CultureInfo.InvariantCulture) + " m away, " + StreetOffer.Degrees(StreetGame.NearCos)
+                                         + " deg off the facing, " + KindName(StreetGame.NearKind)
                                          + (StreetGame.NearUsable ? ", usable" : ", not usable (hidden, held by another feature or another player's)")
                 : "nobody within 12 m";
             Logger?.Info("Street talk check (offer): nothing offered: " + why + "; out: " + StreetGame.LastWalkers + " walker(s), " + StreetGame.LastFigures
                          + " standing or sitting; the nearest: " + nearest + ": " + verdict + ".");
         }
 
-        // The one offered, for a check line: who, what kind, how far and at what angle.
         private string What(Vector3 at, Vector3 forward)
         {
             if (_offered == null)
@@ -376,7 +350,6 @@ namespace RealLifeOverhaul.Street
             return s != null ? s.First : StreetText.T("reallife_street_stranger");
         }
 
-        // Who somebody is today, from the save, the day and the game's figure .
         private StreetStranger Who(BaseHuman p, int day)
         {
             if (p == null)
@@ -399,7 +372,7 @@ namespace RealLifeOverhaul.Street
             StreetMouth mouth = save.modData != null && save.modData.TryGetValue(StreetStore.Key, out line) ? StreetStore.Read(line) : new StreetMouth();
             if (mouth == null)
             {
-                SaveLines.Unreadable(save.modData, StreetStore.Key, "it could not be read");   // (put back as it was read at every save: Core/SaveLines)
+                SaveLines.Unreadable(save.modData, StreetStore.Key, "it could not be read");   // put back as read at every save
                 Logger?.Warn("Street talk: the save's line of word of mouth could not be read (" + StreetStore.Key + "); it starts again and the line is kept in the save as it is.");
                 mouth = new StreetMouth();
             }
@@ -417,7 +390,7 @@ namespace RealLifeOverhaul.Street
             _save.modData[StreetStore.Key] = StreetStore.Write(_mouth);
         }
 
-        // Everything given back: the person walks on, the panel goes, the dialogue closes if it is ours.
+        // Everything given back: the person walks on, the panel goes, our dialogue closes.
         private void Stop(string why)
         {
             _door.Hide(why);
@@ -450,7 +423,7 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        /// <summary>Per cent more customers for a business of the player's: the word of mouth of the last days (StreetRules.MouthMost at most). For BusinessGame.Ambient, through Wiring/StreetLinks.</summary>
+        /// <summary>Per cent more customers for a business of the player's from word of mouth (for BusinessGame.Ambient).</summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             StreetDirector d = Instance;
@@ -461,7 +434,7 @@ namespace RealLifeOverhaul.Street
             return d._mouth.Percent(StreetGame.AddressKey(reg.Address), TimeHelper.CurrentDay);
         }
 
-        /// <summary>Everything remembered of this save is gone (its line was removed): no word of mouth, nobody remembers today.</summary>
+        /// <summary>Forgets everything of this save: its line was removed.</summary>
         public void Forget()
         {
             _mouth = new StreetMouth();

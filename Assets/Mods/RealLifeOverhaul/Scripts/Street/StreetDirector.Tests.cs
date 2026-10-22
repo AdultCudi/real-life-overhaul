@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Street
     public sealed partial class StreetDirector
     {
         private const string TestName = "Street talk";
-        private const float TestReach = 8f;   // metres: the test talks to the nearest person this near (walking, standing or seated), whichever way the player faces
+        private const float TestReach = 8f;   // metres: the test talks to the nearest person this near, whichever way the player faces
 
         private bool TestReady()
         {
@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        /// <summary>Options-page test: everybody forgets today's talks with the player (a rude word too).</summary>
+        /// <summary>Options-page test: everybody forgets today's talks with the player, a rude word too.</summary>
         public void TestForget()
         {
             if (!TestReady())
@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Street
             Logger?.Info("Street talk: test, " + n + " people forgot today's talks.");
         }
 
-        /// <summary>Everything of street talk off the street (the save is being prepared for the mod's removal): whoever was stopped walks on.</summary>
+        /// <summary>Takes street talk off the street for the mod's removal: whoever was stopped walks on.</summary>
         public void StopAll()
         {
             Stop("taken off the street");

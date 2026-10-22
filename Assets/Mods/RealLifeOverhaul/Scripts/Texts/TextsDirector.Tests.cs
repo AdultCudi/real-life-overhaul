@@ -4,17 +4,10 @@ using System.Text;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// RLO Texts' entries in Options > Tests: a sample message written now, with what it took or why the written line would
-    /// be used; what was shown this session (the readout, the full count in Player.log); and, with a pack of data 6, a
-    /// message from the player's staff, a text after a life event, and gossip, each made now rather than waited for.
-    /// </summary>
+    /// <summary>RLO Texts' entries in Options > Tests: each makes now what would otherwise be waited for.</summary>
     public sealed partial class TextsDirector
     {
-        /// <summary>
-        /// A friend's small talk written by the model now, shown as a notice when it comes back (or why not: no pack, still
-        /// loading, switched off, another language, the words refused). Needs a save loaded.
-        /// </summary>
+        /// <summary>A friend's small talk written by the model now, shown as a notice when it comes back, or why not. Needs a save loaded.</summary>
         public static void TestSample()
         {
             if (Instance == null || SaveGameManager.Current == null)
@@ -30,7 +23,7 @@ namespace RealLifeOverhaul.Texts
                     LanguageOk() ? status : Langs(), 16f);
                 return;
             }
-            TextRequest r = SampleRequest();   // (with Your own AI up, it goes the way every message goes: the service first)
+            TextRequest r = SampleRequest();   // with Your own AI up it goes as every message goes, the service first
             double asked = TextClock.Now;
             r.Done = words => TextsGame.Notice(words != null ? "reallife_texts_test_sample_done" : "reallife_texts_test_sample_none",
                 new Dictionary<string, string>(2) { { "text", words ?? string.Empty }, { "seconds", (TextClock.Now - asked).ToString("0.0") } }, 16f);
@@ -46,8 +39,6 @@ namespace RealLifeOverhaul.Texts
             return new Dictionary<string, string>(2) { { "pack", _pack != null ? _pack.Name : TextsHub.NoPack }, { "langs", string.Join(", ", Hub.Languages) } };
         }
 
-        // ---------------------------------------------------------------- what was shown
-
         private static readonly string[] WhyKeys =
         {
             null, "reallife_texts_why_nopack", "reallife_texts_why_off", "reallife_texts_why_loading", "reallife_texts_why_busy", "reallife_texts_why_slow",
@@ -61,10 +52,7 @@ namespace RealLifeOverhaul.Texts
             "reallife_texts_rule_machine", "reallife_texts_rule_capital", "reallife_texts_rule_article", "reallife_texts_rule_name", "reallife_texts_rule_cut"
         };
 
-        /// <summary>
-        /// "RLO Texts: what was shown": the running pack's lines this session as a notice (by the model, written, the two
-        /// commonest reasons and, for a refusal, the commonest rule), and every pack's count by message in Player.log.
-        /// </summary>
+        /// <summary>"RLO Texts: what was shown": the running pack's lines this session as a notice, and every pack's count in Player.log.</summary>
         public static void TestShown()
         {
             string pack = Hub.Pack;
@@ -132,10 +120,7 @@ namespace RealLifeOverhaul.Texts
             return b.Length > 0 ? TextsText.T("reallife_texts_shown_why").Replace("{reasons}", b.ToString()) + " " : string.Empty;
         }
 
-        // ---------------------------------------------------------------- the city's new talk, now
-
-        // Whether the city's talk can be tried now: a save, a pack of data 6 (the staff and gossip: the life's texts need none),
-        // the option; else the notice that says why not.
+        // Whether the city's talk can be tried now; else the notice that says why not. The life's texts need no pack.
         private static bool CityReady(bool six = true)
         {
             if (Instance == null || SaveGameManager.Current == null)
@@ -156,14 +141,14 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>A message from the first of the player's staff now (a raise asked for, or off sick before the working day), through the game's own thread with them.</summary>
+        /// <summary>A message from the first of the player's staff now, through the game's own thread with them.</summary>
         public static void TestStaff()
         {
             if (!CityReady())
             {
                 return;
             }
-            ReadStaff();   // (with the game's own facts of each: their job, hours, a day off sick)
+            ReadStaff();
             if (Views.Staff.Count == 0)
             {
                 TextsGame.Notice("reallife_texts_test_staff_none", null, 12f);
@@ -172,13 +157,13 @@ namespace RealLifeOverhaul.Texts
             TextStaff s = Views.Staff[0];
             if (s.AskTo <= s.Paid)
             {
-                s.AskTo = s.Paid + 150;   // (the test's own ask: the game's pay and a dollar and a half)
+                s.AskTo = s.Paid + 150;   // the test's own ask: a dollar and a half more, in hundredths
             }
             StaffMessage(s, SaveGameManager.Current.Hour < TextsCityRules.StaffFrom ? TextStaffSay.Sick : TextStaffSay.RaiseAsk, TextsGame.Day);
             TextsGame.Notice("reallife_texts_test_staff_sent", new Dictionary<string, string>(1) { { "name", s.Name } }, 12f);
         }
 
-        /// <summary>A text after a life event now: the player's graduation, told by Mom or a friend as on the day, a pack or not.</summary>
+        /// <summary>A text after a life event now: the player's graduation, told as on the day, a pack or not.</summary>
         public static void TestLife()
         {
             if (!CityReady(false))
@@ -197,7 +182,7 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice("reallife_texts_test_life_sent", null, 12f);
         }
 
-        /// <summary>Gossip now: the newest public event of the player's (or a crash yesterday, for the test) passed on by somebody who knows who heard it.</summary>
+        /// <summary>Gossip now: the newest public event of the player's, or a crash yesterday for the test, passed on.</summary>
         public static void TestGossip()
         {
             if (!CityReady())
@@ -231,7 +216,7 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice(sent ? "reallife_texts_test_gossip_sent" : "reallife_texts_test_gossip_none", null, 12f);
         }
 
-        /// <summary>Everything remembered and every life event let go (the save tools' reset of the feature's data).</summary>
+        /// <summary>Lets go of everything remembered and every life event: the save tools' reset of the feature's data.</summary>
         public static void ForgetAll()
         {
             MemoryStore.Clear();

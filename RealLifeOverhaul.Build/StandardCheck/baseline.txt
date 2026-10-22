@@ -15,9 +15,7 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/FrontSignRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextServer.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/FlareLinks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StandingLinks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/Wiring.cs	1
@@ -160,7 +158,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/TextsPhone.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/UtilityLinks.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/VenturesLinks.cs	1
 RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/CompanyLinks.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StreetLinks.cs	1
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/NoticeKinds.cs	9
@@ -200,16 +197,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfCensus.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Photos/CameraMode.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Photos/GalleryApp.Viewer.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Photos/PhotosGame.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.Talk.cs	5
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetLines.cs	7
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetSay.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextCheck.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextIntents.Street.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextServer.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextSpeed.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextsDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextsStore.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/CareersLinks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/EconomyLinks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/FlareLinks.cs	1

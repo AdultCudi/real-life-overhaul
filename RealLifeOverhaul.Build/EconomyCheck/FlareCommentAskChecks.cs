@@ -225,7 +225,7 @@ internal static partial class Program
     private static void CommentAsksSources()
     {
         string director = TextsSource("Social/Flare/FlareDirector.Comments.cs"), flare = TextsSource("Social/Flare/FlareDirector.cs"), app = TextsSource("Social/Flare/FlareApp.cs"),
-            hub = TextsSource("Texts/TextsHub.cs");
+            hub = TextsSource("Texts/TextsHub.cs") + TextsSource("Texts/TextsHub.Look.cs");
         Check(director.Contains("AskComments(first, now, true, true);") && director.Contains("AskComments(p, now, pass == 0, false);")
               && director.IndexOf("AskComments(first, now, true, true);", StringComparison.Ordinal) < director.IndexOf("if (now == _commentsLooked && !_commentsFreed)", StringComparison.Ordinal),
             "Flare comment asks sources: the open thread's due comments are asked first, ahead of the walk; the walk asks the due comments before those still to come");
