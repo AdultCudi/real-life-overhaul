@@ -110,8 +110,6 @@ RLO-STY-001	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/ClipLibrary.cs	18
 RLO-STY-001	Assets/Mods/RealLifeOverhaul/Scripts/Core/PropLibrary.cs	12
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/WorkModel.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/StandingScenes.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/WalkingActivities.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Civic/CivicState.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/EndScale.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneApps.cs	1
@@ -231,7 +229,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/WorkStore.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Character/GridLooks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Character/ModLooks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/StallActivity.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/WalkingActivities.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityLifeDirector.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityPeople.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/CityReserves.cs	1
