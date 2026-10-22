@@ -17,45 +17,20 @@ namespace RealLifeOverhaul.Texts
         Dash,        // an en or em dash, or a hyphen used as one
         Exclaim,     // an exclamation mark from a voice that never uses one
         Banned,      // a word on Flare's list
-        Language,    // letters of another script while the card asks for English (data v6: another script, or another language, than the card's)
+        Language,    // letters of another script while the card asks for English (data v6: another script or language than the card's)
         Repeat,      // the same, or nearly the same, as one of the last few things this person said
         Machine,     // the speaker calls itself an AI, a bot, an assistant or a language model
-        Capital,     // data v6: a sentence that starts with a small letter, in a language that has capitals (unless the speaker writes in lower case)
+        Capital,     // data v6: a sentence that starts with a small letter, in a language that has capitals
         Article,     // data v6: "a" before a vowel or "an" before a consonant, in English
         Name,        // data v6: the player's name from somebody the card says does not know it
         Cut          // data v6: the reply ran to its most tokens and was cut off
     }
 
     /// <summary>
-    /// The checker every model's words pass before anything is shown (the written line is used when they fail):
-    ///
-    ///   tidied     everything before the first letter, digit, $ or quote taken off (the 2B model through llama.cpp
-    ///              sometimes starts with a stray ":", "." or "-"), and the ends trimmed
-    ///   one line   no line break
-    ///   length     at most the intent's most (200 for a text, 140 to 180 for Flare)
-    ///   must       every must fact of the card, case aside
-    ///   numbers    no figure that is not on the card (a run of digits, with its commas and points, must appear in the card)
-    ///   dashes     no en or em dash and no hyphen standing alone between words
-    ///   "!"        only from Mom and the partner (the only voices whose training lines have one)
-    ///   words      none of Flare's list (Social/Flare/FlareFilter, the same list other players' text goes through)
-    ///   English    no letters of another script while the card says lang: en
-    ///   repeats    not the same, or nearly the same, as the last few things the same person said (words compared:
-    ///              three quarters of them shared, of four or more, counts as nearly)
-    ///   no machine the speaker never calls itself an AI, a bot, a chatbot, an assistant or a language model ("I'm an
-    ///              AI", "as an AI", "I am a bot"; the 2B v3 wrote "I'd blush, but I'm an AI, so no."): first person only,
-    ///              so a post or comment about the city's AI labs passes ("an AI lab", "as an AI researcher"); the words
-    ///              "chatbot" and "language model" pass only when the card itself names them
-    ///
-    /// The player's own typed words (a call's composer) are made fit to be shown and sent by <see cref="Typed"/>.
-    ///
-    /// Data v6 (<see cref="JudgeSix"/>, TextCheck.Six.cs) checks the reply in the card's language: its length by the
-    /// language's script, a must fact that is a name, a figure or a time's clock in any language and English words only
-    /// in English, no "!" nor its full-width form from anybody, the language's own script and words, a capital at each
-    /// sentence's start where the language has capitals, "a" and "an" in English, the player's name kept from a stranger
-    /// who does not know it, the speaker never calling itself a machine in any of the seven languages, and a reply cut at
-    /// its most tokens refused.
-    ///
-    /// Game-free (EconomyCheck, TextsChecks.cs, ComposerChecks.cs and TextsLanguageChecks.cs: each rule made to fail). COST: one pass over a line of 200 characters.
+    /// The checker every model's words pass before anything is shown; the written line is used when they fail (see
+    /// <see cref="TextVerdict"/>). Data v6's replies are judged in the card's language by <see cref="JudgeSix"/>; the
+    /// player's own typed words are made fit to show by <see cref="Typed"/>. Game-free.
+    /// COST: one pass over a line of 200 characters.
     /// </summary>
     public static partial class TextCheck
     {
@@ -66,7 +41,7 @@ namespace RealLifeOverhaul.Texts
         private static readonly HashSet<string> WordsB = new HashSet<string>(StringComparer.Ordinal);
         private static readonly StringBuilder Word = new StringBuilder(32);
 
-        /// <summary>The words with the stray marks before the first word taken off and the ends trimmed.</summary>
+        /// <summary>The words with the stray marks before the first word taken off (the model sometimes starts with ":" or "-"), trimmed.</summary>
         public static string Tidy(string raw)
         {
             if (raw == null)
@@ -81,10 +56,7 @@ namespace RealLifeOverhaul.Texts
             return raw.Substring(start).Trim();
         }
 
-        /// <summary>
-        /// The same for a reply of data v6 in a language (null: as <see cref="Tidy(string)"/>), the opening marks of the seven
-        /// languages kept as well: Spanish's question mark, the guillemets, German's low quotes, the Chinese corner brackets.
-        /// </summary>
+        /// <summary>The same for a reply of data v6 in a language, keeping the seven languages' opening marks.</summary>
         public static string Tidy(string raw, string lang)
         {
             if (lang == null || raw == null)
@@ -106,10 +78,9 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// What the player typed, as it may be shown and put on a card: one line (line breaks and other control characters
-        /// made spaces, a run of spaces made one), the prompt's turn markers taken out (<see cref="TextIntents.Plain"/>), the
-        /// angle brackets of text markup made harmless (‹ ›, so "&lt;b&gt;" is never bold), trimmed, and cut at
-        /// <paramref name="most"/> characters without splitting a character in two. Null when nothing is left.
+        /// What the player typed, fit to show and put on a card: one line, single spaces, the prompt's turn markers out, the
+        /// angle brackets of markup made harmless (‹ ›), cut at <paramref name="most"/> characters without splitting a
+        /// character in two. Null when nothing is left.
         /// </summary>
         public static string Typed(string text, int most)
         {
@@ -132,7 +103,7 @@ namespace RealLifeOverhaul.Texts
                 {
                     if (typed.Length >= most - 1)
                     {
-                        break;   // (a space at the very end would be trimmed off anyway)
+                        break;   // a space at the very end would be trimmed off anyway
                     }
                     typed.Append(' ');
                     space = false;
@@ -141,7 +112,7 @@ namespace RealLifeOverhaul.Texts
                 {
                     if (i + 1 >= plain.Length || typed.Length >= most - 1)
                     {
-                        break;   // (both halves, or neither)
+                        break;   // both halves, or neither
                     }
                     typed.Append(c).Append(plain[++i]);
                     continue;
@@ -156,7 +127,7 @@ namespace RealLifeOverhaul.Texts
             return char.IsLetterOrDigit(c) || c == '$' || c == '"' || c == '\'' || c == '“' || c == '‘' || char.IsSurrogate(c);
         }
 
-        /// <summary>The verdict on tidied words for this card. <paramref name="recent"/>: the last few things the same speaker said (may be null).</summary>
+        /// <summary>The verdict on tidied words for this card; <paramref name="recent"/> is what the speaker said lately, or null.</summary>
         public static TextVerdict Judge(string words, TextIntent intent, TextSheet card, string cardText, IReadOnlyList<string> recent, int filterStrength = 1)
         {
             if (string.IsNullOrEmpty(words))
@@ -215,12 +186,12 @@ namespace RealLifeOverhaul.Texts
             return TextVerdict.Ok;
         }
 
-        // The speaker naming itself a machine: "I'm" (I am, Im, "I'm just") or "as a" or "as an" before an AI, a bot, a
-        // chatbot, an assistant or a language model, as a whole word not followed by what makes it a person's trade ("an AI
-        // researcher", "an assistant at the clinic"). "As AI gets better" (no article) is the trade's talk, not a self.
+        // The speaker naming itself a machine ("I'm an AI", "as a bot"), first person only and not followed by a person's
+        // trade ("an AI researcher", "an assistant at the clinic").
         private static readonly Regex SelfMachine = new Regex(
             @"(?:\b(?:i\s*'?\s*m|i\s+am)\s+(?:(?:just|only|merely|simply|really|actually|literally|basically)\s+)?(?:an?\s+)?|\bas\s+an?\s+)(?:large\s+)?"
-            + @"(?:a\.?i\.?|artificial\s+intelligence|ai\s+assistant|ai\s+model|ai\s+language\s+model|bot|chat\s*bot|robot\s+assistant|virtual\s+assistant|digital\s+assistant|assistant|language\s+model|llm)"
+            + @"(?:a\.?i\.?|artificial\s+intelligence|ai\s+assistant|ai\s+model|ai\s+language\s+model|bot|chat\s*bot|robot\s+assistant|"
+            + @"virtual\s+assistant|digital\s+assistant|assistant|language\s+model|llm)"
             + @"(?![a-z])(?!\s+(?:researcher|research|lab|labs|company|companies|startup|start\s*up|engineer|engineers|developer|developers|expert|experts|fan|fans|enthusiast|"
             + @"investor|investors|firm|firms|sector|stock|stocks|share|shares|job|jobs|team|teams|course|class|degree|student|ethicist|manager|to|at|for|in|on)\b)",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -228,7 +199,7 @@ namespace RealLifeOverhaul.Texts
         // The words that only a machine would use of itself, unless the card is about them.
         private static readonly Regex MachineWords = new Regex(@"\b(?:chat\s*bots?|language\s+models?)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        /// <summary>True if the words have the speaker call itself an AI, a bot, an assistant or a language model (first person), or say "chatbot" or "language model" while the card does not.</summary>
+        /// <summary>True if the speaker calls itself a machine, or says "chatbot" or "language model" while the card does not.</summary>
         public static bool Machine(string words, string cardText)
         {
             if (string.IsNullOrEmpty(words))
@@ -243,11 +214,7 @@ namespace RealLifeOverhaul.Texts
             return MachineWords.IsMatch(plain) && (cardText == null || !MachineWords.IsMatch(cardText));
         }
 
-        /// <summary>
-        /// A guest's check of the host's words on arrival (the card is the host's): tidy, one line, the intent's length, no
-        /// dash, "!" only for the voices that use it, none of Flare's list, no speaker calling itself a machine, no other
-        /// script. Unknown intent: refused.
-        /// </summary>
+        /// <summary>A guest's check of the host's words on arrival, without the host's card; an unknown intent is refused.</summary>
         public static TextVerdict JudgeShared(string words, TextIntent intent, int filterStrength = 1)
         {
             if (intent == null || string.IsNullOrEmpty(words) || Tidy(words) != words)
@@ -276,12 +243,12 @@ namespace RealLifeOverhaul.Texts
             }
             if (SelfMachine.IsMatch(words.IndexOf('\u2019') >= 0 ? words.Replace('\u2019', '\'') : words))
             {
-                return TextVerdict.Machine;   // (a guest has no card: the speaker calling itself a machine is refused; the host's card judged the rest)
+                return TextVerdict.Machine;   // without the card, any machine word of the speaker's is refused
             }
             return OtherScript(words) ? TextVerdict.Language : TextVerdict.Ok;
         }
 
-        // Every run of digits (with the commas and points inside it) appears on the card.
+        // Every run of digits, with the commas and points inside it, appears on the card.
         private static bool NumbersOnCard(string words, string card)
         {
             int i = 0;
@@ -292,7 +259,7 @@ namespace RealLifeOverhaul.Texts
                     i++;
                     continue;
                 }
-                int start = i > 0 && words[i - 1] == '$' ? i - 1 : i;   // (money with its sign: "$40" must be on the card as "$40")
+                int start = i > 0 && words[i - 1] == '$' ? i - 1 : i;   // money with its sign must be on the card with it
                 while (i < words.Length && (char.IsDigit(words[i]) || (Joins(words[i]) && i + 1 < words.Length && char.IsDigit(words[i + 1]))))
                 {
                     i++;
@@ -307,8 +274,7 @@ namespace RealLifeOverhaul.Texts
 
         private static bool Joins(char c) => c == ',' || c == '.' || c == ':';
 
-        // The token on the card as a whole number: no digit (or a digit's comma or point) right before or after it, so that
-        // "40" is not found in "400" nor "$40" in "$4,000".
+        // The token on the card as a whole number: "40" is not found in "400" nor "$40" in "$4,000".
         private static bool Whole(string card, string token)
         {
             int at = card.IndexOf(token, StringComparison.Ordinal);
@@ -347,7 +313,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        // A letter outside the Latin script (Cyrillic, Greek, Chinese, Arabic and the rest). Emoji are not letters.
+        // A letter outside the Latin script. Emoji are not letters.
         private static bool OtherScript(string words)
         {
             for (int i = 0; i < words.Length; i++)
@@ -361,7 +327,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        /// <summary>The same, or nearly: the same words once case and marks are set aside, or most of them shared.</summary>
+        /// <summary>True for the same words once case and marks are set aside, or most of them shared.</summary>
         public static bool Near(string a, string b)
         {
             if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b))

@@ -22,7 +22,7 @@ internal static partial class Program
         TextsStartWatch();
         TextsStartPretend("silent", "a server that takes the connection and never answers (the model never loads)", "took longer than 2 s to load");
         TextsStartPretend("loads", "a server that loads but never answers the first reply (a GPU building its shaders for ever)", "the first reply failed: too slow");
-        string server = TextsSource(@"Texts\TextServer.cs");
+        string server = TextsSource(@"Texts\TextServer.cs") + TextsSource(@"Texts\TextServer.Start.cs") + TextsSource(@"Texts\TextServer.Process.cs");
         Check(server.Contains("client.Client.Poll(") && !server.Contains("net.Read(buffer, 0, buffer.Length)) > 0"),
             "texts, the start: every read from the server waits through Socket.Poll on the runner's own clock, never on the socket's ReceiveTimeout alone");
     }

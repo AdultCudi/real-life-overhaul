@@ -7,20 +7,16 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// Your own AI's secrets on this PC: the API keys, and the ChatGPT sign-in's tokens. One file per Windows user, outside
-    /// every save (the game's data folder, RLO Texts/service-keys.bin), sealed with Windows' own protection for the user's
-    /// data (DPAPI: only this Windows user on this PC can open it; a copy of the file elsewhere opens nowhere), and written
-    /// whole each time through a file of its own that then takes its place. Where Windows cannot seal it, nothing is kept,
-    /// and the player is told. A key is never shown again once typed: <see cref="Has"/> says only whether there is one.
-    /// The names are the service's ("key.4") or the sign-in's ("chatgpt.refresh"); nothing here is logged or saved in a
-    /// game. Thread-safe (the game's thread, the runner's workers, the sign-in). Game-free (EconomyCheck, TextsServiceChecks.cs).
+    /// Your own AI's secrets on this PC, the API keys and the ChatGPT sign-in's tokens: one file outside every save, sealed
+    /// with DPAPI so only this Windows user on this PC can open it, written whole through a file that then takes its place.
+    /// Where Windows cannot seal it nothing is kept. Nothing here is logged or saved in a game. Thread-safe; game-free.
     /// COST: a file read when the service starts, a write when a key or a token changes.
     /// </summary>
     public sealed class TextKeys
     {
         public const string FileName = "service-keys.bin";
         private const int UiForbidden = 0x1;                 // CRYPTPROTECT_UI_FORBIDDEN: never a prompt
-        private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("RealLifeOverhaul.Texts.TextKeys");   // (this app's own: another app of the same user cannot open the file as its own)
+        private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("RealLifeOverhaul.Texts.TextKeys");   // so another app of the same user cannot open the file
 
         private readonly object _lock = new object();
         private readonly string _path;
@@ -32,10 +28,10 @@ namespace RealLifeOverhaul.Texts
             _path = Path.Combine(folder, FileName);
         }
 
-        /// <summary>Why the last read or write failed, for the log (no secret in it); null when it did not.</summary>
+        /// <summary>Why the last read or write failed, for the log; null when it did not.</summary>
         public string Why { get; private set; }
 
-        /// <summary>True when the file can be sealed here (Windows' protection answered once).</summary>
+        /// <summary>True when the file can be sealed here.</summary>
         public static bool Sealable()
         {
             try
@@ -60,7 +56,7 @@ namespace RealLifeOverhaul.Texts
 
         public bool Has(string name) => !string.IsNullOrEmpty(Get(name));
 
-        /// <summary>Sets (or with null or empty takes out) each name and value pair, then writes the file once. False if it could not be kept.</summary>
+        /// <summary>Sets each name and value pair, an empty value taking the name out, then writes the file once; false if it could not be kept.</summary>
         public bool Set(params string[] namesAndValues)
         {
             lock (_lock)
@@ -152,7 +148,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>The values as the sealed file holds them: one "name=value" a line (values never hold a line break).</summary>
+        /// <summary>The values as the sealed file holds them, one "name=value" a line.</summary>
         public static string Text(Dictionary<string, string> values)
         {
             var t = new StringBuilder(256);
@@ -163,7 +159,6 @@ namespace RealLifeOverhaul.Texts
             return t.ToString();
         }
 
-        /// <summary>The values of such a text, into <paramref name="into"/>.</summary>
         public static void Parse(string text, Dictionary<string, string> into)
         {
             foreach (string line in text.Split('\n'))
@@ -176,8 +171,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // ---------------------------------------------------------------- Windows' protection of a user's data (crypt32)
-
+        // Windows' protection of a user's data (crypt32).
         [StructLayout(LayoutKind.Sequential)]
         private struct Blob
         {
@@ -227,7 +221,7 @@ namespace RealLifeOverhaul.Texts
             }
             catch (Exception)
             {
-                return null;   // (no crypt32 here: nothing is kept)
+                return null;   // no crypt32 here: nothing is kept
             }
             finally
             {

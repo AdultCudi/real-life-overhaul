@@ -17,20 +17,16 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// One Sign in with ChatGPT (TextChatGpt's rules): a callback listener on 127.0.0.1 (port 1455 when free, else any),
-    /// the address for the browser, then on a background thread of its own the wait for the callback (at most
-    /// <see cref="WaitSeconds"/>), the code's exchange, the ID token checked against OpenAI's published keys, the grant
-    /// checked for the plan's use, and the tokens kept in <see cref="TextKeys"/>. The browser is opened by the caller
-    /// (the game's thread: TextsGame.OpenUrl). Also the refresh of a kept sign-in and signing out, one at a time
-    /// (<see cref="Gate"/>). The browser's page after the callback says only that the player may go back to the game.
-    /// Game-free (EconomyCheck, TextsServiceChecks.cs drives it against a pretend sign-in server).
-    /// COST: nothing on the game's thread but <see cref="Begin"/>'s listener.
+    /// One Sign in with ChatGPT by TextChatGpt's rules: a callback listener on 127.0.0.1, then on a thread of its own the
+    /// wait for the callback, the code's exchange, the ID token and the grant checked, and the tokens kept in
+    /// <see cref="TextKeys"/>. Also the refresh of a kept sign-in and signing out, one at a time (<see cref="Gate"/>).
+    /// The caller opens the browser. Game-free. COST: nothing on the game's thread but <see cref="Begin"/>'s listener.
     /// </summary>
     public sealed class TextSignIn
     {
-        public const double WaitSeconds = 300.0;   // seconds the browser has to come back (OpenAI's sign-in, then the consent)
+        public const double WaitSeconds = 300.0;   // seconds the browser has to come back, through the sign-in and the consent
         public const int ReadMs = 3000;            // milliseconds a callback's request may take to arrive once connected
-        public const int CallMs = 10000;           // milliseconds each of the sign-in's own calls may take (the exchange, the keys)
+        public const int CallMs = 10000;           // milliseconds each of the sign-in's own calls may take
 
         /// <summary>Refreshing and signing out one at a time, for every runner and sign-in: the refresh token rotates.</summary>
         public static readonly object Gate = new object();
@@ -51,22 +47,19 @@ namespace RealLifeOverhaul.Texts
 
         public volatile TextSignInState State = TextSignInState.Waiting;
 
-        /// <summary>Why it failed (no token in it); null otherwise.</summary>
+        /// <summary>Why it failed; null otherwise.</summary>
         public string Why { get; private set; }
 
-        /// <summary>The account signed in to, as its ID token names it (for the notice).</summary>
+        /// <summary>The account signed in to, as its ID token names it, for the notice.</summary>
         public string Email { get; private set; }
 
-        /// <summary>True when this was the first sign-in to a ChatGPT account on this PC (the welcome is shown once).</summary>
+        /// <summary>True for the first sign-in to a ChatGPT account on this PC: the welcome is shown once.</summary>
         public bool First { get; private set; }
 
-        /// <summary>The page the browser shows after the callback, and after a failed one (made by the caller, in the player's language).</summary>
+        /// <summary>The page the browser shows after the callback and after a failed one, made by the caller in the player's language.</summary>
         public string DonePage = "<p>OK</p>", FailedPage = "<p>Not signed in</p>";
 
-        /// <summary>
-        /// The listener started and the address for the browser made; the wait begins on its own thread. Null, with
-        /// <see cref="Why"/>, when no port could be had.
-        /// </summary>
+        /// <summary>Starts the listener and the wait on its own thread; the address for the browser, or null when no port could be had.</summary>
         public string Begin(string appName, int port = TextChatGpt.Port)
         {
             _kept = _keys.Get(TextChatGpt.KClient);
@@ -100,7 +93,7 @@ namespace RealLifeOverhaul.Texts
             return url;
         }
 
-        /// <summary>Gives up the wait (the option switched off, another sign-in begun).</summary>
+        /// <summary>Gives up the wait.</summary>
         public void Cancel()
         {
             _stop = true;
@@ -127,8 +120,6 @@ namespace RealLifeOverhaul.Texts
             return null;
         }
 
-        // ---------------------------------------------------------------- the wait and the exchange
-
         private void Wait()
         {
             try
@@ -146,7 +137,7 @@ namespace RealLifeOverhaul.Texts
                         string target = Target(client);
                         if (target == null || !target.StartsWith(TextChatGpt.CallbackPath, StringComparison.Ordinal))
                         {
-                            Answer(client, "404 Not Found", string.Empty);   // (the browser's icon and the like: the wait goes on)
+                            Answer(client, "404 Not Found", string.Empty);   // the browser's icon and the like: the wait goes on
                             continue;
                         }
                         string why = Exchange(TextChatGpt.Query(target));
@@ -176,12 +167,12 @@ namespace RealLifeOverhaul.Texts
                 }
                 catch (Exception)
                 {
-                    // (stopped already)
+                    // stopped already
                 }
             }
         }
 
-        // The callback's request line ("GET /auth/callback?code=... HTTP/1.1"): its target, or null.
+        // The callback request line's target, or null.
         private static string Target(TcpClient client)
         {
             NetworkStream net = client.GetStream();
@@ -226,7 +217,7 @@ namespace RealLifeOverhaul.Texts
             net.Write(body, 0, body.Length);
         }
 
-        // The callback checked, the code exchanged, the ID token and the grant checked, the tokens kept. Null when signed in.
+        // The callback checked, the code exchanged, the ID token and the grant checked, the tokens kept; null when signed in.
         private string Exchange(Dictionary<string, string> q)
         {
             string why = TextChatGpt.Callback(q, _state, _kept, out string clientId);
@@ -276,15 +267,12 @@ namespace RealLifeOverhaul.Texts
         private static TextWebRequest Form(string url, string form) =>
             new TextWebRequest { Url = url, Body = form, ContentType = "application/x-www-form-urlencoded" }.Header("Accept", "application/json");
 
-        // ---------------------------------------------------------------- a kept sign-in
-
-        /// <summary>True when a sign-in is kept here (a client id and a refresh token).</summary>
+        /// <summary>True when a sign-in is kept here: a client id and a refresh token.</summary>
         public static bool SignedIn(TextKeys keys) => keys.Has(TextChatGpt.KClient) && keys.Has(TextChatGpt.KRefresh);
 
         /// <summary>
-        /// The access token to send now: the kept one, or a fresh one when it ends within TextChatGpt.RefreshAhead. Null,
-        /// with <paramref name="fault"/>, when there is none: Key when the refresh was refused for good (the tokens are
-        /// cleared: sign in again), Network or Busy when it could not be asked now (the tokens are kept).
+        /// The access token to send now, refreshed when it ends soon. Null with <paramref name="fault"/> when there is none:
+        /// Key when the refresh was refused for good and the tokens are cleared, Network or Busy when it could not be asked now.
         /// </summary>
         public static string Access(ITextWeb web, TextKeys keys, string auth, out TextFault fault, out string why)
         {
@@ -334,9 +322,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Signs out: the refresh token revoked at OpenAI's revocation address, then the tokens cleared here (the app's
-        /// client id and this PC's host id are kept, as OpenAI asks). True when OpenAI confirmed it; false when it could
-        /// not be asked, and the tokens are cleared all the same (the player can disconnect the app in ChatGPT's settings).
+        /// Signs out: the refresh token revoked, then the tokens cleared here, the client and host ids kept as OpenAI asks.
+        /// True when OpenAI confirmed it; the tokens are cleared all the same.
         /// </summary>
         public static bool SignOut(ITextWeb web, TextKeys keys, string auth)
         {

@@ -286,17 +286,23 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextCard.cs" Link="Mod\TextCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextFaces.cs" Link="Mod\TextFaces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextIntents.cs" Link="Mod\TextIntents.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextIntents.Three.cs" Link="Mod\TextIntents.Three.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextIntents.Street.cs" Link="Mod\TextIntents.Street.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextWords.cs" Link="Mod\TextWords.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextCheck.cs" Link="Mod\TextCheck.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextQueue.cs" Link="Mod\TextQueue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextJson.cs" Link="Mod\TextJson.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServer.cs" Link="Mod\TextServer.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServer.Start.cs" Link="Mod\TextServer.Start.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServer.Process.cs" Link="Mod\TextServer.Process.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextCores.cs" Link="Mod\TextCores.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextPacks.cs" Link="Mod\TextPacks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextSpeed.cs" Link="Mod\TextSpeed.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsStore.cs" Link="Mod\TextsStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsShare.cs" Link="Mod\TextsShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsHub.cs" Link="Mod\TextsHub.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsHub.Look.cs" Link="Mod\TextsHub.Look.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextRequest.cs" Link="Mod\TextRequest.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsMapRules.cs" Link="Mod\TextsMapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextRuntime.cs" Link="Mod\TextRuntime.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextHang.cs" Link="Mod\TextHang.cs" />

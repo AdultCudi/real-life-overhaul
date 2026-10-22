@@ -80,7 +80,7 @@ internal static partial class Program
 
     private static void TextsSpeedSources()
     {
-        string server = TextsSource(@"Texts\TextServer.cs").Replace("\r\n", "\n"), director = TextsSource(@"Texts\TextsDirector.cs");
+        string server = (TextsSource(@"Texts\TextServer.cs") + TextsSource(@"Texts\TextServer.Start.cs") + TextsSource(@"Texts\TextServer.Process.cs")).Replace("\r\n", "\n"), director = TextsSource(@"Texts\TextsDirector.cs");
         Check(Regex.IsMatch(server, @"_process\.PriorityClass = low \? ProcessPriorityClass\.BelowNormal : ProcessPriorityClass\.Normal;")
               && Regex.IsMatch(server, @"bool low = LowPriority\(_start\.Device\);") && Regex.IsMatch(server, @"if \(!low\)\s*\{\s*FullSpeed\(_process\);"),
             "texts, the runner: the server's priority class by its device, and a GPU's kept out of power throttling");

@@ -4,12 +4,9 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The English words a card uses for the mod's people, as the models were trained on them (common.py's JOBS, TRAITS,
-    /// MOODS and world.ORIGINS, in the order of Social/SocialCatalogue's own lists), and each person's style of writing:
-    /// drawn once from their own seed by the generator's own rule (world.friend, world.citizen, defs_people.mom), so a
-    /// person always writes the same way. Cards are always in English (the models read English cards); only the game's
-    /// texts are translated. Game-free.
-    /// COST: a lookup or a few hashes; nothing per frame.
+    /// The English words a card uses for the mod's people, as the models were trained on them (common.py's lists, in
+    /// SocialCatalogue's order), and each person's style of writing, drawn from their own seed by the generator's rule so a
+    /// person always writes the same way. Cards are always in English. Game-free. COST: a lookup or a few hashes.
     /// </summary>
     public static class TextWords
     {
@@ -30,7 +27,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>By a person's mood, -2 (a rough day) to +2 (a great one).</summary>
         public static readonly string[] Moods = { "having a rough day", "a bit low", "fine", "in a good mood", "having a great day" };
 
-        /// <summary>How they met, by SocialOrigin (Family and OldFriend first; Event, the last, is not in the training data: the nearest).</summary>
+        /// <summary>How they met, by SocialOrigin; Event, not in the training data, takes the nearest.</summary>
         public static readonly string[] Origins =
         {
             "family", "an old friend", "met at the gym", "met at work", "met at the coffee cart", "lives next door", "you helped them once",
@@ -65,7 +62,7 @@ namespace RealLifeOverhaul.Texts
             "my umbrella blew inside out", "I stood in a puddle first thing"
         };
 
-        /// <summary>A small thing of a friend's day for small talk, from a seed (the person and the day).</summary>
+        /// <summary>A small thing of a friend's day for small talk, from a seed of the person and the day.</summary>
         public static string Happening(int seed, bool good)
         {
             string[] list = good ? HappeningsGood : HappeningsBad;
@@ -112,8 +109,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// A friend's (or the partner's, or a roommate's) way of writing, from their own seed (world.friend): a main word, then
-        /// lowercase or brief now and then, and emoji for a few. The supportive never write coldly; the envious often dryly.
+        /// A friend's, the partner's or a roommate's way of writing, from their own seed (world.friend). The supportive never
+        /// write coldly; the envious often dryly.
         /// </summary>
         public static string FriendStyle(int seed, int traits, bool partner)
         {
@@ -180,7 +177,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>A business account's way of writing (defs_flare.make_biz).</summary>
         public static string BusinessStyle(int seed) => Roll(seed, 1, 3) == 2 ? "neat, polite" : "friendly, plain";
 
-        /// <summary>An age from a seed in the range the generator drew from (the city's people have none in the game).</summary>
+        /// <summary>An age from a seed in the generator's range: the city's people have none in the game.</summary>
         public static int Age(int seed, int least, int most) => least + Roll(seed, 7, most - least + 1);
 
         /// <summary>0 to n-1 from a seed and a slot: the same every time for the same person.</summary>
@@ -206,15 +203,15 @@ namespace RealLifeOverhaul.Texts
 
         private static int Clamp(int v, int least, int most) => v < least ? least : v > most ? most : v;
 
-        // ---------------------------------------------------------------- data v6: the card's English words of what the game shows in the player's language
+        // Data v6: the card's English words for what the game shows in the player's language.
 
-        /// <summary>The kinds of place street talk is asked the way to, by StreetPlace (the English of Street/StreetLines.Whats' keys).</summary>
+        /// <summary>The kinds of place street talk is asked the way to, by StreetPlace (the English of StreetLines.Whats).</summary>
         public static readonly string[] StreetWhats = { "a cafe", "a restaurant", "a bar", "a supermarket", "a clothes shop", "a gym", "a cinema", "a bank" };
 
-        /// <summary>Which way, by StreetRules.Way (the English of StreetLines.Ways' keys).</summary>
+        /// <summary>Which way, by StreetRules.Way (the English of StreetLines.Ways).</summary>
         public static readonly string[] StreetWays = { "straight ahead", "off to your right", "back the way you came", "off to your left" };
 
-        /// <summary>A walk of so many minutes, as street talk's card says it ("a minute", "5 minutes").</summary>
+        /// <summary>A walk of so many minutes, as street talk's card says it.</summary>
         public static string Walk(int minutes) => minutes == 1 ? "a minute" : minutes.ToString(System.Globalization.CultureInfo.InvariantCulture) + " minutes";
 
         /// <summary>The street events' locale keys (Events/EventCalendar.Name) and their English words on a card.</summary>
@@ -246,7 +243,7 @@ namespace RealLifeOverhaul.Texts
             "ba:skill_hrmanager", "HR manager", "ba:skill_graphicdesigner", "graphic designer", "ba:skill_securityguard", "security guard", "ba:skill_headhunter", "headhunter"
         };
 
-        /// <summary>The job a card calls one of the staff by, from their main skill's name; "member of staff" for one this table does not know.</summary>
+        /// <summary>The job a card calls one of the staff by, from their main skill's name; "member of staff" for an unknown one.</summary>
         public static string StaffJob(string skill)
         {
             for (int i = 0; skill != null && i + 1 < StaffJobs.Length; i += 2)
@@ -265,7 +262,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>One of the player's staff's way of writing, from their own seed.</summary>
         public static string StaffStyle(int seed) => StaffStyles[Roll(seed, 1, StaffStyles.Length)];
 
-        /// <summary>A review's word for one of the game's satisfaction figures (0 to 100): very good, good, fair or poor.</summary>
+        /// <summary>A review's word for one of the game's satisfaction figures (0 to 100).</summary>
         public static string Rating(int figure) => figure >= 75 ? "very good" : figure >= 55 ? "good" : figure >= 35 ? "fair" : "poor";
     }
 }

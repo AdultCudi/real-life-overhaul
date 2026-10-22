@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Texts
     /// <summary>How urgent a text is: what the player is looking at first, the city's background last.</summary>
     public enum TextPriority
     {
-        Now = 0,         // the player is looking at it: a spoken line, an open chat, the open Flare post (and the line guessed before a click)
+        Now = 0,         // the player is looking at it: a spoken line, an open chat, the open Flare post, a line guessed before a click
         Soon = 1,        // a message due shortly: a text about to arrive, a reply under the player's post
         Background = 2   // the city's posts, the Ledger's next edition: written long before anyone reads them
     }
@@ -16,8 +16,8 @@ namespace RealLifeOverhaul.Texts
     {
         Waiting,     // in the queue
         Running,     // being written
-        Written,     // words came back (not yet checked: the checker runs when they are handed over)
-        Missed,      // its time ran out (or the budget, or the model failed): the written line is used
+        Written,     // words came back, checked when they are handed over
+        Missed,      // its time or the budget ran out, or the model failed: the written line is used
         Dropped      // its owner no longer wants it
     }
 
@@ -30,53 +30,40 @@ namespace RealLifeOverhaul.Texts
         public int Id;
         public string Key;              // what it is for ("fp:123", "ph:dana:42"): the same key asked again finds this one
         public string Prompt;           // the ChatML text (TextCard.ChatMl)
-        public string Card;             // the card alone (TextCard.Card): what an AI service is sent, after its system turn (Your own AI)
-        public string System;           // ...that system turn (TextCard.ServiceSystem: data v6's in the card's language); null: TextCard.System
+        public string Card;             // the card alone: what an AI service is sent, after its system turn
+        public string System;           // ...that system turn (TextCard.ServiceSystem); null: TextCard.System
         public TextPriority Priority;
         public double Asked;            // real seconds (TextQueue's clock) it was asked
         public double Deadline;         // ...by which it must be shown; past it the written line is used
-        public bool Guess;              // asked before the player clicked (face to face): shown only if ready when needed
+        public bool Guess;              // asked before the player clicked: shown only if ready when needed
         public volatile TextJobState State;
         public string Raw;              // the model's words as they came back
         public double Took;             // seconds the model took
         public string Why;              // why it was missed, for the log
-        public bool Ran;                // the worker took it (the model was asked): a miss after that is the model's or the machine's, never the budget's own holding back
-        public volatile bool Speaking;  // an AI service's first words of it came (a streamed reply): the rest is on its way, never shown until it is whole
+        public bool Ran;                // the worker took it: a miss after that is the model's or the machine's, never the budget's
+        public volatile bool Speaking;  // an AI service's first streamed words of it came; never shown until it is whole
         public object Owner;            // the asker's own record (what to do with the words), never read by the queue
         public int Tokens;              // data v6: the reply's most tokens (TextDecoding.Tokens); 0: TextJson.Tokens
         public string Grammar;          // data v6: the reply's GBNF grammar (TextDecoding.Grammar); null: none
         public string BanName;          // data v6: a name the reply may never write (its first token banned); null: none
-        public bool Cut;                // the worker's: the reply stopped at its most tokens (the server's stop_type "limit")
+        public bool Cut;                // the worker's: the reply stopped at its most tokens
     }
 
     /// <summary>
-    /// The one queue every request goes through, and its scheduling rules:
-    ///
-    ///   order      the worker always takes the most urgent request that can still be written by its deadline (Now before
-    ///              Soon before Background; within one, the earliest deadline); one at a time
-    ///   deadlines  a request that can no longer be written in time (now plus the expected time past its deadline) is
-    ///              missed at once: its owner shows the written line and it is dropped. Generate ahead: a message the
-    ///              game schedules for later is asked at once with its arrival as the deadline
-    ///   bursts     everything is queued; what cannot finish by its deadline is missed. A budget of requests a minute keeps
-    ///              the model from ever being kept busy (<see cref="PerMinute"/>), and the background may use only part of
-    ///              it (<see cref="BackgroundPerMinute"/>), so a burst of the city's posts never holds up a message
-    ///   quiet      background requests wait while the game is not quiet (loading, fast forward or a time skip, a busy
-    ///              scene, a slow frame); Now and Soon still run
-    ///   guesses    a request asked before the player clicks (face to face) is Now, and shown only if it is written by
-    ///              the time the line is needed
-    ///   size       at most <see cref="Most"/> requests wait; past that the least urgent latest one is missed
-    ///
-    /// Thread-safe: the game's thread adds and drops, the worker takes. Every call holds the lock for a pass over at most
-    /// <see cref="Most"/> requests. Game-free (EconomyCheck, TextsChecks.cs). COST: nothing per frame.
+    /// The one queue every request goes through. The worker takes the most urgent request that can still be written by
+    /// its deadline, one at a time; one that can no longer make it is missed at once, and its owner shows the written
+    /// line. A budget a minute keeps the model from being kept busy, the background may use only part of it and waits
+    /// while the game is not quiet, and at most <see cref="Most"/> requests wait. Thread-safe: the game's thread adds and
+    /// drops, the worker takes. Game-free. COST: nothing per frame; a pass over at most <see cref="Most"/> a call.
     /// </summary>
     public sealed class TextQueue
     {
         public const int Most = 48;                     // requests waiting at once
-        public const int PerMinute = 12;                // requests started a minute at most: about a fifth of two threads on the 2B model
+        public const int PerMinute = 12;                // requests started a minute at most: about a fifth of what two threads write
         public const int BackgroundPerMinute = 6;       // ...of which the background's
-        public const double StartGuess = 1.5;           // seconds a reply is expected to take before any is measured (the 2B on two threads; an AI service's too)
+        public const double StartGuess = 1.5;           // seconds a reply is expected to take before any is measured
         public const double GuessWeight = 0.2;          // how much each measured time moves the expectation
-        public const double ExpectedMost = 60.0;        // seconds: a speed test's figure past this is no figure (it failed), and the guess stays
+        public const double ExpectedMost = 60.0;        // seconds: a speed test's figure past this failed, and the guess stays
 
         private readonly object _lock = new object();
         private readonly List<TextJob> _waiting = new List<TextJob>(Most);
@@ -87,7 +74,7 @@ namespace RealLifeOverhaul.Texts
         private double _expect = StartGuess;
         private int _perMinute = PerMinute, _backPerMinute = BackgroundPerMinute;
 
-        /// <summary>Seconds a reply is expected to take now (a running mean of the measured ones).</summary>
+        /// <summary>Seconds a reply is expected to take now: a running mean of the measured ones.</summary>
         public double Expect
         {
             get { lock (_lock) { return _expect; } }
@@ -99,13 +86,12 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The expected time set from what the speed test measured on this machine (TextSpeedResult.Estimate), so that the
-        /// first spoken lines are not refused for the start's cautious guess (<see cref="StartGuess"/>: 1.5 s, past a
-        /// spoken line's hold of 1.1 s, which only measured replies used to bring down). Measured replies move it as before.
+        /// Sets the expected time from the speed test, so the first spoken lines are not refused for
+        /// <see cref="StartGuess"/>, which is past a spoken line's hold.
         /// </summary>
         public void Expected(double seconds)
         {
-            if (seconds > 0 && seconds < ExpectedMost)   // (NaN fails both; no figure at all keeps the guess)
+            if (seconds > 0 && seconds < ExpectedMost)   // NaN fails both
             {
                 lock (_lock)
                 {
@@ -114,10 +100,10 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>The least urgent kind taken now (TextBudget lowers it while too many requests miss): Background takes every kind.</summary>
+        /// <summary>The least urgent kind taken now; TextBudget lowers it while too many requests miss.</summary>
         public TextPriority Floor { get; set; } = TextPriority.Background;
 
-        /// <summary>The budgets a minute (TextBudget's step): at least one in all, the background's none or more.</summary>
+        /// <summary>Sets the budgets a minute: at least one in all, the background's none or more.</summary>
         public void SetBudget(int perMinute, int backgroundPerMinute)
         {
             lock (_lock)
@@ -128,9 +114,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Queues a request. False when it cannot be written in time even now (its deadline is nearer than the expected
-        /// time): the owner shows the written line at once. The same key waiting already is replaced (its owner is told
-        /// through its state: Dropped).
+        /// Queues a request; false when it cannot be written in time even now, and the owner shows the written line. One of
+        /// the same key waiting already is dropped.
         /// </summary>
         public bool Add(TextJob job, double now)
         {
@@ -173,7 +158,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>The owner no longer wants it (a scene changed, the option was switched off): taken out if it waits.</summary>
+        /// <summary>Takes out a request its owner no longer wants, if it waits.</summary>
         public void Drop(TextJob job)
         {
             lock (_lock)
@@ -185,10 +170,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// A guess that is now the line itself (the player clicked while it was being written: TextsHub.Adopt): wanted by
-        /// the new deadline, at the first priority, no longer a guess. Waiting or running, it is the same job.
-        /// </summary>
+        /// <summary>Makes a guess the line itself, the player having clicked while it was written: Now, by the new deadline.</summary>
         public void Urge(TextJob job, double deadline)
         {
             lock (_lock)
@@ -199,7 +181,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>Every waiting request dropped (the pack switched off, the game closing).</summary>
+        /// <summary>Drops every waiting request.</summary>
         public void Clear()
         {
             lock (_lock)
@@ -212,10 +194,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Every waiting request missed at once (an AI service resting after a fault, or switched off): their owners fall
-        /// back without waiting for their deadlines.
-        /// </summary>
+        /// <summary>Misses every waiting request at once, so their owners fall back without waiting for their deadlines.</summary>
         public void MissAll(string why)
         {
             lock (_lock)
@@ -230,8 +209,7 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>
         /// The worker's next request, or null: the most urgent that can still be written by its deadline, within the
-        /// budget, the background only while <paramref name="quiet"/>. Requests that can no longer make their deadline
-        /// are missed on the way (the owner sees their state).
+        /// budget, the background only while <paramref name="quiet"/>. Requests past hope are missed on the way.
         /// </summary>
         public TextJob Take(double now, bool quiet)
         {
@@ -296,7 +274,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>Requests missed since the last call (their owners show the written line), handed over once.</summary>
+        /// <summary>Hands over the requests missed since the last call, once.</summary>
         public void TakeMissed(List<TextJob> into)
         {
             lock (_lock)
@@ -306,7 +284,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>Seconds until the soonest waiting deadline (for the owner's next look); a large number with none.</summary>
+        /// <summary>Seconds until the soonest waiting deadline; a large number with none.</summary>
         public double Soonest(double now)
         {
             lock (_lock)
@@ -331,7 +309,6 @@ namespace RealLifeOverhaul.Texts
             _missed.Add(job);
         }
 
-        // The least urgent, latest waiting request.
         private int Worst()
         {
             int worst = 0;

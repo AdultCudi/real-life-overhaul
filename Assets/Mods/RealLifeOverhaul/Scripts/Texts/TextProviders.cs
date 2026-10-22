@@ -3,11 +3,9 @@ using System;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The services Your own AI can send a card to, in the order of the options page's list (Settings.TextsService saves
-    /// the number: new ones only ever go at the end). GitHub Copilot is not among them: GitHub documents no way for an
-    /// app of its own to call Copilot over the web, and signing in as another app (an editor's or a partner's own sign-in)
-    /// would be passing the mod off as that app. Claude subscriptions are never offered: Anthropic's terms forbid their
-    /// sign-in in other apps; Anthropic is reached only with an API key.
+    /// The services Your own AI can send a card to, in the options page's order; the number is saved, so new ones go at
+    /// the end. GitHub Copilot is not offered (no documented way for another app to call it), nor Claude subscriptions
+    /// (their terms forbid the sign-in in other apps): Anthropic is reached only with an API key.
     /// </summary>
     public enum TextProvider
     {
@@ -45,22 +43,21 @@ namespace RealLifeOverhaul.Texts
     public sealed class TextProviderInfo
     {
         public TextProvider Id;
-        public string Name;              // as the log and the notices name it (a product's own name, the same in every language)
+        public string Name;              // as the log and the notices name it, the same in every language
         public TextApi Api;
         public TextAccess Access;
         public string Base;              // the API's base address, without the last part of the path
-        public string Model;             // the model asked when the player names none (null: the first the service lists)
-        public string TokensField = "max_tokens";   // the chat API's name for the reply's length ("max_completion_tokens" for OpenAI's own)
+        public string Model;             // the model asked when the player names none; null for the first the service lists
+        public string TokensField = "max_tokens";   // the chat API's name for the reply's length
         public bool Temperature = true;  // the service takes a sampling temperature for this kind of model
-        public string Reasoning;         // a low reasoning effort sent to the models that think first (null: none)
-        public string ReasoningFor;      // ...only to models whose name holds this (null: every model)
-        public bool Titled;              // the service is told the app's name in its own header (OpenRouter's X-Title, for its list of apps)
+        public string Reasoning;         // a low reasoning effort sent to the models that think first; null for none
+        public string ReasoningFor;      // ...only to models whose name holds this; null for every model
+        public bool Titled;              // the service is told the app's name in its own header (OpenRouter's X-Title)
     }
 
     /// <summary>
-    /// The table of services (<see cref="TextProvider"/>), checked against each service's own documentation in October
-    /// 2026: base addresses, the default models (each a free or the cheapest fast model of that service, the
-    /// player can name any other), and what each one refuses. Game-free (EconomyCheck, TextsServiceChecks.cs).
+    /// The table of services as each one's documentation gives them: base addresses, the default models (a free or the
+    /// cheapest fast one; the player can name any other), and what each refuses. Game-free.
     /// </summary>
     public static class TextProviders
     {
@@ -73,7 +70,7 @@ namespace RealLifeOverhaul.Texts
             new TextProviderInfo
             {
                 Id = TextProvider.ChatGpt, Name = "ChatGPT", Api = TextApi.Responses, Access = TextAccess.SignIn, Base = OpenAiApi, Model = null,
-                Temperature = false, Reasoning = "low"   // (the plan's route takes no temperature and no length: OpenAI's preview limits)
+                Temperature = false, Reasoning = "low"   // the plan's route takes no temperature and no length
             },
             new TextProviderInfo
             {
@@ -112,21 +109,21 @@ namespace RealLifeOverhaul.Texts
             new TextProviderInfo
             {
                 Id = TextProvider.OpenCodeZen, Name = "OpenCode Zen", Api = TextApi.Chat, Access = TextAccess.Key, Base = "https://opencode.ai/inference/openai/v1",
-                Model = "deepseek-v4.1-flash"   // (Zen's free models answer only OpenCode itself: "FreeTierError", seen live in October 2026)
+                Model = "deepseek-v4.1-flash"   // Zen's free models answer only OpenCode itself ("FreeTierError")
             },
             new TextProviderInfo { Id = TextProvider.Ollama, Name = "Ollama", Api = TextApi.Chat, Access = TextAccess.Local, Base = "http://127.0.0.1:11434/v1", Model = null },
             new TextProviderInfo { Id = TextProvider.LmStudio, Name = "LM Studio", Api = TextApi.Chat, Access = TextAccess.Local, Base = "http://127.0.0.1:1234/v1", Model = null }
         };
 
-        /// <summary>How many entries the options page's list has (Off first).</summary>
+        /// <summary>How many entries the options page's list has, Off first.</summary>
         public static int Count => All.Length;
 
-        /// <summary>The entry of a list position; Off for one out of range (a saved number of a later RLO).</summary>
+        /// <summary>The entry of a list position; Off for one out of range, such as a later RLO's saved number.</summary>
         public static TextProviderInfo Of(int index) => index > 0 && index < All.Length ? All[index] : All[0];
 
         public static TextProviderInfo Of(TextProvider id) => Of((int)id);
 
-        // The options page's word for each entry, in the list's order (every key written out: the locale check finds each one).
+        // The options page's word for each entry, every key written out for the locale check.
         private static readonly string[] Choices =
         {
             "reallife_textsai_provider_0", "reallife_textsai_provider_1", "reallife_textsai_provider_2", "reallife_textsai_provider_3", "reallife_textsai_provider_4",
@@ -134,7 +131,7 @@ namespace RealLifeOverhaul.Texts
             "reallife_textsai_provider_10", "reallife_textsai_provider_11"
         };
 
-        /// <summary>The options page's key for each entry, in order: a copy, one for each entry of <see cref="All"/>.</summary>
+        /// <summary>A copy of the options page's key for each entry, in order.</summary>
         public static string[] ChoiceKeys()
         {
             var keys = new string[All.Length];
@@ -143,9 +140,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The address a service is asked at: its base, or the player's own for a program on this PC (another port), which
-        /// must be http or https and, for a local one, on this PC only (127.0.0.1, localhost or ::1). Null if the player's
-        /// address is not one.
+        /// The address a service is asked at: its base, or for a program on this PC the player's own, http or https on this PC
+        /// only. Null if the player's address is not one.
         /// </summary>
         public static string Base(TextProviderInfo p, string own)
         {
@@ -160,7 +156,7 @@ namespace RealLifeOverhaul.Texts
             string b = own.Trim().TrimEnd('/');
             if (!System.Uri.TryCreate(b, System.UriKind.Absolute, out System.Uri uri) || (uri.Scheme != "http" && uri.Scheme != "https") || !uri.IsLoopback)
             {
-                return null;   // (a program on this PC only: Your own AI's local entries never send a card elsewhere)
+                return null;   // the local entries never send a card elsewhere
             }
             return b;
         }

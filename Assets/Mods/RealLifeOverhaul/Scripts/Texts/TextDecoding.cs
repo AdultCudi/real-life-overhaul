@@ -5,33 +5,21 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// How every request of data v6 is made so that a reply cannot break the rules, rather than only be refused after
-    /// (TextCheck still has the last word): llama.cpp's server is sent, with the prompt,
-    ///
-    ///   a grammar   one of three GBNF grammars (<see cref="Grammar"/>, by the card's language and the speaker's style,
-    ///               <see cref="GrammarName"/>) that allows no line break or control character, no "!" nor its full-width
-    ///               form, no dash and no hyphen but one inside a word, nothing before the first word, and, in a language
-    ///               with capitals for a speaker who does not write in lower case, a capital (or no letter) at the line's
-    ///               start and after every ". ", "? " or "… "
-    ///   the length  n_predict from the intent's most units in the language (TextLanguages.Tokens): a reply cannot run on,
-    ///               and one cut at the limit is refused (TextVerdict.Cut)
-    ///   the name    when the card says the speaker does not know the player's name, the first token of the name as it is
-    ///               written in a line (" Sam", and "Sam" at the start) banned through logit_bias; the tokens come from the
-    ///               server's own /tokenize and are kept per name for as long as that server runs (TextServer)
-    ///
-    /// The exact bodies are in the contract (SPEC_v6.json: decoding). Game-free (EconomyCheck, TextsDecodingChecks.cs).
-    /// COST: a string chosen and a few appended a request.
+    /// How every request of data v6 is made so that a reply cannot break the rules, rather than only be refused after: a
+    /// GBNF grammar by the card's language and the speaker's style, n_predict from the intent's length in the language,
+    /// and the player's name banned through logit_bias when the speaker does not know it. The bodies are the contract's
+    /// (SPEC_v6.json: decoding). Game-free. COST: a string chosen and a few appended a request.
     /// </summary>
     public static class TextDecoding
     {
         public const string Cased = "cased";       // a capital at every sentence's start: English, Portuguese, German, French, Spanish, Russian
         public const string Free = "free";         // ...the same without the capitals, for a speaker who writes in lower case
-        public const string Uncased = "uncased";   // Chinese: no capitals, and the full-width digits kept out (a figure is written as the card writes it)
+        public const string Uncased = "uncased";   // Chinese: no capitals, and the full-width digits kept out, so a figure is as the card writes it
 
-        /// <summary>What no reply of data v6 may hold, in the contract's words: "!", its full-width form and Spanish's opening one; the grammars keep them out.</summary>
+        /// <summary>What no reply of data v6 may hold, in the contract's words: "!", its full-width form and Spanish's opening one.</summary>
         public static readonly string[] Bans = { "!", "\uFF01", "\u00A1" };
 
-        // What no character of a reply may be: control characters and line breaks of every kind, "!", its full-width and opening forms, the dashes.
+        // What no character of a reply may be: control characters and line breaks, the forms of "!", the dashes.
         private const string Never = @"\x00-\x1F\x7F\u0085\u00A1\u200B-\u200F\u2028\u2029!\uFF01\u2010-\u2015\u2212";
 
         /// <summary>The cased grammar: a capital (or no letter) to start each sentence; no line break, "!", dash or loose hyphen.</summary>
@@ -63,7 +51,7 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The names of the grammars, in the contract's order.</summary>
         public static readonly string[] Names = { Cased, Free, Uncased };
 
-        /// <summary>The grammar a request of this language and style takes: uncased for Chinese, free for a speaker who writes in lower case, cased otherwise.</summary>
+        /// <summary>The grammar a request of this language and style takes.</summary>
         public static string GrammarName(string lang, bool lowercase)
         {
             if (!TextLanguages.Cased(lang))
@@ -73,7 +61,7 @@ namespace RealLifeOverhaul.Texts
             return lowercase ? Free : Cased;
         }
 
-        /// <summary>A grammar's GBNF by its name; null for an unknown one.</summary>
+        /// <summary>A grammar's GBNF by its name; null for an unknown name.</summary>
         public static string Grammar(string name)
         {
             switch (name)
@@ -92,9 +80,8 @@ namespace RealLifeOverhaul.Texts
         public static int Tokens(TextIntent intent, string lang) => TextLanguages.Tokens(TextLanguages.MostUnits(intent.MaxLen, lang), lang);
 
         /// <summary>
-        /// The forms of a name whose first token is banned: " Sam" (in a line) and "Sam" (its start). None for a name too short
-        /// to ban without taking a common token with it (two letters or fewer), or the card's stand-in when the game has no
-        /// name ("you").
+        /// The forms of a name whose first token is banned: in a line and at its start. Null for a name too short to ban
+        /// without a common token, or the card's stand-in "you".
         /// </summary>
         public static string[] NameForms(string name)
         {
@@ -119,7 +106,7 @@ namespace RealLifeOverhaul.Texts
             {
                 if (tokens[i] < 0 || tokens.IndexOf(tokens[i]) != i)
                 {
-                    continue;   // (a token twice: once)
+                    continue;   // a token twice: once
                 }
                 b.Append(written > 0 ? "," : string.Empty).Append('[').Append(tokens[i].ToString(CultureInfo.InvariantCulture)).Append(",false]");
                 written++;

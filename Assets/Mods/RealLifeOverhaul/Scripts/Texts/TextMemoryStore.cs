@@ -6,25 +6,10 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// What people remember of the player (data v6), kept in the save under its own key, one record a fact (records
-    /// separated by '^', fields by '|', each text escaped as TextsStore's):
-    ///
-    ///     v=1^m=person|kind|code|day|value|from^...
-    ///
-    /// kind is the contract's name (met, talked, tone, favour, knows, event). A record of a kind this version does not know,
-    /// or with more fields than it reads (a later version's, which adds them at the end), is read as far as it can be;
-    /// a line of a later version, or one that cannot be read, gives none and is kept in the save as it was read
-    /// (Core/SaveLines). Without the line nothing is remembered yet. What the social life keeps of its own people (how
-    /// they met, their outings, loans, the player's arrest) is read from it at the card, never copied here.
-    ///
-    ///   caps      <see cref="TextMemoryRules.PeopleMost"/> people (past it, the one whose newest fact is oldest goes) and
-    ///             <see cref="TextMemoryRules.FactsMost"/> facts each (past it, the least: TextMemoryRules.Least); one fact
-    ///             of each kind, code and value (remembered again: its day moves on)
-    ///   pruned    once a game day: a fact past its kind's lifetime, a stranger past their day (<see cref="Prune"/>)
-    ///   order     people and facts in the order they were first remembered, so a save writes the same line every time
-    ///
-    /// Each player's own: it is in their save (Going Public keeps one save a player), nothing of it is ever sent, and it is
-    /// never put on a card everybody reads. Game-free (EconomyCheck, TextsMemoryChecks.cs).
+    /// What people remember of the player (data v6), in the save: v=1^m=person|kind|code|day|value|from^..., texts escaped
+    /// as TextsStore's. A record of an unknown kind or with more fields is read as far as it can be; a line that cannot be
+    /// read is kept as it was (Core/SaveLines). Capped in people and facts, kept in the order first remembered so a save
+    /// writes the same line every time. Each player's own: nothing of it is ever sent. Game-free.
     /// COST: nothing unless a fact is remembered (a short list's pass), a card is built, or the game saves.
     /// </summary>
     public sealed class TextMemoryStore
@@ -36,10 +21,8 @@ namespace RealLifeOverhaul.Texts
         private readonly Dictionary<string, List<TextFact>> _byPerson = new Dictionary<string, List<TextFact>>(64, StringComparer.Ordinal);
         private readonly List<string> _people = new List<string>(64);
 
-        /// <summary>People remembered.</summary>
         public int People => _people.Count;
 
-        /// <summary>Facts in all.</summary>
         public int Facts
         {
             get
@@ -62,7 +45,7 @@ namespace RealLifeOverhaul.Texts
             return person != null && _byPerson.TryGetValue(person, out List<TextFact> list) ? list : null;
         }
 
-        /// <summary>Every fact of a person added to a list (for a card), none when nothing is remembered.</summary>
+        /// <summary>Adds every fact of a person to a list, for a card.</summary>
         public void AddTo(string person, List<TextFact> into)
         {
             List<TextFact> list = Of(person);
@@ -73,8 +56,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Remembers a fact of a person: false for a key a memory may not be kept under (TextMemoryRules.KeyOk), an unknown
-        /// code, or nothing to remember. The same kind, code and value again moves its day on (and who told them).
+        /// Remembers a fact of a person; false for a key a memory may not be kept under or an unknown code. The same kind,
+        /// code and value again moves its day on.
         /// </summary>
         public bool Remember(string person, TextFact fact)
         {
@@ -112,7 +95,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>A stranger who became somebody the player knows (numbers swapped): what they remembered goes with them to their new key.</summary>
+        /// <summary>Moves a stranger's facts to their new key once they are somebody the player knows.</summary>
         public int Move(string from, string to)
         {
             List<TextFact> list = Of(from);
@@ -129,7 +112,6 @@ namespace RealLifeOverhaul.Texts
             return moved;
         }
 
-        /// <summary>Everything remembered of a person let go.</summary>
         public bool Forget(string person)
         {
             if (person == null || !_byPerson.Remove(person))
@@ -141,7 +123,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>Facts past their lifetime, and strangers past their day, let go. Returns how many facts went.</summary>
+        /// <summary>Lets go of facts past their lifetime and strangers past their day; how many facts went.</summary>
         public int Prune(int today)
         {
             int gone = 0;
@@ -174,7 +156,7 @@ namespace RealLifeOverhaul.Texts
             _people.Clear();
         }
 
-        // The person whose newest fact is oldest (the first such in order).
+        // The person whose newest fact is oldest, the first such in order.
         private string Oldest()
         {
             string oldest = null;
@@ -195,8 +177,6 @@ namespace RealLifeOverhaul.Texts
             }
             return oldest;
         }
-
-        // ---------------------------------------------------------------- the save
 
         public string Write()
         {
@@ -223,7 +203,7 @@ namespace RealLifeOverhaul.Texts
             return t.ToString();
         }
 
-        /// <summary>Reads a line into this store (emptied first). False if it is of a later version or cannot be read (the store is then empty).</summary>
+        /// <summary>Reads a line into this store; false, and the store empty, if it is of a later version or cannot be read.</summary>
         public bool Read(string text)
         {
             _byPerson.Clear();
@@ -249,7 +229,7 @@ namespace RealLifeOverhaul.Texts
                 }
                 if (r[0] != 'm')
                 {
-                    continue;   // (a record of a later version's kind: passed over)
+                    continue;   // a later version's kind of record
                 }
                 string[] f = r.Substring(2).Split('|');
                 if (f.Length < 5 || !int.TryParse(f[3], NumberStyles.Integer, Inv, out int day))
@@ -261,7 +241,7 @@ namespace RealLifeOverhaul.Texts
                 TextMemoryKinds kind = TextMemoryRules.KindOf(f[1]);
                 if (kind == TextMemoryKinds.None)
                 {
-                    continue;   // (a kind of a later version)
+                    continue;   // a later version's kind of memory
                 }
                 string value = TextsStore.Unescape(f[4]);
                 string from = f.Length > 5 ? TextsStore.Unescape(f[5]) : string.Empty;

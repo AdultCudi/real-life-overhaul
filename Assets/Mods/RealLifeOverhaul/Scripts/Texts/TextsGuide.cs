@@ -5,9 +5,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The feature's entry in the mod's feature list, and the figures its Guide page prints: every {name} in its text is
-    /// filled from the rules here, so the page can never say anything RLO Texts does not do. Called once, when the feature
-    /// list is built (Meta/FeatureList); each figure is worked out when the page is opened.
+    /// The feature's entry in the feature list, and its Guide page's figures, each filled from the rules when the page is
+    /// opened.
     /// </summary>
     public static class TextsGuide
     {
@@ -52,10 +51,10 @@ namespace RealLifeOverhaul.Texts
         }
     }
 
-    /// <summary>RLO Texts' place on the options page, under the mod's own namespace so that it is one line there.</summary>
+    /// <summary>RLO Texts' blocks on the options page, as extensions so each is one line there.</summary>
     public static class TextsOptions
     {
-        /// <summary>The "RLO Texts" block of the options page: the switch, where it runs, the threads, each use, the status and the sample.</summary>
+        /// <summary>The "RLO Texts" block of the options page.</summary>
         public static ModOptions AddTexts(this ModOptions options)
         {
             return options
@@ -85,11 +84,7 @@ namespace RealLifeOverhaul.Texts
             "reallife_textsai_test", "reallife_textsai_status", "reallife_textsai_usage"
         };
 
-        /// <summary>
-        /// The "Your own AI" block: which AI service the cards go to (off unless the player chooses one), its key or the
-        /// ChatGPT sign-in, the model, a local program's address, forgetting the key or signing out, the test, the status and
-        /// ChatGPT's usage page.
-        /// </summary>
+        /// <summary>The "Your own AI" block: the service the cards go to, off unless the player chooses one, and its buttons.</summary>
         public static ModOptions AddOwnAi(this ModOptions options)
         {
             return options

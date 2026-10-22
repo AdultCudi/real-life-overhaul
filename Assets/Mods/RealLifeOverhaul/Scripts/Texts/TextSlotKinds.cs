@@ -18,17 +18,16 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The kind of every slot a card of data v6 names, and what that means for the reply in another language: a must fact
-    /// that is a name, a figure or a time's clock is found in a reply of any language as the card writes it; one of English
-    /// words (a holiday, a weekday, a kind of place) only in an English reply, since the model says it in its own language.
-    /// Every slot any intent names has a kind here (EconomyCheck, TextsSixChecks.cs). Game-free. COST: a switch.
+    /// The kind of every slot a card of data v6 names, and what that means for a reply in another language: a must fact
+    /// that is a name, a figure or a time's clock is found as the card writes it; English words only in an English reply,
+    /// since the model says them in its own language. Game-free. COST: a switch.
     /// </summary>
     public static class TextSlotKinds
     {
         /// <summary>The kind of a slot by its name; Text for one this table does not know.</summary>
         public static TextSlotKind Of(string slot) => Of(slot, out _);
 
-        /// <summary>True for a slot this table names (every slot of every intent must be: TextsSixChecks.cs).</summary>
+        /// <summary>True for a slot this table names, as every slot of every intent must be.</summary>
         public static bool Listed(string slot)
         {
             Of(slot, out bool listed);
@@ -115,7 +114,7 @@ namespace RealLifeOverhaul.Texts
                 case "traits":
                 case "topic":
                     return TextSlotKind.Choice;
-                case "holiday":    // (the model names it in its own language: "Thanksgiving", "Ação de Graças")
+                case "holiday":    // the model names it in its own language
                 case "issue":
                 case "problem":
                     return TextSlotKind.Text;
@@ -167,9 +166,8 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>
         /// The words a reply in a language must hold for a must fact of this kind: the fact itself for a name, a figure or
-        /// any fact in English; a time's clock alone ("19:30" of "Friday 19:30") in another language; null when the model
-        /// says the fact in its own words (English words in another language: nothing to look for), a place of common
-        /// words among them ("the park": its first letter small, where a name has a capital).
+        /// any fact in English, a time's clock alone in another language; null when the model says it in its own words, as it
+        /// does a place of common words ("the park", small where a name has a capital).
         /// </summary>
         public static string Needed(string fact, TextSlotKind kind, string lang)
         {
@@ -192,7 +190,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // The clock of a time ("19:30" of "Friday 19:30"); null when there is none.
+        // The clock of a time, "19:30" of "Friday 19:30"; null when there is none.
         private static string Clock(string time)
         {
             int colon = time.IndexOf(':');

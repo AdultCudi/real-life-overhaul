@@ -3,30 +3,16 @@ using System;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The intents of data v6 (the contract: data/gen/v6/spec/SPEC_v6.json, written from this table by EconomyCheck's
-    /// --texts-spec): every intent of data 5 or lower again, at its latest card, so that a data 6 pack has a card for all of
-    /// them, and the city's new talk. A data 5 pack or older is never asked them (TextsHub.Data picks the highest data the
-    /// pack has), and keeps its exact cards. What data v6 adds to a card, beside its own:
-    ///
-    ///   language   the lang line is the game's language of the seven (TextLanguages); the card's own words stay English,
-    ///              names are as the game shows them, and the model writes the language
-    ///   memory     up to <see cref="TextMemoryRules.CardMost"/> "memory:" lines of what the speaker remembers of the
-    ///              player, of the kinds their intent allows (<see cref="MemoryOf"/>); none on what everybody reads
-    ///   the name   a stranger's card always says whether they know the player's name ("you know their name: yes" or
-    ///              "no", right after the branch's facts), and when they do not, the name is kept out of the reply
-    ///   the reply  bound by its request (TextDecoding: a grammar, the length, no exclamation mark) and checked in its
-    ///              language (TextCheck.JudgeSix)
-    ///
-    /// The new talk: the player's staff (a raise asked for, off sick, thanks for a raise, their hours), the people of the
-    /// player's life after the player's own events (a crash, a court case, a graduation, a company listed, a wedding, a
-    /// baby, a big win or loss), gossip passed on between the people the player knows, and a city person's review of the
-    /// player's own business from its real figures. Game-free. COST: none until asked.
+    /// The intents of data v6 (the contract SPEC_v6.json is written from this table by EconomyCheck's --texts-spec):
+    /// every older intent again at its latest card, in the game's language, with what the speaker remembers, and the
+    /// city's new talk (the staff, the people of the player's life, gossip, reviews). An older pack is never asked them.
+    /// Game-free. COST: none until asked.
     /// </summary>
     public static partial class TextIntents
     {
-        public const int DataV6 = 6;   // ...and of the contract of data/gen/v6: every intent again in seven languages, with memory, and the city's new talk
+        public const int DataV6 = 6;   // ...and of the contract of data/gen/v6
 
-        // The street's facts of data v6: whether they know the name, always, after the branch's own; the moment where v5 had it.
+        // The street's facts of data v6: whether they know the name, always after the branch's own; the moment where v5 had it.
         private static readonly string[] KnownSix = { "you know their name: {known}" };
         private static readonly string[] MomentSix = { "weather: {weather}", "moment: {moment}", "today: {event}" };
 
@@ -41,7 +27,7 @@ namespace RealLifeOverhaul.Texts
                 TextIntent t = List[i];
                 if (Six(t.Key, t.Branch) != null)
                 {
-                    continue;   // (copied already: the latest card of this key and branch)
+                    continue;   // copied already
                 }
                 TextIntent latest = Find(t.Key, t.Branch, DataV5);
                 bool street = latest.Key.StartsWith("street.", StringComparison.Ordinal);
@@ -155,7 +141,7 @@ namespace RealLifeOverhaul.Texts
             return null;
         }
 
-        /// <summary>The kind of message in the contract's words: spoken, text, dm (a Flare message), post, comment, review or paper.</summary>
+        /// <summary>The kind of message in the contract's words.</summary>
         public static string ShapeOf(TextIntent t)
         {
             switch (t.Channel)
@@ -169,13 +155,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// What a speaker may remember of the player, by who they are: a stranger, a friend, the partner, the roommate and
-        /// a city person the player messaged everything; Mom all but how they met; the in-laws what was said and the news;
-        /// a manager how they met, what was said and what they know; the lender what was said and the money; the staff how
-        /// they met, what was said, a raise and what they know. Nothing for what everybody reads: a post, a comment, the
-        /// paper, an account's or a rival's words.
-        /// </summary>
+        /// <summary>What a speaker may remember of the player, by who they are; nothing for what everybody reads.</summary>
         public static TextMemoryKinds MemoryOf(TextIntent t)
         {
             switch (t.Voice)
@@ -196,8 +176,7 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The event of the player's a card's own news tells (TextMemoryRules.Select leaves a memory of it out, so the card
-        /// does not say it twice); null for a card that tells none.
+        /// The player's event a card's own news tells, so its memory is left out and not said twice; null for none.
         /// </summary>
         public static string Subject(string key, string branch)
         {

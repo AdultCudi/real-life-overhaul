@@ -8,20 +8,17 @@ using RealLifeOverhaul.GameUi;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// Your own AI: the people who answer through the RLO Texts packs answer through an AI service the player chose
-    /// instead (TextProviders), off unless one is chosen in the options. This part keeps its runner (TextService) as
-    /// the options say, started again only when the service, its model, its address or its key changes (a few integer
-    /// comparisons a look); the options page's buttons (the key, the ChatGPT sign-in, the model, the address, forgetting,
-    /// the test, ChatGPT's usage page); and its status. The key is typed in the game's own text box, hidden as it is typed,
-    /// and kept only in TextKeys, never in a save, the options or a log. In a Going Public session nothing shared goes to
-    /// the service (TextsHub). COST: the look's comparisons; everything else on a press or on the runner's threads.
+    /// Your own AI: the people who answer through the packs answer through an AI service the player chose instead. This
+    /// part keeps its runner as the options say, started again only when the service, its model, address or key changes;
+    /// the options page's buttons; and its status. The key is typed hidden in the game's text box and kept only in
+    /// TextKeys, never in a save, the options or a log. COST: two comparisons a look; the rest on a press or the runner's threads.
     /// </summary>
     public sealed partial class TextsDirector
     {
-        private const int KeyMost = 400;      // characters a key may be (the longest services' keys are about 170)
+        private const int KeyMost = 400;      // characters a key may be; the longest services' keys are about 170
         private const int ModelMost = 120;    // characters of a model's name
         private const int AddressMost = 200;  // characters of a local program's address
-        private const string ConfigFile = "service.txt";   // the models and addresses the player named, per service (nothing secret)
+        private const string ConfigFile = "service.txt";   // the models and addresses the player named, per service; nothing secret
 
         private static readonly ITextWeb Web = new TextWeb();
         private static TextService _service;
@@ -32,12 +29,10 @@ namespace RealLifeOverhaul.Texts
         private static TextSignIn _signIn;
         private static Action<string> _keyTyped, _modelTyped, _addressTyped;
 
-        /// <summary>The secrets' store (made on the game's thread the first time: it needs the game's data folder).</summary>
+        // Made on the game's thread the first time: it needs the game's data folder.
         private static TextKeys Keys => _keys ?? (_keys = new TextKeys(TextsGame.Home));
 
         private static TextProviderInfo Chosen => TextProviders.Of(Settings.TextsService);
-
-        // ---------------------------------------------------------------- keeping the runner as the options say
 
         // At each look: the runner started, stopped or started again when the service, its model, address or key changed.
         private static void RunService()
@@ -46,7 +41,7 @@ namespace RealLifeOverhaul.Texts
             if (_serviceIndex == index && _serviceVersion == _version)
             {
                 Watch();
-                return;   // (as it was started: two comparisons)
+                return;   // as it was started: two comparisons
             }
             StopService("the options changed");
             _serviceIndex = index;
@@ -70,7 +65,7 @@ namespace RealLifeOverhaul.Texts
                          + (p.Access == TextAccess.Local ? " on this PC" : string.Empty) + "; the pack or the written lines when it fails, is late or rests.");
             if (_toldIndex != index)
             {
-                _toldIndex = index;   // (once a session for each service: what is sent, or why nothing can be)
+                _toldIndex = index;   // once a session for each service: what is sent, or why nothing can be
                 if (_service.State == TextServerState.Failed)
                 {
                     ShowServiceStatus();
@@ -82,7 +77,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // The runner's own state as the player should hear of it: once a session when the ChatGPT plan's allowance is used up.
+        // Tells the player once a session when the ChatGPT plan's allowance is used up.
         private static void Watch()
         {
             if (_service != null && !_limitTold && _service.Fault == TextFault.UsageLimit)
@@ -95,23 +90,22 @@ namespace RealLifeOverhaul.Texts
         private static void StopService(string why)
         {
             TextService service = _service;
-            _serviceIndex = -1;   // (started again as the options say at the next look that wants it)
+            _serviceIndex = -1;   // started again as the options say at the next look that wants it
             if (service == null)
             {
                 return;
             }
             _service = null;
-            service.Halt();   // (at once: nothing more of the queue goes to a service the player has left)
+            service.Halt();   // at once: nothing more of the queue goes to a service the player has left
             Hub.Service = null;
             Hub.Clear();
-            ThreadPool.QueueUserWorkItem(_ => service.Dispose());   // (its workers end within a request's time: never on the game's thread)
+            ThreadPool.QueueUserWorkItem(_ => service.Dispose());   // its workers end within a request's time: never on the game's thread
             Logger?.Info("Your own AI: " + service.Provider.Name + " stopped (" + why + "); the pack or the written lines are used.");
         }
 
         private static string KeyName(int index) => "key." + index.ToString(CultureInfo.InvariantCulture);
 
-        // ---------------------------------------------------------------- the player's own names (models, addresses), per service
-
+        // The player's own models and addresses, per service.
         private static string Config(string name)
         {
             if (_config == null)
@@ -156,9 +150,7 @@ namespace RealLifeOverhaul.Texts
             _version++;
         }
 
-        // ---------------------------------------------------------------- the options page's buttons
-
-        /// <summary>The key of the chosen service, typed in the game's text box (hidden as it is typed), kept on this PC only.</summary>
+        /// <summary>Asks for the chosen service's key in the game's text box, hidden as it is typed; kept on this PC only.</summary>
         public static void EnterKey()
         {
             TextProviderInfo p = Chosen;
@@ -205,7 +197,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>Continue with ChatGPT: the browser opens OpenAI's sign-in; the answer comes back to this PC.</summary>
+        /// <summary>Continue with ChatGPT: opens OpenAI's sign-in in the browser; the answer comes back to this PC.</summary>
         public static void SignIn()
         {
             if (!TextKeys.Sealable())
@@ -226,12 +218,12 @@ namespace RealLifeOverhaul.Texts
                 _signIn = null;
                 return;
             }
-            TextsGame.OpenUrl(url);   // (never logged: it carries the kept sign-in's hint)
+            TextsGame.OpenUrl(url);   // never logged: it carries the kept sign-in's hint
             Logger?.Info("Your own AI: the browser was opened for the ChatGPT sign-in; its answer is awaited on 127.0.0.1.");
             TextsGame.Notice("reallife_textsai_chatgpt_open", null, 16f);
         }
 
-        // At each look, while a sign-in is under way: its end told once.
+        // At each look while a sign-in is under way: its end told once.
         private static void SignInLook()
         {
             TextSignIn s = _signIn;
@@ -251,7 +243,7 @@ namespace RealLifeOverhaul.Texts
             if (s.First)
             {
                 Keys.Set(TextChatGpt.KWelcomed, "1");
-                TextsGame.Notice("reallife_textsai_chatgpt_welcome", null, 20f);   // (OpenAI's guidelines: told once, at the first sign-in)
+                TextsGame.Notice("reallife_textsai_chatgpt_welcome", null, 20f);   // OpenAI's guidelines: told once, at the first sign-in
             }
             else
             {
@@ -259,7 +251,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>The model of the chosen service, typed in the game's text box; an empty line goes back to the service's own.</summary>
+        /// <summary>Asks for the chosen service's model in the game's text box; an empty line goes back to the service's own.</summary>
         public static void ChooseModel()
         {
             TextProviderInfo p = Chosen;
@@ -284,7 +276,7 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice("reallife_textsai_model_kept", new Dictionary<string, string>(2) { { "service", p.Name }, { "model", model.Length > 0 ? model : p.Model ?? "?" } });
         }
 
-        /// <summary>The address of a program on this PC (Ollama, LM Studio on another port); an empty line goes back to its own.</summary>
+        /// <summary>Asks for the address of a program on this PC on another port; an empty line goes back to its own.</summary>
         public static void ChooseAddress()
         {
             TextProviderInfo p = Chosen;
@@ -313,7 +305,7 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice("reallife_textsai_model_kept", new Dictionary<string, string>(2) { { "service", p.Name }, { "model", address.Length > 0 ? address : p.Base } });
         }
 
-        /// <summary>The kept key of the chosen service forgotten, or the ChatGPT sign-in signed out (revoked at OpenAI).</summary>
+        /// <summary>Forgets the chosen service's kept key, or signs out of ChatGPT, revoked at OpenAI.</summary>
         public static void Forget()
         {
             TextProviderInfo p = Chosen;
@@ -335,7 +327,7 @@ namespace RealLifeOverhaul.Texts
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 bool confirmed = TextSignIn.SignOut(Web, keys, TextProviders.ChatGptAuth);
-                _signedOut = confirmed ? 1 : 2;   // (told at the next look, on the game's thread)
+                _signedOut = confirmed ? 1 : 2;   // told at the next look, on the game's thread
             });
         }
 
@@ -355,15 +347,15 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice(told == 1 ? "reallife_textsai_chatgpt_out" : "reallife_textsai_chatgpt_out_unconfirmed", null, 16f);
         }
 
-        /// <summary>ChatGPT's own page for the plan's use in apps, in the browser.</summary>
+        /// <summary>Opens ChatGPT's own page for the plan's use in apps.</summary>
         public static void ManageUsage()
         {
             TextsGame.OpenUrl(TextChatGpt.UsageUrl);
         }
 
         /// <summary>
-        /// A friend's small talk sent to the chosen service only (never the pack), checked as every reply is, shown as a
-        /// notice with what it took, or why not. A stopped service is started again first.
+        /// Sends a friend's small talk to the chosen service only, checked as every reply is, and shows it as a notice with
+        /// what it took, or why not. A stopped service is started again first.
         /// </summary>
         public static void TestService()
         {
@@ -385,14 +377,14 @@ namespace RealLifeOverhaul.Texts
             }
             if (!Hub.ServiceWrites)
             {
-                TextsGame.Notice("reallife_textsai_test_language", new Dictionary<string, string>(1) { { "service", p.Name } }, 16f);   // (Dutch, Turkish: no checks of a reply in them)
+                TextsGame.Notice("reallife_textsai_test_language", new Dictionary<string, string>(1) { { "service", p.Name } }, 16f);   // no checks of a reply in them
                 return;
             }
             if (_service == null || _service.State == TextServerState.Failed || !Hub.ServiceUp)
             {
                 if (_service != null && _service.State == TextServerState.Failed)
                 {
-                    _version++;   // (started again at the next look: a key or a connection mended since)
+                    _version++;   // started again at the next look: a key or a connection may be mended since
                 }
                 ShowServiceStatus();
                 return;
@@ -411,7 +403,7 @@ namespace RealLifeOverhaul.Texts
 
         private static string Short(string why) => why == null ? "?" : why.Length <= WhyMost * 2 ? why : why.Substring(0, WhyMost * 2 - 1) + "\u2026";
 
-        /// <summary>The service's status as one of the game's notices: off, starting, ready with its model and this session's figures, resting, or stopped and why.</summary>
+        /// <summary>Shows the service's status as one of the game's notices.</summary>
         public static void ShowServiceStatus()
         {
             TextProviderInfo p = Chosen;
@@ -447,7 +439,7 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice(key, data, 16f);
         }
 
-        // The sample card of the tests: a friend's good news, as the pack's test asks it.
+        // The tests' sample card: a friend's good news, as the pack's test asks it.
         private static TextRequest SampleRequest()
         {
             var r = new TextRequest

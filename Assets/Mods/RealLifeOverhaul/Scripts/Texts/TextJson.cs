@@ -4,26 +4,22 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The little JSON the runner speaks with llama.cpp's server: the body of a completion request (the prompt as it is,
-    /// the sampling the models were tested with) and the "content" read back from the answer, with every escape. No
-    /// library. Game-free (EconomyCheck, TextsChecks.cs). COST: one pass over a few hundred characters.
+    /// The little JSON the runner speaks with llama.cpp's server: a completion request's body and the fields read back
+    /// from the answer, with every escape. No library. Game-free. COST: one pass over a few hundred characters.
     /// </summary>
     public static class TextJson
     {
-        public const int Tokens = 70;               // at most this many tokens a reply (the tests' setting; a reply of 200 characters is about 50)
+        public const int Tokens = 70;               // tokens a reply at most, the tests' setting (200 characters are about 50)
         public const double Temperature = 0.7;      // the sampling the models were tested with
         public const double TopP = 0.9;
 
         /// <summary>The body of a POST /completion for this prompt, stopping at the end of the assistant's turn.</summary>
         public static string Request(string prompt, int seed) => Request(prompt, seed, Tokens);
 
-        /// <summary>The same, with a number of tokens of its own (0: read the prompt only, as the cached head is made).</summary>
+        /// <summary>The same with a number of tokens of its own; 0 reads the prompt only, as the cached head is made.</summary>
         public static string Request(string prompt, int seed, int tokens) => Request(prompt, seed, tokens, null, null);
 
-        /// <summary>
-        /// A request of data v6: the same body with the reply's grammar (TextDecoding.Grammar) and the tokens it may never
-        /// write (TextDecoding.Bias), each left out when there is none, after the fields of every request.
-        /// </summary>
+        /// <summary>A request of data v6: the same body with the reply's grammar and banned tokens, each left out when there is none.</summary>
         public static string Request(string prompt, int seed, int tokens, string grammar, string bias)
         {
             var t = new StringBuilder(prompt.Length + 200 + (grammar != null ? grammar.Length + 32 : 0));
@@ -87,10 +83,10 @@ namespace RealLifeOverhaul.Texts
             return i > start && int.TryParse(json.Substring(start, i - start), NumberStyles.Integer, CultureInfo.InvariantCulture, out int token) ? token : -1;
         }
 
-        /// <summary>True when the server's answer says the reply stopped at its most tokens ("stop_type":"limit"): it was cut off.</summary>
+        /// <summary>True when the server's answer says the reply was cut off at its most tokens.</summary>
         public static bool Cut(string json) => Field(json, "stop_type") == "limit";
 
-        /// <summary>A JSON string of the text, quotes included.</summary>
+        /// <summary>Appends the text as a JSON string, quotes included.</summary>
         public static void Quote(string text, StringBuilder t)
         {
             t.Append('"');
@@ -207,7 +203,7 @@ namespace RealLifeOverhaul.Texts
                         {
                             return null;
                         }
-                        t.Append((char)code);   // (a pair of surrogates comes as two escapes, each appended as it is)
+                        t.Append((char)code);   // a surrogate pair comes as two escapes, each appended as it is
                         i += 4;
                         break;
                     default: t.Append(json[i]); break;   // \" \\ \/

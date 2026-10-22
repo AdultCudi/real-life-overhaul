@@ -4,21 +4,19 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// Which trained intent each of the game's written messages is (the map for the phone: friends, Mom, the partner, the
-    /// in-laws, roommates, the boss and the lender), by the written line's own key: the game picks the line as before, and
-    /// the line's key says what the moment is. A key with no intent here keeps its written line. Flare's map is its own
-    /// (Social/Flare/FlareTextsMap). Game-free (EconomyCheck, TextsChecks.cs: every key maps to the intent of the same
-    /// moment, every intent exists). COST: a few string comparisons a message.
+    /// Which trained intent each of the phone's written messages is, by the written line's own key: the game picks the line
+    /// as before, and its key says what the moment is. A key with no intent here keeps its written line. Flare's map is
+    /// its own. Game-free. COST: a few string comparisons a message.
     /// </summary>
     public static class TextsMapRules
     {
         /// <summary>Who a phone message is from, as the asker says it.</summary>
         public enum From { Friend, Partner, Mom, InLaws, Roommate, Boss, Lender }
 
-        // The written lines' pools, without their number (built, so the catalogue's check does not read them as keys).
+        // The written lines' pools, without their number, built so the catalogue's check does not read them as keys.
         private const string Social = "reallife" + "_social_text_";
         private const string Family = "reallife" + "_family_";
-        private const string CityStem = "reallife" + "_texts_";   // data v6's life texts and gossip (CityKeys)
+        private const string CityStem = "reallife" + "_texts_";   // data v6's life texts and gossip
 
         /// <summary>A phone message's intent and branch from its written line's key; null for a line with none.</summary>
         public static string Phone(string key, From from, out string branch)
@@ -33,7 +31,7 @@ namespace RealLifeOverhaul.Texts
             if (city != null)
             {
                 branch = cityBranch;
-                return city;   // (data v6: a text after the player's own event, or gossip: Texts/TextsDirector.City)
+                return city;   // data v6: a text after the player's own event, or gossip
             }
             switch (pool)
             {
@@ -45,7 +43,7 @@ namespace RealLifeOverhaul.Texts
                 case Social + "cancel_rain": return "friend.cancel.rain";
                 case Social + "stoodup": return "friend.stood_up";
                 case Social + "thanks": return "friend.thanks";
-                case Social + "nextday_good": return from == From.Friend ? "friend.thanks" : null;   // (a friend's the day after a good outing: thanks for it, the card every pack has)
+                case Social + "nextday_good": return from == From.Friend ? "friend.thanks" : null;   // the day after a good outing: thanks for it, a card every pack has
                 case Social + "birthday_own": return "friend.birthday_own";
                 case Social + "birthday_missed": return "friend.birthday_missed";
                 case Social + "rich_kind":
@@ -113,10 +111,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// The written lines of data v6's life events and gossip by their pool (the key without its number: TextsCityRules.LifeKey,
-        /// GossipKey), with their intent and branch: one row each, "pool|intent|branch" (no branch: empty).
-        /// </summary>
+        /// <summary>The written lines of data v6's life events and gossip by their pool, one row each: "pool|intent|branch".</summary>
         public static readonly string[] CityKeys =
         {
             "reallife_texts_life_partner_crash|partner.crash|", "reallife_texts_life_mom_news_crash|mom.news.crash|",
@@ -156,9 +151,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The card that answers the player's own typed words to somebody of the social life on a call (Wiring/TextsCalls):
-        /// data v3's answer to a message, for a friend and for the partner, the typed words the history's last line as they
-        /// were trained. Null for Mom and anybody else: no pack has a card that answers what is said to them.
+        /// The card that answers the player's own typed words to somebody of the social life on a call: data v3's answer to
+        /// a message, for a friend and for the partner. Null for anybody else: no pack has a card for them.
         /// </summary>
         public static string Answering(From from)
         {
@@ -170,7 +164,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>A piece of the City Ledger's intent by its key (the city's economy's briefs), and the names its values go by; null for a piece with none.</summary>
+        /// <summary>A City Ledger piece's intent by its key, and the names its values go by; null for a piece with none.</summary>
         public static string Ledger(string key)
         {
             switch (key)
@@ -186,9 +180,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The key a piece's words are kept under: its edition's day, and its key and values hashed (FNV-1a, the same on every
-        /// machine, so a guest of a session finds the host's words for the same piece; the day keeps the same news of two
-        /// editions apart).
+        /// The key a piece's words are kept under: its edition's day, and its key and values hashed the same on every machine,
+        /// so a guest finds the host's words for the same piece.
         /// </summary>
         public static string LedgerKey(int day, string key, string[] data)
         {
@@ -217,7 +210,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>A key without its number at the end (a crash text's "..._crash_2" is of "..._crash").</summary>
+        /// <summary>A key without its number at the end: "..._crash_2" is of "..._crash".</summary>
         public static string Pool(string key)
         {
             int end = key.Length;
@@ -228,7 +221,7 @@ namespace RealLifeOverhaul.Texts
             return end < key.Length && end > 0 && key[end - 1] == '_' ? key.Substring(0, end - 1) : key;
         }
 
-        /// <summary>What a friend's small-talk line is about (the written line's own happening, in the training's words), or null for one of the day's.</summary>
+        /// <summary>What a friend's small-talk line is about, in the training's words; null for one of the day's.</summary>
         public static string Happening(string key)
         {
             switch (key)
@@ -255,10 +248,10 @@ namespace RealLifeOverhaul.Texts
             "stiff, oddly polite, data and privacy, insists he is human"
         };
 
-        /// <summary>The holidays of Mom's invitations in the training's words where the game's are the same (Thanksgiving); else the game's own English name.</summary>
+        /// <summary>The holiday of Mom's invitation in the training's words where it is the same; else the game's own English name.</summary>
         public static string Holiday(string english) => english;
 
-        // ---------------------------------------------------------------- for the checks
+        // For the checks.
 
         private static readonly string[] PhoneKeys =
         {
@@ -278,7 +271,7 @@ namespace RealLifeOverhaul.Texts
             "reallife_text_shark_intro", "reallife_text_shark_due", "reallife_text_shark_warn"
         };
 
-        // What each key's moment is, said plainly, against the intent the map gives (a wrong map shows here).
+        // What each key's moment is, said plainly, against the intent the map gives.
         private static readonly string[][] Expect =
         {
             new[] { "reallife_social_text_crash_1", "friend.crash" }, new[] { "reallife_social_text_news_2", "friend.news.bad" },
@@ -293,10 +286,10 @@ namespace RealLifeOverhaul.Texts
             new[] { "reallife_social_text_nextday_date_good_1", null }, new[] { "reallife_social_text_nextday_mom_bad_2", null }
         };
 
-        /// <summary>The cases checked (for the checks' line).</summary>
+        /// <summary>The cases checked, for the checks' line.</summary>
         public static int Cases => Expect.Length + PhoneKeys.Length + 3;
 
-        /// <summary>Every intent the phone's map can give (the checks find each in TextIntents).</summary>
+        /// <summary>Every intent the phone's map can give; the checks find each in TextIntents.</summary>
         public static List<string> Mapped()
         {
             var list = new List<string>(64);

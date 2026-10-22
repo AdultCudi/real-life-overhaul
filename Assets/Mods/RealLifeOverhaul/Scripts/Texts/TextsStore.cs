@@ -5,37 +5,33 @@ using System.Text;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>Words the model wrote for something the game shows again later (a Flare post, a reply, a message), by its key.</summary>
+    /// <summary>Words the model wrote for something the game shows again later, by its key.</summary>
     public sealed class TextKept
     {
         public string Key;        // "fp:123" a Flare post of this save, "fn:45" a shared post by the host's number, "fr:123:2" a friend's reply, "fd:c4:9000" a message
         public int Day;           // the game day it was written
-        public string Intent;     // the intent it was written for (a guest checks the host's words by it)
+        public string Intent;     // the intent it was written for: a guest checks the host's words by it
         public string Words;
-        public bool Shared;       // the host's words for the session's shared feed or paper (go to guests)
+        public bool Shared;       // the host's words for the session's shared feed or paper, which go to guests
         public bool Received;     // ...sent by the host of a session to this guest: shown, never saved and never sent on
-        public string Lang;       // data v6: the language the words are in (TextLanguages); null: English, as every pack before wrote
+        public string Lang;       // data v6: the language the words are in; null: English, as every pack before wrote
     }
 
     /// <summary>
-    /// What RLO Texts keeps in a save: the model's words for what is worded again each time it is shown (Flare's posts,
-    /// replies and messages are worded when drawn, from their kind and seed), so a load shows the same words. A text on
-    /// the phone needs nothing here: the game keeps the words in its own thread. One line under its own key, records
-    /// separated by '^', fields by '|', the words escaped (% ^ | and line breaks):
+    /// What RLO Texts keeps in a save: the model's words for what is worded again each time it is shown, such as Flare's
+    /// posts, so a load shows the same words. One line, records separated by '^', fields by '|', texts escaped:
     ///
-    ///     v=1^w=key|day|intent|shared|words^...      (and data v6's words: ...|words|lang, the language at the record's end)
+    ///     v=1^w=key|day|intent|shared|words^...      (data v6's words: ...|words|lang)
     ///
-    /// Each record is kept while the game still has what it belongs to (<see cref="Prune"/>, once a game day), and at most
-    /// <see cref="Most"/> records in all (past that the oldest go: a bound on the save's line, not a rule of time). A line of a
-    /// later version, or one that cannot be read, gives none and is kept in the save as it was read (Core/SaveLines).
-    /// Without the line nothing changes: the written lines are shown. Game-free (EconomyCheck, TextsChecks.cs).
+    /// A record is kept while the game still has what it belongs to, at most <see cref="Most"/> in all. A line that cannot
+    /// be read is kept as it was (Core/SaveLines). Game-free.
     /// COST: nothing unless a save is loaded or written, or words come back (a dictionary write).
     /// </summary>
     public sealed class TextsStore
     {
         public const string SaveKey = "reallife:texts";
         public const int Version = 1;
-        public const int Most = 3000;           // records kept at most (Flare keeps 220 posts, every comment under them up to sixteen a post, and 120 messages; the paper a week of editions): about 1,300 in a busy city, so the bound never drops words still shown
+        public const int Most = 3000;           // records kept at most: a busy city has about 1,300, so the bound never drops words still shown
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private readonly Dictionary<string, TextKept> _byKey = new Dictionary<string, TextKept>(64, StringComparer.Ordinal);
@@ -51,10 +47,7 @@ namespace RealLifeOverhaul.Texts
             return key != null && _byKey.TryGetValue(key, out TextKept k) ? k.Words : null;
         }
 
-        /// <summary>
-        /// The words kept under a key for a game in this language: words of data v6 only in their own language (in another,
-        /// the written line), and words of an older pack, which carry no language, as ever. Null if none.
-        /// </summary>
+        /// <summary>The words kept under a key for a game in this language: data v6's only in their own; null if none.</summary>
         public string Words(string key, string lang)
         {
             if (key == null || !_byKey.TryGetValue(key, out TextKept k))
@@ -69,7 +62,7 @@ namespace RealLifeOverhaul.Texts
             return key != null && _byKey.TryGetValue(key, out TextKept k) ? k : null;
         }
 
-        /// <summary>Keeps words under a key (replacing any), and lets the oldest go past the limit. <paramref name="lang"/>: data v6's language, null below.</summary>
+        /// <summary>Keeps words under a key, replacing any, and lets the oldest go past the limit; <paramref name="lang"/> is null below data v6.</summary>
         public TextKept Keep(string key, int day, string intent, string words, bool shared, bool received = false, string lang = null)
         {
             if (key == null || words == null)
@@ -92,8 +85,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Records whose post, message or edition the game no longer has let go (never by age alone: words are shown for as
-        /// long as what they belong to is, and never change once seen). <paramref name="stillThere"/> answers for a key.
+        /// Lets go of the records whose post, message or edition the game no longer has; never by age alone, so words never
+        /// change once seen.
         /// </summary>
         public int Prune(Func<string, bool> stillThere)
         {
@@ -110,7 +103,7 @@ namespace RealLifeOverhaul.Texts
             return gone;
         }
 
-        /// <summary>Every text a host sent let go (a new whole part, the session left).</summary>
+        /// <summary>Lets go of every text a host sent.</summary>
         public int ClearReceived()
         {
             int gone = 0;
@@ -132,8 +125,6 @@ namespace RealLifeOverhaul.Texts
             _order.Clear();
         }
 
-        // ---------------------------------------------------------------- the save
-
         public string Write()
         {
             var t = new StringBuilder(16 + _order.Count * 120);
@@ -143,7 +134,7 @@ namespace RealLifeOverhaul.Texts
                 TextKept k = _order[i];
                 if (k.Received)
                 {
-                    continue;   // (the host's, for this session only)
+                    continue;   // the host's, for this session only
                 }
                 t.Append("^w=");
                 Escape(k.Key, t);
@@ -154,13 +145,13 @@ namespace RealLifeOverhaul.Texts
                 if (k.Lang != null)
                 {
                     t.Append('|');
-                    Escape(k.Lang, t);   // (at the record's end: an older RLO reads the five fields before it)
+                    Escape(k.Lang, t);   // at the record's end: an older RLO reads the five fields before it
                 }
             }
             return t.ToString();
         }
 
-        /// <summary>Reads a line into this store (emptied first). False if it is of another version or cannot be read (the store is then empty).</summary>
+        /// <summary>Reads a line into this store; false, and the store empty, if it is of another version or cannot be read.</summary>
         public bool Read(string text)
         {
             Clear();
@@ -183,7 +174,7 @@ namespace RealLifeOverhaul.Texts
                 }
                 if (r[0] != 'w')
                 {
-                    continue;   // (a record of a later version's kind: passed over)
+                    continue;   // a later version's kind of record
                 }
                 string[] f = r.Substring(2).Split('|');
                 if (f.Length < 5 || !int.TryParse(f[1], NumberStyles.Integer, Inv, out int day))
@@ -198,7 +189,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>Text with % ^ | and line breaks escaped, so it sits in one field of one record.</summary>
+        /// <summary>Appends text with % ^ | and line breaks escaped, so it sits in one field of one record.</summary>
         public static void Escape(string text, StringBuilder t)
         {
             for (int i = 0; i < text.Length; i++)

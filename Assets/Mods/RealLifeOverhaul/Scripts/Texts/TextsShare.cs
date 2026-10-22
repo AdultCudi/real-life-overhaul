@@ -5,42 +5,27 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// RLO Texts in a Going Public session:
+    /// RLO Texts in a Going Public session. A player's own texts are written on their own machine and never sent. What
+    /// every player sees (the shared feed and paper) is written once by the host and sent as text in part
+    /// <see cref="Part"/>; a guest checks each again on arrival and never writes shared text; without the host's words every
+    /// player shows the written line. An older RLO passes over a part letter or a line kind it does not know.
     ///
-    ///   personal   what is that player's own (texts from the partner, friends, family, the roommate, the in-laws, the boss;
-    ///              Flare messages to them; replies addressed to them) is written on their own machine and never sent; a
-    ///              player without a pack, or with it off, has the written lines
-    ///   shared     what every player sees (the shared Flare feed: the city's people's posts and comments, the city's
-    ///              accounts and their answers, the rivals; the shared City Ledger) is written once, by the host, checked
-    ///              there, and sent as text in this part of the shared city (letter <see cref="Part"/>), small and in
-    ///              the shared city's own pace; a guest that joins late has the whole part with the snapshot
-    ///   guests     show the host's words for those items after checking them again on arrival
-    ///              (<see cref="TextCheck.JudgeShared"/>); a guest never writes shared text. Without the host's words in
-    ///              time (no pack, switched off, too slow) every player shows the written line, as before
-    ///   older RLO  a part letter it does not know is passed over whole (SharedCity), and another version's messages are
-    ///              never applied at all
-    ///
-    /// One line a text: "w|key|intent|words", the words escaped as the save's (TextsStore.Escape), at most
-    /// <see cref="WordsMost"/> characters; the whole part at most <see cref="LinesMost"/> lines (the newest). The key is the
-    /// session's number of the item ("fn:45" a post by the host's number, "fn:45:3:c17" a comment under it, "lp:day:n" a piece of the paper).
-    ///
-    /// Shared text carries its language: a "w" line is English (as every pack before data v6 wrote), and words of a data
-    /// v6 pack in another language go as "x|key|intent|lang|words", a line kind an older RLO passes over (it shows its
-    /// written line, as it would without the host's words). A guest keeps only words in its own game's language and
-    /// shows its own written line for the rest (<see cref="Apply"/>), checking each in its language (TextCheck.JudgeSharedSix).
-    /// Game-free (EconomyCheck, TextsChecks.cs, TextsLanguageChecks.cs). COST: a line a text written on the host; nothing per frame.
+    /// One line a text: "w|key|intent|words" in English, or "x|key|intent|lang|words" in another language, texts escaped as
+    /// the save's, at most <see cref="WordsMost"/> characters and <see cref="LinesMost"/> lines. The key is the session's
+    /// number of the item ("fn:45", "fn:45:3:c17", "lp:day:n"). A guest keeps only words in its own game's language.
+    /// Game-free. COST: a line a text written on the host; nothing per frame.
     /// </summary>
     public static class TextsShare
     {
         public const char Part = 'T';
-        public const int WordsMost = 200;        // characters of one text (the longest intent's most)
-        public const int LinesMost = 300;        // lines of the whole part (a day of the feed and the paper)
+        public const int WordsMost = 200;        // characters of one text: the longest intent's most
+        public const int LinesMost = 300;        // lines of the whole part: a day of the feed and the paper
         public const int ReadMost = 400;         // lines a guest reads of one message
 
-        /// <summary>One shared text as a line, ending with its line break (so that changes put together in a message stay lines).</summary>
+        /// <summary>Appends one shared text as a line, ending with its line break so changes put together stay lines.</summary>
         public static void Line(StringBuilder b, string key, string intent, string words) => Line(b, key, intent, words, null);
 
-        /// <summary>The same in a language: English (or none) as a "w" line, any other as an "x" line with its language.</summary>
+        /// <summary>The same in a language: English or none as a "w" line, any other as an "x" line.</summary>
         public static void Line(StringBuilder b, string key, string intent, string words, string lang)
         {
             bool english = lang == null || lang == TextLanguages.English;
@@ -58,7 +43,7 @@ namespace RealLifeOverhaul.Texts
             b.Append('\n');
         }
 
-        /// <summary>The host's whole part: every shared text this machine wrote as the host (never one it was sent), the newest <see cref="LinesMost"/>; null with none.</summary>
+        /// <summary>The host's whole part: the newest shared texts this machine wrote as the host, never one it was sent; null with none.</summary>
         public static string Whole(TextsStore store)
         {
             var b = new StringBuilder(4096);
@@ -82,19 +67,16 @@ namespace RealLifeOverhaul.Texts
             return b.Length > 0 ? b.ToString() : null;
         }
 
-        // A shared text this machine wrote itself as the host ("fp:", "fc:", "lp:"), not one a host sent it.
+        // A shared text this machine wrote itself as the host, not one a host sent it.
         private static bool Own(TextKept k) => k.Shared && !k.Received;
 
         /// <summary>
-        /// A guest: reads the host's lines, checks each again, and keeps the ones that pass, as received (never saved, never
-        /// sent on). The host's whole part replaces every text received before it. Returns how many were kept.
+        /// A guest: reads the host's lines, checks each again, and keeps those that pass as received, never saved or sent on.
+        /// The host's whole part replaces every text received before it. How many were kept.
         /// </summary>
         public static int Apply(string text, TextsStore store, int day, List<string> refused, bool whole) => Apply(text, store, day, refused, whole, TextLanguages.English);
 
-        /// <summary>
-        /// The same for a guest whose game is in <paramref name="lang"/> (TextLanguages.Of): words in another language are
-        /// not kept (its own written line is shown), and every one kept is checked in its language.
-        /// </summary>
+        /// <summary>The same for a guest whose game is in <paramref name="lang"/>: words in another language are not kept.</summary>
         public static int Apply(string text, TextsStore store, int day, List<string> refused, bool whole, string lang)
         {
             if (whole)
@@ -113,7 +95,7 @@ namespace RealLifeOverhaul.Texts
                 bool six = f.Length == 5 && f[0] == "x";
                 if (!six && (f.Length != 4 || f[0] != "w"))
                 {
-                    continue;   // (a line this version does not know)
+                    continue;   // a line this version does not know
                 }
                 string key = TextsStore.Unescape(f[1]), intentKey = TextsStore.Unescape(f[2]);
                 string wordsLang = six ? TextsStore.Unescape(f[3]) : TextLanguages.English, words = TextsStore.Unescape(f[six ? 4 : 3]);
@@ -123,7 +105,7 @@ namespace RealLifeOverhaul.Texts
                 }
                 if (wordsLang != (lang ?? TextLanguages.English))
                 {
-                    continue;   // (another language than this guest's game: its own written line)
+                    continue;   // another language than this guest's game: its own written line
                 }
                 TextIntent intent = TextIntents.Find(intentKey) ?? TextIntents.Find(intentKey, "on") ?? TextIntents.Six(intentKey, null);
                 TextVerdict verdict = six ? TextCheck.JudgeSharedSix(words, intent, wordsLang) : TextCheck.JudgeShared(words, intent);
@@ -132,7 +114,7 @@ namespace RealLifeOverhaul.Texts
                     refused?.Add(key + " (" + verdict + ")");
                     continue;
                 }
-                store.Keep(key, day, intentKey, words, true, true, wordsLang);   // (in its language: a switch of the game's language shows the written line)
+                store.Keep(key, day, intentKey, words, true, true, wordsLang);   // in its language: a switch of the game's language shows the written line
                 kept++;
             }
             return kept;
@@ -145,9 +127,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The key a host's text goes under to the guests: a post of the host's own ("fp:12") by the session's number, the
-        /// host's own ("fn:12"); a comment under one ("fc:12:3:c17", Flare/FlareCommentRules.Key) likewise ("fn:12:3:c17").
-        /// An older RLO keeps such a comment's line under a key it never reads.
+        /// The key a host's text goes under to the guests: a post or comment of the host's own ("fp:12", "fc:12:3:c17") by
+        /// the session's number ("fn:12", "fn:12:3:c17"). An older RLO keeps such a comment's line under a key it never reads.
         /// </summary>
         public static string NetKey(string key)
         {

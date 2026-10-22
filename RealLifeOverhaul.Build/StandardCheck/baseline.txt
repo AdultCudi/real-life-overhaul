@@ -27,7 +27,6 @@ RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYield.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextServer.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/FlareLinks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StandingLinks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/Wiring.cs	1
@@ -263,12 +262,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalDirector.cs	10
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalPage.cs	6
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalRules.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextCheck.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextIntents.Street.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextServer.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextSpeed.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextsDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextsStore.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/CareersLinks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/EconomyLinks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/FlareLinks.cs	1

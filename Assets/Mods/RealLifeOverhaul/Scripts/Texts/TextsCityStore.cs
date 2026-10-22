@@ -5,23 +5,21 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// What the city's new talk of data v6 keeps in the save, so that a load carries on rather than telling everything
-    /// again: where the player's life stood at the last look (TextLifeMark), the life events of the last weeks with who
-    /// texted about them and whether gossip passed them on, and what was last seen and said of each of the staff. One line
-    /// under its own key, records separated by '^', fields by '|', texts escaped as TextsStore's:
+    /// What the city's new talk of data v6 keeps in the save, so a load does not tell everything again: the life's mark, the
+    /// last weeks' life events, and each of the staff's mark. One line, records separated by '^', fields by '|', texts
+    /// escaped as TextsStore's:
     ///
     ///     v=1^n=day|children|marriedDay|degreeDay|court|listedDay|businessDay|worth|worthDay
     ///        ^e=kind|day|value|child|adopted|texted|done|gossiped^...^s=id|raise|asked|sick|hoursWeek|lastDay|seenDay^...
     ///
-    /// New fields go at the end of a record; a record of a kind this version does not know is passed over; a line of a
-    /// later version, or one that cannot be read, gives none and is kept in the save as it was read (Core/SaveLines).
-    /// Game-free (EconomyCheck, TextsCityChecks.cs). COST: nothing unless a save is read or written.
+    /// A record of an unknown kind is passed over; a line that cannot be read is kept as it was (Core/SaveLines). Game-free.
+    /// COST: nothing unless a save is read or written.
     /// </summary>
     public sealed class TextsCityStore
     {
         public const string SaveKey = "reallife:texts_city";
         public const int Version = 1;
-        public const int StaffMost = 400;   // staff marks kept at most (the game's own staff of the player's businesses)
+        public const int StaffMost = 400;   // staff marks kept at most
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -52,7 +50,7 @@ namespace RealLifeOverhaul.Texts
             return m;
         }
 
-        /// <summary>The marks of staff not seen for a week let go (they left), and the events past their days. Returns how many went.</summary>
+        /// <summary>Lets go of the marks of staff not seen for a week, and the events past their days; how many went.</summary>
         public int Prune(int day)
         {
             int gone = TextsCityRules.Prune(Events, day);
@@ -76,8 +74,6 @@ namespace RealLifeOverhaul.Texts
             Events.Clear();
             Staff.Clear();
         }
-
-        // ---------------------------------------------------------------- the save
 
         public string Write()
         {
@@ -108,7 +104,7 @@ namespace RealLifeOverhaul.Texts
             return t.ToString();
         }
 
-        /// <summary>Reads a line into this store (emptied first). False if it is of a later version or cannot be read (the store is then empty).</summary>
+        /// <summary>Reads a line into this store; false, and the store empty, if it is of a later version or cannot be read.</summary>
         public bool Read(string text)
         {
             Clear();
@@ -136,7 +132,7 @@ namespace RealLifeOverhaul.Texts
                     case 'n': ok = ReadMark(f); break;
                     case 'e': ok = ReadEvent(f); break;
                     case 's': ok = ReadStaff(f); break;
-                    default: ok = true; break;   // (a record of a later version's kind: passed over)
+                    default: ok = true; break;   // a later version's kind of record
                 }
                 if (!ok)
                 {

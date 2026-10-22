@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>Who is speaking, as the card's first lines say it: the shape of the who, role, traits, mood, style, player and when lines.</summary>
+    /// <summary>Who is speaking: the shape of the card's first lines.</summary>
     public enum TextFace
     {
         Friend,          // a friend, the partner, a roommate: "Name Surname, 34, nurse, lives in Midtown", their role, traits, mood, style, the player
@@ -22,10 +22,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The speaker of a card, read from the game's state by the feature that asks (a friend's own data, a citizen's, the
-    /// boss's): their name, age, job and part of town in the English words the models were trained on (TextWords), their
-    /// traits and mood, their style of writing (TextWords.Style, stable for each person), the player's name and the game's
-    /// day and time. Game-free; kept and cleared by its owner.
+    /// The speaker of a card, read from the game's state by the feature that asks, in the English words the models were
+    /// trained on (TextWords). Game-free; kept and cleared by its owner.
     /// </summary>
     public sealed class TextWho
     {
@@ -53,9 +51,8 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The first lines of a card by its face, as the training generator wrote them (world.sheet_of, world.cit_sheet, v3's citizen_dm_sheet,
-    /// defs_people.mom_sheet, defs_work's boss and lender, defs_flare's official, tycoon, business and Ledger sheets).
-    /// Game-free. COST: a few short strings a request.
+    /// The first lines of a card by its face, as the training generator wrote them (world.sheet_of and the sheets of
+    /// defs_people, defs_work and defs_flare). Game-free. COST: a few short strings a request.
     /// </summary>
     public static class TextFaces
     {

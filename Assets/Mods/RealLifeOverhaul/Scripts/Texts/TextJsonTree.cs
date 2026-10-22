@@ -6,11 +6,9 @@ using System.Text;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// A whole JSON text read into plain objects, for the answers of an AI service (Your own AI): an object is a
-    /// Dictionary&lt;string, object&gt;, an array a List&lt;object&gt;, a string a string, a number a double, true and false a
-    /// bool, null null. The services' answers nest the words several levels down ("choices", then "message", then
-    /// "content"), so <see cref="TextJson.Field"/>'s first match is not enough. Never throws: a text that is not JSON gives
-    /// null. Depth is bounded (<see cref="Deepest"/>). Game-free (EconomyCheck, TextsServiceChecks.cs).
+    /// A whole JSON text read into plain objects (Dictionary&lt;string, object&gt;, List&lt;object&gt;, string, double,
+    /// bool, null) for an AI service's answers, which nest the words too deep for <see cref="TextJson.Field"/>. Never
+    /// throws: a text that is not JSON gives null. Game-free.
     /// COST: one pass over an answer of a few kilobytes, once a reply; nothing per frame.
     /// </summary>
     public static class TextJsonTree
@@ -37,10 +35,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// A value by its path from the root: names of fields, and numbers in square brackets for array items
-        /// ("choices[0].message.content"). Null if any step is missing.
-        /// </summary>
+        /// <summary>A value by its path from the root, such as "choices[0].message.content"; null if any step is missing.</summary>
         public static object At(object root, string path)
         {
             object at = root;
@@ -80,8 +75,6 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>The number at a path; NaN if it is missing or not a number.</summary>
         public static double Number(object root, string path) => At(root, path) is double d ? d : double.NaN;
-
-        // ---------------------------------------------------------------- reading
 
         private static object Value(string s, ref int i, int depth)
         {
@@ -207,7 +200,7 @@ namespace RealLifeOverhaul.Texts
                         {
                             throw new FormatException("an escape");
                         }
-                        t.Append((char)code);   // (a pair of surrogates comes as two escapes, each appended as it is)
+                        t.Append((char)code);   // a surrogate pair comes as two escapes, each appended as it is
                         i += 4;
                         break;
                     default: t.Append(s[i]); break;   // \" \\ \/

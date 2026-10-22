@@ -7,16 +7,14 @@ using Entities.Employee.JobDemands.Requirements;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The part of TextsGame for the city's new talk of data v6: the game's own employees (whether one is off sick now,
-    /// their hours this week and the most they agreed to, a complaint of the game's open, their main skill), a message
-    /// into the game's own thread with one of them, and a business's figures for a review (the game's satisfaction parts,
-    /// and yesterday's customers against the week's). Called once a game hour or when a review is worded, never per frame.
+    /// The part of TextsGame for the city's new talk of data v6: the game's own employees, a message into the game's thread
+    /// with one of them, and a business's figures for a review. Called once a game hour or when a review is worded.
     /// </summary>
     public static partial class TextsGame
     {
         private static readonly Dictionary<string, EmployeeInstance> Employees = new Dictionary<string, EmployeeInstance>(64, StringComparer.Ordinal);
 
-        /// <summary>The game's employees by id, for one look over the staff (a pass over the save's list, once a game hour).</summary>
+        /// <summary>Indexes the game's employees by id for one look over the staff: a pass over the save's list.</summary>
         public static void IndexEmployees()
         {
             Employees.Clear();
@@ -31,9 +29,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The game's own facts of one of the staff (after <see cref="IndexEmployees"/>): off sick now, the hours they are down
-        /// for this week, the most they agreed to, a complaint of the game's open, and their job in the card's words. False
-        /// for an id the game has no employee of.
+        /// Reads the game's own facts of one of the staff, after <see cref="IndexEmployees"/>; false for an id the game has no
+        /// employee of.
         /// </summary>
         public static bool ReadEmployee(TextStaff s)
         {
@@ -62,7 +59,7 @@ namespace RealLifeOverhaul.Texts
             return 0;
         }
 
-        /// <summary>A message from one of the player's staff into the game's own thread with them (the game adds their name, business and skill to the values).</summary>
+        /// <summary>Sends a message from one of the player's staff into the game's own thread with them; the game adds their name, business and skill.</summary>
         public static bool EmployeeSay(string id, string key, Dictionary<string, string> data)
         {
             if (id == null || key == null)
@@ -74,17 +71,16 @@ namespace RealLifeOverhaul.Texts
                 IndexEmployees();
                 if (!Employees.TryGetValue(id, out e))
                 {
-                    return false;   // (gone since: nothing is sent)
+                    return false;   // gone since: nothing is sent
                 }
             }
-            e.SendMessage(key, data != null ? new Dictionary<string, string>(data) : null);   // (a copy: the game keeps a message's values for as long as it is listed)
+            e.SendMessage(key, data != null ? new Dictionary<string, string>(data) : null);   // a copy: the game keeps a message's values while it is listed
             return true;
         }
 
         /// <summary>
-        /// A business's figures for a review of it, each 0 to 100 as the game's own insight page shows them (service,
-        /// pricing, cleanliness, interior), and how busy it was yesterday against the week before (1 busy, -1 quiet, 0
-        /// neither or not known). False when the game has too few days of its customers to have figures.
+        /// A business's figures for a review, each 0 to 100 as the game's insight page shows them, and how busy it was
+        /// yesterday against the week before (1 busy, -1 quiet, 0 neither). False when the game has too few days of figures.
         /// </summary>
         public static bool Figures(BuildingRegistration reg, out int service, out int pricing, out int cleanliness, out int interior, out int crowd)
         {
@@ -115,7 +111,7 @@ namespace RealLifeOverhaul.Texts
             }
             if (!any)
             {
-                return false;   // (the game's own page says "not enough data" then)
+                return false;   // the game's own page says "not enough data" then
             }
             service = reg.satisfaction.customerService;
             pricing = reg.satisfaction.pricing;

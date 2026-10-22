@@ -5,36 +5,22 @@ using System.Globalization;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The director's part that runs once a game hour (a comparison of the game's hour in each look, twice a second): the
-    /// line of what was shown, in Player.log while Developer diagnostics are on, and the city's new talk (the option "Texts
-    /// from your staff, about your news, and gossip", Settings.TextsCity):
-    ///
-    ///   the staff     with a pack of data 6: one of the player's staff texts, in the game's own thread with them, when the
-    ///                 company records a raise asked for, the game has them off sick, a raise is agreed, or their hours run
-    ///                 past what they agreed (TextsCityRules.Staff); worded by the model like the phone's texts, held at most
-    ///                 <see cref="StaffHold"/> s, else the written line
-    ///   life events   with a pack or without one: the partner, Mom or a friend texts after the player's own events, read
-    ///                 from the features' public state since the last look (TextsCityRules.Life, Sender), through the social
-    ///                 life's own texts; a pack of data 6 words them, and every other player has their written lines (a
-    ///                 player's own news is a reason to text whatever words it is said in: GitHub #12)
-    ///   gossip        with a pack of data 6: a public event passed on the day after by somebody who knows who heard it
-    ///                 (TextsCityRules.Gossip)
-    ///
-    /// Each player's own: in a Going Public session nothing of it is sent, and only the player's own staff and people
-    /// speak. One life text and one piece of gossip an hour at most, and the social life's own daily cap and quiet hours
-    /// hold (TextsBridges.PersonSay). COST: once a game hour, a pass over the staff and the people (a few dozen each).
+    /// The director's part that runs once a game hour: the line of what was shown, and the city's new talk. With a pack of
+    /// data 6 the staff text and gossip passes events on; with a pack or without one the people of the player's life text
+    /// after the player's own events, through the social life's own texts and caps. One life text and one piece of gossip
+    /// an hour at most. Each player's own: nothing of it is sent in a Going Public session.
+    /// COST: once a game hour, a pass over the staff and the people, a few dozen each.
     /// </summary>
     public sealed partial class TextsDirector
     {
         public const double StaffHold = 4.0;   // real seconds a message of the staff waits for its words, as the phone's texts do
-        public const string StaffStem = "reallife" + "_texts_staff_";   // the staff's written lines' keys without their kind and number (built: not read as a key)
+        public const string StaffStem = "reallife" + "_texts_staff_";   // the staff's keys without their kind and number, built so they are not read as keys
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private static readonly TextCityViews Views = new TextCityViews();
         private static readonly List<TextLifeEvent> NewEvents = new List<TextLifeEvent>(4);
         private int _hourDay = -1, _hour = -1;
 
-        // Once a game hour: the shown line, the city's talk.
         private void Hour()
         {
             GameInstance save = SaveGameManager.Current;
@@ -47,7 +33,7 @@ namespace RealLifeOverhaul.Texts
             _hourDay = save.Day;
             if (first)
             {
-                return;   // (the first look of a session only notes the hour)
+                return;   // the first look of a session only notes the hour
             }
             if (Meta.Dev.Verbose)
             {
@@ -65,7 +51,7 @@ namespace RealLifeOverhaul.Texts
                 }
                 catch (Exception e)
                 {
-                    Logger?.Error(e);   // (the city's talk once this hour: the next hour tries again)
+                    Logger?.Error(e);   // the next hour tries again
                 }
             }
         }
@@ -121,12 +107,12 @@ namespace RealLifeOverhaul.Texts
                 }
                 if (day - e.Day > 1)
                 {
-                    e.Done = true;   // (nobody could text about it in time: let go)
+                    e.Done = true;   // nobody could text about it in time: let go
                     continue;
                 }
                 if (!TextsCityRules.Sender(e, Views.People, day, out TextLifeSender sender))
                 {
-                    continue;   // (nobody may text now: the next hour tries again)
+                    continue;   // nobody may text now: the next hour tries again
                 }
                 if (TextsBridges.PersonSay(sender.Index, sender.Key, LifeData(e, null)))
                 {
@@ -153,7 +139,7 @@ namespace RealLifeOverhaul.Texts
                 {
                     tellerFirst = Views.People[k].Index == teller ? Views.People[k].First : tellerFirst;
                 }
-                e.Gossiped = true;   // (once, sent or not: the moment has passed)
+                e.Gossiped = true;   // once, sent or not: the moment has passed
                 _cityChanged = true;
                 if (tellerFirst != null && TextsBridges.PersonSay(hearer, TextsCityRules.GossipKey(e.Kind, TextsCityRules.Hash(e.Day, e.Kind, hearer)), LifeData(e, tellerFirst)))
                 {
@@ -163,7 +149,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // A life event's values for its written line and its card: the street, business, company, degree, partner, child or sum.
+        // A life event's values for its written line and its card.
         private static Dictionary<string, string> LifeData(TextLifeEvent e, string other)
         {
             var data = new Dictionary<string, string>(4);
@@ -203,7 +189,7 @@ namespace RealLifeOverhaul.Texts
                 case "win":
                 case "loss":
                     long sum = long.TryParse(e.Value, NumberStyles.Integer, Inv, out long v) ? v : 0;
-                    data["amount"] = TextsGame.Money(sum);   // (as the game writes money: the card carries the same figure)
+                    data["amount"] = TextsGame.Money(sum);   // as the game writes money: the card carries the same figure
                     break;
             }
             if (other != null)
@@ -213,9 +199,7 @@ namespace RealLifeOverhaul.Texts
             return data;
         }
 
-        // ---------------------------------------------------------------- the staff
-
-        // The player's staff as running a business has them, with the game's own facts of each (off sick now, hours, their job).
+        // The player's staff as running a business has them, with the game's own facts of each.
         private static void ReadStaff()
         {
             Views.Staff.Clear();
@@ -229,12 +213,12 @@ namespace RealLifeOverhaul.Texts
             {
                 if (!TextsGame.ReadEmployee(Views.Staff[i]))
                 {
-                    Views.Staff.RemoveAt(i);   // (no longer the game's employee: nothing to say)
+                    Views.Staff.RemoveAt(i);   // no longer the game's employee: nothing to say
                 }
             }
         }
 
-        // A message of one of the staff: the model's words in the game's thread with them, or the written line (held at most StaffHold s).
+        // A message of one of the staff in the game's thread with them: the model's words, or the written line.
         private static void StaffMessage(TextStaff s, TextStaffSay say, int day)
         {
             string intent = StaffIntent(say);
@@ -266,9 +250,9 @@ namespace RealLifeOverhaul.Texts
             r.Who.When = TextsGame.When();
             r.Slots.Set("shop", s.Shop).Set("paid", data["paid"]).Set("asked", data["asked"]).Set("going", data["going"]).Set("hours", data["hours"]).Set("most", data["most"]);
             Recall(r.Person, r.Memory);
-            r.Memory.Add(new TextFact(TextMemoryKinds.Met, "staff", day, s.Shop));   // (a standing fact: no day said)
-            StaffRemember(id, say, intent, data);   // (after the card's own memory: its news says it already)
-            GameInstance save = SaveGameManager.Current;   // (the save it belongs to: never sent into another one)
+            r.Memory.Add(new TextFact(TextMemoryKinds.Met, "staff", day, s.Shop));   // a standing fact: no day said
+            StaffRemember(id, say, intent, data);   // after the card's own memory: its news says it already
+            GameInstance save = SaveGameManager.Current;   // never sent into another save
             r.Done = words =>
             {
                 if (ReferenceEquals(save, SaveGameManager.Current))
@@ -282,7 +266,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // What one of the staff remembers of the message: what it was about, and a raise on the day it was seen (later cards say how long ago).
+        // What one of the staff remembers of the message: what it was about, and a raise on the day it was seen.
         private static void StaffRemember(string id, TextStaffSay say, string intent, Dictionary<string, string> data)
         {
             Remember("e:" + id, TextMemoryKinds.Talked, "text", TextMemoryTopics.Text(intent));

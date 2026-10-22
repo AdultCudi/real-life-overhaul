@@ -13,23 +13,21 @@ using UnityEngine;
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The only part of RLO Texts that touches the game: where its folders are, the game's language, the player's name,
-    /// the day and time as a card writes them, how fast game time runs, whether the game is quiet enough for background
-    /// work, the game's own notices, and for Your own AI the game's text box with what is typed hidden, and the browser.
+    /// The only part of RLO Texts that touches the game: its folders, language, the player's name, the day and time, the
+    /// game's speed and quiet, its notices, and for Your own AI its text box with what is typed hidden, and the browser.
     /// Each read is a property or two; nothing here runs per frame.
     /// </summary>
     public static partial class TextsGame
     {
-        public const string AppId = "1331550";   // the game's Steam app (its Workshop folder)
-        public const float SlowFrameMs = 40f;    // a frame slower than this on average between two looks: not quiet
+        public const string AppId = "1331550";   // the game's Steam app, for its Workshop folder
+        public const float SlowFrameMs = 40f;    // milliseconds: a frame slower than this on average between two looks is not quiet
 
         /// <summary>The fixed folder for packs, the speed file, the server's log and its cache: "RLO Texts" in the game's own data folder.</summary>
         public static string Home => Path.Combine(Application.persistentDataPath, TextPacks.Fixed);
 
         /// <summary>
-        /// Every place a pack may be (TextPacks.Find): the fixed folder, the folders the packs' own small mod announced,
-        /// ModsLocal, and on the Workshop only RLO's own pack items, by their ids (TextPacks.WorkshopItems), switched on
-        /// in the mod list or not. No other Workshop item is ever looked in.
+        /// Every place a pack may be: the fixed folder, the folders the packs' own mod announced, ModsLocal, and on the
+        /// Workshop only RLO's own pack items, switched on or not. No other Workshop item is ever looked in.
         /// </summary>
         public static List<string> Places()
         {
@@ -41,7 +39,7 @@ namespace RealLifeOverhaul.Texts
             return places;
         }
 
-        /// <summary>True while the game shows English: the models write English only, so any other language keeps the written lines.</summary>
+        /// <summary>True while the game shows English.</summary>
         public static bool English
         {
             get
@@ -51,7 +49,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>The game's language as it loaded it (its own code, "pt", "zh-cn"): a field read, compared by the director twice a second.</summary>
+        /// <summary>The game's language code as it loaded it: a field read, compared by the director twice a second.</summary>
         public static string Locale => Localizor.LocalizorManager.LoadedLocale;
 
         /// <summary>The player's name, as a card's player line says it.</summary>
@@ -83,7 +81,7 @@ namespace RealLifeOverhaul.Texts
             return TextWords.When(weekday, save.Hour, Mathf.FloorToInt(save.Minute) % 60);
         }
 
-        /// <summary>The weekday (0 Monday ... 6 Sunday) and hour of the card's when line (<see cref="When"/>); false without a save.</summary>
+        /// <summary>The weekday (0 Monday) and hour of the card's when line; false without a save.</summary>
         public static bool Clock(out int weekday, out int hour)
         {
             GameInstance save = SaveGameManager.Current;
@@ -97,10 +95,9 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>The game's day; 0 without a save.</summary>
         public static int Day => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
 
-        /// <summary>Real seconds until something due so many game minutes from now arrives, at the game's speed (at most an hour).</summary>
+        /// <summary>Real seconds until something due so many game minutes from now arrives, at the game's speed; an hour at most.</summary>
         public static double SecondsFor(double gameMinutes)
         {
             float perSecond = Mathf.Max(1f, PlayerPrefSettings.GameSpeed) * Mathf.Max(1f, Time.timeScale);
@@ -108,8 +105,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Quiet enough for the background: no loading screen, no fast forward or time skip, no police pursuit, and frames
-        /// not slow on average since the last look (frames counted between two looks, never per frame).
+        /// Quiet enough for the background: no loading screen, fast forward, time skip or police pursuit, and frames not slow
+        /// on average since the last look.
         /// </summary>
         public static bool Quiet(float frameMs)
         {
@@ -126,9 +123,8 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// The game's own text box, empty, for a key: what is typed shows as dots (the box's field set to a password's
-        /// while it is open, put back as it was when it closes either way). False, and nothing shown, without the box
-        /// (the main menu). Without the contract's field (GameContract.KeyHidden off) the box still works, unhidden.
+        /// Opens the game's text box, empty, for a key, what is typed shown as dots and the box put back as it was when it
+        /// closes. False without the box, as in the main menu; without the contract's field it works unhidden.
         /// </summary>
         public static bool AskSecret(string placeholderKey, string buttonKey, Action<string> done, int most)
         {
@@ -162,7 +158,7 @@ namespace RealLifeOverhaul.Texts
             done?.Invoke(text);
         }
 
-        // The box's field as it was, and empty: a key never stays in it.
+        // Puts the box's field back as it was, and empty: a key never stays in it.
         private static void SecretClosed()
         {
             TMP_InputField field = KeyField();
@@ -185,22 +181,21 @@ namespace RealLifeOverhaul.Texts
             return uis != null && uis.textInputUi != null && f != null ? f.GetValue(uis.textInputUi) as TMP_InputField : null;
         }
 
-        /// <summary>An address in the player's browser (the ChatGPT sign-in, its usage page): Unity's own call.</summary>
+        /// <summary>Opens an address in the player's browser.</summary>
         public static void OpenUrl(string url)
         {
             Application.OpenURL(url);
         }
 
-        /// <summary>One of the game's own notices.</summary>
         public static void Notice(string key, Dictionary<string, string> data, float seconds = 12f)
         {
             Notifications.Show(NotificationType.Info, key, data, seconds);
         }
 
-        /// <summary>A sum as the game writes money ("$25,000", by the player's own number format): a card and its written line carry the same figure.</summary>
+        /// <summary>A sum as the game writes money, so a card and its written line carry the same figure.</summary>
         public static string Money(long whole) => ((double)whole).ToShortCurrencyFormat();
 
-        /// <summary>An hourly pay kept in hundredths, with its cents, as the game writes a wage ("$15.50").</summary>
+        /// <summary>An hourly pay kept in hundredths, as the game writes a wage ("$15.50").</summary>
         public static string Wage(int hundredths) => (hundredths / 100f).ToCurrencyFormat();
 
         private static string FirstWord(string name)
