@@ -404,6 +404,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OwnRules.cs" Link="Mod\OwnRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Districts\DistrictRules.cs" Link="Mod\DistrictRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorRules.cs" Link="Mod\InteriorRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorRules.Effects.cs" Link="Mod\InteriorRules.Effects.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorStore.cs" Link="Mod\InteriorStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusBay.cs" Link="Mod\BusBay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
