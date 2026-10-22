@@ -291,7 +291,7 @@ namespace RealLifeOverhaul
                 else
                 {
                     _bikes.HideUi();
-                    GarageBay.Close("the Garage switched itself off");   // the bay's panel stays: car ownership's service is still ordered there
+                    GarageBay.CloseList("the Garage switched itself off");   // the bay's panel stays: car ownership's service is still ordered there
                 }
                 List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
                 for (int i = 0; i < all.Count; i++)

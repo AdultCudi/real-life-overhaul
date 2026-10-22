@@ -147,7 +147,7 @@ namespace RealLifeOverhaul
                 : GarageList.MenuUp ? "another screen came up" : null;
             if (why != null)
             {
-                Close(why);
+                CloseList(why);
             }
         }
 
@@ -192,7 +192,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                Close("the Garage is going");
+                CloseList("the Garage is going");
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 OverlayUI box = uis != null ? uis.overlayUI : null;
                 if (box != null && _ours != null && _theirs != null && ReferenceEquals(box.gasStation, _ours))
@@ -332,7 +332,7 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 Logger?.Error(e);
-                Close("an error");
+                CloseList("an error");
             }
         }
 
@@ -367,7 +367,7 @@ namespace RealLifeOverhaul
                 VehicleController car = _car;
                 if (car == null)
                 {
-                    Close("the car is gone");
+                    CloseList("the car is gone");
                     return;
                 }
                 if (id == RowService)
@@ -380,12 +380,12 @@ namespace RealLifeOverhaul
                     }
                     if (ordered)
                     {
-                        Close("the service was ordered");
+                        CloseList("the service was ordered");
                     }
                 }
                 else if (id == RowShop)
                 {
-                    Close("the custom shop was chosen");
+                    CloseList("the custom shop was chosen");
                     bool opened = GarageDirector.Working && GarageDirector.Instance.Shop.Open(car);
                     if (Meta.Dev.Verbose)
                     {
@@ -404,12 +404,12 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 Logger?.Error(e);
-                Close("an error");
+                CloseList("an error");
             }
         }
 
         /// <summary>Closes the workshop's list if it is open, saying why in the log.</summary>
-        public static void Close(string why)
+        public static void CloseList(string why)
         {
             if (ListOpen)
             {
