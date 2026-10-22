@@ -17,27 +17,16 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The one question every street scene asks before it starts: is another one on? Each
-        /// director keeps its own flag (a field read); this puts them side by side, so that a
-        /// scene added later is one line here and not one line in every other director.
-        ///
-        ///     if (Wiring.Scenes.AnyBut(Wiring.Scene.Crime)) { not now }          a director's own start test
-        ///     if (Wiring.Scenes.Near(place, Wiring.Scenes.Beside)) { not here }   the same, and no building site beside it
-        ///
-        /// Everything listed in <see cref="Scene"/> is staged around the player, so two of them
-        /// are always "beside" each other and the flag is the whole answer; a building site
-        /// (Civic) stands where it stands for days, and is asked about by place. Costs four field
-        /// reads; a director asks on its own roll timer, never per frame.
-        ///
-        /// ADDING A SCENE: a value in Scene, a line in <see cref="Active"/>, and the new
-        /// director's start test asks AnyBut(its own value).
+        /// The one question every street scene asks before it starts: is another one on? Every scene is staged around the
+        /// player, so the directors' flags are the whole answer; a building site stands for days and is asked about by
+        /// place. Four field reads, asked on each director's roll timer. A new scene is a value in <see cref="Scene"/>, a
+        /// line in <see cref="Active"/>, and AnyBut(its own value) in its start test.
         /// </summary>
         public static class Scenes
         {
             /// <summary>How near a building site counts as beside it, in metres: the length of road an accident or an event can take up.</summary>
             public const float Beside = 90f;
 
-            /// <summary>Which large scenes are on right now.</summary>
             public static Scene Active =>
                 (TrafficAccidents.IsActive ? Scene.Accident : Scene.None)
                 | (CrimeDirector.IsActive ? Scene.Crime : Scene.None)
@@ -56,9 +45,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// True while something of the mod's has the player's attention on screen: a panel with buttons, a test paper,
-            /// a driven test. Whoever wants to put up a panel of its own waits for this to be false,
-            /// so panels queue and never stack. (The game's own dialogs, time skips and pause are LifeEvents.IsSafeForEvent.)
+            /// True while a panel, test paper or driven test of the mod's has the player's attention; a new panel waits for
+            /// false, so panels queue and never stack. The game's own dialogs are LifeEvents.IsSafeForEvent.
             /// </summary>
             public static bool PlayerHeld =>
                 Law.Custody.Active || JusticePanel.IsOpen || LicenceDirector.IsActive

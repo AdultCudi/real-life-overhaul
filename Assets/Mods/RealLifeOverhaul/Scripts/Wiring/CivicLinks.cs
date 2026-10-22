@@ -2,35 +2,16 @@ using System;
 using BigAmbitions.DayNightCycle;
 using Helpers;
 using UI.Notification;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     public static partial class Wiring
     {
         /// <summary>
-        /// City hall with the rest of the mod (Civic/CivicBridges):
-        ///
-        ///   CriminalRecord, Reputation   <see cref="Standing"/>: an endorsement from somebody with a record is a scandal
-        ///   LargeScene                   <see cref="Scenes"/>: no rally and no site crew beside another street scene
-        ///   WeatherStopsWork             the game's rain, and a thunderstorm of Events/Weather
-        ///   News                         the headline at once, and the story in tomorrow's City Ledger (Social/News)
-        ///   CityPeopleOut                how many of the living city's eight are out, so that civic life yields to the cap
-        ///
-        /// Running for office (Civic/CivicOffice), one line each:
-        ///   Economy                      the city's economy (Economy/City: the cycle), to whoever holds an office and wants one
-        ///   Influence, Recognition, Integrity   Standing's figures (FameCity.Influence, Standing.Recognition, Standing.Integrity)
-        ///   Convicted, CaseOpen          who may stand: a conviction that still counts, a case before the court (Standing)
-        ///   Landlord                     a building the player lets (Economy/Estate): a vote on rent is a conflict of interest
-        ///   StandingMoved                integrity and the papers' notice of what the player did in politics (FameDirector)
-        ///   FileCase                     a case on a summons: campaign finance, misconduct in public office (Justice/TaxCases)
-        ///   CampaignPost                 a draft in Flare about the player's run or office (Wiring/FlareLinks has Flare's side)
-        ///
-        /// Left at their defaults on purpose: Labouring (Jobs has no labouring shift), FinesScaledAtSource and
-        /// FaresScaledAtSource (civic life already applies both policies itself after each charge; setting either flag
-        /// without scaling every fine and fare at its source would switch the policy off). The policies that had no
-        /// consumer are applied at their sources with one line each: CivicPolicy.EnforcementScale (PoliceAttention.Seen),
-        /// ServiceScale (TransitDirector.Headway), EventScale (EventCalendar).
+        /// City hall (CivicBridges) with the record, the scenes, the weather, the paper and the living city, and for running
+        /// for office the economy, Standing, a let building and the courts. Left at their defaults on purpose: Labouring
+        /// (Jobs has no labouring shift), and FinesScaledAtSource and FaresScaledAtSource (civic life scales both itself
+        /// after each charge; either flag without scaling at every source would switch the policy off).
         /// </summary>
         public static class CivicLinks
         {
@@ -129,10 +110,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The City Ledger's intake for a finished story: one locale key with no placeholders, printed as it stands
-        /// in the next morning's paper (Social/News, NewsKind.Story). One call, nothing allocated; it does nothing
-        /// with the paper switched off or no save loaded.
-        ///     Wiring.Paper.Print("reallife_news_story_fire");
+        /// A finished story for the next morning's City Ledger: a locale key with no placeholders, printed as it stands.
+        /// Nothing allocated; does nothing with the paper off or no save loaded.
         /// </summary>
         public static class Paper
         {

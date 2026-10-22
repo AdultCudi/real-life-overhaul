@@ -10,44 +10,14 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Brands and franchises with the rest of the mod (Economy/Brands/BrandsBridges). Brands call no other feature
-        /// and none calls them: what they have to do with each other is here.
-        ///
-        ///   Footfall      a business's promotion figure, written by business pressure's own mechanism
-        ///                 (BusinessDirector.Footfall): the mod's one writer of that figure, whoever asks.
-        ///                 <see cref="BusinessGame.Ambient"/> is asked for what the city's economy, the company and
-        ///                 a brand add together (this pairing puts the brand's share on top of whatever answered
-        ///                 before it), and business pressure keeps the sum inside -25% to +15%. On a new day a
-        ///                 business whose customers the city's economy or the company has already had drawn for it
-        ///                 is not drawn a second time for the brand
-        ///   PriceLoss     the customers the city's economy takes from a business for its prices (CityShop.Price):
-        ///                 what a trusted brand gets some of back
-        ///   scandals      a fire's bill (Events/FireLosses) and an inspector's fine (Business/BusinessEvents) at a
-        ///                 member shop are told to the brand; the loss itself is the other feature's own and is not
-        ///                 changed. A strike is asked for on the day event: the company's own, by its public state
-        ///   the courts    a franchisee's dispute, filed as one of Justice's own civil suits (Economy/Brands/BrandClaims)
-        ///   the Planner   a source of its own (<see cref="BrandsSource"/>): the rows the brands have made for the day
-        ///   managers      the company's managers write a shop's prices with the brands' own writer (BrandsGame.KeepPrice,
-        ///                 as the game's price cell does) and leave alone a shop whose prices a chain or a brand keeps
-        ///                 (CompanyBridges.WritePrice, PricesKept; put back with the company's other bridges)
-        ///
-        /// Read from the city's economy without a bridge, as every feature may: the cycle, a district's income and the
-        /// price index (Economy/City/CityEconomy). Connected after the company and disconnected before it, so that the
-        /// footfall answer it wrapped is put back as it was found.
-        ///
-        /// COST: nothing per frame and nothing allocated. An adapter runs when the feature that owns the bridge asks:
-        /// the footfall answer is a look-up among the player's businesses each time a figure is written (once an hour for
-        /// a business with something asked for: BrandsDirector.FootfallOf), the price answer a walk over the city's
-        /// economy's list once a day.
+        /// Brands and franchises (BrandsBridges) with business pressure's footfall (the brand's share on top of the
+        /// earlier pairings', never drawn twice on a new day), the city's price losses, fires, inspections and strikes at
+        /// member shops, Justice's civil suits, the managers' prices and the Planner. Connected after the company and
+        /// disconnected before it, so the footfall it wrapped goes back as found. Nothing per frame; nothing allocated.
         /// </summary>
         public static class BrandLinks
         {
-            /// <summary>
-            /// The brands' rows in the Planner, as a source of its own: an applicant on the last day they wait, what a
-            /// franchisee asks on the last day to answer, a renewal on the day the agreement runs out, an inspection
-            /// that is due, and a shop that is outside what its city chain asks. The rows are made by the director
-            /// on the day event and when the player changes something; this only hands them over, and changes nothing.
-            /// </summary>
+            /// <summary>The brands' rows in the Planner, made by the director; this only hands them over.</summary>
             private sealed class BrandsSource : IPlannerSource
             {
                 public string Id => "brands";
@@ -100,7 +70,7 @@ namespace RealLifeOverhaul
                 CompanyBridges.PricesKept = null;
                 FireLosses.Billed -= Fire;
                 BusinessEvents.Fined -= Fined;
-                BusinessGame.Ambient = _ambientBefore;   // (the company's and the city's own pairings take theirs off in a moment)
+                BusinessGame.Ambient = _ambientBefore;   // the company's and the city's pairings take theirs off next
                 _ambientBefore = null;
             }
 
@@ -116,7 +86,7 @@ namespace RealLifeOverhaul
                 return Settings.Economy && Settings.EconomyBrands && brands != null && brands.Running && brands.KeepsPrices(place);
             }
 
-            // What was asked for before this pairing, and the brand's share on top. Business pressure keeps the sum inside its own bounds.
+            // The earlier pairings' part with the brand's share on top; business pressure bounds the sum.
             private static int Ambient(BuildingRegistration reg)
             {
                 return (_ambientBefore != null ? _ambientBefore(reg) : 0) + BrandsDirector.FootfallOf(reg);
@@ -149,7 +119,7 @@ namespace RealLifeOverhaul
                 return 0;
             }
 
-            // The company's own strike starts at a business today (its state is public; its place is written as the brand's is).
+            // The company's own strike starts at a business today.
             private static bool StrikeStarts(string place, int day)
             {
                 try
@@ -166,7 +136,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A fire's repair bill at a business of the player's: the brand it trades under is talked about.
+            // A fire at a business of the player's: the brand it trades under is talked about.
             private static void Fire(BuildingRegistration reg, int bill)
             {
                 try
@@ -182,7 +152,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A fine from one of business pressure's inspections (health, fire safety): a failed inspection.
+            // A fine from a health or fire safety inspection: a failed inspection.
             private static void Fined(string kind, string place, int amount)
             {
                 try

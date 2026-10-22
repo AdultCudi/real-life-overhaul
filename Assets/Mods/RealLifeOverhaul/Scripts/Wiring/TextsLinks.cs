@@ -10,26 +10,14 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// RLO Texts (Scripts/Texts) with the features whose messages it words, one line each:
-        ///
-        ///   Flare      the posts that go up later (the city's, the replies, the answers, the rivals', the businesses'), the
-        ///              friends' replies and the answers to the player's messages: asked through FlareBridges.TextAsk, shown
-        ///              through FlareBridges.TextKept (Social/Flare/FlareDirector.Texts.cs)
-        ///   the phone  friends, the partner, Mom, the in-laws, roommates, the boss and the lender: a text held back a moment
-        ///              for its words (TextsPhone), sent with the written line when they are not there in time
-        ///   calls      a friend's or the partner's answer to what the player types on a call (TextsCalls)
-        ///   face to face  a friend's greeting at an outing, guessed when the player walks up and taken at the click
-        ///   answers    with a v3 pack, the authors' answers under the player's typed replies and the answers to typed
-        ///              messages and mentions (Social/Flare/FlareDirector.Answers.cs, FlareDirector.Texts.cs)
-        ///   the paper  the City Ledger's economy briefs, asked when an edition is written (at dawn); the words are used only if
-        ///              they come before any piece of that edition has been shown, so a page never changes in front of the player
-        ///   kept texts let go once the game no longer has what they belong to (<see cref="StillThere"/>)
-        ///
-        /// COST: nothing per frame. A request is made when the feature makes its message, never on a timer of its own.
+        /// RLO Texts with the features whose messages it words: Flare, the phone's texts (TextsPhone), calls (TextsCalls),
+        /// the city's talk (TextsCity) and the City Ledger's briefs, whose words are used only if they come before a piece
+        /// of that edition is shown, so a page never changes in front of the player. Nothing per frame: a request is made
+        /// when a feature makes its message.
         /// </summary>
         public static class TextsLinks
         {
-            public const double LedgerSeconds = 120.0;   // real seconds an edition's briefs may take: written at dawn, read later
+            private const double LedgerSeconds = 120.0;   // real seconds an edition's briefs may take: written at dawn, read later
 
             private static readonly HashSet<int> LedgerShown = new HashSet<int>();   // the editions (by day) a piece of which has been shown
             private static Action<NewsKind, UnityEngine.Vector3> _onNews;
@@ -37,7 +25,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 FlareBridges.TextAsk = AskFlare;
-                FlareBridges.TextKept = key => TextsDirector.Words.Store.Words(key, TextsDirector.Words.Language);   // (data v6's words only in their own language)
+                FlareBridges.TextKept = key => TextsDirector.Words.Store.Words(key, TextsDirector.Words.Language);   // data v6's words only in their own language
                 FlareBridges.TextWants = (use, shared) => TextsDirector.Words.Wants(use, shared);
                 FlareBridges.TextWhen = TextsGame.When;
                 FlareBridges.TextSeconds = TextsGame.SecondsFor;
@@ -79,7 +67,7 @@ namespace RealLifeOverhaul
                 TextsCity.Disconnect();
             }
 
-            // A Flare request: its person's memory on the card (data v6: a message's, never a post's), and what it was about remembered.
+            // A Flare request: its person's memory on the card (a message's, never a post's), and what it was about remembered.
             private static bool AskFlare(TextRequest r)
             {
                 SocialPerson friend = null;
@@ -94,7 +82,7 @@ namespace RealLifeOverhaul
                 return asked;
             }
 
-            // The paper's log of the player's own events: a crash, an arrest, a knock-down, for the people of the player's life to hear of.
+            // The player's own crash, arrest or knock-down, for the people of their life to hear of.
             private static void Heard(NewsKind kind, UnityEngine.Vector3 where)
             {
                 try
@@ -112,7 +100,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A review of the player's own business (data v6): the game's figures of it on the card; false for another's (the plain card).
+            // A review of the player's own business: the game's figures of it on the card; false for another's (the plain card).
             private static bool Review(string place, int stars, TextSlots slots)
             {
                 try
@@ -156,7 +144,7 @@ namespace RealLifeOverhaul
                 return TextsDirector.Words.Store.Words(TextsMapRules.LedgerKey(day, p.Key, p.Data), TextsDirector.Words.Language);
             }
 
-            // The City Ledger's briefs of an edition: the economy's (prices, the bank rate, a district's fortunes), asked as it is written.
+            // The City Ledger's economy briefs of an edition, asked as it is written.
             private static void Edition(LedgerEdition e)
             {
                 try
@@ -167,7 +155,7 @@ namespace RealLifeOverhaul
                         return;
                     }
                     int day = e.Day;
-                    LedgerShown.Remove(day);   // (written again: a new edition of the day)
+                    LedgerShown.Remove(day);   // written again: a new edition of the day
                     for (int i = 0; i < e.Pieces.Count; i++)
                     {
                         LedgerPiece p = e.Pieces[i];
@@ -180,7 +168,7 @@ namespace RealLifeOverhaul
                         {
                             Use = TextUse.Ledger, Intent = intent, Key = TextsMapRules.LedgerKey(day, p.Key, p.Data), Speaker = "ledger", Priority = TextPriority.Background,
                             Seconds = LedgerSeconds, Keep = !shared, Shared = shared, Day = day, Done = words => { },
-                            Wanted = () => !LedgerShown.Contains(day)   // (once a piece of the edition is shown, its words stay as shown)
+                            Wanted = () => !LedgerShown.Contains(day)   // once a piece of the edition is shown, its words stay as shown
                         };
                         r.Who.When = TextsGame.When();
                         string change = p.Value("change"), points = p.Value("points"), district = p.Value("district");
@@ -206,9 +194,9 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// Whether the game still has what a kept text belongs to: a Flare post ("fp:id"), a friend's reply under one
-            /// ("fr:post:person"), a comment under one ("fc:post:slot:who"), the answer under a reply of the player's ("fa:reply"), a message ("fd:with:at"), an edition of the paper ("lp:day:hash"). While Flare or the paper is
-            /// not running its texts are kept (nothing is judged on a feature that is not there to ask).
+            /// Whether the game still has what a kept text belongs to: a Flare post ("fp:id"), a reply ("fr:post:person"), a
+            /// comment ("fc:post:slot:who"), an answer ("fa:reply"), a message ("fd:with:at") or an edition ("lp:day:hash").
+            /// While Flare or the paper is not running, its texts are kept.
             /// </summary>
             public static bool StillThere(string key)
             {
@@ -252,7 +240,7 @@ namespace RealLifeOverhaul
                             return ledger == null || ledger.State == null
                                    || (f.Length >= 2 && int.TryParse(f[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int day) && ledger.HasDay(day));
                         default:
-                            return false;   // (nothing else is kept)
+                            return false;   // nothing else is kept
                     }
                 }
                 catch (Exception e)

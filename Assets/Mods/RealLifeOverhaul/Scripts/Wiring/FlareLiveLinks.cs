@@ -14,31 +14,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Flare's living network with the rest of the mod (Social/Flare/FlareBridges.Live.cs), one line each:
-        ///
-        ///   CityFacts     what the city's people post about: the weather (Events/Weather), where the latest crime or crash
-        ///                 was (Social/News), prices (the city's economy's inflation), today's and tomorrow's street event
-        ///                 (Events/EventCalendar), the election and its candidates, the council's works running late, the
-        ///                 street cleaning cut (Civic)
-        ///   Works         the City Office's crew for a road or a lamp: a site of the council's works at the building nearest
-        ///                 the report (Civic/CivicWorks.StartAt: roadworks or utility works, its days as the programme counts
-        ///                 them), never on a guest of a session (the host's programme is the city's)
-        ///   WorksDone, SiteNear, SiteReported  a site handed over; a site near a point; an unsafe site reported to the
-        ///                 inspector (CivicWorks.ReportUnsafe)
-        ///   Watched       the police in the district the player stands in (Crime/CityWatch: less street crime, offences
-        ///                 likelier seen) and the cleaners' round there (the clean streets' mood, Civic/CivicEffects.Keep)
-        ///   PlayerDistrict, Staff, PlayerName  where the player is (Districts), the staff's names (the game's employees),
-        ///                 the player's own name (the game's character)
-        ///   Destination, EventDestination  the way to a business, or to the street event on now (the game's guider)
-        ///   TakeSelfie    photo mode as a selfie (Leisure/Photo/PhotoMode.ArmSelfie)
-        ///   the paper     Flare's stories with their names (a pile-on, ignored complaints) in the morning's City Ledger,
-        ///                 chained on to the others' (Social/News.Extra)
-        ///
-        ///   Tycoons      the rival tycoons in play (Rivals: those come forward and not taken over, while the rivals run and do
-        ///                 not rest), each with the kind of their latest move announced in the last two days, for their posts
-        ///                 in their own voice
-        ///
-        /// COST: nothing per frame; each answer is asked on Flare's day, its hour or a click.
+        /// Flare's living network with what the city's people post about (weather, news, prices, events, the election, the
+        /// council's works), the City Office's crews as council sites (never on a guest of a session: the host's programme
+        /// is the city's), the police and the cleaners, the staff, the way to a business or an event, photo mode's selfie,
+        /// the rival tycoons and the paper. Nothing per frame: asked on Flare's day, its hour or a click.
         /// </summary>
         public static class FlareLiveLinks
         {
@@ -51,7 +30,7 @@ namespace RealLifeOverhaul
             private static readonly List<EmployeeInstance> Staffed = new List<EmployeeInstance>(16);
             private static readonly List<BuildingRegistration> Shops = new List<BuildingRegistration>(16);
             private static Vector3 _eventAt;   // where Flare's way to a city event points
-            // Flare's way to a city event: nothing else takes it off, so the watch does once that event is over (Core/GameUi/GuideMarkWatch).
+            // Nothing else takes Flare's way to a city event off, so the watch does once that event is over.
             private static readonly GuideMark EventMark = new GuideMark("Flare's way to a city event").While(EventGoesOn);
 
             internal static void Connect()
@@ -63,7 +42,8 @@ namespace RealLifeOverhaul
                     CivicWorks works = CivicDirector.Instance != null ? CivicDirector.Instance.Works : null;
                     return works == null || works.Find(id) == null;
                 };
-                FlareBridges.SiteNear = (x, z, within) => CivicDirector.Instance != null && CivicDirector.Instance.Works != null && CivicDirector.Instance.Works.Nearest(new Vector3(x, 0f, z), within) != null;
+                FlareBridges.SiteNear = (x, z, within) => CivicDirector.Instance != null && CivicDirector.Instance.Works != null
+                    && CivicDirector.Instance.Works.Nearest(new Vector3(x, 0f, z), within) != null;
                 FlareBridges.SiteReported = SiteReported;
                 FlareBridges.Watched = Watched;
                 FlareBridges.Tycoons = Tycoons;
@@ -88,9 +68,7 @@ namespace RealLifeOverhaul
                 EventMark.Hide();
             }
 
-            // ---------------------------------------------------------------- the city photos' places (Flare/FlareDirector.Photos.cs)
-
-            // The park or sight the player stands at, from Leisure's list as it is (found behind the loading screen; an empty list is none, never a search).
+            // The park or sight the player stands at, from Leisure's list as found behind the loading screen; never a search.
             private static bool SightAt(float x, float z, out string id, out float sightX, out float sightZ)
             {
                 id = null;
@@ -106,7 +84,7 @@ namespace RealLifeOverhaul
                 return true;
             }
 
-            // The street event on now (Events/EventDirector), its middle and its label.
+            // The street event on now, its middle and its label.
             private static bool StreetEventAt(out float x, out float y, out float z, out string label)
             {
                 bool on = EventDirector.StreetEvent(out Vector3 at, out label);
@@ -115,8 +93,6 @@ namespace RealLifeOverhaul
                 z = at.z;
                 return on;
             }
-
-            // ---------------------------------------------------------------- the city as the day's posts read it
 
             private static void Facts(FlareCityFacts f)
             {
@@ -171,8 +147,6 @@ namespace RealLifeOverhaul
                     Fault("FlareLiveLinks.Facts", e);
                 }
             }
-
-            // ---------------------------------------------------------------- the City Office's crews
 
             private static bool Works(FlareReport kind, string district, float x, float z, int seed, out int site, out int days, out string address)
             {
@@ -229,7 +203,7 @@ namespace RealLifeOverhaul
                         return false;
                     }
                     int day = SaveGameManager.Current.Day;
-                    bool utility = kind == FlareReport.Lamp || kind == FlareReport.Unsafe;   // (a real unsafe place, of the city's faults, is made safe by a utility crew)
+                    bool utility = kind == FlareReport.Lamp || kind == FlareReport.Unsafe;   // an unsafe place of the city's faults is a utility crew's
                     SiteState made = works.StartAt(utility ? SiteKind.Utility : SiteKind.Roadworks, place, day, false, utility ? LampHours : RoadHours);
                     if (made == null)
                     {
@@ -276,7 +250,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The rivals in play, each with their latest move announced (the last two days), for Flare.
+            // The rivals in play, each with their latest move announced in the last two days.
             private static void Tycoons(List<FlareTycoon> into)
             {
                 Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
@@ -305,8 +279,6 @@ namespace RealLifeOverhaul
                     into.Add(new FlareTycoon { Index = t.Index, Name = t.Def.Name, Move = move });
                 }
             }
-
-            // ---------------------------------------------------------------- the player and the staff
 
             private static void Staff(List<string> into)
             {
@@ -379,8 +351,6 @@ namespace RealLifeOverhaul
             {
                 return EventDirector.StreetEvent(out Vector3 at, out string _) && (at - _eventAt).sqrMagnitude < 4f;
             }
-
-            // ---------------------------------------------------------------- the paper
 
             private static void Paper(int day, List<NewsItem> into)
             {

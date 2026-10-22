@@ -9,27 +9,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The tech sector and the professions with the rest of the mod (Tech/TechBridges). The tech sector calls no other
-        /// feature and none calls it; what they have to do with each other is here.
-        ///
-        ///   Esteem     the player's standing as an employer, -10 to 10: Standing's workers (FamePress.Esteem), as the company reads it
-        ///   Rival      a rival of the game's own with businesses to its name, to put a name to an approach (BusinessGame.AnyRival)
-        ///   Held       the company's own rival offers and departures (CompanyLinks.Holds): nobody is approached twice at once;
-        ///              the tech sector's own, the other way, are <see cref="Holds"/>, which the company and business
-        ///              pressure ask (Wiring/CompanyLinks)
-        ///   Standing   a lay-off, a rise refused or a promotion moves the workers' part of Standing by a point (FameDirector.Moved)
-        ///   Books      the economy's books made again for a day once the firms have booked their takings (GameBooks.Refresh)
-        ///   Stock      news of a listed company (a product overtaking its rival's, the rival shipping) moves its price (the
-        ///              stock market's company event)
-        ///   Prosecute  a data protection offence heard by Justice (TaxCases.FileDataProtection)
-        ///   Claim      a breach's cost put to the company's liability cover (CompanyDirector.Loss)
-        ///   Fame       a launch, an outage or a breach moves the customers' or the integrity part of Standing
-        ///   the paper  the tech sector's stories, chained on to the City Ledger's other pieces (News.Extra), the same for a
-        ///              day however often it is asked
-        ///   OthersPicked  the utilities office, the courthouse, the police stations and the university have chosen their
-        ///              buildings (or are off), so that the tech companies' headquarters (Tech/Sites) take none of them
-        ///
-        /// Everything is read from what those features already keep in public; nothing of theirs is changed.
+        /// The tech sector and the professions (TechBridges) with Standing (esteem as an employer, its parts moved), the
+        /// game's rivals, the company's own offers (<see cref="Holds"/> the other way), the books, the stock market, the
+        /// courts, the company's cover, power, water and the internet, and the paper. The headquarters are chosen only once
+        /// the utilities office, the courthouse, the police stations and the university have chosen theirs.
         /// </summary>
         public static class TechLinks
         {
@@ -89,8 +72,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// The tech sector's own rival's offer open to an employee (the game's id), or a departure in hand for them
-            /// (TechDirector.Holds): the company and business pressure make no rival's offer to them then.
+            /// The tech sector's own rival's offer is open to an employee (the game's id), or a departure is in hand for them:
+            /// the company and business pressure make them no offer then.
             /// </summary>
             internal static bool Holds(string id)
             {
@@ -106,7 +89,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A firm's listing is the player's company's (Markets/Listing): its page opened, while the stock market and its listing run.
+            // A firm's listing is the player's company's: its page opened, while the stock market and its listing run.
             private static bool Ipo()
             {
                 try
@@ -126,7 +109,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The tech company of the player's job, by its name (its floor of a tower is offered as theirs, and the door takes them there).
+            // The tech company of the player's job, by name: its floor of a tower is offered as theirs.
             private static string Employer()
             {
                 Careers.WorkFile work = Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.Work : null;
@@ -136,14 +119,9 @@ namespace RealLifeOverhaul
 
             private static bool OthersPicked()
             {
-                Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
-                bool office = !Settings.Utilities || (utilities != null && utilities.Office != null && utilities.Office.Searched);
-                JusticeDirector justice = JusticeDirector.Instance;
-                bool court = !(JusticeSettings.Enabled && JusticeSettings.Courthouse) || (justice != null && justice.Court != null && justice.Court.Searched);
                 Careers.CareersDirector careers = Careers.CareersDirector.Instance;
                 bool campus = !Careers.CareersDirector.UniversityOpen || (careers != null && careers.University != null && careers.University.Searched);
-                bool law = !Settings.LawPrecincts || Law.LawDirector.PrecinctsChosen;
-                return office && court && campus && law;
+                return OfficeLinks.CityOfficesPicked() && campus;
             }
 
             private static bool Supplied(BuildingRegistration reg, int service)
@@ -159,9 +137,8 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // What keeps a business that needs the internet closed for want of it, as the utilities close it each hour
-            // (UtilitiesDirector.Effects): no plan (none, cut or closed), one still being installed, or an outage. Nothing for
-            // a business that does not need one, one still in the grace the rule began with, or with the utilities off.
+            // Why a business that needs the internet is closed for want of it, as the utilities close it each hour: 1 no
+            // plan, 2 one being installed, 3 an outage. 0 for one that needs none, one still in its grace, or utilities off.
             private static int Net(BuildingRegistration reg, out int when)
             {
                 when = 0;
@@ -233,7 +210,7 @@ namespace RealLifeOverhaul
                     Utilities.UtilitiesState state = d != null ? d.State : null;
                     if (state == null || !Settings.Utilities || reg == null)
                     {
-                        return int.MaxValue;   // (no utilities to ask: the data centre is taken to be connected)
+                        return int.MaxValue;   // no utilities to ask: the data centre is taken to be connected
                     }
                     Utilities.Account a = state.Find(Utilities.UtilitiesGame.Place(reg), Utilities.Service.Internet);
                     if (a == null || a.State != Utilities.SupplyState.Active || Utilities.InternetRules.InOutage(a, SaveGameManager.Current.Day * 24 + SaveGameManager.Current.Hour))
@@ -335,25 +312,31 @@ namespace RealLifeOverhaul
                     }
                     Stories.Clear();
                     director.Stories(day, Stories);
-                    for (int i = 0; i < Stories.Count; i++)
-                    {
-                        TechStory s = Stories[i];
-                        var data = new Dictionary<string, string>(2);
-                        if (s.AName.Length > 0)
-                        {
-                            data[s.AName] = s.A;
-                        }
-                        if (s.BName.Length > 0)
-                        {
-                            data[s.BName] = s.B;
-                        }
-                        into.Add(new NewsItem { Key = s.Key, Data = data });
-                    }
+                    AddStories(Stories, into);
                     Stories.Clear();
                 }
                 catch (Exception e)
                 {
                     Fault("TechLinks.Paper", e);
+                }
+            }
+
+            /// <summary>Stories of the tech sector or of careers as the paper's pieces, with their one or two names.</summary>
+            internal static void AddStories(List<TechStory> stories, List<NewsItem> into)
+            {
+                for (int i = 0; i < stories.Count; i++)
+                {
+                    TechStory s = stories[i];
+                    var data = new Dictionary<string, string>(2);
+                    if (s.AName.Length > 0)
+                    {
+                        data[s.AName] = s.A;
+                    }
+                    if (s.BName.Length > 0)
+                    {
+                        data[s.BName] = s.B;
+                    }
+                    into.Add(new NewsItem { Key = s.Key, Data = data });
                 }
             }
         }

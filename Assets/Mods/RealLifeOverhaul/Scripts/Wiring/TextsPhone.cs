@@ -10,19 +10,16 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The phone's texts worded by RLO Texts: friends and Mom (Social), the partner, Mom and the in-laws (Family), the
-        /// roommate, the boss and the lender. The game decides the text as before (who, the moment, its written line and
-        /// every effect, at once); its written line's key says which card it is (Texts/TextsMapRules), the card is built from
-        /// the sender's own data, and the text is held back at most <see cref="HoldSeconds"/> real seconds for the words,
-        /// then sent: with the words through RLO Texts' own key (the game keeps them in the thread), or with the written
-        /// line when the words are not there in time, fail the checker, or the game saves meanwhile. A friend's greeting
-        /// face to face is guessed when the player walks up and taken at the click.
-        /// COST: nothing per frame; a card and a request per text, when the text is made.
+        /// The phone's texts worded by RLO Texts: friends, the partner, Mom, the in-laws, the roommate, the boss and the
+        /// lender. The game decides the text and every effect at once; its written line's key names the card, and the text
+        /// is held at most <see cref="HoldSeconds"/> for the words, else sent with the written line (late, failing the
+        /// checks, or the game saving meanwhile). A friend's greeting face to face is guessed as the player walks up.
+        /// Nothing per frame: a request per text, when it is made.
         /// </summary>
         public static class TextsPhone
         {
-            public const double HoldSeconds = 4.0;       // the most a text waits for its words (the player never knows it was coming)
-            public const double GreetSeconds = 20.0;     // a guessed greeting is kept this long for its click
+            public const double HoldSeconds = 4.0;       // real seconds at most a text waits for its words (the player never knows it was coming)
+            private const double GreetSeconds = 20.0;     // real seconds a guessed greeting is kept for its click
 
             private static readonly string[] MomLeft =
             {
@@ -52,8 +49,7 @@ namespace RealLifeOverhaul
                 DebtPhone.HoldText = null;
             }
 
-            // ---------------------------------------------------------------- friends and Mom (Social)
-
+            // Friends and Mom of the social life.
             private static bool Social(SocialPerson person, string key, Dictionary<string, string> data, Action<string, Dictionary<string, string>> send)
             {
                 try
@@ -70,7 +66,7 @@ namespace RealLifeOverhaul
                     }
                     if (!TextsDirector.Words.Wants(TextUse.People, false))
                     {
-                        TextsDirector.Words.NotAsked(TextUse.People, false, intent);   // (counted: the written line, and why)
+                        TextsDirector.Words.NotAsked(TextUse.People, false, intent);   // counted: the written line, and why
                         return false;
                     }
                     TextRequest r = Request(intent, branch, "s:" + person.Index, key, data, send);
@@ -94,8 +90,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the partner, Mom, the in-laws, the roommate, the boss, the lender
-
+            // The partner, Mom and the in-laws of family life, the roommate, the boss and the lender.
             private static bool Hold(string from, string key, Dictionary<string, string> data, Action<string, Dictionary<string, string>> send)
             {
                 try
@@ -105,16 +100,9 @@ namespace RealLifeOverhaul
                         CountNotAsked(from, key);
                         return false;
                     }
-                    TextsMapRules.From who;
-                    switch (from)
+                    if (!Who(from, out TextsMapRules.From who))
                     {
-                        case "partner": who = TextsMapRules.From.Partner; break;
-                        case "mom": who = TextsMapRules.From.Mom; break;
-                        case "inlaws": who = TextsMapRules.From.InLaws; break;
-                        case "roommate": who = TextsMapRules.From.Roommate; break;
-                        case "boss": who = TextsMapRules.From.Boss; break;
-                        case "lender": who = TextsMapRules.From.Lender; break;
-                        default: return false;
+                        return false;
                     }
                     string intent = TextsMapRules.Phone(key, who, out string branch);
                     if (intent == null)
@@ -129,7 +117,7 @@ namespace RealLifeOverhaul
                             person = SocialState.Partner;
                             if (person == null || !intent.StartsWith("partner.", StringComparison.Ordinal))
                             {
-                                return false;   // (a partner Family keeps from before the social life: no card of theirs)
+                                return false;   // a partner Family keeps from before the social life has no card
                             }
                             FriendWho(person, r.Who, true, intent == "partner.appointment_missed");
                             r.Speaker = "s:" + person.Index;
@@ -173,7 +161,7 @@ namespace RealLifeOverhaul
                             r.Who.When = TextsGame.When();
                             if (data.TryGetValue("most", out string most) && most != "3")
                             {
-                                return false;   // (the card counts three marks, as the training's)
+                                return false;   // the card counts three marks, as the training's
                             }
                             break;
                         case TextsMapRules.From.Lender:
@@ -194,12 +182,12 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The key a held text's speaker remembers under: a person of the social life by their place, the in-laws, the lender, a manager by the employer.
+            // The key a held text's speaker remembers under: a person by their place, the in-laws, the lender, a boss by the employer.
             private static string MemoryKey(TextsMapRules.From who, SocialPerson person, TextRequest r)
             {
                 if (who == TextsMapRules.From.Roommate)
                 {
-                    return r.Speaker;   // ("r:" and their name: a roommate may be nobody of the social life's own)
+                    return r.Speaker;   // "r:" and their name: a roommate may be nobody of the social life's own
                 }
                 if (person != null)
                 {
@@ -214,19 +202,27 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // The sender of a held text, by the name its feature gives it; false for one with no card.
+            private static bool Who(string from, out TextsMapRules.From who)
+            {
+                switch (from)
+                {
+                    case "partner": who = TextsMapRules.From.Partner; return true;
+                    case "mom": who = TextsMapRules.From.Mom; return true;
+                    case "inlaws": who = TextsMapRules.From.InLaws; return true;
+                    case "roommate": who = TextsMapRules.From.Roommate; return true;
+                    case "boss": who = TextsMapRules.From.Boss; return true;
+                    case "lender": who = TextsMapRules.From.Lender; return true;
+                    default: who = default; return false;
+                }
+            }
+
             // A held text with no model to ask: counted with why, under its card when its key has one.
             private static void CountNotAsked(string from, string key)
             {
-                TextsMapRules.From who;
-                switch (from)
+                if (!Who(from, out TextsMapRules.From who))
                 {
-                    case "partner": who = TextsMapRules.From.Partner; break;
-                    case "mom": who = TextsMapRules.From.Mom; break;
-                    case "inlaws": who = TextsMapRules.From.InLaws; break;
-                    case "roommate": who = TextsMapRules.From.Roommate; break;
-                    case "boss": who = TextsMapRules.From.Boss; break;
-                    case "lender": who = TextsMapRules.From.Lender; break;
-                    default: return;
+                    return;
                 }
                 string intent = TextsMapRules.Phone(key, who, out string _);
                 if (intent != null)
@@ -235,8 +231,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- face to face
-
+            // A friend's greeting face to face, guessed as the player walks up.
             private static void Guess(SocialPerson person, PlanKind kind, string place, int late)
             {
                 try
@@ -276,11 +271,9 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the card
-
             private static TextRequest Request(string intent, string branch, string speaker, string key, Dictionary<string, string> data, Action<string, Dictionary<string, string>> send)
             {
-                GameInstance save = SaveGameManager.Current;   // (the save it belongs to: never sent into another one)
+                GameInstance save = SaveGameManager.Current;   // the save it belongs to: never sent into another one
                 return new TextRequest
                 {
                     Use = TextUse.People, Intent = intent, Branch = branch, Key = "ph:" + speaker + ":" + key, Speaker = speaker, Priority = TextPriority.Soon,
@@ -289,7 +282,7 @@ namespace RealLifeOverhaul
                     {
                         if (ReferenceEquals(save, SaveGameManager.Current))
                         {
-                            // The words keep the written line's key they stand for, so a call back knows what the text was about (SocialFollowRules.KeyField).
+                            // The words keep the written line's key, so a call back knows what the text was about.
                             send(words != null ? SocialLinks.WordsKey : key,
                                 words != null ? new Dictionary<string, string>(2) { { "text", words }, { SocialFollowRules.KeyField, key } } : data);
                         }
@@ -303,8 +296,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// A friend or the partner of the social life as the speaker of a Flare message's answer (FlareBridges.TextFriend),
-            /// by their number; false for nobody met, or Mom (no card of hers answers a Flare message).
+            /// A friend or the partner, by their number, as the speaker of a Flare message's answer; false for nobody met, or
+            /// Mom (no card of hers answers a Flare message).
             /// </summary>
             internal static bool FlareFriend(int index, TextWho who, out bool partner)
             {
@@ -318,7 +311,7 @@ namespace RealLifeOverhaul
                 return true;
             }
 
-            /// <summary>A friend (or the partner, or a roommate) as the speaker: their own data in the training's words.</summary>
+            /// <summary>A friend, the partner or a roommate as the speaker: their own data in the training's words.</summary>
             internal static void FriendWho(SocialPerson p, TextWho who, bool partner, bool expecting)
             {
                 who.Clear();
@@ -392,7 +385,7 @@ namespace RealLifeOverhaul
                     Copy(data, r.Slots, "days", "days");
                     Copy(data, r.Slots, "marks", "marks");
                     Copy(data, r.Slots, "day", "day");
-                    Copy(data, r.Slots, "degree", "degree");     // (data v6's life events: the degree, the company listed)
+                    Copy(data, r.Slots, "degree", "degree");     // data v6's life events: the degree, the company listed
                     Copy(data, r.Slots, "company", "company");
                     if (data.TryGetValue("name", out string name) && !string.IsNullOrEmpty(name))
                     {

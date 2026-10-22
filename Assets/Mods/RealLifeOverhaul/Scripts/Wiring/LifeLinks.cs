@@ -8,24 +8,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Everyday life: who the player knows, where they work, how they are, where they travel.
-        ///
-        ///   SocialLinks.Law            <see cref="Standing"/>: people know of a record and of a good name
-        ///   SocialLinks.Wellbeing      an evening out takes stress off, and a meal out is a meal (Scripts/Home)
-        ///   CareerLinks.Law            the line about the record on a CV
-        ///   CareerLinks.Health         a doctor's sick note from Scripts/Home counts as one at work
-        ///   Justice.Bridges.Social     a close friend from Scripts/Social speaks in court and visits in prison
-        ///   TravelBridges.Justice      nobody leaves town with a warrant out or a court date inside the trip
-        ///   TravelBridges.Home         a hotel's shower, a night's rest and a holiday act on hygiene and stress
-        ///   TravelBridges.Social       the player's partner and close friends come along; souvenirs are for friends
-        ///   GarageBridges.RoadIsWet    wet in the rain of Events/Weather as well as the game's
-        ///   HomeBridges.Sheltered      up in a hotel room is indoors: no rain, no cold from it
-        ///   HomeBridges.SleepingAway   a night or a nap in a hotel room is sleep, in the room's bed
-        ///   LifeAccounts.Home          Home's residential lookup: a home of the player's, wherever they stand
-        ///
-        /// Left at their defaults, each because the other side has nothing to answer with (see the list in docs/reference/wiring.md):
-        /// CareerLinks.Social, TravelBridges.Transport and Leisure, Justice.Bridges.Transport,
-        /// GarageBridges.PoliceNotice and RiderFalls, Events.Weather.Wardrobe.
+        /// Everyday life: the social life, careers, the courts, travel, home life and the garage with each other. Left at
+        /// their defaults because the other side has nothing to answer with (docs/reference/wiring.md): CareerLinks.Social,
+        /// TravelBridges.Transport and Leisure, Justice.Bridges.Transport, GarageBridges.PoliceNotice and RiderFalls,
+        /// Events.Weather.Wardrobe.
         /// </summary>
         public static class LifeLinks
         {
@@ -43,7 +29,7 @@ namespace RealLifeOverhaul
                 TravelBridges.Home = new HomeForTravel();
                 if (Settings.Social)
                 {
-                    TravelBridges.Social = new FriendsForTravel();   // (travel hands companions and gifts over entirely: only while there is a social life)
+                    TravelBridges.Social = new FriendsForTravel();   // travel hands companions and gifts over entirely
                 }
                 GarageBridges.RoadIsWet = () => RainHelper.AreRainDropsFalling || Events.Weather.Sky >= Events.Sky.Rain;
                 HomeBridges.Sheltered = () => TravelState.InRoom;
@@ -84,7 +70,7 @@ namespace RealLifeOverhaul
 
             private static bool FriendsOn => SocialState.Loaded && Settings.Social;
 
-            // The person nearest the player at or above a stage: the partner first, then by stage.
+            // The person closest to the player at or above a stage: the partner first, then by stage.
             private static SocialPerson Closest(SocialStage atLeast)
             {
                 SocialPerson best = null;
@@ -158,7 +144,7 @@ namespace RealLifeOverhaul
             {
                 public bool Covers(int day)
                 {
-                    // The doctor's note (Scripts/Home), or the mod's older sickness: what the career ladder counts with nothing set.
+                    // Home's doctor's note, or the mod's older sickness, which the career ladder counts with nothing set.
                     int today = TimeHelper.CurrentDay;
                     float dayBegan = TimeHelper.NowInMinutes() - (today - day) * 1440f;
                     bool note = HomeState.Loaded && HomeState.SickNoteUntil > 0f && (day >= today ? HomeHealth.SickNoteActive : HomeState.SickNoteUntil >= dayBegan);
@@ -222,7 +208,7 @@ namespace RealLifeOverhaul
                     return true;
                 }
 
-                public List<string> MissedWhileAway(int fromDay, int toDay) => null;   // (nothing can be missed: a trip over a court date is refused)
+                public List<string> MissedWhileAway(int fromDay, int toDay) => null;   // a trip over a court date is refused
             }
 
             private sealed class HomeForTravel : ITravelHome
@@ -237,7 +223,7 @@ namespace RealLifeOverhaul
                     return true;
                 }
 
-                public bool Laundry(int quality) => false;   // (home life keeps no count of clean clothes)
+                public bool Laundry(int quality) => false;   // home life keeps no count of clean clothes
 
                 public bool Rest(int hours, int quality)
                 {
@@ -277,7 +263,6 @@ namespace RealLifeOverhaul
                         }
                         return;
                     }
-                    // The partner first, then close friends.
                     for (int stage = (int)SocialStage.Partner; stage >= (int)SocialStage.CloseFriend; stage--)
                     {
                         for (int i = 0; i < SocialState.Count; i++)

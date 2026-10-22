@@ -9,20 +9,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The roommate with the features it leans on. The doors that are filled in:
-        ///
-        ///   RoommateBridges.PartnerLivesIn / PartnerName   family life: whether the player's partner lives in, and what they are called
-        ///   RoommateBridges.PartnerBody                    where the partner stands in the home just now: the roommate keeps off that place
-        ///   RoommateBridges.Friends / IsPartner            social life: the friends who could be asked to move in, and whether one is the partner
-        ///   RoommateBridges.FriendMoved                    a roommate who is one of social life's people: what happens at home moves that person's figures
-        ///   RoommateBridges.MakeFriend                     a roommate the player gets on with becomes one of social life's people: the cast's neighbour,
-        ///                                                  while the player has not met them, takes the roommate's name, look and job and is met
-        ///   RoommateBridges.Introduce                      they bring somebody the player has not met along, as social life's own friends do
-        ///   the Planner                                    a source of its own: the next rent day, rent or a loan that is owed, the day they leave,
-        ///                                                  the day a notice comes down
-        ///
-        /// Every adapter answers from what the other feature already keeps and is called on an event (a day, a button);
-        /// none has a timer. A fault is said once (<see cref="Fault"/>) and the default answer is given.
+        /// The roommate (RoommateBridges) with family life (the partner who lives in, and where they stand), the social life
+        /// (friends who could move in, a roommate who becomes one of its people, introductions) and the Planner. Called on
+        /// events only.
         /// </summary>
         public static class RoommateLinks
         {
@@ -197,15 +186,14 @@ namespace RealLifeOverhaul
                     p.Job = m.Job;
                     p.FreeFrom = m.FreeFrom;
                     p.FreeTo = m.FreeTo;
-                    SocialTrait traits = SocialTrait.None;
-                    if (RoommateRules.Has(mate.Traits, RoomTrait.Reliable)) traits |= SocialTrait.Reliable;
-                    if (RoommateRules.Has(mate.Traits, RoomTrait.LateWithRent)) traits |= SocialTrait.Flaky;
-                    if (RoommateRules.Has(mate.Traits, RoomTrait.Generous)) traits |= SocialTrait.Generous;
-                    if (RoommateRules.Has(mate.Traits, RoomTrait.Tight)) traits |= SocialTrait.Careful;
-                    if (RoommateRules.Has(mate.Traits, RoomTrait.NightOwl)) traits |= SocialTrait.NightOwl;
-                    if (RoommateRules.Has(mate.Traits, RoomTrait.EarlyBird)) traits |= SocialTrait.Punctual;
-                    if (RoommateRules.Has(mate.Traits, RoomTrait.Cooks)) traits |= SocialTrait.Foodie;
-                    if (RoommateRules.Has(mate.Traits, RoomTrait.Private)) traits |= SocialTrait.Homebody;
+                    SocialTrait traits = Trait(mate, RoomTrait.Reliable, SocialTrait.Reliable)
+                                         | Trait(mate, RoomTrait.LateWithRent, SocialTrait.Flaky)
+                                         | Trait(mate, RoomTrait.Generous, SocialTrait.Generous)
+                                         | Trait(mate, RoomTrait.Tight, SocialTrait.Careful)
+                                         | Trait(mate, RoomTrait.NightOwl, SocialTrait.NightOwl)
+                                         | Trait(mate, RoomTrait.EarlyBird, SocialTrait.Punctual)
+                                         | Trait(mate, RoomTrait.Cooks, SocialTrait.Foodie)
+                                         | Trait(mate, RoomTrait.Private, SocialTrait.Homebody);
                     if (traits != SocialTrait.None)
                     {
                         p.Traits = traits;
@@ -214,7 +202,7 @@ namespace RealLifeOverhaul
                     p.Familiarity = Math.Max(p.Familiarity, m.Familiarity);
                     p.Affection = Math.Max(p.Affection, m.Affection);
                     p.Trust = Math.Max(p.Trust, m.Trust);
-                    p.Shared = Math.Max(p.Shared, SocialRules.FriendShared);   // they have lived together: that is things done together
+                    p.Shared = Math.Max(p.Shared, SocialRules.FriendShared);   // living together counts as things done together
                     SocialLife.Restage(p);
                     return p.Index;
                 }
@@ -224,6 +212,9 @@ namespace RealLifeOverhaul
                     return -1;
                 }
             }
+
+            private static SocialTrait Trait(Flatmate mate, RoomTrait room, SocialTrait social) =>
+                RoommateRules.Has(mate.Traits, room) ? social : SocialTrait.None;
 
             private static string Introduce(int index)
             {

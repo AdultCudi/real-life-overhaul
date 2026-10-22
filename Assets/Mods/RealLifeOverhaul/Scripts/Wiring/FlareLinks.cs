@@ -13,69 +13,16 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Flare, the city's social media app, with the rest of the mod (Social/Flare/FlareBridges). Flare calls no
-        /// other feature and none calls it: what they have to do with each other is here, one line each.
-        ///
-        ///   People        the social life's people the player has met, as Flare reads them: their stage, what they
-        ///                 like (their traits), how close they are, their job and part of town (Social/SocialState)
-        ///   PublicStanding the law's public reputation, which the account's own is pulled towards (Standing.Public)
-        ///   Civic         the election on now: has the player voted, endorsed, and for whom (CivicDirector's state)
-        ///   Career        the player's employer and rank (a profession's, Careers/Work, else Jobs/CareerState): a rank up is a promotion to post about
-        ///   drafts        a picture saved (PhotoMode.Saved), an outing gone to its end (SocialLinks.OutingDone), a good
-        ///                 deed that counted (Reputation.Deed) and an arrest (News.Reported, PlayerArrested) become
-        ///                 drafts in Flare (FlareDirector.Happened)
-        ///
-        /// What a post does elsewhere, one line each:
-        ///   Footfall      Flare's talk about a business is added to <see cref="BusinessGame.Ambient"/> (on top of what
-        ///                 the city's economy, the company and the brands add) and written by business pressure's own
-        ///                 writer (BusinessDirector.Footfall), which keeps the sum inside its own bounds; Flare's part is
-        ///                 6% at most. On a new day a business the others have had drawn already is not drawn again
-        ///   Sponsored     a sponsored post is the company's fifth campaign (CampaignKind.Sponsored), offered from Local
-        ///                 on and priced by Flare (CompanyBridges.Outside); booked, it is posted (CompanyBridges.Booked)
-        ///   Tagged        a friend tagged is a little closer (SocialLife.Change, MemoryCode.Posted); a selfie taken with
-        ///                 them on an outing counts again, the partner more; a post that went badly costs a little trust
-        ///   scandals      a scandal at a brand's shop spreads by the account's reputation (BrandsBridges.ScandalScale,
-        ///                 BrandRules.Hit) and an honest answer wins part of it back (BrandsDirector.Recover)
-        ///   Story         a viral day is a piece in the City Ledger (Paper.Print, NewsKind.Story)
-        ///   Following     the account's word in an election (CivicBridges.Following, two businesses' worth at most)
-        ///   Wanted, Noticed  a picture posted while wanted: a day of closer police scrutiny (Reputation.Noticed)
-        ///   OnShift, Complaint  a post on a rota shift, if the boss follows: a complaint (CareerState.Complaint)
-        ///
-        /// The city's influencers, one line each too:
-        ///   hiring        a deal with influencers is one of the company's six campaigns after the sponsored post
-        ///                 (CampaignKind 5 to 10), quoted (CompanyDirector.CampaignQuote) and booked
-        ///                 (CompanyDirector.BookCampaign) from Flare's Business tab; Flare prices it (CompanyBridges.Outside:
-        ///                 its fee as a share of the kind's base) and is told when it is booked (CompanyBridges.Booked)
-        ///   BrandScandal  a hired influencer's scandal, or a hire that backfires, is one more scandal for the business's
-        ///                 brand (BrandsDirector.Heard, Scandal.Influencer)
-        ///   NightLate     the council's night-life policy draws night-life influencers (CivicPolicy)
-        ///   Candidates    the election's candidates post, and influencers back them (the council's state)
-        ///   Brands        the player's brands and the city's chains post (the brands' state)
-        ///   MeetStar      a star influencer is somebody the player has still to meet, introduced by a friend
-        ///                 (SocialDirector.NextStranger, QueueIntroduction)
-        ///   CityNews      what the city's news reported today is what local news posts about (News.Reported)
-        ///
-        /// The rest of the city:
-        ///   MeetOnline    somebody the player has still to meet answers a post: met online (SocialOrigin.Online, SocialLife.Meet)
-        ///   PartnerSees, PartnerMinds, FriendMinds  the partner proud, cool or jealous; never posted; a friend whose texts
-        ///                 wait (SocialLife.Change)
-        ///   Market, Sold, MarketAbuse, MarketBuzz  the stock market's results and biggest move, the player's sales, a case
-        ///                 of market abuse (TaxCases.FileMarketAbuse, Justice's own summons) and a buzz for a trade
-        ///                 (MarketInputs.EventBuzz, MarketEngine.Event)
-        ///   Headlines     the City Ledger's own account: the morning paper's headlines (News.Today)
-        ///   Issue, Mood   a post raising an issue (CivicGovernment.Raised) and the feed's mood on the mayor's approval
-        ///                 (CivicBridges.Mood), a point a day at most
-        ///   Campaign      the player's own run for office or office: a draft to post (CivicBridges.CampaignPost,
-        ///                 FlareSource.Campaign), and what a post of it is worth to the campaign (CivicOffice.Posted)
-        ///   Fame, Heard   a Celebrity pays a lawyer a little more and their hearing is in the paper (Justice.Bridges)
-        ///
-        /// Everything is read from what those features already keep in public or heard through an event they already
-        /// raise; nothing of theirs is changed but through an entry of theirs. COST: nothing per frame. A draft is one
-        /// call when the thing happens; the people are read when Flare plays its day, makes a post or the app opens (a
-        /// walk over the cast of eight); the footfall answer is a walk over Flare's talk (none most days).
+        /// Flare, the city's social media app (FlareBridges), with the social life's people (met, tagged, minding, met
+        /// online or through a star), the law, the council (the election, issues, the player's campaign), careers, photo
+        /// mode, footfall (on top of the economy's, the company's and the brands'), the company's sponsored posts and
+        /// influencer deals, brands' scandals, the stock market, the paper and the courts. Nothing per frame: a draft is
+        /// one call when the thing happens; the people are a walk over the cast of eight when Flare plays its day, posts
+        /// or opens.
         /// </summary>
         public static class FlareLinks
         {
+            private const int ProfessionKeys = 50;   // a profession's employer numbers start here, after the street careers' employers
             private const int PostFamiliarity = 1, PostAffection = 1;   // a friend tagged in a post that went well
             private const int PartnerAffection = 2;                     // ...the partner, more
             private const int BadTrust = -2;                            // ...one that went badly
@@ -130,7 +77,8 @@ namespace RealLifeOverhaul
                 FlareBridges.MarketAbuse = company => TaxCases.FileMarketAbuse(company);
                 FlareBridges.MarketBuzz = MarketBuzz;
                 FlareBridges.Headlines = Headlines;
-                FlareBridges.Issue = (issue, weight) => CivicDirector.Instance?.Government?.Raised(issue == (int)FlareIssue.Safety ? (int)RealLifeOverhaul.Issue.Safety : (int)RealLifeOverhaul.Issue.Roads, weight / 1000f);
+                FlareBridges.Issue = (issue, weight) => CivicDirector.Instance?.Government?.Raised(
+                    issue == (int)FlareIssue.Safety ? (int)RealLifeOverhaul.Issue.Safety : (int)RealLifeOverhaul.Issue.Roads, weight / 1000f);
                 CivicBridges.Mood = () => FlareDirector.Instance != null ? FlareDirector.Instance.ApprovalPull() : 0f;
                 CivicBridges.CampaignPost = (what, name) => FlareDirector.Instance?.Happened(FlareSource.Campaign, -1, null, name, what);
                 FlareBridges.Campaign = weight => CivicDirector.Instance?.Office?.Posted(weight);
@@ -151,7 +99,7 @@ namespace RealLifeOverhaul
                 SocialLinks.OutingDone = null;
                 Reputation.Deed -= Deed;
                 News.Reported -= Reported;
-                BusinessGame.Ambient = _ambientBefore;   // (the brands', the company's and the city's own pairings take theirs off in a moment)
+                BusinessGame.Ambient = _ambientBefore;   // the brands', the company's and the city's pairings take theirs off next
                 _ambientBefore = null;
                 BrandsBridges.ScandalScale = null;
                 BrandsBridges.ScandalHeard = null;
@@ -164,7 +112,7 @@ namespace RealLifeOverhaul
                 Justice.Bridges.Heard = null;
             }
 
-            // What was asked for before this pairing, and Flare's talk on top. Business pressure keeps the sum inside its own bounds.
+            // The earlier pairings' part with Flare's talk on top, 6% at most; business pressure bounds the sum.
             private static int Ambient(BuildingRegistration reg)
             {
                 return (_ambientBefore != null ? _ambientBefore(reg) : 0) + FlareDirector.FootfallOf(reg);
@@ -174,6 +122,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
+                    // On a new day a business the other pairings have had drawn already is not drawn again.
                     bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0 || BrandsDirector.FootfallOf(reg) != 0);
                     int own, written;
                     return BusinessDirector.Footfall(reg, !drawn, newDay, out own, out written);
@@ -185,7 +134,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A friend tagged: closer for it, and they remember it; a selfie with them counts again; the partner more; a bad post costs a little trust.
+            // A friend tagged is closer and remembers it, a selfie counts again, the partner more; a bad post costs a little trust.
             private static void Tagged(int person, bool selfie, bool wentWell)
             {
                 try
@@ -272,13 +221,12 @@ namespace RealLifeOverhaul
                         why = "reallife_flare_hire_no_figure";
                         return false;
                     }
-                    int share, reach, suit, repeat;
-                    if (!company.Offered(shop, kind, out share, out reach))
+                    if (!company.Offered(shop, kind, out _, out _))
                     {
                         why = "reallife_flare_hire_no_one";
                         return false;
                     }
-                    company.CampaignQuote(shop, kind, out cost, out percent, out suit, out repeat);
+                    company.CampaignQuote(shop, kind, out cost, out percent, out _, out _);
                     return true;
                 }
                 catch (Exception e)
@@ -345,7 +293,7 @@ namespace RealLifeOverhaul
                 {
                     if (!s.Candidates[i].Player)
                     {
-                        into.Add(CivicText.Name(s.Candidates[i]));   // (the player's own account is theirs: the city does not post as them)
+                        into.Add(CivicText.Name(s.Candidates[i]));   // the player's own account is theirs: the city does not post as them
                     }
                 }
             }
@@ -520,7 +468,7 @@ namespace RealLifeOverhaul
             private static void Headlines(List<string> into)
             {
                 IReadOnlyList<NewsItem> today = News.Today;
-                for (int i = 1; today != null && i < today.Count && into.Count < 3; i++)   // (the first is the masthead)
+                for (int i = 1; today != null && i < today.Count && into.Count < 3; i++)   // the first is the masthead
                 {
                     NewsItem item = today[i];
                     if (string.IsNullOrEmpty(item.Key))
@@ -591,7 +539,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The people met as the save holds them, while the loading screen is up (Social/SocialState.PeekMet): their looks for Flare's faces.
+            // The people met as the save holds them, while the loading screen is up: their looks for Flare's faces.
             private static void SavedPeople(Dictionary<string, string> data, List<FlarePerson> into)
             {
                 if (!Settings.Social)
@@ -657,7 +605,7 @@ namespace RealLifeOverhaul
                 employer = null;
                 try
                 {
-                    // A profession's job (Careers/Work) first: its employer, and a rung up the ladder is a promotion to post about.
+                    // A profession's job first: a rung up the ladder is a promotion to post about.
                     Careers.CareersDirector careers = Careers.CareersDirector.Instance;
                     Careers.WorkFile work = careers != null ? careers.Work : null;
                     if (work != null && work.Job != null)
@@ -678,8 +626,6 @@ namespace RealLifeOverhaul
                 return CareerState.EmployerIndex * 100 + CareerState.Rank;
             }
 
-            private const int ProfessionKeys = 50;   // a profession's employer numbers start here, after the street careers' employers
-
             // A picture saved in photo mode: a draft, with the friend in it and the business it was taken in.
             private static void PictureSaved(string path, bool selfie, int person)
             {
@@ -699,7 +645,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // An outing gone to its end: a draft with the friend (the two favours played on the street are not outings to post).
+            // An outing gone to its end: a draft with the friend. The two favours played in the street are not outings to post.
             private static void OutingDone(SocialPerson person, PlanKind kind)
             {
                 if (person != null && kind != PlanKind.Lift && kind != PlanKind.Moving)

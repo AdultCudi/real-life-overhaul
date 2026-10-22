@@ -12,60 +12,15 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Standing, a city that reacts to the player's success (Scripts/Fame/FameBridges), with the rest of the mod.
-        /// Standing calls no other feature and none calls it: what they have to do with each other is here, one line each.
-        ///
-        /// What Standing reads:
-        ///   Followers     Flare's followers, a part of the player's recognition (FlareDirector's file)
-        ///   Staff         each business's staff as the company knows them: their standing, those who stand low, a strike
-        ///                 now or in the last week (CompanyDirector.ShopAt), for the workers' reputation
-        ///   Holdings      the buildings the player lets and the rent asked against the market's (EstateDirector's state),
-        ///                 for the neighbourhoods' opinion of rents raised
-        ///   Brand         the player's brands' recognition in each district (BrandsDirector's state)
-        ///   the page      the Standing page is a page of the Finance app (EconomyBridges.Standing, Finance.OpenStanding)
-        ///
-        /// What moves Standing, heard from the features that keep it:
-        ///   Deed          a good deed that counted (Reputation.Deed): integrity
-        ///   Closed        one of business pressure's issues closed (BusinessEvents.Closed): a complaint answered or
-        ///                 left, praise shared, an inspection passed or failed (the customers), a strike settled or
-        ///                 refused, an argument left to fester, somebody poached (the workers)
-        ///
-        ///   HelpedNow     the player helped somebody (ModState.HelpedNow): walking on afterwards is no refusal
-        ///   Need          an accident nobody has helped at yet (TrafficAccidents.Needing) or a crime with a victim in the
-        ///                 street (CrimeDirector.Victim): walking past it in front of others costs integrity
-        ///
-        /// What Standing does elsewhere:
-        ///   Visited       a visit to a business whose staff are proud or nervous: their standing a point either way,
-        ///                 through the company (CompanyDirector.Visited)
-        ///   Footfall      Standing's part of a business's customers (the customers' reputation and the district's
-        ///                 opinion, 5% at most either way) is added to <see cref="BusinessGame.Ambient"/> after everybody
-        ///                 else's and written by business pressure's own writer (BusinessDirector.Footfall), which keeps the
-        ///                 sum inside its own bounds; on a new day a business the others have had drawn already is not drawn again
-        ///   WeightOf      business pressure's deal: complaints by the customers and the neighbourhoods, praise by the
-        ///                 customers, inspections, licences and audits by integrity and more for somebody well known
-        ///                 (BusinessDirector.WeightOf, after the city's economy's own), 0.6 to 1.8 times
-        ///   Esteem        the workers' reputation, -10 to 10, for the company's hiring and its rivals (CompanyBridges.Esteem)
-        ///   Story         a piece for the City Ledger (Paper.Print, NewsKind.Story)
-        ///   the Planner   an invitation accepted is an appointment, one offered a deadline, a promise its day, a request
-        ///                 the last day to answer it, a push on the council the day it is decided (a source of its own)
-        ///
-        /// Connections and power:
-        ///   Meet          somebody the player has still to meet is met at an evening with investors or a reception: a place
-        ///                 of meeting of its own (SocialOrigin.Event, appended), met as the social life meets (SocialLife.Meet)
-        ///   Levers, Lobbied  the council's policies for business and growth and better transport, offered to push for while
-        ///                 the player has the influence; one won is the council's own change, announced on its day
-        ///                 (CivicGovernment.Lobbied, Settled: new)
-        ///   BribeAsk, Bribed an official on the Business desk who would make an inspection or a licence a formality for
-        ///                 cash (BusinessDirector.BribeAsk and Bribed, new; one more option of the issue's)
-        ///   Investigate   a bribe come out is one of Justice's own cases on a summons (TaxCases.FileBribery, JusticeLaw.Bribery: new)
-        ///
-        /// Everything is read from what those features already keep in public or heard through an event they already
-        /// raise; nothing of theirs is changed but through an entry of theirs. COST: nothing per frame. The reads are made
-        /// once on Standing's daily round (a walk over the player's businesses and buildings) and the page when it is shown.
+        /// Standing (FameBridges) with what it reads (Flare's followers, the staff, the buildings let, the brands), what
+        /// moves it (good deeds, business pressure's issues closed, help given or refused), and what it moves: a visit's
+        /// staff, footfall (on top of every other pairing's), business pressure's deal, the company's esteem, the paper,
+        /// the Planner, people met at an evening, the council lobbied, bribes and their cases. Nothing per frame: read on
+        /// Standing's daily round and when its page is shown.
         /// </summary>
         public static class StandingLinks
         {
-            private const int DeedIntegrity = 2;
+            private const int DeedIntegrity = 2;       // integrity points for a good deed that counted
             private const int StrikeDays = 7;          // a strike this recent still counts against the workers' reputation
 
             internal static void Connect()
@@ -105,7 +60,7 @@ namespace RealLifeOverhaul
                 Reputation.Deed -= Deed;
                 BusinessEvents.Closed -= IssueClosed;
                 ModState.HelpedNow -= Helped;
-                BusinessGame.Ambient = _ambientBefore;   // (Flare's, the brands', the company's and the city's own pairings take theirs off in a moment)
+                BusinessGame.Ambient = _ambientBefore;   // Flare's, the brands', the company's and the city's pairings take theirs off next
                 _ambientBefore = null;
                 BusinessDirector.WeightOf = _weightBefore;
                 _weightBefore = null;
@@ -114,7 +69,7 @@ namespace RealLifeOverhaul
                 BusinessDirector.Bribed = null;
             }
 
-            // Somebody the player has still to meet is met at an evening: a place of meeting of its own (SocialOrigin.Event).
+            // Somebody the player has still to meet is met at an evening, a place of meeting of its own.
             private static string MeetAtEvening()
             {
                 try
@@ -135,8 +90,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The council's changes a business owner might push for (its own policies for business and growth, and better
-            // transport near the shops), that neither stand already nor are on their way.
+            // The council's policies for business and growth, and better transport, that neither stand nor are on their way.
             private static void Levers(List<FameLever> into)
             {
                 CivicGovernment gov = Settings.Civic && CivicDirector.Instance != null ? CivicDirector.Instance.Government : null;
@@ -168,8 +122,10 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0 || BrandsDirector.FootfallOf(reg) != 0 || FlareDirector.FootfallOf(reg) != 0
-                                            || Interiors.InteriorDirector.FootfallOf(reg) != 0 || Rivals.RivalDirector.FootfallOf(reg) != 0);
+                    // On a new day a business the other pairings have had drawn already is not drawn again.
+                    bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0 || BrandsDirector.FootfallOf(reg) != 0
+                                            || FlareDirector.FootfallOf(reg) != 0 || Interiors.InteriorDirector.FootfallOf(reg) != 0
+                                            || Rivals.RivalDirector.FootfallOf(reg) != 0);
                     int own, written;
                     return BusinessDirector.Footfall(reg, !drawn, newDay, out own, out written);
                 }
@@ -180,7 +136,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Business pressure's share of the deal for a kind of issue: the city's economy's first, then the player's standing on it.
+            // A kind of issue's weight in business pressure's deal: the earlier pairings' first, then the player's standing.
             private static int Weight(string kind, int weight)
             {
                 int w = _weightBefore != null ? _weightBefore(kind, weight) : weight;
@@ -228,10 +184,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// Standing's rows of the Planner: an invitation accepted on its day and hour (to be there), one offered on the
-            /// last day to accept it, an open promise on its day, a request on the last day to answer it, a push on the
-            /// council on the day it is decided. It reads the file and changes nothing. Ids: 1 an invitation accepted, 2 one
-            /// offered, 3 a promise, 4 a request, 5 a push on the council, with its number.
+            /// Standing's rows of the Planner, read only. Ids, each with its number: 1 an invitation accepted, 2 one offered,
+            /// 3 a promise, 4 a request, 5 a push on the council.
             /// </summary>
             private sealed class StandingSource : IPlannerSource
             {
@@ -353,7 +307,7 @@ namespace RealLifeOverhaul
                 EstateState s = EstateDirector.Instance != null ? EstateDirector.Instance.State : null;
                 for (int i = 0; s != null && i < s.Holdings.Count; i++)
                 {
-                    // (Since each unit has its own lease: let if any unit is, the units' asking rents averaged, their agreed rents summed.)
+                    // Each unit has its own lease: let if any unit is, the asking rents averaged, the agreed rents summed.
                     EstateHolding h = s.Holdings[i];
                     bool let = false;
                     int ask = 0, rent = 0;
@@ -377,7 +331,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The best of the player's brands' recognition in each district, points (the brands keep hundredths).
+            // The best of the player's brands' recognition in each district, in points (the brands keep hundredths).
             private static void Brand(Dictionary<string, int> into)
             {
                 BrandsState s = BrandsDirector.Instance != null ? BrandsDirector.Instance.State : null;
@@ -400,7 +354,7 @@ namespace RealLifeOverhaul
                 FameDirector.Instance?.Moved(FamePart.Integrity, FameCause.GoodDeed, DeedIntegrity);
             }
 
-            // One of business pressure's issues has closed: what it says about the customers' and the workers' view of the player.
+            // One of business pressure's issues has closed: what it says to the customers and the workers of the player.
             private static void IssueClosed(string kind, string place, string outcome)
             {
                 FameDirector fame = FameDirector.Instance;

@@ -12,39 +12,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Education and careers with the rest of the mod (Careers/CareersBridges). Careers calls no other feature and none
-        /// calls it; what they have to do with each other is here.
-        ///
-        ///   HomeInternet  the home the player is in, or the first they have: its internet over a span of minutes, up or
-        ///                 why it was down (Utilities: an outage, no plan, one being put in, one cut for a bill), for
-        ///                 classes, working days and interviews online, and what an outage excuses
-        ///   Refresher     a driving refresher takes penalty points off the licence (Licences: LicenceState.TakeOff)
-        ///   Standing      a qualification or a career's turn moves a part of Standing (FameDirector.Moved)
-        ///   Reputation    the player's name as a professional: Standing's recognition and integrity
-        ///   Board, TookAd the rivals' ads on the jobs board are vacancies too; one the player takes is filled (TechDirector.FillRivalAd)
-        ///   Shortage      the labour market's shortage of a family sets what a post pays (Tech/Hiring)
-        ///   Friends       friends of the social life put the player forward now and then (a referral)
-        ///   Record        the law's record, as an employer reads it
-        ///   Cycle         the city's economy: how many vacancies there are and how choosy employers are
-        ///   Claim         a former employer's claim over a restraint clause is a civil suit of Justice's (RestraintClaims.File)
-        ///   TechFirm, JoinFirm  colleagues who leave with the player join a tech firm of theirs on the payroll (TechDirector.JoinPayroll)
-        ///   Founder       the venture firms read the player's record as a founder at a pitch (TechBridges.Founder)
-        ///   Credit        the student loan is an account of the credit file: borrowing and paying it off are on the record
-        ///   Council       the council's grants policy covers tuition too: a subsidy when it is up, a surcharge when it is down (CivicPolicy)
-        ///   Children      the family's children: a grown one is offered a place at the university
-        ///   CourseShareBp the player's own academy halves what their professional staff pay for a course (Tech/People)
-        ///   DegreeFee     a professional can be sent on a degree, paid by the business (Tech/People)
-        ///   AcademyType, Schools  BizMan's start screen counts an academy's competitors in the city: the game's school, the
-        ///                 university while it is open, other academies (Tech/Firms/StartCards)
-        ///   Qualified     the banking licence asks for a qualified person: a finance qualification of the player's, or a senior professional in finance
-        ///   the obituary  the best qualification and the career, for Permadeath's page (PermadeathLinks)
-        ///   the paper     education's and careers' stories, chained on to the City Ledger's other pieces (News.Extra)
-        ///   the Planner   a source of its own: the classes of the courses under way, and their exams
-        ///   the desk      a fitted floor (FitOut: a headquarters, a preset desk) keeps one of its desks for a job of the
-        ///                 player's worked there: the floor asks which (FitDesks.Wanted) and says when it stands or goes
-        ///
-        /// Everything is read from what those features already keep in public; nothing of theirs is changed but the
-        /// licence's record.
+        /// Education and careers (CareersBridges) with the internet at home, the licence's points (the one thing of
+        /// another feature's it changes), Standing, the jobs board and the tech labour market, the social life, the record,
+        /// the economy's vacancies, the courts, the student loan on the credit file, the council's grants, the family's
+        /// children, the player's bank, the obituary, the paper, a fitted floor's desk and the Planner.
         /// </summary>
         public static class CareersLinks
         {
@@ -52,25 +23,12 @@ namespace RealLifeOverhaul
             private static readonly List<TechStory> Stories = new List<TechStory>(4);
             private static readonly StudySource Classes = new StudySource();
 
-            // The utilities office, the courthouse and the police stations have chosen their buildings (or their features are
-            // off), so the university can choose one that is none of them, the same on every machine.
-            private static bool OthersPicked()
-            {
-                Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
-                bool office = !Settings.Utilities || (utilities != null && utilities.Office != null && utilities.Office.Searched);
-                JusticeDirector justice = JusticeDirector.Instance;
-                bool court = !(JusticeSettings.Enabled && JusticeSettings.Courthouse) || (justice != null && justice.Court != null && justice.Court.Searched);
-                bool law = !Settings.LawPrecincts || Law.LawDirector.PrecinctsChosen;   // (the police stations take empty units too)
-                return office && court && law;
-            }
-
             internal static void Connect()
             {
-                // The university's permanent building is held for it from the start, before any feature chooses one (the
-                // police stations, the tech towers, the offices for rent, City Utilities, the courthouse), while its part is on.
+                // The university's building is held for it from the start, before any feature chooses one, while its part is on.
                 SpecialBuildings.Reserve(CampusRules.BookId, CampusRules.HomeStreet, CampusRules.HomeNumber, () => CareersDirector.UniversityOpen);
                 CareersBridges.HomeInternet = HomeInternet;
-                CareersBridges.OthersPicked = OthersPicked;
+                CareersBridges.OthersPicked = OfficeLinks.CityOfficesPicked;   // so the university chooses none of theirs, the same on every machine
                 CareersBridges.Headquarters = (string name, out string street, out int number) =>
                 {
                     street = null;
@@ -98,7 +56,7 @@ namespace RealLifeOverhaul
                 Economy.OwnBankBridges.Qualified = Qualified;
                 CareersBridges.Council = () => CivicPolicy.Position(Lever.Grants);
                 Economy.CreditLedger.Register(Loan);
-                Economy.EconomyBridges.OtherAccounts = StudentCredit;   // and again each time the credit side starts: its ledger forgets every account when it stands down
+                Economy.EconomyBridges.OtherAccounts = StudentCredit;   // again at each start of the credit side, whose ledger forgets every account
                 CareersBridges.TechFirm = TechFirm;
                 CareersBridges.JoinFirm = (place, role, level, count) => TechDirector.Instance != null && SaveGameManager.Current != null
                     ? TechDirector.Instance.JoinPayroll(place, role, level, count, SaveGameManager.Current.Day) : 0;
@@ -135,7 +93,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    if (CareersGame.SchoolAddress(out string street, out int number))
+                    if (CareersGame.SchoolAddress(out _, out _))
                     {
                         into.Add(CareersText.T("reallife_study_campus_school"));
                     }
@@ -151,9 +109,8 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The connection's state as it is now and its last outage, read when a class, a day or an interview is asked
-            // about or goes by (never per frame): one search of the accounts. The outages are drawn from the save's seed
-            // (on the host in a shared city) and only read here.
+            // The home's connection over a span of minutes, read when a class, a day or an interview is asked about or goes
+            // by: one search of the accounts. The outages are drawn from the save's seed (the host's in a shared city).
             private static HomeNet HomeInternet(int fromMinute, int toMinute)
             {
                 try
@@ -163,7 +120,7 @@ namespace RealLifeOverhaul
                     GameInstance save = SaveGameManager.Current;
                     if (!Settings.Utilities || state == null || Utilities.UtilitiesDirector.Failed || save == null)
                     {
-                        return HomeNet.Online;   // (no utilities to ask: a home is taken to be connected)
+                        return HomeNet.Online;   // no utilities to ask: a home is taken to be connected
                     }
                     BuildingRegistration home = HomeTidy.Home();
                     if (home == null)
@@ -233,8 +190,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the family's children, staff courses, the obituary, the bank
-
             private static void Children(List<ChildView> into)
             {
                 try
@@ -268,7 +223,7 @@ namespace RealLifeOverhaul
                 return Prices.At(StudyCatalogue.Find(StudyCatalogue.SoftwareEngineering).Fee);
             }
 
-            /// <summary>The player's degree and career for the obituary (Permadeath): the best qualification, and the job now or the highest held.</summary>
+            /// <summary>The player's best qualification, and the job now or the highest held, for the obituary.</summary>
             internal static void Obituary(LifeStory s)
             {
                 try
@@ -288,7 +243,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>The banking licence's qualified person (the own bank): the player with a finance qualification, or a senior professional of the player's in finance.</summary>
+            // The banking licence's qualified person: the player with a finance qualification, or a senior professional of theirs in finance.
             private static bool Qualified()
             {
                 try
@@ -297,7 +252,7 @@ namespace RealLifeOverhaul
                     StudyFile f = d != null ? d.Study : null;
                     if (f == null)
                     {
-                        return true;   // (careers not running: the licence asks nothing of the kind)
+                        return true;   // careers not running: the licence asks nothing of the kind
                     }
                     if (f.Holds(StudyCatalogue.Finance) || f.Holds(StudyCatalogue.Mba) || f.Holds(StudyCatalogue.CharteredAccountant) || f.Holds(StudyCatalogue.Accounting))
                     {
@@ -322,8 +277,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the student loan on the credit file
-
             /// <summary>The student loan as one of the credit file's accounts: what is owed, no instalments (it is taken from pay).</summary>
             private sealed class StudentLoan : Economy.ICreditAccount
             {
@@ -343,7 +296,6 @@ namespace RealLifeOverhaul
 
             private static readonly StudentLoan Loan = new StudentLoan();
 
-            // The student loan for the credit side's start (EconomyBridges.OtherAccounts).
             private static void StudentCredit(List<Economy.ICreditAccount> into)
             {
                 into.Add(Loan);
@@ -357,7 +309,7 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
-                    Economy.CreditLedger.Register(Loan);   // (again, if the credit file was opened afresh since the city loaded)
+                    Economy.CreditLedger.Register(Loan);   // again, in case the credit file was opened afresh since the city loaded
                     int day = SaveGameManager.Current.Day;
                     if (kind == 0)
                     {
@@ -373,8 +325,6 @@ namespace RealLifeOverhaul
                     Fault("CareersLinks.Credit", e);
                 }
             }
-
-            // ---------------------------------------------------------------- the jobs board (Tech/Hiring)
 
             private static void Board(List<BoardAd> into)
             {
@@ -441,7 +391,8 @@ namespace RealLifeOverhaul
                     return null;
                 }
             }
-            // Friends and close friends of the social life (a partner counts as well).
+
+            // Friends and close friends of the social life, a partner too.
             private static int Friends()
             {
                 try
@@ -460,6 +411,7 @@ namespace RealLifeOverhaul
                     return 0;
                 }
             }
+
             private static void Paper(int day, List<NewsItem> into)
             {
                 try
@@ -479,20 +431,7 @@ namespace RealLifeOverhaul
                     }
                     Stories.Clear();
                     director.Stories(day, Stories);
-                    for (int i = 0; i < Stories.Count; i++)
-                    {
-                        TechStory s = Stories[i];
-                        var data = new Dictionary<string, string>(2);
-                        if (s.AName.Length > 0)
-                        {
-                            data[s.AName] = s.A;
-                        }
-                        if (s.BName.Length > 0)
-                        {
-                            data[s.BName] = s.B;
-                        }
-                        into.Add(new NewsItem { Key = s.Key, Data = data });
-                    }
+                    TechLinks.AddStories(Stories, into);
                     Stories.Clear();
                 }
                 catch (Exception e)
@@ -501,8 +440,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the Planner: working days and interviews
-
+            // A profession's working days, interviews and offers in the Planner.
             private sealed class WorkSource : IPlannerSource
             {
                 public string Id => "profession";
@@ -568,7 +506,7 @@ namespace RealLifeOverhaul
                             e.Start = a.InterviewHour * 60;
                             e.End = (a.InterviewHour + 1) * 60;
                             e.Attend = true;
-                            e.JoinBy = a.InterviewHour * 60 + ProRules.InterviewLateMinutes;   // the last minute it can be joined (CareersDirector.CanInterview)
+                            e.JoinBy = a.InterviewHour * 60 + ProRules.InterviewLateMinutes;   // the last minute it can be joined
                             if (a.Post.Work != (int)WorkMode.Remote && a.Post.Def.Place != Workplace.Hospital)
                             {
                                 e.Street = a.Post.Street;
@@ -590,6 +528,7 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // Freelance contracts' deadlines in the Planner.
             private sealed class ContractSource : IPlannerSource
             {
                 public string Id => "freelance";
@@ -628,8 +567,7 @@ namespace RealLifeOverhaul
 
             private static readonly WorkSource Jobs = new WorkSource();
 
-            // ---------------------------------------------------------------- the Planner: classes and exams
-
+            // Classes, exams and a graduation in the Planner.
             private sealed class StudySource : IPlannerSource
             {
                 public string Id => "study";
@@ -691,7 +629,8 @@ namespace RealLifeOverhaul
                                 p.Start = hour * 60;
                                 p.End = ((hour + c.Hours) % 24) * 60;
                                 p.Attend = true;
-                                p.JoinBy = director.SittingClass == c.Id && day == today ? -1 : hour * 60 + StudyCatalogue.LateMinutes;   // missed once it can no longer be joined (StudyRules.Joinable)
+                                // missed once it can no longer be joined (StudyRules.Joinable)
+                                p.JoinBy = director.SittingClass == c.Id && day == today ? -1 : hour * 60 + StudyCatalogue.LateMinutes;
                                 CampusBuilding uni = director.University;
                                 if (mode != StudyMode.Distance && c.Campus == Campus.University && uni != null && uni.Usable)
                                 {

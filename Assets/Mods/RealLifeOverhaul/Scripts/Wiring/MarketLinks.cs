@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using BigAmbitions.DayNightCycle;
-using Helpers;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
 using RealLifeOverhaul.Events;
@@ -13,32 +12,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The city's stock market with the rest of the mod (Markets/MarketBridges). The market calls no other feature
-        /// and none calls it: what they have to do with each other is here, and every answer is read from what a
-        /// feature already keeps in public.
-        ///
-        ///   City     the city on a market day, read at its open (the tape keeps it for a replay):
-        ///              the cycle, the bank rate and its next move, inflation   Economy/City (CityEconomy)
-        ///              the price level                                         Core/Prices
-        ///              the districts' income, the supply of each kind of goods the city's economy, as it stands
-        ///              the council's policies, a campaign, elections counted   Civic (CivicPolicy, the government)
-        ///              the sky, the spell, the street event                    Events/Weather, Events/EventCalendar
-        ///              crimes, break-ins, fires and accidents reported         counted here from the paper's reports
-        ///              yesterday                                               (Social/News.Reported) and the fires' bills
-        ///              the player's own takings by trade                       Economy/Finance (Books): yesterday's
-        ///   Events   what moves prices the moment it happens: a crime, a break-in, an accident (the paper's reports), a
-        ///            fire at a business (Events/FireLosses), a policy moved (Civic), an election counted, a storm
-        ///            breaking (polled once a second by the director)
-        ///   Rivals   the game's named rivals (Ventures' reader of them)
-        ///   Old      the old market's file (Ventures'): the live one while Ventures runs, else the save's copy
-        ///   Banks    the city's three largest banks (Economy/Lending, BankTerms.Banks): a deposit at each (Markets/Bonds)
-        ///   NetWorth what the player is worth as the Finance app shows it (Economy/Finance, Books.NetWorth): the most of
-        ///            one bond purchase is a share of it with what the market holds (Markets/Bonds)
-        ///   OwnWholesale, CityPrices, MaterialsFixed   the raw materials exchange (Markets/Derivatives) and the city's economy
-        ///            (Economy/City): an item's own wholesale price, whether the city writes the importers' prices, and the
-        ///            exchange's new prices written as the importers' after a close (CityEconomyDirector.RewriteWholesale)
-        ///   Planner  results of the companies held or watched, dividends coming, a margin call, orders that lapse,
-        ///            bonds' payments and ends (one set to roll over repays nothing into the cash)
+        /// The city's stock market (MarketBridges) with the city on a market day, read at its open (the economy, the
+        /// council, the weather and the street, yesterday's crimes, fires and accidents, the player's takings by trade;
+        /// the tape keeps it for a replay), what moves prices as it happens, the game's rivals, the old Ventures market,
+        /// the banks for the bonds' deposits, the raw materials exchange and the Planner.
         /// </summary>
         public static class MarketLinks
         {
@@ -79,6 +56,9 @@ namespace RealLifeOverhaul
                 FireLosses.Billed -= Fire;
             }
 
+            /// <summary>The bank rate in basis points, as the market and the City Ledger read it.</summary>
+            internal static int RateBp() => 300 + (int)Math.Round(CityEconomy.BasePoints * 100f);
+
             private static bool CityPrices()
             {
                 CityEconomyDirector city = CityEconomyDirector.Instance;
@@ -90,8 +70,6 @@ namespace RealLifeOverhaul
                 CityEconomyDirector.RewriteWholesale();
             }
 
-            // ---------------------------------------------------------------- the city on a market day
-
             private static MarketEnv City(int day)
             {
                 MarketEnv e = MarketEnv.Quiet();
@@ -99,7 +77,7 @@ namespace RealLifeOverhaul
                 try
                 {
                     e.Cycle = (int)CityEconomy.State;
-                    e.RateBp = 300 + (int)Math.Round(CityEconomy.BasePoints * 100f);
+                    e.RateBp = RateBp();
                     e.InflationBp = (int)Math.Round(CityEconomy.InflationPercent * 100f);
                     CityState live = CityEconomy.Live;
                     if (live != null)
@@ -158,7 +136,7 @@ namespace RealLifeOverhaul
                 {
                     Fault("MarketLinks.City (the player's businesses)", ex);
                 }
-                ListingLinks.Env(ref e, day);   // the player's own company's day, while they have one on the market or a book open
+                ListingLinks.Env(ref e, day);
                 return e;
             }
 
@@ -201,8 +179,6 @@ namespace RealLifeOverhaul
                 }
                 Businesses.Clear();
             }
-
-            // ---------------------------------------------------------------- what happens during the day
 
             // The day's reports become yesterday's when a new day is counted.
             private static void Count(int day)
@@ -312,9 +288,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the banks of the bonds' deposits
-
-            // The city's three largest banks, the largest first: the ranks the bank apps and their terms have (BankRules).
+            // The city's three largest banks for the bonds' deposits, the largest first, as the bank apps rank them.
             private static void Banks(List<string> names)
             {
                 names.Clear();
@@ -333,8 +307,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the rivals and the old market
-
             private static void Rivals(List<string> names, List<string> ids)
             {
                 names.Clear();
@@ -344,7 +316,7 @@ namespace RealLifeOverhaul
                     VenturesGame.RivalNames(names);
                     for (int i = 0; i < names.Count; i++)
                     {
-                        ids.Add(names[i]);   // (the game names its rivals uniquely: the name is the id)
+                        ids.Add(names[i]);   // the game names its rivals uniquely: the name is the id
                     }
                 }
                 catch (Exception e)
@@ -371,7 +343,7 @@ namespace RealLifeOverhaul
                     }
                     if (ventures != null && ventures.Opening && _oldAsked++ < OldWaitSeconds)
                     {
-                        return null;   // Ventures may be opening its file (with Investors off, for deals that carry on): ask again in a second
+                        return null;   // Ventures may be opening its file for deals that carry on: ask again in a second
                     }
                     VenturesFile file = VenturesStore.Load(save.modData, out int _);
                     if (file == null)
@@ -387,16 +359,11 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the Planner
-
             private static readonly MarketSource Source = new MarketSource();
 
             /// <summary>
-            /// The stock market's rows in the Planner: a quarter's results of a company the player holds or watches (on
-            /// the morning they come out, before the open), a dividend coming to the player (on its pay day), a margin
-            /// call (met by that day's close), an order that lapses (on its last day) and a bond's next payment or its end.
-            /// It reads the market and changes nothing. Ids: 1 results, 2 a dividend (both with the company's id), 3 the
-            /// margin call, 4 an order (its id), 5 a bond (its number).
+            /// The stock market's rows in the Planner, read only. Ids: 1 results, 2 a dividend (both with the company's id),
+            /// 3 the margin call, 4 an order (its id), 5 a bond (its number).
             /// </summary>
             private sealed class MarketSource : IPlannerSource
             {
@@ -457,7 +424,7 @@ namespace RealLifeOverhaul
                         {
                             continue;
                         }
-                        bool end = h.Paid + 1 >= h.Payments, rolls = end && InvestRules.Rolls(h, Settings.MarketsBonds);   // (rolling over: what it repays goes into a new one)
+                        bool end = h.Paid + 1 >= h.Payments, rolls = end && InvestRules.Rolls(h, Settings.MarketsBonds);   // rolling over: what it repays goes into a new one
                         long cents = BondRules.InterestCents(h, d) + (end && !rolls ? h.Face : 0);
                         e.Title = PlannerText.T(rolls ? "reallife_mkt_plan_bond_roll_title" : end ? "reallife_mkt_plan_bond_end_title" : "reallife_mkt_plan_bond_title", "name", BondText.Name(h));
                         e.What = PlannerText.T(rolls ? "reallife_mkt_plan_bond_roll_what" : end ? "reallife_mkt_plan_bond_end_what" : "reallife_mkt_plan_bond_what");

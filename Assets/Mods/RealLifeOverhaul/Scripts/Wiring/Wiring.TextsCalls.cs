@@ -9,15 +9,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// RLO Texts at the other end of a call's composer (Social/PersonDialog.Composer): a friend or the partner answers the
-        /// player's typed words in their own voice. The card is data v3's answer to a message (TextsMapRules.Answering:
-        /// friend.dm.answer, partner.dm.answer), the speaker's own data as their texts carry it (TextsPhone), with the call's
-        /// last lines (SocialComposerRules.HistoryMost) and the typed words last, as the cards were trained; asked at the
-        /// queue's first priority with a hold of SocialComposerRules.HoldSeconds. A pack of data v2 has no such card, and the
-        /// call keeps its two answers; so does Mom's, for whom no pack has a card yet. Words that speak of chat (the card is a
-        /// Flare message's: StreetCards.Chatty) are not shown. The words are shown once on this machine and change nothing:
-        /// nothing is kept, nothing is shared.
-        /// COST: nothing per frame; a card and a request a typed message, and a few comparisons when a topic is shown.
+        /// RLO Texts answering what the player types on a call (PersonDialog.Composer): a friend or the partner in their
+        /// own voice, from data v3's answer card with the call's last lines. A pack without the card, and Mom, keep the
+        /// call's two answers; words that speak of chat (the card is a Flare message's) are not shown. Shown once on this
+        /// machine; nothing kept or shared. Nothing per frame: a request per typed message.
         /// </summary>
         public static class TextsCalls
         {
@@ -82,7 +77,7 @@ namespace RealLifeOverhaul
                     {
                         Use = TextUse.People, Intent = intent, Key = "call:" + person.Index, Speaker = "s:" + person.Index, Priority = TextPriority.Now,
                         Seconds = SocialComposerRules.HoldSeconds, Day = TextsGame.Day, Wanted = wanted,
-                        Spoken = true   // (said on the call while the player waits: with their AI service late, the end of the hold is the pack's)
+                        Spoken = true   // the player waits on the call: with their AI service late, the end of the hold is the pack's
                     };
                     TextsPhone.FriendWho(person, r.Who, person.Together, false);
                     string player = r.Who.Player, first = r.Who.First;
@@ -108,7 +103,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The words back, or why none: said to the call with how they came (whose: the AI service's, the pack's).
+            // The words back, or why none, with whose they are (the AI service's or the pack's).
             private static void Came(TextRequest r, string words, Action<string, string> done)
             {
                 if (words != null && StreetCards.Chatty(words))
