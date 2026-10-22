@@ -43,7 +43,7 @@ namespace RealLifeOverhaul
         {
             if (FrameGuard.Off)
             {
-                return base.GetButtons();   // the Garage switched off after its faults: the game's own buttons
+                return base.GetButtons();   // (the Garage switched off after its faults: the game's own buttons)
             }
             try
             {

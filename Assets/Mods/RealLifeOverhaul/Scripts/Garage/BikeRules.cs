@@ -3,13 +3,9 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// How a bicycle or a motorbike rides, in plain numbers so that NavCheck checks the code <see cref="BikeMount"/>
-    /// rides by.
-    /// A bicycle's push is the rider's: the scooter's drivetrain is let go, as through its gearbox the engine weighed
-    /// on the wheel like another 275 to 600 kg.
-    /// The game freezes a standing scooter by zeroing its inertia, so the mass is kept and written back only while the
-    /// body is free to turn.
-    /// A few multiplications a physics step or a frame while ridden; nothing allocated.
+    /// How a two-wheeler rides, in plain numbers so that NavCheck checks what <see cref="BikeMount"/> rides by. A
+    /// bicycle's push is the rider's, with the scooter's drivetrain let go (through its gearbox the engine weighed on
+    /// the wheel like another 275 to 600 kg). A few multiplications a physics step or a frame while ridden.
     /// </summary>
     public static class BikeRules
     {
@@ -51,9 +47,7 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The rider's push along the bike (N) at this forward speed (m/s), with the throttle (0 to 1) and the effort
-        /// (1 fresh, 0.5 worn out).
-        /// With the brake held (<paramref name="back"/>, the gearbox's reverse) a slow walk back instead; zero with
-        /// nothing held.
+        /// (1 fresh, 0.5 worn out); with the brake held (the gearbox's reverse) a slow walk back; else zero.
         /// </summary>
         public static float Pedal(Ride ride, float mass, float along, float throttle, float effort, float back)
         {
@@ -183,8 +177,7 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The frame box: from the back of the rear wheel to the front of the front one, from just off the road to the
-        /// saddle, as narrow as the frame. The wheels' middles at <paramref name="rearZ"/> and
-        /// <paramref name="frontZ"/>.
+        /// saddle, as narrow as the frame.
         /// </summary>
         public static Box Frame(float rearZ, float frontZ, float wheelRadius, float seatHeight, bool motor)
         {
@@ -201,9 +194,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The bars box: the width of the grips and the hands on them, from the rider's knees to the hands, from the
-        /// saddle's front to just ahead of the grips. <paramref name="gripHalf"/> is a grip's middle off the centre
-        /// line.
+        /// The bars box: as wide as the hands on the grips, from the rider's knees to the hands, from the saddle's front
+        /// to just ahead of the grips.
         /// </summary>
         public static Box Bars(float gripHalf, float gripHeight, float gripZ, float seatZ)
         {
@@ -212,7 +204,7 @@ namespace RealLifeOverhaul
             float back = seatZ - BarsBehindSeat, front = gripZ + BarsAhead;
             if (front < back + 0.2f)
             {
-                front = back + 0.2f;   // (a grip over the saddle: never a box with no length)
+                front = back + 0.2f;   // a grip over the saddle: never a box with no length
             }
             return new Box
             {
@@ -240,9 +232,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A box's size along the axes of a space turned by the rotation matrix m (rows: the space's axes in the
-        /// bike's): each of the space's axes takes the absolute parts of the bike's sizes that lie along it, so a box
-        /// turned a quarter turn has its width and length swapped, and no size ever comes out negative.
+        /// A box's size along the axes of a space turned by the rotation matrix m (rows: the space's axes in the bike's).
+        /// Absolute parts, so a quarter turn swaps width and length and no size comes out negative.
         /// </summary>
         public static void SizeAlong(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22,
             float x, float y, float z, out float sx, out float sy, out float sz)
@@ -254,30 +245,22 @@ namespace RealLifeOverhaul
 
         public const float LeastInertia = 0.001f;   // kg m2: a component at or under this is the engine's lock on a frozen turn, not a body's own
 
-        /// <summary>
-        /// True for an inertia a body turns on: every component finite and over <see cref="LeastInertia"/> (a zero is
-        /// the engine's frozen turn).
-        /// </summary>
+        /// <summary>True for an inertia a body turns on: every component finite and over <see cref="LeastInertia"/>.</summary>
         public static bool Turns(float x, float y, float z)
         {
             return Turning(x) && Turning(y) && Turning(z);
         }
 
         /// <summary>
-        /// Whether the centre of mass and inertia read now are kept: only while no turn is frozen and only an inertia
-        /// it turns on.
-        /// The game freezes every scooter nobody rides (VehicleController.SetFreeze), so a standing bike reads an
-        /// inertia of nothing.
+        /// Whether the centre of mass and inertia read now are kept: only from a body free to turn. The game freezes
+        /// every scooter nobody rides (VehicleController.SetFreeze) by zeroing its inertia.
         /// </summary>
         public static bool KeepMass(bool turnFree, float x, float y, float z)
         {
             return turnFree && Turns(x, y, z);
         }
 
-        /// <summary>
-        /// Whether what was kept is written back: only into a body free to turn. A frozen body gets the game's own
-        /// values as it is let go.
-        /// </summary>
+        /// <summary>Whether what was kept is written back: only into a body free to turn; a frozen one gets the game's own as it is let go.</summary>
         public static bool PutMassBack(bool kept, bool turnFree)
         {
             return kept && turnFree;
@@ -285,7 +268,7 @@ namespace RealLifeOverhaul
 
         private static bool Turning(float value)
         {
-            return value > LeastInertia && value < float.PositiveInfinity;   // (not a number fails both)
+            return value > LeastInertia && value < float.PositiveInfinity;   // NaN fails both
         }
 
         private static float Clamp01(float value)
