@@ -100,7 +100,6 @@ namespace RealLifeOverhaul
         /// <summary>True once the load has ended either way: what is built from the bundle now is what it will be.</summary>
         public static bool Settled => _state == State.Ready || _state == State.Failed;
 
-        /// <summary>Starts the one-off asynchronous load. Safe to call repeatedly.</summary>
         public static void Load(ModContext context)
         {
             if (_state != State.NotStarted || context == null)
@@ -168,10 +167,7 @@ namespace RealLifeOverhaul
             return _state == State.Ready && id != null && Props.ContainsKey(id);
         }
 
-        /// <summary>
-        /// The lit material tinted, for a part on a neutral swatch coloured from code (a bicycle's frame): one shared
-        /// material per colour, kept until <see cref="Dispose"/>. Null when the atlas material cannot be made.
-        /// </summary>
+        /// <summary>The lit material tinted, one shared per colour until <see cref="Dispose"/>; null if it cannot be made.</summary>
         public static Material Tinted(Color tint)
         {
             Material lit = _state == State.Ready ? Material(false) : null;
@@ -197,10 +193,7 @@ namespace RealLifeOverhaul
             return _state == State.Ready && id != null && Props.TryGetValue(id, out Prop prop) ? prop.Size : Vector3.zero;
         }
 
-        /// <summary>
-        /// Destroys the materials when the city scene ends; the bundle stays loaded for the session and the materials are
-        /// made again when next asked for.
-        /// </summary>
+        /// <summary>Destroys the materials when the city ends; the bundle stays loaded for the session.</summary>
         public static void Dispose()
         {
             if (_lit != null)

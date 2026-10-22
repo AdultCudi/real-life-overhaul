@@ -23,10 +23,7 @@ namespace RealLifeOverhaul
         /// <summary>Said once for each line kept (the key, why), for the log and the notice; set by Core/Guard.</summary>
         public static Action<string, string> Told;
 
-        /// <summary>
-        /// A store could not read its line (<paramref name="why"/>, in English): it is kept as it is in this save. Safe
-        /// with a missing or empty line.
-        /// </summary>
+        /// <summary>A store could not read its line (<paramref name="why"/>, in English): it is kept as it is in this save.</summary>
         public static void Unreadable(Dictionary<string, string> data, string key, string why)
         {
             if (data == null || key == null || !data.TryGetValue(key, out string text) || string.IsNullOrEmpty(text))
@@ -96,10 +93,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// The feature replaced what a kept line held (the player chose afresh): the line is let go and the feature's own
-        /// is saved from now on. Safe when nothing is kept.
-        /// </summary>
+        /// <summary>The feature replaced what a kept line held (the player chose afresh): the line is let go.</summary>
         public static void Release(Dictionary<string, string> data, string key)
         {
             if (data == null || !ReferenceEquals(data, _save))
@@ -115,7 +109,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The keys kept in this save.</summary>
         public static List<string> Keys(Dictionary<string, string> data)
         {
             var keys = new List<string>(Kept.Count);
@@ -129,10 +122,7 @@ namespace RealLifeOverhaul
             return keys;
         }
 
-        /// <summary>
-        /// Puts every kept line back as it was read, after the features have written and before the game writes the
-        /// save; returns how many.
-        /// </summary>
+        /// <summary>Puts every kept line back as read, after the features wrote and before the game writes; returns how many.</summary>
         public static int PutBack(Dictionary<string, string> data)
         {
             if (data == null || !ReferenceEquals(data, _save))

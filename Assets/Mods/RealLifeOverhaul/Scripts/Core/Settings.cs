@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace RealLifeOverhaul
+﻿namespace RealLifeOverhaul
 {
     /// <summary>
     /// Live option values. The game fires option callbacks only once the options screen has been opened, so saved

@@ -58,10 +58,7 @@ namespace RealLifeOverhaul
 
         public int Waiting => _waiting.Count;
 
-        /// <summary>
-        /// Asks for a business's redraw with its figure now. True if it waits; false if its list stands drawn with this
-        /// figure, and a waiting wish without "always" is dropped.
-        /// </summary>
+        /// <summary>Asks for a redraw with the figure now: true if it waits; false if the list stands drawn with it.</summary>
         public bool Ask(T key, int figure, bool always, int hour, DrawPrint now)
         {
             if (key == null)
@@ -137,10 +134,7 @@ namespace RealLifeOverhaul
             return key != null && _waiting.ContainsKey(key);
         }
 
-        /// <summary>
-        /// The game made the business a new list (its day's draw): a wish asked against the old list is dropped. True if
-        /// one was.
-        /// </summary>
+        /// <summary>The game made the business a new list: a wish asked against the old one is dropped; true if one was.</summary>
         public bool Replaced(T key, object listNow)
         {
             if (key != null && _waiting.TryGetValue(key, out Wish wish) && !ReferenceEquals(wish.List, listNow))
@@ -267,19 +261,13 @@ namespace RealLifeOverhaul
         public const int StepsKept = 3;            // the margin holds the clock's largest step of a frame this many times over, or nothing is spread
         public const float MinutesInHour = 60f;    // the game's clock: minutes an hour
 
-        /// <summary>
-        /// The most game minutes one frame can move the clock: the engine's largest frame step (seconds), times the time
-        /// scale (never under one), times the game's minutes a second.
-        /// </summary>
+        /// <summary>The most game minutes one frame can move the clock: largest step times time scale (at least 1) times minutes a second.</summary>
         public static float StepMost(float maximumDeltaTime, float timeScale, float minutesASecond)
         {
             return Math.Max(0f, maximumDeltaTime) * Math.Max(1f, timeScale) * Math.Max(0f, minutesASecond);
         }
 
-        /// <summary>
-        /// The game minutes a second the clock ran at between two looks a frame apart, over the larger of the two steps so
-        /// a long frame is not read as a fast clock; 0 if it did not move forward within an hour.
-        /// </summary>
+        /// <summary>The game minutes a second the clock ran at between two looks, over the larger step; 0 if it did not move.</summary>
         public static float Seen(double clockBefore, double clockNow, float stepBefore, float stepNow)
         {
             double moved = clockNow - clockBefore;

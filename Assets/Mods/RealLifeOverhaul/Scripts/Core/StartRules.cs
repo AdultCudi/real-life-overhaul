@@ -38,10 +38,7 @@ namespace RealLifeOverhaul
             "the tech sector", "education and careers", "empty shops as offices", "the tech sector's buildings", "Flare", "Standing", "Permadeath",
         };
 
-        /// <summary>
-        /// For each seat, the seats whose state it reads when it starts, so must start before it. A seat that waits for
-        /// another itself (the offices for the headquarters) needs no place after it.
-        /// </summary>
+        /// <summary>For each seat, the seats whose state it reads when it starts, so must start before it.</summary>
         public static readonly int[][] After =
         {
             new int[0],                                   // Credit
@@ -93,13 +90,11 @@ namespace RealLifeOverhaul
 
         public int Seats => _first.Length;
 
-        /// <summary>Seats given since the line began.</summary>
         public int GivenCount => _givenCount;
 
         /// <summary>The frame the last seat was given in; <see cref="int.MinValue"/> while none has been.</summary>
         public int LastGiven => _lastGiven;
 
-        /// <summary>A new city: every seat waits for its first load again.</summary>
         public void Begin()
         {
             for (int i = 0; i < _first.Length; i++)
@@ -112,10 +107,7 @@ namespace RealLifeOverhaul
             _givenCount = 0;
         }
 
-        /// <summary>
-        /// True while the seat's first load must wait in this frame; false once given (until <see cref="Begin"/>) and for
-        /// a seat that is not one.
-        /// </summary>
+        /// <summary>True while the seat's first load must wait this frame; false once given, until <see cref="Begin"/>.</summary>
         public bool Holds(int seat, int frame)
         {
             if (seat < 0 || seat >= _first.Length || _given[seat] != Never)

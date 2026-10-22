@@ -35,7 +35,8 @@ namespace RealLifeOverhaul
             if (_started != null && _started != context.ModId)
             {
                 _second = true;
-                context.Logger.Warn("Real Life Overhaul is switched on twice (the Workshop item and a copy in the ModsLocal folder?). This copy does nothing; switch one of them off under Mods in the main menu.");
+                context.Logger.Warn("Real Life Overhaul is switched on twice (the Workshop item and a copy in the ModsLocal folder?). This copy does nothing; "
+                                    + "switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;
             }
             _started = context.ModId;
@@ -1193,7 +1194,8 @@ namespace RealLifeOverhaul
             if (_running != context.ModId && GameObject.Find(RootName) != null)
             {
                 _second = true;
-                context.Logger.Warn("Real Life Overhaul is already running in this city (two copies of the mod are switched on). This copy does nothing; switch one of them off under Mods in the main menu.");
+                context.Logger.Warn("Real Life Overhaul is already running in this city (two copies of the mod are switched on). This copy does nothing; "
+                                    + "switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;
             }
             _running = context.ModId;
@@ -1287,7 +1289,8 @@ namespace RealLifeOverhaul
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // once a second of real time
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // disabled unless a piece is waiting
             Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting
-            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));   // pieces run last added first: this one after the road data
+            // Pieces run last added first: this one after the road data below.
+            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
             Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
             Guard.Step("the sirens' prewarm", () => ScenePrewarm.Add("traffic: the sirens' sounds being made", TrafficEffects.PrewarmSirens));

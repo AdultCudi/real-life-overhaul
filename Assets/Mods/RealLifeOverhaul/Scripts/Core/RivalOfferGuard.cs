@@ -99,10 +99,7 @@ namespace RealLifeOverhaul
                   : name == NewHour ? "the game's hour" : "a rival beaten");
         }
 
-        /// <summary>
-        /// Called right after the mod lets an employee go, so a rival's offer to them loses its buttons now, not at the
-        /// next hour. Never throws.
-        /// </summary>
+        /// <summary>The mod has just let an employee go: a rival's offer to them loses its buttons now. Never throws.</summary>
         public static void Look(string why)
         {
             try
@@ -118,10 +115,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The Contacts app has picked a chat: its rival messages are judged before the game draws it a frame later.
-        /// <paramref name="drawn"/>: already on screen, so drawn again if a message lost its buttons.
-        /// </summary>
+        /// <summary>The Contacts app picked a chat; <paramref name="drawn"/>: on screen already, so drawn again if needed.</summary>
         internal static void Picked(Contact chat, bool drawn)
         {
             GameInstance save = Save;
@@ -145,9 +139,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Whether an employee is still the player's (<see cref="RivalOfferRules.Standing"/>), so business pressure says
-        /// one has left exactly when their offer loses its buttons. <paramref name="name"/>: the name the offer was made
-        /// to (null: the employee's own).
+        /// Whether an employee is still the player's, by the same rule as the buttons; <paramref name="name"/>: the name
+        /// the offer was made to (null: the employee's own).
         /// </summary>
         public static RivalOfferRules.State Standing(EmployeeInstance e, string name)
         {
@@ -164,10 +157,7 @@ namespace RealLifeOverhaul
             return RivalOfferRules.Standing(Employed(e, staff), sameName, e.isBeingReplaced, e.satisfaction);
         }
 
-        /// <summary>
-        /// True while the game's own offer to an employee is open (EmployeeInstance.PoachByRival): the company's and the
-        /// tech sector's offers give way to it. A few field reads.
-        /// </summary>
+        /// <summary>True while the game's own offer to an employee is open; the mod's own offers give way to it.</summary>
         public static bool OfferOpen(EmployeeInstance e)
         {
             if (e == null || string.IsNullOrEmpty(e.poachedByRivalId))
@@ -178,7 +168,6 @@ namespace RealLifeOverhaul
             return RivalOfferRules.Open(e.poachedByRivalId, known, known ? (int)DeadlineField.GetValue(e) : 0);
         }
 
-        // Every chat of the player's: the rival messages with buttons are judged, and those the rule takes lose them.
         private static void Sweep(string why)
         {
             GameInstance save = Save;

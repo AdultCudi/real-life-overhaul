@@ -29,10 +29,7 @@ namespace RealLifeOverhaul
             return Path.Combine(Path.GetDirectoryName(photo) ?? string.Empty, "Thumbs", Path.GetFileName(photo) + ".thumb");
         }
 
-        /// <summary>
-        /// Makes a new photo's copy on a worker thread once the engine has written it; a failure leaves it to be made
-        /// when Flare first wants it.
-        /// </summary>
+        /// <summary>Makes a new photo's copy on a worker thread once the engine has written it.</summary>
         public static void MakeSoon(string photo)
         {
             if (string.IsNullOrEmpty(photo))
@@ -99,10 +96,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A photo's small copy, read from its file or made and written. Null if the photo is missing or not whole yet,
-        /// or (<paramref name="undecoded"/>) a PNG this does not read, left to the engine. Off the main thread.
-        /// </summary>
+        /// <summary>A photo's small copy, read or made; null if not there yet, or <paramref name="undecoded"/>. Off the main thread.</summary>
         public static byte[] Get(string photo, out int width, out int height, out bool undecoded)
         {
             undecoded = false;
@@ -181,7 +175,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Writes a small copy's file under a name of its own, then moves it into place.</summary>
         public static void Write(string file, byte[] rows, int width, int height)
         {
             string temporary = file + "." + Guid.NewGuid().ToString("N") + ".part";
@@ -226,10 +219,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The small copy of a PNG, <see cref="Width"/> pixels wide and as tall as its shape gives (at least one). Null if
-        /// the stream is not whole, or (<paramref name="undecoded"/>) a PNG this does not read or no wider than the copy.
-        /// </summary>
+        /// <summary>The small copy of a PNG, <see cref="Width"/> wide; null if not whole, or <paramref name="undecoded"/>.</summary>
         public static byte[] Small(Stream png, out int width, out int height, out bool undecoded)
         {
             width = height = 0;
@@ -360,7 +350,6 @@ namespace RealLifeOverhaul
                 _file = file;
             }
 
-            /// <summary>Reads the signature and the header up to the first image data.</summary>
             public Opened Open()
             {
                 var head = new byte[8];

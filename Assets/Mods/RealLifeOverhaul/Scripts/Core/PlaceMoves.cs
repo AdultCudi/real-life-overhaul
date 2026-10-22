@@ -31,7 +31,8 @@ namespace RealLifeOverhaul
             string now = CityReserves.Mark(street, number);
             if (CityReserves.TellMoved(kept, now, ran, oldRule))
             {
-                Meta.Dev.Always(logger, what + " has moved from " + (string.IsNullOrEmpty(kept) ? oldRule : kept).Replace('|', ' ') + " to " + address + " since the save was made; the player is told once.");
+                Meta.Dev.Always(logger, what + " has moved from " + (string.IsNullOrEmpty(kept) ? oldRule : kept).Replace('|', ' ') + " to " + address
+                                        + " since the save was made; the player is told once.");
                 Notifications.Show(NotificationType.Info, noticeKey, new Dictionary<string, string>(1) { { "address", address } }, 12f);
             }
             save.modData[key] = now;

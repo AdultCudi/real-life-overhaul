@@ -51,10 +51,7 @@ namespace RealLifeOverhaul
             return key == OfferKey ? Kind.Offer : key == SurrenderKey ? Kind.Surrender : Kind.None;
         }
 
-        /// <summary>
-        /// The part of the rule about the employee alone, which business pressure's poaching watch reads too, so the two
-        /// always agree on whether an employee has left.
-        /// </summary>
+        /// <summary>The rule's part about the employee alone, which business pressure reads too, so both agree.</summary>
         public static State Standing(bool employed, bool sameName, bool beingReplaced, float satisfaction)
         {
             if (!employed)
@@ -68,7 +65,6 @@ namespace RealLifeOverhaul
             return satisfaction > 0f ? State.Live : State.Leaving;
         }
 
-        /// <summary>What a rival message's buttons are now.</summary>
         public static State Of(Kind kind, Facts f)
         {
             if (kind == Kind.None)
@@ -99,10 +95,7 @@ namespace RealLifeOverhaul
             return f.MessageDay == f.OfferDay ? State.Live : State.Older;
         }
 
-        /// <summary>
-        /// Whether the game's own offer to an employee is open: a rival named and days left on it. Without the days
-        /// (<paramref name="known"/> false) while a rival is named, which at worst keeps the mod's own offers waiting.
-        /// </summary>
+        /// <summary>Whether the game's own offer is open: a rival named and days left (unknown days: while a rival is named).</summary>
         public static bool Open(string rivalId, bool known, int deadlineDays)
         {
             return !string.IsNullOrEmpty(rivalId) && (!known || deadlineDays > 0);

@@ -67,10 +67,7 @@ namespace RealLifeOverhaul
             _goal = new int[Count];
         }
 
-        /// <summary>
-        /// A search of its own over the same roads, places and edges shared; with <paramref name="ownCosts"/> a copy of
-        /// the extra costs for a caller that changes them (TransitMap.Corridor).
-        /// </summary>
+        /// <summary>A search of its own over the same roads; <paramref name="ownCosts"/>: a copy of the extra costs to change.</summary>
         public static RouteSearch Over(RouteSearch roads, bool ownCosts)
         {
             var search = new RouteSearch(roads);
@@ -99,15 +96,15 @@ namespace RealLifeOverhaul
         public int[] EdgeTo => _edgeTo;
         public float[] EdgeExtra => _edgeExtra;
 
-        /// <summary>True if the last search got to this point.</summary>
         public bool WasReached(int node)
         {
             return node >= 0 && node < Count && _seen[node] == _search && _search > 0;
         }
 
-        /// <summary>Finds the shortest way; <paramref name="path"/> is filled start to end, both included.</summary>
-        /// <param name="gx">The middle of the ends (the station), for the estimate ahead.</param>
-        /// <param name="goalReach">No end is further than this from that middle.</param>
+        /// <summary>
+        /// Finds the shortest way; <paramref name="path"/> is filled start to end, both included. (gx, gy, gz) is the
+        /// ends' middle for the estimate ahead, and no end is further than <paramref name="goalReach"/> from it.
+        /// </summary>
         public bool Find(IList<int> starts, IList<int> goals, float gx, float gy, float gz, float goalReach, int maxExpansions, List<int> path)
         {
             path.Clear();
@@ -165,10 +162,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Goes on with the search until it is decided or <see cref="Expanded"/> reaches <paramref name="expandedLimit"/>
-        /// (pass Expanded plus a slice). On Found, <paramref name="path"/> is filled start to end.
-        /// </summary>
+        /// <summary>Goes on until decided or <see cref="Expanded"/> reaches <paramref name="expandedLimit"/>; on Found, fills the path.</summary>
         public Outcome Advance(int expandedLimit, List<int> path)
         {
             if (!_begun)

@@ -18,10 +18,7 @@ namespace RealLifeOverhaul
         public static int Made { get; private set; }
         public static int InPlay { get; private set; }
 
-        /// <summary>
-        /// True while a long frame is not seen as one: the loading screen (with the late prewarm,
-        /// <see cref="ScenePrewarm.InLate"/>), a pause, or the game's black screen at a door.
-        /// </summary>
+        /// <summary>True while a long frame is not seen: the loading screen, a pause, or the game's black screen at a door.</summary>
         public static bool Hidden => Looks.Hidden || UI.UiFader.isFading || ScenePrewarm.InLate;
 
         /// <summary>
@@ -31,16 +28,12 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool Dark => UI.Load.LoadScene.isLoading || UI.UiFader.isFading;
 
-        /// <summary>
-        /// True while the screen shows black: the loading screen, or the game's black screen at full strength
-        /// (<see cref="Covered"/>). Through a door's 0.2 s fades the picture shows, so heavy work waits for this.
-        /// </summary>
+        /// <summary>True while the screen shows black; through a door's 0.2 s fades the picture shows, so heavy work waits for this.</summary>
         public static bool Black => UI.Load.LoadScene.isLoading || Covered;
 
         /// <summary>
-        /// True while the game's black overlay (UIs.blackOverlay) is at full strength. Its alpha is read only while it
-        /// fades; a build where it cannot be read has no black screen here (one log line), and the work waits for the
-        /// loading screen.
+        /// True while the game's black overlay is at full strength, its alpha read only while it fades; false for good
+        /// where it cannot be read (one log line).
         /// </summary>
         public static bool Covered
         {
@@ -167,10 +160,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Hands over a piece that needs the game's own start of the city, run in its late "game loaded" call in the order
-        /// handed over; false there, and it waits with the others. A constant text.
-        /// </summary>
+        /// <summary>Hands over a piece run in the game's late "game loaded" call, in order; false there, and it waits. A constant text.</summary>
         public static void AddLate(string what, Func<bool> work)
         {
             if (work != null)

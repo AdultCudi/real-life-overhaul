@@ -24,7 +24,8 @@ namespace RealLifeOverhaul
             {
                 if (_scene == null && SceneFinds.Hidden && Time.unscaledTime >= _retryAt)
                 {
-                    CurrentSceneData[] found = SceneFinds.All<CurrentSceneData>("roads: the traffic system's road data being looked for (a search of the whole scene, once a city)", FindObjectsInactive.Include);
+                    CurrentSceneData[] found = SceneFinds.All<CurrentSceneData>("roads: the traffic system's road data being looked for (a search of the whole scene, once a city)",
+                                                                                FindObjectsInactive.Include);
                     // The traffic system takes the one switched on; a spare without lane points is of no use.
                     _scene = null;
                     for (int i = 0; i < found.Length; i++)

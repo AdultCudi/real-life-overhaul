@@ -8,10 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// One part of the city that is shared in a Going Public session: what the system it belongs to gives the layer
-    /// (<see cref="SharedCity"/>). Each system registers its own when it starts.
-    /// </summary>
+    /// <summary>One part of the shared city, registered by its system when it starts (<see cref="SharedCity"/>).</summary>
     public sealed class SharedCityPart
     {
         public char Id;                              // its letter in a message (an update of only what changed has a small letter: Changes)
@@ -53,7 +50,7 @@ namespace RealLifeOverhaul
         private static readonly List<object> Guests = new List<object>(4);       // the host's links to guests that run this mod in the same version
         private static readonly StringBuilder[] Asked = new StringBuilder[128];   // a guest's requests not yet sent, by part letter
         private static readonly Action<object, byte[]> OnMessage = Received;
-        private static readonly Dictionary<string, StringBuilder> Private = new Dictionary<string, StringBuilder>(4);   // the host's lines for one player only, by Going Public's player id and the part's letter
+        private static readonly Dictionary<string, StringBuilder> Private = new Dictionary<string, StringBuilder>(4);   // the host's lines for one player, by part letter and player id
         private static bool _anyPrivate;
 
         private static bool _following;            // a guest: the host's snapshot is applied
@@ -66,7 +63,6 @@ namespace RealLifeOverhaul
         private static byte[] _recorded;           // the test's recorded snapshot
         private static bool _testFollow;           // the test applied a recording: a pretended guest follows it with no host
 
-        /// <summary>The version this mod's messages carry.</summary>
         public static string Version => Meta.Changelog.Latest;
 
         /// <summary>True on a guest that follows the host's city.</summary>
@@ -119,10 +115,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The host: a line of a part for one player only (a direct message), sent to that guest alone within the second.
-        /// False when that player is not a following guest (the caller keeps it, or applies it when it is the host).
-        /// </summary>
+        /// <summary>The host: a line for one guest alone, sent within the second; false when that player is not a following guest.</summary>
         public static bool ToPlayer(char id, string player, string line)
         {
             if (!GoingPublic.IsHost || Guests.Count == 0 || string.IsNullOrEmpty(player) || string.IsNullOrEmpty(line))
@@ -155,10 +148,7 @@ namespace RealLifeOverhaul
 
         public const int AskedMost = 16 * 1024;     // characters of one part's request waiting for the second
 
-        /// <summary>
-        /// A guest: one line of something the player did that changes the shared city, sent to the host within the
-        /// second. False when not following or this second's request is full: a caller that must not lose it keeps it.
-        /// </summary>
+        /// <summary>A guest: one line for the host to apply, sent within the second; false when not following or full.</summary>
         public static bool Ask(char id, string line)
         {
             if (!_following || string.IsNullOrEmpty(line) || id >= Asked.Length)
@@ -175,10 +165,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// A guest: the lines a part has asked for that are not sent yet, for a part whose host reads only so many lines
-        /// of one request. A count over a short text.
-        /// </summary>
+        /// <summary>A guest: the lines a part has asked for that are not sent yet. A count over a short text.</summary>
         public static int Waiting(char id)
         {
             StringBuilder b = id < Asked.Length ? Asked[id] : null;
@@ -567,7 +554,8 @@ namespace RealLifeOverhaul
                 {
                     _refused = true;
                     string host = m != null ? m.Version : "?";
-                    Logger?.Warn("Shared city: the host runs version " + host + " of this mod and this machine " + Version + ". Nothing of the host's city is applied; this player's city stays their own in this session.");
+                    Logger?.Warn("Shared city: the host runs version " + host + " of this mod and this machine " + Version
+                                 + ". Nothing of the host's city is applied; this player's city stays their own in this session.");
                     Notifications.Show(NotificationType.Warning, "reallife_gp_city_versions", new Dictionary<string, string> { { "host", host }, { "mine", Version } }, 20f);
                 }
                 if (_following)
@@ -610,7 +598,8 @@ namespace RealLifeOverhaul
                 ApplyWhole(part, text);
                 names.Append(names.Length > 0 ? ", " : string.Empty).Append(part.Name).Append(part.Following ? string.Empty : " (when it starts here)");
             }
-            Logger?.Warn("Shared city: this guest follows the host's city" + (test ? " (the test's recording)" : string.Empty) + ": " + (names.Length > 0 ? names.ToString() : "nothing (the host runs none of it)")
+            Logger?.Warn("Shared city: this guest follows the host's city" + (test ? " (the test's recording)" : string.Empty) + ": "
+                         + (names.Length > 0 ? names.ToString() : "nothing (the host runs none of it)")
                          + ". None of it is stepped here; the host's comes every few seconds.");
             if (!_toldShared)
             {
@@ -865,7 +854,8 @@ namespace RealLifeOverhaul
                 }
                 SharedMessage back;
                 SharedRead read = SharedCityWire.Read(_recorded, Version, out back);
-                Logger?.Info("Shared city test: recorded " + Describe(m) + ", " + _recorded.Length + " bytes; read back: " + read + ": " + (read == SharedRead.Ok && back.Parts.Count == m.Parts.Count ? "PASS" : "FAIL"));
+                Logger?.Info("Shared city test: recorded " + Describe(m) + ", " + _recorded.Length + " bytes; read back: " + read + ": "
+                             + (read == SharedRead.Ok && back.Parts.Count == m.Parts.Count ? "PASS" : "FAIL"));
                 Notifications.Show(NotificationType.Info, "reallife_gp_test_recorded", new Dictionary<string, string> { { "size", (_recorded.Length / 1024f).ToString("0.0") } }, 10f);
             }
             catch (Exception e)
@@ -874,10 +864,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Test: this machine pretends to be a guest (<see cref="GoingPublic.TestPretend"/>) and the recording is applied
-        /// as a host's snapshot through a guest's own path; nothing of it steps until the pretence ends.
-        /// </summary>
+        /// <summary>Test: the recording applied as a host's snapshot, this machine pretending to be a guest.</summary>
         public static void TestApply()
         {
             try

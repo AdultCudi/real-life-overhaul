@@ -14,7 +14,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/CustomerDraw.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/FrontSignRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/FlareLinks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StandingLinks.cs	1
@@ -182,15 +181,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/TableView.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GoingPublic.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/OtherMods.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/PlaceMoves.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/RealLifeOverhaulMod.cs	40
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/RoadData.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/SaveHook.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/Settings.cs	52
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/SharedCity.cs	4
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/TestRefusal.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/WageRules.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikeMount.cs	6
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfCensus.cs	1

@@ -54,7 +54,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A unit cube, centred.</summary>
         public static Mesh Cube
         {
             get
@@ -75,10 +74,7 @@ namespace RealLifeOverhaul
         /// <summary>A straight round drum one unit tall and one wide, standing on its origin (a wheel, laid on its side).</summary>
         public static Mesh Drum => _drum != null ? _drum : _drum = BuildRound("RealLifeOverhaul Drum", 0.5f, 0.5f);
 
-        /// <summary>
-        /// The one material of a colour, made when first asked for; null if <see cref="Available"/> is false.
-        /// <paramref name="glow"/>: how strongly it shows in the dark, 0 for not at all.
-        /// </summary>
+        /// <summary>The one material of a colour and <paramref name="glow"/> (0: none); null if <see cref="Available"/> is false.</summary>
         public static Material Paint(Color colour, float glow = 0f)
         {
             if (!Available)
@@ -121,10 +117,7 @@ namespace RealLifeOverhaul
             return place;
         }
 
-        /// <summary>
-        /// A modelled prop from the prop library as one piece at the parent's origin. False if the library does not have
-        /// it yet: the caller builds its plain stand-in and asks again next time, as the library loads in the background.
-        /// </summary>
+        /// <summary>A modelled prop as one piece at the parent's origin; false if the library has none yet: ask again next time.</summary>
         public static bool Prop(string id, Transform parent)
         {
             if (!PropLibrary.TryGet(id, out Mesh mesh, out Material material) || mesh == null || material == null)

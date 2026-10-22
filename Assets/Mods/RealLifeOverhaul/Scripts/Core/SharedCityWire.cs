@@ -75,8 +75,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class SharedCityWire
     {
-        /// <summary>Going Public's message type for this mod's messages: free in Going Public (its own end at 222) and in its add-ons (Friend Trade 249, Extras 250).</summary>
-        public const byte MessageType = 231;
+        public const byte MessageType = 231;   // Going Public's message type for these: free there (its own end at 222) and in its add-ons
 
         public const int Format = 1;
         public const int MostPacked = 1 << 20;        // 1 MB on the wire
@@ -135,10 +134,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Reads a message: whole with <see cref="SharedRead.OtherVersion"/>, only its version with
-        /// <see cref="SharedRead.OtherFormat"/>, null with <see cref="SharedRead.Damaged"/>.
-        /// </summary>
+        /// <summary>Reads a message: whole for another version, only its version for another format, null if damaged.</summary>
         public static SharedRead Read(byte[] bytes, string mine, out SharedMessage m)
         {
             m = null;

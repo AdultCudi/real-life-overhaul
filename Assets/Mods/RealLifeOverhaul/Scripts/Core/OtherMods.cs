@@ -105,13 +105,17 @@ namespace RealLifeOverhaul
                 case OtherModKind.Route:
                     return "The city map is left to it: this mod draws its route on its own minimap only, and not at all with 'Use the other mod's route line' on.";
                 case OtherModKind.Session:
-                    return "In one of its sessions this mod passes no time of its own, takes nothing out of a guest's traffic and counts no other player's building as this player's (Core/GoingPublic).";
+                    return "In one of its sessions this mod passes no time of its own, takes nothing out of a guest's traffic and counts no other player's "
+                           + "building as this player's (Core/GoingPublic).";
                 case OtherModKind.Business:
-                    return "Its dealerships are businesses of the player's here, with their car sales and costs in the books; the cars of their stock are left to it; its view from the driver's seat is kept off while this mod's camera key is V (Core/EmpireMotors, Camera/EmpireView).";
+                    return "Its dealerships are businesses of the player's here, with their car sales and costs in the books; the cars of their stock are "
+                           + "left to it; its view from the driver's seat is kept off while this mod's camera key is V (Core/EmpireMotors, Camera/EmpireView).";
                 case OtherModKind.Interiors:
-                    return "Each district's minimum and the extra products in customers' baskets are left to it: this mod's district standard (its footfall and complaints) and its basket stay off (Scripts/Interiors).";
+                    return "Each district's minimum and the extra products in customers' baskets are left to it: this mod's district standard (its "
+                           + "footfall and complaints) and its basket stay off (Scripts/Interiors).";
                 case OtherModKind.Ambience:
-                    return "The customers decor brings are left to it: this mod's decor footfall stays off, and its redraws of a day's customers keep the hour under way (Scripts/Interiors, Core/CustomerDraw).";
+                    return "The customers decor brings are left to it: this mod's decor footfall stays off, and its redraws of a day's customers keep the "
+                           + "hour under way (Scripts/Interiors, Core/CustomerDraw).";
                 default:
                     return "It adds to a mod this one already lives with; nothing more is changed for it.";
             }

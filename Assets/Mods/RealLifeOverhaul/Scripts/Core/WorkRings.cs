@@ -44,10 +44,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The piece named <paramref name="back"/> pieces ago (0 the newest); <paramref name="spent"/> in ticks, negative
-        /// if never closed. False when there is no such piece.
-        /// </summary>
+        /// <summary>The piece named <paramref name="back"/> ago (0 the newest); <paramref name="spent"/> negative if never closed.</summary>
         public bool Get(int back, out string text, out int frame, out float at, out long spent)
         {
             if (back < 0 || back >= Count)
@@ -66,10 +63,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Which piece explains a long frame, as <see cref="Get"/>'s back: the costliest closed piece that began in
-        /// <paramref name="frame"/>, else the newest (0); -1 when the ring is empty.
-        /// </summary>
+        /// <summary>The costliest closed piece begun in <paramref name="frame"/>, as a back; else 0; -1 when empty.</summary>
         public int Costliest(int frame)
         {
             int pick = -1;
