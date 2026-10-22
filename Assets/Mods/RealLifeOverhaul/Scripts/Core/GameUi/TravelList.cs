@@ -6,17 +6,14 @@ using Localizor.LanguageChangeEvent;
 using TMPro;
 using UI;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A list of places to travel to, in the window the game lists its subway stations in (CityMapSubwayStations): the
-    /// headline bar, scrolling entries of a name and a blue button, and the yellow Cancel with its key. Copied asleep once
-    /// per city without the subway's scripts and put on the HUD's canvas (the game's stands on the map's, drawn only
-    /// while the map is open); two lines of text stand where the game has its search field. Entries are made once and
-    /// reused. Costs nothing while closed; while open, one script on it looks at the cancel key once a frame.
+    /// A list of places to travel to, in a copy of the game's subway station window put on the HUD's canvas, with two lines of
+    /// text where the game has its search field; entries are made once and reused. Costs nothing while closed; while open,
+    /// one look at the cancel key a frame.
     /// </summary>
     public sealed class TravelList
     {
@@ -55,10 +52,7 @@ namespace RealLifeOverhaul.GameUi
 
         public bool IsOpen { get; private set; }
 
-        /// <summary>
-        /// The player may not leave the window: Cancel is hidden and the cancel key left to the game (its menu still opens).
-        /// The owner can still <see cref="Close"/> it; every closing sets it back to false.
-        /// </summary>
+        /// <summary>The player may not leave: Cancel hidden, the cancel key left to the game. The owner can still close it; every closing clears it.</summary>
         public bool Locked
         {
             get { return _locked; }
@@ -78,10 +72,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The window's rectangle on the HUD's canvas, for an owner that moves or widens it; null once the interface has gone.</summary>
         public RectTransform Window => _root != null ? (RectTransform)_root.transform : null;
 
-        /// <summary>
-        /// An entry's height, and whether the lines under the name may wrap. Call it before the first <see cref="Add"/>:
-        /// entries already made keep their shape.
-        /// </summary>
+        /// <summary>An entry's height, and whether the lines under the name wrap: before the first Add.</summary>
         public void EntryShape(float height, bool wrap)
         {
             if (_template == null)
@@ -202,10 +193,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Stands the window on another canvas (the time skip hides the HUD but keeps a screen of its own), or back on the
-        /// HUD's with null, as the last thing drawn there.
-        /// </summary>
+        /// <summary>Stands the window on another canvas (the time skip's own screen), or back on the HUD's with null.</summary>
         public void MoveTo(Transform canvas)
         {
             Transform target = canvas != null ? canvas : _home;
@@ -233,7 +221,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>True while the window's objects are there: the game's interface is rebuilt with the city.</summary>
         public bool Alive => _root != null;
 
-        /// <summary>Starts a filling: the headline and the lines under it. Entries follow with <see cref="Add"/>, then <see cref="Open"/>.</summary>
+        /// <summary>Starts a filling: the headline and the lines under it. Entries follow with Add, then <see cref="Open"/>.</summary>
         public void Begin(string title, string info)
         {
             _used = 0;
@@ -384,7 +372,6 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>The window and everything made for it, gone.</summary>
         public void Destroy()
         {
             if (IsOpen)

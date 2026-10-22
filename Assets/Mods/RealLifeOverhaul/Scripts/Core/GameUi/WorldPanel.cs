@@ -9,19 +9,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The game's own panel over a place in the world: the dark box with an arrow over a petrol pump or a lift
-    /// (UI.Overlays.OverlayUI), with a first line, a second line left and right, and buttons with their key. The game shows
-    /// whatever implements IOverlay, so this class is one: nothing is copied or drawn. The game places the box every frame,
-    /// writes each button's key binding, and runs a button on its key or a click.
-    ///
-    /// The game has one such box. Which of two places has it is one rule for every panel (<see cref="PanelPickRules"/>,
-    /// WorldPanel.Pick): the nearer place the player faces, a person come to meet first within talking range, with a margin
-    /// against flicker; the game's own panels keep it while the player stands there. WorldPanel.Beside keeps every panel
-    /// clear of the game's building box (<see cref="PanelPlacement"/>).
-    ///
-    /// Costs nothing while no panel of the mod's is up; while one is, the few loads of WorldPanel.Beside a frame. Texts and
-    /// buttons are made only when what they say changes: new lines rewrite the three texts alone (the game's private
-    /// SetUpHeader, through a delegate made once), and only new buttons have the game make its buttons again.
+    /// The game's own panel over a place in the world (OverlayUI: a first line, a second left and right, buttons with their
+    /// key): this class is an IOverlay, so nothing is copied or drawn. Which panel has the one box is WorldPanel.Pick's,
+    /// keeping it clear of the building box WorldPanel.Beside's. Texts and buttons are rebuilt only when what they say
+    /// changes. Costs nothing while no panel is up.
     /// </summary>
     public sealed partial class WorldPanel : IOverlay
     {
@@ -92,10 +83,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Up to two buttons, on the interact and secondary keys. A key is a locale key; null leaves the button out. Pass
-        /// delegates made once: they are kept as given.
-        /// </summary>
+        /// <summary>Up to two buttons, on the interact and secondary keys (locale keys; null leaves one out). Pass delegates made once.</summary>
         public void Buttons(string keyA, Action a, bool enabledA, string keyB, Action b, bool enabledB)
         {
             Button(0, keyA, a, enabledA, true);
@@ -104,20 +92,13 @@ namespace RealLifeOverhaul.GameUi
             Button(3, null, null, false, false);
         }
 
-        /// <summary>
-        /// One button by its place: 0 interact, 1 secondary, 2 special, 3 confirm, in that order in the box. A key is a
-        /// locale key; null leaves the place empty. Nothing is made unless the place changed; the next <see cref="Show"/>
-        /// puts the buttons together again. Pass a delegate made once.
-        /// </summary>
+        /// <summary>One button by place (0 interact, 1 secondary, 2 special, 3 confirm); null leaves it empty. Rebuilt by the next <see cref="Show"/> if changed.</summary>
         public void Button(int slot, string key, Action action, bool enabled, bool blue)
         {
             Button(slot, key, null, action, enabled, blue);
         }
 
-        /// <summary>
-        /// A button whose locale key is filled from <paramref name="arguments"/> (an object with the placeholders as members,
-        /// as the game's buttons take them). Keep the same object while the words are the same: another one remakes the buttons.
-        /// </summary>
+        /// <summary>A button whose key is filled from <paramref name="arguments"/>; keep the same object while the words stay, another remakes the buttons.</summary>
         public void Button(int slot, string key, object arguments, Action action, bool enabled, bool blue)
         {
             if (ReferenceEquals(key, _slotKey[slot]) && (key == null || (enabled == _slotOn[slot] && blue == _slotBlue[slot] && ReferenceEquals(action, _slotAction[slot])
@@ -155,10 +136,7 @@ namespace RealLifeOverhaul.GameUi
             _buttonsChanged = true;
         }
 
-        /// <summary>
-        /// Puts the panel in the game's box, or brings the box up to date. False without the game's interface, or when another
-        /// panel has the box and keeps it by the rule (WorldPanel.Pick).
-        /// </summary>
+        /// <summary>Puts the panel in the game's box or brings it up to date; false without the interface, or when another panel keeps the box.</summary>
         public bool Show()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;

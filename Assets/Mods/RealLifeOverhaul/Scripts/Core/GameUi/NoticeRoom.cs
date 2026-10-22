@@ -6,12 +6,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Keeps the game's notifications off the mod's info panels in the top right (<see cref="ShiftCard"/>: a shift, a lesson,
-    /// a test, community service, an outing's plan, a family objective). Each such panel carries a <see cref="NoticeRoomMark"/>;
-    /// while one shows, the game's stack of notifications (found by <see cref="NoticeLook"/>) starts a gap under the lowest
-    /// (<see cref="NoticeRoomRules"/>), and is back at the game's place once none shows. Only that one position is changed,
-    /// put back as found when the panels, the city or the stack go. Costs nothing a frame: it works when a panel comes,
-    /// goes or moves (four corners of each panel showing, and one position).
+    /// Keeps the game's notifications off the mod's info panels in the top right (<see cref="ShiftCard"/> and the like): while
+    /// one marked with a <see cref="NoticeRoomMark"/> shows, the game's stack starts a gap under it (<see cref="NoticeRoomRules"/>),
+    /// back at its own place once none does. Costs nothing a frame: it works when a panel comes, goes or moves.
     /// </summary>
     public static class NoticeRoom
     {

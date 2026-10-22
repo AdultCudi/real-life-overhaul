@@ -1,10 +1,8 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The rules of the mod's look for every app's white box (InfoBox): a text's width in the box's measure, when a value
-    /// goes under its label, a label without its colon, an old "Label <b>value</b>" line read as a row, a meter's fill,
-    /// runs of weekdays, and each app's accent. Game-free and keeps nothing; used only while a page is written. Checked
-    /// offline (ContractCheck LookChecks).
+    /// The rules of the white box's look: a text's width in letters, when a value goes under its label, labels and old
+    /// "Label <b>value</b>" lines, meters, weekday runs and each app's accent. Game-free; checked offline (ContractCheck LookChecks).
     /// </summary>
     public static class LookRules
     {
@@ -78,10 +76,7 @@ namespace RealLifeOverhaul.GameUi
             return (int)(width / (fontSize * LetterEm));
         }
 
-        /// <summary>
-        /// A row's value goes under its label: the two and a gap of four letters do not fit one line. A box of no known width
-        /// (0) keeps them side by side.
-        /// </summary>
+        /// <summary>A row's value goes under its label: the two and a gap of four letters do not fit; never for a box of unknown width (0).</summary>
         public static bool Stack(string label, string value, int capacity)
         {
             if (capacity <= 0)
@@ -95,10 +90,7 @@ namespace RealLifeOverhaul.GameUi
             return Units(label) + Units(value) + 4 > capacity;
         }
 
-        /// <summary>
-        /// A chip's width in canvas pixels: its word in capitals (a capital about two thirds of an em, a square character a
-        /// whole one), its letter spacing and padding. The title leaves this much room.
-        /// </summary>
+        /// <summary>A chip's width in canvas pixels: its word in capitals, its letter spacing and padding.</summary>
         public static float ChipWidth(string words)
         {
             float em = 0f;
@@ -135,12 +127,7 @@ namespace RealLifeOverhaul.GameUi
             return !string.IsNullOrEmpty(label) && Wide(label[label.Length - 1]) ? "：" : ": ";
         }
 
-        /// <summary>
-        /// An old "Label <b>value</b>" line (or "Label: <b>value</b>"), as FinanceText.Pair and the game's box write one, read
-        /// as a row: true with the label (its colon dropped) and value when a plain label is followed by one bold value that
-        /// ends it. After a colon a few plain words may follow the value ("Overall: <b>68</b> of 100"): they join it. False for
-        /// a sentence: a second bold part, mark-up in the label, a label of many words, or more than a few words after.
-        /// </summary>
+        /// <summary>An old "Label <b>value</b>" line (FinanceText.Pair, the game's box) read as a row; false for a sentence.</summary>
         public static bool SplitPair(string words, out string label, out string value)
         {
             label = value = null;
@@ -213,11 +200,7 @@ namespace RealLifeOverhaul.GameUi
             return share > 1f ? 1f : share;
         }
 
-        /// <summary>
-        /// The runs of days in a week's mask (bit 0 Monday to bit 6 Sunday), in order: three days or more make one run ("Mon to
-        /// Fri"), one or two a run each. Returns how many runs were written into <paramref name="from"/> and <paramref name="to"/>
-        /// (each at least 7 long).
-        /// </summary>
+        /// <summary>The runs of days in a week's mask (bit 0 Monday): three or more one run ("Mon to Fri"); returns how many were written.</summary>
         public static int DayRuns(int days, int[] from, int[] to)
         {
             int n = 0;
@@ -254,10 +237,7 @@ namespace RealLifeOverhaul.GameUi
             return n;
         }
 
-        /// <summary>
-        /// Each app's accent, 0xRRGGBB: the deeper of its icon's two colours, so the bar over a box's title matches the icon
-        /// that opened it. Matched by the start of the app's id ("RealLifeBank" is the Banks app's); others get the slate.
-        /// </summary>
+        /// <summary>Each app's accent, 0xRRGGBB, the deeper of its icon's two colours, matched by the start of the app's id.</summary>
         public static readonly string[] AccentIds =
         {
             "RealLifeCareer", "RealLifeCampus", "RealLifeBank", "RealLifeBrands", "RealLifeCompany", "RealLifeDealer",

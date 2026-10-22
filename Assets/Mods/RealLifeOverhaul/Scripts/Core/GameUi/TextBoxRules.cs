@@ -32,32 +32,16 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// When the game's own text box and its handle on the open conversation are put right after what they were for has
-    /// ended.
-    ///
-    /// The text box is a window over the phone and the dialogue panel that the game closes only with its own two buttons
-    /// (TextInputUI.OnConfirm and OnClose), not when what asked for it ends (the phone put away, a call hung up, a talk left,
-    /// a door, a save loaded). Left up with its field selected, it takes every key as typing
-    /// (GameManager.ShouldBlockKeyboardShortcuts) and the mod counts the player as busy with a window, so doors, panels and
-    /// activities refuse. So every box the mod asks for is kept for something (<see cref="For"/>) and the watch closes it
-    /// with the game's own close as soon as that is over (<see cref="Fate"/>).
-    ///
-    /// The handle, DialogController.current, is one static of the game's set and cleared by the dialogue panel and by a
-    /// phone call alike (ContactsApp's CancelDialog and FinishDialog clear it whatever holds it). A call made while the panel
-    /// was open leaves the panel without it when the call ends: its last button and Esc find nothing to end, the panel never
-    /// stops, and its navigation blocker stays, so the player can neither walk nor use a door. The watch gives the panel its
-    /// handle back once nobody holds it (<see cref="HandBack"/>).
-    ///
-    /// Game-free comparisons, nothing allocated. Checked offline (EconomyCheck TextBoxChecks).
+    /// When the game's text box and its conversation handle are put right after what they were for ended. The game closes
+    /// its box only with its own buttons, and left up it takes every key as typing; and a call clears the shared handle
+    /// (DialogController.current) the dialogue panel needs to end, leaving the player stuck. Game-free; checked offline
+    /// (EconomyCheck TextBoxChecks).
     /// </summary>
     public static class TextBoxRules
     {
         public const float WatchEvery = 0.25f;   // seconds of real time between two looks of the watch: a box outlives what it was for by a quarter second at most
 
-        /// <summary>
-        /// What a box is kept for, from what was open when asked: its owner's own test if it gave one; else the phone (on top of
-        /// the panel when both are open); else the panel; else the options page; else nothing.
-        /// </summary>
+        /// <summary>What a box is kept for: its owner's test, else the phone (over the panel), else the panel, else the options page, else nothing.</summary>
         public static TextBoxFor For(bool ownerGiven, bool phoneOpen, bool panelOpen, bool optionsOpen)
         {
             if (ownerGiven)
@@ -75,10 +59,7 @@ namespace RealLifeOverhaul.GameUi
             return optionsOpen ? TextBoxFor.Options : TextBoxFor.Nothing;
         }
 
-        /// <summary>
-        /// What becomes of the box the mod asked for. <paramref name="shown"/>: the game's box is still on screen;
-        /// <paramref name="moved"/>: the player is not in the building (or the street) it was asked in.
-        /// </summary>
+        /// <summary>What becomes of the box; <paramref name="moved"/>: the player is not in the building, or the street, it was asked in.</summary>
         public static TextBoxFate Fate(TextBoxFor kept, bool shown, bool ownerLive, bool phoneOpen, bool panelOpen, bool optionsOpen, bool moved, bool unloading)
         {
             if (kept == TextBoxFor.Nothing || !shown)
@@ -125,10 +106,7 @@ namespace RealLifeOverhaul.GameUi
             return fate != TextBoxFate.Keep && fate != TextBoxFate.Closed;
         }
 
-        /// <summary>
-        /// The dialogue panel is to have the game's handle back: it is open, and nobody holds the handle (a phone call took it
-        /// and let it go). Never while a call holds it.
-        /// </summary>
+        /// <summary>The dialogue panel is to have the game's handle back: it is open and nobody holds the handle.</summary>
         public static bool HandBack(bool panelOpen, TalkHolder holder)
         {
             return panelOpen && holder == TalkHolder.None;

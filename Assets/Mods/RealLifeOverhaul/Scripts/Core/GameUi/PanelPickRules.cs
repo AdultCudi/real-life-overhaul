@@ -18,22 +18,10 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// Who has the game's one panel box when the player is near two places that want it. The game sends the interact key
-    /// to whatever is in the box, so the panel in it is the one the key runs; the others wait.
-    ///
-    ///  - Each place counts by its distance on the flat, longer the further it is from the player's facing: straight
-    ///    behind twice as far (<see cref="BehindWeight"/>). A person come to meet counts nearest of all within
-    ///    <see cref="TalkRange"/>.
-    ///  - A panel takes the box only when it counts nearer by a margin (<see cref="KeepMetres"/> or <see cref="KeepShare"/>
-    ///    of the other's count, whichever is more), so the box never goes to and fro while the player stands still.
-    ///  - The game's own panels (filling station, repair bay, private driver's garage, lift) come with the trigger the
-    ///    player stands in: nearest, never taken from. Another mod's panel is left alone too.
-    ///
-    /// A panel's button runs only while it is in the box (<see cref="KeyToPanel"/>), and the mod's own interact key does
-    /// nothing while the box shows a button on it (<see cref="KeyFree"/>): one press runs one thing. A person waiting to be
-    /// met stands where nothing else wants the box if the street allows (<see cref="Pick"/>).
-    ///
-    /// Game-free arithmetic, nothing allocated. Checked offline (NavCheck PanelPickCheck).
+    /// Who has the game's one panel box when two places want it: each counts by its flat distance, longer the further from
+    /// the player's facing (<see cref="BehindWeight"/>), a person come to meet nearest within <see cref="TalkRange"/>; a panel
+    /// takes the box only by a margin, so it never goes to and fro, and never from the game's own. One press of the
+    /// interact key runs one thing (<see cref="KeyToPanel"/>, <see cref="KeyFree"/>). Game-free; checked offline (NavCheck).
     /// </summary>
     public static class PanelPickRules
     {
@@ -90,10 +78,7 @@ namespace RealLifeOverhaul.GameUi
             return !(boxUp && boxHasButtonOnKey);
         }
 
-        /// <summary>
-        /// Metres a point stands outside the nearest reach (negative inside one; very large with none). Reaches are circles on
-        /// the flat: a middle and a radius in metres.
-        /// </summary>
+        /// <summary>Metres a point stands outside the nearest reach (circles on the flat), negative inside; very large with none.</summary>
         public static float Room(float x, float z, float[] busyX, float[] busyZ, float[] busyReach, int busy)
         {
             float least = float.MaxValue;
@@ -110,10 +95,7 @@ namespace RealLifeOverhaul.GameUi
             return least;
         }
 
-        /// <summary>
-        /// Of places to stand in order of preference, the first with <see cref="StandClear"/> metres outside every reach; else
-        /// the one with most room, the earlier on a tie; -1 when there are none.
-        /// </summary>
+        /// <summary>The first place to stand with <see cref="StandClear"/> metres outside every reach, else the roomiest; -1 for none.</summary>
         public static int Pick(float[] x, float[] z, int count, float[] busyX, float[] busyZ, float[] busyReach, int busy)
         {
             int best = -1;

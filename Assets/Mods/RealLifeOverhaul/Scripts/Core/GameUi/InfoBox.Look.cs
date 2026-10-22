@@ -7,11 +7,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The templates of the box's own look, made once in From from what the game's white box is built of: its line of
-    /// text, title, headline font, grey and rule, the round sprite and the satisfaction bar's green, the switch's tick,
-    /// and the game's red, orange and green (GlobalReferences.colors). Nothing is shipped but the apps' accents (LookRules).
-    /// Each part is one text where the old box had one (a row's label and value share a text; a heading carries its
-    /// hairline, a meter its bar), so a page is as many objects as before. Costs nothing a frame.
+    /// The templates of the box's own look, made once from what the game's white box is built of (its texts, sprites and
+    /// colours): nothing is shipped but the apps' accents. Each part is one text where the old box had one.
     /// </summary>
     public sealed partial class InfoBox
     {

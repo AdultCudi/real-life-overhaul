@@ -13,10 +13,8 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// A table whose rows are written only when shown (a month's 30,000 movements of money, where a row's words cost more
-    /// than its figures). The table asks for each row's figures and kinds at once, a column's words only when ordered by
-    /// them, and the whole row (<see cref="Write"/>) only when it comes into view; each must match what writing the row
-    /// gives. Its rows are plain: no line of words, none pinned, all in the totals.
+    /// A table whose rows are written only when shown (30,000 movements of money): figures and kinds are asked at once, a
+    /// column's words only when ordered by them, the whole row (<see cref="Write"/>) only in view; each must match the row.
     /// </summary>
     public interface ITableSource
     {

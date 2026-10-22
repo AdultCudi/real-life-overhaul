@@ -4,11 +4,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The one list window a feature's screens share (a desk's menu, its pages, the room, a test): a <see cref="TravelList"/>
-    /// made when first wanted, widened for entries that say what a thing costs. One screen has it at a time: taking it closes
-    /// whichever had it, and that screen's closing runs. Each desk in the world is then <c>Take(owner)</c>, fill,
-    /// <c>Open</c>. If the game's window cannot be copied, <see cref="Take"/> returns null (one "Game UI:" line says why) for
-    /// the session and the caller uses its plain fallback. Costs nothing a frame of its own.
+    /// The one list window a feature's screens share (a desk's menu, its pages, a test): a widened <see cref="TravelList"/>,
+    /// made when first wanted, held by one screen at a time. Null from <see cref="Take"/> for the session if the game's
+    /// window cannot be copied. Costs nothing a frame of its own.
     /// </summary>
     public sealed class DeskList
     {

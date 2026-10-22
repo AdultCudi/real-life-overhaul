@@ -1,18 +1,9 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Which app stands on which page of the phone's apps (PhoneGridPager), and where the button that turns the pages
-    /// stands. A page is a set number of tiles: eight on the HUD phone's grid; on the full menu's row as many as fit from
-    /// where the game's row begins to the money's box (RightData, 1350 wide: as wide as the money and date can be), between
-    /// two and the game's own row, worked out again only when the bar's width changes, so the same whatever the money, the
-    /// date or the language: six on a 16:9 screen at 100%, five at 16:10, two at 4:3. A full page stands centred there.
-    ///
-    /// The game's apps come first in its order, then the mod's in one fixed order (<see cref="ModOrder"/>), then other
-    /// mods' as they stand (Arrange). With more than one page, every page's last tile is the More apps button, the pages
-    /// fill in order and only the last may be shorter; the row keeps a full page's left edge, so the button never moves.
-    /// The button goes to the next page and round; the wheel stops at either end.
-    ///
-    /// Plain arithmetic: game-free, nothing kept or allocated, called only when the pages are worked out. Checked offline
+    /// Which app stands on which page of the phone's apps, and where the More apps button stands: eight tiles a page on
+    /// the HUD phone, on the full menu's row as many as fit before the money's box (worked out again only when the bar's
+    /// width changes), the button on every page's last tile so it never moves. Game-free; checked offline
     /// (ContractCheck PagerChecks).
     /// </summary>
     public static class PagerRules
@@ -29,10 +20,7 @@ namespace RealLifeOverhaul.GameUi
 
         public const float WidthTolerance = 0.5f;   // canvas pixels: a smaller change of the bar's width is no change of screen
 
-        /// <summary>
-        /// The tiles for this much room (from where the game's row begins to the money's box): as many as fit, between
-        /// <see cref="LeastTiles"/> and the game's own row (<see cref="StripTiles(int)"/>).
-        /// </summary>
+        /// <summary>The tiles that fit this room, between <see cref="LeastTiles"/> and the game's own row.</summary>
         public static int StripTiles(float room, float pitch, float spacing, int ownApps)
         {
             int most = StripTiles(ownApps);
@@ -40,11 +28,7 @@ namespace RealLifeOverhaul.GameUi
             return fit < LeastTiles ? LeastTiles : fit > most ? most : fit;
         }
 
-        /// <summary>
-        /// Where a full page begins: centred in the room from <paramref name="rowStart"/> to the money's box, as the game
-        /// centres its row; at the room's start when the page is as wide or wider, or the room is not known yet. Every page
-        /// starts there, so the button never moves.
-        /// </summary>
+        /// <summary>Where every page begins: a full page centred in the room, or the room's start when it does not fit or is not known.</summary>
         public static float PageStart(float rowStart, float room, int tiles, float pitch, float spacing)
         {
             float spare = room - RowWidth(tiles, pitch, spacing);
@@ -57,10 +41,7 @@ namespace RealLifeOverhaul.GameUi
             return !(System.Math.Abs(barWidth - measuredFor) <= WidthTolerance);
         }
 
-        /// <summary>
-        /// The game's items (<paramref name="game"/> true) first, then the others, each in the order they stand, their places
-        /// written into <paramref name="order"/>. Returns how many are the game's. Stable.
-        /// </summary>
+        /// <summary>The game's items first, then the others, each as they stand, into <paramref name="order"/>; returns how many are the game's.</summary>
         public static int GameFirst(bool[] game, int count, int[] order)
         {
             if (game == null || order == null || count <= 0)
@@ -90,11 +71,7 @@ namespace RealLifeOverhaul.GameUi
             return games;
         }
 
-        /// <summary>
-        /// The mod's apps in the one order they stand on both phones, whichever feature put its app on first: the day (Planner,
-        /// Flare, the camera, the paper), work and study, money, business, then the Guide and the options. The same groups are
-        /// the home screen's folders (PhoneLayoutRules.Defaults).
-        /// </summary>
+        /// <summary>The mod's apps in the one order of both phones: the day, work and study, money, business, then the Guide and the options.</summary>
         public static readonly string[] ModOrder =
         {
             "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
@@ -107,10 +84,7 @@ namespace RealLifeOverhaul.GameUi
 
         private const int RankStep = 100;   // places kept under each name, room to put a name between two without moving the rest
 
-        /// <summary>
-        /// A button's place among the mod's apps: its <see cref="ModOrder"/> index times <see cref="RankStep"/>; -1 for a name
-        /// that is not one of the mod's (another mod's button). Ordinal comparisons, no allocation.
-        /// </summary>
+        /// <summary>A button's place among the mod's apps (its <see cref="ModOrder"/> index times <see cref="RankStep"/>); -1 for another mod's.</summary>
         public static int ModRank(string name)
         {
             int at = IndexOf(name);
@@ -134,12 +108,7 @@ namespace RealLifeOverhaul.GameUi
             return -1;
         }
 
-        /// <summary>
-        /// The game's items first as they stand, then the mod's (<paramref name="rank"/> 0 or more, from <see cref="ModRank"/>)
-        /// by rank, equal ranks as they stand, then the rest (rank under 0) as they stand; places written into
-        /// <paramref name="order"/>. Returns how many are the game's. Stable whatever order the items were put on in; no
-        /// allocation.
-        /// </summary>
+        /// <summary>The game's items first, then the mod's by rank, then the rest, each as they stand, into <paramref name="order"/>; returns the game's count.</summary>
         public static int Arrange(bool[] game, int[] rank, int count, int[] order)
         {
             if (rank == null)
@@ -270,7 +239,6 @@ namespace RealLifeOverhaul.GameUi
             return Tiles(tiles) - 1;
         }
 
-        /// <summary>The button shows only with more than one page.</summary>
         public static bool ButtonShown(int pages)
         {
             return pages > 1;

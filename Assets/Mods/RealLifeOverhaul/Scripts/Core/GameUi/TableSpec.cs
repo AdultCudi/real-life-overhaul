@@ -47,16 +47,9 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// A table declared as data: its columns, filters, first order and the sentence shown when a filter leaves nothing.
-    /// One static object per table, so it also keeps the player's last order and kinds until the game closes, never in
-    /// the save. Game-free: the offline checks compile this file.
-    ///
-    ///   static readonly TableSpec Accounts = new TableSpec("Finance", "Accounts")
-    ///       .Column("reallife_econ_col_account", 520f, TableSort.Text, flexible: true)
-    ///       .Column("reallife_econ_col_owed", 240f, TableSort.Money, sums: true)
-    ///       .Filter("reallife_tab_all_kinds", KindKeys)
-    ///       .Order(1, false)
-    ///       .Empty("reallife_tab_empty_debts");
+    /// A table declared as data, one static object per table, which also keeps the player's last order and kinds for the
+    /// session. Game-free: the offline checks compile this file.
+    ///   new TableSpec("Finance", "Accounts").Column("reallife_econ_col_owed", 240f, TableSort.Money, sums: true).Order(1, false)
     /// </summary>
     public sealed class TableSpec
     {
@@ -156,10 +149,7 @@ namespace RealLifeOverhaul.GameUi
         public int OrderColumn => Touched ? SortColumn : FirstColumn;
         public bool OrderAscending => Touched ? Ascending : FirstAscending;
 
-        /// <summary>
-        /// A header was clicked, as the game's table takes it (BaTable.ChangeSortOrder): the same column turns the order round,
-        /// another starts ascending. False if the column does not sort.
-        /// </summary>
+        /// <summary>A header was clicked, as BaTable.ChangeSortOrder takes it: the same column turns round, another starts ascending; false if it does not sort.</summary>
         public bool Click(int column)
         {
             if (column < 0 || column >= Count || Columns[column].Sort == TableSort.None)

@@ -3,10 +3,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The watch over the mod's marks on the game's destination guider (<see cref="GuideMark"/>): once a second of real
-    /// time it takes off a mark whose owner was destroyed, stopped by the guard or past its latest time, and forgets one
-    /// that lost the guider (<see cref="GuideMarkBook.Sweep"/>). Every mark goes when a city starts and when it unloads.
-    /// Costs one time comparison a frame; once a second, a few compares per mark up.
+    /// The watch over the mod's guide marks: once a second of real time it takes off a mark whose owner is gone, stopped or
+    /// past its time (<see cref="GuideMarkBook.Sweep"/>), and every mark when a city starts or unloads. Costs one time
+    /// comparison a frame.
     /// </summary>
     public sealed class GuideMarkWatch : MonoBehaviour
     {

@@ -17,10 +17,8 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// The rows of the game's own settings menu (UIs.options, its Graphics and Others views), copied asleep once and made
-    /// from as often as a page needs: a name over a short description (the menu's Label and Tip, as its "Reset windows" row
-    /// has them) and at the right the game's switch, slider with its number, drop-down or button. The menu's rows are
-    /// already white on dark; the words take the dark look. Costs nothing a frame; a page makes the rows it needs.
+    /// The rows of the game's own settings menu, copied asleep once and made from as a page needs: a name over a short
+    /// description, and the game's switch, slider, drop-down or button at the right. Costs nothing a frame.
     /// </summary>
     public sealed class OptionRows
     {
@@ -78,10 +76,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// The menu's switch row alone, asleep under <paramref name="dormant"/>, for a page that is not the settings app's
-        /// (InfoBox.Toggle). Null as Take is. The other three rows are made and let go with it, once.
-        /// </summary>
+        /// <summary>The menu's switch row alone, asleep under <paramref name="dormant"/>, for a page that is not the settings app's; null as Take is.</summary>
         public static GameObject SwitchRow(Transform dormant)
         {
             OptionRows rows = Take(dormant);

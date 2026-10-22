@@ -1,11 +1,8 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// When a bar of the game's is written again, and where a mark on it stands. The game writes its needs bars only when they
-    /// would differ visibly: by half a hundredth for energy, a hundredth for the others, and always when one runs empty
-    /// (Topbar.UpdateStatsBars). <see cref="GameBar"/> keeps to the finer step for all it draws: a marker crossing the bar in a
-    /// second is written at most two hundred times, and a bar standing still never. Game-free, nothing allocated; checked
-    /// offline (NavCheck).
+    /// When a bar of the game's is written again: the game redraws its needs bars only for a visible step
+    /// (Topbar.UpdateStatsBars), and <see cref="GameBar"/> keeps to its finer one. Game-free; checked offline (NavCheck).
     /// </summary>
     public static class BarRule
     {
@@ -21,10 +18,7 @@ namespace RealLifeOverhaul.GameUi
             return value > 1f ? 1f : value;
         }
 
-        /// <summary>
-        /// The bar is to be written: nothing shown yet (<paramref name="shown"/> below zero), the value at an end the bar does not
-        /// show yet, or more than a step from what is shown.
-        /// </summary>
+        /// <summary>The bar is to be written: nothing shown yet (below zero), the value at an end not yet shown, or more than a step off.</summary>
         public static bool Due(float shown, float value)
         {
             value = Clamp(value);

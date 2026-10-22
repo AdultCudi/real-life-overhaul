@@ -12,14 +12,9 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// The one rule for two boxes on the screen: the game's building box (the card over a shop's door while the pointer is
-    /// on the shop) and a panel of the mod's over a place (<see cref="WorldPanel"/>). The game has no such rule: each is
-    /// placed by its own script and they never meet there, since its own panels stand where no building box comes up. Where
-    /// the game does have two boxes for one thing it shows one and holds the other back (OverlayManager.ShowDetailedOverlay).
-    /// So the building box never moves; the panel steps to a side with room, left or right first, then above or below, and
-    /// waits where none has. It keeps its side while that has room, and goes home only once its home is clear by a wider
-    /// margin than sent it away, so it never flickers. Game-free arithmetic, nothing allocated; checked offline (NavCheck).
-    /// All figures are screen pixels, y upwards.
+    /// The rule for the game's building box and a panel of the mod's on the screen: the building box never moves, the panel
+    /// steps to a side with room (left or right, then above or below), waits where none has, keeps its side while it has
+    /// room and goes home only by a wider margin. Game-free, screen pixels y upwards; checked offline (NavCheck).
     /// </summary>
     public static class PanelPlacement
     {
@@ -34,11 +29,7 @@ namespace RealLifeOverhaul.GameUi
             return bLeft < aRight + margin && bRight > aLeft - margin && bBottom < aTop + margin && bTop > aBottom - margin;
         }
 
-        /// <summary>
-        /// Where the panel goes: <paramref name="boxUp"/> whether the building box is on the screen, the panel's rectangle as at
-        /// home, <paramref name="now"/> its side at this moment; <paramref name="dx"/> and <paramref name="dy"/> the pixels from
-        /// home, right and up.
-        /// </summary>
+        /// <summary>Where the panel goes from its home rectangle; <paramref name="dx"/> and <paramref name="dy"/> are the pixels from home, right and up.</summary>
         public static PanelSide Place(bool boxUp, float boxLeft, float boxBottom, float boxRight, float boxTop,
                                       float panelLeft, float panelBottom, float panelRight, float panelTop,
                                       float screenWidth, float screenHeight, PanelSide now, out float dx, out float dy)
@@ -93,10 +84,7 @@ namespace RealLifeOverhaul.GameUi
             return PanelSide.Wait;
         }
 
-        /// <summary>
-        /// The step that puts the panel on one side of the box, the gap away, and whether the whole panel is then on the
-        /// screen. A panel already further out on that side is not drawn in: its step is nothing.
-        /// </summary>
+        /// <summary>The step to one side of the box, the gap away, and whether the panel is then on the screen; none if it is already further out.</summary>
         public static bool Fits(PanelSide side, float boxLeft, float boxBottom, float boxRight, float boxTop,
                                 float panelLeft, float panelBottom, float panelRight, float panelTop,
                                 float screenWidth, float screenHeight, out float dx, out float dy)
@@ -127,10 +115,7 @@ namespace RealLifeOverhaul.GameUi
             return panelLeft + dx >= 0f && panelRight + dx <= screenWidth && panelBottom + dy >= 0f && panelTop + dy <= screenHeight;
         }
 
-        /// <summary>
-        /// The two boxes are to be measured again: the building box came or went, or either moved more than
-        /// <see cref="Moved"/> on the screen since last measured. Squared distances, so nothing is rooted.
-        /// </summary>
+        /// <summary>The boxes are measured again: the building box came or went, or either moved more than <see cref="Moved"/> pixels.</summary>
         public static bool Due(bool boxUp, bool boxWasUp, float panelMovedSqr, float boxMovedSqr)
         {
             if (boxUp != boxWasUp)

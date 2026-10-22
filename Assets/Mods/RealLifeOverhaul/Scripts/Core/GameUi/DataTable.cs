@@ -11,12 +11,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// An app's table: the game's own BaTable over its scroller, which makes only the rows in view and reuses them. The
-    /// order, filter and totals are the model's (TableView, TableModel); this shows the rows in that order, a totals line
-    /// at the foot and a sentence where a filter leaves nothing, as EconoView does. A list of thousands comes from a source
-    /// (ITableSource): its rows' words are written only when the scroller shows them (TableRow.Ready), so 30,000
-    /// movements make some fifteen rows of words. The header names are no fields of TableRow, so the game's sort by
-    /// reflection takes no part. Costs nothing a frame of its own.
+    /// An app's table: the game's BaTable over its scroller, which makes only the rows in view, in the model's order
+    /// (TableView, TableModel), with a totals line and a sentence where a filter leaves nothing. A source's rows are written
+    /// only as they come into view. Costs nothing a frame of its own.
     /// </summary>
     public sealed class DataTable : BaTable<DataCellView, TableRow>
     {
@@ -24,10 +21,7 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>How the totals line writes money.</summary>
         public Func<double, string> Money = amount => ((float)amount).ToShortCurrencyFormat();
-        /// <summary>
-        /// The filter took the selected row out and left nothing to select: the app closes what it showed of that row.
-        /// (Where a row is left, the first is selected as a click would.)
-        /// </summary>
+        /// <summary>A filter took the selected row out and left none to select: the app closes what it showed of it.</summary>
         public Action SelectionLost;
 
         /// <summary>A kind was picked and the selection needed nothing done: an app whose box speaks of the rows shown writes itself again.</summary>
@@ -50,10 +44,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The game's colour of the selected row, read from its row by the frame.</summary>
         public Color RowSelected { get; private set; }
 
-        /// <summary>
-        /// The table of an app on its frame: the game's row made plain cells, the scroller, the header cells and the filter.
-        /// Null, with one line in Player.log, if the game's row is not as expected. Called while the frame sleeps (Build).
-        /// </summary>
+        /// <summary>The app's table on its frame, made while the frame sleeps (Build); null, with one log line, if the game's row is not as expected.</summary>
         public static DataTable On(AppShell shell, string app)
         {
             if (shell == null || !AppShell.PrepareRow(shell.RowPrefab, TableSpec.MaxColumns, app))
@@ -99,10 +90,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Shows the rows as the specification describes, the row of that id selected. On the app's first opening this runs
-        /// before the scroller wakes: Start shows them. The same table written again stays where the player scrolled to.
-        /// </summary>
+        /// <summary>Shows the rows with the row of that id selected; the same table written again keeps the player's scroll.</summary>
         public void Show(TableSpec spec, List<TableRow> rows, string selectedId)
         {
             bool same = ReferenceEquals(spec, Spec) && ReferenceEquals(rows, _source) && _from == null;
@@ -116,10 +104,7 @@ namespace RealLifeOverhaul.GameUi
             Shown(selectedId, same);
         }
 
-        /// <summary>
-        /// Shows a table whose rows are written only as they come into view (<see cref="ITableSource"/>). Its order, filter and
-        /// totals are those of the rows written in full. The same source shown again stays where the player scrolled to.
-        /// </summary>
+        /// <summary>Shows a table whose rows are written as they come into view (<see cref="ITableSource"/>); the same source again keeps the scroll.</summary>
         public void Show(TableSpec spec, ITableSource source, string selectedId)
         {
             bool same = ReferenceEquals(spec, Spec) && ReferenceEquals(source, _from);
@@ -164,7 +149,6 @@ namespace RealLifeOverhaul.GameUi
         {
             SelectRow(null, null);
         }
-
 
         // The rows in the model's order, then the sentence for a filter that left nothing, or the totals.
         private void Fill()
@@ -289,10 +273,8 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// A row: the game's MyEmployees row made plain text cells (AppShell.PrepareRow), written from a TableRow; the table's
-    /// specification sets which cells show and how wide, so one row serves every tab. The game colours the selected row
-    /// and leaves red and yellow alone (BaTableCellView.VisualizeSelected), so emphasis is in the game's own colours.
-    /// Costs nothing a frame of its own.
+    /// A row: the game's MyEmployees row made plain text cells (AppShell.PrepareRow), written from a TableRow; one row
+    /// serves every tab, coloured in the game's own colours. Costs nothing a frame of its own.
     /// </summary>
     public sealed class DataCellView : BaTableCellView<TableRow>
     {

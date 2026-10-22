@@ -5,12 +5,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A <see cref="WorldPanel"/> over a door or a desk while the player is near it, with what every such place needs: it
-    /// stands over the place (or the player's head while the place is behind the camera), is asked for from the owner's
-    /// timer and taken down again, and the frame a button's key ran is known (<see cref="TakesKey"/>, read through the
-    /// feature's TakesInteractKey) so the mod's own interact key does nothing else with it. One log line when the game
-    /// accepts or refuses it and when it goes. Measured from its place by <see cref="PanelPickRules"/>. Costs nothing a
-    /// frame: the owner calls <see cref="Show"/> from its once-a-second timer.
+    /// A <see cref="WorldPanel"/> over a door or a desk while the player is near, shown from the owner's timer, with the frame
+    /// a button's key ran known (<see cref="TakesKey"/>) so the mod's own interact key does nothing else with it, and a log
+    /// line when the game takes or refuses it. Costs nothing a frame.
     /// </summary>
     public sealed class DoorPanel
     {
@@ -54,10 +51,7 @@ namespace RealLifeOverhaul.GameUi
             };
         }
 
-        /// <summary>
-        /// Puts the panel <paramref name="up"/> metres over a place, or over the player when the place is behind the camera.
-        /// <paramref name="what"/> builds the log line only when the state changes.
-        /// </summary>
+        /// <summary>The panel <paramref name="up"/> metres over a place, or over the player when it is behind the camera; <paramref name="what"/> builds the log line.</summary>
         public bool Show(Vector3 place, Vector3 player, float up, Func<string> what)
         {
             Panel.For(place);

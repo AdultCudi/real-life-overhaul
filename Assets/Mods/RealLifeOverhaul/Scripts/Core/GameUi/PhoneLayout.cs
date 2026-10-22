@@ -4,12 +4,9 @@ using System.Text;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The player's own home screen: the apps they moved and where to, over PhoneLayoutRules.Defaults. Only a move away
-    /// from an app's usual place is kept, so an untouched layout is empty and an app added later starts in its folder.
-    /// Written as one line, "1|RealLifeStocks=home|RealLifePlanner=life" (the version, then each move in order). A move of
-    /// an app this version lacks is kept for when it comes; a part this version cannot read (a later folder) is kept and
-    /// written back after the rest, so going between versions loses nothing. Game-free; read once a session and written
-    /// only on a move. Checked offline (ContractCheck PhoneLayoutChecks).
+    /// The player's own home screen: only the moves away from an app's usual place, as one line
+    /// ("1|RealLifeStocks=home|RealLifePlanner=life"); a part this version cannot read is kept and written back, so going
+    /// between versions loses nothing. Game-free; checked offline (ContractCheck PhoneLayoutChecks).
     /// </summary>
     public sealed class PhoneLayout
     {
@@ -34,16 +31,12 @@ namespace RealLifeOverhaul.GameUi
             return at >= 0 ? _places[at] : PhoneLayoutRules.DefaultOf(id);
         }
 
-        /// <summary>Whether the player moved this app from its usual place.</summary>
         public bool Moved(string id)
         {
             return Find(id) >= 0;
         }
 
-        /// <summary>
-        /// Puts an app in a place; back at its usual place the move is forgotten. False, and nothing changed, for a place this
-        /// version lacks, an app with no name, or a layout holding <see cref="MostMoves"/> already.
-        /// </summary>
+        /// <summary>Puts an app in a place, forgotten at its usual one; false for an unknown place, no name, or <see cref="MostMoves"/> reached.</summary>
         public bool Move(string id, int place)
         {
             if (string.IsNullOrEmpty(id) || !PhoneLayoutRules.Known(place) || id.IndexOf(Parts) >= 0 || id.IndexOf(Sign) >= 0)
@@ -82,7 +75,6 @@ namespace RealLifeOverhaul.GameUi
             _kept.Clear();
         }
 
-        /// <summary>The layout as its one line.</summary>
         public string Write()
         {
             var line = new StringBuilder(16 + 32 * (_ids.Count + _kept.Count));
@@ -98,10 +90,7 @@ namespace RealLifeOverhaul.GameUi
             return line.ToString();
         }
 
-        /// <summary>
-        /// A layout from its line; empty for none. A part that is no move, or names a place this version lacks, is kept as read;
-        /// a line of another version is kept whole as its only part.
-        /// </summary>
+        /// <summary>A layout from its line; parts this version cannot read, or a whole line of another version, are kept as read.</summary>
         public static PhoneLayout Read(string line)
         {
             var layout = new PhoneLayout();

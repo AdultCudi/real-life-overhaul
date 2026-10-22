@@ -1,12 +1,9 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Where the buttons of a row of the apps' white box stand (InfoBox.ButtonRow, laid out by ButtonFlow): every button the
-    /// page writes, in order, none dropped. They go on one line while their words fit, else on as many lines as they need,
-    /// each from the box's left edge to its right with the game's gap of 20 between buttons and lines. Buttons that all fit
-    /// an equal share of a line share it equally, as the game's row did; otherwise each has its need and an equal part of
-    /// the rest. A button wider than the line has a line of its own, its words ending in the game's dots. Game-free, nothing
-    /// allocated; used only when a row is laid out. Checked offline (ContractCheck ButtonChecks).
+    /// Where the buttons of a row of the white box stand: in order on as many lines as their words need, each line from the
+    /// box's left edge to its right with the game's gap of 20, shared equally where they all fit, the rest shared out where
+    /// not. Game-free; checked offline (ContractCheck ButtonChecks).
     /// </summary>
     public static class ButtonRules
     {
@@ -23,12 +20,7 @@ namespace RealLifeOverhaul.GameUi
             return need > Least ? need : Least;
         }
 
-        /// <summary>
-        /// Places <paramref name="count"/> buttons of these needs on lines of this width: each one's line (from 0), left edge and
-        /// width into the arrays given (each at least <paramref name="count"/> long). Returns the number of lines, 0 for no
-        /// buttons. A width of nothing (0, below, NaN) gives each button a line of its own, of no width.
-        /// </summary>
-        /// </summary>
+        /// <summary>Writes each button's line, left edge and width into the arrays; returns the lines (0 for none). No width puts each on a line of its own.</summary>
         public static int Place(float width, float[] needs, int count, int[] line, float[] x, float[] w)
         {
             if (count <= 0 || needs == null || line == null || x == null || w == null)

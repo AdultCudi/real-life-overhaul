@@ -6,15 +6,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// One of the game's own bars for a quantity or a timing of the mod's: a copy of the top bar's energy bar (the pill
-    /// StatBarBackground at 30 % black with the same pill filled inside), made asleep, without its button, hover and
-    /// picture. It shows a quantity (<see cref="Fill"/>, as the game's needs are) or a timing (<see cref="Zone"/> in the
-    /// game's green with its better part, and a running <see cref="Mark"/>); all of it is that one sprite of the game's.
-    ///
-    /// Costs nothing a frame of its own. Fill and Mark may be called every frame: two comparisons, and one number written
-    /// only when the value moved a visible step (<see cref="BarRule"/>). The bar has a canvas of its own, so its panel is
-    /// not drawn again for it. Keep it at the game's size (412 x 56): the sprite has no border. Without the game's top bar
-    /// <see cref="Make"/> logs one "Game UI:" line and returns null, and the owner does without.
+    /// One of the game's own bars for a quantity (<see cref="Fill"/>) or a timing (<see cref="Zone"/>, <see cref="Mark"/>): a
+    /// copy of the top bar's energy bar, with a canvas of its own. Fill and Mark may be called every frame: two comparisons,
+    /// and a write only for a visible step (<see cref="BarRule"/>). Keep the game's size (412 x 56): the sprite has no
+    /// border. <see cref="Make"/> returns null, with one log line, without the game's top bar.
     /// </summary>
     public sealed class GameBar
     {
@@ -54,7 +49,6 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>What the bar shows now, 0 to 1 (the marker while a timing, else the fill); below zero while nothing was written.</summary>
         public float Value => _timing ? _markShown : _shown;
 
-        /// <summary>True while the bar shows a zone and a marker.</summary>
         public bool Timing => _timing;
 
         /// <summary>A bar hung on <paramref name="parent"/>, off, in its middle. Null, with one log line, without the game's top bar to copy.</summary>
@@ -193,10 +187,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// The bar as a timing: a zone about <paramref name="centre"/>, <paramref name="width"/> wide, and in it a better part
-        /// <paramref name="bestWidth"/> wide (0: none), in shares of the bar. Written only when a figure differs.
-        /// </summary>
+        /// <summary>The bar as a timing: a zone about <paramref name="centre"/> with a better part inside (shares of the bar); written only when a figure differs.</summary>
         public void Zone(float centre, float width, float bestWidth)
         {
             if (_root == null)

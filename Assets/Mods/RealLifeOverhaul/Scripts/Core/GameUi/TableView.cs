@@ -7,16 +7,9 @@ using Localizor;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The thin layer between a table's model (TableModel) and the game's own controls on the copy of MyEmployees
-    /// (AppShell): its header buttons with their two arrows, and its drop-down over the table. One per app.
-    ///
-    ///   view.Begin(spec, rows)    the table being written: its columns go on the headers
-    ///   view.Model.Set / Kind     what each row gives each column, and its kind
-    ///   view.Apply()              order, filter and totals worked out; arrows and drop-downs follow
-    ///   view.Changed              the player clicked a header or picked a kind: show the rows again
-    ///
-    /// Runs only when a table is written or clicked. Without the game's header buttons or drop-down the table has plain
-    /// headers and no filter, with one line in Player.log, and the app works as ever.
+    /// The layer between a table's model (TableModel) and the game's own header buttons and drop-down on the copy of
+    /// MyEmployees, one per app: Begin, the model's figures, Apply, and Changed when the player clicks. Without the game's
+    /// controls the table has plain headers and no filter.
     /// </summary>
     public sealed class TableView
     {

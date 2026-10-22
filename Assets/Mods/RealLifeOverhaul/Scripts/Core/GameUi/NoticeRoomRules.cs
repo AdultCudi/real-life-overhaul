@@ -1,20 +1,14 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// How far the game's stack of notifications (top right, under the top bar) goes down to start under the mod's info panel
-    /// there (ShiftCard, a copy of the game's job panel). The game places its job panel and its notifications each by its own
-    /// canvas, with no rule for the two: so the panel stays where the game's job panel stands, and the stack starts a gap under
-    /// it while it shows. Game-free arithmetic on screen pixels, y upwards, nothing allocated; checked offline (NavCheck PolishCheck).
+    /// How far the game's stack of notifications goes down to start under the mod's info panel in the top right, which
+    /// stands where the game's job panel does. Game-free, screen pixels y upwards; checked offline (NavCheck PolishCheck).
     /// </summary>
     public static class NoticeRoomRules
     {
         public const float Gap = 16f;   // canvas units between the panel's foot and the first notification: the gap ShiftCard keeps under the game's job panel
 
-        /// <summary>
-        /// Canvas units the stack goes down from its own place (<paramref name="stackTop"/>, screen pixels): none while no panel
-        /// shows (<paramref name="panelBottom"/>, the lowest panel foot in screen pixels, NaN) or the stack is already a gap under
-        /// it; else the overlap and the gap, in the stack's units (<paramref name="scale"/>: screen pixels to one, above 0).
-        /// </summary>
+        /// <summary>Canvas units the stack goes down: none with no panel (NaN) or room already; else the overlap and the gap.</summary>
         public static float Drop(float stackTop, float panelBottom, float scale)
         {
             if (float.IsNaN(panelBottom) || float.IsNaN(stackTop) || !(scale > 0f))

@@ -11,23 +11,11 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Pages for the HUD phone's grid (two columns, four rows: the game's own eight apps fill it) and for the full menu's
-    /// row of app buttons (OnStrip), whose centred row would otherwise grow under the money and the date and off the screen.
-    /// A page is a set number of tiles (PagerRules): eight on the phone; on the row as many as fit between where the game's
-    /// row begins and the money's box, worked out again only when the bar's width changes. The game's apps come first in
-    /// their order, then the mod's in one fixed order, then other mods'. With pages, every page's last tile is the More apps
-    /// button (a copy of the game's app button), which turns to the next page; the wheel turns them too. On the phone the
-    /// button's badge counts the badges up on the other pages.
-    ///
-    /// With the option App folders on, the mod's apps stand in five folders and a dock (PhoneLayoutRules, PhoneFolders,
-    /// PhoneMove); every button is in exactly one place (ContractCheck PhoneLayoutChecks).
-    ///
-    /// What a pager does is written on the grid itself (PageMark, RowAsBuilt, one More apps object under the grid's parent),
-    /// so any pager after it carries on. Another mod paging the same grid (a script on it that is not the game's or the
-    /// mod's, or a hidden button shown again) makes this one step aside for good and show everything.
-    ///
-    /// Costs nothing a frame: it acts when the grid is shown, its children change, a button is shown or hidden (one pass
-    /// before the canvas is drawn), its box changes size, on the button, the wheel, a folder's tile and a layout change.
+    /// Pages for the HUD phone's grid and the full menu's row of app buttons (PagerRules), which the mod's apps would
+    /// overflow: the game's apps first, the mod's in one order, other mods' after, a More apps button on every page's last
+    /// tile; with the option App folders the mod's apps in folders and a dock (PhoneLayoutRules). What it does is written on
+    /// the grid (PageMark, RowAsBuilt) so any later pager carries on, and it steps aside for good for another mod paging the
+    /// same grid. Costs nothing a frame: it acts on the grid's events, at most one pass before the canvas is drawn.
     /// </summary>
     public sealed partial class PhoneGridPager : MonoBehaviour, IScrollHandler
     {
@@ -197,10 +185,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Pages for the full menu's row. <paramref name="rightData"/> (the money, date and time) is read only for the
-        /// diagnostics line; <paramref name="dot"/> is not used.
-        /// </summary>
+        /// <summary>Pages for the full menu's row; <paramref name="rightData"/> is read only for the diagnostics line, <paramref name="dot"/> not at all.</summary>
         public static PhoneGridPager OnStrip(Transform strip, Transform template, Sprite dot, RectTransform rightData)
         {
             if (strip == null || !(strip is RectTransform) || strip.GetComponent<HorizontalLayoutGroup>() == null)
@@ -304,10 +289,7 @@ namespace RealLifeOverhaul.GameUi
             Changed();
         }
 
-        /// <summary>
-        /// A button was shown or hidden by any hand (its PageMark says so), which is no change of the grid's children: one
-        /// pass before the canvas is drawn, however many changed.
-        /// </summary>
+        /// <summary>A button was shown or hidden by any hand (its PageMark): one pass before the canvas is drawn, however many changed.</summary>
         internal void Changed()
         {
             if (_working || _aside || _pending || !_ready || !isActiveAndEnabled)
@@ -543,10 +525,7 @@ namespace RealLifeOverhaul.GameUi
             DropFolders();
         }
 
-        /// <summary>
-        /// Every button is in exactly one place (the view, the dock or one folder's page) and each folder's tile stands on the
-        /// home screen while it has apps, worked out again from the rules: "PASS" or what is wrong, for the log and the test.
-        /// </summary>
+        /// <summary>"PASS" when every button is in exactly one place and each folder's tile stands while it has apps; else what is wrong.</summary>
         public string Check()
         {
             int count = _apps.Count;

@@ -11,11 +11,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The frame of a phone app, copied asleep from the game's MyEmployees app ("Layout 30-70"): a headline, the white box
-    /// on the left, and on the right two tabs over a table with column headers, the game's virtual scroller and its bar.
-    /// The scripts that make it MyEmployees are taken off, what is not needed destroyed, and the rest handed out by name;
-    /// rows are copies of its table's row prefab. MyEmployees is the one app with every part an agenda needs, and its
-    /// table is the game's BaTable, which any class can derive from (docs/game-ui.md).
+    /// The frame of a phone app, copied asleep from the game's MyEmployees app: a headline, the white box on the left, two
+    /// tabs over a table with headers and the game's scroller on the right, without the scripts that make it MyEmployees.
+    /// It has every part an agenda needs, and its BaTable can be derived from (docs/game-ui.md).
     /// </summary>
     public sealed class AppShell
     {
@@ -303,10 +301,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// The table's columns from a specification: the first header cells of the game's, each with its title and width, the
-        /// button off where a column does not sort. May be called again for another table of the app.
-        /// </summary>
+        /// <summary>The table's columns from a specification on the game's header cells, the button off where one does not sort; again for another table.</summary>
         public bool SetColumns(TableSpec spec)
         {
             var layout = Headers.GetComponent<HorizontalLayoutGroup>();
@@ -395,11 +390,7 @@ namespace RealLifeOverhaul.GameUi
             return _headCount >= spec.Count && (CanSort || spec.Sortable == 0);
         }
 
-        /// <summary>
-        /// The game's employee row made a row of plain text cells: its first cell (the name, a text with a width of its own)
-        /// copied as "Cell0", "Cell1"..., everything else but the background gone. False, with one line in Player.log, if the
-        /// row is not built as expected.
-        /// </summary>
+        /// <summary>The game's employee row made plain text cells, "Cell0", "Cell1"..., copies of its name; false, with one log line, if it is not as expected.</summary>
         public static bool PrepareRow(GameObject row, int cells, string app)
         {
             Transform t = row != null ? row.transform : null;
@@ -456,11 +447,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// More tabs than MyEmployees' two: the first keeps its rounded left corner and the last the right; each between is a
-        /// copy of the first without its picture, which a sliced image draws as a square-cornered tab. Call it while the app
-        /// is asleep, before the tabs get their words and clicks. False, with one line in Player.log, if a copy is not a tab.
-        /// </summary>
+        /// <summary>More tabs than two: middle ones are pictureless copies of the first (square corners). Call while asleep; false, with a log line, on failure.</summary>
         public bool SetTabCount(int count)
         {
             if (count <= 2 || Tabs == null || Tabs.Length != 2)

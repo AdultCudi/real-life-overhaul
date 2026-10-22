@@ -8,11 +8,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The game's F1 help screen (HelpSystem, Canvases/HelpSystem/Container) copied asleep as a window of the mod's: its
-    /// frame and top bar, the round back and forward buttons, the search box, the list of categories on the left and the
-    /// scrolling page on the right. Every script that drove the help is taken off and the rest painted in the mod's dark
-    /// colours (DarkLook); the game's own help and F1 are left alone. Costs nothing a frame of its own; the game's scroll
-    /// views run only while the window shows.
+    /// The game's F1 help screen copied asleep as a window of the mod's, without the scripts that drove the help and painted
+    /// in the dark colours (DarkLook); the game's own help is left alone. Costs nothing a frame of its own.
     /// </summary>
     public sealed class HelpFrame
     {
@@ -402,7 +399,6 @@ namespace RealLifeOverhaul.GameUi
             SetOpen(false);
         }
 
-        /// <summary>A page of this category, at the end of its pages.</summary>
         public HelpLink Add(string name)
         {
             GameObject copy = UnityEngine.Object.Instantiate(_link, _pages, false);

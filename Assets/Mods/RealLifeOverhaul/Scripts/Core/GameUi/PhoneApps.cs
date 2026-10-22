@@ -13,17 +13,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// One app on the game's phone: a button on the HUD phone, a button in the full menu's top bar, and a panel among the
-    /// game's app panels, all copies of the game's. The game opens an app by switching every child of
-    /// FullMenu.appsContainer off and the one of the app's name on (FullMenu.SelectApp); Open does the same for a panel the
-    /// game does not know by name, and the game's own loop switches it off like any other.
-    ///
-    /// The panel (a copy of MyEmployees, a few hundred objects) is built the first time the app is opened (<see cref="Ready"/>),
-    /// under the paused menu rather than in the first frames after a load. Until then an app's page writes nothing; an app
-    /// whose panel cannot be built is taken off the phone at that click, with the builder's line in Player.log.
-    ///
-    /// Opening and the build are timed under "Apps: (id) opened" and "Apps: (id) built" (HotSpots). Costs nothing a frame.
-    /// Every app is known by its id while on the phone (OpenById, TitleOf), so another app can open it as its button does.
+    /// One app on the game's phone: a button on each phone and a panel among the game's app panels, all copies of the
+    /// game's; Open switches the panels as FullMenu.SelectApp does. The panel (a copy of MyEmployees) is built when the
+    /// app is first opened (<see cref="Ready"/>). Opening and the build are timed (HotSpots); costs nothing a frame.
     /// </summary>
     public sealed class PhoneApp
     {
@@ -57,10 +49,7 @@ namespace RealLifeOverhaul.GameUi
             _hotBuilt = HotSpots.Slot("Apps: " + def.Id + " built");
         }
 
-        /// <summary>
-        /// The game's phone can take an app now: its parts are there and the full menu has made its buttons. Every app's
-        /// install asks this before making its page. A look down the full menu's buttons: at most once a second, until on.
-        /// </summary>
+        /// <summary>The game's phone can take an app: its parts are there and the full menu made its buttons. At most once a second until true.</summary>
         public static bool PhoneUp
         {
             get
@@ -76,10 +65,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Puts the app on the phone. Null if the phone is not there yet (<paramref name="tryAgain"/>) or is not built as
-        /// expected (one line in Player.log; nothing is left behind).
-        /// </summary>
+        /// <summary>Puts the app on the phone; null if the phone is not there yet (<paramref name="tryAgain"/>) or not as expected.</summary>
         public static PhoneApp Install(PhoneAppDef def, out bool tryAgain)
         {
             tryAgain = true;
@@ -211,10 +197,7 @@ namespace RealLifeOverhaul.GameUi
             return false;
         }
 
-        /// <summary>
-        /// The app's panel is there, built now on the first call (the app is being opened). False if it cannot be (the builder
-        /// has said why in Player.log, and the app is taken off the phone), or it was taken off already.
-        /// </summary>
+        /// <summary>The app's panel is there, built on the first call; false if it cannot be (the app is then taken off the phone).</summary>
         public bool Ready()
         {
             if (!_pending)
@@ -311,10 +294,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Opens the mod's app of that id as its button does. False, with nothing done, when no app of that id is on the phone
-        /// (its option off, its feature stopped, or the phone not built as expected).
-        /// </summary>
+        /// <summary>Opens the mod's app of that id as its button does; false, with nothing done, when it is not on the phone.</summary>
         public static bool OpenById(string id)
         {
             if (string.IsNullOrEmpty(id) || !ById.TryGetValue(id, out PhoneApp app) || app == null || !app.Installed)
@@ -363,11 +343,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Opens the app as the game opens its own (SmartphoneUI.OpenApp, FullMenu.ShowApp, FullMenu.SelectApp). Each game step
-        /// before the panel comes on is a method of its own, so a game lacking what one needs goes without that step only
-        /// (Core/GameMembers). A click that opens nothing says why in Player.log, once per app a session.
-        /// </summary>
+        /// <summary>Opens the app as the game opens its own, each game step in a method of its own; a click that opens nothing is logged once per app.</summary>
         public void Open()
         {
             using var hotSpot = HotSpots.Time(_hotOpened);
@@ -642,10 +618,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Takes everything this app added off the phone. Safe twice, and after the game's interface has gone. The pages are
-        /// shared by every app on them: they stay and page what is left.
-        /// </summary>
+        /// <summary>Takes everything this app added off the phone; safe twice and after the interface has gone. The shared pages stay.</summary>
         public void Remove()
         {
             if (_def != null && _def.Id != null && ById.TryGetValue(_def.Id, out PhoneApp known) && known == this)

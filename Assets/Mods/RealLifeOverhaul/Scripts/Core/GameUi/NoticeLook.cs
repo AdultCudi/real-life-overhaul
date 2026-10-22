@@ -11,24 +11,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The mod's notifications told apart from the game's at a glance, in the game's own toast and list: each carries a
-    /// picture of what it is about (<see cref="NoticeKinds"/>) on a disc in the mod's colour where the game's carry theirs.
-    /// The game's and other mods' notifications are left as the game draws them.
-    ///
-    /// The game (UI.Notification): NotificationsUI.ShowNotification copies one of four templates by type into its
-    /// container, the copy's Text/Image its picture; NotificationListCellView.SetData switches on the one child of a row's
-    /// Icon named after the type. The look goes on those objects as the game makes them:
-    /// - a toast: on Notifications.onShow, after the game's toast maker (joined again at its end if something joined
-    ///   after), the copy just made gets the disc and the kind's picture; copies are destroyed after each notification,
-    ///   so nothing needs putting back;
-    /// - a list row: on the scroller's cellViewVisibilityChanged, raised right after the game fills a row; rows are reused,
-    ///   so the mod's get the disc and the picture as one more child of Icon (which SetData switches off for the game's),
-    ///   and any other row gets the game's white disc back.
-    /// Pictures are the game's where one fits (<see cref="GameSprites"/>), else the mod's glyphs (<see cref="MapPlaces.Glyph"/>).
-    /// Nothing is sent: a Going Public guest sees the look on what its own game shows.
-    ///
-    /// Costs nothing a frame (no Update). A notification: a prefix test of its key, and for the mod's a walk of the kinds
-    /// table and a few writes on the toast; a row in view the same, plus a look through its icon's children.
+    /// The mod's notifications told apart at a glance in the game's own toast and list: a picture of their kind
+    /// (<see cref="NoticeKinds"/>) on a disc in the mod's colour; the game's and other mods' are left alone. The look goes on
+    /// each toast as the game makes it (Notifications.onShow, joined last) and on each list row as the scroller fills it,
+    /// reused rows of the game's getting their white disc back. Nothing is sent. Costs nothing a frame.
     /// </summary>
     public sealed class NoticeLook : MonoBehaviour
     {

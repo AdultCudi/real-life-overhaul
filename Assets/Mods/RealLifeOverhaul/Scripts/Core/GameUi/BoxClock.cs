@@ -1,18 +1,15 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The white box's own time on a page, for its self-check ("Info box check"). Between the box's Clear and Done the app
-    /// does its own work too (the Settings app compares every option with the presets), which a Clear-to-Done time blamed on
-    /// the box. Here only the time inside the box's own calls counts: each call enters and leaves, one made inside another is
-    /// part of the outer, and the time between calls is the page's. Game-free arithmetic on the timestamps given; checked
-    /// offline (ContractCheck BoxClockChecks). Costs two comparisons and an addition a call, nothing a frame.
+    /// The white box's own time on a page, for its self-check: only the time inside the box's calls, the outermost of nested
+    /// ones, so the app's own work between Clear and Done is not blamed on the box. Game-free; checked offline
+    /// (ContractCheck BoxClockChecks). Two comparisons and an addition a call.
     /// </summary>
     public sealed class BoxClock
     {
         private int _depth;
         private long _began, _entered, _own;
 
-        /// <summary>A page begins: nothing of the box's counted yet.</summary>
         public void Begin(long now)
         {
             _began = now;

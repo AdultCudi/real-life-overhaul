@@ -8,23 +8,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The white box the game shows one employee in (MyEmployees, "Left/WhiteBox"), as a page written again and again.
-    /// Its own parts are kept asleep as templates and copied when asked for:
-    ///
-    ///   title      EmployeePersonalData/EmployeeName          the employee's name
-    ///   line       EmployeePersonalData/EmployeeInfoRow1/Age  "Age: 31"
-    ///   headline   CurrentBusinessHeadline                    a word on a grey rule
-    ///   switch     Demands/DemandTemplate                     a demand's name and its tick box
-    ///   selector   AssignedAddress                            the arrows either side of an assigned business
-    ///   buttons    Buttons                                    the action buttons, laid out by ButtonFlow
-    ///
-    /// The box's own layout group stacks what is added. A slider comes from the settings menu (InfoBox.Slider). On top
-    /// sits the mod's look (InfoBox.Look, InfoBox.Parts, LookRules): a header in the app's colour, sections, rows,
-    /// meters, ticks, notes and the Guide's foot, all copies of templates made once in From.
-    ///
-    /// Parts are reused: Clear lays the parts of the box's own kinds aside among the templates and the next page takes them
-    /// back in order, each first set back as a new copy would be (<see cref="Restore"/>). Pictures, chips and anything
-    /// written into another parent are made and destroyed each page. A page is written only on a click; nothing runs a frame.
+    /// The white box the game shows one employee in (MyEmployees, "Left/WhiteBox") as a page written again and again. Its
+    /// own parts (title, line, headline, switch, selector, buttons) are kept asleep as templates; the mod's look (InfoBox.Look,
+    /// InfoBox.Parts, LookRules) is copies of templates made once in From, reused from page to page (InfoBox.Keep). A page
+    /// is written only on a click.
     /// </summary>
     public sealed partial class InfoBox
     {
@@ -64,10 +51,7 @@ namespace RealLifeOverhaul.GameUi
             return box;
         }
 
-        /// <summary>
-        /// The same parts, written into another object that lays out its children (a scroll view's content, so a long page
-        /// scrolls). The white box copy is left with its background only. Null if the parts no page can do without are missing.
-        /// </summary>
+        /// <summary>The same parts written into an object that lays out its children (a scroll view's content, so a long page scrolls).</summary>
         public static InfoBox Into(Transform whiteBox, Transform templates, Transform box)
         {
             InfoBox made = box != null ? From(whiteBox, templates) : null;
@@ -272,10 +256,7 @@ namespace RealLifeOverhaul.GameUi
             return title.GetComponent<TMP_Text>();
         }
 
-        /// <summary>
-        /// A line of text. An old "Label <b>value</b>" line (FinanceText.Pair, the game's form) is written as a row, so a page
-        /// not yet written with rows reads as one that is.
-        /// </summary>
+        /// <summary>A line of text; an old "Label <b>value</b>" line is written as a row.</summary>
         public TMP_Text Line(string words)
         {
             using var own = Timed();
@@ -300,10 +281,7 @@ namespace RealLifeOverhaul.GameUi
             return line.GetComponent<TMP_Text>();
         }
 
-        /// <summary>
-        /// A picture (a post's thumbnail) at a width and its texture's shape, never taller than <paramref name="most"/>. The
-        /// texture stays the caller's; the row goes with the page.
-        /// </summary>
+        /// <summary>A picture (a post's thumbnail) at a width, never taller than <paramref name="most"/>; the texture stays the caller's.</summary>
         public RawImage Picture(Texture texture, float width, float most)
         {
             using var own = Timed();
@@ -382,10 +360,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        /// <summary>
-        /// A previous/next selector over a fixed number of choices; <paramref name="text"/> gives a choice's words. It does
-        /// not wrap round: the arrow at either end goes grey.
-        /// </summary>
+        /// <summary>A previous/next selector over a fixed number of choices; it does not wrap round: the arrow at either end goes grey.</summary>
         public bool Selector(int count, int index, Func<int, string> text, Action<int> changed)
         {
             return Selector(count, index, text, changed, null);
@@ -454,10 +429,7 @@ namespace RealLifeOverhaul.GameUi
             return null;
         }
 
-        /// <summary>
-        /// A row of action buttons, in the box or anywhere else. Kinds: 0 positive, 1 negative, 2 additional; each button a
-        /// page writes shows, as many of a kind as written, laid out by ButtonFlow in order on as many lines as they need.
-        /// </summary>
+        /// <summary>A row of action buttons (kinds 0 positive, 1 negative, 2 additional), laid out by ButtonFlow on as many lines as needed.</summary>
         public Transform ButtonRow(Transform parent = null)
         {
             using var own = Timed();
@@ -488,10 +460,7 @@ namespace RealLifeOverhaul.GameUi
 
         public const int Positive = 0, Negative = 1, Additional = 2;
 
-        /// <summary>
-        /// Shows a button of a row with its word and click: the kind's own button, or a copy beside it for a further one of the
-        /// kind. Written again with the same kind and word, it is the same button. A row with fewer kinds uses its last.
-        /// </summary>
+        /// <summary>Shows a button of a row: the kind's own, or a copy beside it for a further one; the same kind and word again is the same button.</summary>
         public static Button Button(Transform row, int kind, string key, Action click)
         {
             using var own = TimedWriting();
@@ -519,10 +488,7 @@ namespace RealLifeOverhaul.GameUi
             return button;
         }
 
-        /// <summary>
-        /// How the page fits, for the log: the height it asks for against the box's (the box does not scroll). Works the
-        /// layout out at once: only where a line is being written anyway.
-        /// </summary>
+        /// <summary>For the log: the height the page asks for against the box's. Works the layout out at once.</summary>
         public string Fit()
         {
             var rect = (RectTransform)_box;

@@ -4,17 +4,12 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Where the mod's panels over a place are offered, each with its reach: subway entrances, bus stops, bike places,
-    /// kiosks. Each feature names its own once (<see cref="Set"/>), and a person put out to wait for the player stands clear
-    /// of them where the street allows (<see cref="PanelPickRules.Pick"/>), so nothing else wants the game's box there.
-    /// Costs nothing a frame: <see cref="Near"/> is asked when a person is put out to wait.
+    /// Where the mod's panels over a place are offered, with their reach, so a person put out to wait for the player stands
+    /// clear of them (<see cref="PanelPickRules.Pick"/>). Each feature names its own (<see cref="Set"/>). Costs nothing a frame.
     /// </summary>
     public static class PanelPlaces
     {
-        /// <summary>
-        /// Adds the places within <paramref name="within"/> metres on the flat of <paramref name="around"/> to the arrays from
-        /// <paramref name="count"/> on, never beyond their length; returns the new count.
-        /// </summary>
+        /// <summary>Adds the places within <paramref name="within"/> metres of <paramref name="around"/> to the arrays from <paramref name="count"/>; returns the new count.</summary>
         public delegate int Finder(Vector3 around, float within, float[] x, float[] z, float[] reach, int count);
 
         private const int Most = 8;   // kinds of place, one finder each

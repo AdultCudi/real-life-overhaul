@@ -1,15 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
-using BAModAPI;
-using BigAmbitions.InputSystem;
-using Localizor.LanguageChangeEvent;
-using TMPro;
 using UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.GameUi
 {

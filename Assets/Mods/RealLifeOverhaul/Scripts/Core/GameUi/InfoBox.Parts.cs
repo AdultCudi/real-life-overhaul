@@ -10,11 +10,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The box's own parts as a page writes them: Header, Subtitle, Chip; Section, EndSection; Row, RowPair, Meter, Check;
-    /// Line in a tone, Note, GuideLink. Each is a copy of its template (InfoBox.Look) and its words; after a section's
-    /// heading the parts stand in until the next heading, a row of buttons, the foot or EndSection. With diagnostics on,
-    /// each page logs its parts and the time inside the box's own calls (<see cref="BoxClock"/>, opened by <see cref="Timed"/>)
-    /// beside the page's whole time from Clear to Done.
+    /// The box's own parts as a page writes them (Header, Section, Row, Meter, Check, Note and the rest), each a copy of its
+    /// template; after a section's heading the parts stand in until the next. With diagnostics on, each page logs the box's
+    /// own time (<see cref="BoxClock"/>, opened by <see cref="Timed"/>).
     /// </summary>
     public sealed partial class InfoBox
     {
@@ -96,10 +94,7 @@ namespace RealLifeOverhaul.GameUi
         // How far what is written now stands in: a section's indent, or nothing.
         private float Indent => _inSection ? LookRules.Indent : 0f;
 
-        /// <summary>
-        /// The page's header: the title under a short bar of the app's colour; Subtitle and Chip add to it. A second header
-        /// starts a new one, as a sub-page's title does.
-        /// </summary>
+        /// <summary>The page's header: the title under a short bar of the app's colour, to which Subtitle and Chip add; a second one starts anew.</summary>
         public TMP_Text Header(string words)
         {
             using var own = Timed();
@@ -123,10 +118,7 @@ namespace RealLifeOverhaul.GameUi
             return text;
         }
 
-        /// <summary>
-        /// A status chip right of the title: a short word in capitals on a pill of its tone (Plain: the app's colour). The
-        /// title wraps short of the chips; without a header the chip has a line of its own.
-        /// </summary>
+        /// <summary>A status chip right of the title, a short word on a pill of its tone (Plain: the app's colour); a line of its own without a header.</summary>
         public TMP_Text Chip(string words, CellTone tone = CellTone.Plain)
         {
             using var own = Timed();
@@ -165,10 +157,7 @@ namespace RealLifeOverhaul.GameUi
             return text;
         }
 
-        /// <summary>
-        /// A section: its heading (a locale key) in small capitals over a hairline. What follows stands in under it until the
-        /// next section, a row of buttons, the foot or EndSection.
-        /// </summary>
+        /// <summary>A section: its heading (a locale key) in small capitals over a hairline; what follows stands in under it.</summary>
         public Transform Section(string key)
         {
             using var own = Timed();
@@ -201,10 +190,7 @@ namespace RealLifeOverhaul.GameUi
             _headerText = null;
         }
 
-        /// <summary>
-        /// A row: the label (a locale key, its colon dropped) left in muted grey, the value right in the body's colour or a
-        /// tone. A row that does not fit one line has the value under its label.
-        /// </summary>
+        /// <summary>A row: the label (a locale key, colon dropped) left in grey, the value right, under the label when the two do not fit one line.</summary>
         public TMP_Text Row(string labelKey, string value, CellTone tone = CellTone.Plain)
         {
             using var own = Timed();
@@ -243,10 +229,7 @@ namespace RealLifeOverhaul.GameUi
             return _words.ToString();
         }
 
-        /// <summary>
-        /// Two rows side by side, each in half the line ("Label value  Label value"); one under the other where either does not
-        /// fit its half.
-        /// </summary>
+        /// <summary>Two rows side by side in half the line each; one under the other where either does not fit its half.</summary>
         public void RowPair(string labelKey, string value, string labelKey2, string value2)
         {
             using var own = Timed();
@@ -268,10 +251,7 @@ namespace RealLifeOverhaul.GameUi
             _headerText = null;
         }
 
-        /// <summary>
-        /// A meter: a row of its label and figure ("11 of 10") with a short bar under the figure filled to
-        /// <paramref name="share"/> (0 to 1) in a tone (Plain fills it green).
-        /// </summary>
+        /// <summary>A meter: a row of its label and figure over a short bar filled to <paramref name="share"/> (0 to 1) in a tone, Plain green.</summary>
         public TMP_Text Meter(string labelKey, float share, string figure, CellTone tone)
         {
             using var own = Timed();
@@ -347,10 +327,7 @@ namespace RealLifeOverhaul.GameUi
             return text;
         }
 
-        /// <summary>
-        /// The Guide's page that explains the app, small and muted at the foot under a hairline ("Guide: Professional jobs").
-        /// A note written after it stands with it.
-        /// </summary>
+        /// <summary>The Guide's page for the app at the foot under a hairline ("Guide: Professional jobs"); a note written after joins it.</summary>
         public TMP_Text GuideLink(string pageWords)
         {
             using var own = Timed();

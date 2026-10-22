@@ -20,11 +20,9 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// Which kind a notification of the mod's is, from its locale key alone; game-free (CatalogueCheck NoticeCheck). The game
-    /// saves a notification as its type, key, values and time, and its list draws every saved one again from those, so the
-    /// kind is read from the key each time: nothing new is saved, and one saved by any older version gets its picture too.
-    /// A key without the mod's prefix is <see cref="NoticeKind.None"/>. <see cref="Of"/> walks the table below (at most
-    /// about 120 short ordinal comparisons, no allocation), once per toast and per list row brought into view.
+    /// Which kind a notification of the mod's is, from its locale key alone, so nothing new is saved and old saved ones get
+    /// their picture too; <see cref="NoticeKind.None"/> for a key without the mod's prefix. Game-free; checked offline
+    /// (CatalogueCheck NoticeCheck).
     /// </summary>
     public static class NoticeKinds
     {

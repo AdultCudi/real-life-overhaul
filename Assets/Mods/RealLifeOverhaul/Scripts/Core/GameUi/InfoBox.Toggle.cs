@@ -6,10 +6,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A switch in the box as the Mod settings app has them: the settings menu's own row (OptionRows.SwitchRow, its switch
-    /// at the right), its name and the line under it in the box's words and colours. Made the first time a page asks and
-    /// kept from page to page (InfoBox.Keep); without the game's menu, false, and the page uses <see cref="Switch"/>.
-    /// Costs nothing a frame; the first such page copies the menu's rows once.
+    /// A switch in the box as the Mod settings app has them: the settings menu's own row (OptionRows.SwitchRow), made when a
+    /// page first asks; without it the page uses <see cref="Switch"/>.
     /// </summary>
     public sealed partial class InfoBox
     {

@@ -1,14 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using BAModAPI;
-using Localizor;
-using Localizor.LanguageChangeEvent;
-using UI;
 using UI.Smartphone;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.GameUi
 {
@@ -18,10 +10,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The name of its objects in the game's interface. The game opens an app by its panel's name, so it must be no AppName.</summary>
         public string Id;
         public string TitleKey;
-        /// <summary>
-        /// What the title's names ("{bank}") are filled with, as TextLocalizationComponent.Arguments takes them (a dictionary,
-        /// or an object with a field per name); null for a title without names. The title still follows a change of language.
-        /// </summary>
+        /// <summary>What the title's names ("{bank}") are filled with, as TextLocalizationComponent.Arguments takes them; null for none.</summary>
         public object TitleArguments;
         /// <summary>Given one of the game's app icons to model its picture on; null keeps the template's.</summary>
         public Func<Sprite, Sprite> Icon;

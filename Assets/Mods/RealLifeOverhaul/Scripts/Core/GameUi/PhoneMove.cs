@@ -10,11 +10,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Moving a mod app on the phone, as a long press does on a real phone: a right click on its HUD button (PhoneAppPress)
-    /// opens the game's own list window (DeskList) with an entry for each place it can go, the five folders, the home screen
-    /// and the dock; its own place is marked and cannot be picked, nor the dock while full. A pick moves it at once
-    /// (PhoneLayoutPrefs, kept on this computer) and both phones follow. Also the options page's reset and the two tests.
-    /// Costs nothing a frame; the list is filled when it opens.
+    /// Moving a mod app on the phone, as a long press does on a real phone: a right click on its HUD button opens the
+    /// game's own list window with each place it can go; a pick moves it at once and both phones follow. Also the options
+    /// page's reset and two tests. Costs nothing a frame.
     /// </summary>
     public static class PhoneMove
     {

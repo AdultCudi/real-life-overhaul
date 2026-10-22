@@ -19,10 +19,7 @@ namespace RealLifeOverhaul.GameUi
     {
         public static IModLogger Logger;
 
-        /// <summary>
-        /// An object switched off for good: what is copied into it runs no Awake or OnEnable, so a script can be taken off a
-        /// copy before it has done anything.
-        /// </summary>
+        /// <summary>An object switched off for good: a copy in it runs no Awake or OnEnable, so its scripts can be taken off first.</summary>
         public static Transform Dormant(Transform parent, string name)
         {
             var holder = new GameObject(name, typeof(RectTransform));
@@ -48,10 +45,7 @@ namespace RealLifeOverhaul.GameUi
             return copy;
         }
 
-        /// <summary>
-        /// Takes the game's own scripts off a sleeping copy but those <paramref name="keep"/> wants (they only draw or sound).
-        /// A script another one on the object requires is taken off after it.
-        /// </summary>
+        /// <summary>Takes the game's scripts off a sleeping copy but those <paramref name="keep"/> wants; a script another requires goes after it.</summary>
         public static void StripGameScripts(GameObject copy, Func<MonoBehaviour, bool> keep)
         {
             if (copy == null)
@@ -109,7 +103,6 @@ namespace RealLifeOverhaul.GameUi
             return wanted != null && wanted.IsAssignableFrom(actual);
         }
 
-        /// <summary>Destroys every child of a sleeping copy that is not one of those named.</summary>
         public static void KeepOnly(Transform parent, params string[] names)
         {
             if (parent == null)
@@ -153,11 +146,7 @@ namespace RealLifeOverhaul.GameUi
             return button;
         }
 
-        /// <summary>
-        /// Runs a click inside the guard of the class its code is written in (Core/Guard): nothing thrown reaches the game's
-        /// interface, a fault counts for that class, and a class switched off does nothing. Timed under that class and method
-        /// ("Click: FinanceApp.Build"), one look-up a click.
-        /// </summary>
+        /// <summary>Runs a click inside the guard of the class its code is in, timed under that class and method ("Click: FinanceApp.Build").</summary>
         public static void Safe(Action action)
         {
             if (action == null)
@@ -180,10 +169,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// A text given a translated line: through the game's own component where it has one (it follows a change of language),
-        /// else written once.
-        /// </summary>
+        /// <summary>A text given a translated line: through the game's component where it has one (it follows the language), else written once.</summary>
         public static void Key(Component text, string key)
         {
             if (text == null)
@@ -231,10 +217,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// A station list's entry (MapPicker, TravelList) made the list's one template, asleep: the game's other entries
-        /// destroyed, its label set for a name and a smaller line under it.
-        /// </summary>
+        /// <summary>A station list's entry made the list's one template, asleep: the game's other entries gone, its label set for two lines.</summary>
         internal static void EntryTemplate(Transform entry, Transform label)
         {
             Transform content = entry.parent;

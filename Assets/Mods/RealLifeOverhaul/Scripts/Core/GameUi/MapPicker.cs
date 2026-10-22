@@ -7,22 +7,15 @@ using Localizor.LanguageChangeEvent;
 using TMPro;
 using UI;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A choice of places on the open city map, as the game offers its subway stations there (SubwayStation.Interact).
-    /// The game's station window (CityMapSubwayStations) is copied asleep once per city without the subway's scripts and
-    /// stands where the game's does: the headline, the search field, the scrolling entries (a name, a smaller line, the
-    /// blue button) and Cancel. While it is up the map's filters and the mod's own places (<see cref="MapPlaces.Quiet"/>)
-    /// are put away. An entry with a place has one of the game's markers over it, the player's own place in the game's
-    /// red; pointing at an entry glides the map there after the game's delay, and a click on an entry or a marker picks it.
-    ///
-    /// The map pauses the game, so everything runs on the interface's clock. Costs nothing while closed; while open, one
-    /// script on the window looks once a frame whether the map is still open. Entries and markers are made once and reused.
+    /// A choice of places on the open city map, in a copy of the game's subway station window, with one of the game's
+    /// markers over each place; pointing glides the map there, a click picks. The map pauses the game, so it runs on the
+    /// interface's clock. Costs nothing while closed; while open, one look a frame whether the map is still open.
     /// </summary>
     public sealed partial class MapPicker
     {
@@ -247,10 +240,7 @@ namespace RealLifeOverhaul.GameUi
             Height(row, Mathf.Max(((RectTransform)_template.transform).sizeDelta.y, 34f + 30f * lines));
         }
 
-        /// <summary>
-        /// One entry: a name, a smaller line, the button's locale key and its place on the map (without one: no marker, and
-        /// pointing at it moves nothing).
-        /// </summary>
+        /// <summary>One entry: a name, a smaller line, the button's locale key and its place on the map (none: no marker).</summary>
         public void Add(int id, string name, string detail, string buttonKey, bool enabled, bool hasPlace, Vector3 place)
         {
             Row row = Entry(id, name, detail, buttonKey, enabled, hasPlace, place, false);
@@ -425,11 +415,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Opens the map over <paramref name="centre"/> with what was filled in, or shows it again while open. A click calls
-        /// <paramref name="onPick"/> with the id; it stays open until <see cref="Close"/>, the cancel key or anything else
-        /// closes the map. False if the game would not open its map now.
-        /// </summary>
+        /// <summary>Opens the map over <paramref name="centre"/> with what was filled in; a click calls <paramref name="onPick"/>. False if the game would not open it.</summary>
         public bool Open(Vector3 centre, Action<int> onPick, Action onClosed)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -513,7 +499,6 @@ namespace RealLifeOverhaul.GameUi
             Closed();
         }
 
-        /// <summary>The window and everything made for it, gone.</summary>
         public void Destroy()
         {
             if (IsOpen)

@@ -6,14 +6,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The layout of a row of buttons in the apps' white box (InfoBox.ButtonRow), in place of the game's one-line
-    /// HorizontalLayoutGroup. The game's row has one button per kind (positive, negative, additional), so a second button of
-    /// a kind would take the first's place, and buttons that did not fit were squeezed. Here a row shows every button its
-    /// page writes, in order: a kind's own button first, a copy (<see cref="Take"/>) for each further one, the copies gone
-    /// when the row is written again; ButtonRules places them on as many lines as the words need.
-    ///
-    /// Costs nothing a frame: the engine asks a layout only when something under it changed (a page written on a click),
-    /// then one measure of each button's words and arithmetic over those that show. Lists are kept and reused.
+    /// The layout of a row of buttons in the white box, in place of the game's one-line row, where a second button of a
+    /// kind took the first's place: every button a page writes shows, in order, a copy for each further one of a kind
+    /// (<see cref="Take"/>), on as many lines as ButtonRules needs. Costs nothing a frame: laid out only when a page changes.
     /// </summary>
     public sealed class ButtonFlow : LayoutGroup
     {
@@ -58,10 +53,7 @@ namespace RealLifeOverhaul.GameUi
             SetDirty();
         }
 
-        /// <summary>
-        /// The button a page writes with this kind and key: the one already written with both on this page, else the row's own
-        /// button of the kind if this page has not used it, else a new copy of it. A row with fewer kinds uses its last.
-        /// </summary>
+        /// <summary>The button for this kind and key: the one written with both this page, else the kind's own if unused, else a new copy of it.</summary>
         public Transform Take(int kind, string key)
         {
             for (int i = 0; i < _shown.Count; i++)

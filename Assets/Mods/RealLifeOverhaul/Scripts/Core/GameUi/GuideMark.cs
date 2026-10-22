@@ -7,22 +7,11 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A mark on a place that is no building, as the game marks a job's destination: its own direction guider (the one of
-    /// type JobDestination), which draws the marker, the arrow at the screen's edge, the distance and the name, and puts the
-    /// place on the city map. Nothing is drawn by the mod.
-    ///
-    /// The game has one such guider and the mod's jobs and outings use it too, so a mark takes it only while it is free or
-    /// its own, and takes off only what it put there; a course (<see cref="Ranked"/>: a driving test's checkpoints, a run's)
-    /// takes it from a mark that is not one, which has it back after. Whose the guider is follows
-    /// <see cref="GuideMarkRules.Ours"/>: it points at this mark's stand-in, no other mark took it since, and its words are
-    /// the very string this mark gave. <see cref="Hide"/> clears it whenever that holds, and never when it does not.
-    ///
-    /// A mark never outlives its owner: <see cref="Keep"/>, <see cref="While"/> and <see cref="Until"/> say what keeps it,
-    /// and the watch (<see cref="GuideMarkWatch"/>) takes one off once a second when its keeper is gone or stopped, its scene
-    /// is over or its time is up; all go when the city unloads (<see cref="HideAll"/>).
-    ///
-    /// Costs nothing a frame of the mod's: <see cref="Show"/> works only when the place or name changed (otherwise a few
-    /// compares and one reflected read of the guider's words); the game moves its own marker.
+    /// A mark on a place that is no building, on the game's own job destination guider (marker, edge arrow, distance, map).
+    /// The guider is shared with the game's jobs, so a mark takes it only while free (a course, <see cref="Ranked"/>, takes
+    /// it from a mark that is not one) and takes off only its own (<see cref="GuideMarkRules.Ours"/>). The watch
+    /// (<see cref="GuideMarkWatch"/>) takes a mark off once its keeper (<see cref="Keep"/>, <see cref="While"/>,
+    /// <see cref="Until"/>) is gone. Costs nothing a frame: <see cref="Show"/> works only when the place or name changed.
     /// </summary>
     public sealed class GuideMark : IGuideMarkEntry
     {
@@ -53,19 +42,12 @@ namespace RealLifeOverhaul.GameUi
             _owner = owner;
         }
 
-        /// <summary>
-        /// The latest Time.time (the game's scaled seconds) the owner can need the mark; 0 for no limit. Past it the mark is not
-        /// shown, and the watch takes it off whatever its owner does.
-        /// </summary>
+        /// <summary>The latest Time.time the owner can need the mark (0: no limit); past it the mark is not shown and the watch takes it off.</summary>
         public float Until { get; set; }
 
-        /// <summary>The mod's marks up at the moment.</summary>
         public static int Up => Book.Count;
 
-        /// <summary>
-        /// The component that looks after the mark: destroyed without taking it off, or stopped by the guard, and the watch
-        /// takes the mark off. Called once (Awake); returns this.
-        /// </summary>
+        /// <summary>The component that looks after the mark: destroyed or stopped by the guard, and the watch takes the mark off. Call once; returns this.</summary>
         public GuideMark Keep(Behaviour keeper)
         {
             _keeper = keeper;
@@ -74,10 +56,7 @@ namespace RealLifeOverhaul.GameUi
             return this;
         }
 
-        /// <summary>
-        /// The owner's test that what the mark is for goes on, asked by the watch once a second while it is up; no takes the
-        /// mark off. Make it once and keep it; returns this.
-        /// </summary>
+        /// <summary>The owner's test that what the mark is for goes on, asked once a second; no takes the mark off. Make it once; returns this.</summary>
         public GuideMark While(Func<bool> wanted)
         {
             _while = wanted;
@@ -111,10 +90,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Puts the mark on a place with a name in final words. False if the guider is not there or marks something else, or
-        /// the mark's time is up; ask again later. The same place and name again cost a few compares.
-        /// </summary>
+        /// <summary>Puts the mark on a place with a name; false if the guider is missing, marks something else, or the time is up. The same again is cheap.</summary>
         public bool Show(Vector3 at, string name)
         {
             DirectionGuider guider = null;
@@ -189,10 +165,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Takes the mark off if the guider still shows it, whatever this mark believed; never what another put there. Safe at
-        /// any time, and after the interface has gone.
-        /// </summary>
+        /// <summary>Takes the mark off if the guider still shows it, never another's. Safe at any time.</summary>
         public void Hide()
         {
             if (ReferenceEquals(_target, null) && !_listed)

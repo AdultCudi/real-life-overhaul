@@ -6,12 +6,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The box's parts kept from one page to the next. Clear lays the last page's parts aside, asleep under the templates
-    /// in one list per kind, and Add takes one back for each part of that kind before copying a template. A part laid aside
-    /// is set back to what a new copy is (<see cref="Restore"/>): what a page may change and its writer does not set again
-    /// (a line's tone, a header's margin and chips, a tick's colour and mark, a switch's state), and anything put under it
-    /// since. Costs nothing a frame: a page moves each part taken back, copies each new one; the spares are at most the
-    /// longest page, asleep.
+    /// The box's parts kept from page to page: Clear lays them aside asleep, one list per kind, and Add takes one back before
+    /// copying a template, set back first to what a new copy is (<see cref="Restore"/>). Costs nothing a frame.
     /// </summary>
     public sealed partial class InfoBox
     {
@@ -92,10 +88,7 @@ namespace RealLifeOverhaul.GameUi
             spare.Add(part);
         }
 
-        /// <summary>
-        /// Sets back what a page may change on a part and its writer does not set. Run while the part is still awake, so a switch
-        /// returns to the template's state as a copy's does when it first wakes.
-        /// </summary>
+        /// <summary>Sets back what a page may change and its writer does not set; while still awake, so a switch returns to its template's state.</summary>
         private void Restore(GameObject part, GameObject template)
         {
             if (template == _bodyT)

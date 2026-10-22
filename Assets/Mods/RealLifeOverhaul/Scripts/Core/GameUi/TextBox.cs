@@ -7,18 +7,9 @@ using UI.Smartphone;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The game's own text box (UIs.textInputUi, on its own canvas above the menus and the dialogue panel), as the game asks
-    /// for a business's name: a line with the game's placeholder, button and character limit. Every text box of the mod's
-    /// is asked for here (Flare's composer, street talk, the social calls, the phone's apps). The caller guards what it
-    /// hands over (Guard.Wrap, UiClone.Safe): the game calls it from its button.
-    ///
-    /// The game closes its box only with its own two buttons, whatever became of what asked. So each box is kept for
-    /// something (<see cref="TextBoxRules.For"/>): the conversation that asked, else the phone, the dialogue panel or the
-    /// options page that was open; and <see cref="ConversationWatch"/> closes it with the game's own close (so the caller's
-    /// closed runs) once that is over: hung up, the phone put away, Esc, a talk left, a door gone through, a save loaded.
-    ///
-    /// Costs nothing until shown; while a box of the mod's is up, a few field reads four times a second (the watch).
-    /// </summary>
+    /// The game's own text box, through which every text box of the mod's is asked. The game closes it only with its own two
+    /// buttons, so each box is kept for what asked (<see cref="TextBoxRules.For"/>) and <see cref="ConversationWatch"/>
+    /// closes it with the game's close once that is over. Costs nothing until shown; then a few field reads four times a second.
     /// </summary>
     public static class TextBox
     {
@@ -44,20 +35,13 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A box the mod asked for is kept for something: the watch has work.</summary>
         public static bool Kept => _for != TextBoxFor.Nothing;
 
-        /// <summary>
-        /// Shows the box with an empty or given line, kept for whatever was open (the phone, the dialogue panel, the options
-        /// page). <paramref name="done"/> gets what was typed, <paramref name="closed"/> (may be null) runs when it is closed
-        /// without. False, and nothing shown, if the game has no box.
-        /// </summary>
+        /// <summary>Shows the box, kept for whatever was open; <paramref name="done"/> gets the text, <paramref name="closed"/> runs on closing without. False if the game has none.</summary>
         public static bool Ask(string placeholderKey, string buttonKey, Action<string> done, Action closed, string initial, bool allowEmpty, int most)
         {
             return Ask(placeholderKey, buttonKey, done, closed, initial, allowEmpty, most, null, null);
         }
 
-        /// <summary>
-        /// As above, kept while <paramref name="wanted"/> (made once by the caller and kept) says the asking conversation goes
-        /// on; <paramref name="what"/> names it for Player.log.
-        /// </summary>
+        /// <summary>As above, kept while <paramref name="wanted"/> (made once) says the asking conversation goes on; <paramref name="what"/> names it in the log.</summary>
         public static bool Ask(string placeholderKey, string buttonKey, Action<string> done, Action closed, string initial, bool allowEmpty, int most,
                                Func<bool> wanted, string what)
         {

@@ -8,10 +8,8 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The box's slider: the game's own from its settings menu (ModOptionsSliderControl, as OptionRows uses), copied once
-    /// when a page first asks, without the row's words. On a page: a row of its label and the step's words, then the slider
-    /// in the box's colours. A drag writes only that row and tells the page each new step, so it is never cut short. A page
-    /// copies it afresh and Clear takes it away. Costs nothing a frame; a step dragged writes one row.
+    /// The box's slider: the game's settings menu's own, copied when a page first asks. A drag writes only its row and tells
+    /// the page each new step, so it is never cut short.
     /// </summary>
     public sealed partial class InfoBox
     {
@@ -22,11 +20,7 @@ namespace RealLifeOverhaul.GameUi
         private GameObject _sliderT;   // made the first time a page asks; null until then, or if it could not be had
         private bool _sliderTried;
 
-        /// <summary>
-        /// A slider over whole steps 0 to <paramref name="steps"/> at <paramref name="index"/>, under a row of its label and
-        /// <paramref name="text"/>'s words for the step; <paramref name="changed"/> hears each new step as it is dragged. False
-        /// without the game's slider: the caller offers the choice another way.
-        /// </summary>
+        /// <summary>A slider over steps 0 to <paramref name="steps"/> under a row of its label and step; false without the game's slider.</summary>
         public bool Slider(string labelKey, int steps, int index, Func<int, string> text, Action<int> changed)
         {
             using var own = Timed();

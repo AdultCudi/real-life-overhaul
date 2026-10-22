@@ -8,13 +8,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The tiles a pager lays its folders out with: one per folder, the Back tile on a folder's page, and the empty tiles
-    /// that keep the HUD phone's dock on the last row. Folder and Back tiles are copies of the phone's own app button
-    /// without the scripts that make it an app (its hover, sound and badge kept), the folder's name where an app shows its
-    /// own, and an icon painted as the game's are (AppIconPainter): a slate tile under the small pictures of its first nine
-    /// apps, or for Back a light tile with the game's chevrons turned back. Every tile carries a PhoneTile, so no pager
-    /// counts it as an app, and stands in the grid for its layout to place. Made once, the first time folders show; gone
-    /// with the option, a pager stepping aside or going. Costs nothing a frame: the pager says what to show.
+    /// The tiles a pager lays its folders out with: a folder's (a copy of the app button with an icon of its first nine
+    /// apps), the Back tile, and empty tiles that keep the HUD phone's dock on the last row. Each carries a PhoneTile, so no
+    /// pager counts it as an app. Costs nothing a frame.
     /// </summary>
     internal sealed class PhoneFolders
     {
@@ -61,10 +57,7 @@ namespace RealLifeOverhaul.GameUi
             _template = template;
         }
 
-        /// <summary>
-        /// Every tile of a grid's folders, or null (and one line in Player.log) if the game's app button cannot be copied: the
-        /// grid keeps its plain pages, and no app is lost to a folder without a tile.
-        /// </summary>
+        /// <summary>Every tile of a grid's folders, or null (one log line) if the game's app button cannot be copied: the grid keeps plain pages.</summary>
         public static PhoneFolders Make(PhoneGridPager pager, Transform template, bool strip)
         {
             if (pager == null || template == null)
@@ -238,13 +231,11 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A folder's tile, made with the rest.</summary>
         public Transform Tile(int folder)
         {
             return folder >= 0 && folder < _folders.Length && _folders[folder] != null ? _folders[folder].Tile : null;
         }
 
-        /// <summary>A folder's tile on the page that shows, or not.</summary>
         public void Show(int folder, bool on)
         {
             Transform tile = Tile(folder);
@@ -254,10 +245,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Each folder's small pictures: the icons of its first nine apps in the mod's order, written only where one changed.
-        /// <paramref name="apps"/> are the grid's buttons in the pages' order.
-        /// </summary>
+        /// <summary>Each folder's small pictures: the icons of its first nine apps, written only where one changed.</summary>
         public void Fill(List<Transform> apps, int[] kind, int[] place, int count)
         {
             for (int f = 0; f < PhoneLayoutRules.FolderCount; f++)

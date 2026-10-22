@@ -8,14 +8,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Who has the game's one box when the player is near two places that want it; the rule is <see cref="PanelPickRules"/>,
-    /// and this part measures both claims from the player, so every panel of the mod's goes through it. The game's box
-    /// shows one IOverlay at a time, OverlayUI.Show simply replaces it, and every interact key goes to whatever is in it;
-    /// the game's own panels come with triggers the player stands in (a pump, a repair bay, a lift). So a panel not in the
-    /// box asks in <see cref="Show"/>: against another of the mod's, the nearer place the player faces takes it by the
-    /// rule's margin, and the other's owner asks again later; one of the game's own keeps it, since the game cannot be
-    /// asked for it back. Costs nothing a frame: only a Show that finds another panel measures, and the diagnostics line
-    /// comes only when the outcome between two panels changes.
+    /// Who has the game's one box when two panels want it (<see cref="PanelPickRules"/>): measured from the player in
+    /// <see cref="Show"/>; one of the game's own panels keeps it. Costs nothing a frame.
     /// </summary>
     public sealed partial class WorldPanel
     {
@@ -30,10 +24,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The panel is over a person come to meet: within <see cref="PanelPickRules.TalkRange"/> the nearest place of all. Set by its owner.</summary>
         public bool Meet;
 
-        /// <summary>
-        /// The place this panel is for (a door, a desk, a stop's pole), measured from the player when another panel wants the
-        /// box. Set it before <see cref="Show"/>; the box may stand elsewhere. A panel that follows somebody is for them.
-        /// </summary>
+        /// <summary>The place this panel is for, measured from the player when another panel wants the box; set before <see cref="Show"/>.</summary>
         public void For(Vector3 place)
         {
             _for = place;
@@ -154,10 +145,7 @@ namespace RealLifeOverhaul.GameUi
             return null;
         }
 
-        /// <summary>
-        /// True unless the game's box shows a button on the interact key, which the game runs on that key: the mod's own use
-        /// of the key (a door, a car) then does nothing, so one press runs one thing. Asked on a press, never a frame.
-        /// </summary>
+        /// <summary>False while the game's box shows a button on the interact key: the mod's own use of the key then waits. Asked on a press.</summary>
         public static bool InteractFree()
         {
             if (!OverlayUI.IsVisible)

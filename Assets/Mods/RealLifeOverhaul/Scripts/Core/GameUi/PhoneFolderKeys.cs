@@ -9,12 +9,9 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// On the HUD phone's grid, on only while one of its folders is open (PhoneGridPager.Keys): the game's cancel key goes
-    /// back to the home screen, the press taken so the game's menu does not open too (PlayerAction.Reset, as TravelListKeys
-    /// does). Only while nothing the game's key would close first is up (a question, a menu, the map, the options, an
-    /// activity's panel, a dialogue, a building's card, a preview or the designer, a list window, a field being typed in)
-    /// and the phone is not folded away. Runs before the game's own key handling. Costs nothing while no folder is open;
-    /// while one is, one look at the key a frame.
+    /// On the HUD phone's grid while one of its folders is open: the cancel key goes back to the home screen, the press taken
+    /// so the game's menu does not open too, unless something the key would close first is up. Runs before the game's own
+    /// key handling. Costs nothing while no folder is open; then one look at the key a frame.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     public sealed class PhoneFolderKeys : MonoBehaviour

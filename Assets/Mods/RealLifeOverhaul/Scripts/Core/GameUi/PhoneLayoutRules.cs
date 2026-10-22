@@ -1,17 +1,9 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The phone's home screen as a real phone has it (PhoneGridPager): the mod's apps in five folders, a dock of two along
-    /// the foot of the HUD phone, and the game's and other mods' apps where they always stood. Each app of
-    /// <see cref="PagerRules.ModOrder"/> is in its group's folder unless the player moved it (<see cref="PhoneLayout"/>).
-    ///
-    /// The home screen holds in order: the game's apps; on the full menu's row the docked apps (the HUD phone has its dock
-    /// row); a tile per folder with an app in it; the mod's apps put on the home screen; other mods' buttons. An open
-    /// folder shows its apps after its Back tile. Every button is in exactly one place: one the layout puts nowhere this
-    /// version has (an unknown folder, a third app in the dock) stands on the home screen.
-    ///
-    /// Game-free arithmetic and ordinal comparisons, nothing allocated; used only when the grid is shown or changed.
-    /// Checked offline (ContractCheck PhoneLayoutChecks).
+    /// The phone's home screen as a real phone has it: the mod's apps in five folders, a dock of two on the HUD phone, the
+    /// game's and other mods' apps where they always stood; every button in exactly one place, one the layout puts nowhere
+    /// this version has on the home screen. Game-free; checked offline (ContractCheck PhoneLayoutChecks).
     /// </summary>
     public static class PhoneLayoutRules
     {
@@ -35,12 +27,7 @@ namespace RealLifeOverhaul.GameUi
             "reallife_phone_folder_money", "reallife_phone_folder_work", "reallife_phone_folder_life", "reallife_phone_folder_business", "reallife_phone_folder_setup"
         };
 
-        /// <summary>
-        /// Where each app of <see cref="PagerRules.ModOrder"/> stands until the player moves it, name for name: the Planner and
-        /// Flare in the dock, the rest in their group's folder. The Calendar is in Social and life, the month of the player's
-        /// life beside the Planner's dock; Money holds the apps that move money. The City Ledger's page has no button: its place
-        /// is kept for the table's sake.
-        /// </summary>
+        /// <summary>Where each app of <see cref="PagerRules.ModOrder"/> stands until moved: the Planner and Flare in the dock, the rest in their group's folder.</summary>
         public static readonly int[] Defaults =
         {
             Dock, Dock, Life, Life, Life, Money, Money,
@@ -100,11 +87,7 @@ namespace RealLifeOverhaul.GameUi
             return !strip || tiles >= LeastStrip;
         }
 
-        /// <summary>
-        /// The tiles of a page that hold the view's items: the HUD phone's eight less its dock row on the home screen while the
-        /// dock has an app, less the Back tile on a folder's page; the full menu's row less the Back tile. With pages, the More
-        /// apps button takes the last of them.
-        /// </summary>
+        /// <summary>The tiles of a page for the view's items: less the Back tile on a folder's page, and on the HUD phone's home screen less the dock row.</summary>
         public static int ItemTiles(bool strip, int tiles, bool folderOpen, bool dockRow)
         {
             int all = strip ? tiles : PagerRules.PhoneTiles;
@@ -118,10 +101,7 @@ namespace RealLifeOverhaul.GameUi
             return (folderOpen ? 1 : 0) + PagerRules.ButtonTile(ItemTiles(strip, tiles, folderOpen, dockRow));
         }
 
-        /// <summary>
-        /// The empty tiles before the HUD phone's dock row, so the dock stands on the last row: every item tile not taken, the
-        /// More apps button's too (it stands beside the grid). None without a dock row.
-        /// </summary>
+        /// <summary>The empty tiles before the HUD phone's dock row, so the dock stands on the last row; none without a dock row.</summary>
         public static int Gaps(int onPage, int itemTiles, bool dockRow)
         {
             if (!dockRow)
@@ -132,12 +112,7 @@ namespace RealLifeOverhaul.GameUi
             return gaps < 0 ? 0 : gaps;
         }
 
-        /// <summary>
-        /// A grid's view: what its pages hold (<paramref name="view"/>: a button's index, or -1 - folder for a folder's tile) and
-        /// its dock row, the buttons in the pages' order (PagerRules.Arrange). A <paramref name="folder"/> of 0 or more: its
-        /// apps; else the home screen (see the class), with the dock's first two in <paramref name="dock"/> on the HUD phone.
-        /// Each folder's count goes in <paramref name="members"/>. Returns the view's length.
-        /// </summary>
+        /// <summary>A grid's view (a button's index, or -1 - folder for a folder's tile), its dock and each folder's count; returns the view's length.</summary>
         public static int View(int[] kind, int[] place, int count, int folder, bool dockRow, int[] view, int[] dock, out int docked, int[] members)
         {
             docked = 0;
@@ -249,19 +224,13 @@ namespace RealLifeOverhaul.GameUi
             return kind == ModItem && place >= 0 && place < FolderCount ? place : -1;
         }
 
-        /// <summary>
-        /// An app may move: to a place this version has that it is not in, and into the dock only while it has room
-        /// (<paramref name="docked"/>: the apps in it now).
-        /// </summary>
+        /// <summary>An app may move: to another place this version has, and into the dock only while it has room.</summary>
         public static bool CanMove(int from, int to, int docked)
         {
             return Known(to) && to != from && (to != Dock || docked < DockMost);
         }
 
-        /// <summary>
-        /// Each folder's number: the sum of its apps' numbers, as a real phone adds them (the game's badge shows 99+ past 99).
-        /// <paramref name="sums"/> holds one per folder.
-        /// </summary>
+        /// <summary>Each folder's number: the sum of its apps' numbers, as a real phone adds them.</summary>
         public static void FolderBadges(int[] kind, int[] place, int[] badge, int count, int[] sums)
         {
             if (sums == null)

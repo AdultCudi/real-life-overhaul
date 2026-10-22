@@ -4,12 +4,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The order, filter and totals of one table, over row numbers in the order written, so any app's row class can use
-    /// it. Arrays are made once and reused: ordering again allocates nothing. The sort is a stable merge sort, in both
-    /// directions. It runs when the rows are written, a header is clicked or a kind picked, never otherwise.
-    ///
-    /// A table from a source (<see cref="ITableSource"/>) is given figures and kinds only; a column's words are read the
-    /// first time it is ordered by them, for the rows they decide, and kept until the table is written again.
+    /// The order, filter and totals of one table over row numbers, so any app's row class can use it: a stable merge sort,
+    /// arrays made once so ordering again allocates nothing. A source's words are read only when an order needs them.
     /// </summary>
     public sealed class TableModel
     {
@@ -35,7 +31,6 @@ namespace RealLifeOverhaul.GameUi
         private bool _byText;
 
         public TableSpec Spec => _spec;
-        /// <summary>How many rows were written.</summary>
         public int Rows => _rows;
         /// <summary>How many of them are shown: the pinned ones and those the filters let through.</summary>
         public int Count => _shown;
@@ -89,10 +84,7 @@ namespace RealLifeOverhaul.GameUi
             _shown = _pinnedShown = 0;
         }
 
-        /// <summary>
-        /// A table of rows an app has written. In a table that neither sorts nor filters (headings between rows) every row
-        /// stays where it was written; in any other a line of words and a pinned row come first.
-        /// </summary>
+        /// <summary>A table of rows an app wrote; a line of words and a pinned row come first unless the table neither sorts nor filters.</summary>
         public void Begin(TableSpec spec, List<TableRow> rows)
         {
             Begin(spec, rows.Count);
@@ -241,10 +233,7 @@ namespace RealLifeOverhaul.GameUi
             return held;
         }
 
-        /// <summary>
-        /// Works out the rows shown, their order and the totals. A chosen kind no row is of any more, or a filter with fewer
-        /// than two kinds (not offered), goes back to "all": never an empty table with no way out.
-        /// </summary>
+        /// <summary>Works out the rows shown, their order and totals; a chosen kind left with no rows goes back to "all".</summary>
         public void Apply()
         {
             TableSpec spec = _spec;
@@ -378,10 +367,7 @@ namespace RealLifeOverhaul.GameUi
             return -1;
         }
 
-        /// <summary>
-        /// The row to select after the order or filter changed: the one selected if it still shows, else the first unpinned
-        /// row; -1 if nothing was selected or nothing is left.
-        /// </summary>
+        /// <summary>The row to select after a change: the selected one if it still shows, else the first unpinned; -1 for none.</summary>
         public int Keep(int selectedRow)
         {
             if (selectedRow < 0)

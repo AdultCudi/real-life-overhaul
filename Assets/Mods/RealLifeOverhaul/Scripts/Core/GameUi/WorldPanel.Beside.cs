@@ -9,19 +9,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A panel of the mod's and the game's building box never cover each other; the rule is <see cref="PanelPlacement"/>,
-    /// and this part reads where the two boxes are on the screen and moves the mod's. The game puts its building box
-    /// (BuildingResume) over a door in LateUpdate, unannounced, and the panel's box at the screen point of
-    /// GetTargetPosition in Update. So the step aside is given as a step in the world: GetTargetPosition answers the place
-    /// plus <c>_shift</c>, a vector across the view that is the wanted pixels at the place's depth, and the game keeps the
-    /// box beside the building box itself. The step is worked out again only when the building box comes or goes, either
-    /// box moved more than <see cref="PanelPlacement.Moved"/> pixels, or the panel's size changed; it is looked at on
-    /// Canvas.willRenderCanvases, after every LateUpdate and the interface's layout, so the two never share a frame.
-    ///
-    /// Costs nothing while no panel is up (the watch is off the event); while one is, a frame: one call, a few loads, the
-    /// type in the game's box, two positions and two subtractions. A measurement: two rectangles into an array made once,
-    /// one WorldToScreenPoint and the rule's arithmetic. Nothing is allocated. Without a game member it needs, panels stand
-    /// as before, with one line in the log.
+    /// Keeps a panel of the mod's and the game's building box apart (<see cref="PanelPlacement"/>): the step aside is given
+    /// to the game as a step in the world (<c>_shift</c> on GetTargetPosition), so the game places the box itself, worked out
+    /// again only when either box moves or comes, on Canvas.willRenderCanvases so the two never share a frame. Costs nothing
+    /// while no panel is up; while one is, a few loads a frame. Nothing is allocated.
     /// </summary>
     public sealed partial class WorldPanel
     {
@@ -252,11 +243,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        /// <summary>
-        /// "Test: a stop's panel and a shop's box together": the game's building box goes up for the nearest building (as the
-        /// pointer over it would) and, unless a panel is up already, a panel over its door, where the two must meet; the log
-        /// says to which side the panel stepped. Pressed again, or the panel's button, takes both down.
-        /// </summary>
+        /// <summary>Test: the building box up for the nearest building and a panel over its door, where the two must meet; pressed again, both go.</summary>
         public static void TestBeside()
         {
             try

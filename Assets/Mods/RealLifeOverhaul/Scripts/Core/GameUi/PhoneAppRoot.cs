@@ -1,14 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using BAModAPI;
-using Localizor;
-using Localizor.LanguageChangeEvent;
-using UI;
-using UI.Smartphone;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.GameUi
 {

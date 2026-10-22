@@ -5,12 +5,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A filter over a table: the game's own drop-down (UI.Elements.Dropdown), whole and working, as EconoView has one over
-    /// its transactions ("All types", then each type); the copy is of MyEmployees' mass action box. The box, its list, its
-    /// scroller, typing to find a choice and closing on a click elsewhere are all the game's scripts, left on the copy.
-    /// Made when a table first needs it, under the app's panel while showing, so it wakes before it is given its choices.
-    /// Everything that touches the game's class is here: a caller that gets an exception from it drops the filter and says
-    /// so once. Costs nothing a frame of the mod's.
+    /// A filter over a table: a copy of the game's own drop-down (MyEmployees' mass action box), whole and working, as
+    /// EconoView has one. Everything touching the game's class is here: a caller that gets an exception drops the filter
+    /// and says so once. Costs nothing a frame of the mod's.
     /// </summary>
     public sealed class FilterDrop
     {
@@ -37,7 +34,6 @@ namespace RealLifeOverhaul.GameUi
             }));
         }
 
-        /// <summary>Whether an object is the game's drop-down.</summary>
         public static bool Is(GameObject candidate)
         {
             return candidate != null && candidate.GetComponent<global::UI.Elements.Dropdown>() != null;
@@ -86,7 +82,6 @@ namespace RealLifeOverhaul.GameUi
             _dropdown.SetInteractable(interactable);
         }
 
-        /// <summary>Closes its list if it is open, as the game closes it.</summary>
         public void Close()
         {
             if (global::UI.Elements.Dropdown.currentDropdown == _dropdown)
@@ -95,10 +90,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// The choices (final words, "all" first) and the one chosen. The game's drop-down is told only when something differs
-        /// from what it was last given, so writing a table again costs it nothing.
-        /// </summary>
+        /// <summary>The choices ("all" first, final words) and the one chosen; the game's drop-down is told only when they differ.</summary>
         public void Set(List<string> options, int chosen, Action<int> picked)
         {
             _picked = picked;

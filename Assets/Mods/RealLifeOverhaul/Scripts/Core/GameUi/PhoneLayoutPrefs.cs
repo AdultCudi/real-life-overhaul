@@ -4,10 +4,8 @@ using BAModAPI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The player's own home screen (PhoneLayout), kept on this computer with the game's settings (PlayerPrefs) as the mod's
-    /// options are: the same in every save, and each player's own in a Going Public session, nothing saved or sent. Read the
-    /// first time a phone asks, written on a move. Whoever shows a phone hears <see cref="Changed"/>: a move, the option
-    /// switched, or the options read again (a preset, an import, a reset). Costs nothing a frame.
+    /// The player's home screen kept on this computer with the game's settings (PlayerPrefs), never in the save or sent:
+    /// each Going Public player's own. <see cref="Changed"/> tells the phones to lay themselves out again. Costs nothing a frame.
     /// </summary>
     public static class PhoneLayoutPrefs
     {
@@ -64,7 +62,6 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        /// <summary>Every app back in its usual folder.</summary>
         public static void Reset()
         {
             Layout.Reset();

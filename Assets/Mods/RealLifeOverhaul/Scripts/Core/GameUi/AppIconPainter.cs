@@ -6,18 +6,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The picture on an app's button, made as the game's are: the rounded tile and soft shadow of one of the game's app
-    /// icons (read from its picture at run time, never shipped), filled corner to corner with the app's two colours, and
-    /// a white glyph of the game's in the middle; 160 by 160 like theirs. If the game's pictures cannot be read back, the
-    /// glyph alone is the icon.
-    ///
-    /// Kept for the session: reading a picture back from the graphics card stalls the processor a millisecond or more, so
-    /// the tile is read once a session, each glyph once per size, and each icon kept by its name and made again only if
-    /// what it is made of changed; the kept textures are never unloaded with a scene's unused assets. An icon made again
-    /// destroys the one it replaces, and reads of pictures destroyed since are let go then.
-    ///
-    /// Costs nothing a frame. The first load of a session: one read of the tile and one of each glyph; after it, one
-    /// dictionary look-up per app.
+    /// The picture on an app's button, painted as the game's are: one of the game's icon tiles (read back at run time)
+    /// filled with the app's two colours, a white glyph of the game's on it; the glyph alone if the tile cannot be read.
+    /// Reading back stalls the processor, so tiles, glyphs and icons are read or made once a session and kept by name.
+    /// Costs nothing a frame; after the first load, one dictionary look-up per app.
     /// </summary>
     public static class AppIconPainter
     {
@@ -37,11 +29,7 @@ namespace RealLifeOverhaul.GameUi
         private static readonly List<long> Stale = new List<long>(8);
         private static Color32[] _work = new Color32[0];
 
-        /// <summary>
-        /// The tile and shadow of <paramref name="like"/>, coloured from <paramref name="top"/> (upper left) to
-        /// <paramref name="bottom"/> (lower right), with <paramref name="glyph"/> on it in white or <paramref name="ink"/>,
-        /// flipped when <paramref name="mirrored"/> (the chevron pointing back); without a glyph the tile alone.
-        /// </summary>
+        /// <summary>The tile of <paramref name="like"/> shaded from top to bottom with the glyph in white or ink (flipped if mirrored); no glyph: the tile alone.</summary>
         public static Sprite Paint(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name, Color32? ink = null, bool mirrored = false)
         {
             try
