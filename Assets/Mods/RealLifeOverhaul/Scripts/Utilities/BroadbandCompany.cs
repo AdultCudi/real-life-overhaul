@@ -6,19 +6,8 @@ using UI.Notification;
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The player's broadband company in the game (its rules: BroadbandRules). It is founded with the city's operator's
-    /// licence at the player's headquarters, its network dug district by district from the Utilities app's "Your
-    /// network" tab. Each morning the networks dug by then open and the day that has ended is booked at the
-    /// headquarters: the customers' bills as its takings, its engineers and call centre as wages, its network as the
-    /// cost of what it sells, its marketing as marketing (so its statement, the game's tax and its bank count them all:
-    /// Wiring/EconomyLinks, EconomyBridges.Takings and CostRow), its running costs deducted by the game's tax. Its
-    /// capital, the licence and the networks dug, is not deducted, as the price it is sold for is not taxed. At the turn of the
-    /// month the city's market moves (the rivals' answer already in their prices) and the new connections' installations
-    /// are paid. A company without a headquarters cannot bill anybody; a company sold is its buyer's. The
-    /// UtilitiesDirector runs it with the rest of its books. At the end game's scale (Core/EndScale, its option on) each
-    /// day also hires its crews towards what they need and pays them, and a district dug before the scale may be
-    /// extended to the whole district; a company that existed before is brought to the scale over four game weeks, and
-    /// what the scale adds to a day's costs is never charged past the player's cash. Cost: nothing per frame.
+    /// The player's broadband company in the game (rules: BroadbandRules): founded and dug from the app, its days and months
+    /// booked at the headquarters, running costs tax deductible and capital not. Run by UtilitiesDirector; nothing per frame.
     /// </summary>
     public sealed class BroadbandCompany
     {
@@ -39,10 +28,7 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>The company of this save; null while no save is running.</summary>
         public Network Network => State != null ? State.Network : null;
 
-        /// <summary>
-        /// The end game's share for the company today (Core/EndScale), also set on the network for its rules: 0 with the
-        /// option off; a company that ran before the scale comes to it over four game weeks, with a notice on the first day.
-        /// </summary>
+        /// <summary>The end game's share today, also set on the network: 0 with the option off; an earlier company phases in.</summary>
         public int ScaleNow()
         {
             Network n = Network;
@@ -54,14 +40,13 @@ namespace RealLifeOverhaul.Utilities
             n.ScaleFrom = EndScaleRules.From(Settings.EndScale, before, today, n.Running);
             if (EndScaleRules.Begins(before, n.ScaleFrom, today))
             {
-                UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_endscale_note_phase", "what", UtilitiesText.T("reallife_endscale_what_broadband"), "days", EndScaleRules.PhaseDays.ToString()), 14f);
+                UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_endscale_note_phase", "what", UtilitiesText.T("reallife_endscale_what_broadband"),
+                    "days", EndScaleRules.PhaseDays.ToString()), 14f);
                 Logger?.Info("Utilities: the end game's scale begins to come in for the broadband company on day " + today + ", over " + EndScaleRules.PhaseDays + " days.");
             }
             n.Scale = EndScaleRules.Share(Settings.EndScale, n.ScaleFrom, today);
             return n.Scale;
         }
-
-        // ---------------------------------------------------------------- the day and the month
 
         /// <summary>The morning: the networks dug by today open, and the company as a provider is brought up to date.</summary>
         public void Morning(int today)
@@ -83,7 +68,7 @@ namespace RealLifeOverhaul.Utilities
             BroadbandRules.Apply(n, today);
         }
 
-        /// <summary>A day that has ended, booked at the headquarters: the customers' bills (none on a day the network failed, nor without a headquarters), its staff, its network and its marketing.</summary>
+        /// <summary>An ended day booked at the headquarters: bills (none on a day the network failed, nor without one), staff, network, marketing.</summary>
         public void Day(int day, int level, int monthDays)
         {
             Network n = Network;
@@ -100,8 +85,8 @@ namespace RealLifeOverhaul.Utilities
             long staff = dayStaff, network = dayNetwork;
             if (share > 0 || n.Owed > 0)
             {
-                // at the scale (or while something is owed): the crews' wages and the upkeep up to their figures before the
-                // scale cannot be refused; the rest, and what was owed, only as far as the cash goes (BroadbandRules.Charge)
+                // at scale or while something is owed: the wages and upkeep up to their figures before the scale cannot be
+                // refused; the rest, and what was owed, only as far as the cash goes
                 BroadbandRules.DayCosts(n, level, day, monthDays, out int staff0, out int network0, out _, 0);
                 bool was = n.Owed > 0;
                 BroadbandRules.DayCharge charged = BroadbandRules.Charge(n, UtilitiesGame.Cash, takings, dayStaff, dayNetwork, marketing, staff0, network0);
@@ -109,7 +94,8 @@ namespace RealLifeOverhaul.Utilities
                 network = charged.Network;
                 if (charged.Unpaid > 0 && !was)
                 {
-                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_endscale_note_owed", "what", UtilitiesText.T("reallife_endscale_what_broadband"), "owed", UtilitiesText.Money(n.Owed)), 14f);
+                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_endscale_note_owed", "what", UtilitiesText.T("reallife_endscale_what_broadband"),
+                        "owed", UtilitiesText.Money(n.Owed)), 14f);
                 }
             }
             UtilitiesGame.Book(takings, BroadbandCatalogue.TakingsKey, hq, null);
@@ -117,7 +103,7 @@ namespace RealLifeOverhaul.Utilities
             UtilitiesGame.Book(-network, BroadbandCatalogue.NetworkKey, hq, null);
             UtilitiesGame.Book(-marketing, BroadbandCatalogue.MarketingKey, hq, Marketing);
             n.MonthTakings = Sum(n.MonthTakings, takings);
-            n.MonthCosts = Sum(n.MonthCosts, staff + network + marketing);   // (the month's books stay as they were kept; what was charged is booked whole)
+            n.MonthCosts = Sum(n.MonthCosts, staff + network + marketing);   // the month's books stay as kept; what was charged is booked whole
             if (hq == null && BroadbandRules.Connections(n) > 0 && _warnedDay != UtilitiesGame.Today)
             {
                 _warnedDay = UtilitiesGame.Today;
@@ -125,10 +111,7 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        /// <summary>
-        /// The turn of the month: the city's market moves, the new connections' installations are paid, and the month's
-        /// books are closed. answered: the rivals whose prices are held down this month where the company took customers.
-        /// </summary>
+        /// <summary>The month's turn: the market moves, installations are paid, the books close; <paramref name="answered"/> rivals held prices down.</summary>
         public void Month(int day, int level, int monthDays, int answered)
         {
             Network n = Network;
@@ -143,23 +126,21 @@ namespace RealLifeOverhaul.Utilities
             {
                 return;
             }
-            long installs = BroadbandRules.ChargeInstalls(n, UtilitiesGame.Cash, before, after, level, ScaleNow());   // (the scale's part never past the cash)
+            long installs = BroadbandRules.ChargeInstalls(n, UtilitiesGame.Cash, before, after, level, ScaleNow());   // the scale's part never past the cash
             UtilitiesGame.Book(-installs, BroadbandCatalogue.InstallsKey, UtilitiesGame.Headquarters(), null);
             n.MonthCosts = Sum(n.MonthCosts, installs);
             bool any = n.MonthTakings > 0 || n.MonthCosts > 0;
             BroadbandRules.CloseMonth(n, after, after - before);
             if (any)
             {
-                UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T(answered > 0 ? "reallife_bb_toast_month_answer" : "reallife_bb_toast_month", "count", after.ToString("N0", UtilitiesText.Culture),
-                    "gained", Signed(after - before), "takings", UtilitiesText.Money(n.LastTakings), "costs", UtilitiesText.Money(n.LastCosts), "profit", UtilitiesText.Money(n.LastTakings - n.LastCosts),
-                    "rivals", answered.ToString()), 14f);
+                UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T(answered > 0 ? "reallife_bb_toast_month_answer" : "reallife_bb_toast_month",
+                    "count", after.ToString("N0", UtilitiesText.Culture), "gained", Signed(after - before), "takings", UtilitiesText.Money(n.LastTakings),
+                    "costs", UtilitiesText.Money(n.LastCosts), "profit", UtilitiesText.Money(n.LastTakings - n.LastCosts), "rivals", answered.ToString()), 14f);
             }
             Logger?.Info("Utilities: the broadband month turned on day " + day + ": " + after + " connection(s) (" + (after - before) + "), takings " + n.LastTakings + ", costs " + n.LastCosts
                          + " (installations " + installs + "), the last year's profit " + BroadbandRules.YearProfit(n) + ", a buyer would pay " + BroadbandRules.SaleValue(n)
                          + "; " + answered + " rival(s) holding their prices down.");
         }
-
-        // ---------------------------------------------------------------- what the player does (the app)
 
         /// <summary>The company founded: the licence paid at the headquarters. False with a reason key if it cannot be.</summary>
         public bool Found(out string why)
@@ -189,7 +170,7 @@ namespace RealLifeOverhaul.Utilities
             return true;
         }
 
-        /// <summary>A district's network ordered: paid now, open in BuildMonths of the game's months. False with a reason key if it cannot be.</summary>
+        /// <summary>A district's network ordered: paid now, open in BuildMonths. False with a reason key if it cannot be.</summary>
         public bool Build(int district, out string why)
         {
             Network n = Network;
@@ -218,10 +199,7 @@ namespace RealLifeOverhaul.Utilities
             return true;
         }
 
-        /// <summary>
-        /// A district's network dug before the scale extended to the whole district at it: paid now (what the scale's
-        /// network costs less what it cost), at scale from today. False with a reason key if it cannot be.
-        /// </summary>
+        /// <summary>A network dug before the scale extended to the whole district: the difference paid now. False with a reason key.</summary>
         public bool Extend(int district, out string why)
         {
             Network n = Network;
@@ -264,7 +242,7 @@ namespace RealLifeOverhaul.Utilities
             if (n != null && n.Running)
             {
                 n.Maintenance = Math.Max(BroadbandCatalogue.MaintenanceLeast, Math.Min(BroadbandCatalogue.MaintenanceMost, share));
-                BroadbandRules.Apply(n, UtilitiesGame.Today);   // (its reliability as a provider of the player's own places)
+                BroadbandRules.Apply(n, UtilitiesGame.Today);   // its reliability as a provider of the player's own places
             }
         }
 
@@ -277,10 +255,7 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        /// <summary>
-        /// The company sold for what a buyer pays (BroadbandRules.SaleValue): the network is the buyer's from now, and the
-        /// player's own places on it are its customers like anybody's, month by month at its prices.
-        /// </summary>
+        /// <summary>The company sold for BroadbandRules.SaleValue: the buyer's from now, the player's places on it billed at its prices.</summary>
         public bool Sell(out string why)
         {
             Network n = Network;
@@ -289,7 +264,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 return false;
             }
-            long price = BroadbandRules.SaleNet(n);   // (what it owes is settled out of the price)
+            long price = BroadbandRules.SaleNet(n);   // what it owes is settled out of the price
             int today = UtilitiesGame.Today;
             n.Owed = 0;
             UtilitiesGame.Book(price, BroadbandCatalogue.SaleKey, UtilitiesGame.Headquarters(), null);
@@ -314,9 +289,7 @@ namespace RealLifeOverhaul.Utilities
             return true;
         }
 
-        // ---------------------------------------------------------------- tests
-
-        /// <summary>Test (Core/EndScale): the company starts coming to scale today, or is at it at once. False with no company running.</summary>
+        /// <summary>Test: the company comes to scale from today, or is at it at once; false with no company running.</summary>
         public bool TestScale(bool full)
         {
             Network n = Network;
