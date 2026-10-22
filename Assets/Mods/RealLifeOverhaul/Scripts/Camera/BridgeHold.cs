@@ -31,9 +31,6 @@ namespace RealLifeOverhaul
         private static float _next;       // unscaled seconds
         private static int _taken;        // pieces switched off by the last take
 
-        /// <summary>The bridge held (its place in the city's list), or -1.</summary>
-        public static int Held => _held;
-
         /// <summary>For ScenePrewarm: every bridge of the city and the view-blocking pieces under each. Always true.</summary>
         public static bool Prewarm()
         {

@@ -60,9 +60,6 @@ namespace RealLifeOverhaul
 
         public int Sources => _sources;
 
-        /// <summary>The revs the turntable shows, for the self-check line.</summary>
-        public float Rpm => _reading.Rpm;
-
         /// <summary>Puts the recorded engine on a car; null, the car untouched, without the game's sound system or the clips, and <paramref name="why"/> says which.</summary>
         public static CarSoundCar Take(CarController car, EngineVoice voice, out string why)
         {

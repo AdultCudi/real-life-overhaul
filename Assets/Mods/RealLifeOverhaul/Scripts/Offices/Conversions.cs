@@ -58,9 +58,6 @@ namespace RealLifeOverhaul.Offices
         /// <summary>True for a building that is an office because of this: other features' choices of an office leave it alone.</summary>
         public static bool Holds(Building building) => building != null && Converted.ContainsKey(building);
 
-        /// <summary>The shops that are offices now.</summary>
-        public static int Count => Converted.Count;
-
         private void Awake()
         {
             Instance = this;

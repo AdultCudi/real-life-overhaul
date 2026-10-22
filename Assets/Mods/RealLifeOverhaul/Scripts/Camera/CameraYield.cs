@@ -45,9 +45,6 @@ namespace RealLifeOverhaul
         /// <summary>True while another mod has the camera and this mod's camera does nothing. A field read.</summary>
         public static bool StoodDown => _watch.StoodDown;
 
-        /// <summary>The mod that has the camera, as its author names it, or "another mod"; null while none has.</summary>
-        public static string Holder => _watch.StoodDown ? _holder : null;
-
         /// <summary>For the options page: why the camera's options do nothing, or null while they work.</summary>
         public static string Sentence()
         {

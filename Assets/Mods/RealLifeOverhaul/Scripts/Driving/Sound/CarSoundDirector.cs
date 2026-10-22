@@ -32,9 +32,6 @@ namespace RealLifeOverhaul
         private bool _failed;
         private readonly HashSet<string> _toldWhy = new HashSet<string>();   // a car's reason for keeping the game's sound, said once
 
-        /// <summary>The car playing recorded sounds now, or null.</summary>
-        public CarController Held => _held != null ? _held.Car : null;
-
         private void Awake()
         {
             Instance = this;

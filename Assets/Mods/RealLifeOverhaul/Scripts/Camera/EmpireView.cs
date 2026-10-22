@@ -28,9 +28,6 @@ namespace RealLifeOverhaul
         /// <summary>True while this mod's camera key is V: then Empire Motors' view on V is kept off.</summary>
         public static bool Claims => EmpireMotors.On && Keys.Key(KeyAction.CameraToggle) == KeyCode.V;
 
-        /// <summary>True while that view is switched off by this mod.</summary>
-        public static bool Claimed => _claimed;
-
         /// <summary>Switches Empire Motors' view off while the key is V: on the chase camera's coming on and on the key, never per frame.</summary>
         public static void Claim(GameManager gm)
         {
