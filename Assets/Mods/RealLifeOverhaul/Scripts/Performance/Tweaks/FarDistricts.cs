@@ -7,95 +7,48 @@ using UnityEngine.SceneManagement;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The whole map is loaded at once, and the engine tests every enabled renderer against the view (and against
-    /// the sun's shadow volumes) every frame: about 186,000 of them, of which 3,000 to 4,500 are drawn. This lays
-    /// a grid of 400 m squares over the scenery and takes the mesh renderers of every square that lies more than
-    /// 1300 m from the camera out of the picture; a square comes back, whole and at once, as soon as the player's
-    /// camera is within 1100 m of it (the far plane is 300 m), everything comes back when the city map opens
-    /// (before the game's own map code runs), and a square comes back for any other camera that could see it,
-    /// before that camera draws.
-    ///
-    /// There are two ways of taking a renderer out, and this class does either:
-    ///
-    /// SAFE (the option): Renderer.forceRenderingOff. The game never writes that flag (no occurrence in its code
-    /// or its plug-ins), so nothing the game does while a square is held can be undone or overridden by giving
-    /// the square back: the game's own enabled / active state of every object is untouched throughout. Every
-    /// mesh renderer of the scenery can therefore be taken, with no exceptions. What is not known yet is whether
-    /// the engine also skips its view test for such a renderer, which is where the saving comes from; the
-    /// benchmark pair answers that.
-    ///
-    /// BY ENABLED (a benchmark trial only): Renderer.enabled. This is the version the third benchmark showed to
-    /// save 0.61 ms with 35,986 renderers held. It cannot be made safe by construction: the game's own code
-    /// writes Renderer.enabled in some forty places, and at least one of them (ViewBlockingEntity.renderersToHide,
-    /// ViewBlockingEntity.cs line 248) reaches renderers through a list set up in the editor, anywhere in the
-    /// scene, so no rule about where a renderer sits can prove the game will not switch it. If the game disabled
-    /// a renderer while this held it, giving the square back would wrongly show it. It leaves alone everything on
-    /// or under the components in GameContract.Switchers, which is most of that risk, not all of it.
-    ///
-    /// WHAT MOVES IS NEVER TAKEN. A square is where a renderer stood when the scenery was looked through. The game
-    /// keeps its parked cars in a pool (ParkingSimulator): a car parked in a far street is put away and parked again
-    /// at a kerb near the player, the same object with the same renderers. Taken with its far square, it stood at the
-    /// near kerb unseen, with its collider and its cut in the walking mesh: a block nobody could see. So nothing on
-    /// or under an object of a layer of things that move (<see cref="MovingLayers"/>) is ever sorted into a square,
-    /// and a renderer found outside its square when the square is taken is left alone (<see cref="Hold"/>).
-    ///
-    /// Either way only renderers are touched: objects stay active, so businesses, colliders, navigation, lights,
-    /// sound and every script keep running. Level-of-detail groups are not affected (they choose among their
-    /// renderers by a mask of their own and never write either flag), nor is static batching. Shadows: the sun's
-    /// reach 100 m (150 m when driving), a held square is at least 1100 m away.
-    ///
-    /// THE CITY MAP draws the city with the player's camera set to the map's own layers (CityMap.cityMapMask, or its
-    /// low-detail mask: CityMap.Toggle). So when it opens only the renderers of those layers are given back; the rest
-    /// stay out (the map's camera does not draw them), and all of them come back the moment the camera draws other
-    /// layers while the map is open (CityMap.TemporarilyChangeState). That was every held renderer, some 10 to 30 ms.
-    ///
-    /// THE COST, all on the director's timer and budgeted by the clock (<see cref="WorkSlice"/>): sorting the gathered
-    /// renderers into squares, and taking a square's renderers out, about a millisecond a tick (it was 6,000 renderers a
-    /// tick whatever they cost: ticks of 3 to 9 ms); whether a renderer stands on something that moves is asked once per
-    /// parent object, not once per renderer up its whole line of parents. Gathering a scene's renderers (every object of
-    /// it: a frame of 127 ms for the city) is done behind the loading screen (Prewarm), and for a scene that arrives or
-    /// goes in play behind the next black screen, pause or loading screen; until then the squares are held as they were.
-    /// Per frame: one comparison a camera (OnCameraRendering), and one more while the map is open.
+    /// Takes the mesh renderers of every 400 m square beyond 1300 m out of the picture (the engine tests some 186,000 a
+    /// frame to draw 4,000), and gives a square back whole before any camera within 1100 m draws. The option uses
+    /// forceRenderingOff, which the game never writes; the trial, enabled, minus GameContract.Switchers. Nothing of a moving
+    /// layer is sorted (pooled parked cars move to near kerbs). Work on the director's timer, a millisecond a tick; scenes
+    /// gathered only behind a screen. Cost a frame: one comparison a camera, one more while the map is open.
     /// </summary>
     public sealed class FarDistricts : PerfTweak
     {
-        private const float CellSize = 400f;
-        private const float Margin = 60f;            // a renderer reaches this far beyond the point it stands on, at most
-        private const float HoldBeyond = 1300f;      // metres from the camera to the nearest point of a square
-        private const float ReleaseWithin = 1100f;
-        private const float Alarm = 500f;            // a held square this near means the camera jumped: worth a line in the log
-        private const float Cooldown = 5f;           // after squares were given back for the map or a picture
+        private const float CellSize = 400f;   // metres
+        private const float Margin = 60f;   // metres a renderer reaches beyond the point it stands on, at most
+        private const float HoldBeyond = 1300f;   // metres from the camera to the nearest point of a square
+        private const float ReleaseWithin = 1100f;   // metres
+        private const float Alarm = 500f;   // metres: a held square this near means the camera jumped, worth a log line
+        private const float Cooldown = 5f;   // seconds after squares were given back for the map or a picture
 
-        // Game components whose own code enables and disables renderers: the game contract's list (Core/GameContract,
-        // Switchers, with the file and line of one such write each), resolved once when the mod starts.
-
-        // Scenes that are not scenery standing in one place.
-        // Layers of things the game moves about, pooled or driven: never scenery, whatever scene they stand in.
+        // layers of things the game moves about, pooled or driven: never scenery, whatever scene they stand in
         private static readonly string[] MovingLayers = { "ParkedVehicles", "AiVehicles", "PlayerVehicles", "Vehicles", "Human" };
 
+        // scenes that are not scenery standing in one place
         private static readonly string[] NotScenery = { "MainScene", "UI", "Indoor", "LightsAndPostprocessing", "DontDestroyOnLoad" };
 
         private sealed class Cell
         {
             public Bounds Bounds;
             public bool Held;
-            public int Cursor;       // how far through Scenery the holding has got
+            public int Cursor;   // how far through Scenery the holding has got
             public readonly List<MeshRenderer> Scenery = new List<MeshRenderer>(256);
-            public readonly List<bool> OnMap = new List<bool>(256);                  // for each of those: drawn on the city map (its layer is one of the map's)
-            public readonly List<MeshRenderer> Taken = new List<MeshRenderer>(256);   // the ones this has taken out that the city map draws
-            public readonly List<MeshRenderer> TakenOff = new List<MeshRenderer>(64); // ...and that it does not: kept out while the map is open
+            public readonly List<bool> OnMap = new List<bool>(256);   // for each of those: its layer is one the city map draws
+            public readonly List<MeshRenderer> Taken = new List<MeshRenderer>(256);   // taken out, drawn by the city map
+            public readonly List<MeshRenderer> TakenOff = new List<MeshRenderer>(64);   // taken out, not drawn by the map: kept out while it is open
         }
 
-        private const double SliceMs = 1.0;            // milliseconds of a tick the sorting or the holding may take
+        private const double SliceMs = 1.0;   // milliseconds of a tick the sorting or holding may take
         private const int LookEvery = 64;              // renderers between two looks at the clock
-        private const float HiddenEvery = 0.25f;       // seconds between two looks at whether the screen is black, while a scene waits for it
+        private const float HiddenEvery = 0.25f;   // seconds between looks at whether the screen is black, while a scene waits
 
         private readonly bool _byEnabled;
         private readonly string _id;
         private readonly Dictionary<int, bool> _moves = new Dictionary<int, bool>(4096);   // while sorting: a parent object (its id) on or under something that moves
-        private int _mapMask = ~0;     // the layers the city map draws (both its masks); all of them where the map is not known
+        private int _mapMask = ~0;   // the layers both the map's masks draw; all where the map is not known
         private int _offMapHeld;       // renderers held that the city map does not draw
-        private bool _waitHidden;      // a scene came or went in play: gathered behind the next black screen
+        private bool _waitHidden;   // a scene came or went in play: gathered behind the next black screen
 
         private readonly Dictionary<long, Cell> _byKey = new Dictionary<long, Cell>(512);
         private readonly List<Cell> _cells = new List<Cell>(512);
@@ -108,16 +61,16 @@ namespace RealLifeOverhaul
         private Type[] _switcherTypes;
 
         private int _surveyCursor;
-        private Cell _working;       // a square half-way through being held
+        private Cell _working;   // a square half-way through being held
         private bool _stale;
-        private bool _settled;       // the last look found every square as it should be
+        private bool _settled;   // the last look found every square as it should be
         private float _quietUntil;
         private Camera _main;
         private Vector3 _lastChecked;
         private bool _hooked, _alarmed;
         private int _heldRenderers, _heldCells, _scenery, _leftAlone, _movingMask;
 
-        /// <param name="byEnabled">False: the safe way (forceRenderingOff, every mesh renderer). True: the benchmark trial (enabled, minus what the game switches).</param>
+        /// <param name="byEnabled">False: forceRenderingOff on every mesh renderer. True: the benchmark trial, by enabled.</param>
         public FarDistricts(bool byEnabled)
         {
             _byEnabled = byEnabled;
@@ -126,7 +79,7 @@ namespace RealLifeOverhaul
 
         public override string Id => _id;
         public override string LabelKey => _byEnabled ? null : "reallife_perf_far_districts2";
-        public override bool DefaultOn => false;   // the safe way has not been measured yet
+        public override bool DefaultOn => false;   // not measured yet
         public override bool Trial => _byEnabled;
         public override float Interval => _waitHidden && _surveyCursor >= _survey.Count && _working == null ? HiddenEvery : Busy ? 0.05f : 0.5f;
         public override bool Busy => _stale || _surveyCursor < _survey.Count || _working != null || !_settled;
@@ -137,13 +90,13 @@ namespace RealLifeOverhaul
             {
                 if (GameContract.FarDistricts.Off)
                 {
-                    // A component of the list is gone after a game update: without all of them this trial cannot be safe (Core/GameContract).
+                    // a listed component is gone after a game update: this trial cannot be safe without all of them
                     throw new InvalidOperationException("the game's components that switch renderers have changed: " + GameContract.FarDistricts.Why);
                 }
                 _switcherTypes ??= FindSwitcherTypes();
             }
-            // In front of the game's own map handlers: when they run, every renderer is as the game left it.
-            _onMap = _onMap ?? Guard.Wrap<bool>(OnMapToggled);   // (a fault here never reaches the game's own handlers, or the pipeline: Core/Guard)
+            // in front of the game's own map handlers: when they run, every renderer is as the game left it
+            _onMap = _onMap ?? Guard.Wrap<bool>(OnMapToggled);   // through the guard: a fault never reaches the game or the pipeline
             _onCamera = _onCamera ?? Guard.Wrap<ScriptableRenderContext, Camera>(OnCameraRendering);
             GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Combine(_onMap, GlobalEvents.onCityMapToggle);
             RenderPipelineManager.beginCameraRendering += _onCamera;
@@ -155,8 +108,7 @@ namespace RealLifeOverhaul
             _waitHidden = false;
         }
 
-        // The layers the city map draws: both its masks (the player may switch between them). All layers where it is not there,
-        // so that a map open gives everything back, as it always did.
+        // both the map's masks (the player may switch); all layers where there is no map, so it gives everything back
         private static int MapLayers()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -179,13 +131,11 @@ namespace RealLifeOverhaul
 
         internal override void WorldChanged(bool loaded)
         {
-            _stale = true;   // (an unloaded scene matters here: its squares are forgotten)
+            _stale = true;   // an unloaded scene matters too: its squares are forgotten
             _waitHidden = false;
         }
 
-        // The city's scenes gathered behind the loading screen (Refresh: every mesh renderer under every root object, some
-        // 357,000, which was a frame of 127 ms in play on the first tick after the tweak came on). Sorting them into
-        // squares is left to the timer, a slice a tick, as before; its first tick then finds no scene it has not seen.
+        // the scenes' renderers gathered behind the loading screen (some 357,000: 127 ms); the timer sorts them a slice a tick
         protected override void Prewarm()
         {
             if (_byEnabled)
@@ -195,11 +145,11 @@ namespace RealLifeOverhaul
             Refresh();
             if (_stale)
             {
-                Refresh();   // the scenes of an earlier city were forgotten first: now the ones that are here
+                Refresh();   // an earlier city's scenes were forgotten first: now the ones here
             }
         }
 
-        // The timer only ever takes squares out. Giving them back is done the moment it is needed, in OnCameraRendering.
+        // the timer only takes squares out; OnCameraRendering gives them back the moment it is needed
         protected override void Tick(float now)
         {
             if (_surveyCursor < _survey.Count)
@@ -211,7 +161,7 @@ namespace RealLifeOverhaul
             {
                 if (!Changed())
                 {
-                    _stale = false;   // nothing come or gone that has scenery: nothing to gather
+                    _stale = false;   // nothing with scenery came or went
                 }
                 else
                 {
@@ -257,8 +207,7 @@ namespace RealLifeOverhaul
             _settled = _working == null && !slice.Over;
         }
 
-        // True if a scene with scenery has gone, or a scene not looked through has come: what Refresh would gather or forget.
-        // A look at the scenes' handles and names (a few scenes; a name each), no object of them.
+        // a scene with scenery gone or one not looked through come: a look at the scenes' handles and names only
         private bool Changed()
         {
             foreach (Scene known in _sceneryScenes)
@@ -279,9 +228,8 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Scenes were loaded or unloaded. A scene not seen before is queued to be looked through once; small scenes
-        // that come and go (the game loads one around every save) cost one look at their root objects. If a scene
-        // that had scenery has gone, everything starts again.
+        // A new scene is queued to be looked through once; small ones that come and go (one around every save) cost a look
+        // at their root objects. A scene with scenery gone starts everything again.
         private void Refresh()
         {
             _stale = false;
@@ -303,11 +251,12 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 int before = _survey.Count;
-                using var piece = SessionWatch.Piece("performance: the scenery's renderers being gathered for the far districts (every object of a scene not looked through yet)");
+                using var piece = SessionWatch.Piece(
+                    "performance: the scenery's renderers being gathered for the far districts (every object of a scene not looked through yet)");
                 scene.GetRootGameObjects(_roots);
                 foreach (GameObject root in _roots)
                 {
-                    // The safe way takes renderers on inactive objects too: one the game activates later is then already out.
+                    // the safe way takes inactive objects' renderers too: one activated later is then already out
                     if (root.activeSelf || !_byEnabled)
                     {
                         root.GetComponentsInChildren(!_byEnabled, _gathered);   // fills the list it is given
@@ -324,7 +273,7 @@ namespace RealLifeOverhaul
             }
             if (added && _byEnabled)
             {
-                // Which objects the game switches itself, over everything loaded: once per round of new scenes.
+                // which objects the game switches itself, over everything loaded: once a round of new scenes
                 _switcherObjects.Clear();
                 foreach (Type type in _switcherTypes)
                 {
@@ -336,7 +285,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Sorts the gathered renderers into squares, a slice per tick (about a millisecond).
+        // sorts the gathered renderers into squares, a slice a tick
         private void Survey()
         {
             WorkSlice slice = WorkSlice.Of(SliceMs, LookEvery);
@@ -377,12 +326,12 @@ namespace RealLifeOverhaul
                 _moves.Clear();
                 _surveyCursor = 0;
                 _settled = false;
-                PerfDirector.Logger?.Info("Performance: " + _id + " looked through the scenery: " + _scenery + " mesh renderers in " + _cells.Count + " squares of " + CellSize + " m"
-                                          + "; " + _leftAlone + " left alone (of things that move" + (_byEnabled ? ", disabled, or the game switches them itself" : string.Empty) + ").");
+                PerfDirector.Logger?.Info("Performance: " + _id + " looked through the scenery: " + _scenery + " mesh renderers in " + _cells.Count + " squares of " + CellSize
+                                          + " m; " + _leftAlone + " left alone (of things that move" + (_byEnabled ? ", disabled, or the game switches them itself" : string.Empty) + ").");
             }
         }
 
-        // Takes out as many of the square's renderers as the slice has time for.
+        // takes out as many of the square's renderers as the slice has time for
         private void Hold(Cell cell, ref WorkSlice slice)
         {
             for (; cell.Cursor < cell.Scenery.Count && slice.More(); cell.Cursor++)
@@ -390,7 +339,7 @@ namespace RealLifeOverhaul
                 MeshRenderer renderer = cell.Scenery[cell.Cursor];
                 if (renderer == null || !cell.Bounds.Contains(renderer.transform.position))
                 {
-                    continue;   // (gone, or no longer where it was sorted: something moved it, and it may stand in view)
+                    continue;   // gone, or moved since it was sorted: it may stand in view
                 }
                 if (_byEnabled)
                 {
@@ -404,7 +353,7 @@ namespace RealLifeOverhaul
                 {
                     if (renderer.forceRenderingOff)
                     {
-                        continue;   // somebody else's (or ours already, kept out while the map was open): not taken twice
+                        continue;   // someone else's, or ours kept out while the map was open: not taken twice
                     }
                     renderer.forceRenderingOff = true;
                 }
@@ -422,8 +371,7 @@ namespace RealLifeOverhaul
             _working = cell.Cursor < cell.Scenery.Count ? cell : null;
         }
 
-        // True if the renderer is on or under an object of a layer of things that move. Asked once per parent object while
-        // the renderers are sorted (the answer for a parent is kept until the sorting is done): siblings share their parents.
+        // on or under an object of a moving layer; asked once a parent while sorting, as siblings share their parents
         private bool Moves(Transform transform)
         {
             if (_movingMask == 0)
@@ -448,7 +396,7 @@ namespace RealLifeOverhaul
             return moves;
         }
 
-        // True if the game's own code may enable or disable this renderer: it sits on or under one of the switchers.
+        // the game's own code may switch this renderer: it sits on or under one of the switchers
         private bool GameSwitches(Transform transform)
         {
             for (Transform t = transform; t != null; t = t.parent)
@@ -461,7 +409,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Whole and at once: a square is never half back (but for the map: GiveBackForMap).
+        // whole and at once: a square is never half back, but for the map
         private void GiveBack(Cell cell)
         {
             if (_working == cell)
@@ -503,8 +451,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The city map opens: what it draws comes back, every square; what it does not draw stays out (the square counts as
-        // given back, and the timer takes the rest of it out again after the map, as it does a square that came back whole).
+        // The map opens: what it draws comes back; the rest stays out, the square counts as given back, and the timer takes
+        // it out again after the map.
         private void GiveBackForMap()
         {
             foreach (Cell cell in _cells)
@@ -544,8 +492,9 @@ namespace RealLifeOverhaul
                 }
                 if (playersCamera && distance < Alarm * Alarm && !_alarmed)
                 {
-                    _alarmed = true;   // once per session: a jump (taxi, subway, hospital) is expected now and then
-                    PerfDirector.Logger?.Info("Performance: " + _id + " found a held square " + Mathf.Sqrt(distance).ToString("F0") + " m from the camera (the camera jumped) and gave it back before the frame was drawn.");
+                    _alarmed = true;   // once a session: a jump (taxi, subway, hospital) is expected now and then
+                    PerfDirector.Logger?.Info("Performance: " + _id + " found a held square " + Mathf.Sqrt(distance).ToString("F0")
+                                              + " m from the camera (the camera jumped) and gave it back before the frame was drawn.");
                 }
                 GiveBack(cell);
                 _settled = false;
@@ -581,7 +530,7 @@ namespace RealLifeOverhaul
         private Action<bool> _onMap;
         private Action<ScriptableRenderContext, Camera> _onCamera;
 
-        // Runs before the game's own handlers (see Apply): the map shows the whole city, of its own layers.
+        // before the game's own handlers (see Apply): the map shows the whole city, of its own layers
         private void OnMapToggled(bool open)
         {
             if (open && _heldRenderers > 0)
@@ -592,11 +541,8 @@ namespace RealLifeOverhaul
             _settled = false;
         }
 
-        // Once per camera per frame while the tweak is on, just before the pipeline culls for that camera, so whatever
-        // is given back here is in this very frame. The player's camera: when it has moved 5 m since the last look
-        // (walking: about once a second; a jump across the map: on the frame of the jump; standing: never), every
-        // held square within 1100 m comes back. Any other game camera (savegame picture, building picture, previews):
-        // every held square within its far plane plus 100 m.
+        // Once a camera a frame, just before the pipeline culls for it, so what comes back is in this frame. The player's
+        // camera looks again after moving 5 m (on the frame of a jump).
         private void OnCameraRendering(ScriptableRenderContext context, Camera camera)
         {
             if (_heldRenderers == 0 || camera.cameraType != CameraType.Game)
@@ -610,7 +556,7 @@ namespace RealLifeOverhaul
                 {
                     if (_offMapHeld > 0 && CityMap.IsOpen && (camera.cullingMask & ~_mapMask) != 0)
                     {
-                        GiveBackAll();   // the map's camera draws more than the map's layers now: everything, at once, before it draws
+                        GiveBackAll();   // the map's camera draws more than its layers: everything back before it draws
                         return;
                     }
                     if ((eye - _lastChecked).sqrMagnitude < 25f)
@@ -636,7 +582,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The squares are kept (looking through the scenery is the expensive part); everything taken out goes back.
+        // the squares are kept (looking through the scenery is the dear part); everything taken out goes back
         protected override void Restore()
         {
             if (_hooked)
@@ -660,7 +606,7 @@ namespace RealLifeOverhaul
 
         public override string Describe() => _cells.Count == 0
             ? "scenery not looked through yet"
-            : "renderers out of the picture (" + (_byEnabled ? "disabled" : "forceRenderingOff") + "): " + _heldRenderers + " in " + _heldCells + " of " + _cells.Count + " squares ("
-              + _offMapHeld + " of them of layers the city map does not draw); scenery " + _scenery + ", left alone " + _leftAlone;
+            : "renderers out of the picture (" + (_byEnabled ? "disabled" : "forceRenderingOff") + "): " + _heldRenderers + " in " + _heldCells + " of " + _cells.Count
+              + " squares (" + _offMapHeld + " of them of layers the city map does not draw); scenery " + _scenery + ", left alone " + _leftAlone;
     }
 }

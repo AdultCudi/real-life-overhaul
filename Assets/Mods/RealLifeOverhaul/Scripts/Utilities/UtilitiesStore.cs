@@ -6,13 +6,8 @@ using System.Text;
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The utilities' accounts in the save (GameInstance.modData), one line: "v=2~h:" the days, "~a:" the accounts, each
-    /// its place (escaped, so that no divider can break the line) and its figures, "~n:" the player's broadband company
-    /// (none in a line of version 1), "~g:" the internet's grace period while it runs (its end, then the places it covers,
-    /// escaped; none in a line from before it). A line that cannot be read gives no state (the director starts afresh from the
-    /// player's places); figures out of range are brought within it. The company's end game at scale (Core/EndScale) is
-    /// appended after its months: the day it began to come in, each district built at scale, its three crews; a line
-    /// written before them reads with no day (an existing company is phased in), no district at scale and no crews.
+    /// The utilities' save line: "v=2~h:" the days, "~a:" the accounts, "~n:" the broadband company, "~g:" the grace. A
+    /// line that cannot be read gives no state; figures out of range are brought within it; later fields read as unset.
     /// </summary>
     public static class UtilitiesStore
     {
@@ -25,12 +20,11 @@ namespace RealLifeOverhaul.Utilities
         public static UtilitiesState Load(Dictionary<string, string> data, out int version)
         {
             version = 0;
-            string text;
-            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
+            if (data == null || !data.TryGetValue(Key, out string text) || string.IsNullOrEmpty(text))
             {
                 return null;
             }
-            return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // a line that cannot be read is kept as it is
         }
 
         public static string Write(UtilitiesState s)
@@ -68,7 +62,11 @@ namespace RealLifeOverhaul.Utilities
             if (n.Exists)
             {
                 t.Append("~n:").Append((int)n.State);
-                long[] head = { n.FoundedDay, n.SoldDay, n.SalePrice, n.PriceShare, n.Maintenance, n.Marketing, n.MonthTakings, n.MonthCosts, n.LastTakings, n.LastCosts, n.LastConnections, n.LastGained, n.HistoryCount };
+                long[] head =
+                {
+                    n.FoundedDay, n.SoldDay, n.SalePrice, n.PriceShare, n.Maintenance, n.Marketing, n.MonthTakings, n.MonthCosts, n.LastTakings, n.LastCosts,
+                    n.LastConnections, n.LastGained, n.HistoryCount
+                };
                 for (int f = 0; f < head.Length; f++)
                 {
                     t.Append('|').Append(head[f].ToString(Inv));
@@ -107,7 +105,7 @@ namespace RealLifeOverhaul.Utilities
             return t.ToString();
         }
 
-        // The broadband company: its state, settings and books, then each district's build, cost and shares, then its months.
+        // the company: its state, settings and books, each district's build, cost and shares, then its months
         private static void ReadNetwork(string[] c, Network n)
         {
             n.State = (CompanyState)Clamp(I(c, 0), 0, (int)CompanyState.Sold);
@@ -139,7 +137,7 @@ namespace RealLifeOverhaul.Utilities
                 {
                     for (int p = 0; p < Network.Providers; p++)
                     {
-                        n.Share[d, p] = n.Share[d, p] * 1000 / sum;   // (a line edited by hand: brought back within the whole)
+                        n.Share[d, p] = n.Share[d, p] * 1000 / sum;   // a line edited by hand: brought back within the whole
                     }
                 }
             }
@@ -186,7 +184,7 @@ namespace RealLifeOverhaul.Utilities
                     for (int p = 0; p < s.Promo.Length; p++)
                     {
                         int promo = I(c, 4 + p);
-                        s.Promo[p] = promo <= 0 ? 1000 : Clamp(promo, InternetCatalogue.PromoLeast, InternetCatalogue.PromoMost);   // (none in a line from before the internet)
+                        s.Promo[p] = promo <= 0 ? 1000 : Clamp(promo, InternetCatalogue.PromoLeast, InternetCatalogue.PromoMost);   // none in a line from before the internet
                     }
                 }
                 else if (section.StartsWith("n:", StringComparison.Ordinal))
@@ -253,7 +251,7 @@ namespace RealLifeOverhaul.Utilities
                 LastBill = Math.Max(0, I(c, 15)),
                 LastBillDay = Math.Max(0, I(c, 16)),
                 OnTime = Math.Max(0, I(c, 17)),
-                CutForDebt = I(c, 18) != 0,  // (none in a line from before it was kept)
+                CutForDebt = I(c, 18) != 0,   // none in a line from before it was kept
                 Provider = c.Length > 19 ? Clamp(I(c, 19), -1, InternetCatalogue.OwnIndex) : -1,
                 Plan = Math.Max(0, I(c, 20)),
                 BusinessPlan = I(c, 21) != 0,
@@ -284,14 +282,12 @@ namespace RealLifeOverhaul.Utilities
 
         private static long L(string[] c, int at)
         {
-            long value;
-            return at < c.Length && long.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : 0;
+            return at < c.Length && long.TryParse(c[at], NumberStyles.Integer, Inv, out long value) ? value : 0;
         }
 
         private static int I(string[] c, int at)
         {
-            int value;
-            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : 0;
+            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out int value) ? value : 0;
         }
 
         private static int Clamp(int value, int least, int most)

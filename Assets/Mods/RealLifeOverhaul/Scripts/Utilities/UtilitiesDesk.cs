@@ -6,21 +6,12 @@ using UI.Notification;
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The utilities office's desk, in the window the game lists its subway stations in (TravelList, through the
-    /// feature's DeskList): the game's own form for "pick one of these". An entry for each thing the desk can do today:
-    ///
-    ///   pay        a bill owed at a place: what it comes to and when it falls (or fell) due
-    ///   apply      a bought place in its temporary supply, or a place whose supply is cut: an account applied for, with
-    ///              the deposit (by the credit rating) and, after a cut for an unpaid bill, the reconnection fee; it
-    ///              connects the next morning
-    ///   waiting    an account applied for, and the morning it connects
-    ///
-    /// and a note that bills and auto debit are in the Utilities app. Choosing an entry does it at once and writes the
-    /// list again; the answer is a notification. Built when the desk is spoken to; nothing runs per frame.
+    /// The utilities office's desk in the game's station list (DeskList): pay a bill, apply for an account, see one waiting.
+    /// Built when the desk is spoken to; nothing per frame.
     /// </summary>
     public sealed class UtilitiesDesk
     {
-        private const int Pay = 0, Apply = 1;   // an entry's id: its account's place in the list, twice, and what it does
+        private const int Pay = 0, Apply = 1;   // an entry's id: its account's index in the list, twice, and what it does
         private const string ButtonPay = "reallife_util_desk_button_pay";
         private const string ButtonApply = "reallife_util_desk_button_apply";
 
@@ -64,7 +55,7 @@ namespace RealLifeOverhaul.Utilities
                 Account a = state.Accounts[i];
                 if (a.Service == Service.Internet)
                 {
-                    continue;   // (bought and paid online, from its own provider: the Utilities app)
+                    continue;   // bought and paid online from its own provider: the Utilities app
                 }
                 string service = UtilitiesText.Service(a.Service), place = _director.NameOf(a);
                 int index = _accounts.Count;
@@ -76,7 +67,7 @@ namespace RealLifeOverhaul.Utilities
                         UtilitiesText.T(when, "amount", UtilitiesText.Money(a.Owed), "day", UtilitiesText.Day(a.DueDay)), ButtonPay, true);
                     entries++;
                 }
-                if ((a.State == SupplyState.Temporary || a.State == SupplyState.Cut) && a.State != SupplyState.Closed)
+                if (a.State == SupplyState.Temporary || a.State == SupplyState.Cut)
                 {
                     int cost = _director.ApplicationCost(a, out int deposit, out int fee);
                     string detail = a.Owed > 0

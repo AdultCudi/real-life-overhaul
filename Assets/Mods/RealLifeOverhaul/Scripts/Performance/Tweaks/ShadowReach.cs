@@ -6,12 +6,8 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The sun's shadows as the game sets them for the street: its global volumes' shadow settings ('Default Volume' and
-    /// 'OutdoorShadowVolume' in the census), whose distance and number of cascades the shadow tweaks take down from. Each
-    /// component's own values are kept as found and put back exactly; only a value the game itself sets (overrides) is
-    /// changed, so a volume that leaves the pipeline's default is left alone, and the local volumes of interiors are never
-    /// touched. The volumes are listed again when a scene arrives or the player goes in or out (on the tweaks' timers).
-    /// Nothing here runs per frame.
+    /// The sun's shadow settings of the game's global volumes: only values the game overrides change, put back exactly;
+    /// interiors' volumes are never touched. Listed again after a scene or a door, on the tweaks' timers.
     /// </summary>
     internal static class PerfShadows
     {
@@ -31,7 +27,7 @@ namespace RealLifeOverhaul
         private static int _arrivals = -1;
         private static bool _inside;
 
-        /// <summary>The share of the game's distance asked for (the option's, or a benchmark row's).</summary>
+        /// <summary>The share of the game's distance asked for, by the option or a benchmark row.</summary>
         public static void Distance(bool trial, int percent)
         {
             if (trial)
@@ -59,7 +55,7 @@ namespace RealLifeOverhaul
             Apply();
         }
 
-        /// <summary>On the tweaks' timers: the volumes listed again only after a scene arrived or the player went in or out.</summary>
+        /// <summary>On the tweaks' timers: the volumes listed again only after a scene arrived or a door.</summary>
         public static void Keep()
         {
             if (_arrivals != PerfTweaks.Arrivals || _inside != BuildingManager.IsInsideBuilding)
@@ -80,7 +76,7 @@ namespace RealLifeOverhaul
                    + first.cascadeShadowSplitCount.value + " cascade(s), the game's " + Found[0].Distance.ToString("F0") + " m in " + Found[0].Count : "gone");
         }
 
-        // The game's values back first: what is changed is always taken from them, never from a value of ours.
+        // the game's values back first: a change is always taken from them, never from a value of ours
         private static void Apply()
         {
             Restore();
@@ -125,7 +121,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Every value changed put back as it was found. Safe at any time, and with settings since destroyed.</summary>
+        /// <summary>Every value put back as found; safe at any time, also with settings since destroyed.</summary>
         public static void Restore()
         {
             for (int i = 0; i < Found.Count; i++)
@@ -179,11 +175,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// How far the sun's shadows reach, as a share of the game's (Core/Settings.ShadowReach, or half for the benchmark's
-    /// trial row): fewer things are drawn into the shadow maps, and shadows end nearer the camera. It changes the picture:
-    /// off (100%) until the player moves the slider. Its timer lists the game's volumes again after a scene arrives.
-    /// </summary>
+    /// <summary>The sun's shadow reach as a share of the game's (half for the trial row); the game's own until moved.</summary>
     public sealed class ShadowReach : PerfTweak
     {
         private readonly bool _trial;
@@ -212,11 +204,7 @@ namespace RealLifeOverhaul
         public override string Describe() => "sun shadows to " + RenderLevelRules.Percent(Percent) + "% of the game's distance: " + PerfShadows.Describe();
     }
 
-    /// <summary>
-    /// How many cascades the sun's shadow map is split into (Core/Settings.ShadowCascades, or one for the benchmark's trial
-    /// row): fewer cascades are fewer passes over the shadow casters, and shadows a little softer near the camera. The
-    /// game's own until the player picks a number.
-    /// </summary>
+    /// <summary>The sun's shadow cascades (one for the trial row): fewer passes over the casters; the game's own until picked.</summary>
     public sealed class ShadowCascades : PerfTweak
     {
         private readonly bool _trial;
@@ -245,11 +233,7 @@ namespace RealLifeOverhaul
         public override string Describe() => "sun shadows in " + Count + " cascade(s): " + PerfShadows.Describe();
     }
 
-    /// <summary>
-    /// How far away things keep their detailed models, as a share of the game's distances (Core/Settings.LodReach, or half
-    /// for the benchmark's trial row): the player's camera only, through its own frame settings (PerfFrameSettings), as a
-    /// scale of the game's level-of-detail bias. Simpler models nearer the camera; the game's own until the slider moves.
-    /// </summary>
+    /// <summary>How far things keep detailed models, as a share of the game's (half for the trial row), on the player's camera.</summary>
     public sealed class LodReach : PerfTweak
     {
         private readonly bool _trial;

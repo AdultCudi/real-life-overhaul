@@ -4,7 +4,7 @@ using RealLifeOverhaul.Family;
 
 namespace RealLifeOverhaul.Planner
 {
-    /// <summary>Family: the places to be that the family keeps in the save (scans, school evenings, dinners, the wedding) and a wedding day that is planned (Family/FamilyState).</summary>
+    /// <summary>The family's places to be (scans, school evenings, dinners) and a planned wedding (FamilyState).</summary>
     public sealed class FamilySource : IPlannerSource
     {
         public string Id => "family";
@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Planner
                 {
                     continue;
                 }
-                // Two errands of one kind on one day are told apart by their hour.
+                // two errands of one kind on a day are told apart by their hour
                 PlannerEntry e = into.Add(Id, errand.Day, PlannerLogic.Stable(errand.Kind) ^ errand.FromHour, PlannerCategory.Family, errand.Day);
                 if (e == null)
                 {
@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Planner
                 e.Number = errand.Number;
                 if (into.WantText)
                 {
-                    string key = "reallife" + "_family_errand_" + errand.Kind;   // the family's own titles, one per kind of errand (Family/Errands)
+                    string key = "reallife" + "_family_errand_" + errand.Kind;   // the family's title for the kind
                     e.Title = LocalizorManager.IsLocalizedKey(key) ? key.GetLocalization() : PlannerText.T("reallife_planner_family_title");
                     e.What = PlannerText.T("reallife_planner_family_what");
                 }
@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>Social life: the one plan agreed with somebody (Social/SocialModel: SocialState.Plan).</summary>
+    /// <summary>The one plan agreed with somebody (SocialState.Plan).</summary>
     public sealed class SocialSource : IPlannerSource
     {
         public string Id => "social";
@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>Travel and lodging: the hour a hotel room has to be left (Travel/TravelState, HotelStay.CheckoutHour).</summary>
+    /// <summary>The hour a hotel room has to be left (HotelStay.CheckoutHour).</summary>
     public sealed class TravelSource : IPlannerSource
     {
         public string Id => "travel";
@@ -125,7 +125,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>City events: the market, parade or fireworks of each day (Events/EventCalendar, which answers for any day from the save's own number).</summary>
+    /// <summary>The market, parade or fireworks of each day (EventCalendar answers for any day).</summary>
     public sealed class EventsSource : IPlannerSource
     {
         public string Id => "event";
@@ -156,11 +156,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>
-    /// Civic life: election day with its polling hours, and the candidates' debate before it (Civic/CivicGovernment.State);
-    /// and the player's own politics (Civic/CivicOffice.State): the last day to file papers, the player's own debate, result
-    /// night, an attack to answer, the council's meetings, the budget, the register of interests and a recall vote.
-    /// </summary>
+    /// <summary>Election day and the debate before it; and the player's own politics' dates (CivicOffice.State).</summary>
     public sealed class CivicSource : IPlannerSource
     {
         public string Id => "civic";
@@ -205,7 +201,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // The player's own politics: ids are the day and 10 to 17 for the kind of row.
+        // ids: the day, and 10 to 17 for the kind of row
         private void Office(CivicOffice office, GovState g, PlannerList into)
         {
             OfficeState s = office.State;
@@ -311,7 +307,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>Business pressure: what an open matter at one of the player's businesses has to be dealt with by (Business/BusinessState.Issues).</summary>
+    /// <summary>The day an open matter at one of the player's businesses has to be dealt with by (BusinessState.Issues).</summary>
     public sealed class BusinessSource : IPlannerSource
     {
         public string Id => "business";
@@ -342,7 +338,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>Home life and health: the hour a doctor's sick note runs out (Home/HomeState.SickNoteUntil).</summary>
+    /// <summary>The hour a doctor's sick note runs out (HomeState.SickNoteUntil).</summary>
     public sealed class HealthSource : IPlannerSource
     {
         public string Id => "health";

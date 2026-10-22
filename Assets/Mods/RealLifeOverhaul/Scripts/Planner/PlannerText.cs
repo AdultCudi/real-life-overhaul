@@ -5,30 +5,20 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Planner
 {
-    /// <summary>
-    /// One source of things to do. A source reads a feature's (or the game's) own state and never changes it. It is
-    /// asked only when the Planner looks: when the app opens, once a game hour for the badge, and when a reminder is
-    /// due. "Available" is false while its feature is switched off or not loaded, and then it costs nothing.
-    /// A new feature adds one class in Planner/Sources and one line in PlannerDirector.Sources.
-    /// </summary>
+    /// <summary>A source of things to do: it reads, never changes, is asked only when the Planner looks, and costs nothing while off.</summary>
     public interface IPlannerSource
     {
-        /// <summary>Short and never changed: it is kept in the save with a reminder ("work", "court").</summary>
+        /// <summary>Short and never changed: it is saved with a reminder ("work", "court").</summary>
         string Id { get; }
         bool Available { get; }
-        /// <summary>
-        /// Adds what falls on the days fromDay..toDay (into.Add gives a blank entry, or null for a day outside them).
-        /// The numbers are always filled; the texts only if into.WantText.
-        /// </summary>
+        /// <summary>Adds what falls on the days fromDay..toDay; the texts only if into.WantText.</summary>
         void Collect(int fromDay, int toDay, PlannerList into);
     }
 
-    /// <summary>The Planner's words: every text is a key of en.json or one of the game's own keys; times and days are written as the game writes them.</summary>
+    /// <summary>The Planner's words: mod or game keys, times and days written as the game writes them.</summary>
     public static class PlannerText
     {
-        // The game's own icons, by category: the one that fits best, then one that the phone's own scene uses and
-        // that is therefore certainly in memory (docs/game-ui.md lists which are). GameUi.GameSprites finds them by
-        // name; if neither is there the row has no picture.
+        // By category: the best fit, then one the phone's scene uses and so is surely in memory (docs/game-ui.md).
         private static readonly string[][] IconNames =
         {
             new[] { "Icon-PersonEngineer", "Icon-PersonManage" }, new[] { "Icon-Security" }, new[] { "Icon-Traffic", "Icon-Parking" },
@@ -37,7 +27,7 @@ namespace RealLifeOverhaul.Planner
             new[] { "Icon-Money", "Icon-Coin" }, new[] { "Icon-Edit" }
         };
 
-        /// <summary>The glyph on the app's own icon: a calendar, or the clock face the game's opening hours use.</summary>
+        /// <summary>The glyph on the app's icon: a calendar, or the clock face of the game's opening hours.</summary>
         public static readonly string[] AppGlyphs = { "Icon-Calendar", "Icon-OpeningHours" };
 
         private static readonly string[] CategoryKeys =
@@ -101,24 +91,20 @@ namespace RealLifeOverhaul.Planner
             return amount.ToCurrencyFormat();
         }
 
-        /// <summary>An entry's "Costs $120", with the sum kept for the day's box (PlannerEntry.Owes). Words: the sum as its feature writes it.</summary>
+        /// <summary>An entry's "Costs $120", the sum kept in Owes; 'words' is the sum as its feature writes it.</summary>
         public static void Costs(PlannerEntry entry, float amount, string words)
         {
             entry.Owes = amount > 0f ? amount : 0f;
             entry.Money = T("reallife_planner_costs", "amount", words);
         }
 
-        // ---------------------------------------------------------------- kinds, groups, tags
-
-        private static readonly string[] GroupKeys =
+        /// <summary>The filter's words for the groups, in PlannerGroup's order.</summary>
+        public static readonly string[] GroupKeyList =
         {
             "reallife_planner_group_work", "reallife_planner_group_money", "reallife_planner_group_life", "reallife_planner_group_business"
         };
 
-        /// <summary>The filter's words for the four groups (PlannerGroup), in their order.</summary>
-        public static string[] GroupKeyList => GroupKeys;
-
-        // The short word on an entry in the Week tab: the kind's own where it is short, a shorter one where it is not.
+        // an entry's word in the Week tab: the kind's own, or a shorter one
         private static readonly string[] TagKeys =
         {
             "reallife_planner_cat_work", "reallife_planner_tag_court", "reallife_planner_tag_licence", "reallife_planner_cat_family",
@@ -132,7 +118,7 @@ namespace RealLifeOverhaul.Planner
             return index >= 0 && index < TagKeys.Length ? TagKeys[index] : TagKeys[TagKeys.Length - 1];
         }
 
-        /// <summary>The tone a kind's tag is written in (the mod's tones, GameUi.CellTone): work and study yellow, money green, the rest plain; red is kept for a clash or a miss.</summary>
+        /// <summary>Work yellow, money green, the rest plain; red is kept for a clash or a miss.</summary>
         public static GameUi.CellTone TagTone(PlannerCategory category)
         {
             switch (PlannerRules.GroupOf(category))
@@ -143,7 +129,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>"3 hours 20 minutes", "45 minutes": a stretch of game time.</summary>
+        /// <summary>"3 hours 20 minutes", "45 minutes".</summary>
         public static string Span(int minutes)
         {
             minutes = minutes < 0 ? 0 : minutes;
@@ -159,7 +145,7 @@ namespace RealLifeOverhaul.Planner
             return T("reallife_planner_span_both", "hours", hours.ToString(), "minutes", rest.ToString());
         }
 
-        /// <summary>A time of day as the game writes it, in the 12 or 24 hours of the game's own option (TimeHelper.GetFormattedTime).</summary>
+        /// <summary>A time of day in the game's 12 or 24 hours (TimeHelper.GetFormattedTime).</summary>
         public static string Clock(int minutesOfDay)
         {
             int m = ((minutesOfDay % PlannerTime.MinutesPerDay) + PlannerTime.MinutesPerDay) % PlannerTime.MinutesPerDay;
@@ -176,13 +162,13 @@ namespace RealLifeOverhaul.Planner
             return DayKeys[PlannerTime.Weekday(day)].GetLocalization();
         }
 
-        /// <summary>A day as the game's top bar writes it: "Monday (Day 12)" (its key topbar_date_format).</summary>
+        /// <summary>"Monday (Day 12)", as the game's top bar.</summary>
         public static string Date(int day)
         {
             return "topbar_date_format".GetLocalization().Replace("{DayOfWeek}", Weekday(day)).Replace("{CurrentNumberDay}", day.ToString());
         }
 
-        /// <summary>"Today", "Tomorrow" (the game's own words), or the day as the top bar writes it.</summary>
+        /// <summary>"Today", "Tomorrow", or the day as the top bar writes it.</summary>
         public static string Day(int day, int today)
         {
             return day == today ? "common_today".GetLocalization() : day == today + 1 ? "common_tomorrow".GetLocalization() : Date(day);
@@ -247,17 +233,14 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>
-        /// The reminders an entry's box offers, in this order: none, 15, 30 and 60 minutes before, at the time, the
-        /// evening before, and (for one at a place) when to leave.
-        /// </summary>
+        /// <summary>The reminders an entry's box offers, in order; "when to leave", last, only for one at a place.</summary>
         public static readonly ReminderLead[] Leads =
         {
             ReminderLead.None, ReminderLead.QuarterBefore, ReminderLead.HalfHourBefore, ReminderLead.HourBefore,
             ReminderLead.AtTheTime, ReminderLead.EveningBefore, ReminderLead.LeaveBy
         };
 
-        /// <summary>The place of a reminder in Leads; 0 (none) for one not there.</summary>
+        /// <summary>The index of a reminder in Leads; 0 (none) for one not there.</summary>
         public static int LeadIndex(ReminderLead lead)
         {
             int index = System.Array.IndexOf(Leads, lead);

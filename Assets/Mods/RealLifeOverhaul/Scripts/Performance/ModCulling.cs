@@ -7,34 +7,23 @@ using UnityEngine.SceneManagement;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The mod's own things in the street drawn by distance, as the game draws its own (Culling.CullingManager): a culling
-    /// group of the mod's with the game's two bands (<see cref="CullRules"/>), measured from the player, with the player's
-    /// camera. A thing registered here has its renderers hidden beyond the far band (Renderer.forceRenderingOff, only on
-    /// renderers that were drawn, given back exactly) and drawn again inside it; nothing else of it changes. While the city
-    /// map is open everything is drawn. CullRules.Inventory says which kinds are registered, and why every other kind is not.
-    ///
-    /// A group of its own rather than the game's: the game's rebuilds every sphere of its list whenever one leaves it, and
-    /// bus stops and station fronts come and go. Switched on and off by its performance option (Tweaks/ModCull); things are
-    /// registered whether or not it is on, so switching it on later finds them all.
-    ///
-    /// The cost: per frame one comparison (<see cref="Frame"/>, from PerfDirector) while no thing has changed band; the engine
-    /// measures the spheres as it culls. A change of band is applied in a later frame, at most <see cref="PerFrame"/> things
-    /// a frame, each a walk over its own renderers. Registering is a few array writes; nothing is allocated but a thing's
-    /// own list of renderers, once.
+    /// Hides the mod's things in the street beyond the game's far band, in a culling group of its own (the game's rebuilds
+    /// every sphere when one leaves) measured from the player; only forceRenderingOff changes, and the city map draws all.
+    /// Cost a frame: one comparison while nothing changed band, then at most <see cref="PerFrame"/> things a frame.
     /// </summary>
     public static class ModCulling
     {
-        private const int PerFrame = 8;             // things looked at in one frame at the most
+        private const int PerFrame = 8;   // things looked at in one frame, at most
         private const int StartSize = 64;           // slots before the book grows
 
-        private static readonly FeatureGuard EventGuard = Guard.For("performance", "ModCulling", typeof(ModCulling));   // the engine's callback (Core/Guard)
+        private static readonly FeatureGuard EventGuard = Guard.For("performance", "ModCulling", typeof(ModCulling));   // the engine's callback
         private static readonly float[] Bands = { CullRules.NearBand, CullRules.FarBand };
         private static readonly CullBook Book = new CullBook(StartSize);
         private static readonly List<Renderer> Found = new List<Renderer>(64);
         private static BoundingSphere[] _spheres = new BoundingSphere[StartSize];
         private static CullEntry[] _byId = new CullEntry[StartSize];
         private static CullingGroup _group;
-        private static CullingGroup.StateChanged _changed;   // made once (the engine keeps it)
+        private static CullingGroup.StateChanged _changed;   // made once: the engine keeps it
         private static Action<bool> _mapToggled;
         private static Action _mapClosed;
         private static Camera _camera;
@@ -45,10 +34,7 @@ namespace RealLifeOverhaul
         /// <summary>True while the culling is switched on and its group is measuring.</summary>
         public static bool On => _on && _group != null;
 
-        /// <summary>
-        /// Registers a thing of a kind CullRules lets be culled: its renderers are those under <paramref name="root"/>, its
-        /// sphere the given centre and radius (metres, covering all of it). Null for any other kind, or no root.
-        /// </summary>
+        /// <summary>Registers a thing of a cullable kind by its root and a sphere covering it (metres); null otherwise.</summary>
         public static CullEntry Add(CullRules.Kind kind, Transform root, Vector3 centre, float radius)
         {
             if (!CullRules.MayCull(kind) || root == null)
@@ -65,10 +51,7 @@ namespace RealLifeOverhaul
             return entry;
         }
 
-        /// <summary>
-        /// A registered thing moved (a bus stop's dressing put up at another place): drawn at once, and measured again where
-        /// it is in a later frame.
-        /// </summary>
+        /// <summary>A registered thing moved (a bus stop's dressing put up elsewhere): drawn at once, measured again later.</summary>
         public static void Move(CullEntry entry, Vector3 centre, float radius)
         {
             int slot = entry != null ? Book.SlotOf(entry.Id) : -1;
@@ -81,10 +64,7 @@ namespace RealLifeOverhaul
             Book.Changed(slot, Time.frameCount);
         }
 
-        /// <summary>
-        /// The owner switched some of a thing's pieces on while it was hidden (a patrol car parked by a station front): those
-        /// are hidden too. Nothing to do while it is drawn.
-        /// </summary>
+        /// <summary>The owner switched pieces on while the thing was hidden (a patrol car by a station front): those are hidden too.</summary>
         public static void Refresh(CullEntry entry)
         {
             if (entry != null && entry.Hidden && _byId[entry.Id] == entry)
@@ -93,7 +73,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Takes a thing out, drawn again as it was. Safe with null and with a thing already taken out.</summary>
+        /// <summary>Takes a thing out, drawn again as it was; safe with null or a thing already out.</summary>
         public static void Remove(CullEntry entry)
         {
             if (entry == null || entry.Id < 0 || entry.Id >= _byId.Length || _byId[entry.Id] != entry)
@@ -113,7 +93,7 @@ namespace RealLifeOverhaul
             _group?.SetBoundingSphereCount(Book.Count);
         }
 
-        /// <summary>Switched on or off by its performance option. Off, everything is drawn again and the group is let go.</summary>
+        /// <summary>By its performance option; off, everything is drawn again and the group let go.</summary>
         public static void Enable(bool on)
         {
             _on = on;
@@ -132,7 +112,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>On the option's timer: the group follows the game to a new camera or player, and is made if it is not there.</summary>
+        /// <summary>On the option's timer: the group follows the game to a new camera or player, made if missing.</summary>
         public static void Keep()
         {
             if (!_on)
@@ -165,7 +145,7 @@ namespace RealLifeOverhaul
             Book.QueueAll(Time.frameCount);
         }
 
-        /// <summary>Once a frame, from PerfDirector: the things whose band changed are hidden or drawn. One comparison while none has.</summary>
+        /// <summary>Once a frame, from PerfDirector: the things whose band changed are hidden or drawn.</summary>
         public static void Frame()
         {
             if (Book.Waiting == 0)
@@ -184,7 +164,7 @@ namespace RealLifeOverhaul
                 }
                 if (entry.Root == null)
                 {
-                    Remove(entry);   // its owner is gone without taking it out (the city going)
+                    Remove(entry);   // its owner is gone without taking it out: the city going
                     continue;
                 }
                 bool drawn = !On || CullRules.Drawn(entry.Kind, _group.GetDistance(Book.SlotOf(id)), _mapOpen);
@@ -222,10 +202,7 @@ namespace RealLifeOverhaul
                    + (_mapOpen ? "; the city map is open: all drawn" : string.Empty) + (On ? string.Empty : "; not measuring (no camera or player yet, or off)");
         }
 
-        /// <summary>
-        /// For the probe's report (Performance/PerfCensus): the registered things by kind, and every renderer of the mod's in the
-        /// street by distance from the player and whether it was drawn. Walks the mod's objects; report time only.
-        /// </summary>
+        /// <summary>For the probe's report: the things by kind, and the mod's renderers in the street by distance. Report time only.</summary>
         public static void Census(StringBuilder text)
         {
             var things = new int[(int)CullRules.Kind.Count];
@@ -245,7 +222,8 @@ namespace RealLifeOverhaul
             text.AppendLine("  " + Describe() + "; bands " + CullRules.NearBand + " m and " + CullRules.FarBand + " m from the player, as the game's own");
             for (int k = 0; k < (int)CullRules.Kind.Count; k++)
             {
-                text.AppendLine("    " + CullRules.Name((CullRules.Kind)k).PadRight(24) + things[k] + " registered, " + hidden[k] + " not drawn now (" + renderers[k] + " renderers)");
+                text.AppendLine("    " + CullRules.Name((CullRules.Kind)k).PadRight(24) + things[k] + " registered, " + hidden[k] + " not drawn now (" + renderers[k]
+                                + " renderers)");
             }
             GameManager game = InstanceBehavior<GameManager>.Instance;
             Vector3 player = game != null && game.playerController != null ? game.playerController.transform.position : Vector3.zero;
@@ -295,7 +273,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The engine's call, made while it culls the camera: only noted, applied in a later frame (Frame).
+        // the engine's call while it culls the camera: only noted, applied in a later frame
         private static void Changed(CullingGroupEvent sphere)
         {
             try
@@ -356,7 +334,7 @@ namespace RealLifeOverhaul
             _player = null;
         }
 
-        // The sphere array and the list of things grow with the book; the group is given the new array.
+        // the sphere array and the list of things grow with the book; the group gets the new array
         private static void Fit()
         {
             if (_spheres.Length >= Book.Capacity)
@@ -368,7 +346,7 @@ namespace RealLifeOverhaul
             _group?.SetBoundingSpheres(_spheres);
         }
 
-        // Every renderer of the thing that is drawn now is held back, and remembered; one already held back by its owner is left.
+        // every drawn renderer of the thing held back and remembered; one its owner holds back already is left
         private static void Hide(CullEntry entry)
         {
             if (!entry.Hidden)
@@ -410,12 +388,12 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>A thing registered with <see cref="ModCulling"/>: its owner keeps it, and gives it back when the thing goes.</summary>
+    /// <summary>A thing registered with <see cref="ModCulling"/>, kept by its owner, who takes it out when it goes.</summary>
     public sealed class CullEntry
     {
         internal readonly CullRules.Kind Kind;
         internal readonly Transform Root;
-        internal readonly List<Renderer> Off = new List<Renderer>(8);   // the renderers held back, to be given back exactly
+        internal readonly List<Renderer> Off = new List<Renderer>(8);   // the renderers held back, given back exactly
         internal int Id;
         internal bool Hidden;
 

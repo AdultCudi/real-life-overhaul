@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>Small helpers for the performance reports. Only ever used while a report is being written.</summary>
+    /// <summary>Small helpers for the performance reports, used only while one is written.</summary>
     internal static class PerfText
     {
         public static string F1(float value) => value.ToString("F1", CultureInfo.InvariantCulture);
@@ -143,11 +143,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Writes the public fields of a settings object as "name=value", nested settings indented under their
-        /// name. Used for the render pipeline's settings, so that the report shows them exactly as the game has
-        /// them rather than the handful somebody thought to list.
-        /// </summary>
+        /// <summary>Writes a settings object's public fields as "name=value", nested ones indented, exactly as the game has them.</summary>
         public static void Dump(StringBuilder text, object settings, string indent, int depth)
         {
             if (settings == null)

@@ -6,16 +6,12 @@ using UnityEngine.SceneManagement;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Runs the performance work in the city: switches the tweaks on and off as the options (or the benchmark)
-    /// ask, gives each its timer tick, and starts the probe and the benchmark on their keys (Core/Keys: F7 and Shift+F7 unless rebound).
-    /// Its own cost per frame while nothing is being measured: one key test, five flags and one time compare. Tweaks are
-    /// switched one a frame (<see cref="Sync"/>): after a load, or when the options change, each switch has a frame of its
-    /// own, where every tweak used to be switched in the same frame (a frame of 9 to 20 ms of this director in play).
-    /// What each looks at in the scene is taken behind the loading screen (PerfTweaks.Prewarm).
+    /// Runs the performance work: the tweaks switched one a frame as the options or the benchmark ask, their timer ticks,
+    /// and the probe and benchmark keys. Cost a frame while nothing is measured: a key test, five flags, a time comparison.
     /// </summary>
     public sealed class PerfDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("performance", "PerfDirector", typeof(PerfDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("performance", "PerfDirector", typeof(PerfDirector));
 
         private const float SettleSeconds = 3f;   // after the city loads, before the first tweak looks at the scene
 
@@ -31,7 +27,7 @@ namespace RealLifeOverhaul
         private Pending _pending;
         private float _pendingSince;
 
-        // A measurement asked for from the options page waits for the menus to close: nobody wants the menu measured.
+        // a measurement asked for from the options page waits for the menus to close
         private enum Pending { None, Probe, Bench }
 
         private void Awake()
@@ -45,7 +41,6 @@ namespace RealLifeOverhaul
             PerfTweaks.Dirty = true;
             SceneManager.sceneLoaded += SceneLoadedCall;
             SceneManager.sceneUnloaded += SceneUnloadedCall;
-            // The tweaks' looks at the scene (the skies, the scenery) behind the loading screen, not in the frame they come on.
             ScenePrewarm.Add("performance: the scene looked at for the tweaks that are on (the skies, the scenery)", PerfTweaks.Prewarm);
         }
 
@@ -84,7 +79,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Two seconds of the game running with no menu up, then go.
+        // two seconds of the game running with no menu up, then go
         private void WaitForMenus(float now)
         {
             if (ThirdPersonCamera.IsUiOpen() || Time.timeScale <= 0f)
@@ -107,7 +102,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -151,7 +146,7 @@ namespace RealLifeOverhaul
             ModCulling.Frame();   // one comparison unless a thing of the mod's has changed band (Performance/ModCulling)
         }
 
-        // A measurement that meets something unexpected is dropped, with everything it changed put back.
+        // a measurement that meets something unexpected is dropped, with everything it changed put back
         private void Measure()
         {
             try
@@ -174,8 +169,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Brings the tweaks to the state their options (or the benchmark) ask for, one a frame: the first that is not as asked is
-        // switched, and the next frame looks again. Done once every tweak is as asked.
+        // the first tweak not as asked is switched, and the next frame looks again
         private void Sync(float now)
         {
             foreach (PerfTweak tweak in PerfTweaks.All)
@@ -196,7 +190,7 @@ namespace RealLifeOverhaul
                     tweak.NextTick = now + tweak.Interval;
                     Logger?.Info("Performance: '" + tweak.Id + "' " + (tweak.Active ? "on. " + tweak.Describe() : "off, the game's own state is back."));
                     Schedule();
-                    return;   // one a frame (a tweak that faulted is off and no longer asked for: it is not switched again)
+                    return;   // one a frame; a tweak that faulted is no longer asked for
                 }
             }
             PerfTweaks.Dirty = false;
@@ -228,8 +222,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The tweaks only note it: they look again on their own timers, a slice at a time, never in this frame.
-        // The scene's events, through the guard (a handler that throws would stop the engine's other handlers of it).
+        // Through the guard: a handler that throws would stop the engine's other handlers. The tweaks only note the change
+        // and look again on their own timers.
         private static UnityEngine.Events.UnityAction<Scene, LoadSceneMode> _loaded;
         private static UnityEngine.Events.UnityAction<Scene> _unloaded;
         private static UnityEngine.Events.UnityAction<Scene, LoadSceneMode> SceneLoadedCall => _loaded ?? (_loaded = Guard.Listener<Scene, LoadSceneMode>(OnSceneLoaded));
@@ -239,7 +233,7 @@ namespace RealLifeOverhaul
 
         private static void OnSceneUnloaded(Scene scene) => PerfTweaks.WorldChanged(false);
 
-        /// <summary>A toast from the performance tools; never kept in the savegame.</summary>
+        /// <summary>A notification from the performance tools, never kept in the save.</summary>
         public static void Notify(string key, float seconds)
         {
             Notifications.Show(NotificationType.Info, key, null, seconds, null, null, notificationSound: false, trackOnSaveGame: false);

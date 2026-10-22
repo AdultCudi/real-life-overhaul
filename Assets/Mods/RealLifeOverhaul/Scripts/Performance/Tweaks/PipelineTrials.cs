@@ -6,11 +6,8 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Switches features of the render pipeline off for the player's camera only, through the camera's own
-    /// "custom frame settings" (an override mask: only the named features are affected, everything else keeps
-    /// following the game's defaults), and scales its level-of-detail bias (Tweaks/ShadowReach.cs: LodReach). Several users
-    /// may each switch features off or ask for a scale (the smallest is used); when the last one lets go the camera has
-    /// back exactly the three values it had: the flag, the settings and the mask.
+    /// Pipeline features off and a level-of-detail scale for the player's camera only, through its frame settings' override
+    /// mask; the smallest scale wins, and the last user letting go puts the flag, settings and mask back.
     /// </summary>
     internal static class PerfFrameSettings
     {
@@ -79,7 +76,7 @@ namespace RealLifeOverhaul
                 _wasSettings = data.renderingPathCustomFrameSettings;
                 _wasMask = data.renderingPathCustomFrameSettingsOverrideMask;
             }
-            FrameSettings settings = _wasSettings;   // always from what the camera had, never from our own last state
+            FrameSettings settings = _wasSettings;   // always from what the camera had, never from the last state of ours
             FrameSettingsOverrideMask mask = _wasCustom ? _wasMask : default;
             foreach (FrameSettingsField field in Off)
             {
@@ -93,7 +90,7 @@ namespace RealLifeOverhaul
                 {
                     scale = Mathf.Min(scale, asked);
                 }
-                settings.lodBiasMode = LODBiasMode.ScaleQualitySettings;   // a share of the bias the game's quality level gives
+                settings.lodBiasMode = LODBiasMode.ScaleQualitySettings;   // a share of the bias the quality level gives
                 settings.lodBias = scale;
                 mask.mask[(uint)FrameSettingsField.LODBiasMode] = true;
                 mask.mask[(uint)FrameSettingsField.LODBias] = true;
@@ -104,14 +101,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// A measurement, not an option: one feature (or one group of features) of the render pipeline switched off
-    /// for the player's camera while the benchmark compares the frame with and without it. The pipeline's own
-    /// code is 3.8 ms of the 9.6 ms frame (2.5 ms of it with nothing to draw), and its timers are compiled out
-    /// of this build, so this is the only way to learn which of its passes that time is spent in. Several of
-    /// these change the picture; that is expected for the few seconds the row lasts. One that turns out to be
-    /// both worth something and invisible can be made an option afterwards.
-    /// </summary>
+    /// <summary>A benchmark row: one pipeline feature off, the only way to see its cost, as its timers are compiled out.</summary>
     public sealed class FrameSettingTrial : PerfTweak
     {
         private readonly string _id;
@@ -141,12 +131,7 @@ namespace RealLifeOverhaul
         public override string Describe() => _what;
     }
 
-    /// <summary>
-    /// Whether a feature of the render pipeline does anything for the player's camera in this game, for the benchmark: a
-    /// trial of a feature that is off already measures nothing and is listed as such instead (PerfBench). Off when the
-    /// camera's frame settings leave it out (the quality level's pipeline asset does not support it, or the game's settings
-    /// switch it off), or when the volumes the camera renders with leave it off. Report time only.
-    /// </summary>
+    /// <summary>Why a pipeline feature does nothing for the player's camera (frame settings or volumes), or null. Report time.</summary>
     internal static class PerfRender
     {
         public static string Unused(FrameSettingsField field)
@@ -176,7 +161,8 @@ namespace RealLifeOverhaul
                     return reflection != null && !reflection.enabled.value ? "the game's volumes leave screen-space reflections off" : null;
                 case FrameSettingsField.SSAO:
                     ScreenSpaceAmbientOcclusion occlusion = stack.GetComponent<ScreenSpaceAmbientOcclusion>();
-                    return occlusion != null && occlusion.intensity.value <= 0f ? "the game's volumes leave the pipeline's ambient occlusion at nothing (the game uses its HBAO)" : null;
+                    return occlusion != null && occlusion.intensity.value <= 0f
+                        ? "the game's volumes leave the pipeline's ambient occlusion at nothing (the game uses its HBAO)" : null;
                 case FrameSettingsField.Volumetrics:
                     Fog fog = stack.GetComponent<Fog>();
                     return fog != null && (!fog.enabled.value || !fog.enableVolumetricFog.value) ? "the game's volumes leave volumetric fog off" : null;

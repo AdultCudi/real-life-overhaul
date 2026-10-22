@@ -1,27 +1,19 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What of the mod's own in the street is drawn by distance, and what never is. The bands are the game's own
-    /// (Culling.CullingManager: 60 m and 200 m from the player); <see cref="ModCulling"/> measures the mod's things against
-    /// them in a culling group of its own and hides the renderers of a thing beyond the far band. Hiding is the only change:
-    /// a thing's colliders, navigation boxes, place and state stay as they are, so it is visual and this machine's alone.
-    ///
-    /// <see cref="Inventory"/> is every kind of thing the mod puts in the world, with how it is kept from costing frames
-    /// far away: here, by its owner's own distance, out of view by its pool, inside a building, by the game, or never
-    /// (gameplay needs it while it matters: a car the player drives or chases, an incident in progress, a person in a
-    /// conversation, the player's own activity). Only the kinds of <see cref="Kind"/> may be registered, from the files the
-    /// inventory names for them. No Unity or game types: checked offline (NavCheck, CullCheck.cs).
+    /// What of the mod's own in the street is hidden beyond the game's far band (<see cref="ModCulling"/>): only the kinds
+    /// of <see cref="Kind"/>; <see cref="Inventory"/> says how every other kind is kept cheap. Checked offline (CullCheck.cs).
     /// </summary>
     public static class CullRules
     {
         public const float NearBand = 60f;    // metres from the player: the game's first band
-        public const float FarBand = 200f;    // metres from the player: the game's second band; beyond it a registered thing is not drawn
+        public const float FarBand = 200f;   // metres from the player: the game's second band; beyond it a registered thing is not drawn
 
         public const int Near = 0;            // a band as the engine reports it: within NearBand
         public const int Middle = 1;          // between the two
         public const int Far = 2;             // beyond FarBand
 
-        /// <summary>The kinds of thing that may be culled here. Anything else is never registered.</summary>
+        /// <summary>The kinds of thing culled here; anything else is never registered.</summary>
         public enum Kind
         {
             BusStop,           // a bus stop's pole, shelter, lettering and strips: every place of the city stands all session
@@ -110,10 +102,7 @@ namespace RealLifeOverhaul
         /// <summary>True for the kinds this file lets <see cref="ModCulling"/> take.</summary>
         public static bool MayCull(Kind kind) => kind >= Kind.BusStop && kind < Kind.Count;
 
-        /// <summary>
-        /// Whether a thing of a kind is drawn in a band (<see cref="Near"/>, <see cref="Middle"/>, <see cref="Far"/>):
-        /// always within the far band, and always while the city map is open (the map shows the whole city).
-        /// </summary>
+        /// <summary>Whether a thing is drawn in a band: always within the far band, and while the city map shows the whole city.</summary>
         public static bool Drawn(Kind kind, int band, bool mapOpen) => !MayCull(kind) || mapOpen || band < Far;
 
         /// <summary>The kind's name for the census.</summary>
