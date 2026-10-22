@@ -13,6 +13,9 @@ dotnet RealLifeOverhaul.Build/<Checker>/bin/Release/net10.0/<Checker>.dll
 
 `<Checker>` is `CatalogueCheck`, `NavCheck`, `EconomyCheck`, `PlannerCheck`, `ContractCheck` or `StandardCheck`. Build the mod first for ContractCheck (see [Getting started](getting-started.md#2-build)), and give it the game's `Managed` folder as its first argument or in the `BA_MANAGED` environment variable. The locale check is `python RealLifeOverhaul.Build/Workshop/locales.py`.
 
+Set `BA_MANAGED` when the game is outside the default Steam folder on G:. NavCheck's
+logo checks and EconomyCheck's layout and design checks use it too.
+
 ## What each one proves
 
 | Checker | What it proves | Passes with |
