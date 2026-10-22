@@ -532,9 +532,25 @@ internal static partial class Program
         return sum;
     }
 
+    // The pager's source: PhoneGridPager.cs and its parts, or null if any is missing.
+    private static string PagerSource(string scripts)
+    {
+        string all = string.Empty;
+        foreach (string part in new[] { "", ".View", ".Layout", ".More", ".Aside" })
+        {
+            string text = Read(scripts, "Core/GameUi/PhoneGridPager" + part + ".cs");
+            if (text == null)
+            {
+                return null;
+            }
+            all += text + "\n";
+        }
+        return all;
+    }
+
     private static void PagerSources(string scripts, string locales)
     {
-        string pager = Read(scripts, "Core/GameUi/PhoneGridPager.cs");
+        string pager = PagerSource(scripts);
         if (pager == null)
         {
             Check(false, "the pager's source is not where it was");
