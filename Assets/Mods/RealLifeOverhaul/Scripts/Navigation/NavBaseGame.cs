@@ -8,11 +8,10 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The only place the minimap's base picture touches the game. The game's city map is the city seen by a camera, each
-    /// building drawn by its simple lodVersion mesh, so the base is drawn from what the game keeps: each building's outline
-    /// is that mesh's seen from above (or all its renderers' with none); water, which the game has no object or layer for,
-    /// is asked as Leisure's fishing asks, by a ray down and the navigation mesh; the colours are the game's palette. Run
-    /// only while a city is measured, and for the director's checks and tests.
+    /// The only place the minimap's base picture touches the game. The game's city map is the city under a camera, so
+    /// the base is drawn from what the game keeps: each building's lodVersion mesh seen from above, water asked as
+    /// fishing asks it (a ray down and the navigation mesh), and the game's palette. Run only while a city is measured
+    /// and for the director's checks.
     /// </summary>
     internal static class NavBaseGame
     {
@@ -64,10 +63,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// Buildings a faint shade of the roads' light grey, water the palette's dark blue; false while the game's references
-        /// are not there yet.
-        /// </summary>
+        /// <summary>Buildings in a faint light grey, water in the palette's dark blue; false while the game's references are not there.</summary>
         public static bool Colours(out Color32 building, out Color32 water)
         {
             building = default;
@@ -97,10 +93,7 @@ namespace RealLifeOverhaul.Nav
             return city != null ? city.cityBuildingControllers : null;
         }
 
-        /// <summary>
-        /// The corners of a building's outline seen from above, into arrays with room for 8: 8 for a mesh of its own (its box,
-        /// turned as the building is), 4 for the engine's upright box, 0 with nothing to measure.
-        /// </summary>
+        /// <summary>A building's outline from above, into arrays of 8: 8 corners for its own mesh's box, 4 for an upright box, else 0.</summary>
         public static int Outline(CityBuildingController building, float[] x, float[] z)
         {
             if (building == null)
@@ -242,10 +235,7 @@ namespace RealLifeOverhaul.Nav
             return _solid;
         }
 
-        /// <summary>
-        /// What one square of the water grid is, from a ray down from <paramref name="top"/>, <paramref name="depth"/> metres
-        /// long; the navigation mesh is asked only for something well below the street that is neither road nor building.
-        /// </summary>
+        /// <summary>One square of the water grid from a ray down; the navigation mesh is asked only where that leaves it open.</summary>
         public static byte Ask(float x, float z, float top, float depth, float streetY)
         {
             if (!Physics.Raycast(new Vector3(x, top, z), Vector3.down, out RaycastHit hit, depth, Solid(), QueryTriggerInteraction.Ignore))

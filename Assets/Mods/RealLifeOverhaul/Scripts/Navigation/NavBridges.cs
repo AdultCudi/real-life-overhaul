@@ -13,10 +13,7 @@ namespace RealLifeOverhaul.Nav
         /// <summary>Makes the nearest police station the game's destination; false if there is none. Default: none.</summary>
         public static Func<bool> GuideToStation;
 
-        /// <summary>
-        /// Adds places that move, such as a vehicle on its way to the player, each time the marks are gathered; it only adds
-        /// to the list. Default: none.
-        /// </summary>
+        /// <summary>Adds places that move, such as a vehicle on its way, each time the marks are gathered. Default: none.</summary>
         public static Action<List<NavMark>> MoreMarks;
     }
 

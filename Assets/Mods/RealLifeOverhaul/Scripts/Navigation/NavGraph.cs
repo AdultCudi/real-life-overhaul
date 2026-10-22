@@ -12,12 +12,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The city's roads as the minimap and the GPS use them, made once per city in four steps of <see cref="Step"/>: the
-    /// city's one driving graph (<see cref="RoadGraph.Shared"/>, which the buses search too) with each lane point's road,
-    /// junction and speed; the walking graph and the index of points; the road picture, drawn on a pool thread; and its
-    /// upload. All four run behind the loading screen (<see cref="StepsNow"/>, <see cref="WaitForPicture"/>), the timer
-    /// doing them only where that could not be. The picture is kept for the session with a print of what it was drawn
-    /// from, so the same roads load with no drawing and no upload. Nothing runs after that unless asked.
+    /// The city's roads for the minimap and the GPS, made once per city in the steps of <see cref="Step"/>: the city's
+    /// one driving graph (<see cref="RoadGraph.Shared"/>), the walking graph and index, the road picture drawn on a
+    /// pool thread, and its upload, behind the loading screen where they can be. The picture is kept for the session by
+    /// a print of what it was drawn from. Nothing runs after that unless asked.
     /// </summary>
     public sealed class NavGraph
     {
@@ -127,10 +125,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// Behind the loading screen, the steps up to the picture's drawing at once. False if the city's roads or its traffic
-        /// system are not there yet; the timer then goes on.
-        /// </summary>
+        /// <summary>Behind the loading screen, every step up to the picture's drawing; false while the roads or the traffic system are missing.</summary>
         public bool StepsNow()
         {
             while (_step < 4)
@@ -145,10 +140,7 @@ namespace RealLifeOverhaul.Nav
             return true;
         }
 
-        /// <summary>
-        /// Behind the loading screen, waits up to <paramref name="milliseconds"/> for the drawing thread and sends the picture
-        /// to the graphics card. False if it is not done by then; the timer then sends it.
-        /// </summary>
+        /// <summary>Behind the loading screen, waits for the drawing thread and sends the picture; false if not done in time.</summary>
         public bool WaitForPicture(int milliseconds)
         {
             PictureJob job = _job;
@@ -342,11 +334,7 @@ namespace RealLifeOverhaul.Nav
             _points = null;
         }
 
-        /// <summary>
-        /// The name of a road's street, or null. The graph has no names, so up to seven places along the road each take the
-        /// street of the nearest door within 45 m, and a name needs two votes, or one on a short road. Worked out once per
-        /// road, when first asked for.
-        /// </summary>
+        /// <summary>A road's street, or null: up to seven points vote by the nearest door's street within 45 m, a name needing two.</summary>
         public string StreetOf(int road)
         {
             if (road < 0 || _streetOfRoad == null || road >= _streetOfRoad.Length)

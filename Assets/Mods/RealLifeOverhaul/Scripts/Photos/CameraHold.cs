@@ -122,10 +122,7 @@ namespace RealLifeOverhaul.Photos
             return unchecked(((int)high << 16) | ((int)low & 0xFFFF));
         }
 
-        /// <summary>
-        /// Whether the world's clicks are put back: only while the mask is still the camera's own. If the game set another
-        /// meanwhile (the mop's cleaning ended, a placement began), the game's stands.
-        /// </summary>
+        /// <summary>Whether the world's clicks go back: only while the mask is still the camera's own, else the game's stands.</summary>
         public static bool WorldBack(int now, int cameras)
         {
             return now == cameras;

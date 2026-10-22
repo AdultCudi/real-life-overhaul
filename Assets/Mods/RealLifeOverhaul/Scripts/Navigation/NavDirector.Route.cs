@@ -34,14 +34,12 @@ namespace RealLifeOverhaul.Nav
         private readonly List<int> _starts = new List<int>(64);
         private readonly List<int> _goals = new List<int>(64);
 
-        // the destination
         private DirectionGuider _guider;
         private Vector3 _goal;
         private string _goalName;
         private bool _hasGoal;
         private bool _arrived;
 
-        // the search and the route
         private Phase _phase;
         private RouteSearch _searching;
         private bool _searchOnFoot, _searchAgainstTraffic, _routeOnFoot, _routeAgainstTraffic;
@@ -530,7 +528,6 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        // With no route, the plain distance.
         private void Straight(float toPlace)
         {
             int rounded = NavMath.RoundMetres(toPlace);

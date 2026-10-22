@@ -1,4 +1,3 @@
-using System;
 using BAModAPI;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.GameUi;

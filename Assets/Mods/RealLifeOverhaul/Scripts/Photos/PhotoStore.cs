@@ -60,10 +60,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>
-        /// The path a new photo is written to, numbered past any of the same second. Makes the folder and writes the save's id
-        /// beside the photos for the look over deleted saves.
-        /// </summary>
+        /// <summary>The path for a new photo, numbered past any of the same second; makes the folder and writes save.txt.</summary>
         public static string NewPath(string folder, string saveId, DateTime taken, bool selfie, int day, int hour)
         {
             Directory.CreateDirectory(folder);
@@ -79,10 +76,7 @@ namespace RealLifeOverhaul.Photos
             return Path.Combine(folder, PhotoStoreRules.NameFor(taken, selfie, day, hour, 1000 + Environment.TickCount % 1000));
         }
 
-        /// <summary>
-        /// Writes save.txt whole unless it already holds exactly this id, so a write cut short by a full disk is mended. False
-        /// if it could not be written.
-        /// </summary>
+        /// <summary>Writes save.txt whole unless it already holds this id, mending one cut short; false if it could not be written.</summary>
         public static bool MarkSave(string folder, string saveId)
         {
             if (string.IsNullOrEmpty(saveId))
@@ -254,10 +248,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>
-        /// Looks over every save's photos under the root: a save gone is marked, one back unmarked, one gone for the grace days
-        /// deleted. The folder of the save being played is never touched. Returns the number of folders looked at.
-        /// </summary>
+        /// <summary>Marks, unmarks or deletes the photos of every save but the one played; returns the folders looked at.</summary>
         public static int Sweep(string root, string playing, Func<string, bool> savePresent, DateTime today, List<string> deleted, List<string> marked)
         {
             string[] folders;
@@ -328,10 +319,7 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>
-        /// Moves the photos kept under the save's earlier folder name to its folder now, when that is not there yet and the
-        /// earlier save.txt holds exactly this id, so another save's photos are never taken. True if moved.
-        /// </summary>
+        /// <summary>Moves the photos from the save's earlier folder name if its save.txt holds this id and the new folder is not there.</summary>
         public static bool Adopt(string root, string saveId)
         {
             string earlier = PhotoStoreRules.EarlierFolderName(saveId);
@@ -358,10 +346,7 @@ namespace RealLifeOverhaul.Photos
 
         public const int PhotoMost = 32 * 1024 * 1024;   // bytes read at most; a photo of the Camera's is some 500 KB
 
-        /// <summary>
-        /// A photo's bytes for the engine to decode, or null if missing, unreadable, empty or over <see cref="PhotoMost"/>. By
-        /// its path, never a file URL, so any letter in a folder's name reads.
-        /// </summary>
+        /// <summary>A photo's bytes, or null if missing, unreadable, empty or over <see cref="PhotoMost"/>; read by path, never a URL.</summary>
         public static byte[] ReadPhoto(string path)
         {
             try
@@ -379,10 +364,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>
-        /// Whether the game still has a save of an id: a folder of that name with a ".hsg" or ".json" file, in any of the
-        /// version folders under SaveGames (the game moves a character's folder to each new version's). Only reads.
-        /// </summary>
+        /// <summary>Whether a save of the id is in any version folder under SaveGames, where the game moves it each version. Reads only.</summary>
         public static bool SavePresent(string saveGames, string id)
         {
             if (string.IsNullOrEmpty(id))

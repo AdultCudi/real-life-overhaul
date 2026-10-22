@@ -113,10 +113,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>
-        /// Opens the camera, with the phone already put away; from Flare, its first photo goes to Flare's compose sheet.
-        /// None if it opened, else why not, with nothing changed.
-        /// </summary>
+        /// <summary>Opens the camera, the phone put away; none if it opened, else why not, with nothing changed.</summary>
         public CameraRefusal Open(bool selfie, bool fromFlare)
         {
             if (Active)

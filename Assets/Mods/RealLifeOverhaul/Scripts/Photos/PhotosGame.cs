@@ -106,10 +106,7 @@ namespace RealLifeOverhaul.Photos
 
         public static bool HudShown => ScreenshotController.uiIsVisible;
 
-        /// <summary>
-        /// The game's own "hide the interface". With no interface to toggle, as the city unloads, the static flag alone is set:
-        /// only the engine's start resets it, so the next city's interface would otherwise start hidden.
-        /// </summary>
+        /// <summary>The game's own "hide the interface"; with no interface, as the city unloads, the static flag alone is set.</summary>
         public static void Hud(bool shown)
         {
             if (ScreenshotController.uiIsVisible == shown)
@@ -215,10 +212,7 @@ namespace RealLifeOverhaul.Photos
 
         private static readonly FieldInfo WorldMaskField = GameContract.WorldMask.Field;
 
-        /// <summary>
-        /// The layers the game's mouse points at, false if they cannot be read, and the cursor it shows over them (MopController
-        /// sets both while cleaning a floor).
-        /// </summary>
+        /// <summary>The layers the game's mouse points at and its cursor over them, which a mop sets; false if they cannot be read.</summary>
         public static bool ReadWorld(out int mask, out int cursor)
         {
             cursor = (int)MouseController.cursorOnHover;
@@ -238,10 +232,7 @@ namespace RealLifeOverhaul.Photos
             return 0;   // no layer named: the empty mask
         }
 
-        /// <summary>
-        /// Puts the world's clicks back as held while the mask is still the camera's own. A mask never read puts back the
-        /// game's defaults, with the mop's floor while a mop is held, as the game's city map does on closing.
-        /// </summary>
+        /// <summary>Puts the world's clicks back while the mask is still the camera's own; unread, the game's defaults and a mop's floor.</summary>
         public static void GiveWorld(bool read, int mask, int cursor, int cameras)
         {
             if (read && WorldMaskField != null)
@@ -369,10 +360,7 @@ namespace RealLifeOverhaul.Photos
 
         private static readonly int HotRead = HotSpots.Slot("Photos: PhotosGame.Read");
 
-        /// <summary>
-        /// The one read of the screen on the main thread, after WaitForEndOfFrame; the texture is let go at once. Null when it
-        /// cannot be taken or its pixels are of a kind the camera does not read.
-        /// </summary>
+        /// <summary>The one read of the screen on the main thread, after WaitForEndOfFrame; null if not taken or of pixels not read.</summary>
         public static Shot Read()
         {
             using var hotSpot = HotSpots.Time(HotRead);
@@ -449,10 +437,7 @@ namespace RealLifeOverhaul.Photos
             public double Ms;
         }
 
-        /// <summary>
-        /// On a worker thread: the shot made a JPG of about 1080 lines written whole at <paramref name="path"/>, and its small
-        /// copy where Flare reads it. The shot's pixels are let go. Null if the photo could not be written.
-        /// </summary>
+        /// <summary>On a worker: the shot as a JPG and its small copy at <paramref name="path"/>, its pixels let go; null if not written.</summary>
         public static Developed Develop(Shot shot, string path)
         {
             var watch = Stopwatch.StartNew();

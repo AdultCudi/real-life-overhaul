@@ -115,10 +115,7 @@ namespace RealLifeOverhaul.Nav
             _titleShown = null;
         }
 
-        /// <summary>
-        /// Copies the game's task panel and puts the minimap in it. Null if it cannot be done; <paramref name="later"/> then
-        /// says whether to ask again, the HUD not being there yet, or not, one line having said what was missing.
-        /// </summary>
+        /// <summary>Copies the game's task panel with the minimap in it; null if it cannot, <paramref name="later"/> saying whether to ask again.</summary>
         public static NavHud Build(NavGraph graph, out bool later)
         {
             later = true;

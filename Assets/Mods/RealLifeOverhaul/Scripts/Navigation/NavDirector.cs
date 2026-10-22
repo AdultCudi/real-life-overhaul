@@ -47,7 +47,6 @@ namespace RealLifeOverhaul.Nav
         private bool _pictureGiven;
         private bool _hudSaid;
 
-        // the player
         private Transform _follow;
         private VehicleController _vehicle;
         private Rigidbody _body;
@@ -71,9 +70,8 @@ namespace RealLifeOverhaul.Nav
             ScenePrewarm.AddLate("navigation: the road graph, the walking graph and the minimap's two pictures being made", PrewarmRoads);
         }
 
-        // Behind the loading screen, once the game's traffic system has marked the junctions: the graphs, the index and both
-        // pictures, drawn on threads side by side and sent to the graphics card here, or an earlier load's pictures of the same
-        // city taken as they are.
+        // Behind the loading screen, once the traffic system has marked the junctions: the graphs and both pictures, drawn
+        // side by side on threads and sent here, or an earlier load's pictures of the same city.
         private bool PrewarmRoads()
         {
             bool wantMap = Settings.Minimap;

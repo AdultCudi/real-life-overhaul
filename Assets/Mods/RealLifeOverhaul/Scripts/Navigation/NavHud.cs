@@ -9,14 +9,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The minimap and the GPS's two lines on the game's HUD, in a copy of the game's own task panel (docs/game-ui.md,
-    /// section 10). Inside its mask: a ground tint, the base picture and the road picture, each a square as wide as the
-    /// view's diagonal showing a window of its texture, and a turned and scaled layer, one unit a metre, holding the route
-    /// and the pooled markers; over them the destination's marker and the player's icon.
-    ///
-    /// No Update of its own: the director calls <see cref="Frame"/> once a frame while the panel shows, and it writes only
-    /// what changed, so standing still writes nothing. The panel has a canvas of its own, so moving the map re-batches
-    /// only these few pictures.
+    /// The minimap and the GPS's two lines in a copy of the game's task panel (docs/game-ui.md, section 10): under its
+    /// mask the base and road pictures, squares as wide as the view's diagonal showing a window of their textures, and
+    /// a turned layer, a unit a metre, with the route and the pooled markers. No Update: the director calls <see
+    /// cref="Frame"/> once a frame while it shows, and it writes only what changed.
     /// </summary>
     public sealed partial class NavHud
     {
@@ -155,11 +151,7 @@ namespace RealLifeOverhaul.Nav
             _spin.gameObject.SetActive(!alone);
         }
 
-        /// <summary>
-        /// Puts the panel where it covers nothing of the game's: in the left column between the control hints and the task
-        /// panel, or, with no room there, at the bottom beside it, above the address and item panels. Each panel is measured
-        /// where it is, so any interface scale and screen shape work. On the slow tick; writes only what changed.
-        /// </summary>
+        /// <summary>Puts the panel where it covers nothing of the game's, in the left column or beside it; on the slow tick, writing only changes.</summary>
         public void Place(int sizePercent, bool map, bool lines)
         {
             float width = Mathf.Round(Column * Mathf.Clamp(sizePercent, 50, 100) / 100f);
@@ -249,7 +241,6 @@ namespace RealLifeOverhaul.Nav
             return _screen.InverseTransformPoint(Corners[upper ? 1 : 0]).y - _screen.rect.yMin;
         }
 
-        // A panel's left edge, from the left of the screen.
         private float LeftOf(RectTransform rect)
         {
             rect.GetWorldCorners(Corners);
@@ -343,10 +334,7 @@ namespace RealLifeOverhaul.Nav
             _px = float.MaxValue;
         }
 
-        /// <summary>
-        /// Shows up to <see cref="Pool"/> marks in view in the pooled markers, on the slow tick; a marker already showing its
-        /// mark is not written again.
-        /// </summary>
+        /// <summary>Shows up to <see cref="Pool"/> marks in view, on the slow tick; a marker already showing its mark is not written again.</summary>
         public void Marks(List<NavMark> marks, float px, float pz, float metresAcross)
         {
             float reach = metresAcross * 0.75f;   // a little over the view's half diagonal: what a turned view can show
@@ -402,11 +390,7 @@ namespace RealLifeOverhaul.Nav
             marker.localScale = new Vector3(size, size, 1f);
             marker.localEulerAngles = new Vector3(0f, 0f, _turn == float.MaxValue ? 0f : -_turn);
         }
-        /// <summary>
-        /// Moves the view to the player, once a frame. <paramref name="heading"/> is the way the player faces and
-        /// <paramref name="view"/> the way the camera looks, degrees clockwise from north; with <paramref name="turnWithView"/>
-        /// the map turns so what is ahead on the screen is up, else north is up. Writes nothing when nothing changed.
-        /// </summary>
+        /// <summary>Moves the view to the player once a frame, turned with the camera if <paramref name="turnWithView"/>; writes only changes.</summary>
         public void Frame(float px, float pz, float heading, float view, float metresAcross, bool turnWithView)
         {
             if (!_mapOn || _mapHeight <= 0f)

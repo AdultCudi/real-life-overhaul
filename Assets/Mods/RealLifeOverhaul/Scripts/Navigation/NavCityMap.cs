@@ -6,10 +6,9 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The GPS's part of the game's city map: the route, in the markers' own layer under them, and a double click that sets
-    /// a destination (one click drags the map or picks a building). The game places its markers on the screen each frame
-    /// the map is open; the route's line is worked out again only in a frame the map's camera has moved. Switched off,
-    /// costing nothing, while the map is shut.
+    /// The GPS's part of the game's city map: the route, in the markers' own layer under them, worked out again only in
+    /// a frame the map's camera has moved, and a double click that sets a destination (one click drags the map or picks
+    /// a building). Switched off, costing nothing, while the map is shut.
     /// </summary>
     public sealed class NavCityMap : MonoBehaviour
     {
@@ -70,7 +69,6 @@ namespace RealLifeOverhaul.Nav
             return map;
         }
 
-        /// <summary>The map has been opened or shut.</summary>
         public void Open(bool open)
         {
             if (gameObject.activeSelf != open)

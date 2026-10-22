@@ -17,19 +17,13 @@ namespace RealLifeOverhaul.Photos
     }
 
     /// <summary>
-    /// The game-free rules of the photos on disk, checked offline; <see cref="PhotoStore"/> does the files.
-    ///
-    /// A save's folder, persistentDataPath/RealLifeOverhaul/Photos/(folder name), holds each photo as a JPG of about 1080
-    /// lines, its small copy in "Thumbs" (where Flare reads it), "save.txt" (the save's id), "wallpaper.txt" and, once the
-    /// save is found deleted, "gone.txt" with the day. Every save file of one playthrough shares the game's character id,
-    /// and so its photos; nothing is in the save itself.
-    ///
-    /// A photo's name sorts as the Gallery's order: Photo_20261015_143005_D34_14.jpg, Selfie_20261015_143005_D34_14_2.jpg
-    /// (the real date and time, the game's day and hour, a number for another of the same second).
-    ///
-    /// Nothing is deleted without the player: with <see cref="Cap"/> photos, opening the camera asks whether the oldest
-    /// <see cref="OfferAtOnce"/> may go, never the wallpaper. The photos of a save gone from disk are marked with the day,
-    /// deleted after <see cref="GraceDays"/> days, and unmarked if the save comes back.
+    /// The game-free rules of the photos on disk, checked offline; <see cref="PhotoStore"/> does the files. A save's
+    /// folder under persistentDataPath/RealLifeOverhaul/Photos holds the JPGs, their small copies in Thumbs (where
+    /// Flare reads them), save.txt, wallpaper.txt and, once the save is found deleted, gone.txt. Every save file of a
+    /// playthrough shares the character id, and so its photos. Names sort in the Gallery's order:
+    /// Photo_20261015_143005_D34_14.jpg. Nothing is deleted without the player: at <see cref="Cap"/> the camera asks to
+    /// let the oldest go, and a deleted save's photos go <see cref="GraceDays"/> days after it is found gone, unless it
+    /// comes back.
     /// </summary>
     public static class PhotoStoreRules
     {
@@ -114,10 +108,7 @@ namespace RealLifeOverhaul.Photos
             return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '+' || c == '=';
         }
 
-        /// <summary>
-        /// Whether two paths name one folder, ignoring a trailing separator and case. The separators are compared as one: the
-        /// engine's persistentDataPath has '/', and the game's Mono turns them into '\' in what Path gives back.
-        /// </summary>
+        /// <summary>Whether two paths name one folder, whatever the case, a trailing separator or the separators (Mono writes them apart).</summary>
         public static bool SameFolder(string a, string b)
         {
             if (a == null || b == null)
@@ -227,7 +218,6 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>The real moment a photo was taken, from its stamp.</summary>
         public static DateTime Taken(PhotoEntry photo)
         {
             DateTime.TryParseExact(photo.Stamp.ToString("00000000000000", CultureInfo.InvariantCulture), "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime at);
@@ -256,7 +246,6 @@ namespace RealLifeOverhaul.Photos
             photos.Sort(NewestFirst);
         }
 
-        /// <summary>True when a save has as many photos as it keeps.</summary>
         public static bool Full(int count)
         {
             return count >= Cap;
@@ -268,10 +257,7 @@ namespace RealLifeOverhaul.Photos
             return count < Cap ? 0 : count - Cap + OfferAtOnce;
         }
 
-        /// <summary>
-        /// The oldest <paramref name="count"/> photos of a list in the Gallery's order, oldest first, into a list emptied first;
-        /// never the wallpaper, <paramref name="keep"/>.
-        /// </summary>
+        /// <summary>The oldest <paramref name="count"/> photos, oldest first, into a list emptied first; never <paramref name="keep"/>.</summary>
         public static void Oldest(List<PhotoEntry> ordered, int count, string keep, List<PhotoEntry> into)
         {
             into.Clear();
@@ -317,7 +303,6 @@ namespace RealLifeOverhaul.Photos
             return null;
         }
 
-        /// <summary>A day as a mark writes it.</summary>
         public static string MarkText(DateTime day)
         {
             return day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

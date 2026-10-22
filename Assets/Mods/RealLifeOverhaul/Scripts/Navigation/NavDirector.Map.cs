@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Nav
                 }
                 return;
             }
-            if (open && _map == null && !_mapGaveUp)
+            if (open && _map == null)
             {
                 Colors colours = InstanceBehavior<GlobalReferences>.Instance != null ? InstanceBehavior<GlobalReferences>.Instance.colors : null;
                 Color32 colour = colours != null ? colours.blue : new Color32(60, 130, 240, 255);

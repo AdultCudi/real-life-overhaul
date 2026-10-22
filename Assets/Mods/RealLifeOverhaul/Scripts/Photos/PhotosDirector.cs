@@ -231,10 +231,7 @@ namespace RealLifeOverhaul.Photos
             ClearWallpaper();
         }
 
-        /// <summary>
-        /// Puts the phone away and opens the camera, or says in a notice why not. False when the Camera is off, or when Flare
-        /// asked where its own picture works and the Camera's does not, so Flare takes its own without a word from here.
-        /// </summary>
+        /// <summary>Opens the camera, or says why not; false when off, or where Flare's own picture works and the Camera's does not.</summary>
         public bool OpenCamera(bool selfie, bool fromFlare)
         {
             if (!Settings.PhoneCamera || !_running)
@@ -288,7 +285,7 @@ namespace RealLifeOverhaul.Photos
             Logger?.Info("Camera: not now (" + refusal + ").");
         }
 
-        // The phone's close fades for a tenth of a second.
+        // The phone's close fades for a tenth of a second; a quarter is waited, longer while the menu is still open.
         private IEnumerator OpenWhenPutAway(bool selfie, bool fromFlare)
         {
             PhotosGame.CloseMenu();

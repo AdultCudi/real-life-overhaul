@@ -8,10 +8,7 @@ namespace RealLifeOverhaul.Nav
     /// </summary>
     public static class NavBaseRaster
     {
-        /// <summary>
-        /// Every building's outline into a byte of cover a pixel, its edge a pixel soft, the outermost pixels left empty so
-        /// no building is drawn out past the edge. Returns how many outlines were drawn.
-        /// </summary>
+        /// <summary>Every outline into a byte of cover a pixel, soft by a pixel, the outermost pixels left empty; returns how many.</summary>
         public static int Buildings(byte[] cover, int width, int height, float originX, float originZ, float perMetre, NavBaseData data)
         {
             int drawn = 0;
@@ -90,10 +87,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// The picture from the buildings' cover and the settled water. A clear pixel beside a coloured one takes its colour,
-        /// still clear, so the graphics card's smoothing does not darken the edge.
-        /// </summary>
+        /// <summary>The picture from the cover and the water; a clear pixel takes its neighbour's colour so smoothing does not darken it.</summary>
         public static void Compose(byte[] rgba, byte[] cover, int width, int height, float originX, float originZ, float perMetre, NavBaseData data,
                                    byte buildingR, byte buildingG, byte buildingB, byte buildingA, byte waterR, byte waterG, byte waterB, byte waterA)
         {

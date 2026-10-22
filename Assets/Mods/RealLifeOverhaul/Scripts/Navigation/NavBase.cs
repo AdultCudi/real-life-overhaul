@@ -10,15 +10,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The minimap's base picture, the city's buildings and water under the roads, in the game's palette: the game's own
-    /// city map is the city under a camera, not a picture. The measured city is read from the mod's folder, or measured once
-    /// per version of the game (each building's outline, then a ray down each 8 m square, at most 0.8 ms a frame); the
-    /// picture is drawn on a pool thread and sent to the graphics card in one call.
-    ///
-    /// At most 2048 pixels a side (2048 x 1154 for the game's city, 1.77 m a pixel, 9 MB on the graphics card and none in
-    /// main memory): a building stays 10 to 30 pixels, and more would cost four times the memory for a sharper edge. The
-    /// picture is kept for the session with a print of what it was drawn from, so a load with the same print draws and
-    /// sends nothing. Nothing per frame once made; the director tests <see cref="Busy"/>.
+    /// The minimap's base picture, the buildings and water under the roads, in the game's palette. The city is read
+    /// from the mod's folder or measured once per version of the game, at most 0.8 ms a frame; the picture, at most
+    /// 2048 pixels a side (9 MB on the graphics card, none in main memory), is drawn on a pool thread and kept for the
+    /// session by a print of what it was drawn from. Nothing per frame once it is made.
     /// </summary>
     public sealed class NavBase
     {
@@ -135,10 +130,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// Begins from the mod's folder if this city has been measured and <paramref name="measureAgain"/> is false, else by
-        /// measuring it. Does nothing while the game's palette is not there yet.
-        /// </summary>
+        /// <summary>Begins from the mod's folder unless <paramref name="measureAgain"/>, else by measuring; waits for the game's palette.</summary>
         public void Begin(NavGraph graph, bool measureAgain)
         {
             if (_stage != Stage.Idle || graph == null || !graph.Sized)
@@ -214,10 +206,7 @@ namespace RealLifeOverhaul.Nav
             _stage = Stage.Buildings;
         }
 
-        /// <summary>
-        /// At most 0.8 ms of work, once a frame while <see cref="Busy"/>. The city is measured only <paramref name="inCity"/>,
-        /// the loading screen gone: under it not everything need be there.
-        /// </summary>
+        /// <summary>At most 0.8 ms of work a frame while <see cref="Busy"/>; measures only <paramref name="inCity"/>, the loading screen gone.</summary>
         public void Step(bool inCity)
         {
             switch (_stage)
@@ -353,10 +342,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// Behind the loading screen, waits up to <paramref name="milliseconds"/> for the drawing thread, so the picture is
-        /// sent there and not in play. False if it is not done by then; the director's timer then sends it.
-        /// </summary>
+        /// <summary>Behind the loading screen, waits for the drawing thread; false if not done in time, the timer then sends it.</summary>
         public bool WaitForDrawing(int milliseconds)
         {
             Job job = _job;
@@ -462,10 +448,7 @@ namespace RealLifeOverhaul.Nav
             Logger?.Warn("Navigation: the minimap shows roads only, as before: " + why);
         }
 
-        /// <summary>
-        /// Forgets everything, so <see cref="Begin"/> starts afresh; a thread still drawing finishes into an array nobody reads.
-        /// The picture is kept for the next load, or destroyed with <paramref name="letGo"/>.
-        /// </summary>
+        /// <summary>Forgets everything for a fresh <see cref="Begin"/>; the picture is kept for the next load unless <paramref name="letGo"/>.</summary>
         public void Drop(bool letGo)
         {
             if (letGo && _kept != null)

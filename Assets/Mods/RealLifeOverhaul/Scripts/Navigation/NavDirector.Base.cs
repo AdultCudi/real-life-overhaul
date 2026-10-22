@@ -24,8 +24,7 @@ namespace RealLifeOverhaul.Nav
         private bool _baseGiven, _baseChecked, _baseAgain;
         private float _aloneUntil, _trialUntil;
 
-        // On the slow tick: the picture is begun as soon as the roads are there, and let go when its option or the minimap is
-        // switched off.
+        // On the slow tick: begun once the roads are there, let go when its option or the minimap is switched off.
         private void BaseWanted(bool wantMap)
         {
             if (!wantMap || !Settings.MinimapBase)
@@ -88,8 +87,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        // Two lines once per picture: what it is, and whether the player and three buildings far apart are drawn where the
-        // markers' layer puts them.
+        // Two lines once per picture: what it is, and whether it and the markers' layer agree on three buildings far apart.
         private void BaseCheck()
         {
             NavBaseData data = _base.Data;
@@ -203,10 +201,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// "Test: minimap, mark three buildings": a marker on the door of the building nearest the player and of two far
-        /// apart, to see whether a marker stands on its building's front.
-        /// </summary>
+        /// <summary>"Test: minimap, mark three buildings": markers on the nearest building's door and two far apart.</summary>
         public void TestBaseMarks()
         {
             try

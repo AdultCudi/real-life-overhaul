@@ -299,10 +299,7 @@ namespace RealLifeOverhaul.Nav
             return current + gap * share;
         }
 
-        /// <summary>
-        /// The part of the map picture, as texture coordinates (corner and size), that a square of <paramref name="metres"/>
-        /// a side around a place is.
-        /// </summary>
+        /// <summary>The texture window (corner and size) of a square of <paramref name="metres"/> a side around a place.</summary>
         public static void Window(float x, float z, float originX, float originZ, float worldWidth, float worldHeight, float metres,
                                   out float u, out float v, out float width, out float height)
         {
@@ -312,10 +309,7 @@ namespace RealLifeOverhaul.Nav
             v = (z - originZ) / worldHeight - height * 0.5f;
         }
 
-        /// <summary>
-        /// Where a place is in the view, in its units from the middle, right and up positive, for a view centred on (px, pz)
-        /// and turned by <paramref name="turn"/> degrees clockwise from north.
-        /// </summary>
+        /// <summary>Where a place is in the view, in its units from the middle, for a view turned <paramref name="turn"/> degrees from north.</summary>
         public static void ToView(float wx, float wz, float px, float pz, float turn, float unitsPerMetre, out float vx, out float vy)
         {
             float dx = (wx - px) * unitsPerMetre;
@@ -334,10 +328,7 @@ namespace RealLifeOverhaul.Nav
     /// </summary>
     public static class NavRaster
     {
-        /// <summary>
-        /// The picture's size for a piece of world, and its pixels a metre: as many as fit in <paramref name="longest"/>
-        /// pixels, at most <paramref name="mostPerMetre"/>.
-        /// </summary>
+        /// <summary>The picture's size for a piece of world, and its pixels a metre, within <paramref name="longest"/> and <paramref name="mostPerMetre"/>.</summary>
         public static void Size(float worldWidth, float worldHeight, int longest, float mostPerMetre, out int width, out int height, out float perMetre)
         {
             float span = Math.Max(1f, Math.Max(worldWidth, worldHeight));

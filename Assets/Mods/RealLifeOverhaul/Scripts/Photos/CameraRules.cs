@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Photos
         public const float BaseFieldOfView = 60f;   // degrees: the rear camera at 1x
         public const float SelfieFieldOfView = 65f; // degrees: as photo mode's selfie
         public const float ZoomLeast = 1f;
-        public const float ZoomMost = 5f;
+        public const float ZoomMost = 5f;           // times, about a phone's digital zoom
         public const float ZoomNotch = 1.15f;       // zoom factor per notch of the wheel
         public const float PitchLeast = -60f;       // degrees
         public const float PitchMost = 60f;         // degrees
@@ -120,10 +120,7 @@ namespace RealLifeOverhaul.Photos
             return Refuse(s);
         }
 
-        /// <summary>
-        /// True where Flare's own picture works and the Camera's does not: Flare's camera button shoots the screen wherever
-        /// Flare runs, its selfie button works on foot even while the game or the police hold the player.
-        /// </summary>
+        /// <summary>True where Flare's own picture works and the Camera's does not, so Flare's button takes its own.</summary>
         public static bool FlareTakesOver(CameraRefusal refusal, bool selfie)
         {
             switch (refusal)
@@ -187,10 +184,7 @@ namespace RealLifeOverhaul.Photos
             return Math.Max(ZoomLeast, Math.Min(ZoomMost, zoom)).ToString("0.0", CultureInfo.InvariantCulture) + "x";
         }
 
-        /// <summary>
-        /// The rear camera turned by a drag in pixels: the same part of the view on any screen, less as the zoom narrows it.
-        /// The pitch counts up from level and is kept within its bounds.
-        /// </summary>
+        /// <summary>Turns the rear camera by a drag in pixels, the same part of the view on any screen; the pitch kept in bounds.</summary>
         public static void Aim(ref float yaw, ref float pitch, float dragX, float dragY, float screenHeight, float zoom)
         {
             float scale = DragDegrees * 1080f / Math.Max(240f, screenHeight) / Math.Max(ZoomLeast, Math.Min(ZoomMost, zoom));

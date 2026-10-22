@@ -34,10 +34,7 @@ namespace RealLifeOverhaul.Nav
             Turns.Clear();
         }
 
-        /// <summary>
-        /// Takes a path of the search; <paramref name="road"/>, <paramref name="junction"/> and <paramref name="speed"/>
-        /// (metres a second) are per point of the graph.
-        /// </summary>
+        /// <summary>Takes a path of the search; the road, junction and speed (metres a second) arrays are per point of the graph.</summary>
         public void Build(List<int> path, RouteSearch graph, int[] road, bool[] junction, float[] speed)
         {
             Clear();
@@ -186,7 +183,6 @@ namespace RealLifeOverhaul.Nav
             return -1;
         }
 
-        /// <summary>The place this far along the route.</summary>
         public void PointAt(float along, out float x, out float z)
         {
             if (Count == 0)
@@ -224,11 +220,7 @@ namespace RealLifeOverhaul.Nav
             return low;
         }
 
-        /// <summary>
-        /// The route from a distance along it to its end as fewer points, for drawing: a point is left out while the line has
-        /// turned under four degrees and gone under 30 m since the last kept. The arrays are grown if too short; returns how
-        /// many points were written.
-        /// </summary>
+        /// <summary>The rest of the route as fewer points for drawing, dropping points on a straight under 30 m; returns how many were written.</summary>
         public int Thin(float from, ref float[] x, ref float[] y, ref float[] z)
         {
             if (Count == 0)
@@ -294,10 +286,7 @@ namespace RealLifeOverhaul.Nav
             return _time[Count - 1] - here;
         }
 
-        /// <summary>
-        /// The nearest place on the route, looked for around the last <paramref name="segment"/> (updated) and over the whole
-        /// route only when that finds nothing near. A stretch on another level, such as a bridge overhead, does not count.
-        /// </summary>
+        /// <summary>The nearest place on the route, near the last <paramref name="segment"/> first; a stretch on another level does not count.</summary>
         public bool Locate(float px, float py, float pz, ref int segment, out float along, out float lateral)
         {
             along = 0f;

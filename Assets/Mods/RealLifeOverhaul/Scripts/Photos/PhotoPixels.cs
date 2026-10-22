@@ -35,10 +35,7 @@ namespace RealLifeOverhaul.Photos
             Fit(width, height, SmallWidth, SmallTallest, out smallWidth, out smallHeight);
         }
 
-        /// <summary>
-        /// Averages <paramref name="source"/> (3 or 4 bytes a pixel, blue first if <paramref name="bgr"/>) into RGB24 rows,
-        /// keeping the row order. False, with nothing written, when a size or a length does not add up.
-        /// </summary>
+        /// <summary>Averages 3 or 4 bytes a pixel into RGB24 rows, keeping the row order; false, nothing written, if a size does not add up.</summary>
         public static bool Shrink(ReadOnlySpan<byte> source, int width, int height, int bytes, bool bgr, Span<byte> into, int toWidth, int toHeight)
         {
             if (width <= 0 || height <= 0 || toWidth <= 0 || toHeight <= 0 || toWidth > width || toHeight > height || (bytes != 3 && bytes != 4)

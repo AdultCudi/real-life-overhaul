@@ -99,10 +99,7 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>
-        /// After the album is read again: the photo shown stays if found by name, else the one that took its place is shown;
-        /// with none left, the grid.
-        /// </summary>
+        /// <summary>After the album is read again: the photo found by name, else the one in its place; with none left, the grid.</summary>
         public void Reread(int foundAt, int count)
         {
             if (!Viewing)
@@ -181,7 +178,6 @@ namespace RealLifeOverhaul.Photos
             into.Sort(DayFirst);
         }
 
-        /// <summary>A photo's place in a list by its name, or -1.</summary>
         public static int IndexOf(List<PhotoEntry> photos, string name)
         {
             if (name == null)
@@ -223,10 +219,7 @@ namespace RealLifeOverhaul.Photos
             return columns <= 0 ? 0f : Math.Max(0f, (width - CellGap * (columns - 1)) / columns);
         }
 
-        /// <summary>
-        /// The grid's rows (emptied first): each day's heading and its strips of photos, then the count at the foot; none for an
-        /// empty album. Returns the grid's height.
-        /// </summary>
+        /// <summary>The grid's rows, emptied first: each day's heading and strips, then the count at the foot; returns the height.</summary>
         public static float Layout(List<PhotoEntry> shown, int columns, float cell, List<GalleryRow> rows)
         {
             rows.Clear();
@@ -363,10 +356,7 @@ namespace RealLifeOverhaul.Photos
             return first;
         }
 
-        /// <summary>
-        /// Reads favourites.txt, one photo's name a line, into the set (emptied first); repeats and lines that name no photo
-        /// are left out. Returns how many were read.
-        /// </summary>
+        /// <summary>Reads favourites.txt, a name a line, into the set emptied first, leaving out repeats and other lines; returns the count.</summary>
         public static int ReadFavourites(string text, HashSet<string> into)
         {
             into.Clear();
@@ -411,10 +401,7 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>
-        /// <see cref="Prune"/>, only when the folder was read whole: a listing that failed shows no photo, and every mark would
-        /// go with it.
-        /// </summary>
+        /// <summary><see cref="Prune"/> only for a folder read whole: a failed listing shows no photo, and every mark would go.</summary>
         public static int PruneListed(HashSet<string> favourites, List<PhotoEntry> photos, bool listed)
         {
             return listed ? Prune(favourites, photos) : 0;

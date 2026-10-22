@@ -13,13 +13,11 @@ namespace RealLifeOverhaul.Nav
         public const int LongestSide = 2048;      // pixels: 3.6 km of city at 1.77 m a pixel
         public const float MostPerMetre = 1.25f;  // pixels a metre in a small city, as the road picture has
 
-        /// <summary>Where a place is on the picture, in pixels, along one axis.</summary>
         public static float ToPixel(float world, float origin, float perMetre)
         {
             return (world - origin) * perMetre;
         }
 
-        /// <summary>Where a pixel is in the world, along one axis.</summary>
         public static float ToWorld(float pixel, float origin, float perMetre)
         {
             return origin + pixel / perMetre;
@@ -54,10 +52,7 @@ namespace RealLifeOverhaul.Nav
             return x <= 0f || y <= 0f ? 0f : x * y / (width * height);
         }
 
-        /// <summary>
-        /// Metres between where the base picture, placed by its window, and the markers, placed in metres from the player,
-        /// draw one place. Both turn together, so the turn does not count.
-        /// </summary>
+        /// <summary>Metres between where the base picture and the markers' layer draw one place; both turn together.</summary>
         public static float Misfit(float wx, float wz, float px, float pz, float originX, float originZ, float worldWidth, float worldHeight, float metres)
         {
             NavView.Window(px, pz, originX, originZ, worldWidth, worldHeight, metres, out float u, out float v, out float width, out float height);
@@ -68,10 +63,7 @@ namespace RealLifeOverhaul.Nav
             return (float)Math.Sqrt(dx * dx + dz * dz);
         }
 
-        /// <summary>
-        /// The points' convex hull, anticlockwise, written from <paramref name="at"/> on; the points, the caller's scratch,
-        /// are sorted where they lie. Returns the corners: fewer than 3 if the points are one place or one line.
-        /// </summary>
+        /// <summary>The convex hull, anticlockwise, from <paramref name="at"/> on, sorting the caller's points; fewer than 3 corners for a line.</summary>
         public static int Hull(float[] x, float[] z, int count, float[] hullX, float[] hullZ, int at)
         {
             for (int i = 1; i < count; i++)
@@ -144,10 +136,7 @@ namespace RealLifeOverhaul.Nav
             return inside && count >= 3 ? 0f : (float)Math.Sqrt(best);
         }
 
-        /// <summary>
-        /// Three places far apart, for a check that must not depend on one corner of the city: the furthest from the middle,
-        /// the furthest from that, and the furthest from both. Returns how many were picked.
-        /// </summary>
+        /// <summary>Three places far apart, so a check does not hang on one corner of the city; returns how many were picked.</summary>
         public static int FarApart(float[] x, float[] z, int count, int[] picked)
         {
             if (count <= 0)
@@ -300,10 +289,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// Reads it back; null, so it is made again, for bytes cut short or damaged, another build of the game, or a city
-        /// whose roads lie more than half a metre elsewhere.
-        /// </summary>
+        /// <summary>Reads it back; null, so it is made again, if damaged or for another build or a city whose roads lie elsewhere.</summary>
         public static NavBaseData Decode(byte[] bytes, int build, float originX, float originZ, float worldWidth, float worldHeight)
         {
             if (bytes == null || bytes.Length < 56)
@@ -406,10 +392,7 @@ namespace RealLifeOverhaul.Nav
         public const byte Named = 3;     // before Settle: the game calls what lies here water
         public const byte Unasked = 255; // before the city has been asked
 
-        /// <summary>
-        /// What one square is, from one look straight down at its middle: <paramref name="named"/> is the game's name saying
-        /// water, <paramref name="built"/> a road or a building, <paramref name="streetY"/> the nearest road's height or NaN.
-        /// </summary>
+        /// <summary>What one square is, from one look straight down at its middle; <paramref name="streetY"/> is NaN with no road near.</summary>
         public static byte Classify(bool hit, bool named, bool built, bool walkable, float hitY, float streetY)
         {
             if (!hit)
@@ -479,11 +462,7 @@ namespace RealLifeOverhaul.Nav
             return settled;
         }
 
-        /// <summary>
-        /// An open square reaching the edge over open squares, not across corners, is water; a square the game names water
-        /// is water and floods nothing; the rest is ground. Leaves only <see cref="Land"/> and <see cref="Water"/>; returns
-        /// how many squares are water.
-        /// </summary>
+        /// <summary>Open squares that reach the edge, not across corners, and those the game names are water, the rest ground; returns the water.</summary>
         public static int Settle(byte[] cells, int columns, int rows)
         {
             const byte Reached = 4;

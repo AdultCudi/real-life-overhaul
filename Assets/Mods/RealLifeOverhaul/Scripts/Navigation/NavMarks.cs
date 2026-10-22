@@ -18,10 +18,9 @@ namespace RealLifeOverhaul.Nav
     }
 
     /// <summary>
-    /// The places the minimap marks, read from what the game and the mod keep: the game's guiders but the one routed to,
-    /// its permanent markers (the player's buildings), the subway stations, and the mod's places ticked on the city map.
-    /// <see cref="Gather"/> runs every two seconds while the minimap shows. A marker's picture and colour are private to
-    /// the game, read through fields found once; without them the player's buildings are left off and one line says so.
+    /// The places the minimap marks: the game's guiders but the one routed to, its permanent markers, the subway
+    /// stations and the mod's places ticked on the city map, gathered every two seconds while the minimap shows. A
+    /// marker's picture and colour are private to the game, read through fields found once.
     /// </summary>
     public static class NavMarks
     {
