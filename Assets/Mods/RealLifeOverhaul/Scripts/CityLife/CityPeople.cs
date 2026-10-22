@@ -11,15 +11,13 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The living city's own pool of people, apart from the scenes' (People/ActorPool), and its budget. Eight characters
-    /// at most (<see cref="MaxPeople"/>): what three of the largest sites need, nearly all standing still, the cheap kind.
-    /// A look is the costly part (the game merges meshes), so the eight are made one at a time seconds apart after the city
-    /// loads (<see cref="Warm"/>) and handed out again in the same clothes where they can be. Per frame, only while
-    /// somebody is out: a few comparisons a person to switch off animation and rendering far away or behind the camera,
-    /// and every other physics step the player's car box against them, as Ragdoll/CarStrikes does for the game's
-    /// pedestrians. With nobody out it is disabled.
+    /// The living city's own pool of people, apart from the scenes' (People/ActorPool): eight at most
+    /// (<see cref="MaxPeople"/>), what three of the largest sites need. A look is the costly part (a mesh merge), so they
+    /// are made one at a time after the city loads (<see cref="Warm"/>) and handed out again in the same clothes where they
+    /// can be. Per frame, only while somebody is out: a few comparisons a person to hide those far off or behind the
+    /// camera, and every other physics step the player's car against them, as Ragdoll/CarStrikes does. Idle, disabled.
     /// </summary>
-    public sealed class CityPeople : MonoBehaviour
+    public sealed partial class CityPeople : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "CityPeople", typeof(CityPeople));
 
@@ -37,14 +35,12 @@ namespace RealLifeOverhaul
         private static readonly AppearanceTag[] CasualWear = { AppearanceTag.Casual };
 
         private readonly List<CityPerson> _people = new List<CityPerson>(MaxPeople);
-        private readonly List<CityLook> _wanted = new List<CityLook>(4);   // looks asked for that nobody on the shelf had, made ready one at a time
+        private readonly List<CityLook> _wanted = new List<CityLook>(4);   // looks nobody on the shelf had, made ready one at a time
         private Coroutine _tending;
 
         /// <summary>
-        /// Set by the living city for its own pool; the scenes' pools dress people as they are set up. A thrifty pool never
-        /// builds a look in the frame somebody is asked for (People/Looks): it hands out somebody already dressed for the part,
-        /// whoever came back longest ago first, or says no and makes the look ready on the shelf for next time. A civilian's
-        /// look is changed on the shelf after a few outings.
+        /// Set for the living city's own pool: it never builds a look in the frame somebody is asked for, but hands out
+        /// somebody dressed for the part or says no and makes the look ready on the shelf for next time.
         /// </summary>
         public bool Thrifty;
 
@@ -68,7 +64,6 @@ namespace RealLifeOverhaul
             enabled = false;
         }
 
-        /// <summary>How many characters exist, in use or not.</summary>
         public int Count => _people.Count;
 
         /// <summary>One of the characters, in use or not, for finding this pool's people where they stand (People/CordonClear).</summary>
@@ -94,10 +89,7 @@ namespace RealLifeOverhaul
         /// <summary>Tools dropped by people who were knocked down; whoever ends a site takes what lies near it.</summary>
         public List<Transform> Fallen => _fallen;
 
-        /// <summary>
-        /// Makes one more character, dressed as a civilian and put away, called every few seconds after the city loads so eight
-        /// looks are never paid for in one frame. True while there is more to make.
-        /// </summary>
+        /// <summary>Makes one more character, dressed as a civilian and put away; true while there is more to make.</summary>
         public bool Warm(Vector3 near)
         {
             if (_people.Count >= MaxPeople)
@@ -412,212 +404,6 @@ namespace RealLifeOverhaul
                     CityLifeDirector.Disturb(person);
                 }
             }
-        }
-
-        // Somebody on the shelf dressed for the part: sooner one whose look is not due a change, then whoever came back first.
-        private CityPerson Ready(CityLook look)
-        {
-            CityPerson ready = null;
-            for (int i = _people.Count - 1; i >= 0; i--)
-            {
-                CityPerson person = _people[i];
-                if (!person.Valid)
-                {
-                    _people.RemoveAt(i);   // destroyed with a scene the mod did not unload
-                    continue;
-                }
-                if (person.InUse || person.Actor.InUse || person.Look != look)
-                {
-                    continue;
-                }
-                if (ready == null || (ready.Stale && !person.Stale) || (ready.Stale == person.Stale && person.ReleasedAt < ready.ReleasedAt))
-                {
-                    ready = person;
-                }
-            }
-            return ready;
-        }
-
-        private void Want(CityLook look)
-        {
-            if (!_wanted.Contains(look) && _wanted.Count < 4)
-            {
-                _wanted.Add(look);
-            }
-            Tend();
-        }
-
-        private void Tend()
-        {
-            if (_tending == null && gameObject.activeInHierarchy)
-            {
-                _tending = StartCoroutine(Guard.Routine(Tending()));
-            }
-        }
-
-        // Only while the shelf has something to see to: one look at a time, when People/Looks allows one.
-        private System.Collections.IEnumerator Tending()
-        {
-            while (_wanted.Count > 0 || AnyWorn())
-            {
-                yield return null;
-                if (!Looks.Free)
-                {
-                    continue;
-                }
-                try
-                {
-                    TendOne();
-                }
-                catch (Exception e)
-                {
-                    CityLifeDirector.Logger?.Error(e);
-                    _wanted.Clear();
-                    for (int i = 0; i < _people.Count; i++)
-                    {
-                        _people[i].Stale = false;   // not tried again: they keep the look they have
-                    }
-                }
-            }
-            _tending = null;
-        }
-
-        private bool AnyWorn()
-        {
-            for (int i = 0; i < _people.Count; i++)
-            {
-                CityPerson person = _people[i];
-                if (person.Stale && person.Valid && !person.InUse && !person.Actor.InUse)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private void TendOne()
-        {
-            // First what was asked for and is still not on the shelf.
-            while (_wanted.Count > 0)
-            {
-                CityLook look = _wanted[0];
-                if (Ready(look) != null)
-                {
-                    _wanted.RemoveAt(0);   // somebody dressed for it has come back meanwhile
-                    continue;
-                }
-                CityPerson spare = Spare();
-                if (spare == null)
-                {
-                    return;   // everybody is out: when somebody comes back
-                }
-                _wanted.RemoveAt(0);
-                Redress(spare, look);
-                return;
-            }
-            // Then a new look for a civilian whose own is worn.
-            for (int i = 0; i < _people.Count; i++)
-            {
-                CityPerson person = _people[i];
-                if (person.Stale && person.Valid && !person.InUse && !person.Actor.InUse)
-                {
-                    Redress(person, CityLook.Civilian);
-                    return;
-                }
-            }
-        }
-
-        // Whoever on the shelf can best be spared: of the look there are most of, sooner one due a change, then whoever came
-        // back longest ago.
-        private CityPerson Spare()
-        {
-            CityPerson spare = null;
-            int most = 0;
-            for (int i = 0; i < _people.Count; i++)
-            {
-                CityPerson person = _people[i];
-                if (!person.Valid || person.InUse || person.Actor.InUse)
-                {
-                    continue;
-                }
-                int alike = 0;
-                for (int k = 0; k < _people.Count; k++)
-                {
-                    CityPerson other = _people[k];
-                    alike += other.Valid && !other.InUse && !other.Actor.InUse && other.Look == person.Look ? 1 : 0;
-                }
-                if (spare == null || alike > most || (alike == most && ((person.Stale && !spare.Stale) || (person.Stale == spare.Stale && person.ReleasedAt < spare.ReleasedAt))))
-                {
-                    spare = person;
-                    most = alike;
-                }
-            }
-            return spare;
-        }
-
-        // A look for someone on the shelf, awake only while it is put on.
-        private void Redress(CityPerson person, CityLook look)
-        {
-            GameObject body = person.Character.gameObject;
-            body.SetActive(true);
-            try
-            {
-                person.Reset(_props);
-                Dress(person, look);
-            }
-            finally
-            {
-                body.SetActive(false);
-            }
-        }
-
-        // An idle character already dressed this way, else any idle one, to be re-dressed.
-        private CityPerson Choose(CityLook look)
-        {
-            CityPerson spare = null;
-            for (int i = _people.Count - 1; i >= 0; i--)
-            {
-                CityPerson person = _people[i];
-                if (!person.Valid)
-                {
-                    _people.RemoveAt(i);   // destroyed with a scene the mod did not unload
-                    continue;
-                }
-                if (person.InUse || person.Actor.InUse)
-                {
-                    continue;   // out, or still with the casualty system
-                }
-                if (person.Look == look && !person.Stale)
-                {
-                    return person;
-                }
-                if (spare == null || person.Look == look)
-                {
-                    spare = person;
-                }
-            }
-            return spare;
-        }
-
-        // Who they are (age, build, face, hair) is rolled for everyone; workers then get their work clothes.
-        private static void Dress(CityPerson person, CityLook look)
-        {
-            Looks.Count("city life: a character's look being built (a mesh merge)");   // named for the long-frame line of the session record
-            person.Look = look;
-            person.Stale = false;
-            person.Uses = 0;
-            person.DressedAt = Time.unscaledTime;
-            AppearanceSetter appearance = person.Character.appearanceSetter;
-            CityOutfits.Restore(person.Dyes);
-            appearance.SetRandomAge();
-            Gender gender = Random.value < 0.5f ? Gender.Male : Gender.Female;
-            appearance.RandomizeElements(gender, SkinColorHelper.GetRandom(), CasualWear);
-            // The game holds a heavy character's arms wider by an animator layer that our clips replace: hands and tools made for
-            // an average build would sink into a big belly.
-            appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
-            CityOutfits.Wear(appearance, look, person.Dyes);
-            appearance.UpdateVisuals();   // the one mesh merge for this outfit
-            Looks.Done();
         }
     }
 }
