@@ -4,17 +4,12 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One car playing its recorded engine: the loops of its <see cref="EngineVoice"/> on audio sources of the mod's own,
-    /// put on the car's own sound holders (the NWH SoundManager's engine, exhaust and other source objects, on its own mixer
-    /// groups, so the game's volume, its in-car muffling and its distance falloff apply as to the game's own), and the
-    /// game's own note, pops, turbo and skid sources on that car muted meanwhile (<see cref="GameSounds"/>). The NWH engine
-    /// sound plays one clip pitched by the revs and cannot cross between recordings; this does, by
-    /// <see cref="CarSoundRules"/>, from the powertrain's revs and throttle (or, on the shop's turntable, from revs of its
-    /// own on the throttle key). <see cref="Release"/> takes every source of the mod's off and gives the game's back.
-    ///
-    /// The cost while a car is held: once a frame, the revs and throttle read, a handful of multiplications, the volume and
-    /// pitch of the sounding sources set, the wheels' slip read (four wheels); a source with nothing to play is stopped.
-    /// Nothing is allocated after the car is taken.
+    /// One car playing its recorded engine: the loops of its <see cref="EngineVoice"/> on audio sources of the mod's, put on
+    /// the car's own sound holders and mixer groups (so the game's volume, in-car muffling and falloff apply), with the
+    /// game's own note, pops, turbo and skid sources on that car muted meanwhile. The game's engine sound pitches one clip
+    /// and cannot cross between recordings; this does, by <see cref="CarSoundRules"/>. <see cref="Release"/> gives the
+    /// game's back. Cost while held: once a frame, the revs, throttle and four wheels' slip read and a handful of
+    /// multiplications; nothing allocated after the car is taken.
     /// </summary>
     public sealed class CarSoundCar
     {
@@ -31,7 +26,7 @@ namespace RealLifeOverhaul
         private readonly AudioSource[] _off = new AudioSource[CarSoundRules.MostLoops];
         private readonly AudioClip[] _pops;
         private readonly GameSounds _game = new GameSounds();
-        private readonly System.Random _random = new System.Random(20261018);   // the pops' timing and pitch: one machine's sound alone
+        private readonly System.Random _random = new System.Random(20261018);   // the pops' timing and pitch: this machine's sound alone
         private AudioSource _pop, _whistle, _flutter, _squeal;
         private AudioClip _flutterClip;
         private EngineReading _reading;
@@ -71,8 +66,8 @@ namespace RealLifeOverhaul
         public float Rpm => _reading.Rpm;
 
         /// <summary>
-        /// Puts the recorded engine on a car: null (and the car untouched) if it is not a car with the game's sound system
-        /// or this engine's clips are not all in memory. <paramref name="why"/> says which.
+        /// Puts the recorded engine on a car: null, the car untouched, if it is not a car with the game's sound system or
+        /// this engine's clips are not all in memory; <paramref name="why"/> says which.
         /// </summary>
         public static CarSoundCar Take(CarController car, EngineVoice voice, out string why)
         {
@@ -311,7 +306,7 @@ namespace RealLifeOverhaul
         {
             if (source == null)
             {
-                source = null;   // (gone with the car: nothing to take off)
+                source = null;   // gone with the car: nothing to take off
                 return 0;
             }
             source.Stop();

@@ -77,8 +77,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/Keys.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictPanel.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarDrag.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarMeasure.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/CarStrikes.cs	1
@@ -227,8 +225,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictBridges.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictView.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarTuning.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/VehicleTow.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultDirector.Reports.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitPlanner.Zones.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikeMount.cs	6

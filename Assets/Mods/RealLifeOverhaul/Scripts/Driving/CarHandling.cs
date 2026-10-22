@@ -15,21 +15,16 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The handling of the car the player drives (docs/features/driving.md, "Handling"): the game's own car, read when the
-    /// player gets in, with a little weight, roll and nose dive, smooth brakes that never lock and a little give past the
-    /// very limit. <see cref="HandlingModel"/> works the values out from the car's own; this puts them on the game's own
-    /// vehicle physics: the body's mass, every wheel's spring force and length on the game's own spring curve, its damper
-    /// rates on the game's own damper shape, force point, anti-squat, load rating and rolling resistance, one friction preset
-    /// of the mod's (the game's own tyre curve to its knee, flat past it), the axles' anti-roll bars and brake shares, the
-    /// steering curve if the slider moved it, the game's own ABS module, and a ground preset with no surfaces of its own so
-    /// that the game's terrains never swap the tyres back.
+    /// The handling of the car the player drives: the game's own car, read when the player gets in, with a little weight,
+    /// roll and nose dive, smooth brakes that never lock and a little give past the very limit. <see cref="HandlingModel"/>
+    /// works the values out; this puts them on the game's vehicle physics (mass, springs, dampers, force points, anti-squat,
+    /// tyre ratings, a friction preset of the mod's, the bars and brake shares, the steering if the slider moved it, the
+    /// game's ABS module, and a ground preset that never swaps the tyres back).
     ///
-    /// Everything is recorded first and put back exactly. The Garage's parts always lie on top: lifted before anything
-    /// here changes and laid back after (<see cref="DrivingBridges"/>), so a sports spring is stiffer than this base and
-    /// a grippier tyre grips more than it, and nothing is applied twice. What the handling wrote is read back before the
-    /// parts go back on top. Only the car the player drives, and only their own in a Going Public session. Driven by
-    /// <see cref="CarTuning"/>: the cost is nothing per frame; the work runs once when the player gets in and once on a
-    /// change of an option or a slider.
+    /// Everything is recorded first and put back exactly. The Garage's parts always lie on top: lifted before anything here
+    /// changes and laid back after (<see cref="DrivingBridges"/>), so nothing is applied twice. Only the car the player
+    /// drives, and only their own in Going Public. Driven by <see cref="CarTuning"/>: nothing per frame; the work runs once
+    /// when the player gets in and on a change of an option or a slider.
     /// </summary>
     public sealed class CarHandling
     {
@@ -95,13 +90,11 @@ namespace RealLifeOverhaul
         /// <summary>Why the handling last kept off a car, for the test button; null once it is on one.</summary>
         public string Refusal { get; private set; }
 
-        // ---------------------------------------------------------------- on
-
         /// <summary>
-        /// Puts the handling on a car at a level, the Garage's parts lifted first and laid back on top after, and the brakes
-        /// then shared out for the parts on top (never past what the tyres hold). True if it is on. Refused (and said once in
-        /// the log) for a car that is not a four-wheeled car of a kind the mod tunes, or not the player's own in a Going
-        /// Public session; anything unexpected throws, and the caller puts the car back.
+        /// Puts the handling on a car at a level, the Garage's parts lifted first and laid back on top after, then the brakes
+        /// shared out for the parts. True if it is on. Refused, and said once in the log, for a car that is not a four-wheeled
+        /// car of a kind the mod tunes or not the player's own in Going Public; anything unexpected throws, and the caller
+        /// puts the car back.
         /// </summary>
         public bool Apply(CarController car, NwhVehicle vehicle, HandlingLevel level, in HandlingTuning tuning)
         {
@@ -202,7 +195,7 @@ namespace RealLifeOverhaul
             float torque = vehicle.brakes.maxTorque;
             if (id != null)
             {
-                // As first met this session: before the car's wear (Transport/CarOwnership, a tick after getting in) or the Garage's brakes are on it.
+                // As first met this session: before the car's wear or the Garage's brakes are on it.
                 if (_brakeTorques.TryGetValue(id, out float first))
                 {
                     torque = first;
@@ -266,7 +259,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // A curve's keys into the model's own, once per car; false for a curve the model does not read as the engine does (weighted keys).
+        // A curve's keys into the model's own, once per car; false for weighted keys, which the model does not read as the engine does.
         private static bool Keys(AnimationCurve curve, CurveKeys into)
         {
             into.Clear();
@@ -499,9 +492,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- off
-
-        /// <summary>The car exactly as it was before <see cref="Apply"/>, the Garage's parts lifted first and laid back on top after. Safe with nothing on.</summary>
+        /// <summary>The car exactly as it was before <see cref="Apply"/>, the Garage's parts lifted first and laid back after. Safe with nothing on.</summary>
         public void Restore()
         {
             NwhVehicle vehicle = _vehicle;
@@ -636,8 +627,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the Garage's parts on top
-
         private static void LiftParts(CarController car)
         {
             if (car != null && DrivingBridges.LiftParts != null)
@@ -654,8 +643,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the self-check lines
-
         private void Refused(string type, string why)
         {
             Refusal = why;
@@ -666,8 +653,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// For the test button: the figures of the car the handling is on into <paramref name="data"/> for the notice, and
-        /// the self-check line written to Player.log whatever the diagnostics say. False with the handling on no car.
+        /// For the test button: the figures of the car the handling is on, for the notice, and the self-check line written to
+        /// Player.log whatever the diagnostics say. False with the handling on no car.
         /// </summary>
         public bool Tell(Dictionary<string, string> data, in HandlingTuning tuning)
         {
@@ -686,9 +673,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// For the custom shop: the metres from 100 km/h this car stops in with a build of the Garage's brakes, weight and
-        /// tyres on top (each a factor, 1 for none), by the model the car is given (HandlingModel.ShopStop); -1 for a car the
-        /// handling is not on.
+        /// For the custom shop: the metres from 100 km/h this car stops in with a build of the Garage's brakes, weight and tyres
+        /// on top (each a factor, 1 for none), by the car's own model; -1 for a car the handling is not on.
         /// </summary>
         public float ShopStop(CarController car, float brakes, float mass, float grip)
         {

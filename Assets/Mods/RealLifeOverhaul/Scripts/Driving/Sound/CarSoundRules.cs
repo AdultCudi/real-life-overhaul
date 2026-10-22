@@ -65,31 +65,16 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The recorded car sounds as numbers, with nothing of the game or the engine in them, so that NavCheck
-    /// (CarSoundCheck.cs) checks the very code <see cref="CarSoundCar"/> plays by. The sounds themselves, where each was
-    /// recorded and what was done to it, are in Sounds/SOURCES.md; this file names every clip the mod loads
-    /// (<see cref="AllClips"/>).
+    /// The recorded car sounds as numbers, with nothing of the game or the engine in them, so NavCheck checks the very code
+    /// <see cref="CarSoundCar"/> plays by. Where each sound was recorded is in Sounds/SOURCES.md; <see cref="AllClips"/>
+    /// names every clip the mod loads.
     ///
-    /// THE ENGINE. Each <see cref="EngineVoice"/> is a set of loops, each a real engine held at steady revs (idle, low,
-    /// mid, high), with a second loop for every one above idle that is the same revs off the throttle. The loops are laid
-    /// on the car's own rev range (<see cref="Place"/>): the idle loop at the car's idle, the others as far above it as
-    /// they were recorded, spread wider if the top loop would otherwise be pitched past <see cref="TopPitch"/> at the rev
-    /// limit. Between two neighbouring loops the crossfade (<see cref="Mix"/>) is equal-power over the middle half of the
-    /// span on a scale of ratios, so every rev has one or two loops sounding, the power of the mix is always one, and no
-    /// level steps; each loop is pitched by the revs over its own (<see cref="PitchOf"/>).
-    ///
-    /// LOAD. On and off the throttle are two layers at the same revs, crossed equal-power by the throttle
-    /// (<see cref="OnShare"/>); off the throttle is quieter by the exhaust's <see cref="ExhaustSound.OffLevel"/>.
-    ///
-    /// THE PARTS. A sports or straight-through exhaust (<see cref="Exhaust"/>) is louder, a little lower, rawer off the
-    /// throttle, and pops for a moment after lifting off from high revs (<see cref="PopChance"/>). A turbo
-    /// (<see cref="Turbo"/>) builds boost with the throttle and the revs (<see cref="Boost"/>), whistles with it, and
-    /// flutters when the throttle shuts on boost (<see cref="Flutters"/>).
-    ///
-    /// THE SHOP. On the turntable the car is held, so its revs are the sound's own (<see cref="ShopRevs"/>): the throttle
-    /// key raises them towards most of the rev limit, letting go lets them fall back to idle.
-    ///
-    /// Everything here is a handful of multiplications asked once a frame while a car is held; nothing is allocated.
+    /// An engine is a set of loops, each a real engine at steady revs, with an off-throttle loop for each above idle. The
+    /// loops are laid on the car's own rev range (<see cref="Place"/>) and crossfade equal-power over the middle half of
+    /// each span on a scale of ratios (<see cref="Mix"/>), so no level steps; on and off the throttle cross the same way
+    /// (<see cref="OnShare"/>). An exhaust is louder and lower and pops after a lift-off (<see cref="PopChance"/>); a turbo
+    /// builds boost (<see cref="Boost"/>), whistles and flutters (<see cref="Flutters"/>). On the shop's turntable the
+    /// revs are the sound's own (<see cref="ShopRevs"/>). A handful of multiplications a frame; nothing allocated.
     /// </summary>
     public static class CarSoundRules
     {
@@ -233,8 +218,6 @@ namespace RealLifeOverhaul
             return Turbos[size >= 0 && size < Turbos.Length ? size : 0];
         }
 
-        // ---------------------------------------------------------------- the engine
-
         /// <summary>
         /// The revs each loop of an engine stands for on a car with this idle and rev limit, into <paramref name="at"/>
         /// (at least as long as the loops). The loops keep the recordings' ratios to each other, so two loops crossing over
@@ -335,8 +318,6 @@ namespace RealLifeOverhaul
             return v < 0f ? 0f : v > 1f ? 1f : v;
         }
 
-        // ---------------------------------------------------------------- lifting off: pops and the flutter
-
         /// <summary>Whether the throttle has just been lifted: it was at least <see cref="LiftFrom"/> within <see cref="LiftWithin"/> s and is below <see cref="LiftTo"/> now.</summary>
         public static bool Lifted(float throttle, float lastHighAgo)
         {
@@ -358,8 +339,6 @@ namespace RealLifeOverhaul
             float chance = exhaust.PopsPerSecond * fade * (0.5f + revs) * dt;
             return chance > 1f ? 1f : chance;
         }
-
-        // ---------------------------------------------------------------- the turbo
 
         /// <summary>Boost after this frame, 0 to 1: building towards the throttle times the revs' share with the turbo's spool, dying with the throttle shut.</summary>
         public static float Boost(float boost, float throttle, float revs, float dt, in TurboSound turbo)
@@ -395,8 +374,6 @@ namespace RealLifeOverhaul
             return turbo.FlutterVolume > 0f && lifted && boost >= FlutterFrom;
         }
 
-        // ---------------------------------------------------------------- the shop's turntable
-
         /// <summary>The revs after this frame on the turntable: towards <see cref="ShopRevTop"/> of the limit while the key is held, back to idle when it is not.</summary>
         public static float ShopRevs(float rpm, bool held, float idleRpm, float limitRpm, float dt)
         {
@@ -423,8 +400,6 @@ namespace RealLifeOverhaul
             return idle + above * (float)Math.Exp(-dt / ShopFallTail);   // the last of it eases onto idle, at the same rate where the two meet
         }
 
-        // ---------------------------------------------------------------- tyres
-
         /// <summary>
         /// One wheel's squeal, 0 to 1, as the game's own skid sound reckons it (WheelSkidComponent): its slip, times how fast
         /// it moves, so a car spinning on the spot or crawling squeals little.
@@ -443,8 +418,6 @@ namespace RealLifeOverhaul
             k = k < 0f ? 0f : k > 1f ? 1f : k;
             return heard + (loudest - heard) * k;
         }
-
-        // ---------------------------------------------------------------- the clips
 
         private static string[] Clips()
         {

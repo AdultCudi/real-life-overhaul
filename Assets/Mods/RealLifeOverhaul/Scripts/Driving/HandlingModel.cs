@@ -110,13 +110,11 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The driven car's handling as the game's own vehicle physics (NWH Vehicle Physics 2) works it, game-free, built on the
-    /// car's own game values: its springs and anti-roll bars scaled with the weight (the same ride height and frequency),
-    /// its two-rate dampers' shape with rates for the level's damping, stepped as the physics steps a corner; its tyre
-    /// curve kept to past the slip its own turns use and flat beyond (the give); a little more roll and dive from the
-    /// force points and anti-squat; the force points raised where the car would otherwise roll over before it slides; its
-    /// own steering; brakes shared for its own full pedal's deceleration, never locking. <see cref="HandlingTurn"/> holds
-    /// the car in a turn. Runs once per car and change of an option, a few milliseconds at most, never per frame.
+    /// The driven car's handling as the game's vehicle physics (NWH Vehicle Physics 2) works it, game-free and built on the
+    /// car's own game values: springs and bars scaled with the weight, the dampers' own shape with rates for the level, the
+    /// tyre curve kept past the slip its own turns use and flat beyond, a little more roll and dive, the force points raised
+    /// where it would roll over before it slides, and brakes shared so they never lock. <see cref="HandlingTurn"/> holds the
+    /// car in a turn. Runs once per car and change of an option, a few milliseconds at most, never per frame.
     /// </summary>
     public static class HandlingModel
     {
@@ -159,10 +157,7 @@ namespace RealLifeOverhaul
         private static readonly TurnCar Game = new TurnCar();     // the game's own car, as a turn sees it
         private static readonly TurnCar Own = new TurnCar();      // and the car with the handling on
 
-        /// <summary>
-        /// One car's handling for a target. Returns why the car cannot be given it (then nothing is to be changed), or
-        /// null. Everything on <paramref name="s"/> is written.
-        /// </summary>
+        /// <summary>One car's handling for a target, all written into <paramref name="s"/>; why the car cannot have it, or null.</summary>
         public static string Design(CarChassis car, in HandlingTarget t, HandlingSetup s)
         {
             AxleData f = car.Front;
@@ -225,8 +220,6 @@ namespace RealLifeOverhaul
             return axle.SpringForce > 100f && axle.SpringLength > 0.05f && axle.Radius > 0.1f && axle.SideGrip > 0.05f && axle.AlongGrip > 0.05f
                    && axle.LoadRating > 100f && axle.SideStiffness > 0.05f && axle.Spring.Count >= 2 && axle.Bump >= 0f && axle.Rebound >= 0f;
         }
-
-        // ---------------------------------------------------------------- the springs, the ride
 
         // The game's own spring carrying the new weight: its force scaled with the weight and its length kept, so the car
         // stands as high and rides at the same frequency; the softness slider divides the rate, the spring then made as
@@ -364,7 +357,7 @@ namespace RealLifeOverhaul
             return Bounce(shape, force, length, bump, rebound, mass, Push(shape, force, length, mass), out swings, out after);
         }
 
-        /// <summary>The push <see cref="Bounce"/> measures a corner from: <see cref="BounceStart"/>, or half its travel at rest if less.</summary>
+        /// <summary>The push Bounce measures a corner from: <see cref="BounceStart"/>, or half its travel at rest if less.</summary>
         public static float Push(AxleData shape, float force, float length, float mass)
         {
             float rest = SettledLength(shape, force, length, mass * G);
@@ -561,8 +554,6 @@ namespace RealLifeOverhaul
             float high = x < 0.999f ? x + 0.001f : 1f;
             return (curve(high) - curve(low)) / (high - low);
         }
-
-        // ---------------------------------------------------------------- the body's roll and the tyres
 
         /// <summary>The centre of mass's height above the road at rest on the game's own springs, m.</summary>
         public static float GameHeight(CarChassis car)
@@ -857,8 +848,6 @@ namespace RealLifeOverhaul
             return s.ComHeight - s.RollCentre - 0.5f * (car.Front.Radius + car.Rear.Radius) * s.Front.AntiSquat;
         }
 
-        // ---------------------------------------------------------------- the steering
-
         // The game's own steering curve; with the slider moved, its share at each speed times the slider (never past the
         // lock), the lock at walking pace kept.
         private static void Steering(CarChassis car, in HandlingTarget t, HandlingSetup s)
@@ -891,8 +880,6 @@ namespace RealLifeOverhaul
         {
             return s.Steer.Evaluate(speed / HandlingTurn.SteerTop) * lockDegrees;
         }
-
-        // ---------------------------------------------------------------- the brakes
 
         // The full pedal's deceleration: the game's own on this car (BrakeFactor of it), each axle's brake share set for
         // it (PartsBrakes with no parts), and how much more of its tyres each axle asks at its worst moment as the body dives.

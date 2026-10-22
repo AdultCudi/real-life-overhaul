@@ -48,11 +48,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The one place the recorded car sounds meet the game: the NWH Vehicle Physics sound system on the car
-    /// (its SoundManager: the engine, exhaust and other source holders and their mixer groups; the components whose
-    /// sources the recorded ones stand in for), the car's powertrain (revs, idle, rev limit, throttle), its wheels (slip
-    /// for the squeal) and the player's throttle key (the shop's revving). Each member that might change in a game update
-    /// is read in a small method of its own. Nothing here runs unless a car is held.
+    /// The one place the recorded car sounds meet the game: the car's NWH sound system, its powertrain, its wheels and the
+    /// player's throttle key. Each member that might change in a game update is read in a small method of its own. Nothing
+    /// here runs unless a car is held.
     /// </summary>
     public static class CarSoundGame
     {
