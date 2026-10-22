@@ -144,32 +144,7 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
 
-                // The entries the game made for its stations go; its template stays, as this window's.
-                Transform content = entry.parent;
-                for (int i = content.childCount - 1; i >= 0; i--)
-                {
-                    Transform child = content.GetChild(i);
-                    if (child != entry)
-                    {
-                        UnityEngine.Object.DestroyImmediate(child.gameObject);
-                    }
-                }
-                entry.name = "Entry";
-                if (!entry.CompareTag("Untagged"))
-                {
-                    entry.tag = "Untagged";
-                }
-                var entryRect = (RectTransform)entry;
-                entryRect.sizeDelta = new Vector2(entryRect.sizeDelta.x, 104f);   // the game's 88.8 holds one line; this holds a name and a smaller line
-                var text = label.GetComponent<TMP_Text>();
-                if (text != null)
-                {
-                    text.richText = true;
-                    text.fontStyle &= ~FontStyles.UpperCase;   // the name gets the game's capitals by its own tag; the line under it reads as a sentence
-                    text.textWrappingMode = TextWrappingModes.NoWrap;
-                    text.overflowMode = TextOverflowModes.Ellipsis;
-                }
-                entry.gameObject.SetActive(false);
+                UiClone.EntryTemplate(entry, label);
                 picker._template = entry.gameObject;
 
                 // The game's search field, cleared of what it did there.
@@ -636,12 +611,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 return;
             }
-            // Not left selected: the entries are reused, and the confirm key presses whatever is selected.
-            EventSystem events = EventSystem.current;
-            if (events != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(_root.transform))
-            {
-                events.SetSelectedGameObject(null);
-            }
+            UiClone.Deselect(_root.transform);
             int id = row.Id;
             UiClone.Safe(() => pick(id));
         }

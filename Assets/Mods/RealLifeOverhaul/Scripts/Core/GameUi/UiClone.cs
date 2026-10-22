@@ -5,23 +5,23 @@ using Localizor;
 using Localizor.LanguageChangeEvent;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Copies of the game's own interface objects, made at run time and never shipped. Everything the mod shows in the
-    /// game's interface starts here: a live object of the game is copied while it sleeps (so none of its scripts wake up
-    /// in the copy), the scripts that drive the original are taken off, and what is left (the pictures, the texts, the
-    /// layout, the hover and click sounds) is the game's. See RealLifeOverhaul.Build/docs/game-ui.md.
+    /// Copies of the game's own interface objects, made at run time and never shipped: a live object is copied while
+    /// asleep (none of its scripts wake in the copy), the scripts that drive the original are taken off, and what is left
+    /// is the game's. See RealLifeOverhaul.Build/docs/game-ui.md.
     /// </summary>
     public static class UiClone
     {
         public static IModLogger Logger;
 
         /// <summary>
-        /// An object that is switched off and stays off: whatever is copied into it does not run Awake or OnEnable,
-        /// which is what lets a script be taken off a copy before it has done anything.
+        /// An object switched off for good: what is copied into it runs no Awake or OnEnable, so a script can be taken off a
+        /// copy before it has done anything.
         /// </summary>
         public static Transform Dormant(Transform parent, string name)
         {
@@ -49,8 +49,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// Takes the game's own scripts off a sleeping copy, except the ones that only draw or sound (keep): what drove
-        /// the original must not drive the copy. A script another script on the same object needs is taken off after it.
+        /// Takes the game's own scripts off a sleeping copy but those <paramref name="keep"/> wants (they only draw or sound).
+        /// A script another one on the object requires is taken off after it.
         /// </summary>
         public static void StripGameScripts(GameObject copy, Func<MonoBehaviour, bool> keep)
         {
@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // Whether another script still to be taken off the same object says it requires this one.
+        // Another script still to be taken off the same object requires this one.
         private static bool Needed(MonoBehaviour script, List<MonoBehaviour> others)
         {
             Type type = script.GetType();
@@ -145,7 +145,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 return null;
             }
-            button.onClick = new Button.ButtonClickedEvent();   // drops the calls saved with the game's object as well
+            button.onClick = new Button.ButtonClickedEvent();   // drops the calls saved with the game's object too
             if (click != null)
             {
                 button.onClick.AddListener(() => Safe(click));
@@ -154,11 +154,9 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// Runs something the player clicked, inside the guard of the class the click's code is written in (Core/Guard):
-        /// nothing thrown here reaches the game's interface, a fault counts for that class as its other entry points' do,
-        /// and a click of a class or feature that is switched off does nothing. The click is timed under the name of the class
-        /// and method its code is written in ("Click: FinanceApp.Build", Core/Guard.HandlerSlot: one look-up a click), so the
-        /// session record names an app's tab, row, button or filter that takes long.
+        /// Runs a click inside the guard of the class its code is written in (Core/Guard): nothing thrown reaches the game's
+        /// interface, a fault counts for that class, and a class switched off does nothing. Timed under that class and method
+        /// ("Click: FinanceApp.Build"), one look-up a click.
         /// </summary>
         public static void Safe(Action action)
         {
@@ -183,8 +181,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// A text of the game's given a translated line: through the game's own component where the object has one
-        /// (it follows a change of language by itself), written once where it has none.
+        /// A text given a translated line: through the game's own component where it has one (it follows a change of language),
+        /// else written once.
         /// </summary>
         public static void Key(Component text, string key)
         {
@@ -199,7 +197,7 @@ namespace RealLifeOverhaul.GameUi
                 localised.Prefix = string.Empty;
                 localised.Suffix = string.Empty;
                 localised.Key = key;
-                // Key only writes when it changes: a copy that was saved with the same key still shows its template text.
+                // Key writes only when it changes: a copy saved with the same key would keep its template's text.
                 localised.SetValue(key.GetLocalization());
                 return;
             }
@@ -210,7 +208,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A text of the game's given words that are already final (a name, a time, a composed line).</summary>
+        /// <summary>A text given final words (a name, a time, a composed line).</summary>
         public static void Words(Component text, string words)
         {
             if (text == null)
@@ -230,6 +228,49 @@ namespace RealLifeOverhaul.GameUi
             if (plain != null)
             {
                 plain.text = words ?? string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// A station list's entry (MapPicker, TravelList) made the list's one template, asleep: the game's other entries
+        /// destroyed, its label set for a name and a smaller line under it.
+        /// </summary>
+        internal static void EntryTemplate(Transform entry, Transform label)
+        {
+            Transform content = entry.parent;
+            for (int i = content.childCount - 1; i >= 0; i--)
+            {
+                Transform child = content.GetChild(i);
+                if (child != entry)
+                {
+                    UnityEngine.Object.DestroyImmediate(child.gameObject);
+                }
+            }
+            entry.name = "Entry";
+            if (!entry.CompareTag("Untagged"))
+            {
+                entry.tag = "Untagged";
+            }
+            var entryRect = (RectTransform)entry;
+            entryRect.sizeDelta = new Vector2(entryRect.sizeDelta.x, 104f);   // the game's 88.8 holds one line; this holds a name and a smaller line
+            var text = label.GetComponent<TMP_Text>();
+            if (text != null)
+            {
+                text.richText = true;
+                text.fontStyle &= ~FontStyles.UpperCase;   // the name gets the game's capitals by its own tag; the line under it reads as a sentence
+                text.textWrappingMode = TextWrappingModes.NoWrap;
+                text.overflowMode = TextOverflowModes.Ellipsis;
+            }
+            entry.gameObject.SetActive(false);
+        }
+
+        /// <summary>Nothing under a window left selected: its entries are reused, and the confirm key presses whatever is.</summary>
+        internal static void Deselect(Transform root)
+        {
+            EventSystem events = EventSystem.current;
+            if (events != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(root))
+            {
+                events.SetSelectedGameObject(null);
             }
         }
 
