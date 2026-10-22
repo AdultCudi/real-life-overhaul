@@ -17,7 +17,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public static class TextsLinks
         {
-            public const double LedgerSeconds = 120.0;   // real seconds an edition's briefs may take: written at dawn, read later
+            private const double LedgerSeconds = 120.0;   // real seconds an edition's briefs may take: written at dawn, read later
 
             private static readonly HashSet<int> LedgerShown = new HashSet<int>();   // the editions (by day) a piece of which has been shown
             private static Action<NewsKind, UnityEngine.Vector3> _onNews;

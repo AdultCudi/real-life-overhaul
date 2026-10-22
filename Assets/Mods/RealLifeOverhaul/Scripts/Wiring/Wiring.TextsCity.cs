@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public static class TextsCity
         {
-            public const int WorthHour = 6;          // the game hour the net worth is read for a day's big win or loss
+            private const int WorthHour = 6;          // the game hour the net worth is read for a day's big win or loss
             public const int BigFloor = 25000;       // the least such move at the start's prices
             public const int KnownFrom = 60;         // the city's recognition of the player (0 to 100) from which people know of them
             public const int LikedFrom = 50;         // ...and the public's view (0 to 100) from which they are well known rather than infamous

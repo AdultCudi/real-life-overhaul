@@ -35,20 +35,29 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
-                    bool office = !Settings.Utilities || (utilities != null && utilities.Office != null && utilities.Office.Searched);
-                    JusticeDirector justice = JusticeDirector.Instance;
-                    bool court = !(JusticeSettings.Enabled && JusticeSettings.Courthouse) || (justice != null && justice.Court != null && justice.Court.Searched);
-                    bool law = !Settings.LawPrecincts || Law.LawDirector.PrecinctsChosen;
                     Tech.TechSites sites = Tech.TechSites.Instance;
                     bool hq = !Settings.TechSiteHq || (sites != null && sites.Hq != null && sites.Hq.Picked);
-                    return office && court && law && hq;
+                    return CityOfficesPicked() && hq;
                 }
                 catch (Exception e)
                 {
                     Fault("OfficeLinks.OthersPicked", e);
                     return true;
                 }
+            }
+
+            /// <summary>
+            /// The utilities office, the courthouse and the police stations (which take empty units too) have chosen their
+            /// buildings, or are off: asked by every feature that chooses one after them.
+            /// </summary>
+            internal static bool CityOfficesPicked()
+            {
+                Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
+                bool office = !Settings.Utilities || (utilities != null && utilities.Office != null && utilities.Office.Searched);
+                JusticeDirector justice = JusticeDirector.Instance;
+                bool court = !(JusticeSettings.Enabled && JusticeSettings.Courthouse) || (justice != null && justice.Court != null && justice.Court.Searched);
+                bool law = !Settings.LawPrecincts || Law.LawDirector.PrecinctsChosen;
+                return office && court && law;
             }
         }
     }

@@ -2,58 +2,23 @@ using System;
 using System.Collections.Generic;
 using BigAmbitions.Rivals;
 using Entities;
+using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Events;
 using RealLifeOverhaul.Planner;
-using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul
 {
     public static partial class Wiring
     {
         /// <summary>
-        /// Running a business with the rest of the mod (Economy/Company/CompanyBridges). The company calls no other
-        /// feature and none calls it: what they have to do with each other is here.
-        ///
-        ///   Footfall      a business's promotion figure, written by business pressure's own mechanism
-        ///                 (BusinessDirector.Footfall). <see cref="BusinessGame.Ambient"/> is asked for what the city's
-        ///                 economy and the company add together: one writer of that figure, whoever asks. On a new day
-        ///                 the city's economy has already had the day's customers drawn for a business it changes, so
-        ///                 they are not drawn a second time for the company
-        ///   Close         business pressure's own closure for some hours, which it reopens itself (only while
-        ///                 business pressure is on: off, it keeps no closure)
-        ///   Dispute       business pressure's own "staff dispute" is open at a business: the company's strike waits
-        ///   IssueFootfall what one of business pressure's own issues changes a business's footfall by on a day (read
-        ///                 only: the staff rota planner's forecast of the days ahead)
-        ///   Rival         the name of one of the game's rivals, as business pressure picks one
-        ///   Leave         the game's own resignation, once, as business pressure has an employee leave (Core/StaffLeave)
-        ///   Held          one rival's offer to an employee at a time: the company asks whether the tech sector has its own
-        ///                 offer or a departure in hand for somebody (TechLinks.Holds), the tech sector asks the company's
-        ///                 (<see cref="Holds"/>), and business pressure, whose poaching makes the game's own offer, asks both
-        ///                 (BusinessDirector.Held)
-        ///   losses        a fire's repair bill (Events/FireLosses), a break-in's stock and repair (Crime/BreakIns) and
-        ///                 an inspector's fine (Business/BusinessEvents) are told to the company, which opens a claim
-        ///                 if a policy covers it. The loss is the other feature's own and is not changed
-        ///   Audit         business pressure's own tax audit, started through its own rules (BusinessDirector.StartIssue)
-        ///   TaxCase       a criminal case for tax kept back, opened as one of Justice's own (Justice/TaxCases)
-        ///   Inspect       one of business pressure's own inspections, started through its own rules where a licence is missing
-        ///   inspections   when a health or fire safety inspection ends (Business/BusinessEvents), the company fines a
-        ///                 business that trades without a licence it needs
-        ///   the paper     a strike that starts today, in the City Ledger (News.Extra, after the city's economy's pieces)
-        ///   the Planner   a source of its own (<see cref="CompanySource"/>): the rows the company has made for the day
-        ///
-        /// Everything is read from what those features already keep in public or asked through an entry they already
-        /// have; nothing of theirs is changed.
+        /// Running a business (CompanyBridges) with business pressure (footfall, closures, disputes, rivals, audits and
+        /// inspections), the game's resignation (once, StaffLeave), fires, break-ins and fines for its claims, Justice's tax
+        /// cases, the paper and the Planner. One rival's offer to an employee at a time: the company and the tech sector
+        /// each ask the other's (<see cref="Holds"/>, TechLinks.Holds), and business pressure's poaching asks both.
         /// </summary>
         public static class CompanyLinks
         {
-            /// <summary>
-            /// The company's rows in the Planner, as a source of its own: a premium or an accountant's fee that leaves
-            /// tomorrow, a licence in its last three days and one that is missing, a return due within three days, a
-            /// claim to put in and one paid tomorrow, raise requests and a rival's offer that wait, a strike called for
-            /// tomorrow, an offer of overtime, a campaign's report due, back-tax still owed, and a business that lost
-            /// money three days running. The rows are made by the company on the day event and when the player changes
-            /// something (CompanyDirector.Alerts); this only hands them over, and changes nothing.
-            /// </summary>
+            /// <summary>The company's rows in the Planner, made by CompanyDirector.Alerts; this only hands them over.</summary>
             private sealed class CompanySource : IPlannerSource
             {
                 public string Id => "company";
@@ -114,12 +79,12 @@ namespace RealLifeOverhaul
                 BreakIns.Happened -= BreakIn;
                 BusinessEvents.Fined -= Fined;
                 BusinessEvents.Closed -= IssueClosed;
-                BusinessGame.Ambient = CityEconomyDirector.FootfallOf;   // (the city's economy's own pairing takes it off in a moment)
+                BusinessGame.Ambient = CityEconomyDirector.FootfallOf;   // the city's economy's pairing takes it off next
                 News.Extra = _paperBefore;
                 _paperBefore = null;
             }
 
-            // What the city's economy and the company add to a business's footfall, together. Business pressure keeps the sum inside its own bounds.
+            // The city's economy's and the company's parts of a business's footfall; business pressure bounds the sum.
             private static int Ambient(BuildingRegistration reg)
             {
                 return CityEconomyDirector.FootfallOf(reg) + CompanyDirector.FootfallOf(reg);
@@ -158,7 +123,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // What one of business pressure's issues changes a business's footfall by on a day: its own figure until the day it ends (BusinessDirector's daily pass ends it then).
+            // What one of business pressure's issues changes a business's footfall by on a day, until the day it ends.
             private static int IssueFootfall(BuildingRegistration reg, int day)
             {
                 try
@@ -201,8 +166,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// The company's own rival's offer waiting for an employee (the game's id), or the notice they work after one: the
-            /// tech sector (Tech/TechBridges.Held) and business pressure make no rival's offer to them then.
+            /// The company's own rival's offer waits for an employee (the game's id), or they work their notice after one:
+            /// the tech sector and business pressure make them no offer then.
             /// </summary>
             internal static bool Holds(string id)
             {
@@ -219,15 +184,13 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Business pressure's poaching makes the game's own offer: never to somebody the company or the tech sector has
-            // its own rival's offer or a departure in hand for.
+            // Business pressure's poaching: never somebody the company or the tech sector has an offer or a departure in hand for.
             private static bool Offered(string id)
             {
                 return Holds(id) || TechLinks.Holds(id);
             }
 
-
-            // A fire's repair bill at a business of the player's: fire cover may pay some of it back (the bill itself is the fire's own).
+            // A fire's repair bill at a business of the player's: fire cover may pay some of it back.
             private static void FireLoss(BuildingRegistration reg, int bill)
             {
                 CompanyDirector.Instance?.Loss(reg, CoverKind.Fire, bill);
@@ -239,7 +202,7 @@ namespace RealLifeOverhaul
                 CompanyDirector.Instance?.Loss(reg, CoverKind.Theft, Math.Max(0, stock) + Math.Max(0, repair));
             }
 
-            // A fine from one of business pressure's inspections (health, fire safety): liability cover may pay some of it back.
+            // A fine from a health or fire safety inspection: liability cover may pay some of it back.
             private static void Fined(string kind, string place, int amount)
             {
                 try
@@ -255,7 +218,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Business pressure's own tax audit, by its own rules (it may say no: a rest, an open issue, its switch).
+            // Business pressure's own tax audit, by its own rules: it may say no.
             private static bool Audit(BuildingRegistration reg)
             {
                 try
@@ -269,7 +232,8 @@ namespace RealLifeOverhaul
                     return false;
                 }
             }
-            // One of business pressure's inspections, started through its own rules: health where food is sold, fire safety otherwise, or whichever of the two it will start.
+
+            // Health where food is sold, fire safety otherwise, or whichever of the two business pressure will start.
             private static bool Inspect(BuildingRegistration reg)
             {
                 try

@@ -1,8 +1,8 @@
 using System;
+using Localizor;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Law;
 using RealLifeOverhaul.Street;
-using Localizor;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -156,7 +156,8 @@ namespace RealLifeOverhaul
                 }
                 ContactPictures.Person(SocialPhone.IdOf(p), p.Female, p.Age, p.Seed);
                 SocialLife.Meet(p, m.Warm);
-                SocialDirector.Logger?.Info("Social: " + p.Name + " swapped numbers with the player in the street: met in the street" + (seed != 0 ? ", with the look they had there." : " (their look could not be read: the seat's own)."));
+                SocialDirector.Logger?.Info("Social: " + p.Name + " swapped numbers with the player in the street: met in the street"
+                                            + (seed != 0 ? ", with the look they had there." : " (their look could not be read: the seat's own)."));
             }
 
             // A yes booked as a call books a plan; -1 if it cannot be now (a plan on already, the place gone, nobody left).

@@ -1,6 +1,5 @@
 using System;
 using BigAmbitions.DayNightCycle;
-using Extensions;
 using Helpers;
 using Localizor;
 using RealLifeOverhaul.Flare;

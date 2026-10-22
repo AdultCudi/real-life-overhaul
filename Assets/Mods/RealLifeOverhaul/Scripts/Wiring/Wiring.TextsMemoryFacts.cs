@@ -70,7 +70,7 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>How the social life met a person, as a memory's code; null for the family (Mom is not "met").</summary>
-            public static string MetCode(SocialOrigin origin)
+            private static string MetCode(SocialOrigin origin)
             {
                 switch (origin)
                 {
@@ -89,7 +89,7 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>One of the social life's memories as a memory fact; false for one with none.</summary>
-            public static bool FactOf(SocialMemory m, out TextFact f)
+            private static bool FactOf(SocialMemory m, out TextFact f)
             {
                 f = default(TextFact);
                 switch (m.Code)

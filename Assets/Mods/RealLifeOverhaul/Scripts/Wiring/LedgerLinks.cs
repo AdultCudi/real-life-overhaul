@@ -13,31 +13,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The City Ledger with the rest of the mod (Ledger/LedgerBridges). The paper calls no other feature and none calls
-        /// it: what it prints is read here from what each feature keeps in public, once a morning.
-        ///
-        ///   Paper     the city's paper as Social/News writes it every morning: the street, the courts, City Hall's stories,
-        ///             the weather, the player's own shops, people, and what the city's economy and the company add to it
-        ///   Market    the market's last close (Markets): the city index and its last weeks, every sector, every company's
-        ///             close and move, and the market's news since the last edition (results, dividends, listings, bids,
-        ///             failures, crises, a crash), in the market's own words (MarketText)
-        ///   Economy   the bank rate and inflation as the Stocks app shows them, and the state of the cycle (Economy/City)
-        ///   Extra     what is on in the street today (Events/EventCalendar) and a spell of weather (Events/Weather)
-        ///   Council   the council's policies (Civic) against how they stood at the last edition: one piece for each that
-        ///             came in or ended
-        ///   Office    the player's own run for office and office (Civic/CivicOffice): the morning's pieces about them, with
-        ///             their names (a filing, an attack, an endorsement, the debate, the result, a scandal, the budget)
-        ///   Taken     the bus stops, the help-wanted boards and the bike docks, which a kiosk keeps clear of
-        ///   Say       a message from the City Ledger's contact (Social/SocialPhone), whose call is the paper's desk
-        ///   Extra     also tomorrow's street event (announced the day before) and, while the night life is on, the
-        ///             evening's clubs, cinemas and theatres: the Weekend Review's pages
-        ///   Connection  the internet at the player's homes (Utilities: each home's connection, a provider's outage, a
-        ///             cut, one being put in), which Newsstand's editions come over; and the Utilities app opened on
-        ///             its internet page, where one is bought
-        ///   the Planner  a source of its own: the morning each online subscription renews, and a cancelled one's last
-        ///             edition
-        ///   Report, Forward  in a Going Public session, what would be news on a guest's street goes to the host's paper
-        ///             (Ledger/LedgerDirector.Share.cs: News.Forward on a guest, News.Report on the host)
+        /// The City Ledger (LedgerBridges) with what it prints, read once a morning: the city's paper, the market's last
+        /// close and news, the economy's figures, the street's events, the weather, the night life, the council and the
+        /// player's office, the street's other fixtures, the City Ledger's contact, the internet at the player's homes
+        /// for Newsstand, and the Planner. In a Going Public session a guest's street news goes to the host's paper.
         /// </summary>
         public static class LedgerLinks
         {
@@ -57,7 +36,8 @@ namespace RealLifeOverhaul
                 LedgerBridges.Connection = Connection;
                 LedgerBridges.OpenUtilities = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
                 Planner.PlannerDirector.Instance?.AddSource(Renewals);
-                News.Forward = (kind, where, detail, amount) => LedgerDirector.Instance?.GuestReport((int)kind, where.x, where.z, detail, amount);   // (the city's kinds only: News and LedgerShare.CityKind)
+                // only the city's kinds (LedgerShare.CityKind)
+                News.Forward = (kind, where, detail, amount) => LedgerDirector.Instance?.GuestReport((int)kind, where.x, where.z, detail, amount);
                 LedgerBridges.Filter = Flare.FlareDirector.Filter;
                 LedgerBridges.Report = (kind, x, z, detail, amount) => News.Report((NewsKind)kind, new Vector3(x, 0f, z), detail, amount);
             }
@@ -69,8 +49,6 @@ namespace RealLifeOverhaul
                 SocialPhone.LedgerDesk = null;
                 LedgerCta.Remove();
             }
-
-            // ---------------------------------------------------------------- the city's paper
 
             private static void Paper(List<LedgerPiece> into)
             {
@@ -108,8 +86,6 @@ namespace RealLifeOverhaul
                 }
                 return pairs;
             }
-
-            // ---------------------------------------------------------------- the market's last close
 
             private static void Market(LedgerEdition e, int since)
             {
@@ -161,7 +137,7 @@ namespace RealLifeOverhaul
                         MarketNews n = s.News[i];
                         if (n.Day < since || n.Day >= e.Day || n.Kind == MarketNewsKind.Paid)
                         {
-                            continue;   // (a dividend paid to the player is their own news, not the city's)
+                            continue;   // a dividend paid to the player is their own news, not the city's
                         }
                         string key = MarketText.NewsKey(n, s, out string[] data);
                         if (key.Length == 0)
@@ -200,8 +176,6 @@ namespace RealLifeOverhaul
                 return before > 0 ? (int)Math.Round((now - before) * 10000.0 / before) : 0;
             }
 
-            // ---------------------------------------------------------------- the economy
-
             private static void EconomyFigures(LedgerEdition e)
             {
                 try
@@ -210,7 +184,7 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
-                    e.RateBp = 300 + (int)Math.Round(CityEconomy.BasePoints * 100f);   // as the market reads it (MarketLinks.City), so the paper and the Stocks app agree
+                    e.RateBp = MarketLinks.RateBp();   // the paper and the Stocks app agree
                     e.InflationBp = (int)Math.Round(CityEconomy.InflationPercent * 100f);
                     e.CycleKey = CityText.StateKeys[MacroCatalogue.Clamp((int)CityEconomy.State, 0, CityText.StateKeys.Length - 1)];
                 }
@@ -220,11 +194,9 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- what is on, and the weather's spell
-
             private static readonly string SpellPrefix = "reallife" + "_ledger_spell_";
             private static readonly string NightPrefix = "reallife" + "_ledger_night_";
-            private const int NightPieces = 3;
+            private const int NightPieces = 3;   // night life pieces, one a day in turn
 
             private static void Extra(int day, List<LedgerPiece> into)
             {
@@ -253,7 +225,7 @@ namespace RealLifeOverhaul
                     }
                     if (Settings.Leisure && Settings.NightLife && Settings.CityLife)
                     {
-                        // the city after dark (Leisure/Night/NightLife: from eight in the evening to three in the morning)
+                        // the city after dark: night life's hours, from eight in the evening to three in the morning
                         LedgerPiece piece = LedgerRules.Piece(NightPrefix + (1 + day % NightPieces).ToString(CultureInfo.InvariantCulture),
                             new[] { "from", 20.GetFormattedTime(0f, true), "to", 3.GetFormattedTime(0f, true) });
                         if (piece != null)
@@ -293,8 +265,6 @@ namespace RealLifeOverhaul
                     Fault("LedgerLinks.Extra", ex);
                 }
             }
-
-            // ---------------------------------------------------------------- the council
 
             private static readonly string PolicyOn = "reallife" + "_ledger_policy_on", PolicyOff = "reallife" + "_ledger_policy_off";
 
@@ -345,8 +315,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the internet at home (Newsstand)
-
             // The best connection among the player's homes: a working one, else one down for a few hours, one being put
             // in, one cut, none. NotKept while the utilities are off: the paper then counts a home as connected.
             private static NetState Connection(out string home)
@@ -384,10 +352,9 @@ namespace RealLifeOverhaul
                 return best;
             }
 
-            // ---------------------------------------------------------------- the Planner: Newsstand's renewals
-
             private static readonly NewsstandRenewals Renewals = new NewsstandRenewals();
 
+            // Newsstand's renewals in the Planner, and a cancelled subscription's last edition.
             private sealed class NewsstandRenewals : Planner.IPlannerSource
             {
                 public string Id => "newsstand";
@@ -427,8 +394,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the street's other fixtures
-
+            // Bus stops, help-wanted boards and bike docks, which a kiosk keeps clear of.
             private static bool Taken(Vector3 at, float within)
             {
                 float sqr = within * within;

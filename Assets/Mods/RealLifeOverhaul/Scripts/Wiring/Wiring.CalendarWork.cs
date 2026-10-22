@@ -11,22 +11,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The calendar's days of the player's work and businesses, each read from the feature's own schedule and changed
-        /// in nothing:
-        ///
-        ///   the company     the day the tax quarter closes (TaxFile.QuarterFrom, three of the city's months a quarter), the
-        ///                   last day of a return waiting, the accountant's monthly fee (AccountantNext), each cover's
-        ///                   renewal (Policy.Until), a claim's payout (Claim.PayDay) and each licence's last day; the daily
-        ///                   premiums among what moves every night
-        ///   the tech firms  each managed service's monthly invoice, thirty days from the last (Contract.LastBilled, as
-        ///                   FirmsRules.Work bills it); the subscriptions to the player's products, paid in a thirtieth of the
-        ///                   month's each day, among what moves every night
-        ///   a profession    the next performance review (Job.ReviewDay and LifeRules.ReviewEvery), the weekly profit
-        ///                   share, benefit each week and a pension each night
-        ///   the market      each trading bot's monthly statement and fee: the last trading day of the market's month
-        ///   the city        the day each of the central bank's rate decisions takes effect (CityModel.DaysToTurn)
-        ///
-        /// Asked only when the calendar is shown.
+        /// The calendar's days of the player's work and businesses: the company's tax, cover, claims and licences, the tech
+        /// firms' invoices and subscriptions, a profession's review, profit share, benefit and pension, the trading bots'
+        /// statements and the central bank's decisions, each from its feature's own schedule. Read only; asked when the
+        /// calendar is shown.
         /// </summary>
         internal static class CalendarWork
         {
@@ -47,7 +35,7 @@ namespace RealLifeOverhaul
 
             private static int Today => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
 
-            /// <summary>The tax quarter, a return due, the accountant, business cover, claims and licences (Economy/Company).</summary>
+            /// <summary>The tax quarter, a return due, the accountant, business cover, claims and licences.</summary>
             private sealed class CompanyDays : ICalendarSource
             {
                 public string Id => "company";
@@ -166,7 +154,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>The tech firms' monthly invoices for managed services, and the subscriptions to their products each night (Tech/Firms).</summary>
+            /// <summary>The tech firms' monthly invoices for managed services, and the subscriptions to their products each night.</summary>
             private sealed class FirmDays : ICalendarSource
             {
                 public string Id => "firms";
@@ -210,7 +198,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>A profession's review, its weekly profit share, benefit each week and the pension (Careers: CareersDirector.Life).</summary>
+            /// <summary>A profession's review, its weekly profit share, benefit each week and the pension.</summary>
             private sealed class ProfessionDays : ICalendarSource
             {
                 public string Id => "profession";
@@ -270,7 +258,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>Each trading bot's monthly statement and fee: at the close of the market month's last trading day (Markets: MarketEngine.BotClose).</summary>
+            /// <summary>Each trading bot's monthly statement and fee, at the close of the market month's last trading day.</summary>
             private sealed class BotDays : ICalendarSource
             {
                 public string Id => "bots";
@@ -307,7 +295,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>The day each of the central bank's decisions takes effect, a month apart (Economy/City: CityModel.DaysToTurn).</summary>
+            /// <summary>The day each of the central bank's decisions takes effect, a month apart.</summary>
             private sealed class RateDays : ICalendarSource
             {
                 public string Id => "rates";

@@ -99,7 +99,8 @@ namespace RealLifeOverhaul
                         int key = Key(a);
                         if (a.Owed > 0 && a.DueDay >= fromDay && a.DueDay <= toDay)
                         {
-                            Entry(into, 1, key, a.DueDay, a, d, "reallife_util_plan_due_title", "reallife_util_plan_due_what", a.AutoDebit ? "reallife_util_plan_due_auto" : "reallife_util_plan_due_missed");
+                            Entry(into, 1, key, a.DueDay, a, d, "reallife_util_plan_due_title", "reallife_util_plan_due_what",
+                                a.AutoDebit ? "reallife_util_plan_due_auto" : "reallife_util_plan_due_missed");
                         }
                         int cut = a.DueDay + UtilitiesCatalogue.CutAfterDays;
                         if (a.Owed > 0 && a.DueDay > 0 && a.State != SupplyState.Cut && a.State != SupplyState.Closed && cut >= fromDay && cut <= toDay)
