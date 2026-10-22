@@ -8,13 +8,10 @@ namespace RealLifeOverhaul
     public enum CityLook { Civilian, RoadWorker, Sweeper, Cleaner, Vendor, Canvasser, Courier, Postie, Painter, Gardener, Doorman }
 
     /// <summary>
-    /// Work clothes for the people of the living city, made the way People/Uniforms makes the
-    /// officers' and paramedics': the game has no work wear, so each outfit is a fixed set of
-    /// the game's own garments, found by name on the character and recoloured through the colour
-    /// entry the game itself reads when it builds the look (hi-vis orange and yellow for the road
-    /// crew, council green for the sweeper...). Every recolouring is recorded per character and
-    /// put back before that character is dressed as anyone else. A garment the game no longer
-    /// ships is logged once and that slot keeps the casual clothes that were rolled.
+    /// Work clothes for the living city, made as People/Uniforms makes the officers': the game has no work wear, so each
+    /// outfit is a set of the game's garments found by name and recoloured through the colour entry the game reads when it
+    /// builds the look. Each recolouring is recorded and put back before the character is dressed as anyone else; a garment
+    /// the game lacks is logged once and that slot keeps the rolled clothes.
     /// </summary>
     internal static class CityOutfits
     {
@@ -24,6 +21,12 @@ namespace RealLifeOverhaul
             public AppearanceElementColor Entry;
             public Color Base, R, G, B, A;
             public Color SheenR, SheenG, SheenB, SheenA;
+
+            public static Dye Of(AppearanceElementColor entry) => new Dye
+            {
+                Entry = entry, Base = entry.baseColor, R = entry.r, G = entry.g, B = entry.b, A = entry.a,
+                SheenR = entry.specularR, SheenG = entry.specularG, SheenB = entry.specularB, SheenA = entry.specularA
+            };
         }
 
         private readonly struct Garment
@@ -164,8 +167,8 @@ namespace RealLifeOverhaul
         private static readonly HashSet<string> Missing = new HashSet<string>();
 
         /// <summary>
-        /// Chooses the outfit's garments on a character whose look has already been rolled, and
-        /// records what it recolours. The caller rebuilds the visuals afterwards.
+        /// Puts the outfit on a character whose look is already rolled, recording what it recolours. The caller rebuilds the
+        /// visuals.
         /// </summary>
         public static void Wear(AppearanceSetter appearance, CityLook look, List<Dye> dyes)
         {
@@ -173,11 +176,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The same outfit written into a list of the caller's own and not into the character's appearance data: for
-        /// work clothes worn over somebody's own for a while (the player on a shift, Jobs/JobUniform), shown with the
-        /// game's AppearanceSetter.UpdateVisuals(list) and gone again with UpdateVisuals(). The garments are looked up
-        /// by name on this character, and what is recoloured is this character's own colour entries, recorded in
-        /// <paramref name="dyes"/> as always.
+        /// The same outfit written into the caller's own list instead of the character's data, for work clothes worn over
+        /// somebody's own for a while (Jobs/JobUniform): shown with AppearanceSetter.UpdateVisuals(list), gone with
+        /// UpdateVisuals(). The character's own colour entries are recoloured and recorded in <paramref name="dyes"/>.
         /// </summary>
         public static void Wear(AppearanceSetter appearance, CityLook look, List<Dye> dyes, List<AppearanceElementData> elements)
         {
@@ -222,15 +223,37 @@ namespace RealLifeOverhaul
 
         private static void Put(AppearanceSetter appearance, Garment garment, List<Dye> dyes, List<AppearanceElementData> elements)
         {
-            List<AppearanceElementVariant> variants = appearance.GetElementVariants(garment.Slot);
+            AppearanceElementColor entry = Choose(appearance, garment.Slot, garment.Name, garment.Dyed, elements, out bool missing);
+            if (missing && Missing.Add(garment.Slot + "/" + garment.Name))
+            {
+                CityLifeDirector.Logger?.Warn($"City life: the game has no '{garment.Name}' for {garment.Slot}; work clothes keep whatever was picked there. (Logged once.)");
+            }
+            if (entry == null)
+            {
+                return;
+            }
+            dyes.Add(Dye.Of(entry));
+            Recolour(entry, garment.Main, garment.Second, garment.Trim);
+        }
+
+        /// <summary>
+        /// Puts the garment of that name in its slot and returns its first plain colour entry, chosen, for the caller to
+        /// recolour; null when it is not to be dyed or has only patterned colours. <paramref name="missing"/>: the game
+        /// has no garment of that name, and nothing was changed.
+        /// </summary>
+        internal static AppearanceElementColor Choose(AppearanceSetter appearance, AppearanceElementType slot, string name, bool dyed,
+            List<AppearanceElementData> elements, out bool missing)
+        {
+            missing = false;
+            List<AppearanceElementVariant> variants = appearance.GetElementVariants(slot);
             if (variants == null || variants.Count == 0)
             {
-                return;   // this body has no such slot
+                return null;   // this body has no such slot
             }
             AppearanceElementVariant variant = null;
             for (int i = 0; i < variants.Count; i++)
             {
-                if (variants[i].name == garment.Name)
+                if (variants[i].name == name)
                 {
                     variant = variants[i];
                     break;
@@ -238,17 +261,14 @@ namespace RealLifeOverhaul
             }
             if (variant == null)
             {
-                if (Missing.Add(garment.Slot + "/" + garment.Name))
-                {
-                    CityLifeDirector.Logger?.Warn($"City life: the game has no '{garment.Name}' for {garment.Slot}; work clothes keep whatever was picked there. (Logged once.)");
-                }
-                return;
+                missing = true;
+                return null;
             }
 
             AppearanceElementData element = null;
             for (int i = 0; i < elements.Count; i++)
             {
-                if (elements[i].type == garment.Slot)
+                if (elements[i].type == slot)
                 {
                     element = elements[i];
                     break;
@@ -256,17 +276,17 @@ namespace RealLifeOverhaul
             }
             if (element == null)
             {
-                element = new AppearanceElementData { type = garment.Slot };
+                element = new AppearanceElementData { type = slot };
                 elements.Add(element);
             }
             element.variantId = variant.id;
             element.colorId = null;
-            if (!garment.Dyed || variant.colors == null)
+            if (!dyed || variant.colors == null)
             {
-                return;
+                return null;
             }
 
-            // The first plain colour the garment has; a patterned (textured) one cannot be recoloured.
+            // A patterned (textured) colour cannot be recoloured.
             AppearanceElementColor entry = null;
             for (int i = 0; i < variant.colors.Length; i++)
             {
@@ -279,44 +299,43 @@ namespace RealLifeOverhaul
             if (entry == null)
             {
                 element.colorId = variant.colors.Length > 0 ? variant.colors[0].id : null;
-                return;
+                return null;
             }
             element.colorId = entry.id;
-            dyes.Add(new Dye
-            {
-                Entry = entry, Base = entry.baseColor, R = entry.r, G = entry.g, B = entry.b, A = entry.a,
-                SheenR = entry.specularR, SheenG = entry.specularG, SheenB = entry.specularB, SheenA = entry.specularA
-            });
+            return entry;
+        }
 
-            // Main goes on the base and the first channel in use, Second on the next, Trim on the rest.
+        /// <summary>Main goes on the base colour and the first channel in use, second on the next, trim on the rest.</summary>
+        internal static void Recolour(AppearanceElementColor entry, Color main, Color second, Color trim)
+        {
             if (entry.hasBaseColor)
             {
-                entry.baseColor = garment.Main;
+                entry.baseColor = main;
             }
             int used = 0;
             if (entry.hasChannelR)
             {
-                entry.r = Shade(garment, used++);
+                entry.r = Shade(used++, main, second, trim);
                 entry.specularR = Sheen(entry.r);
             }
             if (entry.hasChannelG)
             {
-                entry.g = Shade(garment, used++);
+                entry.g = Shade(used++, main, second, trim);
                 entry.specularG = Sheen(entry.g);
             }
             if (entry.hasChannelB)
             {
-                entry.b = Shade(garment, used++);
+                entry.b = Shade(used++, main, second, trim);
                 entry.specularB = Sheen(entry.b);
             }
             if (entry.hasChannelA)
             {
-                entry.a = Shade(garment, used);
+                entry.a = Shade(used, main, second, trim);
                 entry.specularA = Sheen(entry.a);
             }
         }
 
-        // The garment's own sheen colour shows at glancing angles, so it follows the dye.
+        // The garment's sheen shows at glancing angles, so it follows the dye.
         private static Color Sheen(Color dye)
         {
             Color sheen = Color.Lerp(dye, Color.white, 0.12f);
@@ -324,9 +343,9 @@ namespace RealLifeOverhaul
             return sheen;
         }
 
-        private static Color Shade(Garment garment, int channel)
+        private static Color Shade(int channel, Color main, Color second, Color trim)
         {
-            return channel == 0 ? garment.Main : channel == 1 ? garment.Second : garment.Trim;
+            return channel == 0 ? main : channel == 1 ? second : trim;
         }
     }
 }
