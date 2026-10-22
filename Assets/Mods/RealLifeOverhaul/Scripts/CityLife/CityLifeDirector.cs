@@ -384,7 +384,8 @@ namespace RealLifeOverhaul
                 bool stale = now >= running.EndsAt || weather || (!running.Test && !CityCatalogue.Enabled(running.Entry.Family));
                 if (!alive || sqr > TooFar * TooFar || (stale && !CitySpots.InView(activity.Centre)))
                 {
-                    Logger?.Info($"City life: {running.Entry.Id} cleared ({(!alive ? "finished" : sqr > TooFar * TooFar ? "left behind" : weather ? (raining ? "rain" : "the rain stopped") : "time up")}, {Mathf.Sqrt(sqr):F0} m away).");
+                    string ended = !alive ? "finished" : sqr > TooFar * TooFar ? "left behind" : weather ? (raining ? "rain" : "the rain stopped") : "time up";
+                    Logger?.Info($"City life: {running.Entry.Id} cleared ({ended}, {Mathf.Sqrt(sqr):F0} m away).");
                     activity.End();
                     _running.RemoveAt(i);
                     for (int k = _moments.Count - 1; k >= 0; k--)
@@ -548,7 +549,8 @@ namespace RealLifeOverhaul
             {
                 _recent.RemoveAt(0);
             }
-            Logger?.Info($"City life: {entry.Id} started {Mathf.Sqrt(CitySpots.Flat(centre - origin)):F0} m away{(test ? " (test)" : "")}; {_running.Count} of {MaxSites} sites out, {_people.Count - _people.Free} of {_people.Count} people.");
+            Logger?.Info($"City life: {entry.Id} started {Mathf.Sqrt(CitySpots.Flat(centre - origin)):F0} m away{(test ? " (test)" : "")}; "
+                         + $"{_running.Count} of {MaxSites} sites out, {_people.Count - _people.Free} of {_people.Count} people.");
             return true;
         }
 

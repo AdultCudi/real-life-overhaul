@@ -252,7 +252,8 @@ namespace RealLifeOverhaul.Events
         {
             Announce();
             ApplySpeed();
-            EventDirector.Logger?.Info(FormattableString.Invariant($"Weather: {Weather.Sky}, {Weather.Spell}, {Weather.Season}: accidents x{Weather.AccidentFactor:F2}, crime x{Weather.CrimeFactor:F2}, sight x{Weather.SightFactor:F2}, ")
+            EventDirector.Logger?.Info(FormattableString.Invariant($"Weather: {Weather.Sky}, {Weather.Spell}, {Weather.Season}: accidents x{Weather.AccidentFactor:F2}, ")
+                                       + FormattableString.Invariant($"crime x{Weather.CrimeFactor:F2}, sight x{Weather.SightFactor:F2}, ")
                                        + FormattableString.Invariant($"street life x{Weather.StreetLifeFactor:F2}, grip x{Weather.GripFactor:F2}, traffic speed x{Weather.TrafficSpeedFactor:F2}."));
         }
 

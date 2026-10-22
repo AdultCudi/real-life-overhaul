@@ -140,7 +140,8 @@ namespace RealLifeOverhaul.Events
             refusal = null;
             if (unit.InUse || anchor == null || prefab == null || !TrafficTools.Ready)
             {
-                refusal = unit.InUse ? "the unit is still out" : anchor == null ? "there is no road point to head for" : prefab == null ? "the traffic pool has no truck or van free" : "traffic is not running";
+                refusal = unit.InUse ? "the unit is still out" : anchor == null ? "there is no road point to head for"
+                          : prefab == null ? "the traffic pool has no truck or van free" : "traffic is not running";
                 return null;
             }
             float walked = 0f;

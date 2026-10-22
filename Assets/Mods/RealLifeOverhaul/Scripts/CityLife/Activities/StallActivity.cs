@@ -177,7 +177,8 @@ namespace RealLifeOverhaul
                                               + _solid.Radius.ToString("F2", CultureInfo.InvariantCulture)
                                               + " m; cut out of the mesh: the cart's middle " + (cut ? "yes" : "no") + "; still walkable: the vendor's place and the first customer's place "
                                               + (kept ? "yes" : "no") + ", a way on foot from one to the other " + (way ? "yes" : "no") + ": "
-                                              + (cut && kept && way ? "PASS" : !kept || !way ? "FAIL (the cut is taken back: the cart is steered round, not solid)" : "FAIL (the cart can be walked through)") + ".");
+                                              + (cut && kept && way ? "PASS" : !kept || !way ? "FAIL (the cut is taken back: the cart is steered round, not solid)"
+                                                 : "FAIL (the cart can be walked through)") + ".");
             }
 
             // The queue: forget whoever was knocked down, close up, and settle whoever has arrived.
@@ -233,7 +234,8 @@ namespace RealLifeOverhaul
             {
                 CityPerson buyer = _queue[0];
                 _buyerHasCup = false;
-                if (vendor.Work("serve_counter", Props, 0.3f, ClipEnd.Return, false) && ClipLibrary.TryGet("serve_counter", out CityClip serve) && ClipLibrary.TryGet("counter_reach", out CityClip reach))
+                if (vendor.Work("serve_counter", Props, 0.3f, ClipEnd.Return, false)
+                    && ClipLibrary.TryGet("serve_counter", out CityClip serve) && ClipLibrary.TryGet("counter_reach", out CityClip reach))
                 {
                     CityLifeDirector.After(serve.Mark("grip", 0.28f), this, CupUp, buyer);
                     buyer.Idle(0.3f);

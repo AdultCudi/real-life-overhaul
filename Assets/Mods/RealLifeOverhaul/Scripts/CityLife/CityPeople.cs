@@ -407,7 +407,8 @@ namespace RealLifeOverhaul
                         // The casualty system would not take them: they stand empty-handed where they are, and their site ends.
                         person.Stand();
                     }
-                    CityLifeDirector.Logger?.Info($"City life: one of its people was hit by the player's car at {speed * 3.6f:F0} km/h" + (person.Lost ? " and is in the casualty system's hands." : "."));
+                    CityLifeDirector.Logger?.Info($"City life: one of its people was hit by the player's car at {speed * 3.6f:F0} km/h"
+                                                  + (person.Lost ? " and is in the casualty system's hands." : "."));
                     CityLifeDirector.Disturb(person);
                 }
             }

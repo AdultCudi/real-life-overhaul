@@ -90,7 +90,8 @@ namespace RealLifeOverhaul.Events
                     }
                 }
                 EndSceneQuietly();
-                TestRefusals.Tell(Logger, kind + " street event", _street.Refusal != null && _street.Refusal.StartsWith("no plain", StringComparison.Ordinal) ? TestRefusal.NoRoad : TestRefusal.NothingFits,
+                TestRefusals.Tell(Logger, kind + " street event",
+                    _street.Refusal != null && _street.Refusal.StartsWith("no plain", StringComparison.Ordinal) ? TestRefusal.NoRoad : TestRefusal.NothingFits,
                     30, _street.Refusal);
             }
             catch (Exception e)

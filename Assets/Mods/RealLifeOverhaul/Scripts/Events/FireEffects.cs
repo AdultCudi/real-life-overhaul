@@ -308,7 +308,8 @@ namespace RealLifeOverhaul.Events
             {
                 Object.DestroyImmediate(script);
             }
-            EventDirector.Logger?.Info($"Fire: effects copied from the game's '{source.name}' (material {source.sharedMaterial.name}); budget {ParticleBudget} particles in {Flames + Smokes + 2} systems.");
+            EventDirector.Logger?.Info($"Fire: effects copied from the game's '{source.name}' (material {source.sharedMaterial.name}); "
+                                       + $"budget {ParticleBudget} particles in {Flames + Smokes + 2} systems.");
             return holder;
         }
 
