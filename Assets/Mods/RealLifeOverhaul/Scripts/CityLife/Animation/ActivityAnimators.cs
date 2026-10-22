@@ -127,7 +127,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static void ReachAll(float delta)
+        /// <summary>One frame's second hands on two-handed tools, by hand, for tests.</summary>
+        public static void ReachAll(float delta)
         {
             for (int i = Reaching.Count - 1; i >= 0; i--)
             {

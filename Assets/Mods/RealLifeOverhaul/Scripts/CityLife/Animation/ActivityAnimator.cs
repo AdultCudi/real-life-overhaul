@@ -126,8 +126,14 @@ namespace RealLifeOverhaul
         /// <summary>The clip being played or faded towards; null when the game's controller has the character.</summary>
         public AnimationClip Current => _body.Current >= 0 && _body.WeightGoal > 0f ? _body.Clips[_body.Current] : null;
 
+        /// <summary>How much of the pose is this player's right now, 0 to 1 (read by CityAssets' CrossFadeProbe).</summary>
+        public float Weight => _body.Weight;
+
         /// <summary>The clip on the masked layer; null when there is none.</summary>
         public AnimationClip Over => _over.Current >= 0 && _over.WeightGoal > 0f ? _over.Clips[_over.Current] : null;
+
+        /// <summary>How much of the masked part of the pose is the masked layer's right now, 0 to 1.</summary>
+        public float OverWeight => _over.Weight;
 
         /// <summary>Cross-fades into a clip: a loop until Stop, a one-off once, then back to the game's controller or held on its last pose.</summary>
         public bool Play(AnimationClip clip, float fade = 0.25f, float speed = 1f, ClipEnd end = ClipEnd.Return, float startAt = 0f)
@@ -162,11 +168,12 @@ namespace RealLifeOverhaul
             SetSpeed(_body, speed);
         }
 
-        /// <summary>Keeps a walking clip in step with the agent's real speed over the speed it was made for; from a tick, not per frame.</summary>
-        public void MatchSpeed(float groundSpeed, float clipSpeed, float least = 0.35f, float most = 1.6f)
+        /// <summary>Keeps a walking clip in step with the agent's real speed over the speed it was made for; the playback speed set.</summary>
+        public float MatchSpeed(float groundSpeed, float clipSpeed, float least = 0.35f, float most = 1.6f)
         {
             float speed = clipSpeed > 0.01f ? Mathf.Clamp(groundSpeed / clipSpeed, least, most) : 1f;
             SetSpeed(_body, speed);
+            return speed;
         }
 
         /// <summary>Evaluates the graph now, for tests and for a pose shown in the same frame it is set.</summary>
