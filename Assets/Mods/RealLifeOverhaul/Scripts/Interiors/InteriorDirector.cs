@@ -440,7 +440,8 @@ namespace RealLifeOverhaul.Interiors
                 {
                     Logger?.Error(e);
                 }
-                Logger?.Info("Interiors: " + s.Name + " is in the news for " + (kind > 0 ? "a striking interior (" + s.Overall + ")." : "a shabby one (" + s.Overall + ", wear " + s.Wear / 10 + "%)."));
+                Logger?.Info("Interiors: " + s.Name + " is in the news for "
+                             + (kind > 0 ? "a striking interior (" + s.Overall + ")." : "a shabby one (" + s.Overall + ", wear " + s.Wear / 10 + "%)."));
                 return;
             }
         }

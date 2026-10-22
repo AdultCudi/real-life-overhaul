@@ -49,7 +49,8 @@ namespace RealLifeOverhaul.Interiors
                          + ", standard " + s.Standard + " (income " + s.Income + ", game minimum " + s.GameMinimum + "), " + s.Sqm + " m2, target " + s.Target / 10 + ", wear " + s.Wear / 10
                          + "%, clean " + s.Clean + "; footfall " + s.Footfall + "% (standard " + s.StandardFootfall + " of " + s.StandardFull
                          + " in full, decor " + s.DecorFootfall + " of " + s.DecorFull
-                         + ", bound " + s.Bound + ", business pressure's dip " + s.IssueDip + "), phased in " + s.Ramp / 10 + "% since day " + s.PhaseFrom + ", bears " + s.Bears + " per mille, basket "
+                         + ", bound " + s.Bound + ", business pressure's dip " + s.IssueDip + "), phased in " + s.Ramp / 10 + "% since day " + s.PhaseFrom
+                         + ", bears " + s.Bears + " per mille, basket "
                          + s.Basket + " per mille, takings " + InteriorRules.Takings(s.Footfall, s.Basket) + " per mille, complaint " + s.ComplaintChance + " per mille, brand " + s.BrandPoints
                          + ", standing " + s.StandingPoints + ", comfort " + s.Comfort + ", office esteem " + s.OfficeEsteem + ", bids " + s.OfficeBid + " per mille.");
             Notifications.Show(NotificationType.Info, "reallife_interior_test_report", InteriorText.Report(s), 12f);

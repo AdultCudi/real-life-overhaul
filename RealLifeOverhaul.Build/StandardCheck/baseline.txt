@@ -4,15 +4,12 @@
 # a line in the same change as new code (docs/standards/testing.md, RLO-TST-011).
 RLO-ARC-011	Assets/Mods/RealLifeOverhaul/Scripts/Core/GoingPublicLink.cs	2
 RLO-ARC-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/EmpireMotors.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessDesk.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Character/CharacterCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Character/ModAssets.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Core/Keys.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	4
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessGame.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Character/HairRules.cs	2
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Character/PlayerDouble.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/CustomerDraw.cs	1
@@ -20,14 +17,11 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/FrontSignRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	2
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/Ragdoll.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYield.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextServer.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/FlareLinks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StandingLinks.cs	1
@@ -81,7 +75,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictPanel.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarDrag.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarMeasure.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneUiDump.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/CarStrikes.cs	1
@@ -180,8 +173,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/TextsPhone.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/UtilityLinks.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/VenturesLinks.cs	1
 RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitOutDirector.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetGame.cs	1
@@ -195,9 +186,6 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/PermadeathRules.cs	8
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Phone/Contacts/ContactPainter.cs	4
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalText.cs	9
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/RoommateLinks.cs	8
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessGame.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessIssues.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYield.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYieldRules.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersStore.cs	1
@@ -237,12 +225,7 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictView.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarTuning.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/VehicleTow.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultDirector.Reports.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitPlanner.Zones.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikeMount.cs	6
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorDirector.cs	7
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Offices/Conversions.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfCensus.cs	1
