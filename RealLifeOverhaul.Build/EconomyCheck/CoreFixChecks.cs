@@ -99,6 +99,27 @@ internal static partial class Program
         // The shared city's ask for a part again is the market's: a guest whose prices are not the host's asks for them whole.
         Check(ModSource(@"Markets\MarketDirector.GoingPublic.cs").Contains("SharedCity.AskAgain('M');") && ModSource(@"Core\SharedCity.cs").Contains("public static void AskAgain(char id)"),
             "shared city: the market's check asks for its part again through the shared city's AskAgain");
+
+        // What's new, with its fix mark, in some row of every language.
+        Check(FixLineEverywhere("no longer stops the features it works with", "não para mais os recursos com que ele trabalha", "不再连带停止与它配合的功能",
+                                "nicht mehr an, sodass die Morgenzeitung", "n'arrête plus les fonctions avec lesquelles elle travaille", "ya no detiene las funciones con las que trabaja",
+                                "больше не останавливает функции", "houdt de functies waarmee die samenwerkt niet meer tegen", "artık birlikte çalıştığı özellikleri durdurmuyor"),
+            "wiring fix: What's new has the line of a fault that no longer stops the features it works with");
+        Check(FixLineEverywhere("the names of its special buildings up to date", "atualiza os nomes dos seus prédios especiais", "其特殊建筑的名称总会随之更新",
+                                "die Namen ihrer besonderen Gebäude immer aktualisiert", "les noms de ses bâtiments spéciaux", "los nombres de sus edificios especiales",
+                                "названия её особых зданий", "de namen van haar speciale gebouwen", "özel binalarının adları"),
+            "special names fix: What's new has the special buildings' names line");
+        Check(FixLineEverywhere("with no stray tabs", "sem abas a mais", "不会多出多余的标签页", "ohne überzählige Reiter", "sans onglet en trop", "sin pestañas de más",
+                                "без лишних вкладок", "zonder losse extra tabbladen", "fazladan sekme olmadan"),
+            "game UI fix: What's new has the tab bar's line");
+        Check(FixLineEverywhere("are found behind the loading screen", "encontradas atrás da tela de carregamento", "会在加载画面期间找到", "hinter dem Ladebildschirm gefunden",
+                                "trouvées derrière l'écran de chargement", "se buscan detrás de la pantalla de carga", "находятся за экраном загрузки",
+                                "achter het laadscherm gevonden", "yükleme ekranının arkasında bulunuyor"),
+            "game UI fix: What's new has the line of the pictures found behind the loading screen");
+        Check(FixLineEverywhere("the marker on a timing bar stays in the right place", "o marcador de uma barra de tempo fica no lugar certo", "计时条上的标记仍会停在正确的位置",
+                                "Die Markierung auf einem Timing-Balken bleibt", "le repère d'une barre de timing reste au bon endroit", "la marca de una barra de tiempo se queda en su sitio",
+                                "отметка на полосе тайминга остаётся", "de markering op een timingbalk blijft", "zamanlama çubuğundaki işaret doğru yerde kalıyor"),
+            "game UI fix: What's new has the timing marker's line");
     }
 
     // Two sets of shown buildings whose string hashes add up the same (found among made-up ids in this process, the
