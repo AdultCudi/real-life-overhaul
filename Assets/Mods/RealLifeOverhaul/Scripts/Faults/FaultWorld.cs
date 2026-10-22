@@ -8,29 +8,15 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// The city's faults as the player sees them, on every machine alike (the faults are the save's, or the host's):
-    ///
-    ///   a dark lamp  one of the game's own street lamps, its lights, its light cone and its glowing head off, kept off by
-    ///                handing the lamp empty lists of lights to switch (its own fields, read once: Core/GameContract) so
-    ///                that the game's own switching at dusk and as the player comes near finds nothing to light; put back
-    ///                exactly when it is mended, and then lit by the game's own call (StreetLamp.ChangeLights) if it should
-    ///                be lit at that hour.
-    ///   a pothole    a dark broken hole in the lane (a prop of its own, the "pothole" stand-in of Civic/CivicProps), and
-    ///                the lane point under it a little slower for traffic (its limit, put back when it is mended).
-    ///   litter       three heaps (the props bundle's litter_pile) scattered on the pavement beside a door, never in front of it.
-    ///   unsafe       an open manhole with its lid lying beside it and a cone, or a works sign fallen on its side.
-    ///   a hot spot   nothing to see.
-    ///
-    /// Props are pooled (CivicProps) and stood only while the player is within <see cref="ShowWithin"/> metres; the
-    /// lamps and the lane limits are switched by reference whatever the distance. Everything is put back as it was found
-    /// when a fault is mended, the feature is switched off, the save changes or the city unloads (<see cref="Clear"/>).
-    ///
-    /// COST: nothing per frame. <see cref="Sync"/> when the faults change and every few seconds: a pass over a dozen
-    /// faults (a distance each); a fault coming into view: a few props from the pool.
+    /// The city's faults as the player sees them, alike on every machine. A dark lamp is handed empty lists of lights, so
+    /// the game's own switching finds nothing to light, and gets its own back when mended. A pothole is a prop and a
+    /// slower lane point; litter, an unsafe place, pooled props stood within <see cref="ShowWithin"/> metres; a hot spot
+    /// shows nothing. All is put back as found (<see cref="Clear"/>). Cost: nothing per frame; <see cref="Sync"/> is a
+    /// pass over a dozen faults when they change and every few seconds.
     /// </summary>
     internal sealed class FaultWorld
     {
-        public const float ShowWithin = 250f;        // metres: props stood for faults this near the player
+        private const float ShowWithin = 250f;        // metres: props stood for faults this near the player
         private const float LaneOnHole = 3f;         // metres: the lane point a pothole slows is this near it
         private const float PileSpread = 0.7f;       // metres: litter's heaps round the middle
         private const float LidAside = 0.95f, ConeAside = 0.8f, ConeAlong = 0.6f;   // metres: an open manhole's lid and cone
@@ -50,7 +36,7 @@ namespace RealLifeOverhaul.Faults
         private static MaterialPropertyBlock _block;
 
         /// <summary>False if this version of the game keeps a lamp's lights somewhere else: no lamp goes dark, the other faults go on.</summary>
-        public static bool KnowsLamps => LampLights != null && LampData != null && LampGlow != null && LampIsOn != null && LampHead != null && LampHeads != null && LampEmission != null;
+        private static bool KnowsLamps => LampLights != null && LampData != null && LampGlow != null && LampIsOn != null && LampHead != null && LampHeads != null && LampEmission != null;
 
         private sealed class Shown
         {
@@ -81,15 +67,7 @@ namespace RealLifeOverhaul.Faults
             _props = new CivicProps(parent);
         }
 
-        /// <summary>Faults in the world now, and how many of them stand as props near the player.</summary>
-        public int Count => _shown.Count;
-        public int PropsOut => _props.Out;
-        public int DarkLamps { get; private set; }
-
-        /// <summary>
-        /// The world brought in line with the faults: what is mended put back, what is new switched (a lamp, a lane) and,
-        /// near the player, stood. Called when the faults change and every few seconds as the player moves.
-        /// </summary>
+        /// <summary>The world brought in line with the faults: the mended put back, the new switched and, near the player, stood.</summary>
         public void Sync(FaultFile file, bool hasPlayer, Vector3 player)
         {
             _gone.Clear();
@@ -152,7 +130,6 @@ namespace RealLifeOverhaul.Faults
                 }
             }
             _shown.Clear();
-            DarkLamps = 0;
         }
 
         /// <summary>Props and their meshes gone for good (the director is destroyed). Clear first.</summary>
@@ -175,8 +152,6 @@ namespace RealLifeOverhaul.Faults
                 s.Lane = null;
             }
         }
-
-        // ---------------------------------------------------------------- a dark lamp
 
         private void Darken(Shown s)
         {
@@ -224,7 +199,6 @@ namespace RealLifeOverhaul.Faults
             {
                 Glow(lamp, false);
             }
-            DarkLamps++;
         }
 
         /// <summary>Every dark lamp's lights switched off again now.</summary>
@@ -239,7 +213,7 @@ namespace RealLifeOverhaul.Faults
             }
         }
 
-        // A dark lamp's lights kept off: anything else that switched one on again (the performance tools putting back what they held) is switched off. A few enabled tests.
+        // Switches off again any light of a dark lamp something else turned on. A few enabled tests.
         private static void KeepDark(Shown s)
         {
             for (int i = 0; s.Lights != null && i < s.Lights.Length; i++)
@@ -262,7 +236,7 @@ namespace RealLifeOverhaul.Faults
             }
         }
 
-        // The lamp's own lists back, everything of it off as the game has an unlit lamp, and then the game's own call lights it if it should be lit now.
+        // The lamp's own lists back, unlit as the game keeps one, then lit by the game's own call if it should be now.
         private void Relight(Shown s)
         {
             StreetLamp lamp = s.Lamp;
@@ -282,7 +256,6 @@ namespace RealLifeOverhaul.Faults
             s.Lights = null;
             s.Data = null;
             s.Glow = null;
-            DarkLamps = Math.Max(0, DarkLamps - 1);
         }
 
         // (A call of the game's own in a method of its own: Mono compiles a method whole.)
@@ -316,8 +289,6 @@ namespace RealLifeOverhaul.Faults
             }
         }
 
-        // ---------------------------------------------------------------- a pothole's lane
-
         private void Slow(Shown s)
         {
             if (!TrafficTools.Street || !RoadMap.Ensure())
@@ -340,8 +311,6 @@ namespace RealLifeOverhaul.Faults
             s.LaneLimit = point.maxSpeed;
             point.maxSpeed = FaultRules.SlowLimit(point.maxSpeed);
         }
-
-        // ---------------------------------------------------------------- props
 
         private void Stand(Shown s)
         {
@@ -388,8 +357,6 @@ namespace RealLifeOverhaul.Faults
             }
             return prop;
         }
-
-        // ---------------------------------------------------------------- what the player meets
 
         /// <summary>True if a wheel's path from one point to another goes over a pothole near the player.</summary>
         public bool OverHole(Vector3 from, Vector3 to)

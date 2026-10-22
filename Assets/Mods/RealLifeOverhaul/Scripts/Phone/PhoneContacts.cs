@@ -1,19 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using BAModAPI;
-using Extensions;
 using Dialogs;
 using Entities;
+using Extensions;
 using Localizor;
 using UI.Smartphone.Apps.Contacts;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Adds callable phone contacts. In the base game most contacts are text-only; these each
-    /// get a call button and their own conversation.
-    /// </summary>
+    /// <summary>The mod's callable contacts: each has a call button and a conversation of its own.</summary>
     public static class PhoneContacts
     {
         private const string EmergencyId = "reallife-911";
@@ -78,6 +73,7 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>The emergency number: report what is happening nearby, or ask for an ambulance.</summary>
     public class EmergencyDialog : Dialog
     {
         public EmergencyDialog()
@@ -113,7 +109,7 @@ namespace RealLifeOverhaul
         {
             if (Events.EventDirector.FireBurning)
             {
-                // A fire (Scripts/Events): the engine is sent at once; a second call is only noted.
+                // The engine is sent at once; a second call is only noted.
                 return PhoneContacts.Closing(Events.EventDirector.Report911() ? "reallife_911_dispatched_fire" : "reallife_911_noted");
             }
             ReportKind kind = CrimeDirector.Reportable();
@@ -163,6 +159,7 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>The doctor: a paid treatment while the player is sick.</summary>
     public class DoctorCallDialog : Dialog
     {
         public DoctorCallDialog()
@@ -193,6 +190,7 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>The friend: one chat a day gives a lift to happiness.</summary>
     public class FriendDialog : Dialog
     {
         public FriendDialog()
@@ -218,6 +216,7 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>Mom: one chat a day gives a lift to happiness.</summary>
     public class MomDialog : Dialog
     {
         public MomDialog()

@@ -10,19 +10,10 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The test tool "say what is blocking me here" (Options > Troubleshooting > Test tools). It answers "something
-    /// I cannot see stops me on the pavement": the player walks on the game's navigation mesh, so what stops them is
-    /// a hole in that mesh (cut by a carving <c>NavMeshObstacle</c>) or its edge, never a collider. One press writes
-    /// to Player.log, whether or not diagnostics are on:
-    ///
-    ///  - where the player stands, how far the walkable mesh is from their feet and how far its nearest edge;
-    ///  - every walking obstacle within <see cref="Reach"/> metres: whose it is (its root object: the mod's own
-    ///    start with "RealLifeOverhaul"), whether it cuts the mesh, its size, and whether anything of it is drawn;
-    ///  - every other walker (a navigation agent) within the same reach: one nobody can see stops the player like a wall;
-    ///  - every solid collider within the same reach that is not the ground, the same way.
-    ///
-    /// An obstacle that cuts and is not drawn is the unseen block. Per frame: nothing. A press goes through the
-    /// scene's obstacles once.
+    /// The test tool "say what is blocking me here", for "something I cannot see stops me on the pavement": the player
+    /// walks on the navigation mesh, so what stops them is a hole cut by a carving obstacle, its edge, or an unseen walker.
+    /// One press writes the mesh, the obstacles, walkers and undrawn solids within <see cref="Reach"/> metres to the log.
+    /// Per frame: nothing; a press searches the scene's obstacles once.
     /// </summary>
     internal static class BlockTests
     {
@@ -46,7 +37,8 @@ namespace RealLifeOverhaul
                 }
                 Vector3 feet = player.transform.position;
                 Text.Length = 0;
-                Text.Append("Block check: the player at (").Append(feet.x.ToString("0.0", CultureInfo.InvariantCulture)).Append(", ").Append(feet.y.ToString("0.0", CultureInfo.InvariantCulture))
+                Text.Append("Block check: the player at (").Append(feet.x.ToString("0.0", CultureInfo.InvariantCulture))
+                    .Append(", ").Append(feet.y.ToString("0.0", CultureInfo.InvariantCulture))
                     .Append(", ").Append(feet.z.ToString("0.0", CultureInfo.InvariantCulture)).Append(")");
                 Text.Append(NavMesh.SamplePosition(feet, out NavMeshHit on, Reach, NavMesh.AllAreas)
                     ? "; the walkable mesh is " + Vector3.Distance(on.position, feet).ToString("0.00", CultureInfo.InvariantCulture) + " m from their feet"
@@ -54,7 +46,8 @@ namespace RealLifeOverhaul
                 if (NavMesh.FindClosestEdge(feet, out NavMeshHit edge, NavMesh.AllAreas))
                 {
                     Vector3 to = edge.position - feet;
-                    Text.Append("; its nearest edge is ").Append(edge.distance.ToString("0.00", CultureInfo.InvariantCulture)).Append(" m away, towards (").Append(to.x.ToString("0.0", CultureInfo.InvariantCulture)).Append(", ").Append(to.z.ToString("0.0", CultureInfo.InvariantCulture)).Append(")");
+                    Text.Append("; its nearest edge is ").Append(edge.distance.ToString("0.00", CultureInfo.InvariantCulture)).Append(" m away, towards (")
+                        .Append(to.x.ToString("0.0", CultureInfo.InvariantCulture)).Append(", ").Append(to.z.ToString("0.0", CultureInfo.InvariantCulture)).Append(")");
                 }
                 Text.Append(". The mod's obstacles changed so far: ").Append(MeshCuts.Total).Append(MeshCuts.Last != null ? ", the last: " + MeshCuts.Last : string.Empty).Append('.');
                 ClickWatch.Logger?.Warn(Text.ToString());
@@ -102,8 +95,10 @@ namespace RealLifeOverhaul
                     if (agents++ < Most)
                     {
                         Text.Length = 0;
-                        Text.Append("Block check (walker): '").Append(Path(a.transform)).Append("', ").Append(flat.ToString("0.0", CultureInfo.InvariantCulture)).Append(" m away, radius ").Append(a.radius.ToString("0.00", CultureInfo.InvariantCulture)).Append(" m, ")
-                            .Append(drawn ? "drawn" : "NOT DRAWN").Append(" (").Append(renderers).Append(" renderer(s), ").Append(seen).Append(" in view), avoidance ").Append(a.obstacleAvoidanceType).Append('.');
+                        Text.Append("Block check (walker): '").Append(Path(a.transform)).Append("', ").Append(flat.ToString("0.0", CultureInfo.InvariantCulture))
+                            .Append(" m away, radius ").Append(a.radius.ToString("0.00", CultureInfo.InvariantCulture)).Append(" m, ")
+                            .Append(drawn ? "drawn" : "NOT DRAWN").Append(" (").Append(renderers).Append(" renderer(s), ").Append(seen).Append(" in view), avoidance ")
+                            .Append(a.obstacleAvoidanceType).Append('.');
                         ClickWatch.Logger?.Warn(Text.ToString());
                     }
                 }
@@ -130,7 +125,8 @@ namespace RealLifeOverhaul
                         ClickWatch.Logger?.Warn(Text.ToString());
                     }
                 }
-                ClickWatch.Logger?.Warn("Block check: " + obstacles + " walking obstacle(s) and " + agents + " walker(s) within " + Reach + " m, " + unseen + " of them with nothing in view; " + solids + " solid thing(s) with nothing drawn.");
+                ClickWatch.Logger?.Warn("Block check: " + obstacles + " walking obstacle(s) and " + agents + " walker(s) within " + Reach + " m, " + unseen
+                    + " of them with nothing in view; " + solids + " solid thing(s) with nothing drawn.");
                 var data = new Dictionary<string, string>(2) { { "obstacles", obstacles.ToString() }, { "unseen", unseen.ToString() } };
                 Notifications.Show(NotificationType.Info, "reallife_test_block_said", data, NoticeSeconds, null, null, true, false);
             }

@@ -3,11 +3,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Walking
 {
-    /// <summary>
-    /// The feature's entry in the mod's feature list and its place on the options page. Its Guide page names the key
-    /// through the key's own fact ({key_walk}, filled by the Guide from Core/Keys), so the page always says the key the
-    /// player has. Called once, when the feature list and the options page are built.
-    /// </summary>
+    /// <summary>Walking's entry in the feature list. Its Guide page names the player's own key through the fact {key_walk}.</summary>
     public static class WalkGuide
     {
         public static void Register()
@@ -21,10 +17,9 @@ namespace RealLifeOverhaul.Walking
         }
     }
 
-    /// <summary>Walking's place on the options page, under the mod's own namespace so that it is one line there.</summary>
+    /// <summary>Walking's place on the options page; its key is under Controls.</summary>
     public static class WalkOptions
     {
-        /// <summary>The "Walking" block of the options page: its switch and its test. Its key is under Controls (Core/Keys).</summary>
         public static ModOptions AddWalking(this ModOptions options)
         {
             return options

@@ -2,16 +2,12 @@ using System;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What the recorded car sounds ask of the Garage, filled in by Wiring/CarSoundLinks. With nothing wired every car is
-    /// stock and there is no turntable.
-    /// </summary>
+    /// <summary>What the recorded car sounds ask of the Garage (Wiring/CarSoundLinks); unwired, every car is stock with no turntable.</summary>
     public static class CarSoundBridges
     {
         /// <summary>
-        /// What a car's build fits that changes its sound: the exhaust's loudness (0 stock, 1 sports, 2 straight-through) in
-        /// the low four bits and the turbo's size (0 none, 1 a turbocharger, 2 a big turbo) in the next four. On the
-        /// turntable it is what is in the cart. Default: stock.
+        /// What a car's build fits for its sound: the exhaust's loudness (0 to 2) in the low four bits, the turbo's size
+        /// (0 to 2) in the next four; on the turntable, what is in the cart.
         /// </summary>
         public static Func<VehicleController, int> Parts;
 

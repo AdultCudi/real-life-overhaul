@@ -1,11 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using BigAmbitions.Characters;
-using BigAmbitions.Characters.Appearance;
-using Character;
-using Character.Customization;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
 using Unity.Collections;
@@ -14,38 +9,20 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Paints the contacts' pictures (<see cref="ContactPictures"/>) from the game's own assets, one at a time.
-    ///
-    ///   a logo    the game's logo shape (StreamingAssets/LogoShapes, read with the game's own LogoHelper.GetLogoShapeTexture)
-    ///             in white on the catalogue's colour, the way a business logo is a shape on a colour; or, where the game
-    ///             has a picture of its own for the same kind of contact (its tow service), that picture
-    ///   a face    from the game's portrait camera (PortraitGenerator.Create, as the Rivals app draws a rival), with the
-    ///             look built exactly as the mod builds the person in the city: AppearanceSetter.RandomizeElements with
-    ///             the person's sex, the skin of their seed, casual clothes and their seed, their age, and the build capped
-    ///             as the mod's own people are (Social/SocialCast.Dress). The face is kept as a JPEG under the game's
-    ///             data folder (RealLifeOverhaul/Portraits) and read from there on every later load
-    ///
-    /// A logo is kept there too, once painted, as its picture's own bytes (256 KB, nothing to decode), named by the shape,
-    /// the colour, and the size and date of the game's shape file (or the game's own picture and the game's build), so a
-    /// shape the game changes is painted again. Every picture is written into the texture's own memory
-    /// (Texture2D.GetPixelData) or through one buffer kept for the session: no array per picture, where each picture made
-    /// some 0.5 to 1.3 MB of garbage (561 KB a second under this in the first minute after a load).
-    ///
-    /// COST. Nothing while there is nothing to paint: the component switches itself off. While there is: pictures one after
-    /// another for about a millisecond of a frame (<see cref="WorkSlice"/>; eight behind a black screen), the first of a frame
-    /// always; a picture not in the cache (a logo's 65,536 samples of the shape, once ever; a face drawn by the game's
-    /// portrait camera with its own read-back, once per look, ever, with the session watch told first) only as the first of
-    /// a frame, alone. A logo from the cache is one read of a file and one upload; a face from the cache one JPEG decode.
+    /// Paints the contacts' pictures one at a time: a logo is the game's logo shape in white on the catalogue's colour (or
+    /// the game's own picture for that kind of contact), a face comes from <see cref="PortraitTurn"/>. Both are kept under
+    /// RealLifeOverhaul/Portraits, named by what they are drawn from. Cost: idle, nothing (it switches itself off); busy,
+    /// about a millisecond of a frame, and a picture not yet kept only as the first of a frame, alone.
     /// </summary>
     public sealed class ContactPainter : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactPainter", typeof(ContactPainter));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactPainter", typeof(ContactPainter));
 
-        private const double SliceMs = 1.0;         // milliseconds of a frame in play the painting may take (the first picture of a frame always)
-        private const double HiddenSliceMs = 8.0;   // ...and of a frame behind the game's black screen
+        private const double SliceMs = 1.0;         // milliseconds of a frame in play (the first picture of a frame always runs)
+        private const double HiddenSliceMs = 8.0;   // milliseconds of a frame behind the game's black screen
         private const float FacePaceSeconds = 2f;   // after a face drawn by the portrait camera
-        private const int LogoBytes = ContactPictures.Size * ContactPictures.Size * 4;   // a logo's picture as it is kept: RGBA, a byte each
-        private const string LogoVersion = "logo_v1_";   // the painting's own version in a kept logo's name: a new way of painting paints them all again
+        private const int LogoBytes = ContactPictures.Size * ContactPictures.Size * 4;   // RGBA, a byte each
+        private const string LogoVersion = "logo_v1_";   // a new way of painting changes this, and every kept logo is painted again
         private const float FaceTimeout = 15f;      // seconds to wait for the camera's read-back before trying again
         private const int TriesMost = 3;
         private const float GlyphShare = 0.62f;     // of the square's height the shape takes, as the game's own logos leave a margin
@@ -54,7 +31,7 @@ namespace RealLifeOverhaul
         private static ContactPainter _instance;
         private static readonly Queue<ContactPictures.Picture> Wanted = new Queue<ContactPictures.Picture>(32);
 
-        private static byte[] _logoBuffer;          // one for the session, made the first time a logo is read or kept: what a kept logo passes through
+        private static byte[] _logoBuffer;          // one for the session: every kept logo passes through it
 
         private ContactPictures.Picture _drawing;   // a face waiting for the portrait camera's read-back
         private float _drawingSince, _next;
@@ -72,7 +49,7 @@ namespace RealLifeOverhaul
             _instance.enabled = true;
         }
 
-        /// <summary>A face's file in the portrait cache is deleted, so that it is drawn again.</summary>
+        /// <summary>Deletes a face's file in the portrait cache, so it is drawn again.</summary>
         internal static void Forget(ContactPictures.Picture p)
         {
             string file = Path.Combine(Folder, ContactCatalogue.CacheName(p.Look.Female, p.Look.Age, p.Seed));
@@ -90,7 +67,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -118,7 +95,7 @@ namespace RealLifeOverhaul
             }
             if (Wanted.Count == 0)
             {
-                enabled = false;   // nothing to paint: no cost at all until a picture is wanted
+                enabled = false;   // nothing to paint: no cost until a picture is wanted
                 return;
             }
             if (Time.realtimeSinceStartup < _next || LoadScene.isLoading)
@@ -181,7 +158,7 @@ namespace RealLifeOverhaul
             return Path.Combine(Folder, LogoVersion + "game_" + name + "_" + Nav.NavBaseGame.Build() + ".raw");
         }
 
-        // A kept logo painted from one of the game's shapes: by the shape, the colour, and the shape file's size and date. Null if the game has no such file.
+        // Named by the shape, the colour and the shape file's size and date; null if the game has no such file.
         private static string ShapeLogoFile(ContactLook look)
         {
             var shape = new FileInfo(Path.Combine(LogoHelper.GetBuildInIconsFolder(), look.Shape + ".png"));
@@ -193,7 +170,7 @@ namespace RealLifeOverhaul
                                         + "_" + shape.Length + "_" + shape.LastWriteTimeUtc.Ticks + ".raw");
         }
 
-        // A kept logo into the picture: one read through the session's buffer, one upload. False if there is none (or it is not whole).
+        // A kept logo into the picture. False if there is none, or it is not whole.
         private static bool ReadLogo(ContactPictures.Picture p, string file)
         {
             if (file == null || !File.Exists(file))
@@ -223,7 +200,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The picture just painted, kept for every later load. A logo that cannot be kept is painted again next time.
+        // A logo that cannot be kept is painted again next time.
         private static void KeepLogo(ContactPictures.Picture p, string file)
         {
             if (file == null)
@@ -262,8 +239,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- a logo
-
         private static void PaintLogo(ContactPictures.Picture p)
         {
             if (p.Look.LikeGame != null)
@@ -296,11 +271,8 @@ namespace RealLifeOverhaul
             var back = new Color32(p.Look.R, p.Look.G, p.Look.B, 255);
             var white = new Color32(255, 255, 255, 255);
             int size = ContactPictures.Size;
-            NativeArray<Color32> pixels = p.Texture.GetPixelData<Color32>(0);   // the picture's own memory: no array of our own
-            // The shape is fitted by what is drawn of it, not by its canvas: as high as GlyphShare of the square, and a wide
-            // one (a car) as wide as WideShare, centred. One pass over the shape's pixels to find its bounds, and the same
-            // pixels then sampled here (Ink), not through the engine one call a pixel: some 30,000 calls, most of a frame
-            // of 11 ms for each logo in the first minute after a load.
+            NativeArray<Color32> pixels = p.Texture.GetPixelData<Color32>(0);
+            // Fitted by what is drawn of the shape, not its canvas, and sampled here (Ink) rather than one engine call a pixel.
             int minX = 0, minY = 0, maxX = -1, maxY = -1;
             Color32[] texels = null;
             int sw = 1, sh = 1;
@@ -330,14 +302,12 @@ namespace RealLifeOverhaul
             p.Texture.Apply(false, false);
             if (shape != null)
             {
-                KeepLogo(p, kept);   // (the game's 'not found' shape stands in for a missing one: that is never kept)
+                KeepLogo(p, kept);   // the game's stand-in for a missing shape is never kept
             }
             Done(p, "the game's logo shape '" + p.Look.Shape + "'" + (shape == null ? " (not found: the game's own 'not found' shape)" : string.Empty));
         }
 
-        // The shape's alpha at texel coordinates (tx, ty), filtered between the four nearest texels as the engine's
-        // Texture2D.GetPixelBilinear does it for the game's shapes (texel centres at half-texel offsets; edges clamped, the
-        // wrap mode LogoHelper.GetLogoShapeTexture gives them). Pure arithmetic over the pixels already read.
+        // The shape's alpha at texel coordinates, filtered as Texture2D.GetPixelBilinear does for the game's shapes.
         private static float Ink(Color32[] texels, int w, int h, float tx, float ty)
         {
             float u = tx - 0.5f, v = ty - 0.5f;
@@ -350,7 +320,7 @@ namespace RealLifeOverhaul
             return Mathf.Lerp(low, high, fy) / 255f;
         }
 
-        // The box of a shape's pixels that are drawn (alpha over a twentieth), and the pixels it was read from.
+        // The box of a shape's drawn pixels (alpha over a twentieth), and the pixels it was read from.
         private static Color32[] Bounds(Texture2D shape, out int minX, out int minY, out int maxX, out int maxY)
         {
             Color32[] px = shape.GetPixels32();
@@ -364,10 +334,22 @@ namespace RealLifeOverhaul
                 {
                     if (px[y * w + x].a > 12)
                     {
-                        if (x < minX) minX = x;
-                        if (x > maxX) maxX = x;
-                        if (y < minY) minY = y;
-                        if (y > maxY) maxY = y;
+                        if (x < minX)
+                        {
+                            minX = x;
+                        }
+                        if (x > maxX)
+                        {
+                            maxX = x;
+                        }
+                        if (y < minY)
+                        {
+                            minY = y;
+                        }
+                        if (y > maxY)
+                        {
+                            maxY = y;
+                        }
                     }
                 }
             }
@@ -378,7 +360,7 @@ namespace RealLifeOverhaul
             return px;
         }
 
-        // One of the game's own contact pictures, copied through the graphics card (it is packed and not readable as it is).
+        // One of the game's own contact pictures, copied through the graphics card: it is packed and not readable as it is.
         private static bool CopyGamePicture(ContactPictures.Picture p, string name)
         {
             var references = InstanceBehavior<GlobalReferences>.Instance;
@@ -416,8 +398,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // ---------------------------------------------------------------- a face
-
         private void PaintFace(ContactPictures.Picture p)
         {
             string file = Path.Combine(Folder, ContactCatalogue.CacheName(p.Look.Female, p.Look.Age, p.Seed));
@@ -429,13 +409,13 @@ namespace RealLifeOverhaul
             float now = Time.realtimeSinceStartup;
             if (!PortraitTurn.Ready || !PortraitTurn.Take(this, now))
             {
-                Requeue(p);   // the city's portrait camera is not there yet (the main menu, a load), or Flare's painter has it: asked again in a moment
-                p.Tries--;    // (not a failure)
+                Requeue(p);   // the portrait camera is not there yet (the main menu, a load), or Flare's painter has it
+                p.Tries--;    // not a failure
                 return;
             }
             _drawing = p;
             _drawingSince = now;
-            using var piece = SessionWatch.Piece("contacts: a face drawn by the game's portrait camera");   // once per look, ever: a render and a read-back
+            using var piece = SessionWatch.Piece("contacts: a face drawn by the game's portrait camera");   // once per look, ever
             Action<Sprite> back = sprite => UiClone.Safe(() => Drawn(p, sprite, file));
             if (!PortraitTurn.Face(p.Look.Female, p.Look.Age, p.Seed, back))
             {
@@ -459,7 +439,7 @@ namespace RealLifeOverhaul
             {
                 if (sprite != null)
                 {
-                    Destroy(sprite);   // the game's portrait is made for this call alone: let go, as a readable one is below
+                    Destroy(sprite);   // the game's portrait is made for this call alone
                 }
                 if (source != null)
                 {
@@ -501,8 +481,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A readable texture into a picture's own, scaled to its size if it is not already: written into the picture's own memory,
-        // the source read in its own (a JPEG of the cache is RGB24, a picture of the camera RGBA32 or ARGB32), with no array made.
+        // A readable texture into a picture's own memory, scaled if need be; no array is made.
         private static void Copy(Texture2D source, Texture2D into)
         {
             int size = ContactPictures.Size;
@@ -532,7 +511,7 @@ namespace RealLifeOverhaul
             }
             else if (same)
             {
-                into.SetPixels32(source.GetPixels32());   // (a format the camera has never given: the engine converts it, as before)
+                into.SetPixels32(source.GetPixels32());   // a format the camera has never given: the engine converts it
             }
             else
             {
@@ -553,7 +532,8 @@ namespace RealLifeOverhaul
             p.Tries = 0;
             if (Meta.Dev.Verbose)
             {
-                ContactPictures.Logger?.Info("Contacts check (picture): '" + p.Id + "' is a " + (p.Look.Kind == PictureKind.Person ? (p.Look.Female ? "woman" : "man") + " of " + p.Look.Age + ", seed " + p.Seed : "logo")
+                ContactPictures.Logger?.Info("Contacts check (picture): '" + p.Id + "' is a "
+                                             + (p.Look.Kind == PictureKind.Person ? (p.Look.Female ? "woman" : "man") + " of " + p.Look.Age + ", seed " + p.Seed : "logo")
                                              + ", from " + from + "; " + ContactPictures.Report() + ": PASS");
             }
         }

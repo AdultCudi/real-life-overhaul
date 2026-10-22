@@ -4,10 +4,8 @@ using UI.Notification;
 namespace RealLifeOverhaul.Rivals
 {
     /// <summary>
-    /// The player's counters, from the rivals' page in the Finance app: outbid, hire away a rival's people, a piece in the
-    /// paper, lobby back, and take a rival's holding over. Each is asked for with the game's own question and done here:
-    /// its cost taken (RivalGame, in pieces), the rules' change made (RivalRules.Counter, Defeat), the customers written
-    /// again where a rival's business closes, one notice. On a click only.
+    /// The rivals, part: the player's counters from the rivals' page (outbid, hire away, a piece in the paper, lobby back,
+    /// take over), each confirmed with the game's own question, paid and done here. On a click only.
     /// </summary>
     public sealed partial class RivalDirector
     {
@@ -48,7 +46,7 @@ namespace RealLifeOverhaul.Rivals
             return why == RivalWhy.None && RivalGame.Cash < cost ? RivalWhy.Money : why;
         }
 
-        /// <summary>The player's holding of a tycoon's holding company and the most one holder may have, in shares; false if it is not listed here.</summary>
+        /// <summary>The player's shares of a tycoon's holding and the most one holder may have; false if it is not listed here.</summary>
         public bool HoldingShares(int tycoon, out long held, out long most, out long shares, out int midCents)
         {
             held = most = shares = 0;
@@ -60,7 +58,7 @@ namespace RealLifeOverhaul.Rivals
             return RivalBridges.Holding(_file.Tycoons[tycoon].Def.StockId, out shares, out held, out most, out midCents);
         }
 
-        /// <summary>A counter used now, after the player said yes. Null when it was done; otherwise the key of the sentence that says why not.</summary>
+        /// <summary>A counter used now, after the player said yes. Null when done; otherwise the key of the sentence saying why not.</summary>
         public string Counter(int tycoon, RivalCounter kind)
         {
             try
@@ -68,7 +66,7 @@ namespace RealLifeOverhaul.Rivals
                 RivalWhy why = CanCounter(tycoon, kind, out long cost);
                 if (why != RivalWhy.None)
                 {
-                    return WhyKey(why);
+                    return RivalText.WhyKey(why);
                 }
                 int day = Save.Day;
                 TycoonDef d = _file.Tycoons[tycoon].Def;
@@ -78,13 +76,13 @@ namespace RealLifeOverhaul.Rivals
                 }
                 if (!RivalGame.Take(cost, RivalGame.CounterKey, d.Holding))
                 {
-                    return WhyKey(RivalWhy.Money);
+                    return RivalText.WhyKey(RivalWhy.Money);
                 }
                 RivalCounterNote note = RivalRules.Counter(_file, tycoon, kind, day, cost, Prices.Level);
                 if (note == null)
                 {
                     RivalGame.Give(cost, RivalGame.CounterKey, d.Holding);   // (the rules said no after all: the money goes back)
-                    return WhyKey(RivalWhy.Nothing);
+                    return RivalText.WhyKey(RivalWhy.Nothing);
                 }
                 RivalMove stopped = note.Move > 0 ? _file.Move(note.Move) : null;
                 if (stopped != null && stopped.Kind == RivalMoveKind.Outlet)
@@ -96,7 +94,8 @@ namespace RealLifeOverhaul.Rivals
                     RivalBridges.Revalue?.Invoke();
                 }
                 RivalGame.Tell(NotificationType.Success, RivalText.CounterDoneKey(kind), RivalText.Data("rival", d.Name, "holding", d.Holding, "amount", RivalText.Money(cost)), _openPage);
-                Logger?.Info("Rivals: the player's " + kind + " against " + d.Name + " for " + cost + (stopped != null ? ", stopping " + stopped.Kind + " (move " + stopped.Id + ")" : string.Empty) + ".");
+                Logger?.Info("Rivals: the player's " + kind + " against " + d.Name + " for " + cost
+                    + (stopped != null ? ", stopping " + stopped.Kind + " (move " + stopped.Id + ")" : string.Empty) + ".");
                 return null;
             }
             catch (Exception e)
@@ -106,18 +105,18 @@ namespace RealLifeOverhaul.Rivals
             }
         }
 
-        // A takeover: the shares the player does not hold bought at the premium through the market, the holding off it, the rival out.
+        // The shares the player does not hold bought at the premium through the market; the holding leaves it and the rival is out.
         private string TakeOver(int tycoon, int day)
         {
             RivalWhy why = TakeoverQuote(tycoon, out long cost, out long breakUp);
             if (why != RivalWhy.None)
             {
-                return WhyKey(why);
+                return RivalText.WhyKey(why);
             }
             TycoonDef d = _file.Tycoons[tycoon].Def;
             if (RivalBridges.TakeOver == null || !RivalBridges.TakeOver(d.StockId, cost))
             {
-                return WhyKey(RivalWhy.Money);
+                return RivalText.WhyKey(RivalWhy.Money);
             }
             RivalRules.Defeat(_file, tycoon, day, cost, breakUp);
             Released(null);
@@ -125,19 +124,6 @@ namespace RealLifeOverhaul.Rivals
                 "back", RivalText.Money(breakUp), "days", RivalCatalogue.BreakUpDays.ToString()), _openPage);
             Logger?.Info("Rivals: the player took " + d.Holding + " over for " + cost + "; " + d.Name + " is out; its parts bring " + breakUp + " on day " + _file.Tycoons[tycoon].BreakUpDay + ".");
             return null;
-        }
-
-        private static string WhyKey(RivalWhy why)
-        {
-            switch (why)
-            {
-                case RivalWhy.Out: return "reallife_rival_why_out";
-                case RivalWhy.Rest: return "reallife_rival_why_rest";
-                case RivalWhy.Nothing: return "reallife_rival_why_nothing";
-                case RivalWhy.NoHolding: return "reallife_rival_why_no_holding";
-                case RivalWhy.Short: return "reallife_rival_why_short";
-                default: return "reallife_rival_why_money";
-            }
         }
 
         /// <summary>The rich list as a page of the City Ledger, opened now. False (with a notice) if the paper cannot show it.</summary>

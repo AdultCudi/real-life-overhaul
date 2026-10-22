@@ -14,22 +14,20 @@ using UnityEngine;
 namespace RealLifeOverhaul.Designs
 {
     /// <summary>
-    /// The only place the ready-made designs touch the game: where its StreamingAssets folder is, a design file read and
-    /// written in the game's own format (the JSON its BusinessLayoutSetHelper reads, every field kept as it was), the game's
-    /// own list of an address's designs (InteriorInstallationFirmHelper), its installers' orders and its notices. Each read is
-    /// a small method of its own. Nothing here runs per frame: the files on a worker thread once, the rest on a press or a load.
+    /// The only place the designs touch the game: StreamingAssets, design files in the JSON BusinessLayoutSetHelper reads
+    /// (every field kept), the firm's own lists, its orders and notices. The files on a worker thread, the rest on a press or a load.
     /// </summary>
     internal static class DesignsGame
     {
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
-        /// <summary>The game's StreamingAssets folder. The engine answers this on the main thread only.</summary>
+        /// <summary>Main thread only.</summary>
         public static string Root()
         {
             return Application.streamingAssetsPath;
         }
 
-        /// <summary>A design file's items as the rules see them, in the file's order; null for a file that cannot be read.</summary>
+        /// <summary>A design file's items in the file's order; null for a file that cannot be read.</summary>
         public static List<DesignItem> Read(string path)
         {
             try
@@ -94,10 +92,7 @@ namespace RealLifeOverhaul.Designs
                 ? (int)Math.Round((double)value * 100.0) : 0;
         }
 
-        /// <summary>
-        /// Writes a Car Showroom's design: the source as it is, every field kept, with only the items the cut keeps (and what
-        /// stands on them pointing only at kept items), named as offered and marked as the showroom's. False if it could not.
-        /// </summary>
+        /// <summary>Writes the source, every field kept, with only the cut's items and stacks, named and typed as offered; false if not.</summary>
         public static bool WriteCut(string source, ShowroomCut cut, string target, string type, string name)
         {
             JObject design = Parse(source);
@@ -131,7 +126,7 @@ namespace RealLifeOverhaul.Designs
             return true;
         }
 
-        /// <summary>The names of the designs the game's own installation firm lists for a type at a size (the main thread only).</summary>
+        /// <summary>How many designs the game's firm lists for a type at a size. Main thread only.</summary>
         public static int Listed(string building, string size, string type)
         {
             string sizeId = DesignRules.SizeId(size, out int version);
@@ -143,7 +138,7 @@ namespace RealLifeOverhaul.Designs
             return names != null ? names.Length : 0;
         }
 
-        /// <summary>The installers' orders waiting for a business of one of these types, of this save.</summary>
+        /// <summary>The firms' orders waiting for a business of one of these types.</summary>
         public static void Orders(HashSet<string> types, List<InteriorInstallationFirmContract> into)
         {
             into.Clear();
@@ -159,7 +154,7 @@ namespace RealLifeOverhaul.Designs
             }
         }
 
-        /// <summary>The game's own installation of an order, now, as on its day (it pays, sells what is there, puts the design in, says so).</summary>
+        /// <summary>The game's own installation, now: it pays, sells what is there, puts the design in and says so.</summary>
         public static void Install(InteriorInstallationFirmContract order)
         {
             order.DoInstallation();

@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Designs
     {
         Copy,       // the game's own designs of a business that works as this one does, whole
         Showroom,   // the game's own designs with the middle of the floor cleared for the Car Showroom's lot
-        Branch      // the game's own shop designs cut to a bank's furniture: counters with a till for the teller, seats to wait on
+        Branch      // the game's own shop designs cut to a bank's furniture: a till on a counter, seats to wait on
     }
 
     /// <summary>Where the game keeps a kind of design it ships.</summary>
@@ -49,32 +49,28 @@ namespace RealLifeOverhaul.Designs
     }
 
     /// <summary>
-    /// The ready-made designs of the mod's business types (Scripts/Designs), game-free so that the offline checks read the
-    /// same table: which of the game's designs each type's are made from, what a Car Showroom keeps of one, and the numbers
-    /// that bound them. The installation firm lists a business's designs from a folder of the game's named after its
-    /// business type, and a type of the mod's has none there; its designs are put there, one file each, as the game's own.
-    /// The layout price and the installation fee stay the game's (the furniture at its market price, the floor area at the
-    /// firm's rate): nothing here sets a price. Nothing runs here.
+    /// The mod's business types' ready-made designs, game-free for the checks: their sources, what a showroom or branch
+    /// keeps, and the bounds. The firm lists a type's designs from a folder named after it. Prices stay the game's.
     /// </summary>
     public static class DesignCatalogue
     {
-        public const int RulesVersion = 2;          // raised whenever what a design is made of changes: every design is made again (2: the bank branch)
+        public const int RulesVersion = 2;          // raise when what a design is made of changes: every design is made again
         public const string Office = "ba:buildingtype_office";
         public const string Retail = "ba:buildingtype_retail";
-        public const string Installer = "InteriorDesigns";   // the game's folder of the installation firms' designs, under StreamingAssets
-        public const string Layouts = "BusinessLayouts";     // the game's folder of its own businesses' layouts, under StreamingAssets
-        public const string Manifest = "reallife_designs.txt";   // in the installers' folder: every file the mod put there, and from what
+        public const string Installer = "InteriorDesigns";   // under StreamingAssets: the installation firms' designs
+        public const string Layouts = "BusinessLayouts";     // under StreamingAssets: the game's own businesses' layouts
+        public const string Manifest = "reallife_designs.txt";   // in the installers' folder: every file the mod put there
         public const string Extension = ".json";
 
-        // The Car Showroom: what is kept clear for its lot (Economy/Dealer: DealerRules.Layout lays the cars out on the floor).
+        // The Car Showroom's lot, as DealerRules.Layout lays the cars out.
         public const int Slack = 30;                // centimetres the game's floor may be wider, narrower or further along than its designs reach
         public const int Clear = 40;                // centimetres kept clear round every car's place, for the visitors walking round it
         public const int FloorTop = 200;            // centimetres up: an item higher than this hangs on a wall or the ceiling, above the cars
         public const int Origin = 100;              // centimetres: an item this close to the world's origin is a design's stray, not in the room
         public const int ShowroomMost = 4;          // designs a Car Showroom is offered for a size at most
-        public const int ShowroomLeast = 6;         // pieces of furniture (not lamps) a showroom's design keeps at least, or it is not offered
+        public const int ShowroomLeast = 6;         // pieces of furniture, lamps aside, a showroom design keeps at least to be offered
 
-        /// <summary>The game's own dealerships' layouts a showroom design is made from: those whose name ends in one of the game's styles.</summary>
+        /// <summary>The styles the game's dealership layouts' names end in; those layouts are offered under them.</summary>
         public static readonly string[] DealerStyles = { "Cheap", "Luxury" };
 
         public static readonly DesignKind[] Kinds =
@@ -94,12 +90,7 @@ namespace RealLifeOverhaul.Designs
                 Offered("FastFoodRestaurant"), Offered("Nightclub"), Offered("Supermarket"), Offered("Gym"))
         };
 
-        /// <summary>
-        /// What a Car Showroom keeps of a design, by the game's item name without its "ba:itemname_": the sales counter and its
-        /// till, seats, tables, desks and what stands on them, plants, pictures, screens, carpets, lamps, the washrooms and the
-        /// staff's things. Shelves, display tables and cases, baskets and the game's own cars on show are left out: a showroom
-        /// sells the cars on its lot. Every one is furniture the installation firms put in for the game's own designs.
-        /// </summary>
+        /// <summary>What a Car Showroom keeps, by item name without "ba:itemname_": no shelves, cases or cars on show, as it sells its lot's.</summary>
         public static readonly string[] ShowroomKeeps =
         {
             "cashregister", "counter1", "counter2", "countercorner", "countercorneroutermodern", "moderncounter", "countermarble01",
@@ -129,18 +120,14 @@ namespace RealLifeOverhaul.Designs
             "securitysign", "jobboard", "exitsign", "wallradiator", "trashbin", "smallcabinet"
         };
 
-        /// <summary>
-        /// What a bank branch keeps of a shop design besides what a showroom keeps: the game's queue barriers, counters with
-        /// glass, more chairs and a bench to wait on, the paper holder. Every one is furniture the installation firms put in
-        /// for the game's own designs; shelves, display cases and products stay out, as for a showroom.
-        /// </summary>
+        /// <summary>What a bank branch keeps besides what a showroom keeps: queue barriers, glass counters, seats, the paper holder.</summary>
         public static readonly string[] BranchExtras =
         {
             "glassbarrier", "beltbarrier", "ropebarrier", "counterwithglass", "counterwithglasscornerleft", "eameschair",
             "bench01", "paperholder"
         };
 
-        /// <summary>Seats a branch's customers wait on: a branch's design with one of these is offered first.</summary>
+        /// <summary>Seats to wait on: a branch design with one is offered first.</summary>
         public static readonly string[] BranchSeats =
         {
             "waitingroomchairs", "bench01", "armchair1", "armchair2", "cornersofa01", "cornersofa02left", "cornersofa02right", "modularsofa1l", "modularsofa1m",
@@ -149,9 +136,9 @@ namespace RealLifeOverhaul.Designs
 
         public const int BranchMost = 4;            // designs a bank branch is offered for a size at most
 
-        public const string Till = "cashregister";       // the game's point of sale: the showroom's salesperson waits by it (Economy/Dealer/Floor)
-        public const string Toilet = "toiletstall";      // the washrooms
-        public const string LampMark = "ceilinglamp";    // a ceiling lamp, which is not counted as furniture
+        public const string Till = "cashregister";       // the showroom's salesperson waits by it
+        public const string Toilet = "toiletstall";
+        public const string LampMark = "ceilinglamp";    // not counted as furniture
 
         public const string ItemPrefix = "ba:itemname_";
 

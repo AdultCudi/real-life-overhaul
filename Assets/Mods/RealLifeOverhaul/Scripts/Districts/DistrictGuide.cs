@@ -5,9 +5,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Districts
 {
     /// <summary>
-    /// The feature's entry in the mod's feature list, and the figures its Guide page prints: every {name} in its text is
-    /// filled from <see cref="DistrictRules"/> here, so the page can never say anything the view does not do. Called once,
-    /// when the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
+    /// The district view's entry in the feature list, and the Guide page's figures, each filled from
+    /// <see cref="DistrictRules"/> when the page opens. Registered once, when the feature list is built.
     /// </summary>
     public static class DistrictGuide
     {

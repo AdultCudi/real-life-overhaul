@@ -4,11 +4,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Calendar
 {
-    /// <summary>
-    /// The calendar's entry in the mod's feature list and its place on the options page. Its Guide page fills the months a
-    /// year can be turned on ahead ({calendar_ahead}) from the code. Called once, when the feature list and the options
-    /// page are built.
-    /// </summary>
+    /// <summary>The calendar's entry in the feature list; its Guide page's {calendar_ahead} comes from the code.</summary>
     public static class CalendarGuide
     {
         public static void Register()
@@ -19,14 +15,13 @@ namespace RealLifeOverhaul.Calendar
                 .Owns(Settings.CalendarId)
                 .Test("reallife_calendar_test_month")
                 .Fact("calendar_ahead", () => MonthViewRules.AheadMonths.ToString(CultureInfo.InvariantCulture))
-                .Cleanup(() => CalendarDirector.Instance?.StopAll());   // the director puts it back on its next second, as the option says
+                .Cleanup(() => CalendarDirector.Instance?.StopAll());   // put back on the next second, as the option says
         }
     }
 
-    /// <summary>The calendar's place on the options page, under the mod's own namespace so that it is one line there.</summary>
+    /// <summary>The calendar's place on the options page.</summary>
     public static class CalendarOptions
     {
-        /// <summary>The "Calendar" block of the options page: its switch and its test.</summary>
         public static ModOptions AddCalendar(this ModOptions options)
         {
             return options

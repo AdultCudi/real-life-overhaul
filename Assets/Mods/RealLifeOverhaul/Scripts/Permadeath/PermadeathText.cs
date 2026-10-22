@@ -7,10 +7,8 @@ using Localizor;
 namespace RealLifeOverhaul.Permadeath
 {
     /// <summary>
-    /// Permadeath's words: every text is a key of en.json, written out when it is shown (the obituary in the language of
-    /// the moment it is opened, a notice when it goes out), never on a timer. The obituary's sentences are chosen by
-    /// <see cref="PermadeathStory"/>; here every {name} in them is filled from the story: the counts with the game's
-    /// figures, money as the game writes it, lists of names as "A, B and C".
+    /// Permadeath's words, written out when shown, in the language of that moment. The obituary's sentences come from
+    /// <see cref="PermadeathStory"/>; here every {name} in them is filled from the story.
     /// </summary>
     public static class PermadeathText
     {

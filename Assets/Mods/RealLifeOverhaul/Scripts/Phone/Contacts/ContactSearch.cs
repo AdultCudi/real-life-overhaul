@@ -7,7 +7,6 @@ using Localizor;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI;
-using UI.Components;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,30 +14,17 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A search box in the game's Contacts app: what is typed narrows the list to the contacts whose name or description
-    /// has every word of it, ignoring case and accents, within the category that is picked. The box is a copy of the
-    /// game's own text field (the one of its text input window, TextInputUI.inputField), on a line of its own under the
-    /// app's "mark all as read" and "delete all" buttons, as wide as the list of contacts, with the game's own
-    /// placeholder text. The game places that row by hand and its two buttons fill it, so the box does not go in it; the
-    /// list starts a line lower instead, and is put back where the game had it if the box goes.
-    ///
-    /// HOW THE LIST IS NARROWED. The game makes the list in ContactsApp.LoadContactsList: it fills the scroller's
-    /// public list of rows (ContactScrollerController.data) and reloads it. A search asks the game to make the list as
-    /// usual and then takes out the rows that do not match and reloads the scroller: the game's own rows, its own order,
-    /// its own pictures. The game makes the list again by itself (a message comes in, a category is picked): while there is
-    /// something in the box, the box's component sees that the list is not the one it narrowed (its count or first row,
-    /// one comparison a frame, and only while the Contacts app is showing) and narrows it again.
-    ///
-    /// While the box has the keyboard the mod's own keys stand still (Keys.Suspended), so typing a letter does not also
-    /// do what that key does. The box is emptied when the app closes. Cost: nothing while the box is empty but one bool
-    /// a frame; a search is one pass over the contacts (a few dozen) with the words compared by the culture-free rules.
+    /// A search box in the game's Contacts app, copied from the game's own text field: the list keeps the contacts whose
+    /// name or description holds every typed word. The game makes its list as usual and the rows that miss are taken out;
+    /// when the game makes it again, the box narrows it again. Cost: only while the app shows, a focus check a frame and,
+    /// with a query, one count and one reference comparison.
     /// </summary>
     public sealed class ContactSearch : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactSearch", typeof(ContactSearch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactSearch", typeof(ContactSearch));
 
         private const int Longest = 24;                 // characters
-        private const float Gap = 16f;                  // between the buttons, the box and the list, on the game's canvas
+        private const float Gap = 16f;                  // units of the game's canvas between the buttons, the box and the list
 
         public static IModLogger Logger;
 
@@ -57,7 +43,7 @@ namespace RealLifeOverhaul
         private Vector2 _listTopWas;
         private static readonly Vector3[] Corners = new Vector3[4];
 
-        /// <summary>Puts the box in the game's Contacts app, once per city. Safe to call again; says in Player.log if the app is not built as expected.</summary>
+        /// <summary>Puts the box in the game's Contacts app, once per city; says in Player.log if the app is not built as expected.</summary>
         public static void Install()
         {
             try
@@ -100,16 +86,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A private field of the game's, through its line of the game contract (resolved once: Core/GameContract).
+        // A private field of the game's, through its line of the game contract.
         private static T Field<T>(object owner, GameMember member) where T : class
         {
             FieldInfo field = member.Field;
             return field != null ? field.GetValue(owner) as T : null;
         }
 
-        // The box on its own line: under the row of the game's buttons, as high as they are and as wide as the list, which
-        // starts below it. Everything is measured from the game's own pieces in the panel they share, so it holds at any
-        // screen size.
+        // On its own line under the game's buttons, measured from the game's own pieces, so it holds at any screen size.
         private void Dress(Button mark, Transform row)
         {
             var markRect = (RectTransform)mark.transform;
@@ -137,9 +121,10 @@ namespace RealLifeOverhaul
                 {
                     _list = list;
                     _listTopWas = list.offsetMax;
-                    list.offsetMax = new Vector2(list.offsetMax.x, list.offsetMax.y - shift);   // (its top edge down, its bottom where it was)
+                    list.offsetMax = new Vector2(list.offsetMax.x, list.offsetMax.y - shift);   // its top edge down, its bottom where it was
                 }
-                where = "under '" + row.name + "', as wide as the list (" + rect.sizeDelta.x.ToString("0") + " x " + height.ToString("0") + "), the list " + Mathf.Max(0f, shift).ToString("0") + " lower";
+                where = "under '" + row.name + "', as wide as the list (" + rect.sizeDelta.x.ToString("0") + " x " + height.ToString("0") + "), the list "
+                        + Mathf.Max(0f, shift).ToString("0") + " lower";
             }
             else
             {
@@ -179,7 +164,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's list of contacts as a piece of the panel the buttons are in: the scroller's own object, or the one it hangs under there.
+        // The game's list as a piece of the buttons' panel: the scroller's own object, or the one it hangs under there.
         private RectTransform ListOf(RectTransform panel)
         {
             Transform t = _app != null && _app.contactScrollerController != null ? _app.contactScrollerController.transform : null;
@@ -230,13 +215,12 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Phone: ContactSearch.Update");
-        // Only while the Contacts app shows (the box is part of it): whether the box has the keyboard, and whether the game made its list again.
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -268,7 +252,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The app closes: the box is emptied, the keys are the player's again; the game makes its whole list when it next opens.
+        // The app closes: the box is emptied and the keys are the player's again.
         private void OnDisable()
         {
             if (_typing)

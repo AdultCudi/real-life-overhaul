@@ -6,15 +6,13 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Adds a high-priority global HDRP volume that grades the image on top of the game's own
-    /// day/night volumes. Contrast and saturation are baked into HDRP's existing colour-grading
-    /// lookup table, so they cost nothing per frame. Bloom and detail distance do cost
-    /// performance and are therefore off unless the player raises them.
-    /// Settings are only pushed to the engine when one of them changes.
+    /// A high-priority global HDRP volume grading the image on top of the game's day and night volumes. Contrast and
+    /// saturation are baked into HDRP's colour-grading table, so they cost nothing a frame; bloom and detail distance do,
+    /// and are off unless the player raises them. A frame compares five settings; the engine is told only on a change.
     /// </summary>
     public class VisualEnhancer : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("visuals", "VisualEnhancer", typeof(VisualEnhancer));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("visuals", "VisualEnhancer", typeof(VisualEnhancer));
 
         public static IModLogger Logger;
 
@@ -24,7 +22,7 @@ namespace RealLifeOverhaul
         private Bloom _bloom;
         private float _vanillaLodBias;
 
-        // Last values pushed to the engine.
+        // The values last pushed to the engine.
         private bool _appliedOn;
         private int _appliedSaturation = int.MinValue;
         private int _appliedContrast = int.MinValue;
@@ -53,7 +51,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try

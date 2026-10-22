@@ -412,6 +412,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OwnRules.cs" Link="Mod\OwnRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Districts\DistrictRules.cs" Link="Mod\DistrictRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorRules.cs" Link="Mod\InteriorRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorRules.Effects.cs" Link="Mod\InteriorRules.Effects.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorStore.cs" Link="Mod\InteriorStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusBay.cs" Link="Mod\BusBay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
@@ -430,6 +431,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalCatalogue.cs" Link="Mod\RivalCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalModel.cs" Link="Mod\RivalModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.cs" Link="Mod\RivalRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.Moves.cs" Link="Mod\RivalRules.Moves.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.Counters.cs" Link="Mod\RivalRules.Counters.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalStore.cs" Link="Mod\RivalStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankStore.cs" Link="Mod\OwnBankStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Branch\BranchCatalogue.cs" Link="Mod\BranchCatalogue.cs" />

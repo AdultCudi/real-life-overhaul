@@ -8,13 +8,13 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The "Measure this car" button: times the next full-throttle run from a standstill (0-50, 0-100 and
-    /// the speed after 20 seconds), so a car's targets can be checked on the road. Says what it found in a
-    /// toast and in the log. Switched off except between the button and the end of the run.
+    /// The "Measure this car" button: times the next full-throttle run from a standstill (0-50, 0-100 and the speed after 20
+    /// seconds) and says what it found in a notice and the log. Idle it is switched off and costs nothing; armed, a frame
+    /// reads the car's speed and pedal.
     /// </summary>
     public sealed class CarMeasure : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("driving", "CarMeasure", typeof(CarMeasure));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("driving", "CarMeasure", typeof(CarMeasure));
 
         private const float WaitFor = 90f;      // seconds the button stays armed
         private const float RunFor = 20f;
@@ -33,7 +33,6 @@ namespace RealLifeOverhaul
         private float _to100;
         private float _lastSpeed;
 
-        /// <summary>The options button.</summary>
         public static void Arm()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
@@ -66,7 +65,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -109,7 +108,7 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // In game time, like the car itself. A crossing is placed within the frame it happened in.
+            // In game time, like the car itself; a crossing is placed within the frame it happened in.
             float time = Time.time - _startedAt;
             if (time > 1.5f && pedal < 0.9f)
             {

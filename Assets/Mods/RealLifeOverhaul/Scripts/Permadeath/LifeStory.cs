@@ -5,16 +5,14 @@ using System.Text;
 namespace RealLifeOverhaul.Permadeath
 {
     /// <summary>
-    /// A life as the mod's records tell it, taken down at the moment it ended (or for a test, at the moment it was asked
-    /// for): who they were, how they died, what they built and owned, the people in their life, their record and what
-    /// the city knew of them. The obituary is written from this and nothing else, so a save opened again prints the same
-    /// page whatever has changed since. Game-free; one line of text (<see cref="Write"/>, <see cref="Read"/>).
+    /// A life as the mod's records tell it, taken down when it ended. The obituary is written from this alone, so a save
+    /// opened again prints the same page whatever has changed since. Game-free; saved as one line of text.
     /// </summary>
     public sealed class LifeStory
     {
         public const int NamesMost = 6;      // names kept in each list: a page has room for a few
-        public const int BusinessesMost = 3;
-        public const int MournersMost = 8;
+        public const int BusinessesMost = 3;   // names
+        public const int MournersMost = 8;     // names
         private const int Version = 1;
         private const char Field = '|', Item = ';';
 
@@ -25,7 +23,7 @@ namespace RealLifeOverhaul.Permadeath
         public DeathCause Cause;
         public string Place = string.Empty;  // the street it happened in; empty when not known (an illness)
 
-        public long Worth;                   // the estate: what the game counts the player worth, less what the mod knows they owe; may be below zero
+        public long Worth;                   // the game's worth less what the mod knows they owe; may be below zero
         public int Founded;                  // businesses run in the life, ever
         public int Owned;                    // businesses running at the end
         public int Employees;
@@ -46,22 +44,28 @@ namespace RealLifeOverhaul.Permadeath
         public string Degree = string.Empty; // the best qualification, in words (Careers); empty for none
         public string Career = string.Empty; // the job at the end or the highest held, in words (Careers); empty for none
 
-        /// <summary>The days lived in the city (the first day counts as one), whole years of them and the days over.</summary>
+        /// <summary>The days lived in the city, the first counting as one; then the whole years of them and the days over.</summary>
         public int Days => Day < 1 ? 1 : Day;
         public int Years => Days / (DaysPerYear < 1 ? 1 : DaysPerYear);
         public int DaysOver => Days % (DaysPerYear < 1 ? 1 : DaysPerYear);
 
-        /// <summary>
-        /// Who mourns them, in the order a notice names them: the partner, the children, the family, then the close
-        /// friends; nobody twice, at most <see cref="MournersMost"/>.
-        /// </summary>
+        /// <summary>Who mourns them, in a notice's order: partner, children, family, close friends; nobody twice, at most <see cref="MournersMost"/>.</summary>
         public void Mourners(List<string> into)
         {
             into.Clear();
             Add(into, Partner);
-            for (int i = 0; i < Children.Count; i++) Add(into, Children[i]);
-            for (int i = 0; i < Family.Count; i++) Add(into, Family[i]);
-            for (int i = 0; i < Close.Count; i++) Add(into, Close[i]);
+            for (int i = 0; i < Children.Count; i++)
+            {
+                Add(into, Children[i]);
+            }
+            for (int i = 0; i < Family.Count; i++)
+            {
+                Add(into, Family[i]);
+            }
+            for (int i = 0; i < Close.Count; i++)
+            {
+                Add(into, Close[i]);
+            }
         }
 
         private static void Add(List<string> into, string name)
@@ -107,8 +111,6 @@ namespace RealLifeOverhaul.Permadeath
         {
             Read(o.Write());
         }
-
-        // ---------------------------------------------------------------- the line
 
         public string Write()
         {
@@ -167,7 +169,7 @@ namespace RealLifeOverhaul.Permadeath
             Convictions = Clamp(Int(f[i++]), 0, 100000);
             Followers = Clamp(Int(f[i++]), 0, int.MaxValue);
             Elections = Clamp(Int(f[i++]), 0, 100000);
-            Degree = i < f.Length ? f[i++] : string.Empty;   // (a line of before the careers has neither)
+            Degree = i < f.Length ? f[i++] : string.Empty;   // an older line has neither
             Career = i < f.Length ? f[i++] : string.Empty;
             return true;
         }

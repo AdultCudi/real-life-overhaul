@@ -7,19 +7,15 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One character as a ragdoll, from the moment it is hit to the moment it is put back.
-    /// Begin switches the character from animated to physical: its animator, pathfinding and
-    /// capsule go off (traffic is told), its own rigidbody is held still, and the bones get the
-    /// bodies built by RagdollRig and a shove. Once the body has lain still for a moment it is
-    /// frozen, after which it costs nothing. End takes every added component off again and
-    /// restores everything Begin changed, optionally standing the character where it landed.
-    /// These objects belong to RagdollSystem, which owns the three there are and reuses them.
+    /// One character as a ragdoll, from the hit to being put back. Begin turns its animator, pathfinding and capsule off
+    /// and gives the bones RagdollRig's bodies; a body at rest is frozen and costs nothing; End takes everything off and
+    /// puts back all Begin changed. Owned and reused by <see cref="RagdollSystem"/>.
     /// </summary>
     public sealed class Ragdoll
     {
         private const float MinFlight = 0.7f;       // seconds before it may count as lying still
         private const float RestHold = 0.5f;        // seconds it must stay still
-        private const float MaxFlight = 8f;         // frozen wherever it is after this long
+        private const float MaxFlight = 8f;         // seconds: frozen wherever it is after this long
         private const float RestSpeedSqr = 0.05f;   // (m/s) squared
         private const float RestSpinSqr = 0.6f;     // (rad/s) squared
         private const float SinkLimit = 8f;         // metres below where it started: it has left the world
@@ -33,7 +29,7 @@ namespace RealLifeOverhaul
         private readonly RagdollPart[] _parts = new RagdollPart[RagdollRig.PartCount];
         private readonly Transform[] _ends = new Transform[RagdollRig.EndCount];
 
-        private BaseHuman _character;   // a full street character, or one of the game's plainer figures that only stand about (no agent, no capsule)
+        private BaseHuman _character;   // a full street character, or a plainer standing figure with no agent or capsule
         private Animator _animator;
         private NavMeshAgent _agent;
         private CapsuleCollider _capsule;
@@ -50,20 +46,15 @@ namespace RealLifeOverhaul
         private float _stillSince;
         private Vector3 _lastPosition;
 
-        /// <summary>True from Begin to End.</summary>
         public bool Active { get; private set; }
 
         /// <summary>True once the body has come to rest and been frozen.</summary>
         public bool Resting { get; private set; }
 
-        /// <summary>
-        /// True for a body at rest that has given up its physics (bodies, joints, colliders) and only keeps
-        /// its pose: what the oldest becomes when a seventh person is thrown down. Still Active and Resting;
-        /// it can be lifted, laid straight and ended like any other.
-        /// </summary>
+        /// <summary>True for a body at rest that has given up its physics and only keeps its pose; still Active and Resting.</summary>
         public bool Still { get; private set; }
 
-        /// <summary>True if the body fell out of the world or flew absurdly far; where it lies means nothing.</summary>
+        /// <summary>True if the body fell out of the world or flew absurdly far: where it lies means nothing.</summary>
         public bool Astray { get; private set; }
 
         /// <summary>Goes up on every Begin, so a holder can tell this is no longer the ragdoll it started.</summary>
@@ -96,10 +87,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True if the character was destroyed, switched off, or put back to work by the game while
-        /// it was ours (a pooled pedestrian released and handed out again). It must be let go.
-        /// </summary>
+        /// <summary>True if the game destroyed, switched off or reused the character while it was ours: it must be let go.</summary>
         public bool Lost =>
             Active && (_character == null || !_character.gameObject.activeInHierarchy
                        || (_capsule != null && _capsule.enabled) || (_agent != null && _agent.enabled));
@@ -116,10 +104,8 @@ namespace RealLifeOverhaul
             return !(character is ThirdPersonCharacter full) || (full.navmeshAgent != null && full.capsuleCollider != null);
         }
 
-        /// <summary>Returns false, with the character as it was, if this skeleton cannot be made a ragdoll.</summary>
-        /// <param name="velocity">What the whole body starts with, in m/s.</param>
-        /// <param name="layer">The layer the parts go on; it must collide with the ground.</param>
-        /// <param name="blocksTraffic">That layer is one traffic brakes for, so the frozen body keeps its colliders.</param>
+        /// <summary>False, with the character as it was, if this skeleton cannot be made a ragdoll. Velocity in m/s; layer collides with the ground.</summary>
+        /// <param name="blocksTraffic">Traffic brakes for that layer, so the frozen body keeps its colliders.</param>
         internal bool Begin(BaseHuman character, Vector3 velocity, int layer, bool blocksTraffic, float now)
         {
             if (Active || !CanTake(character))
@@ -191,8 +177,7 @@ namespace RealLifeOverhaul
                     ShowNearVehicles(_hider);
                     _hider.enabled = false;
                 }
-                // The character's own script would spend every frame telling a stopped animator to stand
-                // still, and could turn the root. It has nothing to do until End.
+                // The character's own script would tell the stopped animator to stand each frame, and could turn the root.
                 character.enabled = false;
                 _animator.enabled = false;
 
@@ -216,7 +201,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The rest check: a few values read from two of the bodies. Called every frame until the body is frozen.</summary>
+        /// <summary>The rest check, called each frame until the body is frozen: a few values read from two bodies.</summary>
         internal void Tick(float now)
         {
             if (!Active || Resting)
@@ -268,12 +253,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Holds the body exactly as it lies. Frozen bodies are not simulated. On a layer traffic
-        // does not brake for, the colliders go too, so nothing solid and immovable is left in the road.
+        // Holds the body as it lies, no longer simulated. It stays solid only where traffic brakes for it and no vehicle
+        // is on top of it already, so nothing solid and immovable is left in the road.
         private void Freeze()
         {
             Resting = true;
-            _solid = false;
             for (int i = 0; i < RagdollRig.PartCount; i++)
             {
                 Rigidbody body = _parts[i].Body;
@@ -282,22 +266,16 @@ namespace RealLifeOverhaul
                     body.isKinematic = true;
                 }
             }
-            // Left solid only where traffic brakes for it, and only if no vehicle is already on top of it.
-            if (_blocksTraffic && !UnderVehicle())
-            {
-                _solid = true;
-            }
-            else
+            _solid = _blocksTraffic && !UnderVehicle();
+            if (!_solid)
             {
                 GoSoft();
             }
         }
 
         /// <summary>
-        /// A body at rest that was left solid gives way if a traffic vehicle has ended up over it after all (it
-        /// could not stop in time, or was pushed there). Frozen bodies cannot be moved, so a vehicle on top of
-        /// one is lifted off its wheels and hops there for good; with the colliders gone it settles on the road.
-        /// One overlap test; called twice a second by RagdollSystem while someone is down.
+        /// A solid body at rest gives way when a traffic vehicle has ended up over it after all: a frozen body cannot move,
+        /// so the vehicle would hop on it for good. One overlap test, twice a second while someone is down.
         /// </summary>
         internal void YieldToVehicles()
         {
@@ -309,11 +287,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A body at rest gives up everything that was added to its bones and stays as it lies: no bodies, no
-        /// joints, no colliders (traffic waiting for one is told), nothing simulated and nothing in the way.
-        /// Everything Begin changed on the character stays changed until End, which works as before.
-        /// </summary>
+        /// <summary>A body at rest gives up everything added to its bones and stays as it lies until End.</summary>
         internal void Settle()
         {
             if (!Active || !Resting || Still)
@@ -355,15 +329,10 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Ends the ragdoll: every added component comes off and everything Begin changed goes
-        /// back. Safe in any state, including a character that no longer exists. No step can
-        /// stop the ones after it.
+        /// Ends the ragdoll: every added component comes off and all Begin changed goes back, in any state, and no step can
+        /// stop the ones after it. <paramref name="stand"/> moves the character to <paramref name="place"/>, else it is
+        /// back where it was hit; <paramref name="restoreMovement"/> is false when the caller places it or the game has it.
         /// </summary>
-        /// <param name="stand">Move the character to <paramref name="place"/>; otherwise it is back where it was hit.</param>
-        /// <param name="restoreMovement">
-        /// Switch pathfinding and the capsule back to how they were. False when the caller places
-        /// the character itself, or when the game has already taken the character back.
-        /// </param>
         internal void End(bool stand, Vector3 place, bool restoreMovement)
         {
             if (!Active)
@@ -373,7 +342,7 @@ namespace RealLifeOverhaul
             bool alive = _character != null;
             if (alive)
             {
-                _lastPosition = stand ? place : Position;   // where it was last seen, for whoever asks afterwards
+                _lastPosition = stand ? place : Position;   // for whoever asks afterwards
             }
             Active = false;
             Resting = false;
@@ -456,14 +425,8 @@ namespace RealLifeOverhaul
 
         private void Forget()
         {
-            for (int i = 0; i < RagdollRig.PartCount; i++)
-            {
-                _parts[i] = default;
-            }
-            for (int i = 0; i < RagdollRig.EndCount; i++)
-            {
-                _ends[i] = null;
-            }
+            Array.Clear(_parts, 0, _parts.Length);
+            Array.Clear(_ends, 0, _ends.Length);
             _character = null;
             _animator = null;
             _agent = null;
@@ -487,7 +450,7 @@ namespace RealLifeOverhaul
             if (!_showSearched)
             {
                 _showSearched = true;
-                _showNearVehicle = GameContract.NearItemToHide.Method;   // (resolved once: Core/GameContract)
+                _showNearVehicle = GameContract.NearItemToHide.Method;
                 if (_showNearVehicle == null)
                 {
                     RagdollSystem.Logger?.Warn("Ragdoll: the game's fade-near-vehicles switch was not found; a body may stay faded while a car is beside it.");

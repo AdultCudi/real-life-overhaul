@@ -10,13 +10,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Rivals
 {
     /// <summary>
-    /// Everything the rival tycoons read from the game or do to it, in one place. READ: the day, the player's worth (the
-    /// Finance app's own figure through the wiring, else the game's), the city's price level, the player's businesses
-    /// that take money (Economy/Finance, Books.Businesses: theirs alone in a Going Public session), with what each took in
-    /// the last week, its district, its type and its rent. DONE: money as the game's own dated transactions (a rent rise
-    /// at the business, a counter, a takeover's break-up), in pieces a float moves exactly (Markets/InvestRules.Piece);
-    /// notifications through the game's own. Nothing of the game's records is written: every move goes through the
-    /// feature that owns what it touches (RivalBridges). Asked on the day, a click or a test; never per frame.
+    /// Everything the rival tycoons read from the game or do to it: the day, the player's worth and businesses, the price
+    /// level; money as the game's own transactions, in pieces a float moves exactly; the game's notifications. Moves
+    /// themselves go through <see cref="RivalBridges"/>. Asked on the day, a click or a test; never per frame.
     /// </summary>
     public static class RivalGame
     {
@@ -30,7 +26,7 @@ namespace RealLifeOverhaul.Rivals
         public static int Day => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
         public static long Cash => SaveGameManager.Current != null ? (long)Math.Floor(Math.Max(0.0, SaveGameManager.Current.Money)) : 0L;
 
-        /// <summary>What the game is today, into the world given: the player's worth and businesses, the price level, the cycle, which features run.</summary>
+        /// <summary>What the game is today, into the world given.</summary>
         public static void Read(RivalWorld into)
         {
             into.Clear();
@@ -55,8 +51,13 @@ namespace RealLifeOverhaul.Rivals
                 BuildingRegistration reg = Regs[i];
                 into.Shops.Add(new RivalShop
                 {
-                    Place = BusinessGame.Place(reg), Name = Name(reg), District = reg.Neighborhood ?? string.Empty, Type = reg.businessTypeName ?? string.Empty,
-                    Week = (long)Math.Round(BusinessGame.DailyRevenue(reg) * 7.0), Rented = !reg.BuildingOwnedByPlayer, Rent = reg.BuildingOwnedByPlayer ? 0 : Mathf.Max(0, Mathf.RoundToInt(reg.RentPerDay))
+                    Place = BusinessGame.Place(reg),
+                    Name = Name(reg),
+                    District = reg.Neighborhood ?? string.Empty,
+                    Type = reg.businessTypeName ?? string.Empty,
+                    Week = (long)Math.Round(BusinessGame.DailyRevenue(reg) * 7.0),
+                    Rented = !reg.BuildingOwnedByPlayer,
+                    Rent = reg.BuildingOwnedByPlayer ? 0 : Mathf.Max(0, Mathf.RoundToInt(reg.RentPerDay))
                 });
             }
             Regs.Clear();
@@ -108,9 +109,7 @@ namespace RealLifeOverhaul.Rivals
             return string.IsNullOrEmpty(place) ? null : BusinessGame.Find(place);
         }
 
-        // ---------------------------------------------------------------- money
-
-        /// <summary>A rent rise at the player's business: taken if the cash is there, never forced (an unpaid rise is left, not owed). True if paid.</summary>
+        /// <summary>A rent rise at the player's business, taken only if the cash is there (an unpaid rise is not owed). True if paid.</summary>
         public static bool ChargeRent(BuildingRegistration reg, long amount, string rival)
         {
             if (amount <= 0 || reg == null || Save == null)
@@ -121,7 +120,7 @@ namespace RealLifeOverhaul.Rivals
             return GameManager.ChangeMoneySafe(-(float)Math.Min(amount, 1000000000L), info, null, reg.Address, force: false);
         }
 
-        /// <summary>A counter's cost, taken in pieces if the cash is there for all of it. False (nothing taken) when it is not.</summary>
+        /// <summary>A counter's cost, taken in pieces if the cash is there for all of it; false, with nothing taken, if not.</summary>
         public static bool Take(long amount, string key, string name)
         {
             if (amount <= 0)
@@ -151,8 +150,6 @@ namespace RealLifeOverhaul.Rivals
                 GameManager.ChangeMoneySafe(sign * InvestRules.Piece(ref left), new TransactionInfo(key, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } }), null, null, true);
             }
         }
-
-        // ---------------------------------------------------------------- notices
 
         /// <summary>A notification of the game's own; a click does what <paramref name="click"/> does, behind the guard.</summary>
         public static void Tell(NotificationType type, string key, Dictionary<string, string> data, Action click)

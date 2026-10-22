@@ -8,16 +8,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.FitOut
 {
     /// <summary>
-    /// The people of a fitted-out floor (<see cref="FitView"/>), as many as <see cref="FitCrew"/> gives the building's kind
-    /// and seats, within the mod's people to spare (People/ActorPool, a few always left for anything else): staff at the
-    /// desks typing as the game's own employees type at a desk computer, a pair at a meeting table, somebody in the lounge
-    /// or waiting, and one or two walking from one place to the next (a coffee machine, a printer, a word at a colleague's
-    /// desk). Now and then one of them leaves through the door and somebody else comes in a while later and walks to a
-    /// free seat.
-    ///
-    /// Put out only while the player is in the room, under the black screen all at once, otherwise one a second through
-    /// the door; taken away when they leave. Looked after once a second (the caller's tick): a few comparisons a person,
-    /// nothing per frame. Those only to be seen give way to any scene of the mod's that needs them.
+    /// The people of a fitted-out floor, as many as <see cref="FitCrew"/> gives within the mod's people to spare: staff
+    /// typing at desks, a pair at a meeting table, somebody in the lounge or waiting, one or two walking between stops;
+    /// now and then one leaves and another comes in. Out only while the player is in the room (all at once under the black
+    /// screen, otherwise through the door). Ticked once a second by the caller: a few comparisons a person.
     /// </summary>
     internal sealed class FitCast
     {
@@ -83,7 +77,7 @@ namespace RealLifeOverhaul.FitOut
                 m.Until = now + (hidden ? 0f : 1f + i * 1.5f);
                 if (hidden)
                 {
-                    Arrive(m, now, atOnce: true);   // (already at work when the player comes in)
+                    Arrive(m, now, atOnce: true);   // already at work when the player comes in
                 }
             }
         }
@@ -124,7 +118,7 @@ namespace RealLifeOverhaul.FitOut
                     if (m.Doing != Doing.Away)
                     {
                         Release(m);
-                        m.Doing = Doing.Away;   // (gone through the door, or taken back by the pool: somebody else later)
+                        m.Doing = Doing.Away;   // gone, or taken back by the pool: somebody else later
                         m.Until = now + Random.Range(25f, 70f);
                     }
                     if (!arrived && now >= m.Until && DoorClear())
@@ -141,7 +135,7 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // Somebody new: seated at once (under the black screen), or in through the door and on to a seat or a place to stand.
+        // Seated at once under the black screen, or in through the door and on to a seat or a stop.
         private bool Arrive(Member m, float now, bool atOnce)
         {
             if (m.Use == FitUse.None)
@@ -195,13 +189,13 @@ namespace RealLifeOverhaul.FitOut
             return m.Presence ? m.Role.EnterPresence(near, ActorLook.Civilian, 0.8f, onRoad: false) : m.Role.Enter(near, ActorLook.Civilian, 0.8f, onRoad: false);
         }
 
-        // Seated: typing at a desk; sitting back anywhere else.
+        // Typing at a desk, as the game's employees do; sitting back anywhere else.
         private void SitDown(Member m, float now)
         {
             SeatPlace seat = _seats[m.Seat];
             if (m.Use == FitUse.Desk && m.Role.Knows(AnimationType.UsingDesktopComputer))
             {
-                m.Role.Repeat(AnimationType.UsingDesktopComputer, 5f, 15f);   // typing, as the game's employees at a desk computer
+                m.Role.Repeat(AnimationType.UsingDesktopComputer, 5f, 15f);
             }
             else
             {
@@ -228,7 +222,7 @@ namespace RealLifeOverhaul.FitOut
                     }
                     else if (now >= m.Until)
                     {
-                        Leave(m, now, at: false);   // (could not get there)
+                        Leave(m, now, at: false);   // could not get there
                     }
                     break;
                 case Doing.Seated:
@@ -238,7 +232,7 @@ namespace RealLifeOverhaul.FitOut
                     }
                     if (m.Use == FitUse.Desk && Random.value < 0.6f)
                     {
-                        m.Until = now + Random.Range(120f, 300f);   // (back to work)
+                        m.Until = now + Random.Range(120f, 300f);   // back to work
                         break;
                     }
                     Leave(m, now, at: true);
@@ -257,7 +251,7 @@ namespace RealLifeOverhaul.FitOut
                     }
                     if (Random.value < 0.12f)
                     {
-                        Leave(m, now, at: true);   // (off home, or out to a meeting)
+                        Leave(m, now, at: true);   // off home, or out to a meeting
                         break;
                     }
                     int next = (m.Stop + 1 + Random.Range(0, Math.Max(1, _stops.Count - 1))) % _stops.Count;
@@ -268,7 +262,7 @@ namespace RealLifeOverhaul.FitOut
                 case Doing.Leaving:
                     if (now >= m.Until)
                     {
-                        m.Role.Exit();   // (taken out of sight if the way out took too long)
+                        m.Role.Exit();   // the way out took too long
                     }
                     break;
             }
