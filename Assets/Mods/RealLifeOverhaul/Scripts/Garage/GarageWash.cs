@@ -6,24 +6,16 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's car wash in a repair bay, kept from holding a car for ever (<see cref="WashRules"/> says why it can).
-    ///
-    /// - Before the wash can be pressed: when the bay's panel lists its buttons for a car (<see cref="GarageBay"/>), a car
-    ///   that has no spray or no wash sound of its own is given a stand-in for each (an empty object kept switched off, a
-    ///   silent sound source), once a car, so the game's own wash runs to its end on it as on the game's own cars.
-    /// - Whatever else stops a wash: four times a second, while the player's car is washing, <see cref="WashWatch"/> sees
-    ///   whether it is still under way; one that has stopped is ended as the game's wash ends: the spray off, the sound
-    ///   stopped, the car's hold and the player's blocker let go (the custom shop's own hold kept while it is open), the car
-    ///   clean, as the wash paid for would have left it.
-    ///
-    /// The cost: one compare four times a second while no car of the player's is washing; nothing is allocated but the
-    /// stand-ins, once a car that lacks them. Nothing is saved or sent: the wash is the player's own car, on this machine.
+    /// The game's car wash in a repair bay, kept from holding a car for ever (<see cref="WashRules"/> says why it can): a
+    /// car without its own spray or wash sound is given stand-ins before the wash can be pressed, and a wash that stops
+    /// anyway is ended as the game's own end does. One compare four times a second while nothing washes; nothing saved
+    /// or sent.
     /// </summary>
     public static class GarageWash
     {
         private const string StandInName = "RealLifeOverhaul Wash Stand-in";
 
-        private static readonly FieldInfo SprayField = GameContract.WashSpray.Field;   // the game's private pieces, resolved once (Core/GameContract)
+        private static readonly FieldInfo SprayField = GameContract.WashSpray.Field;   // the game's private pieces, resolved once
         private static readonly FieldInfo SoundField = GameContract.WashSound.Field;
 
         private static CarController _readied;   // the last car looked at for its wash parts
@@ -31,7 +23,7 @@ namespace RealLifeOverhaul
 
         private static IModLogger Logger => GarageDirector.Logger;
 
-        /// <summary>A car about to be offered the wash has its spray and its sound, its own or stand-ins. Once a car; the bay's panel asks it.</summary>
+        /// <summary>A car about to be offered the wash gets its spray and sound, its own or stand-ins; once a car.</summary>
         public static void Ready(VehicleController vehicle)
         {
             if (!(vehicle is CarController car) || ReferenceEquals(car, _readied))
@@ -41,7 +33,7 @@ namespace RealLifeOverhaul
             _readied = car;
             if (SprayField == null || SoundField == null)
             {
-                return;   // (a game without these pieces: the watch below still ends a wash that stops)
+                return;   // the watch still ends a wash that stops
             }
             try
             {
@@ -62,7 +54,7 @@ namespace RealLifeOverhaul
                 {
                     var stand = new GameObject("Spray");
                     stand.transform.SetParent(holder, false);
-                    stand.SetActive(false);   // the wash switches it on and off: there is nothing in it to see
+                    stand.SetActive(false);   // the wash switches it on and off: nothing in it to see
                     SprayField.SetValue(car, stand);
                 }
                 if (!sound)
@@ -84,7 +76,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Four times a second (<see cref="GarageBay.Tick"/>): a wash of the player's car that has stopped without ending is ended.</summary>
+        /// <summary>Four times a second: a wash of the player's car that has stopped without ending is ended.</summary>
         public static void Watch(GameManager gm)
         {
             CarController car = gm.selectedVehicle as CarController;
@@ -100,7 +92,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's own end of a wash (CarController.WashCoroutine after its loop), for one whose coroutine has stopped.
+        // The game's own end of a wash (WashCoroutine after its loop), for one whose coroutine has stopped.
         private static void End(CarController car, GameManager gm)
         {
             try
@@ -121,7 +113,7 @@ namespace RealLifeOverhaul
                 bool held = shop != null && shop.IsOpen && ReferenceEquals(shop.Car, car);
                 if (!held)
                 {
-                    car.SetFreeze(false);   // (the custom shop's own hold goes when it closes)
+                    car.SetFreeze(false);   // the custom shop's own hold goes when it closes
                 }
                 car.SetDirtiness(0f);
                 if (gm.playerController != null)
@@ -137,7 +129,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Nothing remembered of the city's cars: with the Garage's panel taken off, and as the city goes.</summary>
+        /// <summary>Forgets the city's cars: with the Garage's panel taken off, and as the city goes.</summary>
         public static void Forget()
         {
             _readied = null;

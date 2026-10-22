@@ -9,33 +9,24 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>What a car does, as the model works it out, for the shop's before-and-after figures. A value below zero means "cannot be told".</summary>
+    /// <summary>What a car does by the model, for the shop's before-and-after figures; below zero: cannot be told.</summary>
     public struct GarageFigures
     {
         public float To100;        // seconds
-        public float TopKmh;
+        public float TopKmh;       // km/h
         public float StopMetres;   // from 100 km/h
     }
 
     /// <summary>
-    /// The parts that make a car quicker or faster. They are layered on the mod's per-car model: a build
-    /// divides the car's 0-100 km/h time and multiplies its top speed, and the same sums that give a car
-    /// its stock performance (<see cref="CarModel"/>) find the power, gearing and drag for the new targets.
-    ///
-    /// Two ways in, never both at once:
-    /// - <see cref="Claim"/> is the hook for Driving/CarTuning: it asks for a car's modifiers while it works
-    ///   its targets out, and from the first call on this class leaves power and gearing to it.
-    /// - Until anything calls it, this class does the work itself after CarTuning has run: an engine power
-    ///   modifier (the engine's own list of them), the gear ratios (put back only if they are still the ones
-    ///   written here), and the difference in air drag as a force of its own. With car tuning switched off
-    ///   it falls back to the power modifier and the game's speed limiter.
-    /// Per frame while driving: a few comparisons. The sums run once per car and build.
+    /// The performance parts on the car driven: <see cref="CarModel"/>'s sums find the power, gearing and drag for the
+    /// build's 0-100 km/h time and top speed. Driving/CarTuning applies them once it calls <see cref="Claim"/>; until then
+    /// this writes them itself. A few comparisons a frame while driving; the sums run once per car and build.
     /// </summary>
     public sealed class GarageTuning : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "GarageTuning", typeof(GarageTuning));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "GarageTuning", typeof(GarageTuning));   // its Update and FixedUpdate (Core/Guard)
 
-        private const float MaxTopKmh = 350f;   // as Driving/CarTuning
+        private const float MaxTopKmh = 350f;   // km/h, as Driving/CarTuning
 
         public static IModLogger Logger;
 
@@ -62,10 +53,7 @@ namespace RealLifeOverhaul
         private float _limitBefore, _limitWritten;
         private bool _failed;
 
-        /// <summary>
-        /// The hook for Driving/CarTuning. Returns what the car's build does to its targets (neutral for a
-        /// stock car or with the option off), and tells this class that CarTuning applies them from now on.
-        /// </summary>
+        /// <summary>The hook for Driving/CarTuning: the car's modifiers, neutral when stock or off; from then CarTuning applies them.</summary>
         public static GarageModifiers Claim(VehicleInstance vehicle)
         {
             _claimed = true;
@@ -98,14 +86,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults (Core/Guard)
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -159,14 +147,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults (Core/Guard)
                 return;
             }
             try
             {
                 OnFixedUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -208,8 +196,7 @@ namespace RealLifeOverhaul
 
             if (tuned && box != null && Read(vehicle, _body, out int firstForward) == null)
             {
-                // CarTuning has given this car the numbers for its stock targets. The same sums again, twice:
-                // once for those targets (what is on the car now) and once for the build's.
+                // CarTuning has given this car its stock targets' numbers: the same sums for those and the build's.
                 CarKind kind = GarageShop.KindOf(car);
                 bool eased = Settings.SmoothThrottle;
                 float seconds = tuning.TargetSeconds;
@@ -248,8 +235,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A car the model does not drive (car tuning off, or a type it leaves alone): more power, and the
-            // game's own speed limiter moved by the build's top speed.
+            // A car the model does not drive: more power, and the game's speed limiter moved by the build's top speed.
             _powerFactor = m.Acceleration;
             engine.powerModifiers.Add(_modifier);
             var limiter = vehicle.GetComponent<SpeedLimiterModuleWrapper>();
@@ -276,7 +262,7 @@ namespace RealLifeOverhaul
             _limiter = null;
             if (vehicle == null)
             {
-                return;   // nothing of ours anywhere (or the car is gone, and its numbers with it)
+                return;   // nothing of ours anywhere, or the car is gone with its numbers
             }
             try
             {
@@ -285,7 +271,7 @@ namespace RealLifeOverhaul
                     vehicle.powertrain.engine.powerModifiers.Remove(_modifier);
                 }
                 TransmissionComponent box = vehicle.powertrain != null ? vehicle.powertrain.transmission : null;
-                // Only if the ratios are still ours: CarTuning may have put its own back, or new ones on, since.
+                // Only if the ratios are still ours: CarTuning may have put its own back since.
                 if (gears && box != null && box.finalGearRatio == _finalWritten)
                 {
                     box.finalGearRatio = _finalBefore;
@@ -315,15 +301,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the shop's figures
-
-        /// <summary>
-        /// What this car does with a build on it, by the model: 0-100 and top speed when the car model is
-        /// driving it (the player is in it and CarTuning has tuned it), and the distance it stops in from
-        /// 100 km/h from its brakes, tyres and weight: with car handling on the car, by the handling's own model of it (the
-        /// axles' brake shares, the tyres' grip along and the eased pedal's rise). Runs the sums: for a click in the shop,
-        /// never per frame.
-        /// </summary>
+        /// <summary>What this car does with a build by the model: 0-100, top speed, the stop. Runs the sums: never per frame.</summary>
         public static GarageFigures Figures(CarController car, GarageBuild build)
         {
             var figures = new GarageFigures { To100 = -1f, TopKmh = -1f, StopMetres = -1f };
@@ -345,7 +323,7 @@ namespace RealLifeOverhaul
                 CarTuning tuning = CarTuning.Instance;
                 if (tuning != null && tuning.Tuned == vehicle && Read(vehicle, vehicle.vehicleRigidbody, out _) == null)
                 {
-                    // CarTuning's targets are the stock car's, unless it has taken this car's own build into them (the hook).
+                    // CarTuning's targets are the stock car's, unless the hook has taken this car's build into them.
                     float seconds = tuning.TargetSeconds;
                     float stockTop = tuning.TargetTopKmh;
                     if (_claimed)
@@ -370,8 +348,7 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                // Stopping: with car handling on this car, as its handling stops it (Driving/HandlingModel.ShopStop, the same
-                // sums the car's brakes are set by); else the brakes' torque at the tyre, or what the tyres hold, whichever is less.
+                // As the handling stops this car; else the brakes' torque at the tyre or what the tyres hold, the lesser.
                 float handled = CarTuning.HandlingStop(car, m.Brakes, m.Mass, m.Grip);
                 if (handled > 0f)
                 {
@@ -400,7 +377,7 @@ namespace RealLifeOverhaul
                         float braked = torque * m.Brakes * brake / (mass * m.Mass);
                         float slowing = Mathf.Min(held, braked);
                         const float speed = 27.7778f;
-                        figures.StopMetres = speed * speed / (2f * slowing) + speed * 0.12f;   // and the brakes coming on
+                        figures.StopMetres = speed * speed / (2f * slowing) + speed * 0.12f;   // plus 0.12 s while the brakes come on
                     }
                 }
             }
@@ -410,8 +387,6 @@ namespace RealLifeOverhaul
             }
             return figures;
         }
-
-        // ---------------------------------------------------------------- reading the car, as Driving/CarTuning reads it
 
         /// <summary>Reads the car into <see cref="Physics"/>. Returns why the model cannot drive it, or null.</summary>
         private static string Read(NwhVehicle vehicle, Rigidbody body, out int firstForward)
@@ -526,10 +501,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The same model for a two-wheeler: reads the scooter's own drivetrain and finds the power, gearing
-        /// and drag for a 0-100 km/h time and a top speed. False (with why) if the model cannot drive it.
-        /// </summary>
+        /// <summary>The same model for a two-wheeler from the scooter's drivetrain. False, with why, if it cannot drive it.</summary>
         public static bool SolveBike(NwhVehicle vehicle, float seconds, float topKmh, CarSetup setup, out CarRun run, out int firstForward, out string why)
         {
             run = default;
