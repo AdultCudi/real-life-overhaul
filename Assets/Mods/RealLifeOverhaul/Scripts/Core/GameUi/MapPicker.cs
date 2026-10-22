@@ -14,30 +14,21 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A choice of places made on the open city map, the way the game offers its subway stations there
-    /// (SubwayStation.Interact: CityMap.Toggle, then CityMap.ToggleSubwayMode). The game's window for its stations
-    /// (Canvases/CityMap/SubwayStations, class CityMapSubwayStations) is copied asleep once per city, the scripts that
-    /// make it the subway's are taken off, and the copy stands where the game's stands, on the map's canvas: the
-    /// headline, the search field (it narrows the entries by name, as the game's does), the scrolling entries with a
-    /// name, a smaller line under it and the blue button, and Cancel. While it is up the map's filters are put away, as
-    /// the game puts them away for its stations, and so are the mod's own places (<see cref="MapPlaces.Quiet"/>).
+    /// A choice of places on the open city map, as the game offers its subway stations there (SubwayStation.Interact).
+    /// The game's station window (CityMapSubwayStations) is copied asleep once per city without the subway's scripts and
+    /// stands where the game's does: the headline, the search field, the scrolling entries (a name, a smaller line, the
+    /// blue button) and Cancel. While it is up the map's filters and the mod's own places (<see cref="MapPlaces.Quiet"/>)
+    /// are put away. An entry with a place has one of the game's markers over it, the player's own place in the game's
+    /// red; pointing at an entry glides the map there after the game's delay, and a click on an entry or a marker picks it.
     ///
-    /// An entry with a place has one of the game's own markers over it (CityMap.AddPoi), in the owner's icon and colour;
-    /// the place the player is at has its marker in the game's red, as the game marks the station the player is at.
-    /// Pointing at a marker shows its name; clicking it picks it. Pointing at an entry glides the map to its place after
-    /// the game's own delay and leaving it stops the glide, as the game's entries do (CityMapSubwayStationEntry); a
-    /// click anywhere on an entry picks it.
-    ///
-    /// The map pauses the game while it is open (Time.timeScale 0), so everything here runs on the interface's clock,
-    /// and an owner that ticks on the game's clock takes up a pick once the map has closed. The cost: nothing while it
-    /// is closed. While it is open one script of the mod's on the window tests once a frame whether the map is still
-    /// open. The entries and the markers are made when first needed and used again on every opening.
+    /// The map pauses the game, so everything runs on the interface's clock. Costs nothing while closed; while open, one
+    /// script on the window looks once a frame whether the map is still open. Entries and markers are made once and reused.
     /// </summary>
-    public sealed class MapPicker
+    public sealed partial class MapPicker
     {
         public static IModLogger Logger;
 
-        private const float MarkerUp = 4.5f;   // metres over the place, as the mod's other markers stand (MapPlaces)
+        private const float MarkerUp = 4.5f;   // metres over the place, as the mod's other markers stand
         private static readonly string[] Harmless = { "ButtonEffects", "ScrollBarDraggingComponent", "ScrollBarHandleSizeLimiter" };
         private static FieldInfo _blobField, _plateButtonField;
         private static bool _markersSaid;
@@ -95,13 +86,13 @@ namespace RealLifeOverhaul.GameUi
 
         public bool IsOpen { get; private set; }
 
-        /// <summary>True while the window's objects are there (the game's interface is rebuilt with the city).</summary>
+        /// <summary>True while the window's objects are there: the game's interface is rebuilt with the city.</summary>
         public bool Alive => _root != null;
 
-        /// <summary>How many entries have been made so far (for the log).</summary>
+        /// <summary>Entries made so far, for the log.</summary>
         public int Made => _rows.Count;
 
-        /// <summary>How many markers have been made so far (for the log).</summary>
+        /// <summary>Markers made so far, for the log.</summary>
         public int Marked => _marks.Count;
 
         /// <summary>The window, asleep. Null, with one line in Player.log, if the game's window is not built as expected.</summary>
@@ -120,7 +111,7 @@ namespace RealLifeOverhaul.GameUi
                     UiClone.Fallback("the game's list of subway stations on the map is not there to copy, so '" + name + "' is not made");
                     return null;
                 }
-                // Where the parts the game's entry script points at sit in its entry, read before the script goes.
+                // Read before the entry's script goes: where the parts it points at sit.
                 string entryPath = PathUnder(original.transform, entryOriginal.transform);
                 string labelPath = entryOriginal.stationNameLabel != null ? PathUnder(entryOriginal.transform, entryOriginal.stationNameLabel.transform) : "Label";
                 string buttonPath = entryOriginal.travelButton != null ? PathUnder(entryOriginal.transform, entryOriginal.travelButton.transform) : null;
@@ -169,19 +160,19 @@ namespace RealLifeOverhaul.GameUi
                     entry.tag = "Untagged";
                 }
                 var entryRect = (RectTransform)entry;
-                entryRect.sizeDelta = new Vector2(entryRect.sizeDelta.x, 104f);   // the game's 88.8 holds one line; this holds a name and a smaller line under it
+                entryRect.sizeDelta = new Vector2(entryRect.sizeDelta.x, 104f);   // the game's 88.8 holds one line; this holds a name and a smaller line
                 var text = label.GetComponent<TMP_Text>();
                 if (text != null)
                 {
                     text.richText = true;
-                    text.fontStyle &= ~FontStyles.UpperCase;   // the name keeps the game's capitals by a tag of its own (Entry); the line under it reads as a sentence
+                    text.fontStyle &= ~FontStyles.UpperCase;   // the name gets the game's capitals by its own tag; the line under it reads as a sentence
                     text.textWrappingMode = TextWrappingModes.NoWrap;
                     text.overflowMode = TextOverflowModes.Ellipsis;
                 }
                 entry.gameObject.SetActive(false);
                 picker._template = entry.gameObject;
 
-                // The game's search field, with nothing left on it of what it did there.
+                // The game's search field, cleared of what it did there.
                 TMP_InputField search = picker._search;
                 search.onValueChanged = new TMP_InputField.OnChangeEvent();
                 search.onEndEdit = new TMP_InputField.SubmitEvent();
@@ -203,14 +194,14 @@ namespace RealLifeOverhaul.GameUi
                     group.interactable = true;
                     group.blocksRaycasts = true;
                 }
-                // Beside the game's own window, on the map's canvas, where the game's stands (it keeps the game's anchors).
+                // On the map's canvas just after the game's window, with the game's anchors.
                 root.SetActive(false);
                 var rect = (RectTransform)root.transform;
                 rect.SetParent(canvas, false);
                 rect.SetSiblingIndex(original.transform.GetSiblingIndex() + 1);
                 root.AddComponent<MapPickerWatch>().Owner = picker;
 
-                // What the markers stand over: plain objects in the city's own scene, so that they go with it.
+                // The markers' anchors: plain objects in the city's own scene, so that they go with it.
                 var places = new GameObject(name + " Places");
                 CityManager city = InstanceBehavior<CityManager>.Instance;
                 Scene scene = city != null ? city.gameObject.scene : canvas.gameObject.scene;
@@ -239,7 +230,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The path of a child under a parent ("Scroll View/Viewport/Content/Entry"), "" for the parent itself, null if it is not under it.
+        // "Scroll View/Viewport/Content/Entry"; "" for the parent itself, null if it is not under it.
         private static string PathUnder(Transform parent, Transform child)
         {
             string path = null;
@@ -261,7 +252,7 @@ namespace RealLifeOverhaul.GameUi
             return button != null ? button : entry.GetComponentInChildren<Button>(true);
         }
 
-        /// <summary>Starts a filling: the headline, as final words, and the icon and colour of the markers. Entries follow, then <see cref="Open"/>.</summary>
+        /// <summary>Starts a filling: the headline and the markers' icon and colour. Entries follow, then <see cref="Open"/>.</summary>
         public void Begin(string title, Sprite icon, Color colour)
         {
             _used = 0;
@@ -271,7 +262,7 @@ namespace RealLifeOverhaul.GameUi
             UiClone.Words(_title, title);
         }
 
-        /// <summary>A line of text in the list's smaller lettering, with no button, at the top: something to read before the choices. The search field leaves it.</summary>
+        /// <summary>A line of text at the top in the smaller lettering, with no button; the search leaves it.</summary>
         public void Note(string text)
         {
             Row row = Entry(0, null, text, null, false, false, Vector3.zero, true);
@@ -288,14 +279,14 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// One entry: a name, a smaller line under it, the button's word (a locale key, written by the game's component),
-        /// and the place it stands for on the map (none: no marker, and pointing at it moves nothing).
+        /// One entry: a name, a smaller line, the button's locale key and its place on the map (without one: no marker, and
+        /// pointing at it moves nothing).
         /// </summary>
         public void Add(int id, string name, string detail, string buttonKey, bool enabled, bool hasPlace, Vector3 place)
         {
             Row row = Entry(id, name, detail, buttonKey, enabled, hasPlace, place, false);
             Height(row, ((RectTransform)_template.transform).sizeDelta.y);
-            row.Mark = hasPlace ? Marker(place, name, _colour, _used - 1) : -1;   // (the entry just filled is the last one used)
+            row.Mark = hasPlace ? Marker(place, name, _colour, _used - 1) : -1;   // the entry just filled is the last one used
         }
 
         /// <summary>The place the player is at: a marker in the game's red, named, that picks nothing.</summary>
@@ -367,7 +358,7 @@ namespace RealLifeOverhaul.GameUi
                 row.Button.interactable = row.Enabled;
                 if (row.Button.gameObject.activeSelf == note)
                 {
-                    row.Button.gameObject.SetActive(!note);   // (a note has none; an entry made from a note's has it back)
+                    row.Button.gameObject.SetActive(!note);   // a note has none; an entry reused from a note's has it back
                 }
             }
             if (row.Background != null)
@@ -390,7 +381,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // One of the game's markers over a place, made when first needed and used again. -1 if the map would not take one.
+        // Made when first needed and reused; -1 if the map would not take one.
         private int Marker(Vector3 place, string name, Color colour, int row)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -429,14 +420,14 @@ namespace RealLifeOverhaul.GameUi
             return index;
         }
 
-        // The marker's plate shows its name without the dismiss button the game's directions have; its blob takes the pointer.
+        // The plate shows the name without the dismiss button of the game's directions; the blob takes the pointer.
         private void Clickable(Mark mark, int index)
         {
             try
             {
                 if (_blobField == null)
                 {
-                    _blobField = GameContract.PoiBlob.Field;   // (the game's private fields, resolved once: Core/GameContract)
+                    _blobField = GameContract.PoiBlob.Field;   // the game's private fields, resolved once
                     _plateButtonField = GameContract.PoiButton.Field;
                 }
                 var dismiss = _plateButtonField != null ? _plateButtonField.GetValue(mark.Poi) as Button : null;
@@ -466,10 +457,9 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// Opens the city map over <paramref name="centre"/> and shows what was filled in, or shows it again while it is
-        /// open (after a filling that changed it). A click on an entry or a marker calls <paramref name="onPick"/> with its
-        /// id; it stays open until <see cref="Close"/>, the game's cancel key or anything else closes the map. False if the
-        /// game would not open its map now (it says why where it does).
+        /// Opens the map over <paramref name="centre"/> with what was filled in, or shows it again while open. A click calls
+        /// <paramref name="onPick"/> with the id; it stays open until <see cref="Close"/>, the cancel key or anything else
+        /// closes the map. False if the game would not open its map now.
         /// </summary>
         public bool Open(Vector3 centre, Action<int> onPick, Action onClosed)
         {
@@ -492,9 +482,9 @@ namespace RealLifeOverhaul.GameUi
             {
                 if (CityMap.IsOpen && city.cityMap.isSubwayMode)
                 {
-                    return false;   // (the game's own choice of a station is up)
+                    return false;   // the game's own choice of a station is up
                 }
-                MapPlaces.Quiet = true;   // before the map opens: the mod's places are not shown for a moment
+                MapPlaces.Quiet = true;   // before the map opens, so they never show for a moment
                 if (!CityMap.IsOpen)
                 {
                     city.cityMap.Toggle(centre);
@@ -534,12 +524,12 @@ namespace RealLifeOverhaul.GameUi
             _scroll.StopMovement();
             if (_scroll.content != null)
             {
-                _scroll.content.anchoredPosition = Vector2.zero;   // from the top: the content hangs from the top of the view
+                _scroll.content.anchoredPosition = Vector2.zero;   // the content hangs from the top of the view
             }
             return true;
         }
 
-        /// <summary>Closes the choice and the map with it, the game's own way out (as the game's Cancel does for its stations). The closed callback runs once.</summary>
+        /// <summary>Closes the choice and the map, the game's own way out. The closed callback runs once.</summary>
         public void Close()
         {
             if (!IsOpen)
@@ -549,7 +539,7 @@ namespace RealLifeOverhaul.GameUi
             CityManager city = InstanceBehavior<CityManager>.Instance;
             if (CityMap.IsOpen && city != null && city.cityMap != null)
             {
-                city.cityMap.Toggle(Vector3.zero, force: true);   // (stops the map's own opening if it is still under way)
+                city.cityMap.Toggle(Vector3.zero, force: true);   // also stops the map's opening if it is still under way
             }
             Closed();
         }
@@ -568,7 +558,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 if (!ReferenceEquals(_marks[i].Poi, null) && !GameManager.isCitySceneBeingUnloaded)
                 {
-                    MapPlaces.Drop(_marks[i].Poi);   // out of the game's list of markers first, then destroyed (Core/MapPlaces)
+                    MapPlaces.Drop(_marks[i].Poi);   // out of the game's list of markers first, then destroyed
                 }
             }
             _marks.Clear();
@@ -584,7 +574,7 @@ namespace RealLifeOverhaul.GameUi
             _root = null;
         }
 
-        // Whoever closed it (this window, the game's cancel key, or anything else that closed the map).
+        // However it closed: this window, the cancel key, or anything else that closed the map.
         private void Closed()
         {
             if (!IsOpen)
@@ -618,7 +608,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The search field: the entries whose name holds what is typed, as the game's list of stations narrows.
+        // The entries whose name holds what is typed, as the game's list narrows.
         private void Filter(string query)
         {
             string value = (query ?? string.Empty).Trim();
@@ -646,7 +636,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 return;
             }
-            // The clicked button is not left selected: the entries are used again, and the interface's confirm key presses whatever is selected.
+            // Not left selected: the entries are reused, and the confirm key presses whatever is selected.
             EventSystem events = EventSystem.current;
             if (events != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(_root.transform))
             {
@@ -654,242 +644,6 @@ namespace RealLifeOverhaul.GameUi
             }
             int id = row.Id;
             UiClone.Safe(() => pick(id));
-        }
-
-        // ---------------------------------------------------------------- the pointer
-
-        internal void EntryEnter(int index)
-        {
-            if (!IsOpen || index < 0 || index >= _used || _rows[index].Note)
-            {
-                return;
-            }
-            Unpoint();
-            Row row = _rows[index];
-            if (row.Background != null)
-            {
-                row.Background.enabled = true;
-            }
-            _pointedRow = index;
-            _glideAt = Time.unscaledTime + _previewDelay;
-            _glided = false;
-        }
-
-        internal void EntryExit(int index)
-        {
-            if (index == _pointedRow)
-            {
-                Unpoint();
-            }
-        }
-
-        internal void EntryClick(int index)
-        {
-            Picked(index);
-        }
-
-        internal void MarkEnter(int index)
-        {
-            if (IsOpen && index >= 0 && index < _marksUsed)
-            {
-                Plate(index);
-            }
-        }
-
-        internal void MarkExit(int index)
-        {
-            if (index == _plate && _pointedRow < 0)
-            {
-                Plate(-1);
-            }
-        }
-
-        internal void MarkClick(int index)
-        {
-            if (IsOpen && index >= 0 && index < _marksUsed && _marks[index].Row >= 0)
-            {
-                Picked(_marks[index].Row);
-            }
-        }
-
-        private void Unpoint()
-        {
-            if (_pointedRow >= 0 && _pointedRow < _rows.Count && _rows[_pointedRow].Background != null)
-            {
-                _rows[_pointedRow].Background.enabled = false;
-            }
-            if (_glided)
-            {
-                CityManager city = InstanceBehavior<CityManager>.Instance;
-                if (city != null && city.cityMap != null && city.cityMap.cityMapCam != null)
-                {
-                    city.cityMap.cityMapCam.MoveCameraToTarget(Vector3.zero);   // stops the glide where it is, as the game's entries do
-                }
-            }
-            _pointedRow = -1;
-            _glided = false;
-            Plate(-1);
-        }
-
-        private void Plate(int index)
-        {
-            if (_plate == index)
-            {
-                return;
-            }
-            if (_plate >= 0 && _plate < _marks.Count && _marks[_plate].Poi != null)
-            {
-                _marks[_plate].Poi.SetContainerActive(false);
-            }
-            _plate = index;
-            if (index >= 0 && _marks[index].Poi != null)
-            {
-                _marks[index].Poi.SetContainerActive(true);
-            }
-        }
-
-        /// <summary>Once a frame while it is open (the window's own script): the map, the glide and the name plate.</summary>
-        internal void Frame()
-        {
-            if (!IsOpen)
-            {
-                return;
-            }
-            if (!CityMap.IsOpen)
-            {
-                Closed();   // the game's cancel key, or anything else that closed the map
-                return;
-            }
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            if (uis != null && uis.mapFilters != null && uis.mapFilters.gameObject.activeSelf)
-            {
-                uis.mapFilters.gameObject.SetActive(false);   // (the game's key that hides and shows the interface puts them back)
-            }
-            if (_pointedRow >= 0 && !_glided && Time.unscaledTime >= _glideAt)
-            {
-                _glided = true;
-                Row row = _rows[_pointedRow];
-                CityManager city = InstanceBehavior<CityManager>.Instance;
-                if (row.HasPlace && city != null && city.cityMap != null && city.cityMap.cityMapCam != null)
-                {
-                    city.cityMap.cityMapCam.MoveCameraToTarget(row.Place);
-                    Plate(row.Mark);
-                }
-            }
-            if (_plate >= 0 && _plate < _marks.Count && _marks[_plate].Poi != null)
-            {
-                _marks[_plate].Poi.SetContainerActive(true);   // (the game's marker puts its plate away the first time it is shown)
-            }
-        }
-
-        /// <summary>The window's object went with the game's interface: what is open is put right.</summary>
-        internal void Lost()
-        {
-            if (IsOpen)
-            {
-                IsOpen = false;
-                if (_shown == this)
-                {
-                    _shown = null;
-                }
-                MapPlaces.Quiet = false;
-            }
-            _root = null;
-            _onPick = null;
-            _onClosed = null;
-        }
-    }
-
-    /// <summary>On the window's own object, so it runs only while the window is open: <see cref="MapPicker"/> once a frame.</summary>
-    public sealed class MapPickerWatch : MonoBehaviour
-    {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "MapPickerWatch", typeof(MapPickerWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
-
-        public MapPicker Owner;
-
-        private static readonly int HotUpdate = HotSpots.Slot("Core: MapPickerWatch.Update");
-        private void Update()
-        {
-            using var hotSpot = HotSpots.Time(HotUpdate);
-            if (FrameGuard.Off)
-            {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
-                return;
-            }
-            try
-            {
-                OnUpdate();
-            }
-            catch (System.Exception e)
-            {
-                Guard.Fail(FrameGuard, e, this);
-            }
-        }
-
-        private void OnUpdate()
-        {
-            if (Owner == null)
-            {
-                return;
-            }
-            try
-            {
-                Owner.Frame();
-            }
-            catch (Exception e)
-            {
-                MapPicker.Logger?.Error(e);
-                enabled = false;   // the entries and Cancel still work
-            }
-        }
-
-        private void OnDestroy()
-        {
-            Owner?.Lost();
-        }
-    }
-
-    /// <summary>An entry of the window: pointed at, it glides the map to its place; clicked anywhere, it picks it (CityMapSubwayStationEntry).</summary>
-    public sealed class MapPickerEntry : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
-    {
-        public MapPicker Owner;
-        public int Index;
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            UiClone.Safe(() => Owner?.EntryEnter(Index));
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            UiClone.Safe(() => Owner?.EntryExit(Index));
-        }
-
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            UiClone.Safe(() => Owner?.EntryClick(Index));
-        }
-    }
-
-    /// <summary>A marker of the window's on the map: pointed at, it shows its name; clicked, it picks its entry.</summary>
-    public sealed class MapPickerMark : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
-    {
-        public MapPicker Owner;
-        public int Index;
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            UiClone.Safe(() => Owner?.MarkEnter(Index));
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            UiClone.Safe(() => Owner?.MarkExit(Index));
-        }
-
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            UiClone.Safe(() => Owner?.MarkClick(Index));
         }
     }
 }
