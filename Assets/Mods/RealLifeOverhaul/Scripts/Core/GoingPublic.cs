@@ -18,40 +18,16 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Living with Going Public (Steam Workshop 3765662670), the mod that lets several players share one city. See
-    /// RealLifeOverhaul.Build/docs/other-mods.md, "Going Public", for what it does and why each feature of this mod
-    /// does what it does in a session.
-    ///
-    /// What matters here, read in its decompiled code:
-    ///  - every player plays their own save (their money, their businesses, this mod's state in it), loaded and kept
-    ///    on the host's machine, and the shared world is laid over it: the clock, the weather, the market, who rents
-    ///    and owns what, and near the host the traffic, all as the host has them;
-    ///  - the clock is everyone's. In a session it stops the game's time skip as soon as anything starts it
-    ///    (TimeMachine.StartTimeMachine, and TimeMachine.Update never runs), refuses the game's pause and its lock on
-    ///    the speed controls (GameSpeedController.SetPause, SetPauseState, DisableTimeControl), and puts back any jump
-    ///    of the clock it did not make. Time passes faster only by a vote of all the players, from an activity the
-    ///    game's own panel shows (a bed, a bench, the mod's own shift skip). So nothing of this mod's may pause, skip or
-    ///    speed the clock in a session: <see cref="ClockShared"/>;
-    ///  - another player's business or home is on this machine as rented by the player (RentedByPlayer) with that
-    ///    player's id as its owner (businessOwnerRivalId), and Going Public keeps it out of the game's own lists of
-    ///    the player's assets. This mod does the same through <see cref="Mine"/>, with Going Public's own test
-    ///    (GameStatePatcher.HideFromOwnAssetLists) where it can be read;
-    ///  - a guest's traffic near the host is the host's cars, placed from the host's figures (TrafficManager.Update is
-    ///    not run there): nothing may be taken out of it, stopped or steered. <see cref="TrafficMirrored"/>;
-    ///  - the city's economy, government and stock market of this mod are the host's in a session, one city for every
-    ///    player, through this mod's own messages on Going Public's connection: Core/SharedCity.
-    ///
-    /// How it is known, without a reference to it: by its assembly and a type of its own (<see cref="OtherMods"/>),
-    /// then by three of its statics, read by reflection once and called through delegates made then:
-    /// MPServer.IsRunning (hosting), MPClient.IsClientInWorld (in someone's world) and
-    /// GameStatePatcher.HideFromOwnAssetLists. A missing one means it is taken as not there; a fault in one is
-    /// logged once and the mod goes on as if alone.
-    ///
-    /// The cost: nothing per frame but one comparison with the real clock (<see cref="Tick"/>); once a second of real
-    /// time, two property reads of the other mod's. <see cref="Role"/> and everything built on it are a field read.
-    /// The notice and the log lines are made on a change only. The other players' figures on this machine are read
-    /// from Going Public's own list (RemotePlayerManager.GetRemotePlayerTransforms) only when asked for
-    /// (<see cref="RemotePlayers"/>): a local read, nothing sent or changed.
+    /// Living with Going Public (Workshop 3765662670), the mod that lets several players share one city; see
+    /// RealLifeOverhaul.Build/docs/other-mods.md, "Going Public". In a session the clock is everyone's, so nothing of
+    /// this mod's pauses, skips or speeds it (<see cref="ClockShared"/>); another player's buildings are on this machine
+    /// as rented by the player (<see cref="Mine"/>); a guest's traffic is the host's (<see cref="TrafficMirrored"/>);
+    /// the mod's city economy is the host's, through Core/SharedCity.
+    /// It is known by its assembly (<see cref="OtherMods"/>), then through delegates made once by reflection over
+    /// MPServer.IsRunning, MPClient.IsClientInWorld and GameStatePatcher.HideFromOwnAssetLists; a missing one means not
+    /// there, a fault is logged once and the mod goes on as if alone.
+    /// COST: one comparison a frame (<see cref="Tick"/>); two property reads of the other mod's a real second;
+    /// <see cref="Role"/> and all built on it are field reads.
     /// </summary>
     public static class GoingPublic
     {
@@ -64,7 +40,7 @@ namespace RealLifeOverhaul
         private static Func<bool> _hosting;
         private static Func<bool> _inWorld;
         private static Func<BuildingRegistration, bool> _hidden;
-        private static Func<List<Transform>> _remotes;   // Going Public's list of the other players' figures on this machine
+        private static Func<List<Transform>> _remotes;   // the other players' figures on this machine
         private static bool _remotesFailed;
         private static bool _readFailed;
         private static bool _ownerFailed;
@@ -84,24 +60,24 @@ namespace RealLifeOverhaul
         public static bool IsGuest => _role == GoingPublicRole.Guest;
 
         /// <summary>
-        /// True while the clock belongs to the session: nothing of this mod's pauses it, skips it or speeds it. What
-        /// would have passed time alone passes none (Going Public does the same with a taxi ride).
+        /// True while the clock is the session's: nothing of this mod's pauses, skips or speeds it, and what would pass
+        /// time alone passes none.
         /// </summary>
         public static bool ClockShared => InSession;
 
-        /// <summary>True while the traffic here is the host's: nothing of it is taken, stopped or steered (Traffic/TrafficTools.Ready).</summary>
+        /// <summary>True while the traffic here is the host's: nothing of it is taken, stopped or steered.</summary>
         public static bool TrafficMirrored => _role == GoingPublicRole.Guest;
 
         /// <summary>
-        /// True for a building rented by the player that is the player's own: not another player's business or home,
-        /// which Going Public puts on this machine as rented by the player. Outside a session exactly RentedByPlayer.
+        /// True for a building rented by the player that is not another player's (Going Public puts those on this machine
+        /// as rented by the player). Outside a session exactly RentedByPlayer.
         /// </summary>
         public static bool Mine(BuildingRegistration reg)
         {
             return reg != null && reg.RentedByPlayer && !Foreign(reg);
         }
 
-        /// <summary>True for another player's business or home, in a session. Going Public's own test where it can be read.</summary>
+        /// <summary>True for another player's business or home in a session, by Going Public's own test where it can be read.</summary>
         public static bool Foreign(BuildingRegistration reg)
         {
             if (reg == null || !reg.RentedByPlayer || !InSession || _pretend != GoingPublicRole.Absent)
@@ -125,11 +101,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True for a vehicle of the player's own. Going Public shows another player's car on this machine as a car of the
-        /// game's player's list (VehicleHelper.AllPlayerVehicles) but takes it off the save's own list
-        /// (GameInstance.VehicleInstances), so in a session a car is the player's only if the save has it. For loops over a
-        /// handful of cars, not per frame. Outside a session: any car of the list with an entry. The decision is
-        /// <see cref="WhoseCar.Mine"/>'s, checked offline.
+        /// True for a vehicle of the player's own: in a session only if the save has it, as Going Public lists another
+        /// player's car among the player's but not in the save. Decided by <see cref="WhoseCar.Mine"/>. Not per frame.
         /// </summary>
         public static bool MineVehicle(VehicleController vehicle)
         {
@@ -145,16 +118,16 @@ namespace RealLifeOverhaul
             return WhoseCar.Mine(true, true, save == null, own, driver);
         }
 
-        /// <summary>A city is loading: the session is read at once, so that every feature starts knowing it.</summary>
+        /// <summary>A city is loading: the session is read at once, so every feature starts knowing it.</summary>
         public static void Look()
         {
             Resolve();
             _next = 0f;
             Read();
-            Logger?.Info("Other mods check: " + Describe());   // the self-check's line, with Developer diagnostics on
+            Logger?.Info("Other mods check: " + Describe());
         }
 
-        /// <summary>Once a frame, from <see cref="GoingPublicWatch"/>: a look once a second of real time.</summary>
+        /// <summary>Once a frame from <see cref="GoingPublicWatch"/>: a look once a real second.</summary>
         public static void Tick()
         {
             if (Time.unscaledTime < _next)
@@ -163,15 +136,15 @@ namespace RealLifeOverhaul
             }
             _next = Time.unscaledTime + Every;
             Read();
-            SharedCity.Second();   // the shared city's second: hello, updates, what a guest asked for (Core/SharedCity)
+            SharedCity.Second();
             if (!_told && InSession && ModState.Loaded)
             {
-                _told = true;   // once in a run of the game, not on every load: the first look after the save is in
+                _told = true;   // once a run of the game, not on every load
                 Tell();
             }
         }
 
-        // The three statics, found once. Nothing found leaves the delegates empty: the mod is then taken as not there.
+        // Nothing found leaves the delegates empty: the mod is then taken as not there.
         private static void Resolve()
         {
             if (_resolved)
@@ -181,7 +154,7 @@ namespace RealLifeOverhaul
             OtherMods.Look(Logger);
             if (!OtherMods.GoingPublic.Loaded)
             {
-                return;   // looked for again on the next city: it cannot be switched on without the game starting again, but this costs one walk
+                return;   // looked for again on the next city: one walk
             }
             _resolved = true;
             try
@@ -213,7 +186,7 @@ namespace RealLifeOverhaul
                     _hosting = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), hosting);
                     _inWorld = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), inWorld);
                 }
-                GoingPublicLink.Install(assembly);   // this mod's own messages through Going Public's connection, for the shared city
+                GoingPublicLink.Install(assembly);   // the shared city's messages
                 if (hidden != null && hidden.ReturnType == typeof(bool))
                 {
                     _hidden = (Func<BuildingRegistration, bool>)Delegate.CreateDelegate(typeof(Func<BuildingRegistration, bool>), hidden);
@@ -289,8 +262,7 @@ namespace RealLifeOverhaul
                                  + "stock market are the host's once it answers (Core/SharedCity).");
                     if (ModState.Loaded)
                     {
-                        // In the middle of play: whatever of the traffic's this mod holds is given back now, before the next figures of
-                        // the host's arrive. (At a city's load nothing is held yet.)
+                        // Mid-play: whatever of the traffic this mod holds is given back before the host's figures arrive.
                         Meta.Features.Find("streets")?.CleanupAction?.Invoke();
                         Meta.Features.Find("traffic")?.CleanupAction?.Invoke();
                     }
@@ -311,7 +283,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The notice that says what is different in this session. Shown by itself once a run; again from the options page.</summary>
+        /// <summary>The notice of what is different in this session: once a run by itself, again from the options page.</summary>
         public static void Tell()
         {
             try
@@ -324,8 +296,6 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
         }
-
-        // ---------------------------------------------------------------- the options page
 
         /// <summary>For the rows of what takes cars out of the traffic: why they do nothing just now, or null.</summary>
         public static string TrafficSentence()
@@ -364,9 +334,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// "Test: pretend a Going Public session": each press goes one step on, a session hosted here, a session joined,
-        /// none, so that everything a session changes can be seen without the other mod or a second player. Another
-        /// player's buildings cannot be pretended: none is taken as theirs during the test.
+        /// "Test: pretend a Going Public session": each press steps through hosting, joined and none. No building is
+        /// taken as another player's during the test.
         /// </summary>
         public static void TestPretend()
         {
@@ -394,9 +363,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The other players' figures on this machine in a session, from Going Public's own list (a local read: nothing is
-        /// sent, nothing of theirs is changed), added to <paramref name="into"/>. Nothing outside a session, or where the list
-        /// cannot be read. For a look every few seconds, not per frame (the other mod makes a new list for each call).
+        /// Adds the other players' figures on this machine, from Going Public's own list: a local read, nothing sent or
+        /// changed. Not per frame: the other mod makes a new list each call.
         /// </summary>
         public static void RemotePlayers(List<Transform> into)
         {
@@ -423,17 +391,16 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A new city: the test's pretence ends with it. What the player was told this run stays told.</summary>
+        /// <summary>A new city: the test's pretence ends.</summary>
         public static void Reset()
         {
             _pretend = GoingPublicRole.Absent;
             SharedCity.Reset();
         }
 
-        /// <summary>True while the test pretends a session.</summary>
         public static bool Pretending => _pretend != GoingPublicRole.Absent;
 
-        /// <summary>For the shared city's test: the pretence is set to a role at once (Absent ends it).</summary>
+        /// <summary>For the shared city's test: sets the pretence at once (Absent ends it).</summary>
         public static void Pretend(GoingPublicRole role)
         {
             if (role == GoingPublicRole.Alone)
@@ -453,15 +420,16 @@ namespace RealLifeOverhaul
         /// <summary>For the guide and the self-check: one line on where this machine stands.</summary>
         public static string Describe()
         {
-            return "Going Public: " + (_role == GoingPublicRole.Absent ? "not switched on" : _role == GoingPublicRole.Alone ? "switched on, no session" : _role == GoingPublicRole.Host ? "hosting a session" : "a guest in a session")
+            return "Going Public: " + (_role == GoingPublicRole.Absent ? "not switched on" : _role == GoingPublicRole.Alone ? "switched on, no session"
+                       : _role == GoingPublicRole.Host ? "hosting a session" : "a guest in a session")
                    + (_pretend != GoingPublicRole.Absent ? " (pretended)" : string.Empty) + ".";
         }
     }
 
-    /// <summary>The one per-frame call of <see cref="GoingPublic"/>: a comparison with the real clock and a look once a second, and the shared city's inbox (a field read).</summary>
+    /// <summary>The per-frame call of <see cref="GoingPublic"/>. COST: a clock comparison a frame, a look a second, a field read for the shared city.</summary>
     public sealed class GoingPublicWatch : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("multiplayer", "GoingPublicWatch", typeof(GoingPublicWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("multiplayer", "GoingPublicWatch", typeof(GoingPublicWatch));
 
         private static readonly int HotUpdate = HotSpots.Slot("Core: GoingPublicWatch.Update");
         private void Update()
@@ -469,7 +437,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -485,7 +453,7 @@ namespace RealLifeOverhaul
         private void OnUpdate()
         {
             GoingPublic.Tick();
-            SharedCity.Frame();   // (a field read while nothing of the shared city's has come)
+            SharedCity.Frame();   // a field read while nothing has come
         }
     }
 }
