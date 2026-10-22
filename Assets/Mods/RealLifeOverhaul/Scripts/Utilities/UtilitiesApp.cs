@@ -5,7 +5,6 @@ using Localizor;
 using Localizor.LanguageChangeEvent;
 using RealLifeOverhaul.GameUi;
 using Streets;
-using UI;
 using UI.Notification;
 using UI.Smartphone;
 using UnityEngine;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using BigAmbitions.DayNightCycle;
 using Buildings;
-using Buildings.Schedule;
 using Helpers;
 using Localizor;
 using Streets;
