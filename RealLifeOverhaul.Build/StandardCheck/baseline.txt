@@ -23,7 +23,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	2
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/Ragdoll.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetRules.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Camera/CameraYield.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	1
@@ -184,7 +183,6 @@ RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitOutDirector.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	1
-RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/CompanyLinks.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StreetLinks.cs	1
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/NoticeKinds.cs	9
@@ -265,10 +263,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalDirector.cs	10
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalPage.cs	6
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalRules.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.Talk.cs	5
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetLines.cs	7
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetSay.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextCheck.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextIntents.Street.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Texts/TextServer.cs	4

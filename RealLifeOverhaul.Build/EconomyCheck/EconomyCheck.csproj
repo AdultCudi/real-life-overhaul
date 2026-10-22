@@ -330,6 +330,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareInviteRules.Reading.cs" Link="Mod\FlareInviteRules.Reading.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetModel.cs" Link="Mod\StreetModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetRules.cs" Link="Mod\StreetRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetRules.Choices.cs" Link="Mod\StreetRules.Choices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetMemory.cs" Link="Mod\StreetMemory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetOffer.cs" Link="Mod\StreetOffer.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetSay.cs" Link="Mod\StreetSay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetLines.cs" Link="Mod\StreetLines.cs" />

@@ -3,23 +3,21 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Street
 {
     /// <summary>
-    /// The written lines of street talk: for every kind of line (StreetLine) a few in each language (en, pt, zh-cn; the
-    /// other languages read English until they are translated), what each choice of the player's says, the places asked
-    /// the way to. They are what is shown whenever the model's words are not there in time, or the model is off, missing,
-    /// or the game is in another language (StreetTexts). Every key is written out in full: the catalogue check reads them.
-    /// Game-free. COST: none.
+    /// The written lines of street talk, shown whenever the model's words are not there in time. Every key is written out
+    /// in full: the catalogue check reads them. Game-free. COST: none.
     /// </summary>
     public static class StreetLines
     {
-        /// <summary>The lines of each kind, by StreetLine.</summary>
         public static readonly string[][] Lines =
         {
             new[] { "reallife_street_open_warm_1", "reallife_street_open_warm_2", "reallife_street_open_warm_3", "reallife_street_open_warm_4", "reallife_street_open_warm_5" },   // OpenWarm
             new[] { "reallife_street_open_fine_1", "reallife_street_open_fine_2", "reallife_street_open_fine_3", "reallife_street_open_fine_4", "reallife_street_open_fine_5" },   // OpenFine
             new[] { "reallife_street_open_cool_1", "reallife_street_open_cool_2", "reallife_street_open_cool_3", "reallife_street_open_cool_4", "reallife_street_open_cool_5" },   // OpenCool
             new[] { "reallife_street_open_again_1", "reallife_street_open_again_2", "reallife_street_open_again_3", "reallife_street_open_again_4", "reallife_street_open_again_5" },   // OpenAgain
-            new[] { "reallife_street_open_famous_1", "reallife_street_open_famous_2", "reallife_street_open_famous_3", "reallife_street_open_famous_4", "reallife_street_open_famous_5" },   // OpenFamous
-            new[] { "reallife_street_open_infamous_1", "reallife_street_open_infamous_2", "reallife_street_open_infamous_3", "reallife_street_open_infamous_4", "reallife_street_open_infamous_5" },   // OpenInfamous
+            new[] { "reallife_street_open_famous_1", "reallife_street_open_famous_2", "reallife_street_open_famous_3", "reallife_street_open_famous_4",
+                "reallife_street_open_famous_5" },   // OpenFamous
+            new[] { "reallife_street_open_infamous_1", "reallife_street_open_infamous_2", "reallife_street_open_infamous_3", "reallife_street_open_infamous_4",
+                "reallife_street_open_infamous_5" },   // OpenInfamous
             new[] { "reallife_street_brush_hurry_1", "reallife_street_brush_hurry_2", "reallife_street_brush_hurry_3" },   // BrushHurry
             new[] { "reallife_street_brush_work_1", "reallife_street_brush_work_2", "reallife_street_brush_work_3" },   // BrushWork
             new[] { "reallife_street_brush_night_1", "reallife_street_brush_night_2", "reallife_street_brush_night_3" },   // BrushNight
@@ -30,9 +28,12 @@ namespace RealLifeOverhaul.Street
             new[] { "reallife_street_brush_record_1", "reallife_street_brush_record_2", "reallife_street_brush_record_3" },   // BrushRecord
             new[] { "reallife_street_brush_wanted_1", "reallife_street_brush_wanted_2", "reallife_street_brush_wanted_3" },   // BrushWanted
             new[] { "reallife_street_brush_phone_1", "reallife_street_brush_phone_2", "reallife_street_brush_phone_3" },   // BrushPhone
-            new[] { "reallife_street_waiting_1", "reallife_street_waiting_2", "reallife_street_waiting_3", "reallife_street_waiting_4", "reallife_street_waiting_5", "reallife_street_waiting_6" },   // Waiting
-            new[] { "reallife_street_small_warm_1", "reallife_street_small_warm_2", "reallife_street_small_warm_3", "reallife_street_small_warm_4", "reallife_street_small_warm_5", "reallife_street_small_warm_6", "reallife_street_small_warm_7" },   // SmallWarm
-            new[] { "reallife_street_small_cool_1", "reallife_street_small_cool_2", "reallife_street_small_cool_3", "reallife_street_small_cool_4", "reallife_street_small_cool_5", "reallife_street_small_cool_6", "reallife_street_small_cool_7" },   // SmallCool
+            new[] { "reallife_street_waiting_1", "reallife_street_waiting_2", "reallife_street_waiting_3", "reallife_street_waiting_4",
+                "reallife_street_waiting_5", "reallife_street_waiting_6" },   // Waiting
+            new[] { "reallife_street_small_warm_1", "reallife_street_small_warm_2", "reallife_street_small_warm_3", "reallife_street_small_warm_4",
+                "reallife_street_small_warm_5", "reallife_street_small_warm_6", "reallife_street_small_warm_7" },   // SmallWarm
+            new[] { "reallife_street_small_cool_1", "reallife_street_small_cool_2", "reallife_street_small_cool_3", "reallife_street_small_cool_4",
+                "reallife_street_small_cool_5", "reallife_street_small_cool_6", "reallife_street_small_cool_7" },   // SmallCool
             new[] { "reallife_street_about_job_1", "reallife_street_about_job_2", "reallife_street_about_job_3", "reallife_street_about_job_4" },   // AboutJob
             new[] { "reallife_street_about_retired_1", "reallife_street_about_retired_2", "reallife_street_about_retired_3" },   // AboutRetired
             new[] { "reallife_street_about_cool_1", "reallife_street_about_cool_2", "reallife_street_about_cool_3" },   // AboutCool
@@ -79,8 +80,10 @@ namespace RealLifeOverhaul.Street
             new[] { "reallife_street_business_will_1", "reallife_street_business_will_2", "reallife_street_business_will_3" },   // BusinessWill
             new[] { "reallife_street_business_no_1", "reallife_street_business_no_2", "reallife_street_business_no_3" },   // BusinessNo
             new[] { "reallife_street_business_again_1", "reallife_street_business_again_2", "reallife_street_business_again_3" },   // BusinessAgain
-            new[] { "reallife_street_said_warm_1", "reallife_street_said_warm_2", "reallife_street_said_warm_3", "reallife_street_said_warm_4", "reallife_street_said_warm_5", "reallife_street_said_warm_6", "reallife_street_said_warm_7", "reallife_street_said_warm_8" },   // SaidWarm
-            new[] { "reallife_street_said_cool_1", "reallife_street_said_cool_2", "reallife_street_said_cool_3", "reallife_street_said_cool_4", "reallife_street_said_cool_5", "reallife_street_said_cool_6", "reallife_street_said_cool_7", "reallife_street_said_cool_8" },   // SaidCool
+            new[] { "reallife_street_said_warm_1", "reallife_street_said_warm_2", "reallife_street_said_warm_3", "reallife_street_said_warm_4",
+                "reallife_street_said_warm_5", "reallife_street_said_warm_6", "reallife_street_said_warm_7", "reallife_street_said_warm_8" },   // SaidWarm
+            new[] { "reallife_street_said_cool_1", "reallife_street_said_cool_2", "reallife_street_said_cool_3", "reallife_street_said_cool_4",
+                "reallife_street_said_cool_5", "reallife_street_said_cool_6", "reallife_street_said_cool_7", "reallife_street_said_cool_8" },   // SaidCool
             new[] { "reallife_street_said_odd_1", "reallife_street_said_odd_2", "reallife_street_said_odd_3" },   // SaidOdd
             new[] { "reallife_street_rude_cold_1", "reallife_street_rude_cold_2", "reallife_street_rude_cold_3", "reallife_street_rude_cold_4" },   // RudeCold
             new[] { "reallife_street_walk_off_1", "reallife_street_walk_off_2", "reallife_street_walk_off_3", "reallife_street_walk_off_4" },   // WalkOff
@@ -100,7 +103,7 @@ namespace RealLifeOverhaul.Street
             new[] { "reallife_street_greet_back_1", "reallife_street_greet_back_2", "reallife_street_greet_back_3", "reallife_street_greet_back_4" },   // GreetBack
         };
 
-        /// <summary>What the player says for each choice (the button's words, and the player's line on the card), by StreetAsk.</summary>
+        /// <summary>What the player says for each choice, by StreetAsk: the button's words and the player's line on the card.</summary>
         public static readonly string[] Asks =
         {
             "reallife_street_ask_smalltalk", "reallife_street_ask_about", "reallife_street_ask_name", "reallife_street_ask_area", "reallife_street_ask_directions",
@@ -109,14 +112,14 @@ namespace RealLifeOverhaul.Street
             "reallife_street_ask_day", "reallife_street_ask_event", "reallife_street_ask_work", "reallife_street_ask_thanks", "reallife_street_btn_goodbye"
         };
 
-        /// <summary>The remarks of small talk, by StreetRules.SmallTopic: any day, the rain, the night, a morning, an evening, the weekend, the rush hour.</summary>
+        /// <summary>The remarks of small talk, by StreetRules.SmallTopic.</summary>
         public static readonly string[] Small =
         {
             "reallife_street_ask_smalltalk", "reallife_street_ask_smalltalk_rain", "reallife_street_ask_smalltalk_night", "reallife_street_ask_smalltalk_morning",
             "reallife_street_ask_smalltalk_evening", "reallife_street_ask_smalltalk_weekend", "reallife_street_ask_smalltalk_busy"
         };
 
-        /// <summary>The other wordings of a choice (by the person's seed: two people do not ask the same way), and those of the moment.</summary>
+        // Other wordings of a choice, picked by the person's seed, and those of the moment.
         public static readonly string[] DayAsks = { "reallife_street_ask_day", "reallife_street_ask_day_2" };
         public static readonly string[] WorkAsks = { "reallife_street_ask_work", "reallife_street_ask_work_2" };
         public const string AskWorkRetired = "reallife_street_ask_work_retired";
@@ -126,7 +129,7 @@ namespace RealLifeOverhaul.Street
         public const string AskDinner = "reallife_street_ask_invite_dinner";
         public const string Opener = "reallife_street_said_open";   // the player's first words, on the card only
 
-        /// <summary>A place's button, by StreetPlace.</summary>
+        /// <summary>Place buttons, by StreetPlace.</summary>
         public static readonly string[] Places =
         {
             "reallife_street_place_coffee", "reallife_street_place_food", "reallife_street_place_drinks", "reallife_street_place_grocery",
@@ -140,16 +143,14 @@ namespace RealLifeOverhaul.Street
             "reallife_street_what_clothes", "reallife_street_what_gym", "reallife_street_what_cinema", "reallife_street_what_bank"
         };
 
-        /// <summary>Which way, by StreetRules.Way: ahead, right, behind, left.</summary>
+        /// <summary>Which way, by StreetRules.Way.</summary>
         public static readonly string[] Ways = { "reallife_street_way_ahead", "reallife_street_way_right", "reallife_street_way_behind", "reallife_street_way_left" };
 
-        public const int SaidMost = 32;   // written lines a person remembers having said today (more than any day's talks with one person use)
+        public const int SaidMost = 32;   // written lines a person remembers having said today
 
         /// <summary>
-        /// One line of a kind, by the person's seed and the turn: never the one this person said last, and never one they said
-        /// to the player earlier today (<paramref name="said"/>, newest last) while the kind has one they have not; when every
-        /// line of the kind has been said, the one said longest ago. Two people do not all say the first.
-        /// COST: a pass over the kind's few lines and the day's said lines; nothing allocated.
+        /// One line of a kind, by the person's seed and the turn: never the one said last, nor one said today while the kind
+        /// has one unsaid; else the one said longest ago. COST: a pass over a few lines; nothing allocated.
         /// </summary>
         public static string Pick(StreetLine line, int seed, int turn, string last, List<string> said)
         {
@@ -166,7 +167,7 @@ namespace RealLifeOverhaul.Street
                 int when = said != null ? said.LastIndexOf(pool[at]) : -1;
                 if (when < 0)
                 {
-                    return pool[at];   // (not said today)
+                    return pool[at];   // not said today
                 }
                 int age = said.Count - when;
                 if (age > bestAge)
