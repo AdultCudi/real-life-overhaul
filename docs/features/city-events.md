@@ -54,7 +54,7 @@ Twenty seconds after the flames, or at once on a 911 call, a fire engine is sent
 With the modelled `fire_engine` in the bundle a Delivery Truck wears it: the body is made to that truck (the same 7.43 m, the same axles), so it wears the body with its wheels on the truck's own.
 Any other truck, or a van, and every truck without the bundle, is repainted red with a light bar instead.
 
-Three firefighters get out one a second: the first takes the nozzle to 3.6 to 5.5 m from the fire, the hose is laid behind them and the jet arcs on to the fire.
+Three firefighters get out one a second: the first takes the nozzle to 3.6 to 5.5 m from the fire, the hose is laid behind them and the jet arcs on to the fire. A spare rolled hose (`hose_coil`) lies 0.8 m off the engine's side towards the fire, behind the rear axle, where nobody works and the hose is not laid: stood once as the engine parks, on clear ground only, and given back as the crew pack up and on every way the fire ends.
 
 The second works the pump panel (on the modelled engine: 0.50 m off the panel of the fire's side, square to it, which is where `pump_panel` has its hands; the first gets out at the front door, the third at the crew door).
 The third stands between the fire and the street.
@@ -92,7 +92,7 @@ The game has rain and nothing else: no snow, fog, wind, temperature or forecast.
 Seasons are quarters of the game's year (`gameVariables.daysPerYear`, 60 by default), starting in midwinter.
 
 `WeatherEffects` applies grip to the driven car's `LateralFrictionGrip` and `LongitudinalFrictionGrip` (the values `Driving/CarTuning` reads; recorded per wheel and written back exactly).
-It narrows each pooled traffic vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (the traffic system has no speed factor; it takes effect as cars are put on the road; originals written back).
+It narrows each pooled traffic vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (the traffic system has no speed factor; it takes effect as cars are put on the road; originals written back). The pool is made once, when the traffic system starts (GleyTrafficSystem's TrafficVehicles.Initialize), and never grows: an idle car is in it too, so a car that sets off later already has the weather's range. On a Going Public guest the traffic is the host's cars, so nothing is narrowed there, and what was is put back the moment the machine becomes a guest.
 
 It spends 1 to 2 energy an hour out of doors in heat (11 to 19 h) and cold (never below 15; `Weather.Wardrobe`, if anybody sets it, says whether a coat is worn).
 It gives the morning forecast (toast and City Bulletin) and a warning when the weather turns.

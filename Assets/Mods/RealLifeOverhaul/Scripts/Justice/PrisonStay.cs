@@ -67,7 +67,7 @@ namespace RealLifeOverhaul
                 if (SaveGameManager.Current != null)
                 {
                     ModState.AddModifier(ModState.MoodDown);
-                    JusticeText.Toast(NotificationType.Info, "reallife_justice_custody_released", "hours", JusticeText.N(hours), 10f);
+                    JusticeText.Toast(NotificationType.Info, JusticeLaw.CustodyReleasedKey(GoingPublic.ClockShared), "hours", JusticeText.N(hours), 10f);
                 }
                 _logger?.Info("Justice: " + hours + " h of custody served.");
             }

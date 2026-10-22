@@ -340,6 +340,7 @@ namespace RealLifeOverhaul.Planner
         {
             int now = Now();
             PlannerStore.SeenStamp = PlannerLogic.DueStamp(List, now, BadgeMinutes);
+            PlannerStore.SeenOldHash = false;
             if (_app != null)
             {
                 _app.SetBadge(0);
@@ -366,7 +367,12 @@ namespace RealLifeOverhaul.Planner
                 {
                     Look(today, today + 1, false);
                     int count = PlannerLogic.DueSoon(List, now, BadgeMinutes);
-                    _app.SetBadge(count > 0 && PlannerLogic.DueStamp(List, now, BadgeMinutes) != PlannerStore.SeenStamp ? count : 0);
+                    int stamp = PlannerLogic.DueStamp(List, now, BadgeMinutes);
+                    if (PlannerStore.SeenOldHash)
+                    {
+                        PlannerStore.CarrySeen(PlannerLogic.OldDueStamp(List, now, BadgeMinutes), stamp);
+                    }
+                    _app.SetBadge(count > 0 && stamp != PlannerStore.SeenStamp ? count : 0);
                 }
             }
             catch (Exception e)

@@ -126,6 +126,8 @@ namespace RealLifeOverhaul.Nav
                     rgba[o + 3] = (byte)(solid * 255f + 0.5f);
                 }
             }
+            // A clear pixel takes the colour of its most solid neighbour (left, right, up, down; the first of equals), so
+            // that the texture's filtering blends an edge into its own colour, never into black.
             for (int py = 0; py < height; py++)
             {
                 for (int px = 0; px < width; px++)
@@ -137,24 +139,21 @@ namespace RealLifeOverhaul.Nav
                     }
                     int from = -1;
                     byte most = 0;
-                    if (px > 0 && rgba[o - 4 + 3] > most)
+                    if (px > 0)
                     {
-                        most = rgba[o - 4 + 3];
-                        from = o - 4;
+                        MoreSolid(rgba, o - 4, ref from, ref most);
                     }
-                    if (px < width - 1 && rgba[o + 4 + 3] > most)
+                    if (px < width - 1)
                     {
-                        most = rgba[o + 4 + 3];
-                        from = o + 4;
+                        MoreSolid(rgba, o + 4, ref from, ref most);
                     }
-                    if (py > 0 && rgba[o - width * 4 + 3] > most)
+                    if (py > 0)
                     {
-                        most = rgba[o - width * 4 + 3];
-                        from = o - width * 4;
+                        MoreSolid(rgba, o - width * 4, ref from, ref most);
                     }
-                    if (py < height - 1 && rgba[o + width * 4 + 3] > most)
+                    if (py < height - 1)
                     {
-                        from = o + width * 4;
+                        MoreSolid(rgba, o + width * 4, ref from, ref most);
                     }
                     if (from >= 0)
                     {
@@ -163,6 +162,16 @@ namespace RealLifeOverhaul.Nav
                         rgba[o + 2] = rgba[from + 2];
                     }
                 }
+            }
+        }
+
+        // The pixel at n, if it is more solid than the most solid neighbour so far, becomes the one whose colour is taken.
+        private static void MoreSolid(byte[] rgba, int n, ref int from, ref byte most)
+        {
+            if (rgba[n + 3] > most)
+            {
+                most = rgba[n + 3];
+                from = n;
             }
         }
     }

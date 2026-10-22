@@ -38,6 +38,8 @@ internal static partial class Program
         Clashes();
         States();
         Badge();
+        OwnAllDay();
+        StableStamp();
         Reminders();
         SaveAndLoad();
         Damaged();
@@ -189,6 +191,66 @@ internal static partial class Program
         Check(stamp == PlannerLogic.DueStamp(list, at + 5, 180), "nothing new: the stamp stays");
         Add(list, "a", 6, 5, 700, 760);
         Check(stamp != PlannerLogic.DueStamp(list, at, 180), "something new is due: the stamp changes");
+    }
+
+    // The player's own all-day notes count for the badge on their day, once; a source's all-day entries never do.
+    private static void OwnAllDay()
+    {
+        var list = new PlannerList();
+        list.Begin(1, 10, false);
+        Add(list, "a", 1, 5, 600, 660);
+        PlannerEntry fact = Add(list, "market", 2, 5, -1, -1, false);
+        int at = PlannerTime.At(5, 9);
+        int before = PlannerLogic.DueSoon(list, at, 120);
+        int stamp = PlannerLogic.DueStamp(list, at, 120);
+        Check(before == 1 && fact.AllDay, "a source's all-day entry does not count for the badge (" + before + ", wanted 1)");
+        PlannerEntry note = list.Add("note", 7, 0, PlannerCategory.Note, 5);
+        note.Own = true;
+        Check(note.AllDay && PlannerLogic.DueSoon(list, at, 120) == 2, "the player's own all-day note on its day counts for the badge, once (" + PlannerLogic.DueSoon(list, at, 120) + ", wanted 2)");
+        Check(PlannerLogic.DueSoon(list, PlannerTime.At(5, 23, 50), 120) == 1, "the own all-day note still counts at the end of its day, the hour that has ended does not");
+        Check(PlannerLogic.DueStamp(list, at, 120) != stamp, "an own all-day note due today changes the stamp, so the badge comes back for it");
+        Check(PlannerLogic.DueSoon(list, PlannerTime.At(6, 1), 120) == 0, "an own all-day note is not counted once its day is over");
+        PlannerEntry tomorrow = list.Add("note", 8, 0, PlannerCategory.Note, 6);
+        tomorrow.Own = true;
+        Check(PlannerLogic.DueSoon(list, PlannerTime.At(5, 23, 30), 120) == 1, "an own all-day note for tomorrow is not counted in the last two hours of today");
+        note.Done = true;
+        Check(PlannerLogic.DueSoon(list, at, 120) == 1, "an own all-day note ticked off does not count");
+    }
+
+    // The seen stamp is saved: EntryId's hash is the same in every run and process, and a stamp an older save made of
+    // string's own hash is carried over once, so what was seen stays seen.
+    private static void StableStamp()
+    {
+        Check(PlannerLogic.Stable("note") == -1852175299, "the stable hash of 'note' is fixed (" + PlannerLogic.Stable("note") + ", wanted -1852175299)");
+        Check(new EntryId("note", 3).GetHashCode() == 840474834, "EntryId(note, 3)'s hash is fixed in every run and process (" + new EntryId("note", 3).GetHashCode() + ", wanted 840474834)");
+        Check(new EntryId("work", 2, 5).GetHashCode() == -1723366273, "EntryId(work, 2, 5)'s hash is fixed (" + new EntryId("work", 2, 5).GetHashCode() + ", wanted -1723366273)");
+        Check(new EntryId(null, 1).GetHashCode() == new EntryId(null, 1).GetHashCode(), "an id with no source has a hash");
+
+        var list = new PlannerList();
+        list.Begin(1, 10, false);
+        Add(list, "a", 1, 5, 600, 660);
+        int at = PlannerTime.At(5, 9);
+        int old = PlannerLogic.OldDueStamp(list, at, 120), stamp = PlannerLogic.DueStamp(list, at, 120);
+        PlannerStore.Load(new Dictionary<string, string> { { PlannerStore.Key, "v=1;next=2;seen=" + old } });
+        Check(PlannerStore.SeenOldHash && PlannerStore.SeenStamp == old, "a save without hash= is read as a stamp of the old hash");
+        PlannerStore.CarrySeen(old, stamp);
+        Check(!PlannerStore.SeenOldHash && PlannerStore.SeenStamp == stamp, "nothing new since it was seen: the old stamp becomes the stable one, and no badge comes back");
+        PlannerStore.CarrySeen(old, stamp + 1);
+        Check(PlannerStore.SeenStamp == stamp, "the old stamp is carried over once only");
+        var data = new Dictionary<string, string>();
+        PlannerStore.Save(data);
+        PlannerStore.Load(data);
+        Check(!PlannerStore.SeenOldHash && PlannerStore.SeenStamp == stamp && data[PlannerStore.Key].EndsWith(";hash=1", StringComparison.Ordinal), "a save made since says hash=1 and is read as the stable stamp");
+        PlannerStore.Load(new Dictionary<string, string> { { PlannerStore.Key, "v=1;next=2;seen=" + (old + 1) } });
+        PlannerStore.CarrySeen(old, stamp);
+        Check(!PlannerStore.SeenOldHash && PlannerStore.SeenStamp == old + 1, "something new since it was seen: the stamp stays as it was, and the badge comes back as for anything new");
+        PlannerStore.Load(new Dictionary<string, string> { { PlannerStore.Key, "v=1;next=2;seen=5" } });
+        data.Clear();
+        PlannerStore.Save(data);
+        PlannerStore.Load(data);
+        Check(PlannerStore.SeenOldHash && PlannerStore.SeenStamp == 5, "an old stamp saved again before its first look stays an old stamp (hash=0)");
+        PlannerStore.Reset();
+        Check(!PlannerStore.SeenOldHash, "a new game has no old stamp");
     }
 
     private static void Reminders()

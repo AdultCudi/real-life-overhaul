@@ -62,7 +62,41 @@ namespace RealLifeOverhaul
             return amount;
         }
 
-        /// <summary>A cost paid only if it can be afforded in full (a repair, a locksmith). False if it was not paid.</summary>
+        /// <summary>
+        /// A hold-up empties the till of the player's own shop (<see cref="CrimeRules.TillTake"/>). The game keeps one purse
+        /// for the player and every business, so the money leaves it, booked at the shop's address and in the shop's day as
+        /// theft (BizMan's Theft line). Returns what was taken; 0 and nothing booked if there was nothing to take.
+        /// </summary>
+        public static int RobTill(BuildingRegistration shop)
+        {
+            if (SaveGameManager.Current == null || shop == null)
+            {
+                return 0;
+            }
+            int amount = CrimeRules.TillTake(BusinessGame.DailyRevenue(shop), Cash, Prices.Level);
+            if (amount <= 0)
+            {
+                return 0;
+            }
+            GameManager.ChangeMoneySafe(-amount, new TransactionInfo("reallife_transaction_holdup_till"), null, shop.Address, force: true);
+            BusinessGame.BookTheft(shop, amount);
+            Logger?.Info("Crime: a hold-up emptied the till of " + shop.BusinessName + ": " + amount + " (a day's takings " + BusinessGame.DailyRevenue(shop).ToString("F0") + ").");
+            return amount;
+        }
+
+        /// <summary>
+        /// A charge for something already done that the player cannot refuse (a late fee, as a tow or a roadside call):
+        /// charged in full even into the red, as the game allows, so it is always paid.
+        /// </summary>
+        public static void Charge(int amount, string transactionKey)
+        {
+            if (amount > 0 && SaveGameManager.Current != null)
+            {
+                GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey), null, null, force: true);
+            }
+        }
+
+        /// <summary>A cost paid only if it can be afforded in full (a repair, a locksmith); a choice the player can do without. False if it was not paid.</summary>
         public static bool Pay(int amount, string transactionKey)
         {
             return amount > 0 && SaveGameManager.Current != null

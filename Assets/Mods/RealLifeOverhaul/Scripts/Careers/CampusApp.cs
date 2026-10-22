@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
 using UI.Notification;
@@ -18,8 +17,6 @@ namespace RealLifeOverhaul.Careers
         {
             "reallife_campus_tab_courses", "reallife_campus_tab_studying", "reallife_campus_tab_results", "reallife_campus_tab_skills", "reallife_campus_tab_family"
         };
-
-        public static IModLogger Logger;
 
         private readonly CareersDirector _director;
         private readonly List<TableRow> _rows = new List<TableRow>(64);

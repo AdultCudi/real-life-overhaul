@@ -1240,7 +1240,6 @@ namespace RealLifeOverhaul
             Guard.Step("the modelled props", () => PropLibrary.Load(context));   // the modelled props, read in the background; plain shapes until they are there
             Guard.Step("PolicePursuit", () => PolicePursuit.Logger = context.Logger);
             Guard.Step("ActorPool", () => ActorPool.Logger = context.Logger);
-            Guard.Step("StreetCrime", () => StreetCrime.Logger = context.Logger);
             Guard.Step("CrimeDirector", () => CrimeDirector.Logger = context.Logger);
             Guard.Step("PoliceAttention", () => PoliceAttention.Logger = context.Logger);
             Guard.Step("BeatPatrol", () => BeatPatrol.Logger = context.Logger);
@@ -1279,12 +1278,9 @@ namespace RealLifeOverhaul
             Guard.Step("CivicDirector", () => CivicDirector.Logger = context.Logger);
             Guard.Step("Family.FamilyDirector", () => Family.FamilyDirector.Logger = context.Logger);
             Guard.Step("Tech.TechDirector", () => Tech.TechDirector.Logger = context.Logger);
-            Guard.Step("Tech.RolesApp", () => Tech.RolesApp.Logger = context.Logger);
             Guard.Step("Tech.HiringGame", () => Tech.HiringGame.Logger = context.Logger);
             Guard.Step("Tech.FirmsGame", () => Tech.FirmsGame.Logger = context.Logger);
-            Guard.Step("Tech.TechApp", () => Tech.TechApp.Logger = context.Logger);
             Guard.Step("Careers.CareersDirector", () => Careers.CareersDirector.Logger = context.Logger);
-            Guard.Step("Careers.CampusApp", () => Careers.CampusApp.Logger = context.Logger);
 
             _root = new GameObject(RootName);
             Guard.Step("the start line", () => StartLine.Logger = context.Logger);
@@ -1445,7 +1441,7 @@ namespace RealLifeOverhaul
             Guard.Step("Street.StreetDirector", () => Street.StreetDirector.Logger = context.Logger);
             Guard.Step("Street.StreetDirector", () => Guard.Add<Street.StreetDirector>(_root));   // street talk: the game's panel over a passer-by offers Talk, a conversation in the game's dialogue panel (Scripts/Street): four looks a second on foot, nothing per frame
             Guard.Step("Utilities.UtilitiesDirector", () => Utilities.UtilitiesDirector.Logger = context.Logger);
-            Guard.Step("Utilities.UtilitiesApp", () => Utilities.UtilitiesApp.Logger = context.Logger);
+            Guard.Step("Utilities.BroadbandCompany", () => Utilities.BroadbandCompany.Logger = context.Logger);
             Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)
             Guard.Step("Family.FamilyDirector", () => Guard.Add<Family.FamilyDirector>(_root));   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
             Guard.Step("the roommate", () => Roommates.RoommateDirector.Attach(_root, context.Logger));   // a roommate who shares the flat and the rent (Scripts/Home/Roommates)

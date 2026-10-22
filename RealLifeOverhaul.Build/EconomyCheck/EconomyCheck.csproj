@@ -89,6 +89,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EndScale.cs" Link="Mod\EndScale.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SaveLines.cs" Link="Mod\SaveLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeLaw.cs" Link="Mod\JusticeLaw.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeRules.cs" Link="Mod\CrimeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\ReleaseRules.cs" Link="Mod\ReleaseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.cs" Link="Mod\JusticeState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.Save.cs" Link="Mod\JusticeState.Save.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Travel\TravelCatalogue.cs" Link="Mod\TravelCatalogue.cs" />

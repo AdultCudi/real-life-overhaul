@@ -65,6 +65,7 @@ internal static partial class Program
         TestingChecks();
         TextChecks();
         CommentChecks();
+        LoggerChecks();
         GitChecks();
 
         if (write)

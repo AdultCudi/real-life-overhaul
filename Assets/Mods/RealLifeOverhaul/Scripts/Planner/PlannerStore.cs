@@ -72,6 +72,7 @@ namespace RealLifeOverhaul.Planner
         public static ReminderLead DefaultLead = ReminderLead.HourBefore;
         public static bool Welcomed;                              // the first-run notification has been shown
         public static int SeenStamp;                              // PlannerLogic.DueStamp when the app was last opened
+        public static bool SeenOldHash;                           // SeenStamp came from a save without hash=: made of string's own hash (CarrySeen)
         public static int MorningDay;                             // the day the morning line was last sent; 0 none
         /// <summary>The soonest reminder's moment in game minutes, int.MaxValue with none: the director's one comparison a second.</summary>
         public static int NextFire { get; private set; } = int.MaxValue;
@@ -87,7 +88,26 @@ namespace RealLifeOverhaul.Planner
             DefaultLead = ReminderLead.HourBefore;
             Welcomed = false;
             SeenStamp = 0;
+            SeenOldHash = false;
             MorningDay = 0;
+        }
+
+        /// <summary>
+        /// The first look after loading a save whose stamp is made of the old hash: if nothing has changed since it was
+        /// taken (it equals <paramref name="oldStamp"/>), it becomes the same stamp made the stable way, so what was
+        /// seen stays seen; otherwise the badge comes back as for anything new. Once a save.
+        /// </summary>
+        public static void CarrySeen(int oldStamp, int stamp)
+        {
+            if (!SeenOldHash)
+            {
+                return;
+            }
+            SeenOldHash = false;
+            if (SeenStamp == oldStamp)
+            {
+                SeenStamp = stamp;
+            }
         }
 
         public static bool Shows(PlannerCategory category)
@@ -352,6 +372,7 @@ namespace RealLifeOverhaul.Planner
             if (data.TryGetValue(Key, out string text) && !string.IsNullOrEmpty(text))
             {
                 int read = 0;
+                SeenOldHash = true;   // until a hash= says otherwise
                 foreach (string part in text.Split(';'))
                 {
                     int eq = part.IndexOf('=');
@@ -371,6 +392,7 @@ namespace RealLifeOverhaul.Planner
                         case "lead": DefaultLead = Lead(value, ReminderLead.HourBefore); break;
                         case "hello": Welcomed = value != 0; break;
                         case "seen": SeenStamp = value; break;
+                        case "hash": SeenOldHash = value == 0; break;
                         case "morning": MorningDay = value; break;
                         default: read--; break;
                     }
@@ -432,7 +454,8 @@ namespace RealLifeOverhaul.Planner
                 return;
             }
             data[Key] = "v=1;next=" + Text(NextNoteId) + ";hide=" + Text(HiddenCategories) + ";lead=" + Text((int)DefaultLead)
-                        + ";hello=" + (Welcomed ? "1" : "0") + ";seen=" + Text(SeenStamp) + ";morning=" + Text(MorningDay);
+                        + ";hello=" + (Welcomed ? "1" : "0") + ";seen=" + Text(SeenStamp) + ";morning=" + Text(MorningDay)
+                        + ";hash=" + (SeenOldHash ? "0" : "1");   // hash=1: the stamp is made of EntryId's stable hash
             var text = new StringBuilder(Notes.Count * 48);
             for (int i = 0; i < Notes.Count; i++)
             {

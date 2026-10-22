@@ -30,6 +30,29 @@ internal static partial class Program
         PhotoWaysOut();
         PhotoWholeLoads();
         PhotoFullWords();
+        PhotoNameFree(System.IO.Path.Combine(scratch, "free"));
+    }
+
+    // ---------------------------------------------------------------- a new photo's name is never a file that is there
+
+    private static void PhotoNameFree(string folder)
+    {
+        if (Directory.Exists(folder))
+        {
+            Directory.Delete(folder, true);
+        }
+        Directory.CreateDirectory(folder);
+        var at = new DateTime(2026, 10, 15, 9, 0, 0);
+        for (int number = 1; number < 2000; number++)
+        {
+            File.WriteAllBytes(System.IO.Path.Combine(folder, PhotoStoreRules.NameFor(at, false, 5, 9, number)), Array.Empty<byte>());
+        }
+        string path = PhotoStore.NewPath(folder, "free+id==", at, false, 5, 9);
+        Check(path != null && !File.Exists(path) && System.IO.Path.GetFileName(path) == "Photo_20261015_090000_D5_09_2000.jpg",
+            "photos name free: past a thousand photos in one second the next free number is taken, never a file that is there (" + (path == null ? "none" : System.IO.Path.GetFileName(path)) + ")");
+        Check(PhotoStore.MostSameSecond >= 10000 && Regex.IsMatch(Between(Read(@"Photos\PhotoStore.cs"), "public static string NewPath(", "public static bool MarkSave("), @"number <= MostSameSecond[\s\S]*return null;")
+              && !Read(@"Photos\PhotoStore.cs").Contains("Environment.TickCount"),
+            "photos name free: the numbers tried are bounded, the clock picks none, and with every one taken nothing is written over");
     }
 
     // ---------------------------------------------------------------- the whole photo's loads

@@ -8,12 +8,10 @@ namespace RealLifeOverhaul
     /// Trouble in the shop the player stands in, played by the mod's own people (customers only look startled). A
     /// shoplifter in somebody else's shop makes for the door: gets out, is met there, only forgot to pay, or runs into the
     /// player. A robber holds the room up and runs: met outside, too late, or losing their nerve; in the player's own shop
-    /// a success costs a capped amount, with crimes against you on.
+    /// a success empties the till (Crime.RobTill), with crimes against you on.
     /// </summary>
     internal sealed class ShopIncidentScene : CrimeScene
     {
-        internal const float HoldUpShare = 0.04f;                // of the cash carried
-        internal const int HoldUpLeast = 40, HoldUpMost = 500;   // dollars at the start's prices
         private const int Entering = 0, Busy = 1, Running = 2, AtDoor = 3, Floored = 4, Out = 5;
 
         private readonly string _id;
@@ -206,7 +204,7 @@ namespace RealLifeOverhaul
             First.WalkOff(_outside, Pace.Run, 15f);
             if (_holdUp && _ownShop && Settings.CrimeAgainstPlayer && !Is("bungled"))
             {
-                int taken = Crime.Rob(HoldUpShare, HoldUpLeast, HoldUpMost, "reallife_transaction_robbery");
+                int taken = Crime.RobTill(ShopFloor.OwnRegistration);
                 if (taken > 0)
                 {
                     ModState.AddModifier(ModState.Robbed);

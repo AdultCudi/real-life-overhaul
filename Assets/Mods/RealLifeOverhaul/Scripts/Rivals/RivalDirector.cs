@@ -56,7 +56,6 @@ namespace RealLifeOverhaul.Rivals
         private void Awake()
         {
             Instance = this;
-            RivalGame.Logger = Logger;
             _onSave = OnSave;
             _openPage = () => RivalBridges.Open?.Invoke();   // (wrapped behind the guard where it is handed to the game: RivalGame.Tell)
             StartCoroutine(Guard.Routine(Tick()));

@@ -232,6 +232,8 @@ internal static partial class Program
         FlareThemeSwitch();   // Flare's light and dark switch: the look by setting and hour, a press always the other look, its words, written and saved as the Settings app does, every open part painted again (FlareThemeChecks.cs)
         Shared();
         Fame();
+        CrimeFixes();   // a hold-up empties the till, rewards at today's prices, a release in a session names no hours, no Crime.Pay dropped (CrimeFixChecks.cs)
+        CityEventFixes();   // the spare hose by the engine, a guest's traffic left alone by the weather, arrivals past one who never came (CityEventFixChecks.cs)
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)

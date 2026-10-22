@@ -294,8 +294,9 @@ namespace RealLifeOverhaul.Events
                 {
                     if (now >= _cast[i].Until)
                     {
-                        Drop(i, true);   // never got there: they walk off again
-                        return;
+                        Drop(i, true);   // never got there: they walk off again; the last of the cast takes this place
+                        i--;             // and is looked at now, with the others due this second
+                        continue;
                     }
                     who.WalkTo(_cast[i].Post, _cast[i].Job == Job.Runner);
                 }

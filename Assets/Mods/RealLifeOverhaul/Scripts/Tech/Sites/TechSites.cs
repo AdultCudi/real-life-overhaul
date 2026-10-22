@@ -48,7 +48,6 @@ namespace RealLifeOverhaul.Tech
         private void Awake()
         {
             Instance = this;
-            RoomMeasure.Logger = Logger;
             _hq = new Headquarters(Logger);
             _floors = new TowerFloors(Logger);
             _floors.ChangeFloor = floor =>

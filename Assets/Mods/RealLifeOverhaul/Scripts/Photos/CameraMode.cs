@@ -651,7 +651,7 @@ namespace RealLifeOverhaul.Photos
                 work = Task.Run(() =>
                 {
                     path = PhotoStore.NewPath(folder, saveId, taken, selfie, day, hour);
-                    return PhotosGame.Develop(given, path);
+                    return path != null ? PhotosGame.Develop(given, path) : null;   // no free name: told as a photo not written
                 });
                 _pendingWork = work;
                 while (!work.IsCompleted)

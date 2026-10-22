@@ -181,6 +181,7 @@ namespace RealLifeOverhaul.Events
             {
                 _outlet.y = ground;
             }
+            StandCoil(unit, modelled, centre, forward, right, side, halfLength, halfWidth);
             // The nozzle: on the line from the engine to the fire, a few metres short of it, where there is room to stand.
             Vector3 from = centre - _seat;
             from.y = 0f;
@@ -307,6 +308,35 @@ namespace RealLifeOverhaul.Events
                         }
                         break;
                 }
+            }
+        }
+
+        // A spare length of hose, rolled, lies on the ground at the back of the engine on the fire's side, where nobody works
+        // and the hose is not laid: stood once, as the engine parks, and given back with the hose (Depart, End).
+        private void StandCoil(FireEngine unit, bool modelled, Vector3 centre, Vector3 forward, Vector3 right, float side, float halfLength, float halfWidth)
+        {
+            ReturnCoil();
+            Vector3 want = modelled
+                ? unit.BodyPoint(side * (EngineLivery.BodyHalfWidth + CoilOut), 0f, CoilAhead)
+                : centre + right * (side * (halfWidth + CoilOut)) - forward * (halfLength * 0.7f);
+            if (!StreetSpots.OnRoad(want, 1.2f, out Vector3 spot) || !StreetSpots.OutOfVehicles(ref spot) || !CitySpots.ClearQuietly(spot, 0.35f))
+            {
+                return;   // no clear ground there: the engine carries its spare hose
+            }
+            if (StreetSpots.Ground(spot, out float ground))
+            {
+                spot.y = ground;
+            }
+            float heading = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg + side * CoilTurn;
+            _coil = _director.Props.Stand(EventProps.HoseCoil, spot, heading);
+        }
+
+        private void ReturnCoil()
+        {
+            if (_coil != null)
+            {
+                _director.Props.Return(_coil);
+                _coil = null;
             }
         }
 
@@ -485,6 +515,7 @@ namespace RealLifeOverhaul.Events
         {
             StopWater();
             _director.Hose.Take();
+            ReturnCoil();
             for (int i = 0; i < 3; i++)
             {
                 if (_crew[i] != null)

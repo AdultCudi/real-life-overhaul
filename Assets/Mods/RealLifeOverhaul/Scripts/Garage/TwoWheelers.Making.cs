@@ -142,7 +142,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < _scratch.Count; i++)
             {
                 Remove(_scratch[i]);
-                Crime.Pay(BikeCatalogue.LateFee, "reallife_transaction_bike");
+                Crime.Charge(BikeCatalogue.LateFee, "reallife_transaction_bike");   // owed for the days kept, as a tow is: the notice says it was paid
                 Notifications.Show(NotificationType.Warning, "reallife_bike_collected",
                     new Dictionary<string, string>(1) { { "amount", GarageText.Money(BikeCatalogue.LateFee) } }, 9f);
             }

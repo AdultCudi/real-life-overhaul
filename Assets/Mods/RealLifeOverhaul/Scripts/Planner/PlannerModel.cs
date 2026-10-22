@@ -95,10 +95,17 @@ namespace RealLifeOverhaul.Planner
             return obj is EntryId other && Equals(other);
         }
 
+        /// <summary>The same in every session, runtime and process (<see cref="PlannerLogic.Stable"/>): the seen stamp that is saved is made of it.</summary>
         public override int GetHashCode()
         {
-            return ((Source != null ? Source.GetHashCode() : 0) * 397 ^ A) * 397 ^ B;
+            return (PlannerLogic.Stable(Source) * 397 ^ A) * 397 ^ B;
         }
+
+        /// <summary>
+        /// The hash a seen stamp was made of in a save whose planner line has no hash= (string's own hash, which Mono
+        /// gives the same in every run); read once, to carry such a stamp over (<see cref="PlannerStore.CarrySeen"/>).
+        /// </summary>
+        public int OldHash => ((Source != null ? Source.GetHashCode() : 0) * 397 ^ A) * 397 ^ B;
     }
 
     /// <summary>One thing to do, from PlannerList's pool; a source fills the texts only when the list wants them.</summary>
@@ -409,20 +416,17 @@ namespace RealLifeOverhaul.Planner
             return nowMinutes >= e.Begins ? PlannerState.Now : PlannerState.Upcoming;
         }
 
-        /// <summary>How many entries still to do begin or fall due within the minutes: the app's badge.</summary>
+        /// <summary>
+        /// How many entries still to do begin or fall due within the minutes, and the player's own all-day notes on their
+        /// day, each once: the app's badge. A source's all-day entry (a market day, a holiday) is a fact, not a thing to do.
+        /// </summary>
         public static int DueSoon(PlannerList list, int nowMinutes, int withinMinutes)
         {
             int count = 0;
             List<PlannerEntry> items = list.Items;
             for (int i = 0; i < items.Count; i++)
             {
-                PlannerEntry e = items[i];
-                if (e.Done || e.AllDay)
-                {
-                    continue;
-                }
-                PlannerState state = StateOf(e, nowMinutes);
-                if (state == PlannerState.Now || state == PlannerState.Upcoming && e.Begins - nowMinutes <= withinMinutes)
+                if (Counts(items[i], nowMinutes, withinMinutes))
                 {
                     count++;
                 }
@@ -430,7 +434,7 @@ namespace RealLifeOverhaul.Planner
             return count;
         }
 
-        /// <summary>Changes when what is due soon changes, so the badge comes back only for something not yet seen.</summary>
+        /// <summary>Changes when what <see cref="DueSoon"/> counts changes, so the badge comes back only for something not yet seen.</summary>
         public static int DueStamp(PlannerList list, int nowMinutes, int withinMinutes)
         {
             int stamp = 17;
@@ -438,18 +442,47 @@ namespace RealLifeOverhaul.Planner
             for (int i = 0; i < items.Count; i++)
             {
                 PlannerEntry e = items[i];
-                if (e.Done || e.AllDay)
-                {
-                    continue;
-                }
-                PlannerState state = StateOf(e, nowMinutes);
-                if (state == PlannerState.Now || state == PlannerState.Upcoming && e.Begins - nowMinutes <= withinMinutes)
+                if (Counts(e, nowMinutes, withinMinutes))
                 {
                     stamp = stamp * 31 + e.Id.GetHashCode();
                     stamp = stamp * 31 + e.Begins;
                 }
             }
             return stamp;
+        }
+
+        /// <summary>
+        /// The stamp as a save whose planner line has no hash= made it: string's own hash, and no all-day entry. Only to
+        /// carry that save's stamp over (<see cref="PlannerStore.CarrySeen"/>).
+        /// </summary>
+        public static int OldDueStamp(PlannerList list, int nowMinutes, int withinMinutes)
+        {
+            int stamp = 17;
+            List<PlannerEntry> items = list.Items;
+            for (int i = 0; i < items.Count; i++)
+            {
+                PlannerEntry e = items[i];
+                if (!e.AllDay && Counts(e, nowMinutes, withinMinutes))
+                {
+                    stamp = stamp * 31 + e.Id.OldHash;
+                    stamp = stamp * 31 + e.Begins;
+                }
+            }
+            return stamp;
+        }
+
+        private static bool Counts(PlannerEntry e, int nowMinutes, int withinMinutes)
+        {
+            if (e.Done)
+            {
+                return false;
+            }
+            PlannerState state = StateOf(e, nowMinutes);
+            if (e.AllDay)
+            {
+                return e.Own && state == PlannerState.Now;   // on its own day only: never "within two hours" of a day yet to come
+            }
+            return state == PlannerState.Now || state == PlannerState.Upcoming && e.Begins - nowMinutes <= withinMinutes;
         }
     }
 }

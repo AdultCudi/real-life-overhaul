@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UI.Smartphone;
@@ -65,8 +64,6 @@ namespace RealLifeOverhaul.Utilities
         public const int InternetTab = TabInternet;
         private static readonly string[] TabKeys = { "reallife_util_tab_accounts", "reallife_util_tab_internet", "reallife_util_tab_network" };
         private static Network _cityAsItIs;   // the city's market before any company: a district's rivals before founding
-
-        public static IModLogger Logger;
 
         private readonly UtilitiesDirector _director;
         private readonly List<TableRow> _rows = new List<TableRow>(24);

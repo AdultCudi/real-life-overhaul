@@ -68,7 +68,7 @@ Planner/
   The leave by time uses the player's own way (by car if they have a car of their own); a clash by the way uses car or taxi.
 
 - **Missed.** An entry the player has to attend is missed once it can no longer be begun (`PlannerEntry.JoinBy`): a class an hour after it starts, a rota shift three hours after, a working day two hours after, an interview an hour after, each from its feature's own rule.
-- **The badge** counts what begins within two hours and is still to do.
+- **The badge** counts what begins within two hours and is still to do, and the player's own all-day notes on their day (a source's all-day entries, such as a market day, never count). What the player has seen is kept as a stamp made of a hash that is the same in every run.
   It goes when the app is opened and comes back only when what is due has changed (`PlannerLogic.DueStamp`).
 - **If the game changes.** Every object the app is made of is looked up by name; if one is missing, one line says which, the app is left off the phone (or the part is left out: a switch, a selector, an icon), and reminders already set still go out.
   Nothing is thrown into the game's interface.
