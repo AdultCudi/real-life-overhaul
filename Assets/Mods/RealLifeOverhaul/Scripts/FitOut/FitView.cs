@@ -5,10 +5,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 using BAModAPI;
-using BigAmbitions.InteriorDesigner.InteriorElements;
-using BigAmbitions.SaveSystem;
-using BusinessLayoutSets;
-using Extensions;
 using RealLifeOverhaul.Tech;
 using UnityEngine;
 using UnityEngine.AI;
@@ -16,44 +12,22 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.FitOut
 {
     /// <summary>
-    /// The floor of one of the mod's buildings fitted out while the player is in it (Scripts/FitOut): the room the caller
-    /// has measured (Tech/Sites/SiteProps.cs, RoomMeasure) and what it already stands there (a lobby, a station's counter,
-    /// a server hall) are handed in, and this does the rest, a little each frame:
-    ///
-    ///   the design     the game's own design for the unit, of the kinds of business asked for (FitDesigns), read on a
-    ///                  worker thread; its walls and floors put on the room by the game's own call while the player is in
-    ///                  it, where the caller asks for them
-    ///   the pieces     a template of every piece wanted, the game's own (Core/GameFurniture) or a model of the mod's
-    ///                  where the game has none (the server closet's racks, a workbench), made the first time it is
-    ///                  wanted in a session; their sizes measured from them
-    ///   the plan       <see cref="FitPlanner"/>, on a worker thread: the design round what is there, rooms of the
-    ///                  building's kind on the bare floor, the walkway check
-    ///   the building   copies of the templates stood where the plan says, the nearest the door first; hung where a ray
-    ///                  finds the wall, lamps where one finds the ceiling; then what stands is cut out of the walkable
-    ///                  floor, a few pieces a frame (the game's own carving)
-    ///   the people     <see cref="FitCast"/>: staff at the desks, a few walking, looked after once a second
-    ///   your desk      where a job of the player's is worked on this floor (<see cref="FitDesks"/>), one of its desks
-    ///                  is the player's: picked by the seed the careers give, the same every visit, and nobody of the
-    ///                  cast sits there
-    ///
-    /// THE COST. Behind the game's black screen at the door a frame may take up to <see cref="HiddenBudgetMs"/> of the
-    /// work, in play <see cref="BudgetMs"/>: no frame of the building is a long one the player sees (a template's first
-    /// load from the game's files is the one step that cannot be cut, and comes once a session, mostly behind the black
-    /// screen). Nothing runs once it stands but the cast's look once a second; nothing runs at all while the player is
-    /// elsewhere. Everything is destroyed when they leave; the templates are kept for the next visit.
-    ///
-    /// Everything is local and only to be seen: plain objects, not items, never saved, never counted in what furniture is
-    /// worth, nothing sent over Going Public's connection. The callers hand in only the mod's own buildings and the
-    /// player's own places.
+    /// The floor of one of the mod's buildings fitted out while the player is in it, from the room the caller measured and
+    /// what it stands there: the game's design read on a worker thread (<see cref="FitDesigns"/>), a template of each piece
+    /// (Core/GameFurniture), the plan on a worker thread (<see cref="FitPlanner"/>), copies stood nearest the door first and
+    /// cut out of the walkable floor, then the people (<see cref="FitCast"/>) and the player's desk (<see cref="FitDesks"/>).
+    /// The cost: a frame takes at most <see cref="BudgetMs"/> of the work in play, <see cref="HiddenBudgetMs"/> behind the
+    /// black screen; once it stands only the cast's look once a second. Plain local objects, destroyed when the player
+    /// leaves: never items, never saved, nothing sent over Going Public's connection.
     /// </summary>
-    internal sealed class FitView
+    internal sealed partial class FitView
     {
         public const float BudgetMs = 2.5f;           // milliseconds of a played frame the building may take
-        public const float HiddenBudgetMs = 28f;      // ...and of a frame behind the black screen
+        public const float HiddenBudgetMs = 28f;      // milliseconds of a frame behind the black screen
         private const int CutsPerFrame = 24;          // pieces cut out of the walkable floor a frame
         private const float WaitForDesign = 8f;       // seconds the reading of a design is waited for, at most
-        private const float CarveWait = 3f;           // real seconds the navigation system is waited for to cut what stands out of the walkable floor, at most
-        private const float CarveProbeLeast = 1.0f;   // metres a cut piece is across at least to tell by its middle that the floor is cut
+        private const float CarveWait = 3f;           // real seconds the navigation system is waited for to cut the floor, at most
+        private const float CarveProbeLeast = 1.0f;   // metres a cut piece is across at least to tell by its middle that it is cut
         private const string ModProp = "rlo:";
 
         /// <summary>What a caller asks for: the room, the building's kind, what is there already and what to furnish from.</summary>
@@ -63,12 +37,12 @@ namespace RealLifeOverhaul.FitOut
             public FitKind Kind;
             public int Seed;
             public BuildingManager Building;
-            public string Place;                                              // the floor's place key for the player's desk (a tower's floor: the company's); null: the building's
+            public string Place;                                              // the place key for the player's desk; null: the building's
             public RoomGrid Grid;
             public float Floor;
             public Vector3 Door, Inward;
             public readonly List<string> DesignKinds = new List<string>(8);   // the kinds of business whose designs may furnish it, in order
-            public readonly List<string> LookKinds = new List<string>(4);     // ...and whose walls and floors alone may be put on it
+            public readonly List<string> LookKinds = new List<string>(4);     // and whose walls and floors alone may be put on it
             public bool Look = true;                                          // the design's walls and floors on the room while the player is in it
             public bool Carve = true;                                         // what stands is cut out of the walkable floor
             public bool People = true;
@@ -141,10 +115,7 @@ namespace RealLifeOverhaul.FitOut
         /// <summary>Said once the building stands (the callers log it).</summary>
         public event Action<FitView> Built;
 
-        /// <summary>
-        /// The floor of the room in the request fitted out, a little each frame on <paramref name="host"/>. The request is
-        /// the caller's and is read until End. False if there is nothing to fit out (no room was measured).
-        /// </summary>
+        /// <summary>Fits out the request's room a little each frame on <paramref name="host"/>, reading the request until End; false with no room measured.</summary>
         public bool Begin(Request request, MonoBehaviour host)
         {
             End();
@@ -170,8 +141,6 @@ namespace RealLifeOverhaul.FitOut
             return true;
         }
 
-        // ---------------------------------------------------------------- the building, a little a frame
-
         private IEnumerator Build()
         {
             var watch = new Stopwatch();
@@ -179,7 +148,7 @@ namespace RealLifeOverhaul.FitOut
             FitSite site = r.Site;
             Buildings.Building building = r.Building.building;
 
-            // The game's design for this very unit, read on a worker thread.
+            // the game's design for this very unit, read on a worker thread
             _set = null;
             _setName = null;
             string size = FitDesigns.SizeOf(building);
@@ -206,7 +175,7 @@ namespace RealLifeOverhaul.FitOut
             }
             bool furnish = _set != null && r.DesignKinds.Count > 0;
 
-            // The pieces wanted, each made ready once a session: the design's and those of the building's kind.
+            // the pieces wanted, each made ready once a session: the design's and the building kind's
             _wanted.Clear();
             if (furnish)
             {
@@ -247,7 +216,7 @@ namespace RealLifeOverhaul.FitOut
             }
             Lap(watch);
 
-            // The sizes, the design as pieces of a plan, and the plan on a worker thread.
+            // the sizes, the design as pieces of a plan, and the plan on a worker thread
             site.Kind = r.Kind;
             site.Seed = r.Seed;
             site.DoorX = r.Door.x;
@@ -256,7 +225,7 @@ namespace RealLifeOverhaul.FitOut
             site.InZ = r.Inward.z;
             site.Erosion = Erosion();
             Exits(r, site);
-            // (each visit its own design and plan: a worker left over from the visit before writes only into its own)
+            // each visit its own design and plan: a worker left over from the last writes only into its own
             var design = new List<FitPiece>(furnish ? _set.Items.Count : 0);
             var plan = new FitPlan();
             watch.Restart();
@@ -303,13 +272,13 @@ namespace RealLifeOverhaul.FitOut
             }
             _plan = plan;
 
-            // The walls and floors of the design, by the game's own call (behind the black screen if it is still up).
+            // the design's walls and floors, by the game's own call
             if (r.Look && _set != null && _set.interiorDesigns != null && _set.interiorDesigns.Count > 0)
             {
                 ApplyLook(r);
             }
 
-            // The pieces, the nearest the door first.
+            // the pieces, nearest the door first
             _order.Clear();
             for (int i = 0; i < _plan.Pieces.Count; i++)
             {
@@ -333,7 +302,7 @@ namespace RealLifeOverhaul.FitOut
             {
                 int i = _order[k];
                 FitPiece p = _plan.Pieces[i];
-                // (what stands on a piece goes on once that piece stands: its parent's index is lower in the plan, not always in the order)
+                // what stands on a piece goes on once it stands: its parent is earlier in the plan, not always in the order
                 Transform under = p.Anchor >= 0 ? made[p.Anchor] : null;
                 if (!Safely(() => made[i] = Place(p, under)))
                 {
@@ -348,7 +317,7 @@ namespace RealLifeOverhaul.FitOut
                 }
             }
             Lap(watch);
-            // What stands cut out of the walkable floor, a few a frame; the navigation system cuts at its own next update.
+            // cut out of the walkable floor a few a frame; the navigation system cuts at its next update
             bool probing = CarveProbe(r, out Vector3 probe);
             for (int k = 0; k < _cuts.Count; k++)
             {
@@ -362,12 +331,12 @@ namespace RealLifeOverhaul.FitOut
                     yield return null;
                 }
             }
-            // The seats are measured on the floor as it is cut: a place to stand under a desk is no place to walk to.
+            // the seats are measured on the floor as cut: a place to stand under a desk is no place to walk to
             float carvedBy = Time.realtimeSinceStartup + CarveWait;
             for (int after = 0; _cuts.Count > 0 && after < 2; after++)
             {
                 _frames++;
-                yield return null;   // (the last few switched on: the navigation system's next updates)
+                yield return null;   // the navigation system's next updates, for the last few switched on
             }
             while (probing && Time.realtimeSinceStartup < carvedBy && NavMesh.SamplePosition(probe, out _, 0.3f, NavMesh.AllAreas))
             {
@@ -395,7 +364,7 @@ namespace RealLifeOverhaul.FitOut
             }
             else if (_deskSeed >= 0)
             {
-                FitDesks.Down(_deskPlace);   // (no desk with a seat stands: the careers look elsewhere)
+                FitDesks.Down(_deskPlace);   // no desk with a seat stands: the careers look elsewhere
             }
             try
             {
@@ -407,7 +376,7 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // A step of the building that may meet something of the game's gone: the fault said once and the floor left as it is.
+        // A step that may meet something of the game's gone: the fault said once and the floor left as it is.
         private bool Safely(Action step)
         {
             try
@@ -429,201 +398,14 @@ namespace RealLifeOverhaul.FitOut
             return watch.Elapsed.TotalMilliseconds >= (SceneFinds.Hidden ? HiddenBudgetMs : BudgetMs);
         }
 
-        // A frame's share of the work counted, before the next frame is waited for.
+        // A frame's share of the work, counted before the next frame is waited for.
         private void Lap(Stopwatch watch)
         {
             _workMs += watch.Elapsed.TotalMilliseconds;
             _frames++;
         }
 
-        private static string Id(Item item) => item != null && !string.IsNullOrEmpty(item.itemName) ? item.itemName.GetIdWithoutType() : null;
-
-        // Most of a design's floor pieces on this room's floor: it is a design for this room.
-        private static bool StandsHere(BusinessLayoutSet set, Request r)
-        {
-            int floorItems = 0, onFloor = 0;
-            for (int i = 0; i < set.Items.Count; i++)
-            {
-                Item item = set.Items[i];
-                Vector3 at = item.position;
-                if (item.itemName == null || Mathf.Abs(at.y - r.Floor) > 0.15f)
-                {
-                    continue;
-                }
-                floorItems++;
-                onFloor += r.Grid.NearestOpen(at.x, at.z, null) >= 0 ? 1 : 0;
-            }
-            return floorItems >= 4 && onFloor >= floorItems * 0.7f;
-        }
-
-        // How far the walkable floor stops short of a wall: the game's walkers' own width.
-        private static float Erosion()
-        {
-            try
-            {
-                return Mathf.Clamp(NavMesh.GetSettingsByID(NavMeshHelper.NpcNavMeshFilter.agentTypeID).agentRadius, 0.15f, 0.6f);
-            }
-            catch (Exception)
-            {
-                return 0.3f;
-            }
-        }
-
-        // The unit's other ways out kept clear, and its drive-in bays, with room for a car.
-        private static void Exits(Request r, FitSite site)
-        {
-            site.Exits.Clear();
-            List<ExitZone> exits = r.Building.exitZones;
-            for (int i = 0; exits != null && i < exits.Count; i++)
-            {
-                ExitZone exit = exits[i];
-                if (exit == null || exit.playerSpawnPoint == null)
-                {
-                    continue;
-                }
-                Vector3 at = exit.playerSpawnPoint.position;
-                if (!exit.isDriveInBay && CitySpots.Flat(at - r.Door) < 0.5f * 0.5f)
-                {
-                    continue;   // (the door the player came in by: the plan keeps its own way clear of it)
-                }
-                site.Exits.Add(new FitSpot(at.x, at.z, exit.isDriveInBay ? 4.5f : FitPlanner.ExitClear));
-            }
-        }
-
-        // A piece's drawn size: its template's, or the size the mod's model stands by.
-        private static bool Size(string prefab, out FitSize size)
-        {
-            if (prefab.StartsWith(ModProp, StringComparison.Ordinal))
-            {
-                if (ModSpec(prefab, out SiteProps.Spec spec))
-                {
-                    size = new FitSize(spec.Size.x, spec.Size.z, spec.Size.y);
-                    return true;
-                }
-                size = default;
-                return false;
-            }
-            if (GameFurniture.Template(prefab, out Bounds b) == null || b.size.x < 0.02f || b.size.z < 0.02f)
-            {
-                size = default;
-                return false;
-            }
-            size = new FitSize(b.size.x, b.size.z, b.size.y, b.center.x, b.center.z, b.max.y);
-            return true;
-        }
-
-        private static bool ModSpec(string prefab, out SiteProps.Spec spec)
-        {
-            switch (prefab)
-            {
-                case "rlo:closetrack": spec = SiteProps.ClosetRack; return true;
-                case "rlo:bench": spec = SiteProps.Bench; return true;
-                default: spec = default; return false;
-            }
-        }
-
-        // The design's items as pieces of the plan, each with the floor its drawn bounds take, turned as it stands.
-        private void DesignPieces(Request r, List<FitPiece> into)
-        {
-            for (int i = 0; i < _set.Items.Count; i++)
-            {
-                Item item = _set.Items[i];
-                string id = Id(item);
-                if (id == null || !FitRoles.Fitted(id) || !r.Site.Sizes.TryGetValue(id, out FitSize s))
-                {
-                    continue;
-                }
-                Vector3 at = item.position;
-                Quaternion facing = item.rotation;
-                float height = at.y - r.Floor;
-                FitRole role = FitRoles.IsLamp(id) ? FitRole.Lamp : FitRoles.IsFlat(id) ? FitRole.Flat : height >= 0.15f ? FitRole.OnTop : FitRoles.IsChair(id) ? FitRole.Seat : FitRole.Floor;
-                float yaw = facing.eulerAngles.y;
-                float sin = Mathf.Sin(yaw * Mathf.Deg2Rad), cos = Mathf.Cos(yaw * Mathf.Deg2Rad);
-                float cx = at.x + s.CX * cos + s.CZ * sin, cz = at.z - s.CX * sin + s.CZ * cos;
-                into.Add(new FitPiece
-                {
-                    Prefab = id, Role = role, X = at.x, Z = at.z, Y = height, Yaw = yaw, CX = cx, CZ = cz,
-                    HalfX = Mathf.Abs(cos) * s.W * 0.5f + Mathf.Abs(sin) * s.D * 0.5f, HalfZ = Mathf.Abs(sin) * s.W * 0.5f + Mathf.Abs(cos) * s.D * 0.5f,
-                    Height = s.H, Anchor = -1, Tall = s.H > 1.3f
-                });
-            }
-        }
-
-        // One piece of the plan stood in the room; null if it could not be (no such prefab, no wall or ceiling where it hangs).
-        private Transform Place(FitPiece p, Transform under)
-        {
-            Request r = _request;
-            float floor = r.Floor;
-            Quaternion facing = Quaternion.Euler(0f, p.Yaw, 0f);
-            Vector3 at = new Vector3(p.X, floor + p.Y, p.Z);
-            if (p.Role == FitRole.Hung && !p.Design)
-            {
-                // On the wall behind where the plan put it, its back on the wall's real surface.
-                Vector3 front = facing * Vector3.forward;
-                if (!RoomMeasure.Wall(new Vector3(p.X, floor + p.Y + 0.4f, p.Z), -front, 1.4f, out Vector3 surface, out Vector3 normal))
-                {
-                    return null;
-                }
-                at = new Vector3(surface.x, floor + p.Y, surface.z) + normal * 0.004f;
-                facing = Quaternion.LookRotation(normal, Vector3.up);
-            }
-            else if (p.Role == FitRole.Lamp && !p.Design)
-            {
-                if (!RoomMeasure.Ceiling(new Vector3(p.X, floor + 1.2f, p.Z), out Vector3 ceiling))
-                {
-                    return null;
-                }
-                at = ceiling - Vector3.up * 0.002f;
-            }
-            else if (p.Role == FitRole.Flat)
-            {
-                at.y += 0.003f;
-            }
-            Transform piece;
-            Vector3 boxCentre, boxSize;
-            if (p.Prefab.StartsWith(ModProp, StringComparison.Ordinal))
-            {
-                if (!ModSpec(p.Prefab, out SiteProps.Spec spec))
-                {
-                    return null;
-                }
-                piece = SiteProps.Make(spec, _root, out _);
-                boxCentre = new Vector3(0f, spec.Size.y * 0.5f, 0f);
-                boxSize = spec.Size;
-            }
-            else
-            {
-                piece = GameFurniture.Copy(p.Prefab, _root);
-                if (piece == null)
-                {
-                    return null;
-                }
-                GameFurniture.Template(p.Prefab, out Bounds b);
-                boxCentre = new Vector3(b.center.x, b.size.y * 0.5f, b.center.z);
-                boxSize = new Vector3(b.size.x, Mathf.Max(0.5f, b.size.y), b.size.z);
-            }
-            piece.SetPositionAndRotation(at, facing);
-            if (under != null && p.Role == FitRole.OnTop)
-            {
-                piece.SetParent(under, true);
-            }
-            if (r.Carve && p.Role == FitRole.Floor && p.HalfX * p.HalfZ * 4f >= 0.06f)   // (thin partitions too: they make the rooms)
-            {
-                var cut = piece.gameObject.AddComponent<NavMeshObstacle>();
-                cut.shape = NavMeshObstacleShape.Box;
-                cut.center = boxCentre;
-                cut.size = boxSize;
-                cut.carving = true;
-                cut.carveOnlyStationary = true;
-                cut.carvingTimeToStationary = 0f;   // (it never moves: cut at the navigation system's next update)
-                cut.enabled = false;   // (all of them switched on together once the room stands, a few a frame)
-                _cuts.Add(cut);
-            }
-            piece.gameObject.SetActive(true);
-            return piece;
-        }
-
-        // The places to sit, on the seats the plan gave a use, with where somebody stands to sit down.
+        // The seats the plan gave a use, with where somebody stands to sit down.
         private void Seats(Transform[] made)
         {
             _seats.Clear();
@@ -656,8 +438,8 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // The player's desk among the seats at a desk with something on it, in the plan's order: the seed's pick if the
-        // player can walk to it from the door, otherwise the next one round that they can (-1 for none, or none wanted).
+        // The player's seat among those at a desk: the seed's pick if it can be walked to from the door, else the next
+        // round that can; -1 for none, or none wanted.
         private int PlayerSeat()
         {
             _desk = null;
@@ -699,9 +481,9 @@ namespace RealLifeOverhaul.FitOut
         }
 
         private readonly List<int> _deskSeats = new List<int>(32);
-        private int _deskOf, _deskShift;   // the floor's desks, and how far round from the seed's pick the player's is (-1: none can be walked to)
+        private int _deskOf, _deskShift;   // the floor's desks, and how far round from the seed's pick the player's is (-1: none)
 
-        // The middle of the largest piece to be cut out of the floor, where it is walkable now: once it is not, the floor is cut.
+        // The middle of the largest piece to be cut, walkable now: once it is not, the floor is cut.
         private bool CarveProbe(Request r, out Vector3 probe)
         {
             probe = Vector3.zero;
@@ -740,11 +522,8 @@ namespace RealLifeOverhaul.FitOut
             return _stopsView;
         }
 
-        // ---------------------------------------------------------------- the look
-
-        // The design's walls and floors on the room, by the game's own call. Only while the player is in this unit: the
-        // game writes a unit's look into the save only for one the player rents, and puts each unit's own look back on
-        // the room every time it loads one.
+        // By the game's own call, only while the player is in the unit: the game saves a unit's look only for one the
+        // player rents, and puts each unit's own look back every time it loads one.
         private void ApplyLook(Request r)
         {
             try
@@ -769,7 +548,7 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // The unit's own look back, if the player is still in it; out of it, the game puts it back when it next loads the unit.
+        // If the player has left, the game puts the look back when it next loads the unit.
         private void RestoreLook()
         {
             Buildings.Building on = _lookOn;
@@ -794,8 +573,6 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // ---------------------------------------------------------------- once a second, and away
-
         /// <summary>Once a second while the player is in the room: the people.</summary>
         public void Tick(float now)
         {
@@ -805,7 +582,7 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        /// <summary>Hidden (the game's placement mode in a place of the player's) and shown again; the people go meanwhile.</summary>
+        /// <summary>Hidden for the game's placement mode and shown again; the people go meanwhile.</summary>
         public void Hide(bool hidden)
         {
             if (_root == null || hidden == _hidden)
@@ -865,7 +642,7 @@ namespace RealLifeOverhaul.FitOut
             _said.Append("; built in ").Append(_frames).Append(" frames, ").Append(_workMs.ToString("F0")).Append(" ms of work");
         }
 
-        /// <summary>The player has left (or the part is going): the people sent away, the pieces destroyed, the room's own look back. Safe at any time.</summary>
+        /// <summary>The people sent away, the pieces destroyed, the room's own look back. Safe at any time.</summary>
         public void End()
         {
             try

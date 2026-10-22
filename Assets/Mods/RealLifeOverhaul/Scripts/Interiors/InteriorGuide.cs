@@ -5,9 +5,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Interiors
 {
     /// <summary>
-    /// The feature's entries in the mod's feature list, and the figures its Guide pages print: every {name} in their
-    /// text is filled from <see cref="InteriorRules"/> here, so a page never says anything the feature does not do.
-    /// Called once, when the feature list is built (Meta/FeatureList); each figure is worked out when a page is opened.
+    /// The feature's entries in the feature list and the figures its Guide pages print, each {name} filled from
+    /// <see cref="InteriorRules"/> when a page opens, so a page never says what the feature does not do.
     /// </summary>
     public static class InteriorGuide
     {
@@ -99,7 +98,7 @@ namespace RealLifeOverhaul.Interiors
                 .Fact("in_basket_poor", () => Share(InteriorRules.BasketMostPoor))
                 .Fact("in_basket_rich", () => Share(InteriorRules.BasketMostRich))
                 .Fact("in_basket_middle", () => Share(InteriorRules.BasketShare(InteriorRules.BasketFullAt, InteriorRules.Standard(InteriorRules.IncomeMiddle, 0))))
-                .Fact("in_complaint_dip", () => N(-BusinessCatalogue.ComplaintDip));   // (in_bound, in_bound_top and in_ramp are the main feature's)
+                .Fact("in_complaint_dip", () => N(-BusinessCatalogue.ComplaintDip));   // in_bound, in_bound_top and in_ramp are the main feature's
 
             Features.Add("interiors_decor", "reallife_meta_title_interiors_decor")
                 .About("reallife_guide_interiors_decor_about").Help("reallife_guide_interiors_decor")
