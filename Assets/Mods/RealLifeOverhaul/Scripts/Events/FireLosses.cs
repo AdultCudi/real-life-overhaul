@@ -3,10 +3,9 @@ using System;
 namespace RealLifeOverhaul.Events
 {
     /// <summary>
-    /// What a fire has cost one of the player's businesses, for whoever outside the fires wants to know (business
-    /// insurance, through Wiring/CompanyLinks). The loss itself is FireDamage's and is not changed by anybody who
-    /// listens: this only says, once, that a repair bill has just been charged, at which business and for how much.
-    /// Nothing here runs on a timer. A listener that throws is not allowed to stop the others or the fire.
+    /// Tells other features (business insurance, through Wiring/CompanyLinks) once that a fire's repair bill was charged to
+    /// one of the player's businesses. Listeners cannot change the loss, and one that throws stops neither the others nor
+    /// the fire.
     /// </summary>
     public static class FireLosses
     {
