@@ -9,19 +9,17 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// On the HUD phone's grid, switched on only while one of its folders is open (PhoneGridPager.Keys): the game's cancel
-    /// key goes back to the home screen, as the game's own windows close on it, and the press is taken so that the game's
-    /// menu does not open as well (PlayerAction.Reset, as TravelListKeys takes it). Only while nothing the game's key would
-    /// close first is up: a question, the game's menu, the full menu, the map, the options, a panel of an activity, a
-    /// dialogue, a building's card, a preview or the interior designer, a list window of the mod's, or a field being typed
-    /// in, and while the phone is folded away; then the key is left to the game. It runs before the game's own key handling.
-    ///
-    /// Cost: nothing while no folder is open (switched off); while one is, one look at the key a frame.
+    /// On the HUD phone's grid, on only while one of its folders is open (PhoneGridPager.Keys): the game's cancel key goes
+    /// back to the home screen, the press taken so the game's menu does not open too (PlayerAction.Reset, as TravelListKeys
+    /// does). Only while nothing the game's key would close first is up (a question, a menu, the map, the options, an
+    /// activity's panel, a dialogue, a building's card, a preview or the designer, a list window, a field being typed in)
+    /// and the phone is not folded away. Runs before the game's own key handling. Costs nothing while no folder is open;
+    /// while one is, one look at the key a frame.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     public sealed class PhoneFolderKeys : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "PhoneFolderKeys", typeof(PhoneFolderKeys));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "PhoneFolderKeys", typeof(PhoneFolderKeys));   // its Update
         private static readonly int HotUpdate = HotSpots.Slot("Core: PhoneFolderKeys.Update");
 
         internal PhoneGridPager Pager;
@@ -32,7 +30,7 @@ namespace RealLifeOverhaul.GameUi
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try
@@ -60,7 +58,7 @@ namespace RealLifeOverhaul.GameUi
             Pager.CloseFolder();
         }
 
-        // Whether nothing of the game's that the key closes first is up (the order of the game's CancelButtonHandler).
+        // Nothing of the game's that the key closes first is up, in the order of the game's CancelButtonHandler.
         private static bool KeyIsFree()
         {
             if (_without || TravelList.AnyOpen)
@@ -94,7 +92,7 @@ namespace RealLifeOverhaul.GameUi
             }
             if (uis.smartphoneCollapsibleWindow != null && uis.smartphoneCollapsibleWindow.IsCollapsed)
             {
-                return false;   // (the phone folded away: the key is the game's, the folder stays as it was)
+                return false;   // the phone folded away: the key is the game's, the folder stays
             }
             if (uis.buildingResume != null && GameMembers.TargetOf(uis.buildingResume) != null)
             {
@@ -105,13 +103,12 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// On each of the mod's app buttons on the HUD phone, while its home screen has folders: a right click on the button
-    /// opens the list to move the app (PhoneMove), into another folder, onto the home screen or into the dock, as a long
-    /// press does on a real phone. A left click is the button's own. It has no Update: it costs nothing a frame.
+    /// On each mod app button on the HUD phone while it has folders: a right click opens the list to move the app
+    /// (PhoneMove), as a long press does on a real phone; a left click is the button's own. Costs nothing a frame.
     /// </summary>
     public sealed class PhoneAppPress : MonoBehaviour, IPointerClickHandler
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "PhoneAppPress", typeof(PhoneAppPress));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "PhoneAppPress", typeof(PhoneAppPress));   // the game's calls of it
 
         internal PhoneGridPager Pager;
 
