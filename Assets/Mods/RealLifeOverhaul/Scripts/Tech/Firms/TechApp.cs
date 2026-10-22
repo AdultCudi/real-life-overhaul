@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Smartphone;
 using UnityEngine;
@@ -17,8 +16,6 @@ namespace RealLifeOverhaul.Tech
             "reallife_tech_tab_firms", "reallife_tech_tab_products", "reallife_tech_tab_contracts", "reallife_tech_tab_startups", "reallife_tech_tab_funding",
             "reallife_tech_tab_infra"
         };
-
-        public static IModLogger Logger;
 
         private readonly TechDirector _director;
         private readonly List<TableRow> _rows = new List<TableRow>(32);

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BAModAPI;
 using Helpers;
 using Localizor;
 using RealLifeOverhaul.Economy;
@@ -24,8 +23,6 @@ namespace RealLifeOverhaul.Rivals
         public const string RentKey = "reallife_transaction_rival_rent";
         public const string CounterKey = "reallife_transaction_rival_counter";
         public const string BreakUpKey = "reallife_transaction_rival_breakup";
-
-        public static IModLogger Logger;
 
         private static readonly List<BuildingRegistration> Regs = new List<BuildingRegistration>(16);
 
