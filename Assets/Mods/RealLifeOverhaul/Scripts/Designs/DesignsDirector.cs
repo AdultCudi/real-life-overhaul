@@ -6,29 +6,21 @@ using BAModAPI;
 namespace RealLifeOverhaul.Designs
 {
     /// <summary>
-    /// The ready-made designs (Scripts/Designs): the mod's business types are offered designs by the game's interior
-    /// installation firms as the game's own businesses are, made from the game's own (DesignPlan, DesignRules) and put in the
-    /// folder the firms read them from, one file a design, as the game's are (DesignFiles). With the option off they are
-    /// taken out again, and so the firms offer what they did before.
-    ///
-    /// When: at the game's start, and when the option is switched, on a worker thread, one job at a time (a switch during a
-    /// job is done when it ends). While the game's files and these rules are as they were last time, a job only lists the
-    /// folders and reads the list: nothing is written. The cost: no component and nothing per frame; the files on the
-    /// worker; at a city load, with Developer diagnostics on, one look at the firms' own lists (a folder listing each).
-    /// Nothing is saved: the designs are derived from the game's files. Nothing is sent: an installation is the game's own.
+    /// Ready-made designs: the game's installation firms offer the mod's business types designs made from the game's own,
+    /// put in the folder the firms read; with the option off they are taken out again. Run at the start and on a switch,
+    /// on a worker thread, one job at a time; unchanged files mean nothing is written. Nothing per frame, saved or sent.
     /// </summary>
     public static partial class DesignsDirector
     {
         public static IModLogger Logger;
 
         private static readonly object Gate = new object();      // one job at a time
-        private static readonly object FilesGate = new object(); // the folder written by one hand at a time
+        private static readonly object FilesGate = new object(); // one writer of the folder at a time
         private static string _root;                             // StreamingAssets, read on the main thread
         private static bool _running, _again;
         private static volatile bool _wanted;
         private static volatile DesignsReport _last;
 
-        /// <summary>True while a job is putting the designs in place or taking them away.</summary>
         public static bool Working
         {
             get
@@ -40,10 +32,7 @@ namespace RealLifeOverhaul.Designs
             }
         }
 
-        /// <summary>
-        /// Puts the designs in place (on) or takes them away (off), on a worker thread. Called at the game's start with the
-        /// option as saved, and when the option is switched. The main thread only: the game's folder is asked for here.
-        /// </summary>
+        /// <summary>Puts the designs in place or takes them away on a worker thread. Called on the main thread, which asks for the folder.</summary>
         public static void Ask(bool on)
         {
             _wanted = on;
@@ -64,7 +53,7 @@ namespace RealLifeOverhaul.Designs
             Task.Run(() => Work(root));
         }
 
-        // On the worker: the job asked for, and again while the option was switched meanwhile.
+        // On the worker: again while the option was switched meanwhile.
         private static void Work(string root)
         {
             while (true)
@@ -123,10 +112,7 @@ namespace RealLifeOverhaul.Designs
                          + (r.Skipped > 0 ? ", " + r.Skipped + " left out (a file of that name is not the mod's)" : string.Empty) + " (" + r.Milliseconds + " ms).");
         }
 
-        /// <summary>
-        /// For "prepare this save for removing the mod": the designs taken out of the game's folder now, on this thread (a job
-        /// under way is waited for, and one asked for after does nothing more). Returns how many were taken away.
-        /// </summary>
+        /// <summary>For removing the mod: takes the designs away now, on this thread, after any job under way. Returns how many.</summary>
         public static int TakeAway()
         {
             _wanted = false;
@@ -137,10 +123,7 @@ namespace RealLifeOverhaul.Designs
             return Run(_root, false).Removed;
         }
 
-        /// <summary>
-        /// A city has loaded: with Developer diagnostics on, the game's own installation firm is asked for every type and size
-        /// on the list, and one line says whether it lists what was written. The main thread only; a folder listing each.
-        /// </summary>
+        /// <summary>With Developer diagnostics on, a self-check that the game's firm lists what was written. Main thread; a folder listing each.</summary>
         public static void CityLoaded()
         {
             if (!Meta.Dev.Verbose || !Settings.Designs || Working || _root == null)
