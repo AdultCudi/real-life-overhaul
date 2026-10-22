@@ -3,37 +3,29 @@ using System.Collections.Generic;
 using System.Reflection;
 using BAModAPI;
 using Helpers;
-using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Puts the game's on-screen place markers on the right side of the screen when what they mark is
-    /// behind the camera. The game was made for a camera that looks down on the player, where nothing
-    /// marked is ever behind it; it projects each marker straight to the screen, and a point behind a
-    /// camera projects mirrored through the middle, so with the mod's street-level cameras the icon of a car
-    /// behind the player showed up ahead of them, on the opposite side.
-    ///
-    /// After the game has placed its markers each frame (and only while the mod's camera is on and the
-    /// map is closed), every marker whose target is behind the camera is moved: direction markers
-    /// (destination, deliveries, taxi, the private driver) and the player's own vehicles to the screen
-    /// edge on the side the target really is, in the lower half ("turn round"); every other marker out
-    /// of the picture, as the game does with what is out of view. Markers in front are never touched.
-    /// A few subtractions per marker, nothing allocated.
+    /// Puts the game's on-screen place markers on the right side of the screen when what they mark is behind the camera.
+    /// The game projects each marker straight to the screen, and a point behind the camera projects mirrored, which a camera
+    /// looking down on the player never meets but the mod's street-level cameras do. Each frame after the game has placed
+    /// its markers (the mod's camera on, the map closed), a direction marker or one of the player's vehicles behind the
+    /// camera goes to the screen's edge on its true side, in the lower half; any other marker behind goes out of the picture.
+    /// Cost: a few subtractions per marker, nothing allocated.
     /// </summary>
     public sealed class PoiDirection : MonoBehaviour
     {
         private const float NearlyBehind = -0.05f;   // camera space looks down -z: at or behind the lens from here
-        private const int Remembered = 8;
+        private const int Remembered = 8;            // direction markers whose private fields are kept
 
         public static IModLogger Logger;
 
-        private static readonly FieldInfo PermanentField = GameContract.PermanentPois.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo PermanentField = GameContract.PermanentPois.Field;
         private static readonly FieldInfo DeadZoneField = GameContract.PoiDeadZone.Field;
         private static readonly FieldInfo PointerField = GameContract.PoiPointer.Field;
 
-        // What was read from a direction marker's private fields, so that is done once per marker.
         private readonly PointOfInterest[] _known = new PointOfInterest[Remembered];
         private readonly Vector4[] _deadZones = new Vector4[Remembered];
         private readonly RectTransform[] _pointers = new RectTransform[Remembered];
@@ -43,7 +35,7 @@ namespace RealLifeOverhaul
         private bool _lookedUp;
         private bool _failed;
 
-        private Canvas.WillRenderCanvases _correct;   // (made once, through the guard: Core/Guard)
+        private Canvas.WillRenderCanvases _correct;   // made once, through the guard
 
         private void OnEnable()
         {
@@ -96,11 +88,10 @@ namespace RealLifeOverhaul
                     Vector3 seen = view.MultiplyPoint3x4(marker.target.position + marker.offset);
                     if (seen.z < NearlyBehind || !marker.gameObject.activeSelf)
                     {
-                        continue;   // in front of the camera (or not shown): the game has it right
+                        continue;   // in front of the camera, or not shown
                     }
 
-                    // Which way the target lies, as the player would have to turn: sideways by where it is to
-                    // the camera's left or right, and always downwards, since it is behind.
+                    // Which way the player would have to turn: sideways by the target's side, and always down, as it is behind.
                     float sideways = seen.x;
                     float down = Mathf.Max(Mathf.Abs(seen.y), Mathf.Abs(seen.x) * 0.3f, 0.01f);
                     if (marker.isGuider)
@@ -115,7 +106,7 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
-                        marker.transform.position = new Vector3(-10000f, -10000f, 0f);   // out of view, like anything else not in the picture
+                        marker.transform.position = new Vector3(-10000f, -10000f, 0f);   // out of view, as the game does
                     }
                 }
             }
@@ -155,7 +146,7 @@ namespace RealLifeOverhaul
             RectTransform pointer = _pointers[slot];
             if (pointer != null)
             {
-                // The game's own convention: the pointer's rest position points down, turned by the angle from "up".
+                // The game's convention: the pointer at rest points down, turned by the angle from up.
                 pointer.rotation = Quaternion.Euler(0f, 0f, 180f + Vector2.SignedAngle(Vector2.up, new Vector2(x, y)));
             }
         }

@@ -5,34 +5,29 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// GTA-style chase camera for cars. The game's vehicle cameras are scene-authored
-    /// Cinemachine rigs with no script to steer, so this adds its own virtual camera and
-    /// raises its priority above the game's while the normal outdoor driving camera is live.
-    /// The look-back camera, garages and parking keep the game's own cameras.
-    /// It is the one looked through only while <see cref="CameraYield"/> orders it (the game asks for its vehicleCamera, the
-    /// options are on, no other author's mod drives the camera, the player is alive); for every other camera of the game's
-    /// it is let go. While it is looked through, the bridges are kept in sight (<see cref="BridgeHold"/>): the game would
-    /// otherwise hide the highway, and the car on it, from a camera this close to the deck.
-    /// Per frame: the orders read and the bridges' flag compared; while it is the one looked through, one ray at most for the
-    /// road under it and a few vector operations.
+    /// A chase camera for cars. The game's vehicle cameras are scene-authored Cinemachine rigs with nothing to steer, so this
+    /// adds its own virtual camera above them in priority while <see cref="CameraYield"/> orders it (the game asks for its
+    /// vehicleCamera); the look-back camera, garages and parking keep the game's own. While it is looked through, the bridge
+    /// under the car is kept in sight (<see cref="BridgeHold"/>). Per frame: the orders read; while live, at most one ray for
+    /// the road under it and a few vector operations.
     /// </summary>
     public class ChaseCamera : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("camera", "ChaseCamera", typeof(ChaseCamera));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("camera", "ChaseCamera", typeof(ChaseCamera));
 
-        private const int LivePriority = 100;
+        private const int LivePriority = 100;       // over the game's cameras
         private const int IdlePriority = -100;
-        private const float TargetHeight = 1.3f;
-        private const float RestPitch = 12f;
-        private const float MinPitch = -35f;        // under 0 the view looks up
-        private const float MaxPitch = 65f;
+        private const float TargetHeight = 1.3f;    // metres above the car's origin
+        private const float RestPitch = 12f;        // degrees
+        private const float MinPitch = -35f;        // degrees; under 0 the view looks up
+        private const float MaxPitch = 65f;         // degrees
         private const float RecenterDelay = 1.2f;   // seconds without mouse input before swinging back behind the car
         private const float RecenterSpeed = 2f;     // m/s the car must be moving
 
         // The view may look up further than the camera can swing down: the camera stops over the road and the rest of
         // the tilt is a look upwards from where it stands (Orbit).
         private const float GroundClearance = 0.5f;   // metres between the camera and the road under it
-        private const float LowOrbit = 10f;           // degrees: at this tilt or steeper (the resting one too) the camera is well over the road, which is then not looked at
+        private const float LowOrbit = 10f;           // degrees: at this tilt or steeper the camera is well over the road, not looked at
         private const float FloorEase = 12f;          // per second, so that a kerb under the camera does not make it hop
 
         public static IModLogger Logger;
@@ -40,7 +35,7 @@ namespace RealLifeOverhaul
         /// <summary>True while the mouse is steering the chase camera (cursor locked).</summary>
         public static bool IsLooking { get; private set; }
 
-        /// <summary>True while the chase camera is the one asked for (its priority is above the game's).</summary>
+        /// <summary>True while the chase camera is the one asked for.</summary>
         public static bool Live { get; private set; }
 
         private CinemachineVirtualCamera _vcam;
@@ -49,7 +44,7 @@ namespace RealLifeOverhaul
         private float _yaw;
         private float _pitch = RestPitch;
         private float _floor;          // the lowest the camera may swing round the car (degrees of tilt), eased
-        private bool _hasFloor;        // false until the first frame after the camera comes on, which takes the road as it is
+        private bool _hasFloor;        // false until the first frame after the camera comes on
         private float _yawVelocity;
         private float _pitchVelocity;
         private float _distance;
@@ -57,12 +52,12 @@ namespace RealLifeOverhaul
         private float _lastMouseTime;
         private Vector3 _lastPos;
 
-        /// <summary>True while the chase camera is live, in the blend out of it too (for the bridge's hold).</summary>
+        /// <summary>True while the chase camera is live, in the blend out of it too.</summary>
         public static bool InPicture { get; private set; }
 
-        private static ChaseCamera _instance;   // the city's one, for the feature's clean-up
+        private static ChaseCamera _instance;   // for the feature's clean-up
 
-        // Empire Motors' view on V is looked for behind the loading screen, not the first time this camera comes on (Camera/EmpireView).
+        // Empire Motors' view on V is looked for behind the loading screen, not the first time this camera comes on.
         private void Awake()
         {
             _instance = this;
@@ -75,7 +70,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 LetGo();
                 return;
             }
@@ -93,9 +88,9 @@ namespace RealLifeOverhaul
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
-            InPicture = _vcam != null && (_active || InPicture) && CinemachineCore.Instance.IsLive(_vcam);   // live, in a blend out too (the bridge's hold)
-            CameraOrders orders = CameraYield.Orders;   // the one rule of when this mod's camera stands aside (Camera/CameraYieldRules)
-            BridgeHold.Hold(orders.HoldBridges);        // (the on-foot camera holds them too: whichever runs first in the frame does it)
+            InPicture = _vcam != null && (_active || InPicture) && CinemachineCore.Instance.IsLive(_vcam);
+            CameraOrders orders = CameraYield.Orders;
+            BridgeHold.Hold(orders.HoldBridges);        // the on-foot camera holds them too: whichever runs first does it
             if (!orders.Chase || vehicle == null)
             {
                 Deactivate();
@@ -112,7 +107,7 @@ namespace RealLifeOverhaul
                 _distance = Settings.CarCameraDistance;
             }
 
-            // Mouse steering of the car and mouse look can't share the mouse (the rule: CameraYieldRules.Decide).
+            // Mouse steering of the car and mouse look cannot share the mouse.
             bool look = orders.ChaseLook;
             SetLooking(look);
 
@@ -143,14 +138,13 @@ namespace RealLifeOverhaul
                 _pitch = Mathf.SmoothDamp(_pitch, RestPitch, ref _pitchVelocity, 0.6f, Mathf.Infinity, dt);
             }
 
-            // The camera swings round the car no lower than the road allows; a tilt past that turns the view up from
-            // where the camera stands, as a head turns.
+            // The camera swings round the car no lower than the road allows; a tilt past that turns the view up, as a head turns.
             Vector3 target = car.position + Vector3.up * TargetHeight;
             float yaw = _yaw + (ThirdPersonCamera.LookBehind ? 180f : 0f);
             Quaternion orbit = Quaternion.Euler(Orbit(target, yaw, dt), yaw, 0f);
             _vcam.transform.SetPositionAndRotation(target - orbit * Vector3.forward * _distance, Quaternion.Euler(_pitch, yaw, 0f));
 
-            if (!Mathf.Approximately(_vcam.m_Lens.FieldOfView, Settings.CameraFov))   // written only when the option has changed
+            if (!Mathf.Approximately(_vcam.m_Lens.FieldOfView, Settings.CameraFov))
             {
                 LensSettings lens = _vcam.m_Lens;
                 lens.FieldOfView = Settings.CameraFov;
@@ -158,8 +152,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // How high the camera swings round the car, in degrees of tilt: the tilt asked for, but never so low that the
-        // camera comes nearer the road under it than GroundClearance. One ray at most, and only while the tilt is low.
+        // How high the camera swings round the car, in degrees of tilt: never so low that it comes nearer the road under it
+        // than GroundClearance. One ray at most, and only while the tilt is low.
         private float Orbit(Vector3 target, float yaw, float dt)
         {
             float above = TargetHeight;   // as on a level road
@@ -192,7 +186,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            EmpireView.Claim(gm);   // Empire Motors' view on the same key kept off while the key is V (Camera/EmpireView): once a run
+            EmpireView.Claim(gm);   // Empire Motors' view on the same key kept off while the key is V
             _yaw = vehicle.transform.eulerAngles.y;
             _pitch = RestPitch;
             _hasFloor = false;
@@ -240,7 +234,7 @@ namespace RealLifeOverhaul
             SetLooking(false);
             Live = false;
             InPicture = false;
-            BridgeHold.Release();   // the bridge back to the game's hiding as it was (the city unloading)
+            BridgeHold.Release();   // the city unloading
             if (_instance == this)
             {
                 _instance = null;
@@ -248,8 +242,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The chase camera let go at once, the pointer freed and the bridge given back: for the camera feature's clean-up
-        /// (Meta/FeatureList), which the guard runs when it switches the feature off after its faults. Safe at any time.
+        /// Lets the chase camera go at once, frees the pointer and gives the bridge back: the camera feature's clean-up when
+        /// the guard switches it off. Safe at any time.
         /// </summary>
         public static void LetGo()
         {
