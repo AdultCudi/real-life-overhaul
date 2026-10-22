@@ -49,7 +49,8 @@ namespace RealLifeOverhaul
             bool motor = place.Kind == BikePlaceKind.MotorbikeStand;
             _panelPlace = place;
             _acts.Clear();
-            list.Begin(GarageText.T(motor ? "reallife_bike_panel_motorbikes" : "reallife_bike_panel_bicycles"), GarageText.T(motor ? "reallife_bike_list_info_motor" : "reallife_bike_list_info_bicycle"));
+            list.Begin(GarageText.T(motor ? "reallife_bike_panel_motorbikes" : "reallife_bike_panel_bicycles"),
+                GarageText.T(motor ? "reallife_bike_list_info_motor" : "reallife_bike_list_info_bicycle"));
             foreach (BikeDef def in BikeCatalogue.All)
             {
                 if (def.Motor != motor)
@@ -74,13 +75,15 @@ namespace RealLifeOverhaul
             {
                 int offer = Mathf.RoundToInt(near.Def.Cost * GarageCatalogue.Resale);
                 string id = near.Record.Id;
-                Row(list, GarageText.T(near.Def.Name), GarageText.T("reallife_bike_sell", "name", GarageText.T(near.Def.Name), "price", GarageText.Money(offer)), "reallife_bike_button_sell", true, () => Sell(id, offer));
+                Row(list, GarageText.T(near.Def.Name), GarageText.T("reallife_bike_sell", "name", GarageText.T(near.Def.Name), "price", GarageText.Money(offer)),
+                    "reallife_bike_button_sell", true, () => Sell(id, offer));
             }
             _listClosing = null;
             list.Open(_onPick, _onListClosed);
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Garage check (stand list): the game's list is open at a " + place.Kind + " with " + _acts.Count + " entries" + (near != null ? " (one of them sells the player's own standing by)" : string.Empty) + "; "
+                Logger?.Info("Garage check (stand list): the game's list is open at a " + place.Kind + " with " + _acts.Count + " entries"
+                             + (near != null ? " (one of them sells the player's own standing by)" : string.Empty) + "; "
                              + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }

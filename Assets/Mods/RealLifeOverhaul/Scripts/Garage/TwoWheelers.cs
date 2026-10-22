@@ -415,7 +415,8 @@ namespace RealLifeOverhaul
             {
                 _promptPlace = place;
                 _promptState = state;
-                string title = GarageText.T(place.Kind == BikePlaceKind.Dock ? "reallife_bike_place_dock" : place.Kind == BikePlaceKind.BicycleShop ? "reallife_bike_place_rack" : "reallife_bike_place_stand");
+                string title = GarageText.T(place.Kind == BikePlaceKind.Dock ? "reallife_bike_place_dock"
+                    : place.Kind == BikePlaceKind.BicycleShop ? "reallife_bike_place_rack" : "reallife_bike_place_stand");
                 if (state == 1)
                 {
                     _world.Lines(title, GarageText.T("reallife_bike_line_hire"), GarageText.Money(BikeCatalogue.DockFee), WorldPanel.White());
@@ -428,7 +429,8 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    _world.Lines(title, GarageText.T(place.Kind == BikePlaceKind.BicycleShop ? "reallife_bike_panel_bicycles" : "reallife_bike_panel_motorbikes"), GarageText.T("reallife_bike_line_sale"), WorldPanel.Green());
+                    _world.Lines(title, GarageText.T(place.Kind == BikePlaceKind.BicycleShop ? "reallife_bike_panel_bicycles" : "reallife_bike_panel_motorbikes"),
+                        GarageText.T("reallife_bike_line_sale"), WorldPanel.Green());
                     _world.Buttons("reallife_bike_button_browse", _onUse, true, null, null, false);
                 }
             }
@@ -447,7 +449,8 @@ namespace RealLifeOverhaul
                 _worldState = shown;
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Garage check (place panel): at a " + place.Kind + ", " + Mathf.Sqrt(CitySpots.Flat(place.Position - player)).ToString("F1", CultureInfo.InvariantCulture) + " m from it (offered within " + BikePlaces.Reach.ToString("F1", CultureInfo.InvariantCulture) + " m): "
+                    Logger?.Info("Garage check (place panel): at a " + place.Kind + ", " + Mathf.Sqrt(CitySpots.Flat(place.Position - player)).ToString("F1", CultureInfo.InvariantCulture)
+                                 + " m from it (offered within " + BikePlaces.Reach.ToString("F1", CultureInfo.InvariantCulture) + " m): "
                                  + (shown == 1 ? "the game's own panel is up with '" + (state == 1 ? "Hire" : state == 2 ? "Return" : "Browse") + "' on the game's interact key: PASS"
                                      : "FAIL (the game's panel is showing another place; it is tried again while the player stands here)") + ".");
                 }

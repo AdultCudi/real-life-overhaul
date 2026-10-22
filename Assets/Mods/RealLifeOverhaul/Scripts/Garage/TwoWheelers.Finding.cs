@@ -31,7 +31,8 @@ namespace RealLifeOverhaul
             bool shown = _mark.Show(_pointAt + Vector3.up * 1.4f, _pointLabel);
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Garage check (marker): '" + _pointLabel + "' at " + _pointAt.ToString("F1", CultureInfo.InvariantCulture) + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked yet (the game's marker is on a job or an outing): FAIL")
+                Logger?.Info("Garage check (marker): '" + _pointLabel + "' at " + _pointAt.ToString("F1", CultureInfo.InvariantCulture) + " is "
+                             + (shown ? "on the game's destination marker: PASS" : "NOT marked yet (the game's marker is on a job or an outing): FAIL")
                              + ".");
             }
         }
