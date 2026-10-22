@@ -1,8 +1,31 @@
-0.48.0
+0.49.0
 
 New
-- Managers: each manager's panel on the Company app's Managers tab has a switch for every task they do, so you can keep the rota, prices or anything else for yourself or for another mod. The Company app has an Open in BizMan button on each business's page. It takes you straight to that business in BizMan. Levels for your own bank: it is now founded as a Community Bank for a small part of the old cost, with limits on its branches, loans and savings, and moves up to a Regional Bank and then a National Bank as it grows and you pay for a larger licence. A bank you already have keeps everything it holds. You can also pay yourself from the bank, a share of each day's profit on a slider or a fixed sum a day, and leave the rest in it to grow. Calling somebody back after a text opens on what they wrote about, from Mom's news to a friend's worry or one of life's little moments. Each text is taken up once, on its day or the next. People text the day after an outing or a date about how it went, and the people in your life text after your big news without an RLO Texts pack too. With a newer pack, a text remembers what that person last texted you about.
+- More people to meet: the gym, your job, the coffee cart, your street, your shop, Flare and evenings out keep bringing new faces, one a day at most, up to 400 people in your life. With that many, only those closest to you, family, your partner and anyone you met lately get in touch on their own. Call the others whenever you like. Interviews at a place: at an employer's you walk in at the door, the screen goes black while the interview lasts and you come back out at the same door. A video interview from home sits you down at your computer, if your home has one. Managers have a directory of their own on the Company app's Managers tab: regional managers by district, with the places they look over and who they stand in for, the managers of businesses, of factories and offices and of warehouses in lists of their own, the places with no manager, and a Needs you list of what to look at. Each list sorts by any column and filters by district, a manager's panel shows their pay and leads to their regional manager, and the first page counts every group, what it costs a month and who is off sick. Meals and music: when you eat and a free seat is near, you sit down with your food in front of you, as customers do in a fast food place. A dish cooked at home is carried to the table and eaten there, and a speaker playing music at home offers Dance in its panel. Dancing to the music lifts your mood and costs no energy.
 
 Fixed
-- A manager no longer rewrites the rota out of nowhere and leaves staff off it. They look at it only on Sunday evening, only when an hour has nobody or somebody has no shift, and write a new one only if it keeps all the staff on it.
-- Ending a call by putting the phone away or pressing Esc, instead of with its own button, no longer leaves its typing box open, which stopped doors, keys and the mod's buttons from working. The same goes for a talk in the street, a phone app's box, a door gone through and a load. A talk in person that a call interrupted can be ended again.
+- The Planner's badge counts your own all-day notes on their day.
+- A hold-up in your own shop empties the shop's till, a quarter of what it takes in a day, and shows in its books as theft, instead of taking a share of all your money.
+- In a Going Public session, being let out of a holding cell no longer names hours held that never passed.
+- The reward for a citizen's arrest and a passer-by's tip rise with the city's prices.
+- The late fee for a hired bicycle not brought back is always charged, as its notice says, even when it takes you below zero.
+- A spare rolled hose lies by the fire engine at a fire.
+- As a guest in a Going Public session, the weather no longer changes the speed of the host's traffic.
+- A car no longer passes through a medic, a mechanic or anyone else of the mod's kneeling in the street.
+- A smear campaign against your business can come whenever there is room for the customers it costs.
+- Refreshing the finishes says why when it cannot be done, and the interiors' wear test ages them as play does, by the wear setting and the cleaning service.
+- In a Going Public session, driving another player's car no longer gives it this mod's engine figures.
+- A payment refused at the doctor's, on the phone or at the clinic, ends the conversation with a word instead of leaving the offer on screen.
+- Staff thank you for a raise even when they first saw it on a day they texted you about something else.
+- Asked what's good around here, a stranger never names the same business twice.
+- RLO Texts keeps going when a street conversation's next answer is asked ahead just as a reply comes back.
+- A decision a regional manager makes standing in for a manager off sick is counted as theirs, so each manager's month says what they decided, and undoing it counts against whoever made it.
+- A regional manager off sick no longer looks over the district's decisions, and a manager's panel no longer says they stand in on such a day. The panel's chance of a mistake is the one that day's decisions are made with.
+- The list of who could be a regional manager says who already is one of another district, and appointing them says that district is left with none.
+- A kind of decision a place no longer has, as when a business becomes a factory, opens the manager's panel instead of a switch that does nothing.
+- With more places than the company follows, the Managers tab says how many are not listed instead of leaving them out without a word.
+- A fault in one of the mod's features no longer stops the features it works with, so the morning paper keeps the other features' pieces.
+- Switching a feature's option on or off always brings the names of its special buildings up to date.
+- If an app cannot be given more tabs, its tab bar is left as the game's own, with no stray tabs.
+- No stutter when the mod's apps are put on the phone after a load, as the game's pictures they use are found behind the loading screen.
+- The marker on a timing bar stays in the right place after the screen size or the interface scale changes.
