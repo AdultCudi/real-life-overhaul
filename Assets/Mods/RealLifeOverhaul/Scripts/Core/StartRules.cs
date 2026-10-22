@@ -88,7 +88,6 @@ namespace RealLifeOverhaul
             Begin();
         }
 
-        public int Seats => _first.Length;
 
         public int GivenCount => _givenCount;
 

@@ -34,9 +34,8 @@ namespace RealLifeOverhaul
         /// <summary>True from the moment it was made solid until <see cref="Verify"/> has looked.</summary>
         public bool VerifyDue => _verifyAt >= 0f;
 
-        /// <summary>The walker's radius the box was sized for, and the half depth it came to (for the log).</summary>
+        /// <summary>The walker's radius the box was sized for, for the log.</summary>
         public float Radius => WalkerRadius();
-        public float HalfDepth => _canCarve ? _halfDepth : _steerHalfDepth;
 
         /// <summary>The radius the navigation mesh was made for, read once from the player's walker; 0.5 m until there is one.</summary>
         public static float WalkerRadius()

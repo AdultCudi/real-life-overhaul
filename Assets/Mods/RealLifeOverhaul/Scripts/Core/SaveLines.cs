@@ -109,18 +109,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        public static List<string> Keys(Dictionary<string, string> data)
-        {
-            var keys = new List<string>(Kept.Count);
-            if (data != null && ReferenceEquals(data, _save))
-            {
-                foreach (Line line in Kept)
-                {
-                    keys.Add(line.Key);
-                }
-            }
-            return keys;
-        }
 
         /// <summary>Puts every kept line back as read, after the features wrote and before the game writes; returns how many.</summary>
         public static int PutBack(Dictionary<string, string> data)

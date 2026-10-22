@@ -145,20 +145,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>The game hour the longest waiting business was first asked for in; false if none waits.</summary>
-        public bool Oldest(out int hour)
-        {
-            for (int i = _head; i < _order.Count; i++)
-            {
-                if (_order[i].Live)
-                {
-                    hour = _order[i].Hour;
-                    return true;
-                }
-            }
-            hour = 0;
-            return false;
-        }
 
         /// <summary>A business's list was drawn with a figure, by the mod or the game's day, and stands so now.</summary>
         public void Drew(T key, int figure, DrawPrint print)

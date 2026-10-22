@@ -54,8 +54,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The seat's first load has been done since the city loaded (for the self-check and the tests).</summary>
-        public static bool Started(int seat) => Queue.Given(seat) != int.MinValue;
 
         // With Developer diagnostics on, once every seat that asked has had its turn: the frames given, against the rule.
         private static void Tell()
