@@ -17,32 +17,21 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Events
 {
     /// <summary>
-    /// City events: fires and the fire service, weather that matters, and street events.
-    ///
-    /// ONE LARGE SCENE AT A TIME, across the whole mod. This director runs at most one scene (a
-    /// fire or a street event) and starts none while a traffic accident, a crime scene or police
-    /// business with the player is on; the others ask <see cref="IsActive"/> before they start
-    /// one of theirs. It owns what its scenes share, all made once and reused: the event pool of
-    /// eight people and its props, a cordon of its own, the fire effects, the hose, the fire
-    /// engine, a patrol car, and two roles for officers from the accident pool.
-    ///
-    /// WHAT IT COSTS. With nothing on: one comparison a frame, and once a second the weather (two
-    /// flags and the hour), the calendar (on the hour) and, every twenty seconds, a roll for a
-    /// fire. With a scene on: the marker per frame (no allocation), the scene four times a second,
-    /// most of it once a second. People: 8 of its own and at most 2 officers. Vehicles: at most 3
-    /// (engine, patrol car, the burning car). Particles: 418 for a fire, 240 for fireworks, never
-    /// both. Nothing is saved but one line in modData (the calendar's number, what has been
-    /// announced, and a business a fire closed so that it is reopened); a save made with a scene
-    /// on holds nothing of it. Any fault clears the street, logs once and switches city events
-    /// off for the session.
+    /// City events: fires and the fire service, weather that matters, and street events. One large scene at a time across
+    /// the mod: none starts while an accident, a crime scene or police business is on, and the others ask
+    /// <see cref="IsActive"/>. It owns what its scenes share, made once and reused: eight people and their props, a cordon,
+    /// the fire effects, hose and engine, a patrol car and two officers' roles (vehicles at most 3; particles 418 for a fire,
+    /// 240 for fireworks, never both). Cost: idle, one comparison a frame and a look once a second; with a scene on, the
+    /// marker each frame and the scene four times a second. Saved: one line in modData, never a scene. A fault clears the
+    /// street and switches city events off for the session.
     /// </summary>
-    public sealed class EventDirector : MonoBehaviour
+    public sealed partial class EventDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("events", "EventDirector", typeof(EventDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("events", "EventDirector", typeof(EventDirector));
 
         private const string StateKey = "reallife:events";
         private const string BulletinId = "reallife-bulletin";
-        private const float RollInterval = 20f;
+        private const float RollInterval = 20f;   // seconds between rolls for a fire or an event
 
         public static IModLogger Logger;
         public static EventDirector Instance { get; private set; }
@@ -50,7 +39,7 @@ namespace RealLifeOverhaul.Events
         /// <summary>True while a fire or a street event is on: accidents, crimes and police scenes should not start.</summary>
         public static bool IsActive => Instance != null && Instance._scene != null;
 
-        /// <summary>True while a street event (never a fire) is on: where it is and the locale key of its name. For the city map (World/MapLinks).</summary>
+        /// <summary>True while a street event (never a fire) is on, with where it is and its name's locale key, for the city map.</summary>
         public static bool StreetEvent(out Vector3 at, out string nameKey)
         {
             EventDirector director = Instance;
@@ -90,7 +79,7 @@ namespace RealLifeOverhaul.Events
         private int _announcedDay, _toldDay, _doneDay;
         private int _stageFailures;
         private Contact _bulletin;
-        // A wreck another feature asked to have set alight (CrashFire): flames only, no engine.
+        // A wreck another feature set alight (CrashFire): flames only, no engine.
         private VehicleComponent _crashCar;
         private float _crashUntil;
 
@@ -98,7 +87,7 @@ namespace RealLifeOverhaul.Events
         {
             if (Settings.CityFires)
             {
-                Effects.Ready();   // false if the game has no smoke in memory yet: it looks again by itself, two minutes on
+                Effects.Ready();   // false while the game has no smoke in memory; it looks again two minutes on
             }
             return true;
         }
@@ -106,13 +95,12 @@ namespace RealLifeOverhaul.Events
         private void Awake()
         {
             Instance = this;
-            _mark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
+            _mark.Keep(this);   // the marker goes with this component
             Props = new EventProps(transform);
             People = new EventPeople(gameObject, Props);
             Cordon = new SceneCordon(transform);
             Effects = new FireEffects(transform);
-            // The fire's flames and smoke are copies of the game's smoke, found by going through everything in memory and
-            // then built: behind the loading screen, not in the frame the first fire starts.
+            // The flames and smoke copy the game's smoke, found by a search of memory: behind the loading screen.
             ScenePrewarm.Add("events: the fire's flames and smoke being built", PrewarmEffects);
             Sky = new Fireworks(transform);
             Hose = new Hose(transform);
@@ -123,8 +111,7 @@ namespace RealLifeOverhaul.Events
             _fire = new FireScene(this);
             _street = new StreetEventScene(this);
             _nextRoll = Time.time + 60f;   // the city settles first
-            // The street events' calendar and the weather's spells are drawn from the salt and the day: in a Going Public
-            // session the host's salt is everybody's, so every player's city has the same days (Core/SharedCity, part S).
+            // The calendar and the weather's spells come from the salt and the day; in Going Public the host's salt is everyone's.
             SharedCity.Register(new SharedCityPart
             {
                 Id = 'S', Name = "street events' calendar",
@@ -171,14 +158,14 @@ namespace RealLifeOverhaul.Events
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -209,13 +196,11 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        // ---------------------------------------------------------------- a scene that is on
-
         private void RunScene(float now)
         {
             if (now < _markerUntil)
             {
-                _mark.Until = _markerUntil;   // the marker's own end: past it the watch takes it off even if this scene has stopped
+                _mark.Until = _markerUntil;   // past it the watch takes the marker off even if the scene has stopped
                 _mark.Show(_scene.Focus, _label);
             }
             if (Effects.Burning && now >= _nextFlicker)
@@ -224,7 +209,7 @@ namespace RealLifeOverhaul.Events
                 Effects.Flicker();
             }
             PlayerController player = PlayerHelper.PlayerController;
-            if (_prompt != null && player != null && JobKeys.InteractDown())   // (as every other prompt: E only while the game shows no interaction of its own)
+            if (_prompt != null && player != null && JobKeys.InteractDown())   // only while the game shows no interaction of its own
             {
                 _scene.Interact(now, player.transform.position);
                 _prompt = null;
@@ -266,7 +251,7 @@ namespace RealLifeOverhaul.Events
                 _prompt = prompt;
                 if (prompt != null)
                 {
-                    // (A stall's snack is the one prompt here that names a price.)
+                    // Only a stall's snack names a price.
                     Crime.ShowKey(NotificationType.Info, prompt, KeyAction.Interact, 6f, "price", ((float)StreetEventScene.SnackPrice).ToCurrencyFormat());
                 }
             }
@@ -278,7 +263,7 @@ namespace RealLifeOverhaul.Events
             _scene = scene;
             if (ReferenceEquals(scene, _fire))
             {
-                Wiring.Paper.Print("reallife_news_story_fire");   // tomorrow's City Ledger (Scripts/Social)
+                Wiring.Paper.Print("reallife_news_story_fire");   // tomorrow's City Ledger
             }
             _label = scene.Label.GetLocalization();
             _prompt = null;
@@ -310,7 +295,7 @@ namespace RealLifeOverhaul.Events
             Logger?.Info("City events: scene cleared (" + why + ")" + (reopened > 0 ? "; " + reopened + " road point(s) were still closed and are open again." : "."));
         }
 
-        // Whatever a scene's own End missed (it faulted part of the way): everything shared is put away regardless.
+        // Puts away everything shared, whatever a scene's End missed by faulting part of the way.
         private void SafetyNet()
         {
             try
@@ -362,10 +347,7 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        /// <summary>
-        /// The player rang 911. True if there is a fire and the call did something (the engine is sent
-        /// at once): the phone then says so. The one-line hook is in Phone/PhoneContacts.
-        /// </summary>
+        /// <summary>The player rang 911: true if the call did something (a fire's engine sent at once), which the phone then says.</summary>
         public static bool Report911()
         {
             EventDirector director = Instance;
@@ -381,9 +363,8 @@ namespace RealLifeOverhaul.Events
         }
 
         /// <summary>
-        /// For the accident director: sets a wreck of its own alight for so many seconds (flames,
-        /// black smoke and firelight on its bonnet, dying down by themselves; the accident's own
-        /// crews attend, no engine is sent). Does nothing while a fire or a street event is on.
+        /// For the accident director: sets one of its wrecks alight for so many seconds, dying down by itself; its own crews
+        /// attend and no engine is sent. Nothing while a fire or a street event is on.
         /// </summary>
         public static void CrashFire(VehicleComponent wreck, float seconds = 50f)
         {
@@ -409,15 +390,13 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        // ---------------------------------------------------------------- once a second
-
         private void Second(float now)
         {
             if (!ModState.Loaded || SaveGameManager.Current == null)
             {
                 if (_stateLoaded)
                 {
-                    // The save is going: what the weather changed is put back, so that it is applied afresh to the next one.
+                    // The save is going: the weather's changes are put back, to be applied afresh to the next.
                     _stateLoaded = false;
                     _weather.Restore();
                     Weather.Reset();
@@ -431,7 +410,7 @@ namespace RealLifeOverhaul.Events
             if (now >= _nextHook)
             {
                 _nextHook = now + 2f;   // the game clears its event hub on every load
-                SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
+                SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));
             }
             _weather.Tick(this);
 
@@ -482,7 +461,7 @@ namespace RealLifeOverhaul.Events
         private static bool CanStage()
         {
             return TrafficTools.Ready && !BuildingManager.IsInsideBuilding && LifeEvents.IsSafeForEvent()
-                   && !Wiring.Scenes.AnyBut(Wiring.Scene.Event) && !PoliceAttention.IsBusy;   // no other street scene is on (Wiring/Scenes)
+                   && !Wiring.Scenes.AnyBut(Wiring.Scene.Event) && !PoliceAttention.IsBusy;
         }
 
         private void Roll(float now, int hour, PlayerController player)
@@ -514,7 +493,7 @@ namespace RealLifeOverhaul.Events
                 }
                 else if (_street.Costly && ++_stageFailures >= 3)
                 {
-                    // A try that got as far as closing the road is not cheap, and moves traffic: three of those and it is not held today.
+                    // A try that got as far as closing the road is costly and moves traffic: after three it is not held today.
                     _doneDay = TimeHelper.CurrentDay;
                     _stageFailures = 0;
                     Logger?.Info("Street event: " + plan.Kind + " could not be fitted on three streets (" + _street.Refusal + "); it is not held today.");
@@ -542,8 +521,6 @@ namespace RealLifeOverhaul.Events
                 Logger?.Info("Fire: a " + kind + " fire was rolled but not staged (" + _fire.Refusal + ").");
             }
         }
-
-        // ---------------------------------------------------------------- once a game hour
 
         private void Hourly(int hour)
         {
@@ -573,8 +550,7 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        // What is on: a notification (held for the morning line while the player sleeps, Core/MorningNews; none for a kind
-        // whose notices are switched off, EventCalendar.Quiet), and the City Bulletin's line either way.
+        // What is on: a notification (held while the player sleeps; none for a quiet kind) and the City Bulletin's line either way.
         private void Tell(string key, PlannedEvent plan)
         {
             var data = new Dictionary<string, string>(2) { { "from", Clock(plan.From) }, { "to", Clock(plan.To) } };
@@ -590,11 +566,7 @@ namespace RealLifeOverhaul.Events
             return (hour % 24).ToString("00", CultureInfo.InvariantCulture) + ":00";
         }
 
-        /// <summary>
-        /// A line on the phone: the City Bulletin contact carries the forecast, what is on today and
-        /// what is on tomorrow (the game keeps a contact's last twenty messages). Nothing if the
-        /// phone contacts are switched off.
-        /// </summary>
+        /// <summary>A line from the phone's City Bulletin contact (the forecast, today, tomorrow); nothing with phone contacts off.</summary>
         internal void Bulletin(string key, Dictionary<string, string> data)
         {
             if (!Settings.PhoneContacts)
@@ -605,7 +577,7 @@ namespace RealLifeOverhaul.Events
             {
                 if (_bulletin == null)
                 {
-                    ContactPictures.Add(BulletinId);   // the game's own logo shapes (Phone/Contacts)
+                    ContactPictures.Add(BulletinId);
                     _bulletin = Contact.GetContact(BulletinId, ContactCategoryName.General, "reallife_contact_bulletin_desc", null, false, true);
                 }
                 _bulletin.SendMessage(new TextMessage(key, data), notify: false);
@@ -615,8 +587,6 @@ namespace RealLifeOverhaul.Events
                 Logger?.Error(e);
             }
         }
-
-        // ---------------------------------------------------------------- the save: one line of plain text in modData
 
         private void LoadState()
         {
@@ -647,7 +617,7 @@ namespace RealLifeOverhaul.Events
                 }
                 else
                 {
-                    SaveLines.Unreadable(save.modData, StateKey, "it has fewer parts than this version of the mod reads");   // (kept as it was read: Core/SaveLines)
+                    SaveLines.Unreadable(save.modData, StateKey, "it has fewer parts than this version of the mod reads");
                 }
             }
             EventCalendar.Salt = salt != 0 ? salt : Random.Range(1, int.MaxValue);
@@ -658,7 +628,7 @@ namespace RealLifeOverhaul.Events
                          + (FireDamage.ClosedKey != null ? "; a business is closed after a fire and is reopened by the mod." : "."));
         }
 
-        private System.Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
+        private Action _onSave;   // made once: SaveHook compares it
 
         private void OnSaveGame()
         {
@@ -712,144 +682,6 @@ namespace RealLifeOverhaul.Events
             {
                 Logger?.Error(e);
             }
-        }
-
-        // ---------------------------------------------------------------- test buttons
-
-        private bool TestReady(string test, out PlayerController player)
-        {
-            player = PlayerHelper.PlayerController;
-            TestRefusal why = _failed ? TestRefusal.FeatureOff : TestRefusals.Street();
-            if (why == TestRefusal.None && (TrafficAccidents.IsActive || CrimeDirector.IsActive))
-            {
-                why = TestRefusal.SceneActive;
-            }
-            if (why == TestRefusal.None && PoliceAttention.IsBusy)
-            {
-                why = TestRefusal.PoliceBusy;
-            }
-            if (why == TestRefusal.None && (!ClipLibrary.Ready || !PropLibrary.Ready))
-            {
-                why = TestRefusal.NotLoaded;
-            }
-            if (why != TestRefusal.None)
-            {
-                TestRefusals.Tell(Logger, test, why, 0, _failed ? "city events faulted earlier this session" : null);
-                return false;
-            }
-            EndScene(true, "a test button");
-            People.WarmAll(player.transform.position);
-            return true;
-        }
-
-        private static Vector3 Ahead(PlayerController player, float metres)
-        {
-            Camera camera = GameManager.GetMainCamera();
-            Vector3 ahead = camera != null ? camera.transform.forward : player.transform.forward;
-            ahead.y = 0f;
-            ahead = ahead.sqrMagnitude > 0.01f ? ahead.normalized : Vector3.forward;
-            return player.transform.position + ahead * metres;
-        }
-
-        /// <summary>Options-page test: stages a fire of a kind near the player, now.</summary>
-        public void TestFire(FireKind kind)
-        {
-            try
-            {
-                if (!TestReady("Fire", out PlayerController player))
-                {
-                    return;
-                }
-                if (_fire.Stage(kind, player.transform.position, Ahead(player, 14f), true, Time.time))
-                {
-                    Begin(_fire, 600f);
-                    return;
-                }
-                EndSceneQuietly();
-                TestRefusals.Tell(Logger, kind + " fire", _fire.Why, _fire.WhyMetres, _fire.Refusal);
-            }
-            catch (Exception e)
-            {
-                Fail(e);
-            }
-        }
-
-        /// <summary>Options-page test: holds a street event of a kind on the road ahead of the player, now.</summary>
-        public void TestEvent(EventKind kind)
-        {
-            try
-            {
-                if (!TestReady("Street event", out PlayerController player))
-                {
-                    return;
-                }
-                for (int attempt = 0; attempt < 3; attempt++)
-                {
-                    if (_street.Stage(kind, Ahead(player, 16f + attempt * 12f), true, 24, Time.time))
-                    {
-                        Begin(_street, 50f);
-                        if (!EventCalendar.Quiet(kind))
-                        {
-                            var data = new Dictionary<string, string>(2) { { "from", Clock(TimeHelper.CurrentHour) }, { "to", Clock(TimeHelper.CurrentHour + 3) } };
-                            Notifications.Show(NotificationType.Info, EventCalendar.Today(kind), data, 8f);
-                        }
-                        return;
-                    }
-                }
-                EndSceneQuietly();
-                TestRefusals.Tell(Logger, kind + " street event", _street.Refusal != null && _street.Refusal.StartsWith("no plain", StringComparison.Ordinal) ? TestRefusal.NoRoad : TestRefusal.NothingFits,
-                    30, _street.Refusal);
-            }
-            catch (Exception e)
-            {
-                Fail(e);
-            }
-        }
-
-        /// <summary>Options-page test: holds the weather's effects (not its looks) as given until cleared.</summary>
-        public void TestWeather(Sky sky, Spell spell)
-        {
-            if (_failed || !ModState.Loaded)
-            {
-                TestRefusals.Tell(Logger, "Weather", _failed ? TestRefusal.FeatureOff : TestRefusal.NotLoaded);
-                return;
-            }
-            Weather.Release();
-            Weather.Reset();
-            Weather.Force(sky, spell);
-            _weather.Changed();
-            _weather.Tick(this);
-            var data = new Dictionary<string, string>(3)
-            {
-                { "grip", Mathf.RoundToInt(Weather.GripFactor * 100f).ToString() }, { "accidents", Mathf.RoundToInt(Weather.AccidentFactor * 100f).ToString() },
-                { "crime", Mathf.RoundToInt(Weather.CrimeFactor * 100f).ToString() }
-            };
-            Notifications.Show(NotificationType.Info, "reallife_weather_test_on", data, 9f);
-        }
-
-        /// <summary>Options-page test: clears any fire or street event and gives the weather back to the game.</summary>
-        public void TestClear()
-        {
-            try
-            {
-                EndScene(true, "the clear button");
-                StopCrashFire();
-                Weather.Release();
-                Weather.Reset();
-                _weather.Changed();   // fair weather for a moment: the game's own is read again within the second
-                Notifications.Show(NotificationType.Info, "reallife_events_test_cleared", null, 5f);
-            }
-            catch (Exception e)
-            {
-                Fail(e);
-            }
-        }
-
-        // A stage that refused may have put part of itself out: it is taken back without a word.
-        private void EndSceneQuietly()
-        {
-            SafetyNet();
-            Cordon.Recheck();
         }
     }
 }
