@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// An officer writing a ticket beside one of the game's parked cars (never touched). The owner may come running, to
-    /// argue or to be let off.
-    /// </summary>
+    /// <summary>An officer tickets one of the game's parked cars (never touched); the owner may come running to argue.</summary>
     internal sealed class ParkingTicketScene : CrimeScene
     {
         private const int Writing = 0, Owner = 1, Argument = 2, Lingering = 3;

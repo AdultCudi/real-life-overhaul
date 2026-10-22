@@ -3,10 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A fight that ends with one of them on the ground: the puncher is arrested, runs, is pulled away by a passer-by, or
-    /// both walk off.
-    /// </summary>
+    /// <summary>A fight that ends with one on the ground: the puncher is arrested, runs, is pulled away, or both walk off.</summary>
     internal sealed class AssaultScene : CrimeScene
     {
         private const int Squaring = 0, Down = 1, Standoff = 2, Aftermath = 3;

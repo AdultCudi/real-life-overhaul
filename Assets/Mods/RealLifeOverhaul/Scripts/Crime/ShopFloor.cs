@@ -9,10 +9,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The shop the player stands in, for the indoor scenes: whose it is, its doors, shelves and cameras, and its guard.
-    /// Read from the game's objects when asked; nothing is kept or changed.
-    /// </summary>
+    /// <summary>The shop the player stands in, for the indoor scenes: owner, doors, shelves, cameras, guard. Nothing kept or changed.</summary>
     internal static class ShopFloor
     {
         private static BuildingManager Building => BuildingManager.IsInsideBuilding ? InstanceBehavior<BuildingManager>.Instance : null;

@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Two people standing too close, something changing hands: an officer breaks it up and both run (one may be caught),
-    /// the officer finds nothing, or nobody comes and they part.
-    /// </summary>
+    /// <summary>Something changing hands: an officer breaks it up (one may be caught) or finds nothing, or nobody comes.</summary>
     internal sealed class DrugDealScene : CrimeScene
     {
         private const int Dealing = 0, CopComing = 1, Scatter = 2, Word = 3, Lingering = 4;

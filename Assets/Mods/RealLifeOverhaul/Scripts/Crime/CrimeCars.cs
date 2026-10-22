@@ -7,10 +7,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Cars for scenes: one of the game's parked cars to stand beside (never touched), or a traffic car to take over, never
-    /// an emergency or working vehicle. Asked once when a scene starts.
-    /// </summary>
+    /// <summary>Cars for scenes, asked once at the start: a parked car to stand beside (never touched), or ordinary traffic to take.</summary>
     internal static class CrimeCars
     {
         private static readonly Collider[] Hits = new Collider[24];

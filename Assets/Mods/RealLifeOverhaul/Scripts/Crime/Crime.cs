@@ -8,10 +8,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What every part of the crime system shares: a random source that does not allocate, money moved through the game's
-    /// own transaction call, the toasts that show it, and the fault log.
-    /// </summary>
+    /// <summary>What the crime system shares: a random source that does not allocate, money through the game's transactions, toasts.</summary>
     internal static class Crime
     {
         public static IModLogger Logger;

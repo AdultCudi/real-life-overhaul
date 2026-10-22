@@ -84,7 +84,6 @@ namespace RealLifeOverhaul
             return offence;
         }
 
-        // Crossing the stop line in the player's own lane after the light has been red for a second.
         private bool RedLight(Vector3 position, Vector3 heading, float now)
         {
             if (!RoadMap.LineAt(position, heading, out int line, out float along))

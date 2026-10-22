@@ -113,7 +113,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Whoever is left (a victim, a bystander) watches them go, then leaves too.
         private void DismissOthers(Vector3 from)
         {
             Dismiss(First, from);

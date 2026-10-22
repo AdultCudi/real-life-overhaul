@@ -55,7 +55,6 @@ namespace RealLifeOverhaul
         /// <summary>True from the moment the cuffs are on: the point of no return, and when a scene says how it ended.</summary>
         public bool Cuffed { get; private set; }
 
-        /// <summary>True if it is ending in a patrol car and not on foot.</summary>
         public bool ByCar { get; private set; }
 
         public void Begin(ActorRole suspect, ActorRole officer, float now)
@@ -291,7 +290,6 @@ namespace RealLifeOverhaul
             _step = Step.Done;
         }
 
-        // Cuffs off: the clips first, then the hand-set arms and the handcuffs.
         private void Uncuff()
         {
             if (Cuffed)

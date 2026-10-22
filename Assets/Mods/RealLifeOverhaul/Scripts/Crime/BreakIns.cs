@@ -2,10 +2,7 @@ using System;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A break-in at one of the player's businesses, told once to whoever listens (business insurance, the district view).
-    /// A listener only hears of the loss and cannot change it; one that throws does not stop the others.
-    /// </summary>
+    /// <summary>A break-in at the player's business, told once to each listener (insurance, districts); one that throws stops no other.</summary>
     public static class BreakIns
     {
         /// <summary>A break-in has happened: the business, the value of the stock taken and the repair bill.</summary>

@@ -4,10 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A mugging, the victim's hands up: the mugger gets away, is knocked flat by the victim, runs from an officer, or bolts
-    /// as the player walks up.
-    /// </summary>
+    /// <summary>A mugging: the mugger gets away, is knocked flat by the victim, runs from an officer, or bolts as the player comes.</summary>
     internal sealed class MuggingScene : CrimeScene
     {
         private const int Threat = 0, Getaway = 1, Floored = 2, CopChase = 3, Aftermath = 4;

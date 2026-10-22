@@ -392,7 +392,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Caught after running: everything so far, the fine for fleeing, and a few hours in a cell.
         private void Bust(float now)
         {
             int fleeing = Mathf.Min(CrimeLaw.FleeingMost,

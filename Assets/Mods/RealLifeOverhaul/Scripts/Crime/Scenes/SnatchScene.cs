@@ -3,10 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A grab from someone on their phone, and a sprint: the victim gives chase, a passer-by brings the thief down, an
-    /// officer runs them in, or it was a misunderstanding.
-    /// </summary>
+    /// <summary>A grab and a sprint: the victim chases, a passer-by brings the thief down, an officer runs them in, or it was nothing.</summary>
     internal sealed class SnatchScene : CrimeScene
     {
         private const int Approach = 0, Grab = 1, Running = 2, Tackled = 3, Cornered = 4, HandBack = 5, Aftermath = 6;

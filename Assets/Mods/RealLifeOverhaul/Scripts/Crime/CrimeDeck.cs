@@ -119,10 +119,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// Deals crimes like cards: a kind comes again only once every kind that fits has been seen, and no ending or line comes
-    /// twice running. Nothing here allocates.
-    /// </summary>
+    /// <summary>Deals crimes like cards: no kind again until all that fit were seen, no ending or line twice running. No allocation.</summary>
     internal static class CrimeDeck
     {
         /// <summary>The next crime for this situation, recorded in <paramref name="seen"/>; null when nothing fits.</summary>
