@@ -231,7 +231,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Offices/Conversions.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfCensus.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/PermadeathDirector.Tests.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/PermadeathDirector.cs	6

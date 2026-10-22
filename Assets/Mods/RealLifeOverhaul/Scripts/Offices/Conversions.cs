@@ -14,35 +14,20 @@ namespace RealLifeOverhaul.Offices
 {
     /// <summary>
     /// More offices to rent: some of the city's empty shops are offices while the mod runs (option "Empty shops as
-    /// offices"). The mod's claims (the tech companies' headquarters, the utilities office, the courthouse, the
-    /// university, the law chambers) take the game's empty office buildings, and the game's own businesses and its rivals
-    /// hold the rest, so a player could find none to let. Which shops and how many is <see cref="ConversionRules"/>'s:
-    /// at least two offices to let in each district with offices and eight in the city, the same on every machine. To the
-    /// game such a shop is an office: listed and filtered as one on the map and in BizMan, rented at an office's rent,
-    /// started as any office business (the mod's tech firms' too), with the game's office interior of that size. How,
-    /// and what a building's type governs, is in <see cref="ConversionGame"/>.
+    /// offices"). The mod's claims take the game's empty office buildings and the game's businesses and rivals hold the
+    /// rest, so a player could find none to let. Which shops and how many is <see cref="ConversionRules"/>'s; to the game
+    /// such a shop is an office in every way (<see cref="ConversionGame"/>).
     ///
-    /// WHEN. At a city load the shops that are offices and somebody has (an office business in one, or one the save
-    /// keeps, <see cref="ConversionStore"/>) are offices again at the first look; the empty ones are chosen once the
-    /// other features have chosen their buildings (<see cref="OthersPicked"/>, two minutes at most), and chosen again
-    /// once a game day, when a building of the city's office districts changes hands (the game's own event,
-    /// GlobalEvents.onBuildingRegistrationChange, for one of the buildings it looks at) and when another feature claims
-    /// or lets go of a building (SpecialBuildings.Stamp). An office that somebody has is never a shop again while the mod
-    /// runs; an empty one no longer needed is.
+    /// At a city load the shops that are offices and somebody has (an office business, or one the save keeps,
+    /// <see cref="ConversionStore"/>) are offices again at the first look; the empty ones are chosen once the other
+    /// features have chosen their buildings (<see cref="OthersPicked"/>, two minutes at most), and again once a game day,
+    /// when a watched building changes hands and when another feature claims or lets go of a building. Nothing is saved
+    /// in a building: everything is put back when the city goes, the option is off, or the save is prepared for removal.
     ///
-    /// NOT SAVED. The type is the city's building asset's, never the save's: a save without the mod has every building
-    /// as the game made it. Everything is put back when the city goes, the option is switched off, or the save is
-    /// prepared for removing the mod (which says which of the player's businesses are in such a building, Meta/SaveTools).
-    ///
-    /// GOING PUBLIC. The choice is made from the city and who rents what, which are the same for every player in a
-    /// session, so every machine with the mod has the same offices; nothing is sent. Another player's building is never
-    /// made an office: only an empty one is, and one that becomes another player's while an office stays as it is.
-    ///
-    /// Other features' choices of an office building skip these (<see cref="Holds"/>), so none of them takes the
-    /// player's offices.
-    ///
-    /// The cost: no Update. A one-second timer on the real clock that reads a few fields of the converted buildings, an
-    /// int and the day; the choice itself (one pass over the city's shops and offices, a few hundred) only on a change.
+    /// Going Public: the choice comes from the city and who rents what, the same on every machine, so nothing is sent;
+    /// another player's building is never made an office. Other features' choices of an office skip these
+    /// (<see cref="Holds"/>). Cost: no Update; a one-second real-time timer reading a few fields, and the choice (one pass
+    /// over a few hundred buildings) only on a change.
     /// </summary>
     public sealed class Conversions : MonoBehaviour
     {
@@ -62,7 +47,7 @@ namespace RealLifeOverhaul.Offices
             public bool Ignored;    // on the game's list of addresses its rivals leave alone
         }
 
-        // Static, so that another feature's choice can ask without a reference: the buildings that are offices because of this.
+        // Static, so another feature's choice can ask without a reference: the buildings that are offices because of this.
         private static readonly Dictionary<Building, Made> Converted = new Dictionary<Building, Made>(32);
 
         private readonly List<CityBuildingController> _shops = new List<CityBuildingController>(128);
@@ -88,7 +73,7 @@ namespace RealLifeOverhaul.Offices
         private void Awake()
         {
             Instance = this;
-            _onChange = Guard.Wrap<Address>(OnChange);   // (a fault here never reaches the game's own handlers: Core/Guard)
+            _onChange = Guard.Wrap<Address>(OnChange);   // a fault here never reaches the game's own handlers
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -115,7 +100,7 @@ namespace RealLifeOverhaul.Offices
                 }
                 while (StartLine.Holds(StartSeats.Offices))
                 {
-                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                    yield return null;   // its first load after a save loads waits for a frame of its own
                 }
                 try
                 {
@@ -136,7 +121,7 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
-        // The game's own event, for any building: only one of the buildings looked at asks for a new look (a set's look-up).
+        // The game's own event, for any building: only one of the watched buildings asks for a new look.
         private void OnChange(Address address)
         {
             try
@@ -155,7 +140,7 @@ namespace RealLifeOverhaul.Offices
         private static readonly int HotTick = HotSpots.Slot("Offices: Conversions.Tick");
         private void Slow()
         {
-            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotTick);
             GameInstance save = SaveGameManager.Current;
             if (save == null || LoadScene.isLoading || GameManager.isCitySceneBeingUnloaded || Meta.SaveTools.Dormant)
             {
@@ -163,7 +148,7 @@ namespace RealLifeOverhaul.Offices
             }
             if (!ReferenceEquals(save, _save))
             {
-                StopAll();   // (another save in the same city: what the last one had made is put back first)
+                StopAll();   // another save in the same city: what the last one made is put back first
                 _save = save;
                 ReadStore(save);
             }
@@ -183,7 +168,7 @@ namespace RealLifeOverhaul.Offices
             {
                 return;
             }
-            // A converted shop let since the last look leaves the rivals' list at once (another player's id on it must stay).
+            // A converted shop let since the last look leaves the rivals' list at once.
             foreach (Made m in Converted.Values)
             {
                 if (m.Ignored && !ConversionGame.Vacant(m.C.buildingRegistration))
@@ -225,7 +210,7 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
-        // The city's shops and offices that may take part, once a city load (the types as the game made them).
+        // The city's shops and offices that may take part, once a city load, by the types as the game made them.
         private bool Index()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -264,7 +249,7 @@ namespace RealLifeOverhaul.Offices
             return true;
         }
 
-        // The choice made again from the city as it is now; only what changed is changed. picks false: only the offices somebody has.
+        // The choice made again from the city as it is now; only what changed is changed. picks false: only the held offices.
         private void Choose(bool picks)
         {
             ConversionGame.ForSale(_save, _forSale);
@@ -303,7 +288,7 @@ namespace RealLifeOverhaul.Offices
             int toLet = ConversionRules.Decide(_rows, _want);
             if (picks)
             {
-                _kept.Clear();   // (what the save kept is an office by now, or somebody let it go)
+                _kept.Clear();   // what the save kept is an office by now, or somebody let it go
             }
             int added = 0, removed = 0;
             for (int i = 0; i < _rows.Count; i++)
@@ -325,7 +310,7 @@ namespace RealLifeOverhaul.Offices
                 {
                     if (!picks)
                     {
-                        continue;   // (the first look only adds)
+                        continue;   // the first look only adds
                     }
                     Restore(m);
                     Converted.Remove(c.building);
@@ -361,11 +346,15 @@ namespace RealLifeOverhaul.Offices
         {
             var said = new StringBuilder(512);
             said.Append("Offices: ").Append(Converted.Count).Append(" shops are offices (").Append(added).Append(" made, ").Append(removed).Append(" shops again");
-            said.Append(picks ? "); " + free + " offices to let in the office districts (at least " + ConversionRules.DistrictFloor + " a district and " + ConversionRules.CityFloor + " in the city where there are shops to spare):" : "; the ones somebody has, at load):");
+            said.Append(picks
+                ? "); " + free + " offices to let in the office districts (at least " + ConversionRules.DistrictFloor + " a district and " + ConversionRules.CityFloor
+                  + " in the city where there are shops to spare):"
+                : "; the ones somebody has, at load):");
             foreach (Made m in Converted.Values)
             {
                 Building b = m.C.building;
-                said.Append(' ').Append(b.StreetName).Append(' ').Append(b.StreetNumber).Append(" (").Append(b.Neighbourhood).Append(ConversionGame.Vacant(m.C.buildingRegistration) ? ", to let)" : ", taken)");
+                said.Append(' ').Append(b.StreetName).Append(' ').Append(b.StreetNumber).Append(" (").Append(b.Neighbourhood)
+                    .Append(ConversionGame.Vacant(m.C.buildingRegistration) ? ", to let)" : ", taken)");
             }
             Logger?.Info(said.ToString());
             if (picks && Meta.Dev.Verbose)
@@ -391,16 +380,15 @@ namespace RealLifeOverhaul.Offices
             ConversionGame.SetType(m.B, m.C, m.Was);
         }
 
-        // ---------------------------------------------------------------- the save
-
         private void ReadStore(GameInstance save)
         {
             _kept.Clear();
             string text = null;
             if (save.modData != null && save.modData.TryGetValue(ConversionStore.Key, out text) && !ConversionStore.Read(text, _kept))
             {
-                SaveLines.Unreadable(save.modData, ConversionStore.Key, "it could not be read");   // (put back as it was read at every save: Core/SaveLines)
-                Logger?.Warn("Offices: the save's line of shops kept as offices could not be read (" + ConversionStore.Key + "); only shops with an office business in them are offices at load, and the line is kept in the save as it is.");
+                SaveLines.Unreadable(save.modData, ConversionStore.Key, "it could not be read");   // put back as it was read at every save
+                Logger?.Warn("Offices: the save's line of shops kept as offices could not be read (" + ConversionStore.Key + "); only shops with an office business "
+                             + "in them are offices at load, and the line is kept in the save as it is.");
             }
         }
 
@@ -430,7 +418,7 @@ namespace RealLifeOverhaul.Offices
             {
                 if (!places.Contains(kept))
                 {
-                    places.Add(kept);   // (a save written before the first full look keeps what it read)
+                    places.Add(kept);   // a save written before the first full look keeps what it read
                 }
             }
             save.modData[ConversionStore.Key] = ConversionStore.Write(places);
@@ -441,8 +429,6 @@ namespace RealLifeOverhaul.Offices
         {
             _kept.Clear();
         }
-
-        // ---------------------------------------------------------------- the save tools, the test
 
         /// <summary>The player's businesses in a shop that is an office because of this (an office business there), each "name (address)".</summary>
         public static List<string> PlayersBusinesses()
@@ -510,7 +496,7 @@ namespace RealLifeOverhaul.Offices
                 {
                     if (_save != null && m.C != null && !ConversionGame.Vacant(m.C.buildingRegistration) && ConversionGame.Keeps(m.C.buildingRegistration, null))
                     {
-                        _kept.Add(ConversionRules.Key(m.B.StreetName, m.B.StreetNumber));   // (an office the player has is one again if the option comes back on)
+                        _kept.Add(ConversionRules.Key(m.B.StreetName, m.B.StreetNumber));   // an office the player has is one again if the option comes back on
                     }
                     Restore(m);
                 }

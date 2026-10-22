@@ -4,17 +4,14 @@ using System.Text;
 namespace RealLifeOverhaul.Offices
 {
     /// <summary>
-    /// What the conversion keeps in a save: the shops that were offices and the player had (rented, owned, or listed for
-    /// sale while an office) when the save was written, so that one rented as an office with no business in it yet is an
-    /// office again after a load. One line under its own key, and never a building's type: the game's own fields of the
-    /// save are left as the game wrote them, so without the mod every building is as the game made it.
+    /// What the conversion keeps in a save: the shops that were offices and the player's (rented, owned, or for sale) when
+    /// it was written, so one rented with no business in it yet is an office again after a load. One line under its own
+    /// key; a building's type is never saved, so without the mod every building is as the game made it.
     ///
     ///     v=1^ba:street_ninthstreet#13^ba:street_fifthavenue#2
     ///
-    /// the version, then a place each (street id and number, as <see cref="ConversionRules.Key"/>), sorted. In a place,
-    /// '%' and '^' are written as %25 and %5E. A line of a later version, or one that cannot be read, gives no places
-    /// (only the shops with an office business in them are offices at load) and is left in the save untouched until
-    /// it is written again. Game-free. Cost: nothing unless a save is loaded or written.
+    /// The version, then each place as <see cref="ConversionRules.Key"/>, sorted, with '%' and '^' written %25 and %5E. A
+    /// line of a later version, or unreadable, gives no places and is kept untouched until written again. Game-free.
     /// </summary>
     public static class ConversionStore
     {

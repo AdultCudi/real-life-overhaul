@@ -10,41 +10,19 @@ using UI;
 namespace RealLifeOverhaul.Offices
 {
     /// <summary>
-    /// Everything the conversion reads from or does to the game, in one place.
+    /// Everything the conversion reads from or does to the game. A building's type (Building.BuildingType) is a field of
+    /// the city's building asset, loaded once and never saved, and everything asks it when it needs it: which businesses
+    /// can start there, the map's filters and marker, the rent, value and deposit, the customers, the game's competition.
+    /// The interior is loaded by size and version alone.
     ///
-    /// WHAT A BUILDING'S TYPE GOVERNS (read in the decompiled game): Building.BuildingType is a field of the city's
-    /// building asset (Buildings/Building.cs), loaded once at the game's start and never written into a save (a save
-    /// keeps a registration by its address, BuildingRegistration.BuildingCached is not saved). Everything asks it when
-    /// it needs it: the businesses that can start there (BuildingTypeData.availableBusinessTypes, read by BizMan's start
-    /// screen, StartBusinessUI.Load, and its settings, BizManSettings.RefreshData, the mod's tech firm types among them
-    /// since they are registered for offices), the city map's filters and the "to let" layer (CityMapFilters, its
-    /// visible building types against Building.BuildingType), the building's map marker and colour
-    /// (BuildingRegistration.GetPOIIcon, CityBuildingController.UpdatePoi), the BizMan list (BusinessCellView), the rent
-    /// and the value (Building.GetMarketPricePerSqm and GetBuildingDailyMarketRent by the type's multipliers; the rent is
-    /// written into the registration when it is rented, BuildingRegistration.RentPerDay), the deposit
-    /// (BuildingTypeData.daysToCalculateDeposit), the customers a business gets (CustomerEntriesCalculatorFactory picks
-    /// the office calculator by the building's type), and the game's own competition (CompetitionHelper, empty
-    /// buildings by type). What it does not govern: the interior, which is loaded by size and version alone
-    /// (BuildingManager: BuildingSizeResolver.LoadBuildingAsync(new BuildingSizeInfo(building))), and the layouts and
-    /// interior designs, which are by business type and size.
+    /// A shop can be an office when the game's data lists its size and version for both (today size C version 1 and
+    /// size D version 2): the game's own offices of that size stand on that structure, so an office business there has the
+    /// game's office layouts and designs. Warehouses stay warehouses.
     ///
-    /// WHICH SHOPS CAN BE OFFICES: those whose size and version the game's own data lists for both shops and offices
-    /// (BuildingSizeData.buildingVersions[].supportedBuildingTypes: today size C version 1 and size D version 2). The
-    /// game's own office buildings of those sizes stand on that very structure, so an office business there has the
-    /// game's office layouts and designs and nothing has to be fitted. No warehouse size lists offices, a warehouse's
-    /// registration is a warehouse of its own (BuildingHelper.GetBuildingRegistration makes a Warehouse) and its floor
-    /// is a loading bay: warehouses stay warehouses.
-    ///
-    /// WRITTEN, each put back when the city goes, the option is off or the save is prepared for removal:
-    ///   Building.BuildingType          office, for the shops chosen; the asset outlives a load, so it is put back
-    ///                                  before another save is loaded
-    ///   RivalsHelper.IgnoredAddresses  the game's own list of addresses its rivals leave alone (CompetitionHelper's
-    ///                                  empty buildings, RivalDefenseHelper): a converted shop is on it while it stands
-    ///                                  empty, so the game's competition does not put a business of its own there.
-    ///                                  Only one with no rival as its landlord, so the game's rival refresh
-    ///                                  (RivalsHelper.RefreshRivals) has nothing to clear on it
-    /// and the building's map marker is drawn again (CityBuildingController.UpdatePoi) and the map's filters applied
-    /// again (CityMapFilters.ApplyFilters), once for every change.
+    /// Written, and put back when the city goes, the option is off or the save is prepared for removal: the chosen shops'
+    /// BuildingType (the asset outlives a load), and RivalsHelper.IgnoredAddresses for a converted shop standing empty
+    /// with no rival landlord, so the game's competition does not move in. Each change draws the building's marker and
+    /// applies the map's filters again.
     /// </summary>
     internal static class ConversionGame
     {
@@ -52,7 +30,7 @@ namespace RealLifeOverhaul.Offices
         public const string Retail = "ba:buildingtype_retail";
         private const string Empty = "ba:businesstype_empty";
 
-        /// <summary>A building the player can walk into and that is the city's own: no special service, no fence, no DLC, a door.</summary>
+        /// <summary>A building the player can walk into that is the city's own: no special service, fence or DLC, and a door.</summary>
         public static bool Usable(CityBuildingController c)
         {
             Building b = c != null ? c.building : null;
@@ -60,7 +38,7 @@ namespace RealLifeOverhaul.Offices
                    && c.entranceDoors != null && c.entranceDoors.Length > 0 && b.totalSqm > 0 && !string.IsNullOrEmpty(b.StreetName);
         }
 
-        /// <summary>A shop whose size and version the game's own data lets be an office too (the game's offices of that size stand on the same structure).</summary>
+        /// <summary>A shop whose size and version the game's own data lets be an office too.</summary>
         public static bool SharedStructure(Building b, List<BuildingSizeInfo> officeSizes)
         {
             for (int i = 0; officeSizes != null && i < officeSizes.Count; i++)
@@ -77,7 +55,7 @@ namespace RealLifeOverhaul.Offices
         /// <summary>The sizes and versions the game's data lists for offices; the game's own list, not a copy.</summary>
         public static List<BuildingSizeInfo> OfficeSizes() => BuildingSizeHelper.GetBuildingVersionsByBuildingType(Office);
 
-        /// <summary>Standing empty: nobody rents or owns it (the player, another player in a session, a rival), nothing of the game's is in it.</summary>
+        /// <summary>Standing empty: nobody rents or owns it (the player, another player, a rival) and nothing of the game's is in it.</summary>
         public static bool Vacant(BuildingRegistration reg)
         {
             return reg != null && reg.AvailableForRent && !reg.RentedByPlayer && !reg.BuildingOwnedByPlayer && string.IsNullOrEmpty(reg.businessOwnerRivalId)
@@ -178,7 +156,7 @@ namespace RealLifeOverhaul.Offices
             }
             catch (Exception)
             {
-                return CityReserves.PlayerOfficeAddress(i, null);   // (outside the game: the Guide's page made offline)
+                return CityReserves.PlayerOfficeAddress(i, null);   // outside the game: the Guide's page made offline
             }
         }
 
@@ -192,7 +170,7 @@ namespace RealLifeOverhaul.Offices
             }
             catch (Exception)
             {
-                return CityReserves.UtilitiesAddress(null);   // (outside the game: the Guide's page made offline)
+                return CityReserves.UtilitiesAddress(null);   // outside the game: the Guide's page made offline
             }
         }
 
