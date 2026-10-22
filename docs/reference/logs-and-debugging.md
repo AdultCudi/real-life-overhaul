@@ -197,9 +197,11 @@ How to tell the causes apart:
 
 The thread's and the system's times are counted at the system's clock tick (about 15.6 ms): good for a long frame and the minute's sums, not for one short frame.
 
-The line a minute says the same of the minute: the minute's waits for the last frame to be shown and its time outside the engine's steps (the sum and the worst frame), the share of the minute the main thread ran, the other programs' share of the processor, the page faults, and the causes of its frames over 33 ms counted by the same rules as the long-frame line.
+The line a minute says the same of the minute: the minute's waits for the last frame to be shown and its time outside the engine's steps (the sum and the worst frame), the share of the minute the main thread ran, the other programs' share of the processor, the page faults, and the causes of its frames over 33 ms counted by the same rules as the long-frame line. Where the build offers the engine's own frame timing (`FrameTimingManager`), it ends with the graphics card's longest frame of the minute in milliseconds; where it does not, it says "the engine's own frame timing: not offered by this build".
 
-What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); and anything about the graphics card.
+What the graphics card's figures are (`Diagnostics/SessionWatch.Timing`): on the long-frame line, the engine's own time for the card and for the render thread, the worst of the last few frames it has figures for (they come a few frames late); on the minute's line, the card's longest frame. They say how long the card took, not what it spent the time on.
+
+What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
 
 ## Log lines by feature
 
