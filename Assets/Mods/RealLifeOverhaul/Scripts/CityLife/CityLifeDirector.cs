@@ -3,49 +3,29 @@ using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.DayNightCycle;
 using Helpers;
-using Localizor;
 using UI;
 using UI.Load;
-using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The living city: people at work and going about their day on the pavements near the
-    /// player. This decides what is out and where; each activity plays itself (CityActivity),
-    /// the catalogue says what exists (CityCatalogue).
-    ///
-    /// How it stays cheap, all of it enforced here and in CityPeople:
-    /// - At most three sites and eight people at once, in a ring 45 to 95 metres from the player.
-    /// - Nobody is ever seen appearing or vanishing. A site is set up only where the camera is
-    ///   not looking, and it is taken away the same way: when its time is up, or it starts to
-    ///   rain, it stays exactly as it is for as long as somebody is looking, and goes the moment
-    ///   they are not. Beyond 150 metres it goes at once. People who come and go while a site is
-    ///   out (a courier, customers at a cart) are put on the pavement out of view, WALK in, and
-    ///   walk off out of view before they are taken back (CityActivity.Arrive and Depart).
-    /// - Everything here runs once a second (one comparison per frame in between); looking for
-    ///   a new site is tried every six seconds and costs a handful of physics queries. Two small
-    ///   things run per frame, and only while there is one of them: somebody turning to face
-    ///   what they have walked up to (a third of a second), and a timed moment inside a clip
-    ///   (the instant a cup changes hands).
-    /// - Nothing is created or destroyed while sites come and go: people come from the pool,
-    ///   props from the shelf, activities are the catalogue's own single instances.
-    /// - Nothing is saved. Entering a building, a time skip, loading, leaving the city or
-    ///   switching the option off clears the street at once; a fault clears it, logs once and
-    ///   switches the feature off for the session.
+    /// The living city: what is out and where, within its budget (three sites and eight people, 45 to 95 metres away), set
+    /// up and taken away only out of view; each activity plays itself. Cost: a tick a second and a new site tried every six (a
+    /// few physics queries); per frame only somebody turning or a moment due in a clip. Nothing is made or destroyed as sites
+    /// come and go, nothing is saved, and indoors, a time skip or a fault clears the street.
     /// </summary>
-    public sealed class CityLifeDirector : MonoBehaviour
+    public sealed partial class CityLifeDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "CityLifeDirector", typeof(CityLifeDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "CityLifeDirector", typeof(CityLifeDirector));
 
         public const int MaxSites = 3;
 
-        private const float TickInterval = 1f;
-        private const float SpawnInterval = 6f;
+        private const float TickInterval = 1f;       // seconds
+        private const float SpawnInterval = 6f;      // seconds between tries for a new site
         private const float WarmInterval = 2.5f;     // seconds between making two of the pool's characters, after the city loads
-        private const float NearRing = 45f;
+        private const float NearRing = 45f;          // metres from the player that a site is set up within
         private const float FarRing = 95f;
         private const float TooFar = 150f;           // a site this far from the player is taken away whether or not it is in view
         private const float SiteGap = 28f;           // two sites are never closer together than this
@@ -96,12 +76,10 @@ namespace RealLifeOverhaul
         private bool _failed;
         private bool _toldNotReady;
 
-        // ---- for features outside the living city that put one of its people out themselves (Scripts/Leisure):
-        // the same pool of eight and the same props, taken and given back through them, never past them.
+        // For features that put one of its people out themselves (Scripts/Leisure): the same pool and props, never past them.
         public CityPeople People => _people;
         public CityProps Props => _props;
 
-        /// <summary>True while the catalogue entry of this id is out on the street.</summary>
         public bool IsOut(string entryId)
         {
             for (int i = 0; i < _running.Count; i++)
@@ -120,7 +98,7 @@ namespace RealLifeOverhaul
             _props = new CityProps(transform);
             _people = gameObject.AddComponent<CityPeople>();
             _people.Setup(_props);
-            _people.Thrifty = true;   // no look is built in the frame a site is set up (CityPeople.Thrifty, People/Looks)
+            _people.Thrifty = true;   // no look is built in the frame a site is set up
             gameObject.AddComponent<ActivityAnimators>();
             ActivityAnimators.Fault = error =>
             {
@@ -131,11 +109,7 @@ namespace RealLifeOverhaul
             _nextWarm = Time.time + 8f;
         }
 
-        /// <summary>
-        /// Called once while the city loads (the loading screen is up): the pool's eight are made now, dressed as
-        /// civilians, so that none of it is paid for while the game is played. If it cannot be done here they are
-        /// made a person at a time once the city runs, as before.
-        /// </summary>
+        /// <summary>Called once behind the loading screen: the pool's eight are made now, so none of it is paid for in play.</summary>
         public void Prewarm()
         {
             if (!Settings.CityLife || _failed)
@@ -173,14 +147,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -220,7 +194,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>One of the living city's people was knocked down: their site is told.</summary>
         public static void Disturb(CityPerson person)
         {
             CityLifeDirector director = Instance;
@@ -237,13 +210,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the two things that are not once a second
-
-        /// <summary>
-        /// Asks for <see cref="ICityActivity.Moment"/> to be called on an activity in so many seconds:
-        /// for the instant inside a clip when something changes hands. Dropped if the activity has
-        /// ended by then. Nothing is allocated; nothing runs while no moment is waiting.
-        /// </summary>
+        /// <summary>Calls an activity's <see cref="ICityActivity.Moment"/> in so many seconds, unless it has ended by then.</summary>
         public static void After(float seconds, ICityActivity owner, int what, CityPerson who)
         {
             CityLifeDirector director = Instance;
@@ -345,8 +312,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // ---------------------------------------------------------------- once a second
-
         private void Tick(float now)
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -384,7 +349,8 @@ namespace RealLifeOverhaul
                 bool stale = now >= running.EndsAt || weather || (!running.Test && !CityCatalogue.Enabled(running.Entry.Family));
                 if (!alive || sqr > TooFar * TooFar || (stale && !CitySpots.InView(activity.Centre)))
                 {
-                    Logger?.Info($"City life: {running.Entry.Id} cleared ({(!alive ? "finished" : sqr > TooFar * TooFar ? "left behind" : weather ? (raining ? "rain" : "the rain stopped") : "time up")}, {Mathf.Sqrt(sqr):F0} m away).");
+                    string ended = !alive ? "finished" : sqr > TooFar * TooFar ? "left behind" : weather ? (raining ? "rain" : "the rain stopped") : "time up";
+                    Logger?.Info($"City life: {running.Entry.Id} cleared ({ended}, {Mathf.Sqrt(sqr):F0} m away).");
                     activity.End();
                     _running.RemoveAt(i);
                     for (int k = _moments.Count - 1; k >= 0; k--)
@@ -405,7 +371,7 @@ namespace RealLifeOverhaul
             {
                 _nextSpawn = now + SpawnInterval;
                 if (Ready() && _running.Count < Wanted(TimeHelper.CurrentHour) && !TrafficAccidents.IsActive && !StreetCrime.IsActive
-                    && !Events.Weather.TakeCover)   // a thunderstorm: nobody new comes out (Scripts/Events)
+                    && !Events.Weather.TakeCover)   // nobody new comes out in a thunderstorm
                 {
                     TryStart(origin, now, raining);
                 }
@@ -445,8 +411,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            // A site that could not start because nobody on the shelf was dressed for it is tried once more, first:
-            // the look has been made ready meanwhile.
+            // A site that last failed for want of a ready look is tried again first: the look is ready by now.
             CityEntry entry = _retry;
             _retry = null;
             int hour = TimeHelper.CurrentHour;
@@ -548,7 +513,8 @@ namespace RealLifeOverhaul
             {
                 _recent.RemoveAt(0);
             }
-            Logger?.Info($"City life: {entry.Id} started {Mathf.Sqrt(CitySpots.Flat(centre - origin)):F0} m away{(test ? " (test)" : "")}; {_running.Count} of {MaxSites} sites out, {_people.Count - _people.Free} of {_people.Count} people.");
+            Logger?.Info($"City life: {entry.Id} started {Mathf.Sqrt(CitySpots.Flat(centre - origin)):F0} m away{(test ? " (test)" : "")}; "
+                         + $"{_running.Count} of {MaxSites} sites out, {_people.Count - _people.Free} of {_people.Count} people.");
             return true;
         }
 
@@ -564,9 +530,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // ---------------------------------------------------------------- clearing up
-
-        /// <summary>Everybody and everything off the street, now.</summary>
         public void EndAll()
         {
             _cart = null;
@@ -604,111 +567,6 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);
             }
-        }
-
-        // ---------------------------------------------------------------- test buttons
-
-        /// <summary>
-        /// Options-page test: puts the next activity of a family on the pavement just ahead of
-        /// the player, in view (the one time anything appears in view), replacing whatever is
-        /// out. Each press steps to the next activity of the family.
-        /// </summary>
-        public void Test(CityFamily family)
-        {
-            if (_failed)
-            {
-                Notifications.Show(NotificationType.Warning, "reallife_city_test_failed", null, 8f);
-                return;
-            }
-            try
-            {
-                PlayerController player = PlayerHelper.PlayerController;
-                if (player == null || !ModState.Loaded || BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle)
-                {
-                    Notifications.Show(NotificationType.Warning, "reallife_city_test_outdoors", null, 8f);
-                    return;
-                }
-                while (_people.Warm(player.transform.position + Vector3.down * 40f))
-                {
-                    // A test cannot wait for the pool to fill a person at a time.
-                }
-                _warm = true;
-                if (!Ready())
-                {
-                    Notifications.Show(NotificationType.Warning, "reallife_city_test_loading", null, 8f);
-                    return;
-                }
-                EndAll();
-                Vector3 origin = player.transform.position;
-                Camera camera = GameManager.GetMainCamera();
-                Vector3 ahead = camera != null ? camera.transform.forward : player.transform.forward;
-                ahead.y = 0f;
-                ahead = ahead.sqrMagnitude > 0.01f ? ahead.normalized : Vector3.forward;
-
-                int count = 0;
-                foreach (CityEntry entry in CityCatalogue.All)
-                {
-                    count += entry.Family == family ? 1 : 0;
-                }
-                CityRefusal last = CityRefusal.OffPavement;
-                string lastName = null;
-                // Each activity of the family in turn, starting with the next, until one finds room near here.
-                for (int step = 0; step < count; step++)
-                {
-                    CityEntry entry = Nth(family, (_testNext[(int)family] + step) % count);
-                    CitySpots.OffPavement = CitySpots.Blocked = CitySpots.NearDoor = CitySpots.NoWall = CitySpots.Uneven = 0;
-                    CityRefusal said = CityRefusal.None;
-                    for (int attempt = 0; attempt < 10; attempt++)
-                    {
-                        Vector3 place = origin + Quaternion.Euler(0f, (attempt % 5 - 2) * 22f, 0f) * ahead * (5f + (attempt / 5) * 4f);
-                        _site.Refusal = CityRefusal.None;
-                        bool opened = CitySpots.Pavement(place, 4f, out Vector3 anchor) && Open(entry, anchor, origin, Time.time, RainHelper.isRaining, true);
-                        said = _site.Refusal != CityRefusal.None ? _site.Refusal : said;
-                        if (opened)
-                        {
-                            _testNext[(int)family] = (_testNext[(int)family] + step + 1) % count;
-                            Notifications.Show(NotificationType.Info, "reallife_city_test_started", new Dictionary<string, string> { { "what", entry.Name.GetLocalization() } }, 8f);
-                            return;
-                        }
-                    }
-                    // Why: what the activity itself said if it said anything, else whatever turned most places down.
-                    if (said == CityRefusal.None)
-                    {
-                        int most = Mathf.Max(Mathf.Max(CitySpots.OffPavement, CitySpots.Blocked), Mathf.Max(CitySpots.NearDoor, Mathf.Max(CitySpots.NoWall, CitySpots.Uneven)));
-                        said = most == 0 ? CityRefusal.OffPavement : most == CitySpots.NoWall ? CityRefusal.NoWall : most == CitySpots.Uneven ? CityRefusal.UnevenWall
-                            : most == CitySpots.NearDoor ? CityRefusal.NearDoor : most == CitySpots.Blocked ? CityRefusal.Blocked : CityRefusal.OffPavement;
-                    }
-                    last = said;
-                    lastName = entry.Name;
-                    Logger?.Info($"City life test: {entry.Id} not started ({said}) in ten tries near the player: places refused as off the pavement {CitySpots.OffPavement}, "
-                                 + $"blocked by something solid {CitySpots.Blocked}, near something the player can use {CitySpots.NearDoor}, no building wall within reach {CitySpots.NoWall}, "
-                                 + $"walls seen but none flat with pavement in front {CitySpots.Uneven}.");
-                }
-                Notifications.Show(NotificationType.Warning, CityRefusals.Key(last), new Dictionary<string, string> { { "what", lastName != null ? lastName.GetLocalization() : string.Empty } }, 9f);
-            }
-            catch (Exception e)
-            {
-                Fail(e);
-            }
-        }
-
-        /// <summary>Options-page test: clears the street of the living city's people.</summary>
-        public void TestClear()
-        {
-            EndAll();
-            Notifications.Show(NotificationType.Info, "reallife_city_test_cleared", null, 5f);
-        }
-
-        private static CityEntry Nth(CityFamily family, int index)
-        {
-            foreach (CityEntry entry in CityCatalogue.All)
-            {
-                if (entry.Family == family && index-- == 0)
-                {
-                    return entry;
-                }
-            }
-            return null;
         }
     }
 }

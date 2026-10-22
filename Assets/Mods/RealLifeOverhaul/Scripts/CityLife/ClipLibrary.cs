@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>One of the mod's animation clips, with the tool it was made for (if any) and how that tool sits in the hand.</summary>
+    /// <summary>One of the mod's animation clips, with the tool it was made for, if any, and how the hand holds it.</summary>
     public sealed class CityClip
     {
         public string Name;
@@ -15,13 +15,13 @@ namespace RealLifeOverhaul
         public bool Loop;
         public string Prop;        // a PropLibrary id, or null
         public ToolGrip Grip;
-        public float Speed;        // metres a second a walking loop is made for (ActivityAnimator.MatchSpeed); 0 for a clip that stands
-        public BodyMask Mask;      // the part of the body it is made for: anything but Full is meant for ActivityAnimator.PlayOver
+        public float Speed;        // metres a second a walking loop is made for (ActivityAnimator.MatchSpeed); 0 for one that stands
+        public BodyMask Mask;      // anything but Full is for ActivityAnimator.PlayOver
         public KeyValuePair<string, float>[] Marks;   // named moments in seconds ("grip", "release"...); never null
 
         public bool HasTool => Prop != null;
 
-        /// <summary>A named moment of the clip in seconds (when the hand closes on something, when it lets go), or the fallback.</summary>
+        /// <summary>A named moment of the clip in seconds (the hand closing, letting go), or the fallback.</summary>
         public float Mark(string name, float fallback = -1f)
         {
             for (int i = 0; i < Marks.Length; i++)
@@ -36,20 +36,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The mod's own animation clips, by name ("sweep", "kneel_work", "cpr", "cuffed_walk",
-    /// "direct_traffic"...; the list, with what each is for, is in CityAssets/README.md).
-    ///
-    /// They live in one asset bundle next to the mod's DLL (Bundles/reallife_anim): Humanoid
-    /// clips and a catalogue, nothing else. It is read once per game session, in the
-    /// background, and stays in memory (about 1 MB). Nothing here runs per frame.
-    ///
-    ///     if (ClipLibrary.TryGet("kneel_work", out CityClip clip))
-    ///     {
-    ///         ActivityAnimators.For(character.animator).Play(clip.Clip);     // and .Stop() to hand back
-    ///     }
-    ///
-    /// TryGet says no while the bundle is still loading, if it is missing, or if it has no such
-    /// clip (logged once): the caller then leaves the character to the game's own animations.
+    /// The mod's Humanoid clips by name (CityAssets/README.md), read once a session in the background from the reallife_anim
+    /// bundle and kept (about 1 MB). TryGet says no while loading, without the bundle or for a clip it lacks (logged once),
+    /// and the caller leaves the character to the game's animations. Nothing runs per frame.
     /// </summary>
     public static class ClipLibrary
     {
@@ -106,12 +95,11 @@ namespace RealLifeOverhaul
         private static readonly HashSet<string> PlayedLogged = new HashSet<string>();
         private static State _state = State.NotStarted;
 
-        /// <summary>True once the bundle has loaded (asynchronously, once); false while loading or if it failed.</summary>
         public static bool Ready => _state == State.Ready;
 
         public static int Count => Clips.Count;
 
-        /// <summary>Starts the one-off asynchronous load. Safe to call repeatedly.</summary>
+        /// <summary>Starts the one asynchronous load. Safe to call again.</summary>
         public static void Load(ModContext context)
         {
             if (_state != State.NotStarted || context == null)
@@ -136,19 +124,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Whether there is such a clip, without a word in the log if there is not: for callers that
-        /// have something else to fall back on. False while the bundle is still loading.
-        /// </summary>
+        /// <summary>Whether there is such a clip, with nothing logged if not; false while loading.</summary>
         public static bool Has(string name)
         {
             return _state == State.Ready && name != null && Clips.ContainsKey(name);
         }
 
-        /// <summary>
-        /// Said once per clip and kind of player, and only with the developer's verbose log on: the clip is now playing on
-        /// <paramref name="by"/> ("the player", "a street character"). Called by whoever starts a clip, after it has started.
-        /// </summary>
+        /// <summary>With the verbose log on, logs once per clip and player that it is playing on by ("the player", "a street character").</summary>
         public static void Played(string name, string by)
         {
             if (Meta.Dev.Verbose && PlayedLogged.Add(name + "|" + by))
@@ -157,7 +139,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A clip by name. False if the bundle is not ready or has no such clip.</summary>
         public static bool TryGet(string name, out CityClip clip)
         {
             clip = null;

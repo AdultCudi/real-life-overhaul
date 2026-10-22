@@ -3,15 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The prop objects of the living city: brooms, cones, the coffee cart. An object is made
-    /// the first time a prop is wanted (one GameObject, the shared mesh and shared material from
-    /// <see cref="PropLibrary"/>, no collider), handed out, and put back on the shelf switched
-    /// off when its site ends, so nothing is built or destroyed while sites come and go.
-    /// There are no plain stand-in shapes here: if the modelled prop cannot be had, Take says
-    /// no and the activity that wanted it does not start. A worker with a box for a broom is
-    /// worse than no worker.
-    /// </summary>
+    /// <summary>The living city's props, made on first use from <see cref="PropLibrary"/> and shelved switched off; without the modelled prop Take returns null.</summary>
     public sealed class CityProps
     {
         private readonly Dictionary<string, Stack<Transform>> _shelf = new Dictionary<string, Stack<Transform>>(16);
@@ -24,10 +16,9 @@ namespace RealLifeOverhaul
             _root.SetParent(parent, false);
         }
 
-        /// <summary>How many prop objects exist, in use or on the shelf.</summary>
         public int Made => _made;
 
-        /// <summary>A prop object, switched on, at the root. Null if the prop library has no such prop (yet).</summary>
+        /// <summary>A prop switched on at the root; null if the prop library has none by that id.</summary>
         public Transform Take(string id)
         {
             if (_shelf.TryGetValue(id, out Stack<Transform> spare) && spare.Count > 0)
@@ -53,7 +44,7 @@ namespace RealLifeOverhaul
             return made.transform;
         }
 
-        /// <summary>Stands a prop on the ground at a point, turned about the upright axis.</summary>
+        /// <summary>Takes a prop and stands it at a point, turned to a heading in degrees.</summary>
         public Transform Stand(string id, Vector3 position, float heading)
         {
             Transform prop = Take(id);

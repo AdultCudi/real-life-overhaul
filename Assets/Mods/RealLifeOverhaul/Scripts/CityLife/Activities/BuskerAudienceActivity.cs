@@ -4,20 +4,10 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// An audience for one of the game's own street performers (the guitarist, the singer, the
-    /// bucket drummer, the juggler: the game has them, with their music and a donation bucket
-    /// the player can already tip into). Two or three people stand in an arc in front of the
-    /// performer, facing them, moving to the music, and now and then they all clap.
-    ///
-    /// The performer is found, not assumed: among the things the player can interact with near
-    /// the player, one that is a StreetPerformer and is out; and each listener's place is tested
-    /// like anybody else's. When the performer packs up (rain, the hour), the audience ends
-    /// when nobody is looking.
-    /// </summary>
+    /// <summary>Two or three people in an arc before one of the game's street performers, found near the player; when it packs up they go once unseen.</summary>
     public sealed class BuskerAudienceActivity : CityActivity
     {
-        private const float SearchRadius = 70f;
+        private const float SearchRadius = 70f;   // metres
         private const int MaxListeners = 3;
 
         private static readonly Collider[] Found = new Collider[96];

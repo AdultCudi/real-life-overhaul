@@ -7,12 +7,8 @@ RLO-ARC-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/EmpireMotors.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessDesk.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Character/CharacterCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Character/ModAssets.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityActivity.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Core/Keys.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventCalendar.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavModel.cs	4
@@ -20,7 +16,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneContacts.cs	4
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessGame.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Character/HairRules.cs	2
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Character/PlayerDouble.cs	1
-RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityPeople.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/CustomerDraw.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/FrontSignRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
@@ -89,7 +84,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictPanel.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarDrag.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarMeasure.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneUiDump.cs	1
@@ -101,8 +95,6 @@ RLO-STY-001	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/ClipLibrary.cs	18
 RLO-STY-001	Assets/Mods/RealLifeOverhaul/Scripts/Core/PropLibrary.cs	12
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersModel.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/WorkModel.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/StandingScenes.cs	1
-RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/WalkingActivities.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Civic/CivicState.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/EndScale.cs	1
 RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneApps.cs	1
@@ -218,10 +210,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/ProCatalogue.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Work/WorkStore.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Character/GridLooks.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Character/ModLooks.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/StallActivity.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/Activities/WalkingActivities.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityLifeDirector.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityPeople.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/CityReserves.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/ClaimedMap.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/ClaimedOffers.cs	2
@@ -252,12 +240,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictBridges.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictView.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarTuning.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Driving/VehicleTow.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventDirector.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireEffects.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	2
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/StreetEventScene.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultDirector.Reports.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitPlanner.Zones.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikeMount.cs	6

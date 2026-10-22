@@ -2,12 +2,7 @@ using System;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Somebody seated at a table for a clip made there (chess_sit: the stool's centre 0.62 m from the board's, the board
-    /// straight ahead) faces the board's centre, whichever stool they have and whichever way the table stands: the way is
-    /// from their own spot to the centre, never a stool's or the table's heading. Game-free, so NavCheck runs it
-    /// (TableSeatCheck.cs). A square root and an arc cosine when asked, once a second for each person seated.
-    /// </summary>
+    /// <summary>Somebody seated for chess_sit faces the board's centre from their own spot, whichever stool and heading; game-free, so NavCheck runs it.</summary>
     public static class TableSeat
     {
         public const float FacedWithin = 6f;      // degrees off the board's centre that still read as facing it

@@ -59,7 +59,7 @@ internal static partial class Program
         // Over the sources: every street character playing chess_sit is kept at the table, and looked at once a second.
         string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string corner = Code(File.ReadAllText(Path.Combine(scripts, "Leisure", "Activities", "ChessGame.cs")));
-        string scenes = Code(File.ReadAllText(Path.Combine(scripts, "CityLife", "Activities", "StandingScenes.cs")));
+        string scenes = Code(File.ReadAllText(Path.Combine(scripts, "CityLife", "Activities", "ChessActivity.cs")));
         string person = Code(File.ReadAllText(Path.Combine(scripts, "CityLife", "CityPerson.cs")));
         Check(corner.Contains("person.Work(\"chess_sit\", city.Props, 0f)") && corner.Contains("person.AtTable(table);") && corner.Contains("_opponent.KeepAtTable(")
               && corner.IndexOf("KeepFacing();", StringComparison.Ordinal) >= 0 && corner.IndexOf("KeepFacing();", StringComparison.Ordinal) < corner.IndexOf("if (busy)", StringComparison.Ordinal),

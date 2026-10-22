@@ -2,12 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// How a tool sits in a hand, as the clip it belongs to was made: on which hand bone, where
-    /// and how it is turned on that bone, and (for a tool held in both hands) where on the tool
-    /// the other wrist belongs. Written by the animation pipeline into the clip catalogue; never
-    /// made up in code.
-    /// </summary>
+    /// <summary>How a tool sits in a hand as its clip was made, and for a two-handed tool where the other wrist goes; from the clip catalogue.</summary>
     public struct ToolGrip
     {
         public HumanBodyBones Hand;
@@ -18,13 +13,7 @@ namespace RealLifeOverhaul
         public Vector3 WristOnTool;    // where the other wrist is, in the tool's own space
     }
 
-    /// <summary>
-    /// A tool in somebody's hands. The tool object is parented to the hand bone at the clip's
-    /// grip, so it moves with the hand for nothing. If the clip holds it with both hands the
-    /// other hand is kept on it by <see cref="TwoBoneReach"/> after the animation each frame
-    /// (ActivityAnimators does that, and only for people who are being animated), because a
-    /// retargeted arm ends up a few centimetres from where the clip's author put it.
-    /// </summary>
+    /// <summary>A tool on the hand bone at the clip's grip; a second hand is kept on it after each frame's animation, as retargeted arms end a little off.</summary>
     public sealed class HeldTool
     {
         private Animator _animator;
@@ -39,10 +28,7 @@ namespace RealLifeOverhaul
         public bool Held => _tool != null;
         public Transform Tool => _tool;
 
-        /// <summary>
-        /// Puts a tool object in the character's hand. False (and nothing changed) if this
-        /// character has no such bone. The tool keeps its life size whatever scale the bones carry.
-        /// </summary>
+        /// <summary>Puts a tool in the hand at its life size, whatever scale the bones carry; false, with nothing changed, without the bone.</summary>
         public bool Attach(Animator animator, Transform tool, ToolGrip grip)
         {
             Detach(null);
@@ -88,10 +74,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Takes the tool out of the hand and gives it to another parent (or none), where it is
-        /// in the world now. The other hand lets go at once.
-        /// </summary>
+        /// <summary>Hands the tool to another parent (or none) where it is now; the other hand lets go at once.</summary>
         public void Detach(Transform parent)
         {
             if (_tool != null)
@@ -111,10 +94,7 @@ namespace RealLifeOverhaul
             _weightGoal = 0f;
         }
 
-        /// <summary>
-        /// A different clip is about to hold the same tool in the same hand. Its grip says whether
-        /// the other hand is on the tool as well: that hand comes off or goes back on over a moment.
-        /// </summary>
+        /// <summary>Another clip holds the same tool in the same hand: the other hand comes off or goes back on over a moment.</summary>
         public void Regrip(ToolGrip grip)
         {
             if (_tool == null || _animator == null)

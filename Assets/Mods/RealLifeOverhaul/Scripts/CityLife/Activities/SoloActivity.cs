@@ -12,7 +12,7 @@ namespace RealLifeOverhaul
         BackToWall   // the same wall behind them, looking out at the street
     }
 
-    /// <summary>A prop stood on the ground beside somebody, in their own frame: metres to their right and ahead, and its heading relative to theirs.</summary>
+    /// <summary>A prop on the ground beside somebody, in their frame: metres to their right and ahead, and its heading.</summary>
     public readonly struct SoloProp
     {
         public readonly string Id;
@@ -27,30 +27,26 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// What one person alone on the pavement does: where they stand, what they wear, the clip
-    /// they work to (which brings its own tool), and how they vary it. Data only; the catalogue
-    /// holds one of these per solo activity.
-    /// </summary>
+    /// <summary>What one person alone does: where they stand, what they wear, the clip they work to and how they vary it; one per catalogue entry.</summary>
     public sealed class SoloSpec
     {
         public CityLook Look = CityLook.Civilian;
         public SoloPlace Place = SoloPlace.Open;
         public float Wall = 0.5f;          // metres between the feet and the wall, for the two wall placements
-        public float Room = 0.6f;          // clear radius round them
+        public float Room = 0.6f;          // metres of clear radius round them
         public float Ahead;                // metres of clear pavement they need in front (where the broom goes)
 
         public string Work;                // the looping clip; null leaves them to the game's own idle
         public string Rest;                // a second looping clip with the same tool, alternated with Work
-        public float WorkMin = 10f, WorkMax = 18f;
-        public float RestMin = 4f, RestMax = 7f;
+        public float WorkMin = 10f, WorkMax = 18f;   // seconds
+        public float RestMin = 4f, RestMax = 7f;   // seconds
 
         public string Carry;               // a clip whose tool is in the other hand from the start
         public string Greet;               // a one-off clip, played when someone on foot comes by in front
         public string Now;                 // a one-off clip, played every so often (a photo, a sip)
-        public float NowMin = 9f, NowMax = 16f;
-        public bool HoldNow;               // between its one-offs the last pose of Now is kept (a carton on the palm, a mug at the hip) and not the game's idle: Now ends as it starts
-        public string Ring;                // with a game pose that is a phone call: the call ends now and then, the phone is away for RestMin..RestMax, and this one-off answers the next one
+        public float NowMin = 9f, NowMax = 16f;   // seconds
+        public bool HoldNow;               // between one-offs the last pose of Now is held (a carton on the palm), not the game's idle
+        public string Ring;                // with a game pose that is a phone call: it ends now and then, and this one-off answers the next
 
         public bool UsesGamePose;          // instead of Work: one of the game's own looping poses
         public PermanentAnimationType GamePose;
@@ -59,12 +55,7 @@ namespace RealLifeOverhaul
         public SoloProp[] Props;
     }
 
-    /// <summary>
-    /// One person, one spot, a loop with variation: sweeping and leaning on the broom, wiping a
-    /// shop window and standing back to look, handing out leaflets when somebody passes, a
-    /// cigarette by the wall. Everything that differs between them is in the <see cref="SoloSpec"/>,
-    /// so a new one is a catalogue entry and nothing else.
-    /// </summary>
+    /// <summary>One person, one spot, a loop with variation (a sweeper, a window cleaner, a leafleter); all that differs is in the <see cref="SoloSpec"/>.</summary>
     public sealed class SoloActivity : CityActivity
     {
         private enum Doing { Working, Resting, Once }
@@ -79,7 +70,7 @@ namespace RealLifeOverhaul
         private float _until;
         private float _nextOnce;
         private float _nextGreet;
-        private bool _rang;                 // the one-off that is playing is Ring: its phone goes away when the game's pose takes over
+        private bool _rang;                 // the one-off playing is Ring: its phone goes when the game's pose takes over
 
         public SoloActivity(SoloSpec spec)
         {
@@ -98,7 +89,7 @@ namespace RealLifeOverhaul
                 {
                     return false;
                 }
-                // Along the pavement where that can be told, either way; and the work in front must have room on it too.
+                // Along the pavement where that can be told, either way, with room for the work in front.
                 if (!CitySpots.Along(_stand, out forward))
                 {
                     forward = Quaternion.Euler(0f, Random.value * 360f, 0f) * Vector3.forward;
@@ -246,7 +237,7 @@ namespace RealLifeOverhaul
             base.End();
         }
 
-        // Back to the main loop (or the game's pose, or its idle). False only if the main loop cannot be played at all.
+        // Back to the main loop, the game's pose or its idle; false only if the main loop cannot be played.
         private bool Settle(float fade)
         {
             _doing = Doing.Working;
@@ -281,8 +272,8 @@ namespace RealLifeOverhaul
 
         private void Once(string clip, float now)
         {
-            // Held on its last pose (which is the main loop's own) until the next tick fades the loop back in:
-            // handing back to the game's idle in between would drop the arms, tool and all.
+            // Held on its last pose, the main loop's own, until the next tick fades the loop back in: the game's idle in between
+            // would drop the arms, tool and all.
             if (_person.Work(clip, Props, 0.3f, ClipEnd.Hold) && ClipLibrary.TryGet(clip, out CityClip found))
             {
                 _doing = Doing.Once;

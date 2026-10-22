@@ -455,7 +455,7 @@ internal static partial class Program
         Check(CodeAt(grade, "bool told = !up || Settings.EconomyGradeUpNotes;") > 0 && CodeAt(grade, "if (told)") > 0 && CodeAt(grade, "Badge();") > CodeAt(grade, "if (told)"),
             "switches: a better credit grade may go untold, a worse one is always told, and the app's badge follows either way");
         string calendar = ModSource(@"Events\EventCalendar.cs");
-        string director = ModSource(@"Events\EventDirector.cs");
+        string director = ModSource(@"Events\EventDirector.cs") + ModSource(@"Events\EventDirector.Tests.cs");
         string scene = ModSource(@"Events\StreetEventScene.cs");
         Check(calendar.Contains("public static bool Quiet(EventKind kind) => kind == EventKind.Protest && !Settings.StreetProtestNotes;")
               && Occurs(director, "EventCalendar.Quiet(") == 3 && Occurs(scene, "if (!EventCalendar.Quiet(_kind))") == 2,

@@ -2,12 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Somebody out for a run: round a loop of three or four stretches of pavement at the game's
-    /// own jogging pace, with the game's own jogging animation, by their navigation agent like
-    /// everybody else on foot. The only one of the living city's people who is not standing
-    /// still, and so the only one that costs a path.
-    /// </summary>
+    /// <summary>Somebody running a loop of pavement at the game's jogging pace: the only one who moves, so the only one that costs a path.</summary>
     public sealed class JoggerActivity : CityActivity
     {
         private const int MaxStops = 4;
