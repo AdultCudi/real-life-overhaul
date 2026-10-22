@@ -14,7 +14,7 @@ Fires and the fire service, weather that matters (grip, crime, sight, street lif
 | `EventDirector` | the one scene that is on (a fire or a street event), yielding to accidents and crimes; calendar announcements, the City Bulletin contact, 911, one line in modData; the test buttons in EventDirector.Tests |
 | `FireScene` | one fire from first smoke to the engine leaving (car, bin, shopfront), the fire service's part in FireScene.Response; HoseHold (hands on the nozzle); FireDamage (the player's own business: closure and repair bill) |
 | `EventRoad` | the adapter over Scripts/Traffic (public surface only): lanes, the stretch to close, bringing a pooled vehicle; beside it EngineLivery (with BarFlash and EventPropsBar) and FireEngine |
-| `FireEffects` | flames, smoke, steam, water jet and firelight: seven pooled particle systems copied from the game's smoke; Fireworks (four pooled mesh-particle systems) |
+| `FireEffects` | flames, smoke, steam, water jet and firelight: seven pooled particle systems copied from the game's smoke; beside it Fireworks (four pooled mesh-particle systems) |
 | `Hose` | sixteen pooled segments laid along the ground from the engine to the nozzle, clear of vehicles and street furniture |
 | `EventPeople` | the event pool of eight (a second CityPeople): people on a closed carriageway, things worn on a bone, a staff in the hand, walking in and off |
 | `EventProps` | the props by id: the modelled one if the bundle has it, else a plain-shape stand-in to the wish-list's size and pivot |

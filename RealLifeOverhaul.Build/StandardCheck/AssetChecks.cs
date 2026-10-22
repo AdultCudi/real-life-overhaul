@@ -43,7 +43,7 @@ internal static partial class Program
         ("Core/PropLibrary.cs", "made", "UnityEngine.Object.Destroy(tinted)", "the props' materials, one for each kind and each tint, destroyed in Dispose"),
         ("Core/Shapes.cs", "mesh", "Object.Destroy(_post)", "the round post's and the drum's meshes, made once and destroyed in Dispose"),
         ("Districts/DistrictPanel.cs", "_drawnDisc", "private static Sprite _drawnDisc", "the swatches' disc, drawn once a session"),
-        ("Events/FireEffects.cs", "clip", "Object.Destroy(_clip)", "a firework's bang, made once a city and destroyed with the fireworks"),
+        ("Events/Fireworks.cs", "clip", "Object.Destroy(_clip)", "a firework's bang, made once a city and destroyed with the fireworks"),
         ("Family/FamilyPhone.cs", "sprite", "Icons[id] = sprite", "a family contact's disc, kept for the session: the game keeps contact icons by the sprite's name"),
         ("Garage/BikeBody.cs", "mesh", "Object.Destroy(meshes[i])", "a bike's meshes, made once for each kind and destroyed in Dispose"),
         ("Jobs/JobPhone.cs", "icon", "_icon = MakeIcon()", "the job contact's icon, drawn once a session"),
