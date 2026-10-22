@@ -1,13 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using BAModAPI;
-using BigAmbitions.Mods;
 using Localizor;
 using UI.Notification;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {
@@ -20,7 +17,7 @@ namespace RealLifeOverhaul
     /// FAULTS: every entry point runs in a try with a <see cref="FeatureGuard"/>. A missing member (<see cref="Missing"/>)
     /// stops its class at once; any other fault is logged and the feature goes on, until a run of them switches the
     /// feature off for the session (its Cleanup runs, its save line is left as last written). <see cref="StandsDown"/>
-    /// and <see cref="DoesWithout"/> serve parts inside an entry point; the game's other calls in are in Core/GuardCalls.
+    /// and <see cref="DoesWithout(Exception, string)"/> serve parts inside an entry point; the game's other calls in are in Core/GuardCalls.
     /// SAVES: a line a store could not read is kept as it was (Core/SaveLines), with one notice.
     /// COST: at game start the contract and the code check (about twenty milliseconds); per frame only the try round
     /// each entry point.

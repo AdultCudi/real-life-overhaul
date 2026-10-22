@@ -281,7 +281,6 @@ namespace RealLifeOverhaul
             _runs = new Dictionary<TKey, Run>(64, comparer ?? EqualityComparer<TKey>.Default);
         }
 
-        /// <summary>Starts afresh.</summary>
         public void Begin()
         {
             _runs.Clear();

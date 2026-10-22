@@ -348,7 +348,8 @@ namespace RealLifeOverhaul
                 }
                 _pretend = _pretend == GoingPublicRole.Absent ? GoingPublicRole.Host : _pretend == GoingPublicRole.Host ? GoingPublicRole.Guest : GoingPublicRole.Absent;
                 _told = false;   // the test shows the notice too
-                Logger?.Info("Going Public test: " + (_pretend == GoingPublicRole.Absent ? "the pretence is over." : "this machine is taken to " + (_pretend == GoingPublicRole.Host ? "host" : "be a guest in") + " a session."));
+                Logger?.Info("Going Public test: " + (_pretend == GoingPublicRole.Absent ? "the pretence is over."
+                                                     : "this machine is taken to " + (_pretend == GoingPublicRole.Host ? "host" : "be a guest in") + " a session."));
                 _next = 0f;
                 Read();
                 if (_pretend == GoingPublicRole.Absent)

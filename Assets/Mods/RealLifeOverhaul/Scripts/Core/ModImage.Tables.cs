@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-
 namespace RealLifeOverhaul
 {
     /// <summary>The mod's assembly read as a file: its type and member references and its own types, methods and fields.</summary>
@@ -74,7 +69,6 @@ namespace RealLifeOverhaul
             return String(Read(Row(AssemblyRef, row) + 12 + _blob, _str));
         }
 
-
         /// <summary>The parent of a member reference as a token: a type reference or specification, a type or method of the mod, a module.</summary>
         public int MemberRefParent(int row)
         {
@@ -109,7 +103,6 @@ namespace RealLifeOverhaul
             return length > 0 && _blobs[at] == 0x06;
         }
 
-
         public int TypeSpecSignature(int row)
         {
             return Read(Row(TypeSpec, row), _blob);
@@ -131,7 +124,6 @@ namespace RealLifeOverhaul
         {
             return Read(Row(StandAloneSig, row), _blob);
         }
-
 
         public string TypeDefName(int row)
         {

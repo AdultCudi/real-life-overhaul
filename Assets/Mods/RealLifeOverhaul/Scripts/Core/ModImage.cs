@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -329,7 +328,6 @@ namespace RealLifeOverhaul
             return size == 2 ? U16(_tables, at) : I32(_tables, at);
         }
 
-        /// <summary>The metadata token of a row.</summary>
         public static int Token(int table, int row)
         {
             return (table << 24) | row;

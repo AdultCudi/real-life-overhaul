@@ -17,7 +17,7 @@ namespace RealLifeOverhaul
     /// a fault or a feature switched off never reaches the game's code nor leaves the player stuck: a method the game
     /// asks gets <see cref="Failed{T}"/>'s answer; an activity whose feature is off is <see cref="Ended"/>; a dialog's
     /// pages (<see cref="Entry"/>, <see cref="Maker"/>) end with the game's own closing; the options page's rows
-    /// (<see cref="Rows"/>) are caught but never skipped; a way out (<see cref="Way"/>) always runs. ContractCheck reads
+    /// (<see cref="Rows"/>) are caught but never skipped; a way out (<see cref="Way(Action)"/>) always runs. ContractCheck reads
     /// the built mod to see that each is so. COST: the try round a method; the wrappers are made once.
     /// </summary>
     public static partial class Guard

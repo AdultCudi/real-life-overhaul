@@ -1,13 +1,6 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using BAModAPI;
-using BigAmbitions.Mods;
 using Localizor;
-using UI.Notification;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace RealLifeOverhaul
 {

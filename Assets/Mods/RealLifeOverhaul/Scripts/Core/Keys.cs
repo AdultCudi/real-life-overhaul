@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Reflection;
 using BAModAPI;
 using BigAmbitions.Mods;
 using BigAmbitions.ModsInternal;
@@ -255,7 +254,6 @@ namespace RealLifeOverhaul
             Logger?.Info("Keys: " + binding.Id + " is now " + binding.Label + ".");
         }
 
-        /// <summary>Puts every action back on the key it shipped with.</summary>
         public static void ResetAll()
         {
             foreach (Binding binding in All)
@@ -358,7 +356,6 @@ namespace RealLifeOverhaul
             return options.AddSplitter();
         }
 
-        /// <summary>The mod is being unloaded.</summary>
         public static void Dispose()
         {
             if (_hooked)

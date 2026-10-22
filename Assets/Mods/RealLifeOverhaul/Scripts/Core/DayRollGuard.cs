@@ -121,8 +121,8 @@ namespace RealLifeOverhaul
             }
             else if (Verbose)
             {
-                Logger?.Info("Day roll check (day " + day + "): " + entries + " good(s) in the city's market, every one the game's; the night before " + (missed ? "stopped before the employees' day" : "ran to its end or was not seen")
-                             + "; " + people + " employee(s), every one's hours as the game counted them: PASS");
+                Logger?.Info("Day roll check (day " + day + "): " + entries + " good(s) in the city's market, every one the game's; the night before "
+                             + (missed ? "stopped before the employees' day" : "ran to its end or was not seen") + "; " + people + " employee(s), every one's hours as the game counted them: PASS");
             }
         }
 

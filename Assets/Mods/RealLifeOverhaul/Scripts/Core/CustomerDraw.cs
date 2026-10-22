@@ -15,22 +15,14 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The one way the mod has the game draw again the customers still to come today at a player's business, and the one
-    /// place it reads that list (the game's private table, through Core/GameContract).
-    ///
-    /// The game's redraw throws away every customer not yet served, the hour under way included. Meaningful Ambience
-    /// (another mod) adds its customers once as the hour turns, so while it is loaded the hour under way is kept as it was
-    /// and only later hours are drawn again.
-    ///
-    /// A redraw is asked for (<see cref="Rewritten"/>, <see cref="Redraw"/>) and waits (Core/RedrawRules): once a business
-    /// however often asked, with the figure of its last asking, and not at all if its list already stands drawn with that
-    /// figure. <see cref="CustomerDrawPace"/> draws the waiting ones about a millisecond a frame; they are drawn at once
-    /// where spreading is not safe (RedrawRules.Spread) or the list is needed (<see cref="Entries"/>, a save, the shop the
-    /// player stands in). A redraw is never made in a later hour than it was asked in. The lists are not saved and each
-    /// Going Public machine draws only its own businesses, so this changes nothing saved or shared.
-    ///
-    /// COST: nothing per frame while nothing waits; about a millisecond a frame while redraws wait; an asking is a
-    /// dictionary look-up. One line a round with Developer diagnostics on.
+    /// The one way the mod has the game draw again a player's business's customers still to come today, and the one
+    /// place it reads that list. While Meaningful Ambience (another mod, which adds customers as the hour turns) is
+    /// loaded, the hour under way is kept as it was. A redraw is asked for (<see cref="Rewritten"/>, <see cref="Redraw"/>)
+    /// and waits (Core/RedrawRules): once a business, with its last figure, and not at all if the list stands drawn with
+    /// it. <see cref="CustomerDrawPace"/> draws the waiting ones about a millisecond a frame, or at once where spreading
+    /// is not safe or the list is needed (<see cref="Entries"/>, a save, the shop the player is in); never in a later
+    /// hour than asked. The lists are not saved and each Going Public machine draws only its own businesses.
+    /// COST: nothing per frame while nothing waits; an asking is a dictionary look-up.
     /// </summary>
     public static class CustomerDraw
     {
@@ -129,7 +121,8 @@ namespace RealLifeOverhaul
                     if (_table == null || _table.FieldType != typeof(Dictionary<Address, List<CustomerEntry>>))
                     {
                         _table = null;
-                        Logger?.Warn("Customers: the game's list of a day's customers is not where it was; the hour under way is not kept on a redraw, the basket adds nothing, and every redraw asked for is made.");
+                        Logger?.Warn("Customers: the game's list of a day's customers is not where it was; "
+                                     + "the hour under way is not kept on a redraw, the basket adds nothing, and every redraw asked for is made.");
                     }
                 }
                 catch (Exception e)

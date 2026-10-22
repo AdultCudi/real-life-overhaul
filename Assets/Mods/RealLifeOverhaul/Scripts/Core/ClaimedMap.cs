@@ -38,7 +38,8 @@ namespace RealLifeOverhaul
                 var step = field != null && work != null ? field.GetValue(work) as Action<CityBuildingController> : null;
                 if (step == null)
                 {
-                    SpecialBuildings.Logger?.Info("Special buildings: the city map's look at its buildings is not as expected; the mod's buildings are put out of its rows of units to let when each look ends.");
+                    SpecialBuildings.Logger?.Info("Special buildings: the city map's look at its buildings is not as expected; "
+                                                  + "the mod's buildings are put out of its rows of units to let when each look ends.");
                     return;
                 }
                 if (step.Method.DeclaringType == typeof(ClaimedMap))

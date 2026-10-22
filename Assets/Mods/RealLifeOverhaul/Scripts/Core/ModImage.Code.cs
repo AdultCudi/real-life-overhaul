@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace RealLifeOverhaul
 {
@@ -20,7 +18,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Lets go of the method bodies' bytes.</summary>
         public void DropCode()
         {
             _file = null;

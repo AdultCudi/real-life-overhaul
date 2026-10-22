@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BAModAPI;
 using Helpers;
 using Localizor;
 using Localizor.LanguageChangeEvent;
@@ -52,7 +51,8 @@ namespace RealLifeOverhaul
                     UnityEngine.Object.Destroy(_presentation);
                     _presentation = null;
                     _presentationMissing = true;
-                    SpecialBuildings.Logger?.Warn("Special buildings: BizMan's presentation of a building is not as expected; the mod's buildings are kept off the market by moving off any the player takes.");
+                    SpecialBuildings.Logger?.Warn("Special buildings: BizMan's presentation of a building is not as expected; "
+                                                  + "the mod's buildings are kept off the market by moving off any the player takes.");
                 }
             }
             if (_estate == null && !_estateMissing)
@@ -195,7 +195,8 @@ namespace RealLifeOverhaul
             {
                 _failed = true;
                 SpecialBuildings.Logger?.Error(e);
-                SpecialBuildings.Logger?.Warn("Special buildings: BizMan's presentation could not be kept after the error above; the mod's buildings are kept off the market by moving off any the player takes.");
+                SpecialBuildings.Logger?.Warn("Special buildings: BizMan's presentation could not be kept after the error above; "
+                                              + "the mod's buildings are kept off the market by moving off any the player takes.");
                 if (_line != null)
                 {
                     _line.SetActive(false);

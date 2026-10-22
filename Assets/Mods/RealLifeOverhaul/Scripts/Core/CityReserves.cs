@@ -57,7 +57,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>City Utilities' address as the game writes one ("13 7th Street"), from the street's name.</summary>
-        public static string UtilitiesAddress(string streetName) => UtilitiesNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + (string.IsNullOrEmpty(streetName) ? UtilitiesStreetName : streetName);
+        public static string UtilitiesAddress(string streetName) => UtilitiesNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) + " "
+                                                                     + (string.IsNullOrEmpty(streetName) ? UtilitiesStreetName : streetName);
 
         /// <summary>
         /// The smallest candidate by floor, ties broken by address in ordinal order, so every machine picks the same;

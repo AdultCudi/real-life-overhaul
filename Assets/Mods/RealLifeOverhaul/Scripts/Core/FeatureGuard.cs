@@ -28,7 +28,7 @@ namespace RealLifeOverhaul
             Where = where;
         }
 
-        /// <summary>True once switched off, for the rest of the session.</summary>
+        /// <summary>True once switched off; for the rest of the session.</summary>
         public bool Off { get; private set; }
 
         /// <summary>Faults this session, counted after the switch-off too.</summary>
