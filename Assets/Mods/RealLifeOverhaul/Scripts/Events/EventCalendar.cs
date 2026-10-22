@@ -26,7 +26,6 @@ namespace RealLifeOverhaul.Events
         /// <summary>This save's own number, from modData; 0 until it has been read.</summary>
         internal static int Salt;
 
-        /// <summary>The year in days, from <see cref="GameCalendar"/>.</summary>
         public static int DaysPerYear => GameCalendar.DaysPerYear;
 
         /// <summary>The day of the year, 1 to DaysPerYear.</summary>
@@ -58,7 +57,6 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        /// <summary>What is on that day, if anything.</summary>
         public static PlannedEvent For(int day)
         {
             var plan = new PlannedEvent { Kind = EventKind.None, Day = day };

@@ -12,10 +12,9 @@ namespace RealLifeOverhaul
     public enum StallKind { Coffee, HotDogs }
 
     /// <summary>
-    /// A coffee or hot-dog cart on the pavement with a real queue: customers walk up from out of view, wait, are served at
-    /// the counter (a cup set down, paid for, taken) and walk off out of view. Cart, vendor and every queue place have tested
-    /// room, or the cart is not here. The player can buy a coffee at the counter for a few dollars and a little energy,
-    /// through the game's own calls; nothing is stored, and with player interactions off it is scenery.
+    /// A coffee or hot-dog cart on the pavement with a real queue walking up, served at the counter and walking off, every place
+    /// tested for room. The player can buy a coffee at the counter through the game's own calls; nothing is stored, and with
+    /// player interactions off it is scenery.
     /// </summary>
     public sealed class StallActivity : CityActivity
     {

@@ -91,7 +91,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Options-page test: clears the street of the living city's people.</summary>
         public void TestClear()
         {
             EndAll();

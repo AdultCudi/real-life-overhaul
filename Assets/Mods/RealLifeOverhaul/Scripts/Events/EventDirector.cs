@@ -17,13 +17,11 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Events
 {
     /// <summary>
-    /// City events: fires and the fire service, weather that matters, and street events. One large scene at a time across
-    /// the mod: none starts while an accident, a crime scene or police business is on, and the others ask
-    /// <see cref="IsActive"/>. It owns what its scenes share, made once and reused: eight people and their props, a cordon,
-    /// the fire effects, hose and engine, a patrol car and two officers' roles (vehicles at most 3; particles 418 for a fire,
-    /// 240 for fireworks, never both). Cost: idle, one comparison a frame and a look once a second; with a scene on, the
-    /// marker each frame and the scene four times a second. Saved: one line in modData, never a scene. A fault clears the
-    /// street and switches city events off for the session.
+    /// City events: fires and the fire service, weather that matters, and street events, one large scene at a time across the
+    /// mod (none starts while an accident, a crime scene or police business is on; the others ask <see cref="IsActive"/>). It
+    /// owns what the scenes share, made once and reused: eight people, props, a cordon, the fire effects, hose and engine, a
+    /// patrol car and two officers. Cost: idle, a comparison a frame and a look once a second; with a scene on, the marker
+    /// each frame and the scene four times a second. Saved: one line in modData. A fault switches it off for the session.
     /// </summary>
     public sealed partial class EventDirector : MonoBehaviour
     {

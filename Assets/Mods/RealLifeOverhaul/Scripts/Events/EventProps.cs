@@ -69,7 +69,6 @@ namespace RealLifeOverhaul.Events
             return made.transform;
         }
 
-        /// <summary>A prop stood on the ground at a place, turned about the upright axis.</summary>
         public Transform Stand(string id, Vector3 position, float heading)
         {
             Transform prop = Take(id);

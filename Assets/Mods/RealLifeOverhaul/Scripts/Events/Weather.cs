@@ -27,11 +27,9 @@ namespace RealLifeOverhaul.Events
     }
 
     /// <summary>
-    /// Weather that matters, without changing how the game draws any of it: what the game has, and a spell of heat or cold
-    /// rolled for the day, become plain factors the rest of the mod multiplies by, 1 in fair weather and with the option
-    /// off: AccidentFactor, CrimeFactor, SightFactor (how far police and witnesses see), StreetLifeFactor (with TakeCover
-    /// in a storm), and GripFactor and TrafficSpeedFactor, which <see cref="WeatherEffects"/> applies. Written only when
-    /// the weather changes, looked at once a second.
+    /// Weather that matters, without changing how the game draws it: the game's weather and a spell of heat or cold rolled for
+    /// the day become factors the rest of the mod multiplies by, 1 in fair weather and with the option off; GripFactor and
+    /// TrafficSpeedFactor are applied by <see cref="WeatherEffects"/>. Written only when the weather changes, read once a second.
     /// </summary>
     public static class Weather
     {

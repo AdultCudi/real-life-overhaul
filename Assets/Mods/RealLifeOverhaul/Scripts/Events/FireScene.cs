@@ -14,12 +14,10 @@ namespace RealLifeOverhaul.Events
     public enum FireKind { Car, Bin, Building }
 
     /// <summary>
-    /// One fire and the fire service's answer, from the first smoke to the engine driving away: a car that pulls up smoking
-    /// (its driver gets out), a bin, or a shopfront (nothing of the building is changed). The road beside it is closed; an
-    /// engine stops short of it and three firefighters get out, one on the nozzle, one at the pump, one keeping people back,
-    /// and knock it down in stages before packing up. A patrol car works the traffic with the police option on; bystanders
-    /// film; a 911 call sends the engine at once, and with no engine to send the fire burns out. Four times a second; every
-    /// way out ends in <see cref="End"/>.
+    /// One fire, from the first smoke to the engine driving away: a car that pulls up smoking, a bin, or a shopfront (nothing of
+    /// the building changed). The road beside it is closed and an engine's crew of three knock it down in stages; a patrol car
+    /// works the traffic, bystanders film, a 911 call sends the engine at once, and with no engine it burns out. Four times a
+    /// second; every way out ends in <see cref="End"/>.
     /// </summary>
     internal sealed partial class FireScene : IEventScene
     {

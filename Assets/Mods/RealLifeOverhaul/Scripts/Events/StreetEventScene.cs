@@ -9,11 +9,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Events
 {
     /// <summary>
-    /// A street event on a stretch of road closed with barriers and tape, marshals at its ends: market stalls with vendors
-    /// and customers, a march with banners, a protest watched by two officers, a fun run, a film shoot or fireworks. Eight
-    /// people at most and two officers, stepped four times a second and mostly once a second. Nobody appears in view: it is
-    /// set up out of sight, the crowd walks in and off, and the props go once nobody is looking. Every way out, a fault
-    /// included, ends in <see cref="End"/>, which gives everything back and reopens the road.
+    /// A street event on a stretch of road closed with barriers and tape: a market, a march, a protest, a fun run, a film
+    /// shoot or fireworks. Eight people at most and two officers, four times a second and mostly once a second. Set up out of
+    /// sight, the crowd walking in and off; every way out, a fault included, ends in <see cref="End"/>, which gives
+    /// everything back and reopens the road.
     /// </summary>
     internal sealed partial class StreetEventScene : IEventScene
     {
@@ -417,7 +416,6 @@ namespace RealLifeOverhaul.Events
                 }
             }
 
-            // Who walks in next.
             if (now < _nextArrival || people.Free == 0 || _count >= MaxCast)
             {
                 return;

@@ -11,11 +11,10 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The living city's own pool of people, apart from the scenes' (People/ActorPool): eight at most
-    /// (<see cref="MaxPeople"/>), what three of the largest sites need. A look is the costly part (a mesh merge), so they
-    /// are made one at a time after the city loads (<see cref="Warm"/>) and handed out again in the same clothes where they
-    /// can be. Per frame, only while somebody is out: a few comparisons a person to hide those far off or behind the
-    /// camera, and every other physics step the player's car against them, as Ragdoll/CarStrikes does. Idle, disabled.
+    /// The living city's own pool, apart from the scenes' (People/ActorPool): eight at most (<see cref="MaxPeople"/>), made
+    /// one at a time after the city loads, as a look (a mesh merge) is the costly part. Per frame, only while somebody is out:
+    /// a few comparisons a person to hide those far off or behind the camera, and every other physics step the player's car
+    /// against them, as Ragdoll/CarStrikes does. Idle, disabled.
     /// </summary>
     public sealed partial class CityPeople : MonoBehaviour
     {
@@ -66,7 +65,6 @@ namespace RealLifeOverhaul
         /// <summary>One of the characters, in use or not, for finding this pool's people where they stand (People/CordonClear).</summary>
         internal CityPerson At(int index) => _people[index];
 
-        /// <summary>How many characters could be put on the street now.</summary>
         public int Free
         {
             get

@@ -16,13 +16,10 @@ namespace RealLifeOverhaul
     public enum BodyMask { Full, Upper, Arms, LeftArm, RightArm }
 
     /// <summary>
-    /// Plays the mod's Humanoid clips on one of the game's characters without touching its animator controller: a small
-    /// playable graph with two clip slots into a mixer, its output faded in over the controller and out to hand the
-    /// character back; clips never move the character. A second, masked layer (<see cref="PlayOver"/>) takes only the arms
-    /// or upper body over the game's walk, an animation job copying in just the masked muscles (an AvatarMask on a layer
-    /// mixer would reset the rest). Cost: a faded-in loop runs in the engine with no script; script runs only while a
-    /// weight changes or a one-off counts down (<see cref="ActivityAnimators"/>). Get one from
-    /// <see cref="ActivityAnimators.For"/>.
+    /// Plays the mod's Humanoid clips on a game character without touching its animator controller: a small playable graph
+    /// whose output fades in over the controller and out to hand the character back. A masked layer (<see cref="PlayOver"/>)
+    /// takes only the arms or upper body over the game's walk. Cost: a faded-in loop runs in the engine with no script; script
+    /// runs only while a weight changes or a one-off counts down. Get one from <see cref="ActivityAnimators.For"/>.
     /// </summary>
     public sealed class ActivityAnimator
     {
@@ -154,7 +151,6 @@ namespace RealLifeOverhaul
             Halt(_body, fade);
         }
 
-        /// <summary>Fades the masked layer out; what was under it shows again.</summary>
         public void StopOver(float fade = 0.25f)
         {
             Halt(_over, fade);

@@ -82,7 +82,6 @@ namespace RealLifeOverhaul
         public CityPeople People => _people;
         public CityProps Props => _props;
 
-        /// <summary>True while the catalogue entry of this id is out on the street.</summary>
         public bool IsOut(string entryId)
         {
             for (int i = 0; i < _running.Count; i++)
@@ -534,7 +533,6 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>Everybody and everything off the street, now.</summary>
         public void EndAll()
         {
             _cart = null;

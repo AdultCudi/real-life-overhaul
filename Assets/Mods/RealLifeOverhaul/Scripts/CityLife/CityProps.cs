@@ -20,7 +20,6 @@ namespace RealLifeOverhaul
             _root.SetParent(parent, false);
         }
 
-        /// <summary>How many prop objects exist, in use or on the shelf.</summary>
         public int Made => _made;
 
         /// <summary>A prop switched on at the root; null if the prop library has none by that id.</summary>

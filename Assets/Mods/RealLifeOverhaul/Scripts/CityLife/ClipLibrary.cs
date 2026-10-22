@@ -140,7 +140,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A clip by name; false if the bundle is not ready or lacks it.</summary>
         public static bool TryGet(string name, out CityClip clip)
         {
             clip = null;

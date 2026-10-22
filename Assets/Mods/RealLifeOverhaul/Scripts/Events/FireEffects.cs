@@ -7,11 +7,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Events
 {
     /// <summary>
-    /// A fire's particle effects (flames, smoke, steam, the water jet) and one flickering light, all copies of the game's
-    /// own smoke effect given their motion and colour here, so they are drawn as the game draws smoke. Made the first time
-    /// there is a fire and reused. Budget, as each system's maxParticles: 3 flames x 36 + 2 smokes x 96 + steam 48 + jet 70
-    /// = 418 particles in seven systems, and one point light without shadows. Nothing runs per frame: the director
-    /// flickers the light on a timer.
+    /// A fire's particle effects (flames, smoke, steam, the water jet) and one flickering light, copies of the game's own smoke
+    /// effect, made the first time there is a fire and reused. Budget, as each system's maxParticles: 3 flames x 36 + 2 smokes
+    /// x 96 + steam 48 + jet 70 = 418 particles in seven systems, one shadowless point light. Nothing runs per frame.
     /// </summary>
     internal sealed class FireEffects
     {

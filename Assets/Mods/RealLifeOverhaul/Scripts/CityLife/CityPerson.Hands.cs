@@ -213,7 +213,6 @@ namespace RealLifeOverhaul
             return tool;
         }
 
-        /// <summary>Everything out of their hands and back on the shelf.</summary>
         public void PutAway(CityProps props)
         {
             for (int hand = 0; hand < Hands; hand++)

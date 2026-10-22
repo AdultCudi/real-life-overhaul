@@ -142,7 +142,6 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        /// <summary>How many are still on their way off.</summary>
         public int LeavingCount => _leaving.Count;
 
         /// <summary>Once a second: takes back whoever has walked out of view (or was lost), and whoever a car knocked down.</summary>

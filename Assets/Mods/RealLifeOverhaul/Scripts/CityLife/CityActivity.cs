@@ -80,7 +80,6 @@ namespace RealLifeOverhaul
         /// <summary>Gives everything back, people to the pool and props to the shelf. Safe in any state, any number of times.</summary>
         void End();
 
-        /// <summary>Where it is, for the director's distance and view tests.</summary>
         Vector3 Centre { get; }
 
         bool Has(CityPerson person);

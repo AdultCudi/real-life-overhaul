@@ -3,10 +3,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A delivery: the courier walks in from out of view behind a sack truck with a parcel on it, stands the truck on the
-    /// pavement, lifts the parcel off, sets it down by a shopfront, takes the truck and walks away out of view. Every place
-    /// is measured first, with the numbers the clips were made with (CityAssets/scripts/clips_life.py). The truck is the
-    /// courier's or the dressing's; the parcel rides on the truck as its child, is in the courier's hands, or is dressing.
+    /// A delivery: the courier walks in behind a sack truck, stands it on the pavement, sets the parcel down by a shopfront
+    /// and walks off with the truck, every place measured with the clips' own numbers (CityAssets/scripts/clips_life.py). The
+    /// parcel rides on the truck as its child, is in the courier's hands, or is dressing.
     /// </summary>
     public sealed class CourierActivity : CityActivity
     {

@@ -192,7 +192,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Puts back every colour an outfit changed on this character.</summary>
         public static void Restore(List<Dye> dyes)
         {
             for (int i = dyes.Count - 1; i >= 0; i--)
