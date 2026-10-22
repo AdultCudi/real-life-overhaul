@@ -7,18 +7,18 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// GTA-style entry: press the interact key (F unless rebound; or the second one, E, when the game isn't
-    /// already offering an interaction) near an entrance door to go inside, or near one of your vehicles to get in. Both use the
-    /// game's own entry methods, so opening hours, entrance fees and cargo rules still apply.
-    /// The cost a frame: the option and the two keys; only on a press are the features asked whether the key is theirs.
+    /// Entry by key: the interact key (F unless rebound, or the second one, E, when the game offers no interaction of its
+    /// own) near an entrance door goes inside, near one of the player's vehicles gets in. Both use the game's own entry
+    /// methods, so opening hours, fees and cargo rules still apply. Cost a frame: the option and the two keys; only on a
+    /// press are the features asked whether the key is theirs.
     /// </summary>
     public class NearbyInteraction : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("camera", "NearbyInteraction", typeof(NearbyInteraction));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("camera", "NearbyInteraction", typeof(NearbyInteraction));
 
-        private const float DoorRange = 5f;
-        private const float VehicleRange = 4.5f;
-        private const float BuildingSearchRadius = 14f;
+        private const float DoorRange = 5f;               // metres
+        private const float VehicleRange = 4.5f;          // metres
+        private const float BuildingSearchRadius = 14f;   // metres
 
         private static readonly Collider[] Nearby = new Collider[48];
         private static int _buildingMask;
@@ -33,7 +33,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -61,8 +61,7 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // A job's key prompt is on screen, or the job has the key for the whole shift (flyers on foot): the key is its.
-            // Asked only on a press: the answer is the same, and eighteen flags a frame are not read for nothing.
+            // A job's key prompt is up, or a feature has the key for a while: the key is its. Asked only on a press.
             if (JobDirector.TakesInteractKey || TransitDirector.TakesInteractKey || CarOwnership.TakesInteractKey || HomeDirector.TakesInteractKey
                 || GarageDirector.TakesInteractKey || Leisure.LeisureDirector.TakesInteractKey || SocialDirector.TakesInteractKey || TravelDirector.TakesInteractKey
                 || Justice.TakesInteractKey || LicenceDirector.TakesInteractKey || CivicDirector.TakesInteractKey || Family.FamilyDirector.TakesInteractKey
@@ -91,9 +90,7 @@ namespace RealLifeOverhaul
                 ? null
                 : FindNearestBuilding(playerPos, out float buildingSqr, vehicleSqr);
 
-            // On any job the key opens no door: going indoors ends the shift, and a press that found nothing
-            // to do with the job must not do that by accident. (Clicking the building still works.) The car
-            // is still got into: a courier and a driver need theirs.
+            // On a job the key opens no door (going in ends the shift); the car is still got into.
             if (building != null && JobDirector.OnShift)
             {
                 if (vehicle != null)
@@ -117,7 +114,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // One frame later, so the same key press can't also reach the game's own vehicle keys.
+        // One frame later, so the same press cannot also reach the game's own vehicle keys.
         private static IEnumerator EnterVehicle(VehicleController vehicle)
         {
             yield return null;

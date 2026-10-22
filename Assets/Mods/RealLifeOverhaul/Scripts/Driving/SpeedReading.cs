@@ -9,12 +9,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The speed of the car, as one more reading of the game's own vehicle panel (the row of parking, cargo, fuel and condition that
-    /// <c>VehicleInfoPanel</c> keeps): a copy of its condition reading, put after it, with the speed and its unit in the same
-    /// lettering. The game's panel shows no speed of its own. Made the first time it is wanted (the way <see cref="CarDash"/> adds
-    /// its reading), then only switched on and off and written when the whole number changes. If the game's panel is not built as
-    /// expected there is no reading, with one line in the log. Each reading's text is made once and kept (<see cref="Text"/>), so a
-    /// car speeding up or slowing down allocates nothing.
+    /// The car's speed as one more reading of the game's vehicle panel, a copy of its condition reading put after it. Made
+    /// when first wanted, then only switched on and off and written when the whole number changes; each reading's text is
+    /// made once and kept, so nothing is allocated.
     /// </summary>
     public static class SpeedReading
     {
@@ -26,9 +23,9 @@ namespace RealLifeOverhaul
         private static string _shownUnit;
         private static bool _on;
         private static bool _failed;
-        private const int Kept = 400;                   // readings 0 to 399 keep their text once made: the fastest car is well under that in km/h or mph
-        private static readonly string[][] Texts = new string[2][];   // each unit's texts by reading, for the two units in use (km/h and mph)
-        private static readonly string[] Units = new string[2];       // ...and which unit each holds
+        private const int Kept = 400;                   // readings 0 to 399 keep their text: the fastest car is well under that
+        private static readonly string[][] Texts = new string[2][];   // each unit's texts by reading, for the two units in use
+        private static readonly string[] Units = new string[2];       // and which unit each holds
 
         public static void Show(int value, string unit)
         {
@@ -73,7 +70,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // "57 km/h": made the first time that reading is shown, then kept, for the two units last asked for.
+        // "57 km/h": made the first time that reading is shown, then kept.
         private static string Text(int value, string unit)
         {
             if (value < 0 || value >= Kept || unit == null)

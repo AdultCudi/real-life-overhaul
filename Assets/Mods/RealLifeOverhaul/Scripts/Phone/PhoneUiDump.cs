@@ -9,15 +9,15 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// TEMPORARY development aid for the phone redesign: press F8 to write the structure of the
-    /// game's phone UI (HUD phone and full-screen menu) to a text file. Remove before release.
+    /// A developer aid: F8 writes the structure of the game's phone UI (the HUD phone and the full menu), the characters'
+    /// rigs and a screenshot to the game's data folder. A frame costs one key check.
     /// </summary>
     public class PhoneUiDump : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "PhoneUiDump", typeof(PhoneUiDump));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "PhoneUiDump", typeof(PhoneUiDump));
 
-        private const int MaxDepth = 7;
-        private const int MaxLinesPerRoot = 900;
+        private const int MaxDepth = 7;           // levels below each root
+        private const int MaxLinesPerRoot = 900;  // lines written per root
 
         public static IModLogger Logger;
 
@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -69,7 +69,6 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
 
-            // Numbered screenshots, so what the player sees can be reviewed alongside the structure.
             string folder = Path.Combine(Application.persistentDataPath, "RealLifeOverhaul_shots");
             Directory.CreateDirectory(folder);
             string shot = Path.Combine(folder, $"shot_{System.DateTime.Now:HHmmss}.png");
@@ -77,7 +76,7 @@ namespace RealLifeOverhaul
             Logger?.Info($"Phone UI structure written to {path}; screenshot {shot}");
         }
 
-        // For the ragdoll work: what skeleton the player and the nearest pedestrians have.
+        // The rigs of the player and up to three pedestrians within 45 metres.
         private static string DescribeCharacters()
         {
             var text = new StringBuilder();
@@ -137,7 +136,8 @@ namespace RealLifeOverhaul
                                 + $"joints: {character.GetComponentsInChildren<Joint>(true).Length}");
                 foreach (Collider collider in character.GetComponentsInChildren<Collider>(true))
                 {
-                    text.AppendLine($"  collider {collider.GetType().Name} on '{collider.name}' layer {LayerMask.LayerToName(collider.gameObject.layer)} trigger={collider.isTrigger} enabled={collider.enabled}");
+                    text.AppendLine($"  collider {collider.GetType().Name} on '{collider.name}' layer {LayerMask.LayerToName(collider.gameObject.layer)} "
+                                    + $"trigger={collider.isTrigger} enabled={collider.enabled}");
                 }
                 foreach (Rigidbody body in character.GetComponentsInChildren<Rigidbody>(true))
                 {
@@ -145,10 +145,10 @@ namespace RealLifeOverhaul
                 }
                 foreach (SkinnedMeshRenderer skin in character.GetComponentsInChildren<SkinnedMeshRenderer>(false))
                 {
-                    text.AppendLine($"  skinned mesh '{skin.name}' bones={skin.bones.Length} rootBone={(skin.rootBone != null ? skin.rootBone.name : "none")} updateWhenOffscreen={skin.updateWhenOffscreen}");
+                    text.AppendLine($"  skinned mesh '{skin.name}' bones={skin.bones.Length} rootBone={(skin.rootBone != null ? skin.rootBone.name : "none")} "
+                                    + $"updateWhenOffscreen={skin.updateWhenOffscreen}");
                 }
 
-                // The skeleton itself, a few levels deep.
                 Transform skeleton = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
                 if (skeleton != null && skeleton.parent != null)
                 {
