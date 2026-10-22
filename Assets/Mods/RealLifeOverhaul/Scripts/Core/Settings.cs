@@ -36,6 +36,9 @@ namespace RealLifeOverhaul
         public const string MouseSensitivityId = "camera_sensitivity";
         public const string EnterWithKeyId = "enter_with_key";
         public const string WalkToggleId = "walk_toggle";
+        public const string MealsSeatedId = "meals_seated";
+        public const string MealsCookedId = "meals_cooked";
+        public const string MealsDanceId = "meals_dance";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -352,6 +355,9 @@ namespace RealLifeOverhaul
         public static int MouseSensitivity = 6;
         public static bool EnterWithKey = true;  // E/F near a door enters the building
         public static bool WalkToggle = true;    // on foot, the walk key walks and gives back the game's own pace (Walking/WalkDirector)
+        public static bool MealsSeated = true;   // a meal is eaten at a free seat nearby, with the food in front (Meals/MealsDirector)
+        public static bool MealsCooked = true;   // a meal cooked at home is carried to a seat and eaten there (Meals/MealsDirector)
+        public static bool MealsDance = true;    // "Dance" in the radio panel over a loudspeaker playing music (Meals/MealsDirector.Dance)
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -702,6 +708,9 @@ namespace RealLifeOverhaul
             MouseSensitivity = Int(modId, MouseSensitivityId, MouseSensitivity);
             EnterWithKey = Bool(modId, EnterWithKeyId, EnterWithKey);
             WalkToggle = Bool(modId, WalkToggleId, WalkToggle);
+            MealsSeated = Bool(modId, MealsSeatedId, MealsSeated);
+            MealsCooked = Bool(modId, MealsCookedId, MealsCooked);
+            MealsDance = Bool(modId, MealsDanceId, MealsDance);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);
