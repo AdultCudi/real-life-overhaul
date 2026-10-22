@@ -19,7 +19,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class HotSpots
     {
-        public const int Most = 768;       // names that can be told apart; any more share the last one
+        public const int Most = 768;       // slots: names that can be told apart, and the last for any more ("others")
+        public const int Others = Most - 1;   // the slot every name past the first Most - 1 shares; no name of its own is put there
         public const int AllocEvery = 8;   // one frame in this many is a sample of the heap, where only its size can be read
 
         /// <summary>One frame in this many is a sample of the heap: <see cref="AllocEvery"/>, or 1 where the reads are exact.</summary>
@@ -80,10 +81,10 @@ namespace RealLifeOverhaul
                 {
                     return slot;
                 }
-                if (_named >= Most)
+                if (_named >= Others)
                 {
-                    Names[Most - 1] = "others";
-                    return Most - 1;
+                    Names[Others] = "others";   // a slot of its own: the last real name keeps its number and its time
+                    return Others;
                 }
                 slot = _named++;
                 Names[slot] = name;
@@ -338,7 +339,7 @@ namespace RealLifeOverhaul
         /// <summary>The slot after <paramref name="skip"/> larger ones by the stretch's time (or heap growth), with its sums.</summary>
         public static bool StretchTop(int skip, bool byBytes, out int slot, out double totalMs, out double worstMs, out long bytes)
         {
-            slot = Rank(byBytes ? Bytes : Sum, null, _named < Most ? _named : Most, skip);
+            slot = Rank(byBytes ? Bytes : Sum, null, _named < Others ? _named : Most, skip);   // once full, the "others" slot too
             if (slot < 0)
             {
                 totalMs = worstMs = 0.0;
