@@ -87,12 +87,30 @@ namespace RealLifeOverhaul
             // The city's economy's and the company's parts of a business's footfall; business pressure bounds the sum.
             private static int Ambient(BuildingRegistration reg)
             {
-                return CityEconomyDirector.FootfallOf(reg) + CompanyDirector.FootfallOf(reg);
+                try
+                {
+                    return CityEconomyDirector.FootfallOf(reg) + CompanyDirector.FootfallOf(reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.Ambient", e);
+                    return 0;
+                }
             }
 
             private static bool Footfall(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written)
             {
-                return BusinessDirector.Footfall(reg, redraw && !(newDay && CityEconomyDirector.FootfallOf(reg) != 0), newDay, out own, out written);
+                try
+                {
+                    return BusinessDirector.Footfall(reg, redraw && !(newDay && CityEconomyDirector.FootfallOf(reg) != 0), newDay, out own, out written);
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.Footfall", e);
+                    own = 0;
+                    written = 0;
+                    return false;
+                }
             }
 
             private static bool Close(BuildingRegistration reg, int hours)
@@ -187,19 +205,41 @@ namespace RealLifeOverhaul
             // Business pressure's poaching: never somebody the company or the tech sector has an offer or a departure in hand for.
             private static bool Offered(string id)
             {
-                return Holds(id) || TechLinks.Holds(id);
+                try
+                {
+                    return Holds(id) || TechLinks.Holds(id);
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.Offered", e);
+                    return false;
+                }
             }
 
             // A fire's repair bill at a business of the player's: fire cover may pay some of it back.
             private static void FireLoss(BuildingRegistration reg, int bill)
             {
-                CompanyDirector.Instance?.Loss(reg, CoverKind.Fire, bill);
+                try
+                {
+                    CompanyDirector.Instance?.Loss(reg, CoverKind.Fire, bill);
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.FireLoss", e);
+                }
             }
 
             // A break-in: theft cover counts the stock taken and the repair together.
             private static void BreakIn(BuildingRegistration reg, int stock, int repair)
             {
-                CompanyDirector.Instance?.Loss(reg, CoverKind.Theft, Math.Max(0, stock) + Math.Max(0, repair));
+                try
+                {
+                    CompanyDirector.Instance?.Loss(reg, CoverKind.Theft, Math.Max(0, stock) + Math.Max(0, repair));
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.BreakIn", e);
+                }
             }
 
             // A fine from a health or fire safety inspection: liability cover may pay some of it back.
@@ -256,9 +296,16 @@ namespace RealLifeOverhaul
             // A health or fire safety inspection has ended at a business: the company looks at its licences.
             private static void IssueClosed(string kind, string place, string outcome)
             {
-                if (kind == BusinessCatalogue.Health || kind == BusinessCatalogue.Fire)
+                try
                 {
-                    CompanyDirector.Instance?.Inspected(place);
+                    if (kind == BusinessCatalogue.Health || kind == BusinessCatalogue.Fire)
+                    {
+                        CompanyDirector.Instance?.Inspected(place);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.IssueClosed", e);
                 }
             }
 

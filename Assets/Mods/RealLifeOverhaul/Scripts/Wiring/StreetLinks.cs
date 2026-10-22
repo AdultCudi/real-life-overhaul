@@ -196,7 +196,24 @@ namespace RealLifeOverhaul
             // The earlier pairings' part with word of mouth on top.
             private static int Ambient(BuildingRegistration reg)
             {
-                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + StreetDirector.FootfallOf(reg);
+                int before = 0;
+                try
+                {
+                    before = _ambientBefore != null ? _ambientBefore(reg) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("StreetLinks.Ambient (the pairings before)", e);
+                }
+                try
+                {
+                    return before + StreetDirector.FootfallOf(reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("StreetLinks.Ambient", e);
+                    return before;
+                }
             }
 
             private static void MouthChanged(string address)

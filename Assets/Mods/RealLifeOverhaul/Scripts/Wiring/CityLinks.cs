@@ -44,8 +44,16 @@ namespace RealLifeOverhaul
 
             private static double MaterialFactor(string itemName)
             {
-                Markets.MarketDirector market = Markets.MarketDirector.Instance;
-                return market != null ? market.MaterialFactor(itemName) : double.NaN;
+                try
+                {
+                    Markets.MarketDirector market = Markets.MarketDirector.Instance;
+                    return market != null ? market.MaterialFactor(itemName) : double.NaN;
+                }
+                catch (Exception e)
+                {
+                    Fault("CityLinks.MaterialFactor", e);
+                    return double.NaN;
+                }
             }
 
             private static CityDay Day(int day)
@@ -95,7 +103,15 @@ namespace RealLifeOverhaul
 
             private static int Weight(string kind, int own)
             {
-                return kind == BusinessCatalogue.Undercut ? own * CityEconomyDirector.UndercutScale() / 1000 : own;
+                try
+                {
+                    return kind == BusinessCatalogue.Undercut ? own * CityEconomyDirector.UndercutScale() / 1000 : own;
+                }
+                catch (Exception e)
+                {
+                    Fault("CityLinks.Weight", e);
+                    return own;
+                }
             }
 
             private static void Paper(int day, List<NewsItem> into)

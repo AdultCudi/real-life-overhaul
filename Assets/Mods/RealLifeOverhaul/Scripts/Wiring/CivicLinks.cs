@@ -92,20 +92,43 @@ namespace RealLifeOverhaul
 
             private static float RaiseOf(string id)
             {
-                Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
-                return company != null ? company.RaiseOf(id) / 100f : 0f;
+                try
+                {
+                    Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
+                    return company != null ? company.RaiseOf(id) / 100f : 0f;
+                }
+                catch (Exception e)
+                {
+                    Fault("CivicLinks.RaiseOf", e);
+                    return 0f;
+                }
             }
 
             private static void Story(string headlineKey, string bodyKey)
             {
-                Notifications.Show(NotificationType.Info, headlineKey, null, 10f);
-                Paper.Print(bodyKey ?? headlineKey);
+                try
+                {
+                    Notifications.Show(NotificationType.Info, headlineKey, null, 10f);
+                    Paper.Print(bodyKey ?? headlineKey);
+                }
+                catch (Exception e)
+                {
+                    Fault("CivicLinks.Story", e);
+                }
             }
 
             private static int PeopleOut()
             {
-                CityLifeDirector city = CityLifeDirector.Instance;
-                return city != null && city.People != null ? city.People.Count - city.People.Free : 0;
+                try
+                {
+                    CityLifeDirector city = CityLifeDirector.Instance;
+                    return city != null && city.People != null ? city.People.Count - city.People.Free : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("CivicLinks.PeopleOut", e);
+                    return 0;
+                }
             }
         }
 

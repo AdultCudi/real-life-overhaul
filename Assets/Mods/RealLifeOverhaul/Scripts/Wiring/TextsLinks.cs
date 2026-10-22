@@ -70,16 +70,24 @@ namespace RealLifeOverhaul
             // A Flare request: its person's memory on the card (a message's, never a post's), and what it was about remembered.
             private static bool AskFlare(TextRequest r)
             {
-                SocialPerson friend = null;
-                if (r != null && r.Speaker != null && r.Speaker.Length > 1 && (r.Speaker[0] == 'f' || r.Speaker[0] == 'p')
-                    && int.TryParse(r.Speaker.Substring(1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int index) && SocialState.Loaded)
+                try
                 {
-                    friend = SocialState.Get(index);
+                    SocialPerson friend = null;
+                    if (r != null && r.Speaker != null && r.Speaker.Length > 1 && (r.Speaker[0] == 'f' || r.Speaker[0] == 'p')
+                        && int.TryParse(r.Speaker.Substring(1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int index) && SocialState.Loaded)
+                    {
+                        friend = SocialState.Get(index);
+                    }
+                    TextsMemory.Fill(r, friend);
+                    bool asked = TextsDirector.Words.Ask(r, TextClock.Now);
+                    TextsMemory.Spoke(r, "dm");
+                    return asked;
                 }
-                TextsMemory.Fill(r, friend);
-                bool asked = TextsDirector.Words.Ask(r, TextClock.Now);
-                TextsMemory.Spoke(r, "dm");
-                return asked;
+                catch (Exception e)
+                {
+                    Fault("RLO Texts, a Flare request", e);
+                    return false;
+                }
             }
 
             // The player's own crash, arrest or knock-down, for the people of their life to hear of.
@@ -128,20 +136,36 @@ namespace RealLifeOverhaul
             // The player's listed company's name (a rival's stake in it or bid for it names it); null while there is none.
             private static string Listed()
             {
-                Markets.Stock own = Markets.MarketDirector.Instance != null ? Markets.MarketDirector.Instance.MyCompany : null;
-                return own != null && !string.IsNullOrEmpty(own.Name) ? own.Name : null;
+                try
+                {
+                    Markets.Stock own = Markets.MarketDirector.Instance != null ? Markets.MarketDirector.Instance.MyCompany : null;
+                    return own != null && !string.IsNullOrEmpty(own.Name) ? own.Name : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("RLO Texts, the listed company's name", e);
+                    return null;
+                }
             }
 
             // A piece's words as the page draws it; drawing marks its edition shown, after which no new words are taken for it.
             private static string Body(LedgerPiece p)
             {
-                int day = LedgerDirector.Instance != null ? LedgerDirector.Instance.DayOf(p) : -1;
-                if (p == null || day < 0)
+                try
                 {
+                    int day = LedgerDirector.Instance != null ? LedgerDirector.Instance.DayOf(p) : -1;
+                    if (p == null || day < 0)
+                    {
+                        return null;
+                    }
+                    LedgerShown.Add(day);
+                    return TextsDirector.Words.Store.Words(TextsMapRules.LedgerKey(day, p.Key, p.Data), TextsDirector.Words.Language);
+                }
+                catch (Exception e)
+                {
+                    Fault("RLO Texts, a City Ledger piece's words", e);
                     return null;
                 }
-                LedgerShown.Add(day);
-                return TextsDirector.Words.Store.Words(TextsMapRules.LedgerKey(day, p.Key, p.Data), TextsDirector.Words.Language);
             }
 
             // The City Ledger's economy briefs of an edition, asked as it is written.

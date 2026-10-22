@@ -61,13 +61,28 @@ namespace RealLifeOverhaul
 
             private static bool CityPrices()
             {
-                CityEconomyDirector city = CityEconomyDirector.Instance;
-                return city != null && city.Running;
+                try
+                {
+                    CityEconomyDirector city = CityEconomyDirector.Instance;
+                    return city != null && city.Running;
+                }
+                catch (Exception e)
+                {
+                    Fault("MarketLinks.CityPrices", e);
+                    return false;
+                }
             }
 
             private static void MaterialsFixed()
             {
-                CityEconomyDirector.RewriteWholesale();
+                try
+                {
+                    CityEconomyDirector.RewriteWholesale();
+                }
+                catch (Exception e)
+                {
+                    Fault("MarketLinks.MaterialsFixed", e);
+                }
             }
 
             private static MarketEnv City(int day)

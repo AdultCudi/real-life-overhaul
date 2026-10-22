@@ -216,11 +216,19 @@ namespace RealLifeOverhaul
             // A degree for a professional of the player's: the dearest of the university's degrees, at today's prices.
             private static int DegreeFee()
             {
-                if (!CareersDirector.UniversityOpen)
+                try
                 {
+                    if (!CareersDirector.UniversityOpen)
+                    {
+                        return 0;
+                    }
+                    return Prices.At(StudyCatalogue.Find(StudyCatalogue.SoftwareEngineering).Fee);
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.DegreeFee", e);
                     return 0;
                 }
-                return Prices.At(StudyCatalogue.Find(StudyCatalogue.SoftwareEngineering).Fee);
             }
 
             /// <summary>The player's best qualification, and the job now or the highest held, for the obituary.</summary>
@@ -263,7 +271,7 @@ namespace RealLifeOverhaul
                     for (int i = 0; people != null && i < people.Count; i++)
                     {
                         Profile p = people[i].File;
-                        if ((p.Role == TalentCatalogue.Accountant || p.Role == 29) && p.Level >= TalentCatalogue.Senior)
+                        if ((p.Role == TalentCatalogue.Accountant || p.Role == TalentCatalogue.FinancialAnalyst) && p.Level >= TalentCatalogue.Senior)
                         {
                             return true;
                         }
@@ -298,7 +306,14 @@ namespace RealLifeOverhaul
 
             private static void StudentCredit(List<Economy.ICreditAccount> into)
             {
-                into.Add(Loan);
+                try
+                {
+                    into.Add(Loan);
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.StudentCredit", e);
+                }
             }
 
             private static void Credit(int kind, int amount)

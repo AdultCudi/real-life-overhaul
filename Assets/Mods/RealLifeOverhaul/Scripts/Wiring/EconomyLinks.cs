@@ -45,16 +45,24 @@ namespace RealLifeOverhaul
             // An open credit card of the mod's banks, not one of the test buttons'.
             private static bool HasCard()
             {
-                Economy.CreditFile file = Economy.CreditLedger.File;
-                for (int i = 0; file != null && i < file.Accounts.Count; i++)
+                try
                 {
-                    Economy.CreditAccount a = file.Accounts[i];
-                    if (a != null && a.Kind == Economy.ProductKind.CreditCard && !a.Closed && !a.Test)
+                    Economy.CreditFile file = Economy.CreditLedger.File;
+                    for (int i = 0; file != null && i < file.Accounts.Count; i++)
                     {
-                        return true;
+                        Economy.CreditAccount a = file.Accounts[i];
+                        if (a != null && a.Kind == Economy.ProductKind.CreditCard && !a.Closed && !a.Test)
+                        {
+                            return true;
+                        }
                     }
+                    return false;
                 }
-                return false;
+                catch (Exception e)
+                {
+                    Fault("EconomyLinks.HasCard", e);
+                    return false;
+                }
             }
 
             internal static void Disconnect()

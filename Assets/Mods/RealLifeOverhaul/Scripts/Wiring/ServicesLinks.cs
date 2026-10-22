@@ -184,13 +184,16 @@ namespace RealLifeOverhaul
                     {
                         sum += Loans[i].remainingAmount;
                     }
-                    Loans.Clear();
                     return Mathf.CeilToInt(Mathf.Min(sum, int.MaxValue / 4));
                 }
                 catch (Exception e)
                 {
                     Fault("ServicesLinks.LoansOwed", e);
                     return 0;
+                }
+                finally
+                {
+                    Loans.Clear();   // no loan of the game's kept past the answer, a fault or not
                 }
             }
 
@@ -215,13 +218,16 @@ namespace RealLifeOverhaul
                         save.Loans.Remove(loan);
                         GameEvent.Invoke(GameLoans.LoanPaidEvent);
                     }
-                    Loans.Clear();
                     return all;
                 }
                 catch (Exception e)
                 {
                     Fault("ServicesLinks.SettleLoans", e);
                     return false;
+                }
+                finally
+                {
+                    Loans.Clear();   // no loan of the game's kept past the payment, a fault or not
                 }
             }
 

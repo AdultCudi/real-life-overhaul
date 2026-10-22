@@ -138,18 +138,20 @@ namespace RealLifeOverhaul
                             {
                                 spot = at;
                                 heading = along;
-                                Route.Clear();
                                 return true;
                             }
                         }
                     }
-                    Route.Clear();
                     return false;
                 }
                 catch (Exception e)
                 {
                     Fault("DebtLinks.KerbSpot", e);
                     return false;
+                }
+                finally
+                {
+                    Route.Clear();   // no waypoint of the city kept past the look, a fault or not
                 }
             }
         }
