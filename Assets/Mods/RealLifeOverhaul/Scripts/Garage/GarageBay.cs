@@ -127,7 +127,6 @@ namespace RealLifeOverhaul
         /// <summary>True while the workshop's list is open.</summary>
         public static bool ListOpen => GarageList.OpenFor(Owner);
 
-
         /// <summary>
         /// Four times a second: puts the extended panel in the game's field once the box is down, and closes the
         /// workshop's list when the car has left the bay or another screen has come up.
@@ -298,7 +297,6 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
         }
-
 
         private static void OpenClicked()
         {
