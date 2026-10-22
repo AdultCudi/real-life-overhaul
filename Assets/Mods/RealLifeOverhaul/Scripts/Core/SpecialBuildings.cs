@@ -17,24 +17,15 @@ using UnityEngine.Events;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The names of the mod's special buildings, wherever the game names a building. A feature that gives one of the
-    /// city's buildings a role puts it in with one line once it has chosen the building, under an id of its own:
+    /// The names of the mod's special buildings, wherever the game names a building. A feature puts its chosen building
+    /// in under an id of its own:
     ///
     ///   SpecialBuildings.Set("utilities", office.Building, SpecialKind.Civic, "reallife_util_desk_title", "reallife_util_card_type", () => Settings.Utilities);
-    ///   SpecialBuildings.Set("campus", campus.Street, campus.Number, SpecialKind.Campus, campusNameKey);   // by address
-    ///   SpecialBuildings.Remove("campus");                                                                           // let go of it
+    ///   SpecialBuildings.Remove("utilities");
     ///
-    /// and everything else reads <see cref="NameFor(CityBuildingController)"/> (or the address form), which is null for
-    /// any building that keeps the game's own name: one not in the book, one whose feature is off, one the player rents
-    /// or owns, and every building while the option "Special buildings carry their own names" is off. The book
-    /// itself (<see cref="SpecialNameBook"/>) has no game types and is checked offline.
-    ///
-    /// Where the name is shown (<see cref="SpecialNames"/>, the component that does it): the game's card over a building
-    /// (under the pointer in the street and on the map), the destination marker of the game's guiders, the headline at
-    /// the top of the screen inside the building, the city map's search; the GPS's title and its arrival line
-    /// (Navigation/NavDirector) and the mod's own map markers (World/MapLinks, Core/MapPlaces) read it too. Only what is
-    /// shown is changed, never what the game keeps in the save, so switching the option off or removing the mod shows
-    /// the game's own names again. The book is filled again on every city load.
+    /// and the rest read <see cref="NameFor(CityBuildingController)"/>, null where the game's own name stands (not in the
+    /// book, its feature off, the player's, or the option off). <see cref="SpecialNames"/> shows the names; only what is
+    /// shown changes, never the save. The book (<see cref="SpecialNameBook"/>) is game-free and filled on every city load.
     /// </summary>
     public static class SpecialBuildings
     {
@@ -43,7 +34,7 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        /// <summary>Buildings in the book (whether or not their names are shown just now).</summary>
+        /// <summary>Buildings in the book, shown or not.</summary>
         public static int Count => Book.Count;
 
         /// <summary>Changes whenever the book or its names do.</summary>
@@ -52,10 +43,10 @@ namespace RealLifeOverhaul
         /// <summary>True while names are given at all: the option is on and some building is in the book.</summary>
         public static bool Active => Settings.SpecialNames && Book.Count > 0;
 
-        /// <summary>True while the city map's search is to be made by the mod: names are given, or some kind is to be found by its own word.</summary>
+        /// <summary>True while the mod makes the city map's search: names are given, or a kind is to be found by its word.</summary>
         internal static bool Searching => Active || FindableTypes.Count > 0;
 
-        /// <summary>Puts a building in the book under the feature's id, in place of what that id held. False if it was refused (and said once in the log).</summary>
+        /// <summary>Puts a building in the book under the feature's id, in place of what it held; false if refused (logged).</summary>
         public static bool Set(string id, CityBuildingController building, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null)
         {
             if (building == null || building.building == null || building.building.Address == null)
@@ -65,7 +56,7 @@ namespace RealLifeOverhaul
             return Set(id, building.building.Address.streetName, building.building.Address.streetNumber, kind, nameKey, typeKey, shown);
         }
 
-        /// <summary>The same, by address (for a feature that keeps the street and number rather than the building).</summary>
+        /// <summary>The same, by address.</summary>
         public static bool Set(string id, string street, int number, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null)
         {
             bool done = Book.Set(id, street, number, kind, nameKey, typeKey, shown);
@@ -82,10 +73,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Reserves one fixed address for a feature's id, before any feature chooses a building (the university's permanent
-        /// building, from Wiring/CareersLinks at start): while <paramref name="on"/> says yes every feature that chooses
-        /// passes it over and no other id is put in the book there, whether or not the feature has moved in yet. It
-        /// outlives the city's unloading; nothing of it is saved. False if another id reserves the address.
+        /// Reserves a fixed address for a feature's id before any feature chooses (the university's building): while
+        /// <paramref name="on"/> holds, no other id goes there. Outlives the city; nothing is saved. False if another
+        /// id reserves it.
         /// </summary>
         public static bool Reserve(string id, string street, int number, Func<bool> on)
         {
@@ -121,10 +111,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The same with a proper name that is never translated (a company's), by address. The name is shown as it is
-        /// given; the line under it is still a locale key. A building that houses several (the tech companies' towers)
-        /// gives their proper names by floor as <paramref name="tenants"/>: the map's search finds the building by each,
-        /// and a sign can name them (<see cref="TenantsOf(string, int)"/>).
+        /// The same with a proper name never translated (a company's); the line under it is still a locale key. A tower
+        /// of several gives their names by floor as <paramref name="tenants"/>, each found by the map's search.
         /// </summary>
         public static bool SetNamed(string id, string street, int number, SpecialKind kind, string name, string typeKey = null, Func<bool> shown = null, string[] tenants = null)
         {
@@ -140,27 +128,27 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The feature that holds an id stood a board of its own at the building's door (true) or found no room for one
-        /// (false): with a board the game's signs are only switched off, without one they carry the name (Core/FrontSigns).
+        /// The id's feature stood a board of its own at the door (true) or found no room (false): with a board the game's
+        /// signs are only switched off, without one they carry the name.
         /// </summary>
         public static void Boarded(string id, bool board)
         {
             Book.Boarded(id, board);
         }
 
-        /// <summary>Every building in the book, shown or not, into a list the caller keeps (Core/FrontSigns, when <see cref="Stamp"/> changes).</summary>
+        /// <summary>Every building in the book, shown or not, into the caller's list.</summary>
         internal static void Entries(List<SpecialEntry> into)
         {
             Book.All(into);
         }
 
-        /// <summary>The name of an entry in the language of the moment while its feature shows it (looked up once, then kept until the language changes).</summary>
+        /// <summary>An entry's name in the current language while its feature shows it (kept until the language changes).</summary>
         internal static string NameOf(SpecialEntry entry)
         {
             return entry != null ? Book.NameAt(entry.Street, entry.Number, false, Localise) : null;
         }
 
-        /// <summary>The id of the feature that holds a building, shown or not; null for none (a feature choosing a building passes over the others').</summary>
+        /// <summary>The id of the feature that holds a building, shown or not; null for none.</summary>
         public static string HolderOf(CityBuildingController building)
         {
             Address address = building != null && building.building != null ? building.building.Address : null;
@@ -168,8 +156,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Who is in the building at an address, by floor (the tech companies of a tower: floor 1 first), while its feature
-        /// shows it and the player neither rents nor owns it; null for every other building. The array is the book's own: read it, never change it.
+        /// Who is in the building at an address by floor, floor 1 first, while its feature shows it; null for any other.
+        /// The array is the book's own: never change it.
         /// </summary>
         public static string[] TenantsOf(string street, int number)
         {
@@ -184,7 +172,7 @@ namespace RealLifeOverhaul
             return address == null || Players(building) ? null : TenantsOf(address.streetName, address.streetNumber);
         }
 
-        /// <summary>Once a second (SpecialNames): an option switched on or off changes what is shown and refused; everything made from the book is made again.</summary>
+        /// <summary>Once a second: an option switched changes what is shown and refused, and all made from the book is made again.</summary>
         internal static void LookShown()
         {
             if (Book.Count > 0 && Book.LookShown())
@@ -224,7 +212,7 @@ namespace RealLifeOverhaul
             }
             if (Book.At(address.streetName, address.streetNumber) == null)
             {
-                return null;   // (most addresses: no look at the registration)
+                return null;   // most addresses: no look at the registration
             }
             BuildingRegistration registration = null;
             try
@@ -250,30 +238,26 @@ namespace RealLifeOverhaul
             return entry != null ? entry.TypeKey : null;
         }
 
-        /// <summary>True if a feature holds the building at an address (a later feature that picks a building of its own leaves it alone).</summary>
+        /// <summary>True if a feature holds the building at an address.</summary>
         public static bool Holds(string street, int number)
         {
             return Book.Holds(street, number);
         }
 
         /// <summary>
-        /// True if a feature is in the building at an address now (put in the book), leaving reservations aside: for
-        /// a question about what the mod has made of a building (a floor it fits out, a door it uses), never about
-        /// what a feature may choose. A building only reserved (the player's two offices, the university's or City
-        /// Utilities' fixed address before it has moved in) is the game's as it stands, its businesses and jobs included.
+        /// True if a feature is in the building at an address now, reservations aside: for what the mod has made of a
+        /// building (a floor it fits out), never what a feature may choose. A building only reserved is the game's.
         /// </summary>
         public static bool Filed(string street, int number)
         {
             return Book.FiledId(street, number) != null;
         }
 
-        /// <summary>The same for a building in the street.</summary>
         public static bool Filed(CityBuildingController building)
         {
             return FiledAt(building) != null;
         }
 
-        /// <summary>True if a feature holds this building.</summary>
         public static bool Holds(CityBuildingController building)
         {
             Address address = building != null && building.building != null ? building.building.Address : null;
@@ -283,9 +267,8 @@ namespace RealLifeOverhaul
         private static readonly HashSet<string> FindableTypes = new HashSet<string>(StringComparer.Ordinal);
 
         /// <summary>
-        /// A kind of the game's special service (its business type, "ba:businesstype_school") that keeps the game's own name
-        /// but is to be found in the city map's search even where the game gives it no business name: it is listed under
-        /// the game's own word for the kind. A feature that sends the player there says so once per city load.
+        /// A business type of the game's special services ("ba:businesstype_school") to be found in the city map's search
+        /// under the game's word for it, even with no business name. Said once per city load.
         /// </summary>
         public static void Findable(string businessType)
         {
@@ -318,27 +301,22 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True for a building the player rents or owns (in a Going Public session another player's too: Going Public puts
-        /// it on this machine as rented by the player). No feature makes such a building its own: it chooses another, and
-        /// one whose building becomes the player's moves off it.
+        /// True for a building the player rents or owns (in Going Public another player's too, shown here as rented). No
+        /// feature makes such a building its own.
         /// </summary>
         public static bool Players(BuildingRegistration registration)
         {
             return registration != null && !SpecialNameBook.MaySit(registration.RentedByPlayer, registration.BuildingOwnedByPlayer);
         }
 
-        /// <summary>The same for a building in the street.</summary>
         public static bool Players(CityBuildingController building)
         {
             return building != null && Players(building.buildingRegistration);
         }
 
-        // ---------------------------------------------------------------- off the market (Core/ClaimedOffers)
-
         /// <summary>
-        /// The name of the feature a building is taken by, for the line that says so, while it is off the market here: a
-        /// feature holds it and is on, and the player neither rents nor owns it. Null for every other building (most of
-        /// them after one dictionary look). The same with the option for names off: the building is taken all the same.
+        /// The name of the feature a building is taken by while it is off the market here (held by a feature that is on,
+        /// not the player's), names option or not; null for any other, mostly after one dictionary look.
         /// </summary>
         public static string TakenBy(BuildingRegistration registration)
         {
@@ -374,11 +352,8 @@ namespace RealLifeOverhaul
         private const string NoBusiness = "ba:businesstype_empty";
 
         /// <summary>
-        /// When the game's look at the buildings on the open map is over (MapPlaces), behind Core/ClaimedMap: a building taken by a feature that
-        /// the game lit because it is to let or for sale (its rows of units to let by kind, and "for sale") is put out, as
-        /// the game puts out a building it does not list. One that a row of the mod's lights is lit again by MapPlaces in
-        /// the same frame. A business in a taken building stays as the game's rows of businesses show it. Thirty-odd
-        /// dictionary looks, on the event only.
+        /// After the game lights the buildings on the open map: a taken building lit only as to let or for sale is put out,
+        /// as the game puts out one it does not list. Thirty-odd dictionary looks, on the event only.
         /// </summary>
         internal static void Unlist()
         {
@@ -401,471 +376,6 @@ namespace RealLifeOverhaul
                 building.SetHighlight(false);
             }
             ShownNow.Clear();
-        }
-    }
-
-    /// <summary>
-    /// Shows the special buildings' names (<see cref="SpecialBuildings"/>) in the game's own interface. Each place is
-    /// written after the game has written it, on the game's own events or the look once a second, never per frame
-    /// except for one reference comparison while some building is in the book (the card, as Core/MapPlaces does it):
-    ///   the card       the business name on the game's card over a building (UI.InGameUI.BuildingResume, which is
-    ///                  also the card of a building picked on the city map), and what it is on the line under it;
-    ///                  written the frame the card changes building, and again each second (the game rewrites it on
-    ///                  the hour and when a registration changes);
-    ///   the guiders    the name plate of the destination marker and the other guiders set to a special building's
-    ///                  address (UI.Guiders.DirectionGuider): once a second, and as soon as "set destination" is pressed;
-    ///   inside         the headline at the top of the screen in the building (UI.CurrentBuilding.CurrentBuildingUI):
-    ///                  the frame after the player goes in, and once a second;
-    ///   the search     the city map's search list (CityMapFilters): the game makes it from the business names, so a
-    ///                  special building is listed under its own name and the empty ones (a police station) are
-    ///                  listed at all; made again only when the map opens after the game has made its own anew.
-    /// Switching the option off puts the game's own words back at once (it is asked to write them again). Everything
-    /// goes with the city: the book is emptied when this component is destroyed.
-    /// </summary>
-    public sealed class SpecialNames : MonoBehaviour
-    {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "SpecialNames", typeof(SpecialNames));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
-
-        private const string ToLet = "common_available_for_rent";   // the game's state line on the card for a unit to let
-        private const string NotToLet = "reallife_claimed_card";
-
-        private static SpecialNames _instance;
-
-        private readonly WaitForSecondsRealtime _second = new WaitForSecondsRealtime(1f);
-        private readonly Dictionary<DirectionGuider, Address> _named = new Dictionary<DirectionGuider, Address>(4);
-        private BuildingResume _card;
-        private bool _cardFailed;
-        private EntityController _carded;
-        private UnityEngine.UI.Button _destination;   // the card's "set destination", which has our listener
-        private CurrentBuildingUI _inside;
-        private TextMeshProUGUI _headline;
-        private bool _headlineNamed;
-        private bool _lookedForInside;
-        private List<string> _searchOptions;          // the search list last given to the map (null: the game's own)
-        private int _searchStamp = -1;               // the book's stamp when that list was made
-        private bool _searchFailed;
-        private bool _on;
-        private int _stamp = -1;
-        private Action<Address> _onEnter;
-        private Action<Address> _enterSeen;
-        private Action<bool> _onMap;
-        private Action<bool> _mapSeen;
-        private Action _onLanguage;
-
-        private static FieldInfo _headlineField, _searchListField, _searchDropField, _optionsField;
-        private static MethodInfo _populate;
-
-        /// <summary>The book or an option changed: everything is written again at the next look (and the card at once).</summary>
-        internal static void Changed()
-        {
-            if (_instance != null)
-            {
-                _instance._carded = null;
-                _instance._stamp = -1;
-                _instance.enabled = SpecialBuildings.Active || SpecialBuildings.Count > 0;   // (the card's "not to let" stands with the names off too)
-            }
-        }
-
-        private void Awake()
-        {
-            _instance = this;
-            // The game's events get these through Core/Guard: a fault here never reaches the game's own handlers.
-            _onEnter = Guard.Wrap<Address>(_ => StartCoroutine(Guard.Routine(Soon())));
-            _onMap = Guard.Wrap<bool>(open =>
-            {
-                if (open)
-                {
-                    Search();
-                }
-            });
-            _onLanguage = Guard.Wrap(() =>
-            {
-                SpecialBuildings.Forget();
-                _searchOptions = null;
-                Changed();
-            });
-            try
-            {
-                LocalizorManager.OnLanguageChanged = (Action)Delegate.Combine(LocalizorManager.OnLanguageChanged, _onLanguage);
-            }
-            catch (Exception e)
-            {
-                SpecialBuildings.Logger?.Error(e);
-            }
-        }
-
-        private void Start()
-        {
-            StartCoroutine(Guard.Routine(Look()));
-        }
-
-        private void OnDestroy()
-        {
-            try
-            {
-                LocalizorManager.OnLanguageChanged = (Action)Delegate.Remove(LocalizorManager.OnLanguageChanged, _onLanguage);
-                if (_destination != null)
-                {
-                    _destination.onClick.RemoveListener(_guiders);
-                }
-            }
-            catch (Exception)
-            {
-                // the game's interface is going too
-            }
-            SpecialBuildings.Clear();
-            ClaimedOffers.Forget();
-            FrontSigns.Forget();
-            if (_instance == this)
-            {
-                _instance = null;
-            }
-        }
-
-        private IEnumerator Look()
-        {
-            while (true)
-            {
-                try
-                {
-                    Tick();
-                }
-                catch (Exception e)
-                {
-                    SpecialBuildings.Logger?.Error(e);
-                }
-                yield return _second;
-            }
-        }
-
-        private IEnumerator Soon()
-        {
-            yield return null;   // after the game's own handlers of the same event have written their words
-            if (_inside == null)
-            {
-                _lookedForInside = false;   // (looked for again on going in, not every second)
-            }
-            try
-            {
-                Inside();
-            }
-            catch (Exception e)
-            {
-                SpecialBuildings.Logger?.Error(e);
-            }
-        }
-
-        // Once a second.
-        private void Tick()
-        {
-            if (SaveGameManager.Current == null)
-            {
-                return;
-            }
-            EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
-            EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);
-            ClaimedOffers.Keep();   // the mod's buildings off the market (Core/ClaimedOffers): two null tests once its pages are watched
-            ClaimedMap.Keep();      // ...and out of the city map's rows of units to let and for sale (Core/ClaimedMap): set up once
-            FrontSigns.Keep();      // their fronts: no "For rent", their own sign the game's way (Core/FrontSigns): a few flag reads a building
-            SpecialBuildings.LookShown();   // (an option switched: the book's stamp moves, and the refusals and names follow it)
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            BuildingResume card = uis != null ? uis.buildingResume : null;
-            if (!ReferenceEquals(card, _card))
-            {
-                if (_destination != null)
-                {
-                    _destination.onClick.RemoveListener(_guiders);
-                }
-                _card = card;
-                _destination = card != null ? card.setDestinationButton : null;
-                if (_destination != null)
-                {
-                    _guiders = _guiders ?? Guard.Listener(Guiders);   // (made once, through the guard: Core/Guard)
-                    _destination.onClick.AddListener(_guiders);   // (after the game's own: its listener is the button's own)
-                }
-            }
-            bool on = SpecialBuildings.Active;
-            bool changed = on != _on || _stamp != SpecialBuildings.Stamp;
-            bool searching = SpecialBuildings.Searching;
-            _on = on;
-            _stamp = SpecialBuildings.Stamp;
-            enabled = on || SpecialBuildings.Count > 0;   // (the card's "not to let" stands with the names off too)
-            _carded = null;   // the card written again: the game rewrites it on the hour
-            Guiders();
-            Inside();
-            if (changed && CityMap.IsOpen)
-            {
-                Search();
-            }
-            else if (changed && !searching && _searchOptions != null)
-            {
-                Search();   // the game's own list back
-            }
-        }
-
-        // ---------------------------------------------------------------- the card
-
-        private static readonly int HotLateUpdate = HotSpots.Slot("Core: SpecialNames.LateUpdate");
-        private void LateUpdate()
-        {
-            using var hotSpot = HotSpots.Time(HotLateUpdate);
-            if (FrameGuard.Off)
-            {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
-                return;
-            }
-            try
-            {
-                OnLateUpdate();
-            }
-            catch (System.Exception e)
-            {
-                Guard.Fail(FrameGuard, e, this);
-            }
-        }
-
-        private void OnLateUpdate()
-        {
-            if (ReferenceEquals(_card, null) || _cardFailed)
-            {
-                return;
-            }
-            EntityController target = GameMembers.TargetOf(_card);
-            if (ReferenceEquals(target, _carded))
-            {
-                return;
-            }
-            _carded = target;
-            if (!ReferenceEquals(target, null))
-            {
-                try
-                {
-                    Card(target as CityBuildingController);
-                }
-                catch (Exception e) when (Guard.StandsDown(e, "the special buildings' names on the game's building card"))
-                {
-                    _cardFailed = true;   // (a game that lacks something the card names would fail at every building looked at)
-                }
-            }
-        }
-
-        private void Card(CityBuildingController building)
-        {
-            string name = SpecialBuildings.NameFor(building);
-            if (name == null && (building == null || SpecialBuildings.TakenBy(building.buildingRegistration) == null))
-            {
-                return;   // (a building of the mod's off the market is not said to be to let even with the names off)
-            }
-            try
-            {
-                // A building off the market (Core/ClaimedOffers) is not said to be to let.
-                if (_card.openStateLabel != null && string.Equals(_card.openStateLabel.Key, ToLet, StringComparison.Ordinal)
-                    && SpecialBuildings.TakenBy(building.buildingRegistration) != null)
-                {
-                    _card.openStateLabel.Key = NotToLet;
-                    _card.openStateLabel.Prefix = string.Empty;
-                }
-                if (name == null)
-                {
-                    return;
-                }
-                if (_card.businessNameLabel != null)
-                {
-                    _card.businessNameLabel.gameObject.SetActive(true);
-                    _card.businessNameLabel.text = name;
-                }
-                string type = SpecialBuildings.TypeKeyFor(building);
-                if (_card.businessTypeLabel != null && type != null)
-                {
-                    _card.businessTypeLabel.Key = type;
-                }
-            }
-            catch (Exception e)
-            {
-                SpecialBuildings.Logger?.Error(e);
-                _cardFailed = true;   // (the card is not as expected: left alone from here on)
-            }
-        }
-
-        // ---------------------------------------------------------------- the guiders
-
-        // Each guider set to an address: the special name on its marker, or the game's own words back where a name was
-        // put and is no longer wanted. A few comparisons a second.
-        private UnityAction _guiders;
-
-        private void Guiders()
-        {
-            List<DirectionGuider> all = GuidersManager.AllGuiders;
-            for (int i = 0; all != null && i < all.Count; i++)
-            {
-                DirectionGuider guider = all[i];
-                if (guider == null || guider.poi == null)
-                {
-                    continue;
-                }
-                Address address = guider.CurrentAddress;
-                string name = address != null && !address.IsUndefined() ? SpecialBuildings.NameFor(address) : null;
-                if (name != null)
-                {
-                    if (!string.Equals(Nav.NavMarks.Words(guider.poi), name, StringComparison.Ordinal))
-                    {
-                        guider.poi.SetText(name);
-                    }
-                    _named[guider] = address;
-                }
-                else if (_named.TryGetValue(guider, out Address was))
-                {
-                    _named.Remove(guider);
-                    if (address != null && !address.IsUndefined() && address == was)
-                    {
-                        guider.UpdateAddressName(address);   // the game's own words for it again
-                    }
-                }
-            }
-        }
-
-        // ---------------------------------------------------------------- inside
-
-        private static readonly int HotInside = HotSpots.Slot("Core: SpecialNames.Inside");
-        private void Inside()
-        {
-            using var hotSpot = HotSpots.Time(HotInside);
-            if (!SpecialBuildings.Active && !_headlineNamed)
-            {
-                return;
-            }
-            if (!_lookedForInside)
-            {
-                _lookedForInside = true;
-                // The game's own reference to its panel, not a search of the scene: FindObjectOfType with switched-off objects
-                // included walked the whole city, a frame of some 100 ms the first time the player went into a building.
-                UIs uis = InstanceBehavior<UIs>.Instance;
-                UI.PlayerHUD.PlayerHUD hud = uis != null ? uis.playerHUD : null;
-                _inside = hud != null ? hud.currentBuildingUI : null;
-                if (_headlineField == null)
-                {
-                    _headlineField = GameContract.BuildingHeadline.Field;   // (resolved once: Core/GameContract)
-                }
-                _headline = _inside != null && _headlineField != null ? _headlineField.GetValue(_inside) as TextMeshProUGUI : null;
-            }
-            if (_inside == null || _headline == null)
-            {
-                return;
-            }
-            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
-            BuildingRegistration registration = BuildingManager.IsInsideBuilding && manager != null && !Parking.UndergroundParking.UndergroundParkingManager.IsInsideParking
-                ? manager.buildingRegistration : null;
-            string name = registration != null ? SpecialBuildings.NameFor(registration.Address) : null;
-            if (name != null)
-            {
-                if (!string.Equals(_headline.text, name, StringComparison.Ordinal))
-                {
-                    _headline.text = name;
-                }
-                _headlineNamed = true;
-            }
-            else if (_headlineNamed)
-            {
-                _headlineNamed = false;
-                if (registration != null)
-                {
-                    _inside.UpdateData();   // the game's own headline again
-                }
-            }
-        }
-
-        // ---------------------------------------------------------------- the city map's search
-
-        private static readonly int HotSearch = HotSpots.Slot("Core: SpecialNames.Search");
-        // The game lists every building with a business name, as "name, address", and finds them by the name. The list is
-        // made again the way the game makes it, with the special names, only when the game has made its own anew since.
-        private void Search()
-        {
-            using var hotSpot = HotSpots.Time(HotSearch);
-            if (_searchFailed)
-            {
-                return;
-            }
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            CityMapFilters filters = uis != null ? uis.mapFilters : null;
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            if (filters == null || city == null || city.cityBuildingControllers == null)
-            {
-                return;
-            }
-            try
-            {
-                if (_searchListField == null)
-                {
-                    _searchListField = GameContract.SearchBuildings.Field;   // (the game's private pieces, resolved once: Core/GameContract)
-                    _searchDropField = GameContract.SearchDropdown.Field;
-                    _optionsField = GameContract.DropdownOptions.Field;
-                    _populate = GameContract.SearchPopulate.Method;
-                }
-                var listed = _searchListField != null ? _searchListField.GetValue(filters) as List<CityBuildingController> : null;
-                var drop = _searchDropField != null ? _searchDropField.GetValue(filters) as UI.Elements.Dropdown : null;
-                if (listed == null || drop == null || _optionsField == null || _populate == null)
-                {
-                    _searchFailed = true;
-                    SpecialBuildings.Logger?.Info("Special buildings: the city map's search is not as expected; it lists the game's own names.");
-                    return;
-                }
-                bool ours = _searchOptions != null && ReferenceEquals(_optionsField.GetValue(drop), _searchOptions);
-                if (!SpecialBuildings.Searching)
-                {
-                    if (ours)
-                    {
-                        _populate.Invoke(filters, new object[] { null });   // the game's own list again
-                    }
-                    _searchOptions = null;
-                    return;
-                }
-                if (ours && _searchStamp == SpecialBuildings.Stamp)
-                {
-                    return;
-                }
-                var options = new List<string>(listed.Count + 8);
-                var words = new List<string>(listed.Count + 8);
-                listed.Clear();
-                CityBuildingController[] all = city.cityBuildingControllers;
-                for (int i = 0; i < all.Length; i++)
-                {
-                    CityBuildingController building = all[i];
-                    if (building == null || building.building == null || building.buildingRegistration == null)
-                    {
-                        continue;
-                    }
-                    string name = SpecialBuildings.NameFor(building) ?? building.buildingRegistration.BusinessName;
-                    if (string.IsNullOrWhiteSpace(name))
-                    {
-                        name = SpecialBuildings.FoundAs(building);   // (a school or a hospital with no business name: the game's word for it)
-                        if (string.IsNullOrWhiteSpace(name))
-                        {
-                            continue;
-                        }
-                    }
-                    options.Add("<b><noparse>" + name + "</noparse></b><br><noparse>" + building.building.Address.ToFormattedString() + "</noparse>");
-                    words.Add(name);
-                    listed.Add(building);
-                    string[] tenants = SpecialBuildings.TenantsOf(building);
-                    for (int t = 0; tenants != null && t < tenants.Length; t++)
-                    {
-                        // Each company of a tower found by its own name too, with the tower's under it.
-                        options.Add("<b><noparse>" + tenants[t] + "</noparse></b><br><noparse>" + name + ", " + building.building.Address.ToFormattedString() + "</noparse>");
-                        words.Add(tenants[t]);
-                        listed.Add(building);
-                    }
-                }
-                drop.SetOptions(options, false, -1, words);
-                _searchOptions = options;
-                _searchStamp = SpecialBuildings.Stamp;
-            }
-            catch (Exception e)
-            {
-                _searchFailed = true;
-                SpecialBuildings.Logger?.Error(e);
-                SpecialBuildings.Logger?.Info("Special buildings: the city map's search could not be given the names (the error above); it lists the game's own.");
-            }
         }
     }
 }

@@ -29,31 +29,18 @@ namespace RealLifeOverhaul
         public string TypeKey;     // the locale key of what it is, for the line under the name on the game's card; may be null
         public Func<bool> Shown;   // the feature's own option; null for always
         public bool Literal;       // NameKey is the name itself (a company's proper name), never looked up
-        public string[] Tenants;   // the proper names of who is in it, by floor (the tech companies of a tower); null for one feature alone
-        public bool Board;         // its feature stood a board of its own at the door: that is its one sign (Core/FrontSigns)
+        public string[] Tenants;   // the proper names of who is in it, by floor; null for one feature alone
+        public bool Board;         // its feature stood a board of its own at the door: that is its one sign
 
-        internal string Name;      // NameKey in the language of the moment, made the first time it is asked for
+        internal string Name;      // NameKey in the current language, made when first asked for
     }
 
     /// <summary>
-    /// The book of the mod's special buildings, by address: the buildings a feature gives a role to (the utilities office,
-    /// the courthouse, the police stations, the hotels) and the name each carries wherever the game names a building. It
-    /// holds names and addresses only, never anything of the game's: what is in a save stays as it is, and the game's own
-    /// names come back as soon as a building is out of the book or the option is off.
-    ///
-    /// A feature puts its building in with one line when it has chosen it (<see cref="Set"/>, by its own id: a building
-    /// that moves is simply set again under the same id), and takes it out when it lets it go (<see cref="Remove"/>).
-    /// Kiosks, street vendors and the businesses of the player or a rival are refused: they keep the names they have.
-    /// An address another id already holds is refused too, so two features never fight over one building.
-    ///
-    /// A name is looked up in the language of the moment the first time it is asked for and kept until the language
-    /// changes (<see cref="Forget"/>). No Unity or game types: checked offline (EconomyCheck, SpecialNameChecks.cs).
-    ///
-    /// A feature whose building is one fixed address in every city (the university's permanent building) also reserves
-    /// it (<see cref="Reserve"/>), before any feature chooses: while its feature is on, the address is held for it
-    /// (<see cref="Holds"/>, <see cref="HolderOf"/>) whether or not the feature has moved in yet, so no other feature
-    /// chooses it or is put in the book there. A reservation is a fixed address, not a choice from the city, so it
-    /// outlives <see cref="Clear"/>; nothing of it is saved.
+    /// The book of the mod's special buildings by address, and the name each carries: names and addresses only, nothing
+    /// of the game's or the save's. A feature sets its building under its own id (<see cref="Set"/>; set again when it
+    /// moves) and removes it when it lets go. Kinds that keep their own names, and an address another id holds, are
+    /// refused. A fixed address can be reserved (<see cref="Reserve"/>) before any feature chooses; a reservation
+    /// outlives <see cref="Clear"/> and is never saved. Game-free.
     /// </summary>
     public sealed class SpecialNameBook
     {
@@ -69,10 +56,9 @@ namespace RealLifeOverhaul
             public Func<bool> On;   // the feature's own option; null for always
         }
 
-        /// <summary>Buildings in the book.</summary>
         public int Count => _byId.Count;
 
-        /// <summary>Changes by one each time the book does: a reader that keeps something made from it compares this.</summary>
+        /// <summary>Changes each time the book does: a reader that keeps something made from it compares this.</summary>
         public int Stamp { get; private set; }
 
         /// <summary>False for the kinds that keep their own names.</summary>
@@ -88,9 +74,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Puts a building in the book under the feature's id, in place of whatever that id held before. False, with nothing
-        /// under the id, for a kind that keeps its own name, a missing street or name, or an address another id holds (a
-        /// missing id: false, and the book as it was).
+        /// Puts a building in the book under the feature's id, in place of what it held. False, with nothing under the id,
+        /// for a kind that keeps its own name, a missing street or name, or an address another id holds or reserves.
         /// </summary>
         public bool Set(string id, string street, int number, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null, bool literal = false, string[] tenants = null)
         {
@@ -98,7 +83,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            Remove(id);   // (whatever the id held goes, even if the new building is refused: it is not that one any more)
+            Remove(id);   // what the id held goes, even if the new building is refused
             string key = Key(street, number);
             string reserved = ReservedFor(street, number);
             if (string.IsNullOrEmpty(street) || string.IsNullOrEmpty(nameKey) || !Accepts(kind) || _byAddress.ContainsKey(key)
@@ -118,7 +103,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Takes the id's building out of the book. False if it held none.</summary>
+        /// <summary>Takes the id's building out of the book; false if it held none.</summary>
         public bool Remove(string id)
         {
             if (string.IsNullOrEmpty(id) || !_byId.TryGetValue(id, out SpecialEntry entry))
@@ -155,35 +140,27 @@ namespace RealLifeOverhaul
             return _byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.TryGetValue(Key(street, number), out SpecialEntry entry) ? entry : null;
         }
 
-        /// <summary>True while an entry's feature shows it: its own option is on (an entry with none always is).</summary>
+        /// <summary>True while an entry's feature shows it (an entry with no option always is).</summary>
         public static bool IsShown(SpecialEntry entry) => entry != null && (entry.Shown == null || entry.Shown());
 
-        /// <summary>
-        /// True if any feature holds the building at an address, whether or not its name is shown just now, or reserves it
-        /// while its feature is on (<see cref="Reserve"/>).
-        /// </summary>
+        /// <summary>True if any feature holds the building at an address, shown or not, or reserves it while on.</summary>
         public bool Holds(string street, int number)
         {
             return (_byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.ContainsKey(Key(street, number))) || ReservedFor(street, number) != null;
         }
 
         /// <summary>
-        /// True if a feature's building kept in a save gives way on load: a player now rents or owns it, or another
-        /// feature holds it (an id not starting with the feature's own <paramref name="ownPrefix"/>; a reserved address
-        /// included). The feature then chooses another and says that it has moved.
+        /// True if a feature's saved building gives way on load: a player now has it, or another feature (an id not
+        /// starting with <paramref name="ownPrefix"/>) holds or reserves it. The feature then chooses another.
         /// </summary>
         public static bool GivesWay(bool players, string holder, string ownPrefix)
         {
             return players || (holder != null && (string.IsNullOrEmpty(ownPrefix) || !holder.StartsWith(ownPrefix, StringComparison.Ordinal)));
         }
 
-        // ---------------------------------------------------------------- reserved addresses
-
         /// <summary>
-        /// Reserves an address for a feature's id, in place of whatever the id reserved before: while <paramref name="on"/>
-        /// says yes (null: always) no other id is put in the book there and every feature that chooses a building passes it
-        /// over (<see cref="Holds"/>, <see cref="HolderOf"/>). False for a missing id or street, or an address another id
-        /// reserves (the id then reserves nothing).
+        /// Reserves an address for a feature's id in place of what it reserved: while <paramref name="on"/> holds (null:
+        /// always) no other id goes there. False for a missing id or street, or an address another id reserves.
         /// </summary>
         public bool Reserve(string id, string street, int number, Func<bool> on = null)
         {
@@ -202,7 +179,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Lets go of the id's reservation. False if it had none.</summary>
+        /// <summary>Lets go of the id's reservation; false if it had none.</summary>
         public bool Unreserve(string id)
         {
             if (string.IsNullOrEmpty(id) || _reserved.Count == 0)
@@ -227,7 +204,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The id an address is reserved for while that feature is on; null for none (most addresses: one count read).</summary>
+        /// <summary>The id an address is reserved for while that feature is on; null for none.</summary>
         public string ReservedFor(string street, int number)
         {
             if (_reserved.Count == 0 || string.IsNullOrEmpty(street) || !_reserved.TryGetValue(Key(street, number), out Reservation r))
@@ -237,28 +214,10 @@ namespace RealLifeOverhaul
             return r.On == null || r.On() ? r.Id : null;
         }
 
-        /// <summary>The address an id reserves, whether or not its feature is on now. False if it reserves none.</summary>
-        public bool ReservationOf(string id, out string street, out int number)
-        {
-            foreach (Reservation r in _reserved.Values)
-            {
-                if (string.Equals(r.Id, id, StringComparison.Ordinal))
-                {
-                    street = r.Street;
-                    number = r.Number;
-                    return true;
-                }
-            }
-            street = null;
-            number = 0;
-            return false;
-        }
 
         /// <summary>
-        /// The pick of a feature that takes "the largest building of a kind": of the candidates that may serve
-        /// (<paramref name="fits"/>), the one with the most floor, ties broken by address (street, then number, as the
-        /// features have always broken them: "street#number" in ordinal order), leaving out every building another feature
-        /// holds (<paramref name="taken"/>). Returns its index, or -1. The same city gives the same pick in every game.
+        /// The largest building of the candidates that <paramref name="fits"/> and not <paramref name="taken"/>, ties
+        /// broken by "street#number" in ordinal order; its index, or -1. The same city gives the same pick in every game.
         /// </summary>
         public static int PickLargest(int count, Func<int, bool> fits, Func<int, int> sqm, Func<int, string> street, Func<int, int> number, Func<string, int, bool> taken)
         {
@@ -289,9 +248,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The id of the feature that holds the building at an address, whether or not its name is shown just now; null for
-        /// none. An address reserved for a feature that is on is that feature's first, whoever is in the book there (one put
-        /// there before the reservation's feature was switched on moves off at its next choice).
+        /// The id of the feature that holds the building at an address, shown or not; null for none. A reservation whose
+        /// feature is on comes first, whoever is in the book there.
         /// </summary>
         public string HolderOf(string street, int number)
         {
@@ -317,8 +275,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The name of the building at an address in the language of the moment, or null for one that is not in the book,
-        /// whose feature is off, or that is the player's (<paramref name="players"/>: rented or owned by the player).
+        /// The name of the building at an address in the current language; null if not in the book, its feature is off,
+        /// or it is the player's (<paramref name="players"/>).
         /// </summary>
         public string NameAt(string street, int number, bool players, Func<string, string> localise)
         {
@@ -339,12 +297,9 @@ namespace RealLifeOverhaul
             return entry.Name;
         }
 
-        // ---------------------------------------------------------------- off the market
-
         /// <summary>
-        /// True if a feature may make a building its own: nobody of the players rents it or owns it (in a Going Public
-        /// session another player's rental is on every machine as rented by the player, so the answer is the same
-        /// everywhere). A building the player already has stays theirs: the feature chooses another.
+        /// True if a feature may make a building its own: no player rents or owns it (in Going Public another player's
+        /// rental shows as the player's on every machine, so the answer is the same everywhere).
         /// </summary>
         public static bool MaySit(bool rented, bool owned)
         {
@@ -352,28 +307,21 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True if the building at an address is off the market here: a feature holds it, that feature is on, and the
-        /// player neither rents nor owns it (what the player already has stays theirs to keep, run and give up). Its
-        /// offers to rent, to buy and to take over are not shown and it is left out of the listings. Nothing of it is
-        /// written into the save, so without the mod it is on the market again as the game has it.
+        /// True if the building at an address is off the market here: held by a feature that is on, and not the player's.
+        /// Nothing of it is saved, so without the mod it is on the market again.
         /// </summary>
         public bool Refuses(string street, int number, bool rented, bool owned)
         {
             return RefusesEntry(Filed(street, number), rented, owned);
         }
 
-        /// <summary>
-        /// The one rule of the refusal, for an entry in hand (the fronts, looked at once a second, and the city map's look at
-        /// every building; <see cref="Refuses"/> files the address first): a feature holds the building, its own option is
-        /// on, and no player rents or owns it. With the option off the building is the game's again, to rent, buy or take
-        /// over; switched on again, a building a player took meanwhile stays theirs and the feature moves off it.
-        /// </summary>
+        /// <summary>The one rule of the refusal, for an entry in hand: its option is on and no player rents or owns it.</summary>
         public static bool RefusesEntry(SpecialEntry entry, bool rented, bool owned)
         {
             return !rented && !owned && IsShown(entry);
         }
 
-        /// <summary>Marks whether the id's feature stood a board of its own at its building's door. False if the id holds none.</summary>
+        /// <summary>Marks whether the id's feature stood a board of its own at the door; false if the id holds none.</summary>
         public bool Boarded(string id, bool board)
         {
             SpecialEntry entry = Of(id);
@@ -386,7 +334,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Every entry, shown or not, into a list the caller keeps (cleared first).</summary>
+        /// <summary>Every entry, shown or not, into the caller's list (cleared first).</summary>
         public void All(List<SpecialEntry> into)
         {
             into.Clear();
@@ -396,7 +344,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Every entry whose feature shows it just now, into a list the caller keeps (cleared first).</summary>
+        /// <summary>Every entry whose feature shows it now, into the caller's list (cleared first).</summary>
         public void Shown(List<SpecialEntry> into)
         {
             into.Clear();
@@ -412,9 +360,8 @@ namespace RealLifeOverhaul
         private int _shownSign = int.MinValue;
 
         /// <summary>
-        /// Looks at which entries their features show now. An option switched on or off changes no entry, so the book's
-        /// <see cref="Stamp"/> moves here when the set shown has changed: everything made from the book (the refusals on an
-        /// open page, the map's search) is made again. True if it moved. One call of each feature's option, once a second.
+        /// Moves <see cref="Stamp"/> when the set of entries shown has changed (an option switched changes no entry); true
+        /// if it moved. One call of each feature's option, once a second.
         /// </summary>
         public bool LookShown()
         {
@@ -425,7 +372,7 @@ namespace RealLifeOverhaul
                 {
                     if (IsShown(entry))
                     {
-                        sign += entry.Id.GetHashCode() * 31 + 7;   // (a sum: the order of the dictionary does not matter)
+                        sign += entry.Id.GetHashCode() * 31 + 7;   // a sum: the dictionary's order does not matter
                     }
                 }
             }
@@ -442,7 +389,7 @@ namespace RealLifeOverhaul
             return !first;
         }
 
-        /// <summary>Every name is looked up again the next time it is asked for (the language has changed).</summary>
+        /// <summary>The language has changed: every name is looked up again when next asked for.</summary>
         public void Forget()
         {
             foreach (SpecialEntry entry in _byId.Values)

@@ -30,36 +30,14 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The shared city: in a Going Public session the city's economy, its government and its stock market are ONE city
-    /// for every player, run by the host and followed by the guests. See RealLifeOverhaul.Build/docs/other-mods.md,
-    /// "Going Public", "The shared city".
-    ///
-    /// THE HOST IS THE CITY. It runs every system as alone. A guest's systems do not step what is the city's (no month of
-    /// the economy, no hour of the government, no market moment past the host's) while <see cref="Follows"/> says so;
-    /// they take the host's state and go on applying it to that player's own game (prices, policies, their shares).
-    ///
-    /// MESSAGES (Core/SharedCityWire, sent through Core/GoingPublicLink):
-    ///   a guest in the world says Hello (every five seconds until it is answered, so a rejoin or a late join is the same);
-    ///   the host answers with a Snapshot of every part it runs, whole: E the economy, G the government, W the building
-    ///   sites, S the street events' calendar, M the stock market;
-    ///   the host sends an Update to every guest that has said hello, at most once every <see cref="UpdateEvery"/> seconds
-    ///   of real time and only with what changed: a part whole when its system marks it changed (<see cref="Changed"/>:
-    ///   the economy's day, the government's hour, a request applied), and the market's new lines of its tape (t: the
-    ///   day's secret, the city of the day, what happened, how far it has played) with which a guest's market plays the
-    ///   very same moments; a part larger than <see cref="ChangesMost"/> goes whole instead;
-    ///   a guest's own doings that change the city go to the host as Requests, within the second; the host applies them
-    ///   and they come back with the next update; a part that came out different on a guest is asked for again (Resync).
-    /// Every message carries the sender's version of this mod and the layout's number. Another version on either side:
-    /// the guest is told once and its city stays its own; nothing of a different version's is applied, ever.
-    ///
-    /// LEAVING. When the guest leaves the session, or the host is gone, nothing is undone: the guest's systems simply step
-    /// again from the host's last state, which is now theirs (the save keeps it). SAVES: a system writes its own state
-    /// into the save as always; on a guest that state is the host's city, so Going Public's coordinated saves keep the
-    /// shared city in every guest's save, and a guest loading alone later has the city as it last was.
-    ///
-    /// THE COST. Nothing per frame but a field read (<see cref="GoingPublicLink.Waiting"/>); once a second a few
-    /// comparisons; an update only when something changed, a few times a minute at most; the texts are each system's
-    /// own compact line, deflated.
+    /// The shared city: in a Going Public session the city's economy, government and stock market are one city, run by
+    /// the host and followed by the guests (RealLifeOverhaul.Build/docs/other-mods.md, "The shared city"). A guest's
+    /// systems do not step what <see cref="Follows"/> says is the host's; they apply the host's state to that player's
+    /// game. A guest says Hello until answered with a Snapshot of every part; the host sends an Update of what changed at
+    /// most every <see cref="UpdateEvery"/> seconds; a guest's doings go to the host as Requests; a part that came out
+    /// different is asked for again (Resync). Every message carries this mod's version and the layout's number: another
+    /// version is told once and never applied. Leaving undoes nothing: the guest steps on from the host's last state.
+    /// Nothing per frame but a field read; once a second a few comparisons.
     /// </summary>
     public static class SharedCity
     {
@@ -97,10 +75,7 @@ namespace RealLifeOverhaul
         /// <summary>True on the host while at least one guest follows its city.</summary>
         public static bool Leading => GoingPublic.IsHost && Guests.Count > 0;
 
-        /// <summary>
-        /// True while this machine follows the host's part: the system must not step it (no day, no hour, no market moment
-        /// of its own). A field read and a search of five parts.
-        /// </summary>
+        /// <summary>True while this machine follows the host's part, which its system must not step. A search of five parts.</summary>
         public static bool Follows(char id)
         {
             if (!_following)
@@ -145,9 +120,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The host: a line of a part for one player of the session only (a direct message), sent to that guest alone within
-        /// the second as an update of the part (a small letter): no other guest is sent it. False when that player is not a
-        /// guest that follows (the caller keeps it, or applies it itself when the player is the host).
+        /// The host: a line of a part for one player only (a direct message), sent to that guest alone within the second.
+        /// False when that player is not a following guest (the caller keeps it, or applies it when it is the host).
         /// </summary>
         public static bool ToPlayer(char id, string player, string line)
         {
@@ -182,9 +156,8 @@ namespace RealLifeOverhaul
         public const int AskedMost = 16 * 1024;     // characters of one part's request waiting for the second
 
         /// <summary>
-        /// A guest: something the player did that changes the shared city, for the host to apply. One line; sent within the
-        /// second. False when it was not taken: not following, or this second's request of the part is full (a caller that
-        /// must not lose the line keeps it for the next second).
+        /// A guest: one line of something the player did that changes the shared city, sent to the host within the
+        /// second. False when not following or this second's request is full: a caller that must not lose it keeps it.
         /// </summary>
         public static bool Ask(char id, string line)
         {
@@ -203,9 +176,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A guest: the lines a part has asked for that are not sent yet (the next request, within the second, takes them
-        /// all). A part whose host reads only so many lines of one request (the market's trades) asks this before it adds
-        /// more. A count over a short text, once a second at most.
+        /// A guest: the lines a part has asked for that are not sent yet, for a part whose host reads only so many lines
+        /// of one request. A count over a short text.
         /// </summary>
         public static int Waiting(char id)
         {
@@ -229,8 +201,6 @@ namespace RealLifeOverhaul
             }
             return null;
         }
-
-        // ---------------------------------------------------------------- the clock
 
         /// <summary>Once a frame, from <see cref="GoingPublicWatch"/>: a field read while nothing has come.</summary>
         public static void Frame()
@@ -420,7 +390,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The host, once a second when there is any: each guest's own lines, to that guest alone.
+        // The host, once a second when there are any: each guest's own lines, to that guest alone.
         private static void SendPrivate()
         {
             _anyPrivate = false;
@@ -442,10 +412,8 @@ namespace RealLifeOverhaul
                     Send(Guests[g], m);
                 }
             }
-            Private.Clear();   // (lines for a player who has left are not kept: they were never theirs to wait for)
+            Private.Clear();   // lines for a player who has left are not kept
         }
-
-        // ---------------------------------------------------------------- messages
 
         private static SharedMessage New(SharedKind kind)
         {
@@ -487,8 +455,7 @@ namespace RealLifeOverhaul
                 {
                     m.Parts.Add(new SharedPart(part.Id, text));
                 }
-                // (What has changed and is not sent yet stays for the next update: the guests that already follow need it,
-                // and to a guest that has just joined it is no news: a whole part again, or market moments it has passed.)
+                // What changed and is not sent yet stays for the next update, which the following guests need.
             }
             return m;
         }
@@ -535,7 +502,7 @@ namespace RealLifeOverhaul
             string who = GoingPublicLink.PlayerOf(peer);
             if (who.Length == 0)
             {
-                return;   // a link Going Public does not know yet: it drops everything such a link sends, and so does this
+                return;   // a link Going Public does not know yet: it drops what such a link sends, and so does this
             }
             if (read != SharedRead.Ok)
             {
@@ -611,7 +578,7 @@ namespace RealLifeOverhaul
             }
             if (m.Sequence <= _lastSeen && m.Kind != SharedKind.Snapshot)
             {
-                return;   // (the channel is ordered: an older one can only be a repeat)
+                return;   // the channel is ordered: an older one can only be a repeat
             }
             _lastSeen = m.Sequence;
             if (m.Kind == SharedKind.Snapshot)
@@ -740,7 +707,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A guest: a part came out different from the host's (the market's check), so it is asked for whole again. Twice in two minutes at most.</summary>
+        /// <summary>A guest: a part came out different from the host's, so it is asked for whole again, at most every two minutes.</summary>
         public static void AskAgain(char id)
         {
             SharedCityPart part = Find(id);
@@ -843,8 +810,6 @@ namespace RealLifeOverhaul
             return t.Length > 0 ? t.ToString() : "nothing";
         }
 
-        // ---------------------------------------------------------------- the player, the options page, the tests
-
         /// <summary>The guide's and the options page's word for whose city this is now.</summary>
         public static string Words()
         {
@@ -910,9 +875,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Test: this machine is taken to be a guest (the pretence of <see cref="GoingPublic.TestPretend"/>) and the
-        /// recording is applied as a host's snapshot, through the very path a guest's messages take. The city then stands
-        /// as it was recorded and nothing of it steps until the pretence ends, when it goes on from there.
+        /// Test: this machine pretends to be a guest (<see cref="GoingPublic.TestPretend"/>) and the recording is applied
+        /// as a host's snapshot through a guest's own path; nothing of it steps until the pretence ends.
         /// </summary>
         public static void TestApply()
         {
@@ -935,7 +899,7 @@ namespace RealLifeOverhaul
                 }
                 GoingPublic.Pretend(GoingPublicRole.Guest);
                 _testFollow = true;
-                _helloTries = HelloTries;   // (no hello: there is no host to say it to)
+                _helloTries = HelloTries;   // no hello: there is no host to say it to
                 SharedMessage m;
                 SharedRead read = SharedCityWire.Read(_recorded, Version, out m);
                 if (read != SharedRead.Ok || m.Kind != SharedKind.Snapshot)

@@ -6,22 +6,18 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Plain shapes for the few props the mod builds itself (cordon posts and tape, the
-    /// stretcher): a cube, a round post and one flat material per colour. Every mesh and
-    /// material is made once and shared by all the pieces that use it, so a prop is a handful
-    /// of renderers with nothing of their own; none has a collider or casts a shadow.
-    /// Dispose drops them when the city unloads.
+    /// Plain shapes for the few props the mod builds itself: a cube, a round post and one flat material per colour,
+    /// each made once and shared, so a prop is a handful of renderers with nothing of their own, no collider and no
+    /// shadow. <see cref="Dispose"/> drops them when the city unloads.
     /// </summary>
     public static class Shapes
     {
         private const string LitShader = "HDRP/Lit";
 
         /// <summary>
-        /// The render queue HDRP's own material editor gives an opaque lit material that takes decals (HDRenderQueue
-        /// .Priority.OpaqueDecal; the game's own such materials are all in it). A material made in code keeps its
-        /// shader's 2000, and in the game's deferred rendering only queues from 2225 on are in the depth prepass that
-        /// decals are worked out from: a prop of the mod's then wore the road's markings of whatever lay behind it, as
-        /// if it were glass (the bus over a bus stop's painted words).
+        /// The render queue HDRP gives an opaque lit material that takes decals (HDRenderQueue.Priority.OpaqueDecal). A
+        /// material made in code keeps its shader's 2000, outside the depth prepass decals are worked from, and then
+        /// wears the road markings behind it as if it were glass.
         /// </summary>
         public const int TakesDecalsQueue = 2225;
         private const int PostSides = 10;
@@ -79,15 +75,17 @@ namespace RealLifeOverhaul
         /// <summary>A straight round drum one unit tall and one wide, standing on its origin (a wheel, laid on its side).</summary>
         public static Mesh Drum => _drum != null ? _drum : _drum = BuildRound("RealLifeOverhaul Drum", 0.5f, 0.5f);
 
-        /// <summary>The one material of a colour, made the first time it is asked for. Null if <see cref="Available"/> is false.</summary>
-        /// <param name="glow">How strongly it shows in the dark, 0 for not at all (tape and stripes use a little).</param>
+        /// <summary>
+        /// The one material of a colour, made when first asked for; null if <see cref="Available"/> is false.
+        /// <paramref name="glow"/>: how strongly it shows in the dark, 0 for not at all.
+        /// </summary>
         public static Material Paint(Color colour, float glow = 0f)
         {
             if (!Available)
             {
                 return null;
             }
-            // Colour and glow packed into one number, so the same colour with and without a glow are two materials.
+            // Colour and glow in one key: the same colour with and without a glow are two materials.
             Color32 packed = colour;
             int key = packed.r | packed.g << 8 | packed.b << 16 | Mathf.Clamp(Mathf.RoundToInt(glow * 4f), 0, 127) << 24;
             if (!Paints.TryGetValue(key, out Material paint) || paint == null)
@@ -124,10 +122,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A modelled prop from the prop library, as one piece under a parent, at the parent's
-        /// origin (the models stand on their own origin, in metres). False if the library does
-        /// not have it (yet): the caller then builds its plain-shape stand-in, and should ask
-        /// again the next time it builds, since the library loads in the background.
+        /// A modelled prop from the prop library as one piece at the parent's origin. False if the library does not have
+        /// it yet: the caller builds its plain stand-in and asks again next time, as the library loads in the background.
         /// </summary>
         public static bool Prop(string id, Transform parent)
         {
@@ -139,7 +135,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Called when the city unloads: the generated meshes and materials go.</summary>
+        /// <summary>The city unloads: the generated meshes and materials go.</summary>
         public static void Dispose()
         {
             foreach (Material paint in Paints.Values)
@@ -215,8 +211,8 @@ namespace RealLifeOverhaul
             mesh.normals = normals;
             mesh.triangles = triangles;
             mesh.RecalculateBounds();
-            // Kept readable (a few hundred bytes): the game reads the normals of every mesh it finds on a character when
-            // it merges that character's meshes, kit pieces on the bones included, and warns twice for each it may not read.
+            // Kept readable (a few hundred bytes): the game reads the normals of every mesh on a character it merges,
+            // kit pieces included, and warns twice for each it may not read.
             mesh.UploadMeshData(false);
             return mesh;
         }
