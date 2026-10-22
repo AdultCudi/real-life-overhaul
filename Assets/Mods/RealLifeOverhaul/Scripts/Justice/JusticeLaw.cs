@@ -166,6 +166,15 @@ namespace RealLifeOverhaul
             return null;
         }
 
+        /// <summary>
+        /// The line for the end of a custody: in a Going Public session the clock is everyone's, the hours are served at
+        /// once (PrisonStay), and the line names none, as none passed.
+        /// </summary>
+        public static string CustodyReleasedKey(bool servedAtOnce)
+        {
+            return servedAtOnce ? "reallife_justice_custody_released_shared" : "reallife_justice_custody_released";
+        }
+
         public static int ClampCap(int days)
         {
             return days < PrisonCapMin ? PrisonCapMin : days > PrisonCapMax ? PrisonCapMax : days;

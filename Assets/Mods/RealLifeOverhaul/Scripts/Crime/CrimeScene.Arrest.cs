@@ -304,7 +304,7 @@ namespace RealLifeOverhaul
             float roll = Random.value;
             if (roll < 0.35f)
             {
-                int reward = Mathf.RoundToInt(Random.Range(20f, 80f) / 5f) * 5;
+                int reward = CrimeRules.Thanks(Random.value, CrimeRules.RewardLeast, CrimeRules.RewardMost, Prices.Level);
                 Crime.Give(reward, "reallife_transaction_reward");
                 Crime.ShowAmount(NotificationType.Success, Pick(RewardLines), reward, 9f);
             }

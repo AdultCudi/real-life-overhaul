@@ -71,7 +71,8 @@ namespace RealLifeOverhaul
                 release.AddHours(hours);
                 _custodyResting = true;
                 EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.Hospital);   // a bench in a cell: a little rest, as in the game's waiting rooms
-                if (!GoingPublic.ClockShared)
+                bool shared = GoingPublic.ClockShared;
+                if (!shared)
                 {
                     uis.timeMachine.StartTimeMachine(release, disableCancel: true, "reallife_crime_custody_info");   // the clock is not skipped in Going Public
                 }
@@ -90,7 +91,7 @@ namespace RealLifeOverhaul
                 {
                     ModState.AddModifier(ModState.MoodDownBig);
                     var data = new Dictionary<string, string>(1) { { "hours", hours.ToString() } };
-                    Notifications.Show(NotificationType.Info, "reallife_crime_custody_released", data, 10f);
+                    Notifications.Show(NotificationType.Info, CrimeRules.CustodyReleasedKey(shared), data, 10f);   // in a session no hours were passed: none are named
                 }
             }
             finally
