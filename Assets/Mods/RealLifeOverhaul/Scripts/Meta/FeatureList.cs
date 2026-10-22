@@ -380,7 +380,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_guard_fault", Guard.TestFault)
                 .Test("reallife_test_build_notice", GameBuild.TestNotice)
                 .Test("reallife_test_build_box", GameConfirm.TestOwnBox)
-                .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
+                .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.CharacterReport);
 
             Features.Add("multiplayer", "reallife_meta_title_multiplayer")
                 .About("reallife_guide_multiplayer_about").Help("reallife_guide_multiplayer")

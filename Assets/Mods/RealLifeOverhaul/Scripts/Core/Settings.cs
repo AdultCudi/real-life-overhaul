@@ -193,7 +193,7 @@
         public const string MinimapBaseId = "nav_base";
         public const string RoadsideChecksId = "roadside_checks";
         public const string ShowTestToolsId = "show_test_tools";       // Meta: the "Test tools" section of the options page
-        public const string DevDiagnosticsId = "dev_diagnostics";      // Meta: the diagnostic keys (F7, Shift+F7, F8, F9) and the Info lines in the log
+        public const string DevDiagnosticsId = "dev_diagnostics";      // Meta: the diagnostic keys (F7, Shift+F7, F9) and the Info lines in the log
         public const string GarageId = "garage";
         public const string GarageCosmeticsId = "garage_cosmetics";
         public const string GarageTuningId = "garage_tuning";

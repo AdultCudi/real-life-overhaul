@@ -405,7 +405,7 @@ namespace RealLifeOverhaul.Meta
                 S("multiplayer").For("multiplayer").Buttons("reallife_gp_tell_button", "reallife_gp_city_button")
                     .Also("going public multiplayer online friends host guest session"),
                 S("measure").Guide("performance").Opts("perf_step_timing").Buttons("reallife_perf_probe_button", "reallife_perf_bench_button4",
-                    "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_phone_dump", "reallife_keys_character_report")
+                    "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_character_report")
                     .Also("benchmark fps developer keys"),
                 S("tuning").Guide("driving").Opts("car_handling_softness", "car_handling_bounce", "car_handling_roll", "car_handling_grip", "car_handling_steering",
                     "car_handling_brakes").Also("handling suspension springs dampers roll grip steering brakes developer sliders")),

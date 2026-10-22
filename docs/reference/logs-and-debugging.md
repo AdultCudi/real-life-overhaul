@@ -52,7 +52,7 @@ If the mod is switched on twice (the Workshop item and a copy in `ModsLocal`), t
 On the mod's options page, under **Troubleshooting**, **Diagnostics**, switch on **Developer diagnostics**. Switch on **Show test tools** too if you want the test buttons. In code the switch is `Meta.Dev`, and `Meta.Dev.Verbose` is true while it is on.
 
 "Show test tools" and "Developer diagnostics" are off as shipped.
-With diagnostics off the mod writes only warnings and errors to `Player.log` (every logger in the mod goes through the one switch, `Meta.Dev.Gated`), and the four diagnostic keys (F7, Shift+F7, F8, F9) do nothing.
+With diagnostics off the mod writes only warnings and errors to `Player.log` (every logger in the mod goes through the one switch, `Meta.Dev.Gated`), and the three diagnostic keys (F7, Shift+F7, F9) do nothing.
 To work on the mod, switch both on under Diagnostics on the options page.
 
 The switch drops the line, not the work of making it: the text handed to `Info` is put together before the logger sees it.

@@ -191,6 +191,6 @@ A key the game itself has bound is allowed and named beside the button (read fro
 | `LookBehind` | Right mouse (held) | `Camera/ThirdPersonCamera` |
 | `GentleThrottle` | G (held) | `Driving/CarTuning`: the pedal goes no further than half |
 | `PerfProbe`, `PerfBench` | F7, Shift+F7 | `Performance/PerfDirector` |
-| `PhoneDump`, `CharacterReport` | F8, F9 | the two development aids |
+| `CharacterReport` | F9 | the development aid that writes a report of the characters on screen |
 | `PhotoMode` | F10 | `Leisure/Photo/PhotoMode`: into and out of photo mode (its other keys are fixed: `PhotoKeys`) |
 | `Walk` | F3 | `Walking/WalkDirector`: on foot, the game's own walk, and a press again for the usual pace. ContractCheck (`KeyClashChecks.cs`) fails if its default is a key of the game's, the mod's, the system's or another mod's |

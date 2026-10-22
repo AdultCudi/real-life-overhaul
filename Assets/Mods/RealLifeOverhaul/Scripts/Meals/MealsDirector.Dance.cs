@@ -7,7 +7,8 @@ namespace RealLifeOverhaul.Meals
     /// The director's part for dancing to the music: "Dance" in the game's radio panel over a loudspeaker starts one of the
     /// game's own dances (the ones its dance list and the nightclub's floor use), and it ends when the player moves (the
     /// game's own rule), presses the button again, the music stops or they leave. Danced long enough, the mood lifts by
-    /// the mod's own modifier, at most once in <see cref="MealsRules.DanceGapHours"/> game hours. Looked at once a second.
+    /// the mod's own modifier, at most once in <see cref="MealsRules.DanceGapHours"/> game hours: that lift is all the dance
+    /// does, it spends no energy (<see cref="MealsGame.StartDance"/>). Looked at once a second.
     /// </summary>
     public sealed partial class MealsDirector
     {

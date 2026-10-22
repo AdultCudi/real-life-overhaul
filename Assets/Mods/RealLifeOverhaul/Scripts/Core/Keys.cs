@@ -20,7 +20,6 @@ namespace RealLifeOverhaul
         GentleThrottle,    // held: half throttle at most
         PerfProbe,
         PerfBench,
-        PhoneDump,
         CharacterReport,
         PhotoMode,          // into and out of photo mode (Leisure/Photo)
         Walk,               // on foot: walk, and press again for the game's own pace (Walking/WalkDirector)
@@ -73,7 +72,6 @@ namespace RealLifeOverhaul
             new Binding("gentle_throttle", "reallife_keys_gentle_throttle", KeyCode.G),
             new Binding("perf_probe", "reallife_keys_perf_probe", KeyCode.F7),
             new Binding("perf_bench", "reallife_keys_perf_bench", KeyCode.F7, KeyModifier.Shift),
-            new Binding("phone_dump", "reallife_keys_phone_dump", KeyCode.F8),
             new Binding("character_report", "reallife_keys_character_report", KeyCode.F9),
             new Binding("photo_mode", "reallife_keys_photo_mode", KeyCode.F10),
             new Binding("walk", "reallife_keys_walk", KeyCode.F3),   // free of the game, the mod and the system (ContractCheck)
