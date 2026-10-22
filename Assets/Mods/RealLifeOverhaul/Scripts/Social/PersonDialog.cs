@@ -205,7 +205,7 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("borrow");
             }
-            if (_p.Stage >= SocialStage.Friend && SocialDirector.NextStranger() != null)
+            if (_p.Stage >= SocialStage.Friend && SocialDirector.AnyStranger())
             {
                 _actions.Add("introduce");
             }

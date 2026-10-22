@@ -104,7 +104,7 @@ internal static partial class Program
         var data = new Dictionary<string, string>();
         SocialState.Load(data, 0, 112, 9, 5150);
         SocialPerson met = null;
-        for (int i = 2; i < SocialRules.CastSize && met == null; i++)
+        for (int i = 2; i < SocialRules.BaseCast && met == null; i++)
         {
             SocialPerson p = SocialState.Get(i);
             if (p != null && !p.Met && !p.IsFamily && p.Origin != SocialOrigin.OldFriend)

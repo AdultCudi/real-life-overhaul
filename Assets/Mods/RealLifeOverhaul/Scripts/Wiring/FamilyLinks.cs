@@ -242,7 +242,7 @@ namespace RealLifeOverhaul
                             // Family first, then the rest from the closest down.
                             for (int stage = (int)SocialStage.CloseFriend; stage >= (int)SocialStage.Friend; stage--)
                             {
-                                for (int i = 0; i < SocialRules.CastSize && added < most; i++)
+                                for (int i = 0; i < SocialState.Count && added < most; i++)
                                 {
                                     SocialPerson p = SocialState.Get(i);
                                     if (p != null && p.Met && p != partner && (int)p.Stage == stage && p.IsFamily == (pass == 0))

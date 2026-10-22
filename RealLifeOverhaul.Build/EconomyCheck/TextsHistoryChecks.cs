@@ -283,7 +283,7 @@ internal static partial class Program
         int capped = hourly.IndexOf("!SocialLife.MayText()", StringComparison.Ordinal);
         int news = hourly.IndexOf("_reactedBreakInDay != day", StringComparison.Ordinal);
         int asked = hourly.IndexOf("if (NextDayText(day, hour))", StringComparison.Ordinal);
-        int roll = hourly.IndexOf("if (Random.value > 0.09f + 0.02f * SocialState.MetCount)", StringComparison.Ordinal);
+        int roll = hourly.IndexOf("if (Random.value > SocialRules.TextChance(CircleCount(day)))", StringComparison.Ordinal);
         Check(capped >= 0 && news > capped && asked > news && roll > asked && next.Contains("bool sent = SocialLife.SendText(p, key, data);") && !next.Contains("SendMessage")
               && next.Contains("Mathf.Max(p.LastTextDay, SocialPhone.LastTextDay(p))") && next.Contains("p.AfterDay = 0;") && next.Contains("return true;")
               && contact.Contains("if (p.AfterDay > 0 && day > p.AfterDay + 1)"),

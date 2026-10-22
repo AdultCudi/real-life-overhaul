@@ -51,7 +51,7 @@ namespace RealLifeOverhaul
                 return chosen;
             }
             SocialPerson best = null;
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
                 if (p != null && p.Met && !p.IsFamily && (best == null || p.Closeness > best.Closeness))
@@ -145,7 +145,7 @@ namespace RealLifeOverhaul
             SocialPerson person = null;
             string noPack = null;
             bool chatted = false;
-            for (int i = -1; i < SocialRules.CastSize && person == null; i++)
+            for (int i = -1; i < SocialState.Count && person == null; i++)
             {
                 SocialPerson p = SocialState.Get(i < 0 ? SocialState.TestPerson : i);
                 if (p == null || !p.Met || p.IsFamily)
@@ -237,7 +237,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            SocialState.TestPerson = (SocialState.TestPerson + 1) % SocialRules.CastSize;
+            SocialState.TestPerson = (SocialState.TestPerson + 1) % Mathf.Max(1, SocialState.Count);
             TellPerson(SocialState.Get(SocialState.TestPerson));
         }
 

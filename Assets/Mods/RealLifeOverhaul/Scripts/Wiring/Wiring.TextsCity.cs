@@ -169,7 +169,7 @@ namespace RealLifeOverhaul
                         return;
                     }
                     int hour = SocialLife.Hour;
-                    for (int i = 0; i < SocialState.People.Length; i++)
+                    for (int i = 0; i < SocialState.Count; i++)
                     {
                         SocialPerson p = SocialState.People[i];
                         if (p == null || string.IsNullOrEmpty(p.Name))

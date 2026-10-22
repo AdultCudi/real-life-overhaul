@@ -202,8 +202,8 @@ namespace RealLifeOverhaul
                 }
                 _lastHour = save.Hour;
                 _phoneState = -1;
-                Logger?.Info("Social: ready. " + SocialState.MetCount + " of " + SocialRules.CastSize + " people known; plan " + (SocialState.Plan.Active ? "on" : "none")
-                             + "; paper of day " + News.PaperDay + ".");
+                Logger?.Info("Social: ready. " + SocialState.MetCount + " of " + SocialState.Count + " people known (at most " + SocialRules.MaxCast + "); plan "
+                             + (SocialState.Plan.Active ? "on" : "none") + "; paper of day " + News.PaperDay + ".");
             }
 
             // The game clears its event hub on every load; Core/SaveHook allocates nothing while the event is unchanged.

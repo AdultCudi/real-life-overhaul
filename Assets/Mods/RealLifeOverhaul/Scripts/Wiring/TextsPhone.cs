@@ -363,7 +363,7 @@ namespace RealLifeOverhaul
 
             private static SocialPerson MomPerson()
             {
-                for (int i = 0; SocialState.Loaded && i < SocialState.People.Length; i++)
+                for (int i = 0; SocialState.Loaded && i < SocialState.Count; i++)
                 {
                     if (SocialState.People[i] != null && SocialState.People[i].IsFamily)
                     {
