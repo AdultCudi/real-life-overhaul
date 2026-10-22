@@ -8,10 +8,8 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.Walking
 {
     /// <summary>
-    /// Walking on a key (F3 by default): a press on foot puts the player on the game's own walk, a press again gives
-    /// the game's pace back. The game still picks its pace and the walk is put back over it each time
-    /// (<see cref="WalkRules.Decide"/>); Toggle Running held brings the game's pace back while held. Ends with every load;
-    /// nothing is saved or sent (Going Public shows the walk through the body's place and animator already).
+    /// Walking on a key (F3 by default): a press on foot puts the game's own walk over whatever pace the game picks
+    /// (<see cref="WalkRules.Decide"/>), a press again gives the pace back. Ends with every load; nothing is saved or sent.
     /// Cost: one key read a frame; while walking, also one engine read of the agent's speed and a time comparison.
     /// </summary>
     public sealed partial class WalkDirector : MonoBehaviour
@@ -23,10 +21,7 @@ namespace RealLifeOverhaul.Walking
         public static IModLogger Logger;
         public static WalkDirector Instance { get; private set; }
 
-        /// <summary>True while walking by the key, even while the game's own pace is on for a moment (Toggle Running held, a seat).</summary>
-        public static bool Walking => Instance != null && Instance._walking;
-
-        private bool _walking;
+        private bool _walking;                 // by the key, even while the game's own pace is on for a moment (Toggle Running held, a seat)
         private ThirdPersonCharacter _body;   // the local player's, taken on the press that started the walk
         private NavMeshAgent _agent;
         private WalkFigures _figures;          // the game's figures on foot, read on that press

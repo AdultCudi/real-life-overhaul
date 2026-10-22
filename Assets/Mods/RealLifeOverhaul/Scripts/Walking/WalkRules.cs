@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Walking
         GiveBack,  // the game's own speed for its pace back, through the game's own call
     }
 
-    /// <summary>Why a press of the walk key did nothing. The key then does nothing at all, and says nothing.</summary>
+    /// <summary>Why a press of the walk key did nothing, silently.</summary>
     public enum WalkRefusal
     {
         None,
@@ -39,11 +39,9 @@ namespace RealLifeOverhaul.Walking
     }
 
     /// <summary>
-    /// Walking on a key, game-free so NavCheck checks the rules the director uses. The game writes its pace's speed into
-    /// the navigation agent only when its pace changes (SetWalkingSpeed); walking writes the game's walk over a run or jog
-    /// and leaves the pace alone, so each change of the game's stands and is walked over again. The animator plays the
-    /// walk cycle from the speed by itself. A speed neither wrote (a job's, another mod's) is never touched. Comparisons
-    /// only; nothing is allocated.
+    /// Walking's rules, game-free for NavCheck. The game writes its pace's speed into the agent only when the pace changes;
+    /// walking writes the game's walk over a run or jog and leaves the pace alone, so the game's choices stand. A speed
+    /// neither wrote (a job's, another mod's) is never touched. No allocation.
     /// </summary>
     public static class WalkRules
     {

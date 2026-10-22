@@ -17,10 +17,9 @@ namespace RealLifeOverhaul.Walking
         }
     }
 
-    /// <summary>Walking's place on the options page.</summary>
+    /// <summary>Walking's place on the options page; its key is under Controls.</summary>
     public static class WalkOptions
     {
-        /// <summary>The switch and the test; the key itself is under Controls.</summary>
         public static ModOptions AddWalking(this ModOptions options)
         {
             return options

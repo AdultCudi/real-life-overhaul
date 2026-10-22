@@ -3,7 +3,6 @@ using BigAmbitions.InputSystem;
 using Helpers;
 using UI.Load;
 using UI.Notification;
-using UnityEngine;
 using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Walking
