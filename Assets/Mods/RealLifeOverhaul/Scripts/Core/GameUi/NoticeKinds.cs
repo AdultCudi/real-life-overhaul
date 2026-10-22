@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>What a notification of the mod's is about: the picture it carries in the game's toast and list.</summary>
     public enum NoticeKind
     {
-        None,       // not the mod's: the game's own, or another mod's; left exactly as the game draws it
+        None,       // not the mod's: the game's own or another mod's, left as the game draws it
         Road,       // accidents, the car, driving licences, buses, taxis, the GPS
         Police,     // crime, the police, courts and prison
         Health,     // illness, the doctor, the hospital
@@ -20,28 +20,22 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// Which kind a notification of the mod's is, from its locale key alone, game-free (checked by CatalogueCheck's
-    /// NoticeCheck). The game saves a notification as its type, its key, its names and values and its time
-    /// (UI.Notification/Notification.cs), and the list draws every saved one again from those
-    /// (NotificationListScrollerController.LoadNotifications), so the kind is read from the key each time it is drawn:
-    /// nothing new is saved, and a notification saved by any older version of the mod is drawn with its picture too.
-    /// A key that is not the mod's (without the mod's prefix in front) is <see cref="NoticeKind.None"/>.
-    ///
-    /// Cost of <see cref="Of"/>: a walk down the table below (about 120 short ordinal comparisons at most), no allocation;
-    /// called once per toast and once per row the list brings into view.
+    /// Which kind a notification of the mod's is, from its locale key alone, so nothing new is saved and old saved ones get
+    /// their picture too; <see cref="NoticeKind.None"/> for a key without the mod's prefix. Game-free; checked offline
+    /// (CatalogueCheck NoticeCheck).
     /// </summary>
     public static class NoticeKinds
     {
         public const string ModPrefix = "reallife_";
 
-        /// <summary>How many kinds there are, <see cref="NoticeKind.None"/> included (for arrays indexed by kind).</summary>
+        /// <summary>How many kinds there are, <see cref="NoticeKind.None"/> included, for arrays by kind.</summary>
         public const int Count = (int)NoticeKind.Other + 1;
 
-        // The part of the key after the prefix, up to and with its underscore, and the kind it means. Longer before
-        // shorter where one begins another ("biz_racket_" before "biz_"): the first match wins.
+        // The key after the prefix, up to and with its underscore. Longer before shorter where one begins another
+        // ("biz_racket_" before "biz_"): the first match wins.
         private static readonly string[] Prefixes =
         {
-            // the options page's test of the pictures: one notification of each kind
+            // the options page's test: one notification of each kind
             "notice_test_road", "notice_test_police", "notice_test_health", "notice_test_money", "notice_test_property",
             "notice_test_work", "notice_test_business", "notice_test_tech", "notice_test_news", "notice_test_people", "notice_test_other",
             // exceptions inside a wider prefix
@@ -71,6 +65,14 @@ namespace RealLifeOverhaul.GameUi
             "family_", "social_", "friend_", "mom_", "contact_", "contacts_"
         };
 
+        // The first prefix of each section of the table after the road's, and the kind of the section before it.
+        private static readonly string[] SectionStarts = { "crime_", "health_", "econ_", "estate_", "job_", "co_", "tech_", "ledger_", "family_" };
+        private static readonly NoticeKind[] SectionKinds =
+        {
+            NoticeKind.Road, NoticeKind.Police, NoticeKind.Health, NoticeKind.Money, NoticeKind.Property, NoticeKind.Work, NoticeKind.Business, NoticeKind.Tech,
+            NoticeKind.News
+        };
+
         private static readonly NoticeKind[] Kinds = Build();
 
         private static NoticeKind[] Build()
@@ -83,8 +85,7 @@ namespace RealLifeOverhaul.GameUi
             return kinds;
         }
 
-        // The kind each prefix stands for: the test keys by their last word, the exceptions one by one, the rest by
-        // where they stand in the table.
+        // The test keys by their last word, the exceptions one by one, the rest by the section of the table they stand in.
         private static NoticeKind Section(string prefix)
         {
             switch (prefix)
@@ -108,15 +109,13 @@ namespace RealLifeOverhaul.GameUi
                 case "home_rent": return NoticeKind.Property;
             }
             int at = Array.IndexOf(Prefixes, prefix);
-            if (at < Array.IndexOf(Prefixes, "crime_")) return NoticeKind.Road;
-            if (at < Array.IndexOf(Prefixes, "health_")) return NoticeKind.Police;
-            if (at < Array.IndexOf(Prefixes, "econ_")) return NoticeKind.Health;
-            if (at < Array.IndexOf(Prefixes, "estate_")) return NoticeKind.Money;
-            if (at < Array.IndexOf(Prefixes, "job_")) return NoticeKind.Property;
-            if (at < Array.IndexOf(Prefixes, "co_")) return NoticeKind.Work;
-            if (at < Array.IndexOf(Prefixes, "tech_")) return NoticeKind.Business;
-            if (at < Array.IndexOf(Prefixes, "ledger_")) return NoticeKind.Tech;
-            if (at < Array.IndexOf(Prefixes, "family_")) return NoticeKind.News;
+            for (int s = 0; s < SectionStarts.Length; s++)
+            {
+                if (at < Array.IndexOf(Prefixes, SectionStarts[s]))
+                {
+                    return SectionKinds[s];
+                }
+            }
             return NoticeKind.People;
         }
 
@@ -139,7 +138,7 @@ namespace RealLifeOverhaul.GameUi
             return NoticeKind.Other;
         }
 
-        /// <summary>The prefixes, for the offline check (a copy).</summary>
+        /// <summary>A copy of the prefixes, for the offline check.</summary>
         public static string[] Table()
         {
             return (string[])Prefixes.Clone();

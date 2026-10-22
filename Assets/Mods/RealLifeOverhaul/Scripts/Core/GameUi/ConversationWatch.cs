@@ -5,28 +5,20 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Puts right what a conversation leaves behind when it ends some other way than by its own last button (issue 22: a
-    /// call closed by shutting the phone or with Esc, after which nothing would work). Four times a second of real time:
-    ///   the text box   a box of the mod's is closed, with the game's own close, once what it was asked for is over
-    ///                  (<see cref="TextBox.Sweep"/>): the call hung up or cancelled by the phone being put away or Esc,
-    ///                  the talk left, the phone page or the options page closed, the player through a door; and every
-    ///                  box of the mod's goes when a city starts (one left from before) and when it unloads;
-    ///   the handle     the dialogue panel, open with nobody holding the game's handle on the conversation (a call on the
-    ///                  phone took it from the panel and cleared it as it ended), has it back, so that its last button, Esc
-    ///                  and the guard's way out end it again and the game's navigation blocker it set goes with it
-    ///                  (<see cref="TextBoxRules.HandBack"/>).
-    ///
-    /// The cost: one time comparison a frame; four times a second a few field reads.
+    /// Puts right what a conversation leaves behind when it ends other than by its own last button (a call closed by
+    /// putting the phone away or Esc): four times a second it closes a text box whose asker is gone (<see cref="TextBox.Sweep"/>)
+    /// and gives the dialogue panel back its conversation handle (<see cref="TextBoxRules.HandBack"/>). Costs one time
+    /// comparison a frame.
     /// </summary>
     public sealed class ConversationWatch : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ConversationWatch", typeof(ConversationWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ConversationWatch", typeof(ConversationWatch));   // its Update
 
         private float _next;
 
         private void Awake()
         {
-            Drop();   // (a box left from the city before: what it was for is gone)
+            Drop();   // a box left from the city before: what it was for is gone
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Core: ConversationWatch.Update");
@@ -35,7 +27,7 @@ namespace RealLifeOverhaul.GameUi
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try
@@ -60,7 +52,7 @@ namespace RealLifeOverhaul.GameUi
             HandBack();
         }
 
-        // The dialogue panel's handle back from a call that cleared it.
+        // From a call that cleared it.
         private static void HandBack()
         {
             UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;

@@ -6,39 +6,23 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// One of the game's own bars, for anything of the mod's that is a quantity or a timing: a copy of the energy bar
-    /// of the game's top bar (Canvases/Topbar/Container/Left Bar/PlayerStats/Energy: the pill StatBarBackground at
-    /// 30 % black with the same pill as a filled picture inside it), made while it sleeps (<see cref="UiClone"/>),
-    /// with its button, its hover effect and its picture taken off. Nothing is drawn by the mod: the bar, the zone
-    /// and the marker are all that one sprite of the game's.
-    ///
-    /// It shows one of two things:
-    ///  - a quantity (<see cref="Fill"/>): the bar filled to a share, as the game's needs are (a clock running down);
-    ///  - a timing (<see cref="Zone"/> and <see cref="Mark"/>): a zone marked on the empty bar in the game's green,
-    ///    the better part of it in full green, and a marker that runs along the bar.
-    ///
-    /// The cost: nothing per frame of its own. <see cref="Fill"/> and <see cref="Mark"/> may be called every frame:
-    /// each is two comparisons, and writes one number to one object only when the value has moved a visible step
-    /// (<see cref="BarRule"/>, the game's own rule for its needs bars). No text and no layout is ever made again: a
-    /// marker moving is one position written. The bar has a canvas of its own, so the panel it stands on is not
-    /// drawn again for it.
-    ///
-    /// Keep the copy at the game's size (412 x 56): the sprite has no border, and a bar of another size is a
-    /// squeezed pill. If the game's top bar is not built as expected, <see cref="Make"/> says so in one "Game UI:"
-    /// line and returns null, and the owner does without a bar.
+    /// One of the game's own bars for a quantity (<see cref="Fill"/>) or a timing (<see cref="Zone"/>, <see cref="Mark"/>): a
+    /// copy of the top bar's energy bar, with a canvas of its own. Fill and Mark may be called every frame: two comparisons,
+    /// and a write only for a visible step (<see cref="BarRule"/>). Keep the game's size (412 x 56): the sprite has no
+    /// border. <see cref="Make"/> returns null, with one log line, without the game's top bar.
     /// </summary>
     public sealed class GameBar
     {
-        private const float MarkWidth = 12f;     // units of the game's interface: a marker that is seen on a bar 412 wide
+        private const float MarkWidth = 12f;     // units of the game's interface: a marker seen on a bar 412 wide
         private const float MarkOver = 8f;       // units the marker stands out above and below the bar
-        private const byte ZoneAlpha = 115;      // of 255: the zone is the game's green let through at 45 %, its better part at full strength
+        private const byte ZoneAlpha = 115;      // of 255: the zone lets the game's green through at 45 %, its better part at full strength
 
         private readonly GameObject _root;
         private readonly RectTransform _rect;
         private readonly Image _fill;
         private readonly RectTransform _span;    // the filler's own rectangle: what "0 to 1" means on this bar
         private readonly RectTransform _zone, _best, _mark;
-        private float _shown = -1f;              // the share last written to the filler (below zero: none)
+        private float _shown = -1f;              // the share last written to the filler; below zero for none
         private float _markShown = -1f;
         private float _zoneFrom = -1f, _zoneTo = -1f, _bestFrom = -1f, _bestTo = -1f;
         private float _width = -1f;
@@ -56,22 +40,18 @@ namespace RealLifeOverhaul.GameUi
             _mark = mark;
         }
 
-        /// <summary>True while the copy exists (it goes with whatever it was hung on).</summary>
+        /// <summary>True while the copy exists; it goes with whatever it was hung on.</summary>
         public bool Alive => _root != null;
 
-        /// <summary>The bar's own rectangle, for its owner to place: anchored and pivoted at its middle, the game's size.</summary>
+        /// <summary>The bar's rectangle for its owner to place: anchored and pivoted at its middle, the game's size.</summary>
         public RectTransform Rect => _rect;
 
-        /// <summary>What the bar shows at this moment, 0 to 1: the marker's place while it is a timing, the share filled otherwise; below zero while nothing was written.</summary>
+        /// <summary>What the bar shows now, 0 to 1 (the marker while a timing, else the fill); below zero while nothing was written.</summary>
         public float Value => _timing ? _markShown : _shown;
 
-        /// <summary>True while the bar shows a zone and a marker.</summary>
         public bool Timing => _timing;
 
-        /// <summary>
-        /// A bar hung on <paramref name="parent"/>, switched off, in the middle of it. Null, with one log line, if
-        /// the game's top bar is not there to copy.
-        /// </summary>
+        /// <summary>A bar hung on <paramref name="parent"/>, off, in its middle. Null, with one log line, without the game's top bar to copy.</summary>
         public static GameBar Make(Transform parent, string name)
         {
             Transform holder = null;
@@ -111,7 +91,7 @@ namespace RealLifeOverhaul.GameUi
                 rect.sizeDelta = source.rect.size;
                 rect.anchoredPosition = Vector2.zero;
 
-                // The filler's own rectangle, empty: the zone and the marker are placed in it by shares of its width.
+                // The filler's rectangle, empty: the zone and the marker are placed in it by shares of its width.
                 var fillRect = (RectTransform)fill.transform;
                 var span = new GameObject("Span", typeof(RectTransform)).GetComponent<RectTransform>();
                 span.SetParent(rect, false);
@@ -131,12 +111,12 @@ namespace RealLifeOverhaul.GameUi
                 mark.sizeDelta = new Vector2(MarkWidth, MarkOver * 2f);
                 mark.anchoredPosition = Vector2.zero;
 
-                // Looked at, never clicked: nothing of it may take the pointer from the world under it.
+                // Looked at, never clicked: nothing of it takes the pointer from the world under it.
                 foreach (Graphic graphic in bar.GetComponentsInChildren<Graphic>(true))
                 {
                     graphic.raycastTarget = false;
                 }
-                bar.AddComponent<Canvas>();   // drawn by itself: a marker that moves does not have its panel drawn again
+                bar.AddComponent<Canvas>();   // drawn by itself: a moving marker does not redraw its panel
                 var made = new GameBar(bar, fill, span, zone, best, mark);
                 bar.SetActive(false);
                 rect.SetParent(parent, false);
@@ -155,7 +135,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The filler's picture once more, whole, in a colour: a stretch of the bar, or the marker.
+        // The filler's picture again, whole, in a colour: a stretch of the bar, or the marker.
         private static RectTransform Piece(Image fill, RectTransform span, string name, Color32 colour)
         {
             GameObject piece = UnityEngine.Object.Instantiate(fill.gameObject, span, false);
@@ -182,10 +162,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// The bar as a quantity: filled to <paramref name="value"/> (0 to 1). Written only when it has moved a
-        /// visible step; fit for every frame.
-        /// </summary>
+        /// <summary>The bar as a quantity, filled to <paramref name="value"/> (0 to 1); written only when it moved a visible step.</summary>
         public void Fill(float value)
         {
             if (_root == null)
@@ -210,11 +187,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// The bar as a timing: a zone about <paramref name="centre"/>, <paramref name="width"/> wide (shares of the
-        /// bar), and inside it a better part <paramref name="bestWidth"/> wide (0: none). Written only when a figure
-        /// differs from what is marked.
-        /// </summary>
+        /// <summary>The bar as a timing: a zone about <paramref name="centre"/> with a better part inside (shares of the bar); written only when a figure differs.</summary>
         public void Zone(float centre, float width, float bestWidth)
         {
             if (_root == null)
@@ -252,10 +225,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// The marker at <paramref name="value"/> (0 to 1) along the bar. Written (one position) only when it has
-        /// moved a visible step; fit for every frame. Call <see cref="Zone"/> first.
-        /// </summary>
+        /// <summary>The marker at <paramref name="value"/> (0 to 1); one position written only when it moved a visible step. Call <see cref="Zone"/> first.</summary>
         public void Mark(float value)
         {
             if (_root == null || !_timing || !BarRule.Due(_markShown, value))

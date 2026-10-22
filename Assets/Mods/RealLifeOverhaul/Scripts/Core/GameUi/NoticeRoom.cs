@@ -6,17 +6,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Keeps the game's notifications off the mod's info panels in the top right corner (<see cref="ShiftCard"/>: a shift
-    /// or a gig, a lesson or a driving test, community service, canvassing, an outing's plan, a family objective). Every
-    /// such panel carries a <see cref="NoticeRoomMark"/>; while one of them shows, the game's stack of notifications
-    /// (Canvases/NotificationsUI/Container, found by <see cref="NoticeLook"/>) starts a gap under the lowest of them
-    /// (<see cref="NoticeRoomRules"/>), and once none shows it is back at the game's own place. Nothing of the game's is
-    /// changed but that one position, and it is put back as it was found when the panels go, the city goes or the stack
-    /// is a new one.
-    ///
-    /// Cost: nothing per frame. It works when a panel comes on or goes off (its mark's OnEnable and OnDisable, which the
-    /// engine calls when the HUD is hidden with the time machine or the map too) and when a panel moves (ShiftCard
-    /// stepping under the game's own job panel): four corners of each panel showing (at most a few) and one position.
+    /// Keeps the game's notifications off the mod's info panels in the top right (<see cref="ShiftCard"/> and the like): while
+    /// one marked with a <see cref="NoticeRoomMark"/> shows, the game's stack starts a gap under it (<see cref="NoticeRoomRules"/>),
+    /// back at its own place once none does. Costs nothing a frame: it works when a panel comes, goes or moves.
     /// </summary>
     public static class NoticeRoom
     {
@@ -63,7 +55,7 @@ namespace RealLifeOverhaul.GameUi
                     Marks.RemoveAt(i);
                     continue;
                 }
-                ((RectTransform)mark.transform).GetWorldCorners(Corners);   // (an overlay canvas: world is screen pixels)
+                ((RectTransform)mark.transform).GetWorldCorners(Corners);   // an overlay canvas: world is screen pixels
                 lowest = NoticeRoomRules.Lowest(lowest, Corners[0].y);
             }
             stack.GetWorldCorners(Corners);
@@ -85,7 +77,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The game's stack, its own place kept the first time it is seen; a new stack (a new city) is kept anew.
+        // Its own place kept the first time it is seen; a new stack (a new city) is kept anew.
         private static RectTransform Stack()
         {
             Transform found = NoticeLook.Instance != null ? NoticeLook.Instance.Container : null;
@@ -109,10 +101,7 @@ namespace RealLifeOverhaul.GameUi
         }
     }
 
-    /// <summary>
-    /// On one of the mod's info panels in the top right: tells <see cref="NoticeRoom"/> when it comes on and goes off.
-    /// The cost: nothing per frame (it has no Update); a pass of <see cref="NoticeRoom"/> when it is switched on or off or moves.
-    /// </summary>
+    /// <summary>On one of the mod's info panels in the top right: tells <see cref="NoticeRoom"/> when it comes, goes or moves. Costs nothing a frame.</summary>
     public sealed class NoticeRoomMark : MonoBehaviour
     {
         private void OnEnable()

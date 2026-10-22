@@ -38,7 +38,7 @@ internal static partial class Program
         ("Character/SkinFinish.cs", "texture", "Object.Destroy(made)", "a skin map's copy, kept in the maps and released by the sweep after each change of look"),
         ("Civic/CivicProps.cs", "mesh", "UnityEngine.Object.Destroy(kind.Mesh)", "a stand-in's merged mesh, kept for its kind and destroyed with the pool"),
         ("Core/GameUi/AppIconPainter.cs", "sprite", "CodeAssets.DropSprite(kept.Result)", "an app's icon, kept by its name for the session: one painted again destroys the one it replaces"),
-        ("Core/GameUi/PhoneGridPager.cs", "sprite", "_drawnGlyph = sprite", "the More apps glyph, drawn once a session"),
+        ("Core/GameUi/PhoneGridPager.More.cs", "sprite", "_drawnGlyph = sprite", "the More apps glyph, drawn once a session"),
         ("Core/MapPlaces.cs", "sprite", "Glyphs[index] = Draw((MapIcon)index)", "a map glyph, drawn once a session for each kind of place"),
         ("Core/PropLibrary.cs", "made", "UnityEngine.Object.Destroy(tinted)", "the props' materials, one for each kind and each tint, destroyed in Dispose"),
         ("Core/Shapes.cs", "mesh", "Object.Destroy(_post)", "the round post's and the drum's meshes, made once and destroyed in Dispose"),

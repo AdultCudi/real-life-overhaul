@@ -6,9 +6,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The game's own interface pictures by name ("Icon-Calendar", "Icon-SetDestination"). Nothing is shipped: a
-    /// picture is found among the sprites the game has in memory, once, the first time one is asked for. A name the
-    /// game does not have in memory gives null, and whoever asked shows no picture.
+    /// The game's own interface pictures by name ("Icon-Calendar"), never shipped: found among the sprites in memory in one
+    /// look, the first time a new name is asked for. A name the game does not have gives null, and the caller shows no
+    /// picture. Costs nothing a frame.
     /// </summary>
     public static class GameSprites
     {
@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.GameUi
         private static readonly HashSet<string> Wanted = new HashSet<string>(StringComparer.Ordinal);
         private static bool _looked;
 
-        /// <summary>Names a picture that will be asked for, before the one look through the game's sprites.</summary>
+        /// <summary>Names pictures that will be asked for, so the one look finds them all.</summary>
         public static void Want(params string[] names)
         {
             for (int i = 0; i < names.Length; i++)
@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.GameUi
             return Found.TryGetValue(name, out sprite) && sprite != null ? sprite : null;
         }
 
-        // One pass over the sprites in memory (a few thousand names compared): only ever on the opening of a menu.
+        // One pass over the sprites in memory, a few thousand names compared: only on a menu's opening or behind a load.
         private static void Look()
         {
             _looked = true;
@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A city was left: its sprites may be gone with it.</summary>
+        /// <summary>A city was left: its sprites may have gone with it.</summary>
         public static void Forget()
         {
             Found.Clear();

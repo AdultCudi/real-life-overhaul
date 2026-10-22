@@ -9,31 +9,14 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The game's own panel over a place in the world: the dark box with an arrow that stands over a petrol pump or a
-    /// lift (Canvases/PlayerHUD/OverlayUI, class UI.Overlays.OverlayUI), with a first line, a second line left and
-    /// right, and buttons that carry their key in brackets. The game shows whatever implements its IOverlay, so this
-    /// class is one: nothing is copied and nothing is drawn by the mod. The game itself puts the box over the place
-    /// every frame, writes the key of each button after its words (the player's own binding), and runs a button on
-    /// its key (GameManager routes Interact, SecondaryInteract and SpecialInteract to OverlayUI.OnPlayerActionPressed)
-    /// or on a click.
-    ///
-    /// The game has one such box, and sends its keys to whatever is in it. Which of two places that want it has it is
-    /// one rule for every panel (<see cref="PanelPickRules"/>, applied in WorldPanel.Pick.cs): the nearer place the
-    /// player faces, a person the player came to meet first of all within talking range, with a margin so that the box
-    /// never goes to and fro; the game's own panels (a filling station, a lift) keep it while the player stands there.
-    ///
-    /// The game's building box (the card over a shop's door while the pointer is on the shop) is another object, and
-    /// the two would cover each other where a panel's place is in front of a shop. The other half of this class
-    /// (WorldPanel.Beside.cs) keeps every panel clear of it by one rule (<see cref="PanelPlacement"/>).
-    ///
-    /// The cost: while no panel of the mod's is up, nothing. While one is up, the few loads of WorldPanel.Beside.cs
-    /// each frame and no more. Texts and buttons are objects made when what they say changes; a
-    /// change of the lines alone rewrites the three texts (the game's private SetUpHeader, called through a delegate
-    /// made once), and only a change of the buttons has the game make its buttons again.
+    /// The game's own panel over a place in the world (OverlayUI: a first line, a second left and right, buttons with their
+    /// key): this class is an IOverlay, so nothing is copied or drawn. Which panel has the one box is WorldPanel.Pick's,
+    /// keeping it clear of the building box WorldPanel.Beside's. Texts and buttons are rebuilt only when what they say
+    /// changes. Costs nothing while no panel is up.
     /// </summary>
     public sealed partial class WorldPanel : IOverlay
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "WorldPanel", typeof(WorldPanel));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "WorldPanel", typeof(WorldPanel));   // the game's calls of it
 
         public static IModLogger Logger;
 
@@ -48,7 +31,7 @@ namespace RealLifeOverhaul.GameUi
         private string _leftWords;
         private string _rightWords;
         private Color32 _rightColour;
-        /// <summary>The most buttons a panel has: one for each key the game sends to its box (interact, secondary, special, confirm).</summary>
+        /// <summary>The most buttons a panel has: one per key the game sends to its box (interact, secondary, special, confirm).</summary>
         public const int Slots = 4;
 
         private static readonly PlayerAction[] SlotAction = { PlayerAction.Interact, PlayerAction.SecondaryInteract, PlayerAction.SpecialInteract, PlayerAction.Confirm };
@@ -64,22 +47,19 @@ namespace RealLifeOverhaul.GameUi
         private bool _linesChanged;
         private bool _buttonsChanged;
 
-        /// <summary>The place in the world the box stands over. Read by the game every frame while the box is up.</summary>
+        /// <summary>The place the box stands over; the game reads it every frame while the box is up.</summary>
         public Vector3 Position;
 
-        /// <summary>
-        /// A thing that moves (a passer-by) the box follows instead of <see cref="Position"/>: the game reads the position every
-        /// frame, so the box stays on them without the mod doing anything per frame. Null: <see cref="Position"/> is used.
-        /// </summary>
+        /// <summary>A moving thing (a passer-by) the box follows instead of <see cref="Position"/>; null for none. The game reads it every frame.</summary>
         public Transform Follow;
 
         /// <summary>Metres above <see cref="Follow"/> the box stands.</summary>
         public float FollowLift;
 
-        /// <summary>True while this panel is the one in the game's box. Two loads: fit for a per-frame test.</summary>
+        /// <summary>This panel is the one in the game's box. Two loads: fit for a test every frame.</summary>
         public bool Showing => _current == this && OverlayUI.IsVisible;
 
-        /// <summary>The three lines, as final words (null leaves a line out). Nothing is made unless a line differs from what is there.</summary>
+        /// <summary>The three lines in final words (null leaves a line out). Nothing is made unless a line differs.</summary>
         public void Lines(string first, string left, string right, Color32 rightColour)
         {
             if (!Same(first, _firstWords))
@@ -103,11 +83,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Up to two buttons: the first on the game's interact key, the second on its secondary one. A key is a locale
-        /// key (the game's component writes and translates it); null leaves the button out. The actions are kept as
-        /// given: pass delegates made once.
-        /// </summary>
+        /// <summary>Up to two buttons, on the interact and secondary keys (locale keys; null leaves one out). Pass delegates made once.</summary>
         public void Buttons(string keyA, Action a, bool enabledA, string keyB, Action b, bool enabledB)
         {
             Button(0, keyA, a, enabledA, true);
@@ -116,22 +92,13 @@ namespace RealLifeOverhaul.GameUi
             Button(3, null, null, false, false);
         }
 
-        /// <summary>
-        /// One button by its place: 0 on the game's interact key, 1 on its secondary one, 2 on its special one, 3 on
-        /// its confirm key. They stand in that order in the box. A key is a locale key; null leaves the place empty.
-        /// Nothing is made unless the place differs from what it held: the buttons are put together again by the
-        /// next <see cref="Show"/>. Pass a delegate made once.
-        /// </summary>
+        /// <summary>One button by place (0 interact, 1 secondary, 2 special, 3 confirm); null leaves it empty. Rebuilt by the next <see cref="Show"/> if changed.</summary>
         public void Button(int slot, string key, Action action, bool enabled, bool blue)
         {
             Button(slot, key, null, action, enabled, blue);
         }
 
-        /// <summary>
-        /// A button whose words are a locale key filled from <paramref name="arguments"/> (an object with the key's placeholders as
-        /// members, as the game's own buttons take them). Keep the same object while the words are the same: a different one makes
-        /// the game's buttons again.
-        /// </summary>
+        /// <summary>A button whose key is filled from <paramref name="arguments"/>; keep the same object while the words stay, another remakes the buttons.</summary>
         public void Button(int slot, string key, object arguments, Action action, bool enabled, bool blue)
         {
             if (ReferenceEquals(key, _slotKey[slot]) && (key == null || (enabled == _slotOn[slot] && blue == _slotBlue[slot] && ReferenceEquals(action, _slotAction[slot])
@@ -169,10 +136,7 @@ namespace RealLifeOverhaul.GameUi
             _buttonsChanged = true;
         }
 
-        /// <summary>
-        /// Puts the panel in the game's box, or brings the box up to date with what was set since. False when the
-        /// game's interface is not there, or another panel has the box and keeps it by the rule (WorldPanel.Pick.cs).
-        /// </summary>
+        /// <summary>Puts the panel in the game's box or brings it up to date; false without the interface, or when another panel keeps the box.</summary>
         public bool Show()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -204,7 +168,7 @@ namespace RealLifeOverhaul.GameUi
                     }
                     else
                     {
-                        OverlayUI.Show(this);   // the whole box again: the same result, with the buttons made anew
+                        OverlayUI.Show(this);   // the whole box again: the same, with the buttons made anew
                     }
                 }
                 return true;
@@ -217,11 +181,11 @@ namespace RealLifeOverhaul.GameUi
             Waiting = false;
             if (OverlayUI.IsVisible && !Contest(box))
             {
-                return false;   // another panel has the box, and the rule leaves it there: asked again by the owner's timer
+                return false;   // another panel keeps the box by the rule: the owner's timer asks again
             }
             if (Held())
             {
-                Waiting = true;    // the game's building box is in the way and no side of it has room: tried again by the owner's timer
+                Waiting = true;    // the building box is in the way with no room beside it: the owner's timer asks again
                 return false;
             }
             _current = this;
@@ -232,7 +196,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        /// <summary>Takes the panel out of the game's box. Safe at any time, and when the interface has already gone.</summary>
+        /// <summary>Takes the panel out of the game's box. Safe at any time, also after the interface has gone.</summary>
         public void Hide()
         {
             Waiting = false;
@@ -257,7 +221,7 @@ namespace RealLifeOverhaul.GameUi
                 else if (OverlayUI.IsVisible)
                 {
                     // The interface went first (the city is unloading): the game's flag must not be left saying a box is up.
-                    GameContract.OverlayVisible.Setter?.Invoke(null, new object[] { false });   // (its private setter, resolved once: Core/GameContract)
+                    GameContract.OverlayVisible.Setter?.Invoke(null, new object[] { false });   // its private setter, resolved once
                 }
             }
             catch (Exception e)
@@ -265,8 +229,6 @@ namespace RealLifeOverhaul.GameUi
                 Logger?.Error(e);
             }
         }
-
-        // ---------------------------------------------------------------- what the game asks
 
         Vector3 IOverlay.GetTargetPosition()
         {
@@ -276,8 +238,7 @@ namespace RealLifeOverhaul.GameUi
             }
             try
             {
-                // (The step aside from the game's building box is in the world's own measure, so the game's own
-                // WorldToScreenPoint puts the box beside it: WorldPanel.Beside.cs.)
+                // The step aside from the building box is in the world's measure, so the game's WorldToScreenPoint puts the box beside it.
                 return ReferenceEquals(_current, this) ? Home() + _shift : Home();
             }
             catch (Exception fault)
@@ -286,7 +247,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The place the panel stands over, before any step aside.
+        // The place before any step aside.
         private Vector3 Home()
         {
             return Follow != null ? Follow.position + Vector3.up * FollowLift : Position;
@@ -312,14 +273,12 @@ namespace RealLifeOverhaul.GameUi
             return _buttons;
         }
 
-        // ---------------------------------------------------------------- helpers
-
         private static bool Same(string a, string b)
         {
             return ReferenceEquals(a, b) || string.Equals(a, b, StringComparison.Ordinal);
         }
 
-        /// <summary>The game's own colours for the right-hand word; white if its references are not there.</summary>
+        /// <summary>The game's own colours for the right-hand words; fixed ones without its references.</summary>
         public static Color32 White()
         {
             GlobalReferences references = InstanceBehavior<GlobalReferences>.Instance;
@@ -351,7 +310,7 @@ namespace RealLifeOverhaul.GameUi
                 _looked = true;
                 try
                 {
-                    MethodInfo method = GameContract.OverlayHeader.Method;   // (resolved once: Core/GameContract)
+                    MethodInfo method = GameContract.OverlayHeader.Method;
                     _setUpHeader = method != null ? (Action<OverlayUI>)Delegate.CreateDelegate(typeof(Action<OverlayUI>), method, false) : null;
                 }
                 catch (Exception e)

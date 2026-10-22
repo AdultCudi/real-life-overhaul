@@ -184,6 +184,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FamePress.cs" Link="Mod\FamePress.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameCity.cs" Link="Mod\FameCity.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableModel.cs" Link="Mod\TableModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableRow.cs" Link="Mod\TableRow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableSpec.cs" Link="Mod\TableSpec.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashCategory.cs" Link="Mod\CashCategory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialRules.cs" Link="Mod\SocialRules.cs" />
