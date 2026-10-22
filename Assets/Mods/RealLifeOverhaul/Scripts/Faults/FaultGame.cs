@@ -10,15 +10,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// The one place the city's faults read the game (and the parts of the mod that stand for it): the city's buildings
-    /// with a street door by district, each district's upkeep, traffic and night life, the street lamps, the weather and
-    /// the council's cleaning, and where in the street a fault of each kind can be put. The city is read once, behind the
-    /// loading screen (<see cref="Prewarm"/>), or failing that the first time the faults need it while the screen is black
-    /// at a door; after that a roll is a look into those lists.
-    ///
-    /// COST: nothing per frame. Behind the loading screen, one pass over the city's buildings and one over the game's
-    /// list of the lamps it culls. A placement, once when a fault is rolled: a few look-ups of the navigation mesh and
-    /// the road map.
+    /// The one place the city's faults read the game: street doors by district, each district's upkeep, traffic and night
+    /// life, the lamps, the weather, and where a fault can go. The city is read once behind a black screen
+    /// (<see cref="Prewarm"/>); a roll then looks into those lists. Cost: nothing per frame; a few look-ups a placement.
     /// </summary>
     public static class FaultGame
     {
@@ -58,19 +52,13 @@ namespace RealLifeOverhaul.Faults
         /// <summary>True once the doors, the districts and the lamps are all read for the city now loaded.</summary>
         public static bool Complete => Ready && _lampsRead;
 
-        /// <summary>The street lamps of the city now loaded (from the game's list of what it culls), and their feet, in step.</summary>
-        public static IReadOnlyList<StreetLamp> CityLamps => Lamps;
-
-        /// <summary>
-        /// Behind the loading screen (Core/ScenePrewarm, late: the game's buildings are listed by then): the city's doors and
-        /// districts, and its lamps. True when done; false to be tried again behind the next black screen.
-        /// </summary>
+        /// <summary>The city's doors, districts and lamps read behind the loading screen; false to try again behind the next black screen.</summary>
         public static bool Prewarm()
         {
             return ReadCity() && ReadLamps();
         }
 
-        /// <summary>The city read now if it has not been for the city loaded, but only while the screen is black (a door, a load, a pause). True when it is there.</summary>
+        /// <summary>The city read now if it is not yet, but only while the screen is black. True when it is there.</summary>
         public static bool EnsureHidden()
         {
             if (Ready && _lampsRead)
@@ -166,7 +154,7 @@ namespace RealLifeOverhaul.Faults
             return Districts.Count - 1;
         }
 
-        // A district's own upkeep by who lives there: a working-class district is kept up less, a well-off one more (the game's neighbourhood data).
+        // A working-class district is kept up less, a well-off one more (the game's neighbourhood data).
         private static int ClassUpkeep(string id)
         {
             try
@@ -224,8 +212,6 @@ namespace RealLifeOverhaul.Faults
             return _lampsRead;
         }
 
-        // ---------------------------------------------------------------- the city now
-
         /// <summary>The city as this hour's roll reads it: the time, the weather, the council's cleaning, the districts.</summary>
         public static void Read(FaultFacts facts, long now, int option)
         {
@@ -277,12 +263,9 @@ namespace RealLifeOverhaul.Faults
 
         public static bool Outdoors => !BuildingManager.IsInsideBuilding;
 
-        // ---------------------------------------------------------------- where a fault goes
-
         /// <summary>
-        /// A place for a fault the roll wants, in its district: a door picked at random (never a door of a player's own
-        /// place), and from it the lamp nearest, the lane in front, or a stretch of pavement beside it. False if no place was
-        /// found in a few tries (the fault is then not made this hour).
+        /// A place in its district for a fault the roll wants: from a random door (never a player's place), the nearest
+        /// lamp, the lane in front or the pavement beside. False if a few tries find none.
         /// </summary>
         public static bool Place(FaultWant want, IFaultDice dice, FaultFile file, out Vector3 at, out string address)
         {
@@ -318,10 +301,7 @@ namespace RealLifeOverhaul.Faults
             return false;
         }
 
-        /// <summary>
-        /// The test's place for a fault of a kind near the player: the doors nearest them (within <see cref="TestNear"/>
-        /// metres) tried in turn. False if none will do.
-        /// </summary>
+        /// <summary>The test's place for a fault near the player: the nearest doors within <see cref="TestNear"/> metres in turn.</summary>
         public static bool PlaceNear(FaultKind kind, Vector3 player, int variant, FaultFile file, out Vector3 at, out string address, out string district)
         {
             at = default;
@@ -441,7 +421,7 @@ namespace RealLifeOverhaul.Faults
             return true;
         }
 
-        /// <summary>The lamp at a fault's place: the one whose foot is within a step of it; null if none (the lamps not read, or another city).</summary>
+        /// <summary>The lamp whose foot is within a step of a fault's place; null if none.</summary>
         public static StreetLamp LampAt(Vector3 foot)
         {
             for (int i = 0; i < LampFeet.Count; i++)
@@ -455,7 +435,7 @@ namespace RealLifeOverhaul.Faults
             return null;
         }
 
-        /// <summary>The district of a point: the neighbourhood of the nearest building with a door within so many metres (a pass over the doors read); null for none.</summary>
+        /// <summary>The district of the nearest street door within so many metres of a point; null for none. A pass over the doors.</summary>
         public static string DistrictAt(Vector3 point, float within, out string address)
         {
             address = null;

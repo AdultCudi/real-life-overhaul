@@ -5,9 +5,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// The feature's entry in the mod's feature list, and the figures its Guide page prints: every {name} in its text is
-    /// filled from <see cref="FaultRules"/> here, so the page can never say anything the faults do not do. Called once,
-    /// when the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
+    /// The city faults' entry in the feature list, and the Guide page's figures, each filled from
+    /// <see cref="FaultRules"/> when the page opens. Registered once, when the feature list is built.
     /// </summary>
     public static class FaultGuide
     {
@@ -45,7 +44,7 @@ namespace RealLifeOverhaul.Faults
     /// <summary>The city's faults' place on the options page, under the mod's own namespace so that it is one line there.</summary>
     public static class FaultOptions
     {
-        /// <summary>The "City faults" block of the options page: its switch, how many, whether reports of nothing cost anything, and the tests.</summary>
+        /// <summary>The "City faults" block of the options page: its switch, how many, the cost of false reports, and the tests.</summary>
         public static ModOptions AddCityFaults(this ModOptions options)
         {
             return options
