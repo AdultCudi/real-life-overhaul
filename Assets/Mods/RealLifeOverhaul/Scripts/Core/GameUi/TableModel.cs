@@ -3,380 +3,20 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.GameUi
 {
-    /// <summary>How a column is ordered when its header is clicked.</summary>
-    public enum TableSort
-    {
-        /// <summary>The header is no button: nothing sensible to order by.</summary>
-        None,
-        /// <summary>By the cell's words, capitals and small letters alike; an empty cell comes last.</summary>
-        Text,
-        /// <summary>By a number the row gives (a count, a share, a rate).</summary>
-        Number,
-        /// <summary>By an amount of money the row gives; a column of money may also be summed.</summary>
-        Money,
-        /// <summary>By a day (or a minute) the row gives.</summary>
-        Date,
-        /// <summary>By whatever the app gives: a number where the row has one, else the cell's words (numbers first).</summary>
-        Custom
-    }
-
     /// <summary>
-    /// The tone of a cell: plain, the game's yellow, its red, its green (as EconoView colours a gain and a loss). A type
-    /// of its own so that a cell's figure is never taken for a tone: TableRow.Set(column, words, figure) orders and sums
-    /// the column by the figure whatever its type.
-    /// </summary>
-    public enum CellTone : byte
-    {
-        Plain = 0,
-        Yellow = 1,
-        Red = 2,
-        Green = 3
-    }
-
-    /// <summary>
-    /// A table whose rows are written only when they are shown: a long list (every movement of money of a month, some
-    /// 30,000) where a row's words cost more than its figures. The table asks it for each row's figures and kinds when it
-    /// is shown (they order, filter and sum it), for a column's words only when the table is ordered by them, and for the
-    /// whole row (<see cref="Write"/>) only when the row comes into view. What it gives must be what writing the row gives:
-    /// Key(row, c) the row's figure in column c, Text(row, c) its words there, Kind(row, f) its kind for filter f. Its rows
-    /// are plain rows: no line of words, none pinned, every one in the totals.
-    /// </summary>
-    public interface ITableSource
-    {
-        /// <summary>How many rows, in the order they are written (row 0 first).</summary>
-        int Count { get; }
-        /// <summary>What a row gives a column to be ordered and summed by; NaN for nothing.</summary>
-        double Key(int row, int column);
-        /// <summary>The kind a row is of for one of the table's filters; -1 for of none.</summary>
-        int Kind(int row, int filter);
-        /// <summary>A row's words in a column (null for none): asked only when the table is ordered by that column.</summary>
-        string Text(int row, int column);
-        /// <summary>The whole row, written into a row of the table's: asked when it comes into view.</summary>
-        void Write(int row, TableRow into);
-    }
-
-    /// <summary>
-    /// One row of an app's table: the words of each cell, what each cell is ordered by, the kind the row is of, or
-    /// one line that only says something. An app keeps its rows and uses them again (Reset). A row of a table that is
-    /// written when shown (<see cref="ITableSource"/>) stands for its source's row until it is first asked for its cells
-    /// (<see cref="Ready"/>); its cells' arrays are made only when it is written, so a list of 30,000 such rows costs some
-    /// 70 bytes a row, once, and nothing after.
-    /// </summary>
-    public sealed class TableRow
-    {
-        /// <summary>The tones of a cell (GameUi.CellTone), by their old names.</summary>
-        public const GameUi.CellTone Plain = GameUi.CellTone.Plain, Yellow = GameUi.CellTone.Yellow, Red = GameUi.CellTone.Red, Green = GameUi.CellTone.Green;
-
-        public string Id;
-        private string[] _text;
-        private double[] _key;
-        private byte[] _tones;
-        public int Kind, Kind2;     // for the table's first and second filter; -1 for of no kind
-        public bool Info;           // a line of words: no background, not to be selected, always shown first
-        public bool Pick;           // a click on it means something
-        public bool Pinned;         // shown first whatever the order and the filter, and not counted or summed
-        public bool NoTotal;        // ordered and filtered like any other row, but in no total
-        public int Index;           // what it stands for in its tab's list
-
-        private ITableSource _source;   // the table it is written from when shown; null for a row an app wrote itself
-        private int _sourceRow;
-        private bool _written;
-
-        /// <summary>The words of each cell (made when first written to).</summary>
-        public string[] Text => _text ?? (_text = new string[TableSpec.MaxColumns]);
-
-        /// <summary>What each column is ordered and summed by; NaN for nothing.</summary>
-        public double[] Key
-        {
-            get
-            {
-                if (_key == null)
-                {
-                    _key = new double[TableSpec.MaxColumns];
-                    for (int i = 0; i < _key.Length; i++)
-                    {
-                        _key[i] = double.NaN;
-                    }
-                }
-                return _key;
-            }
-        }
-
-        /// <summary>The tone of each cell (GameUi.CellTone).</summary>
-        public byte[] Tones => _tones ?? (_tones = new byte[TableSpec.MaxColumns]);
-
-        /// <summary>A cell's words, its figure and its tone, read without making the row's arrays.</summary>
-        public string TextAt(int column) => _text != null ? _text[column] : null;
-        public double KeyAt(int column) => _key != null ? _key[column] : double.NaN;
-        public byte ToneAt(int column) => _tones != null ? _tones[column] : (byte)Plain;
-
-        // The four cells the apps' first tables had, by their old names.
-        public string A { get { return Text[0]; } set { Text[0] = value; } }
-        public string B { get { return Text[1]; } set { Text[1] = value; } }
-        public string C { get { return Text[2]; } set { Text[2] = value; } }
-        public string D { get { return Text[3]; } set { Text[3] = value; } }
-        /// <summary>The tone of the fourth cell (the last one of a table of four).</summary>
-        public GameUi.CellTone Tone { get { return (GameUi.CellTone)ToneAt(3); } set { Tones[3] = (byte)value; } }
-
-        public TableRow Reset(string id)
-        {
-            _source = null;
-            _written = false;
-            Clean();
-            Id = id;
-            return this;
-        }
-
-        private void Clean()
-        {
-            Id = null;
-            for (int i = 0; i < TableSpec.MaxColumns; i++)
-            {
-                if (_text != null)
-                {
-                    _text[i] = null;
-                }
-                if (_key != null)
-                {
-                    _key[i] = double.NaN;
-                }
-                if (_tones != null)
-                {
-                    _tones[i] = (byte)Plain;
-                }
-            }
-            Kind = Kind2 = -1;
-            Info = Pick = Pinned = NoTotal = false;
-            Index = 0;
-        }
-
-        /// <summary>The row stands for a source's row, written when it is first shown (<see cref="Ready"/>).</summary>
-        public TableRow Stand(ITableSource source, int row)
-        {
-            _source = source;
-            _sourceRow = row;
-            _written = false;
-            Clean();
-            return this;
-        }
-
-        /// <summary>Written from its source if it stands for one and has not been: what it shows, its id, its tones. Then nothing.</summary>
-        public void Ready()
-        {
-            if (_source != null && !_written)
-            {
-                _written = true;
-                Clean();
-                _source.Write(_sourceRow, this);
-            }
-        }
-
-        /// <summary>A cell of words, ordered by them where its column sorts.</summary>
-        public void Set(int column, string words, GameUi.CellTone tone = Plain)
-        {
-            Text[column] = words;
-            if (_key != null)
-            {
-                _key[column] = double.NaN;
-            }
-            if (_tones != null || tone != Plain)
-            {
-                Tones[column] = (byte)tone;
-            }
-        }
-
-        /// <summary>A cell with the figure it is ordered (and summed) by: an amount, a rate, a count, a day.</summary>
-        public void Set(int column, string words, double key, GameUi.CellTone tone = Plain)
-        {
-            Text[column] = words;
-            Key[column] = key;
-            if (_tones != null || tone != Plain)
-            {
-                Tones[column] = (byte)tone;
-            }
-        }
-    }
-
-    /// <summary>One column of a table, as data: its title, its width, how it sorts and whether it is summed.</summary>
-    public sealed class TableColumn
-    {
-        public string TitleKey;
-        public float Width;
-        public bool Flexible;       // takes the room that is left (one column of a table)
-        public TableSort Sort;
-        public bool Sums;           // the totals line adds this column up over the rows shown
-        public bool Right;          // set to the right, as the game sets its last column
-    }
-
-    /// <summary>
-    /// One "filter by" of a table: the kinds its rows can be of. The kinds are fixed (KindKeys, translated when
-    /// shown) or the app's own for this opening (Names: businesses, sectors). What is chosen is kept here for the
-    /// session; a list of the app's own keeps the name chosen, since its numbers change with the save.
-    /// </summary>
-    public sealed class TableFilter
-    {
-        public string AllKey;
-        public string[] KindKeys;
-        public readonly List<string> Names = new List<string>(16);
-        public int Chosen = -1;             // -1: all
-        public string ChosenName;
-
-        public bool OwnNames => KindKeys == null;
-        public int Kinds => KindKeys != null ? KindKeys.Length : Names.Count;
-    }
-
-    /// <summary>
-    /// A table declared as data: its columns, what it can be filtered by, its first order, and the sentence shown
-    /// when a filter leaves nothing. One static object per table of an app, so it also keeps what the player last
-    /// chose there (the column, the direction, the kinds) until the game is closed: a convenience for whoever is
-    /// playing, never part of the save.
+    /// The order, filter and totals of one table, over row numbers in the order written, so any app's row class can use
+    /// it. Arrays are made once and reused: ordering again allocates nothing. The sort is a stable merge sort, in both
+    /// directions. It runs when the rows are written, a header is clicked or a kind picked, never otherwise.
     ///
-    ///   static readonly TableSpec Accounts = new TableSpec("Finance", "Accounts")
-    ///       .Column("reallife_econ_col_account", 520f, TableSort.Text, flexible: true)
-    ///       .Column("reallife_econ_col_owed", 240f, TableSort.Money, sums: true)
-    ///       .Filter("reallife_tab_all_kinds", KindKeys)
-    ///       .Order(1, false)
-    ///       .Empty("reallife_tab_empty_debts");
-    ///
-    /// No Unity type and no type of the game's is used here: the offline checks run this file as it is.
-    /// </summary>
-    public sealed class TableSpec
-    {
-        public const int MaxColumns = 9;    // the header row of the game's table has nine cells
-        public const int MaxFilters = 2;
-
-        public readonly string App, Tab;
-        public readonly TableColumn[] Columns = new TableColumn[MaxColumns];
-        public readonly TableFilter[] Filters = new TableFilter[MaxFilters];
-        public int Count, FilterCount;
-        public int FirstColumn = -1;        // the order on opening: -1 for the order the rows were written in
-        public bool FirstAscending = true;
-        public string EmptyKey;
-
-        // What the player last chose here (the session's memory).
-        public int SortColumn = -1;
-        public bool Ascending = true;
-        public bool Touched;                // a header has been clicked: the first order no longer applies
-        public bool Reported;               // the self-check's line for this table has been written this session
-        public int Slot = -1;               // the HotSpots slot its sorts and filters are timed under (GameUi.TableView); -1 until the first
-
-        public TableSpec(string app, string tab)
-        {
-            App = app;
-            Tab = tab;
-        }
-
-        public string Id => App + ", " + Tab;
-
-        public TableSpec Column(string titleKey, float width, TableSort sort = TableSort.None, bool flexible = false, bool sums = false, bool right = false)
-        {
-            if (Count < MaxColumns)
-            {
-                Columns[Count++] = new TableColumn { TitleKey = titleKey, Width = width, Sort = sort, Flexible = flexible, Sums = sums, Right = right };
-            }
-            return this;
-        }
-
-        /// <summary>A filter over fixed kinds (their names are locale keys), "all" first.</summary>
-        public TableSpec Filter(string allKey, string[] kindKeys)
-        {
-            if (FilterCount < MaxFilters)
-            {
-                Filters[FilterCount++] = new TableFilter { AllKey = allKey, KindKeys = kindKeys };
-            }
-            return this;
-        }
-
-        /// <summary>A filter over kinds the app names each time it writes the table (TableFilter.Names).</summary>
-        public TableSpec Filter(string allKey)
-        {
-            return Filter(allKey, null);
-        }
-
-        public TableSpec Order(int column, bool ascending)
-        {
-            FirstColumn = column;
-            FirstAscending = ascending;
-            return this;
-        }
-
-        public TableSpec Empty(string key)
-        {
-            EmptyKey = key;
-            return this;
-        }
-
-        public int Sortable
-        {
-            get
-            {
-                int n = 0;
-                for (int i = 0; i < Count; i++)
-                {
-                    n += Columns[i].Sort != TableSort.None ? 1 : 0;
-                }
-                return n;
-            }
-        }
-
-        public bool HasTotals
-        {
-            get
-            {
-                for (int i = 0; i < Count; i++)
-                {
-                    if (Columns[i].Sums)
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
-
-        /// <summary>The column the table is ordered by now, and the direction: the player's choice, else the first order.</summary>
-        public int OrderColumn => Touched ? SortColumn : FirstColumn;
-        public bool OrderAscending => Touched ? Ascending : FirstAscending;
-
-        /// <summary>
-        /// A header was clicked, as the game's own table takes it (BaTable.ChangeSortOrder): the same column again
-        /// turns the order round, another column starts ascending. False if the column does not sort.
-        /// </summary>
-        public bool Click(int column)
-        {
-            if (column < 0 || column >= Count || Columns[column].Sort == TableSort.None)
-            {
-                return false;
-            }
-            bool same = OrderColumn == column;
-            Ascending = same ? !OrderAscending : true;
-            SortColumn = column;
-            Touched = true;
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// The order, the filter and the totals of one table: which rows are shown and in what order, worked out from
-    /// what each row gives for each column (a number, or its words) and the kind it is of. Rows are numbers here
-    /// (0, 1, 2... in the order they were written), so any app's own row class can use it.
-    ///
-    /// Everything is kept in arrays that are made once and used again: after the first time a table of some size has
-    /// been ordered, ordering it again allocates nothing. The sort is a merge sort on the array of row numbers, so
-    /// rows that compare equal stay in the order they were written (stable), in both directions. It runs when the
-    /// rows are written and when the player clicks a header or picks a kind, never otherwise.
-    ///
-    /// A table written from a source (<see cref="ITableSource"/>) is given its rows' figures and kinds only; a column's
-    /// words are read from the source the first time the table is ordered by that column, for the rows whose order the
-    /// words decide (every row of a column ordered by its words, the rows without a figure in any other), and kept until
-    /// the table is written again. The order, the filter and the totals are those the written rows would give.
+    /// A table from a source (<see cref="ITableSource"/>) is given figures and kinds only; a column's words are read the
+    /// first time it is ordered by them, for the rows they decide, and kept until the table is written again.
     /// </summary>
     public sealed class TableModel
     {
         private const int Small = 12;       // runs this short are ordered by insertion before they are merged
 
         private TableSpec _spec;
-        private ITableSource _source;       // the rows' words are read from here when an order needs them
+        private ITableSource _source;       // the rows' words come from here when an order needs them
         private readonly bool[] _wordsRead = new bool[TableSpec.MaxColumns];
         private int _rows;
         private double[][] _keys = new double[TableSpec.MaxColumns][];
@@ -388,7 +28,7 @@ namespace RealLifeOverhaul.GameUi
         private readonly double[] _totals = new double[TableSpec.MaxColumns];
         private int _shown, _pinnedShown;
 
-        // What a comparison reads while a sort runs.
+        // Read by Compare while a sort runs.
         private double[] _k;
         private string[] _t;
         private int _direction;
@@ -401,12 +41,11 @@ namespace RealLifeOverhaul.GameUi
         public int Count => _shown;
         /// <summary>How many of the shown rows are pinned (they come first).</summary>
         public int Pinned => _pinnedShown;
-        /// <summary>The row shown at a place.</summary>
         public int RowAt(int place) => _order[place];
         /// <summary>The sum of a column over the rows shown; only columns declared with 'sums' are added up.</summary>
         public double Total(int column) => _totals[column];
 
-        /// <summary>Starts a table of so many rows: every row has no number, no words, no kind, and is not pinned.</summary>
+        /// <summary>Starts a table of so many rows, each with no number, words or kind, not pinned.</summary>
         public void Begin(TableSpec spec, int rows)
         {
             _spec = spec;
@@ -451,9 +90,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// A table of rows an app has written: what each gives each column that sorts or sums, and its kinds. In a table
-        /// that neither sorts nor filters (a page laid out by hand, headings between its rows) every row stays where it was
-        /// written; in any other a line of words and a pinned row come first.
+        /// A table of rows an app has written. In a table that neither sorts nor filters (headings between rows) every row
+        /// stays where it was written; in any other a line of words and a pinned row come first.
         /// </summary>
         public void Begin(TableSpec spec, List<TableRow> rows)
         {
@@ -483,7 +121,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A table written from a source: each row's figures and kinds now; its words when an order needs them.</summary>
+        /// <summary>A table written from a source: figures and kinds now, words when an order needs them.</summary>
         public void Begin(TableSpec spec, ITableSource source)
         {
             int rows = source != null ? source.Count : 0;
@@ -511,9 +149,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The words of a column the table is to be ordered by, from the source, where they decide the order: every row of
-        // a column ordered by its words, the rows without a figure in any other (Compare). Once a column, until the table
-        // is written again.
+        // A column's words from the source where they decide the order: every row of a column ordered by its words, the rows
+        // without a figure in any other (Compare). Once a column, until the table is written again.
         private void Words(int column, bool byText)
         {
             if (_source == null || _wordsRead[column])
@@ -557,7 +194,7 @@ namespace RealLifeOverhaul.GameUi
             _texts[column][row] = text;
         }
 
-        /// <summary>The kind a row is of, for one of the table's filters (-1: of none, shown only under "all").</summary>
+        /// <summary>The kind a row is of for one filter (-1: none, shown only under "all").</summary>
         public void Kind(int row, int filter, int kind)
         {
             if (row >= 0 && row < _rows && filter >= 0 && filter < _spec.FilterCount)
@@ -566,7 +203,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A row that always shows, first, whatever the order and the filter: a line that only says something.</summary>
+        /// <summary>A row that always shows first, whatever the order and the filter.</summary>
         public void Pin(int row)
         {
             if (row >= 0 && row < _rows)
@@ -575,7 +212,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A row that is ordered and filtered like any other but is in no total (an offer among deals: money not yet put in).</summary>
+        /// <summary>A row ordered and filtered like any other but in no total (an offer among deals).</summary>
         public void Leave(int row)
         {
             if (row >= 0 && row < _rows)
@@ -584,7 +221,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>How many rows are of a kind (whatever is filtered now).</summary>
+        /// <summary>How many rows are of a kind, whatever is filtered now.</summary>
         public int KindCount(int filter, int kind)
         {
             int[] counts = filter >= 0 && filter < _spec.FilterCount ? _counts[filter] : null;
@@ -605,9 +242,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// Works out which rows show and in what order, and the totals. A kind that was chosen and that no row is
-        /// of any more (or a filter with fewer than two kinds left, which is not offered) goes back to "all": the
-        /// player is never left with an empty table and no way out of it.
+        /// Works out the rows shown, their order and the totals. A chosen kind no row is of any more, or a filter with fewer
+        /// than two kinds (not offered), goes back to "all": never an empty table with no way out.
         /// </summary>
         public void Apply()
         {
@@ -705,7 +341,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A header was clicked. False (and nothing done) if that column does not sort.</summary>
+        /// <summary>A header was clicked. False, and nothing done, if the column does not sort.</summary>
         public bool SortBy(int column)
         {
             if (_spec == null || !_spec.Click(column))
@@ -743,8 +379,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// The row to have selected after the order or the filter has changed: the one that was, if it still shows;
-        /// else the first row that is not pinned; -1 if nothing was selected or nothing is left.
+        /// The row to select after the order or filter changed: the one selected if it still shows, else the first unpinned
+        /// row; -1 if nothing was selected or nothing is left.
         /// </summary>
         public int Keep(int selectedRow)
         {
@@ -759,10 +395,7 @@ namespace RealLifeOverhaul.GameUi
             return _shown > _pinnedShown ? _order[_pinnedShown] : -1;
         }
 
-        // ---------------------------------------------------------------- the sort
-
-        // A merge sort from the bottom up over _order[from..to): short runs by insertion, then merged pair by pair
-        // through _scratch. Both steps leave equal rows as they were, so the order is stable.
+        // Bottom-up merge sort of _order[from..to): short runs by insertion, then merged through _scratch. Stable.
         private void Sort(int from, int to)
         {
             int[] a = _order, b = _scratch;
@@ -810,8 +443,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // Less than 0 if row x comes before row y. A row with nothing to compare (no number, no words) comes last
-        // in both directions; numbers come before words where a column has both.
+        // Less than 0 if row x comes first. A row with nothing to compare comes last in both directions; numbers before words.
         private int Compare(int x, int y)
         {
             if (!_byText)
