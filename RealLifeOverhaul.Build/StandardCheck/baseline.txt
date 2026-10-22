@@ -9,9 +9,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Character/CharacterCatalogue.cs
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Character/ModAssets.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/CityLife/CityActivity.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Core/Keys.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDeck.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/PlayerOffences.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Crime/Scenes/CarPursuitScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventCalendar.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
@@ -205,9 +202,6 @@ RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetGame.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/CompanyLinks.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StreetLinks.cs	1
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/NoticeKinds.cs	9
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDeck.cs	4
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeDirector.cs	6
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Crime/CrimeScene.cs	7
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	7
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventRunner.cs	22
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/LifeStory.cs	3
@@ -253,8 +247,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/Settings.cs	52
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/SharedCity.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/TestRefusal.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/WageRules.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Crime/PlayerOffences.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Crime/PoliceAttention.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/BlockTests.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/SessionWatch.cs	4

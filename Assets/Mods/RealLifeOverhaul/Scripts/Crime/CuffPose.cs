@@ -4,23 +4,13 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Hands held behind the back: handcuffs. Crime/ArrestSequence plays the mod's own clips for
-    /// it (cuffed_stand, cuffed_walk); this is what holds the arms whenever no such clip is on the
-    /// body (the clip bundle not loaded, the clip player off, a clip ended), and what lays the
-    /// handcuffs across the wrists in either case. The game has no such animation, so the arms are
-    /// set by hand, the same way People/KneelPose sets a kneel (both through People/BonePose): each bone is aimed along a
-    /// direction given in the character's own frame, by turning it from wherever it points now,
-    /// so nothing is assumed about how the skeleton is rolled. Unlike a kneel, a cuffed person
-    /// walks, so the animator keeps running and writes the arms again every frame; the four arm
-    /// bones are therefore aimed again after it, in LateUpdate. That is the only per-frame work
-    /// in the crime system besides the marker: two people at most, four bones each, and the
-    /// component is switched off whenever nobody is cuffed. With the modelled props loaded, a pair
-    /// of handcuffs (one object per slot, kept and reused) is laid across the wrists in the same pass. Nothing is left on the character:
-    /// with the cuffs off, the animator's next frame is all there is.
+    /// Hands cuffed behind the back, aimed by hand after the animator (the game has no such animation) wherever no cuffed
+    /// clip has the body, and the handcuffs on the wrists. Per frame: two people at most, four bones each; off while
+    /// nobody is cuffed.
     /// </summary>
     public sealed class CuffPose : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("crime", "CuffPose", typeof(CuffPose));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("crime", "CuffPose", typeof(CuffPose));
 
         private const int Slots = 2;
 
@@ -28,7 +18,7 @@ namespace RealLifeOverhaul
         {
             public ThirdPersonCharacter Character;
             public Transform UpperL, LowerL, HandL, UpperR, LowerR, HandR;
-            public GameObject Cuffs;   // the modelled handcuffs, if they could be had; kept and reused
+            public GameObject Cuffs;   // the handcuffs prop, if it could be had; kept and reused
         }
 
         public static CuffPose Instance { get; private set; }
@@ -87,7 +77,6 @@ namespace RealLifeOverhaul
             free.Character = character;
             if (free.Cuffs == null && PropLibrary.TryGet("handcuffs", out Mesh mesh, out Material material) && mesh != null && material != null)
             {
-                // The one prop of this pose: made the first time somebody is cuffed after the props have loaded.
                 free.Cuffs = new GameObject("RealLifeOverhaul Handcuffs");
                 free.Cuffs.transform.SetParent(pose.transform, false);
                 Shapes.Piece("Cuffs", free.Cuffs.transform, mesh, material, Vector3.zero, Vector3.one);
@@ -110,7 +99,7 @@ namespace RealLifeOverhaul
                 Cuffed cuffed = pose._cuffed[i];
                 if ((object)cuffed.Character != null && (cuffed.Character == character || cuffed.Character == null))
                 {
-                    cuffed.Character = null;   // (also anyone destroyed with the street)
+                    cuffed.Character = null;   // also anyone destroyed with the street
                     Show(cuffed, false);
                 }
                 any |= (object)cuffed.Character != null;
@@ -124,7 +113,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -156,7 +145,7 @@ namespace RealLifeOverhaul
                         continue;
                     }
                     any = true;
-                    // Not while they are a ragdoll (physics has the body), and not while nobody is drawing them.
+                    // Not while physics has the body as a ragdoll, nor while nobody draws them.
                     bool held = cuffed.Character.visible && !RagdollSystem.Holds(cuffed.Character);
                     if (held && !ByClip(cuffed.Character))
                     {
@@ -178,8 +167,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // True while one of the mod's clips has the body (cuffed_stand, cuffed_walk, or the fade between them and
-        // the game's animation): the arms are that clip's business, and aiming them as well would fight it.
+        // True while one of the mod's clips has the body, fades included: aiming the arms as well would fight it.
         private static bool ByClip(ThirdPersonCharacter character)
         {
             ActivityAnimator player = ActivityAnimators.For(character.animator);
@@ -193,13 +181,13 @@ namespace RealLifeOverhaul
             Vector3 forward = root.forward;
             Vector3 up = root.up;
             Vector3 right = root.right;
-            Aim(cuffed.UpperL, cuffed.LowerL, -up * 0.86f - forward * 0.42f - right * 0.10f);
-            Aim(cuffed.LowerL, cuffed.HandL, right * 0.80f - forward * 0.38f - up * 0.30f);
-            Aim(cuffed.UpperR, cuffed.LowerR, -up * 0.86f - forward * 0.42f + right * 0.10f);
-            Aim(cuffed.LowerR, cuffed.HandR, -right * 0.80f - forward * 0.38f - up * 0.30f);
+            BonePose.Aim(cuffed.UpperL, cuffed.LowerL, -up * 0.86f - forward * 0.42f - right * 0.10f);
+            BonePose.Aim(cuffed.LowerL, cuffed.HandL, right * 0.80f - forward * 0.38f - up * 0.30f);
+            BonePose.Aim(cuffed.UpperR, cuffed.LowerR, -up * 0.86f - forward * 0.42f + right * 0.10f);
+            BonePose.Aim(cuffed.LowerR, cuffed.HandR, -right * 0.80f - forward * 0.38f - up * 0.30f);
         }
 
-        // The handcuffs lie across the wrists, flat against the back. Moved with them while they are held; hidden otherwise.
+        // The handcuffs across the wrists, flat against the back, while the person is drawn and not a ragdoll; hidden otherwise.
         private static void Show(Cuffed cuffed, bool shown)
         {
             GameObject cuffs = cuffed.Cuffs;
@@ -217,11 +205,6 @@ namespace RealLifeOverhaul
                 cuffs.transform.SetPositionAndRotation((cuffed.HandL.position + cuffed.HandR.position) * 0.5f - root.forward * 0.02f,
                     Quaternion.LookRotation(root.up, -root.forward));
             }
-        }
-
-        private static void Aim(Transform from, Transform towards, Vector3 direction)
-        {
-            BonePose.Aim(from, towards, direction);
         }
     }
 }

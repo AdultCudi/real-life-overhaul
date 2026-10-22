@@ -44,7 +44,6 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
-                        // Free to go: the civilian walks off, the officer watches them a moment.
                         First.Emote(CharacterEmojiName.CommonGreenHappy);
                         First.WalkAwayFrom(Cop.Position, Pace.Walk);
                         Conclude("released");

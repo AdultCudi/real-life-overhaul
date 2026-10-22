@@ -12,29 +12,22 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Decides when a crime happens near the player and which, and looks after the one scene
-    /// that is running: there is never more than one, never while a traffic accident or a
-    /// police pursuit has the street, never a street scene indoors or an indoor one outside,
-    /// and never one the pool cannot cast. Kinds are dealt from CrimeCatalogue like cards
-    /// (CrimeDeck), so nothing repeats until everything that fits has been seen.
-    /// It also watches the stolen value of the player's own shop while they are in it (once a
-    /// second) so that a theft the game books can be acted out, hands the hourly roll to
-    /// OffscreenCrimes, and answers the 911 contact.
-    /// Idle, this is two time comparisons per frame. With a scene running it places the marker
-    /// each frame and ticks the scene four times a second. A scene that throws is ended and
-    /// logged; after three faults in a session the whole system switches itself off.
+    /// Decides when and which crime happens near the player (dealt like cards by CrimeDeck) and runs the one scene at a
+    /// time, never while an accident or a pursuit has the street. It also acts out thefts the game books in the player's
+    /// own shop, hands the hourly roll to OffscreenCrimes and answers 911. Idle it costs two time comparisons a frame; with
+    /// a scene, the marker each frame and a tick four times a second. Three faults switch it off for the session.
     /// </summary>
     public class CrimeDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("crime", "CrimeDirector", typeof(CrimeDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("crime", "CrimeDirector", typeof(CrimeDirector));
 
-        internal const int CashLeast = 60;   // a crime against the player needs this much on them, at the start's prices
-        private const float CheckInterval = 20f;
-        private const float TickInterval = 0.25f;
-        private const float WatchInterval = 1f;
-        private const float MinDistance = 35f;
-        private const float MaxDistance = 80f;
-        private const float ReportRange = 160f;       // a call about something further away than this is a call about nothing
+        internal const int CashLeast = 60;   // dollars at the start's prices: a crime against the player needs this on them
+        private const float CheckInterval = 20f;      // seconds
+        private const float TickInterval = 0.25f;     // seconds
+        private const float WatchInterval = 1f;       // seconds
+        private const float MinDistance = 35f;        // metres
+        private const float MaxDistance = 80f;        // metres
+        private const float ReportRange = 160f;       // metres: a call about something further away is a call about nothing
         private const int MaxFaults = 3;
         private const int PlayerCrimeRestDays = 2;    // in-game days between crimes against the player
         private const float ShopTheftMinimum = 0.5f;  // dollars: a smaller rise in stolen value is rounding, not a theft
@@ -42,13 +35,9 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static CrimeDirector Instance { get; private set; }
 
-        /// <summary>True while a crime scene is running. Only one incident of any kind runs at a time.</summary>
         public static bool IsActive => Instance != null && Instance._scene != null;
 
-        /// <summary>
-        /// True while a crime with a victim in the street is going on (an assault, a mugging, a snatch: not one done to the
-        /// player), and where (Wiring/StandingLinks: walking away from it in front of others is noticed). A few field reads.
-        /// </summary>
+        /// <summary>True while an assault, a mugging or a snatch is going on in the street, and where (Wiring/StandingLinks).</summary>
         public static bool Victim(out Vector3 where)
         {
             ICrimeScene scene = Instance != null ? Instance._scene : null;
@@ -56,7 +45,7 @@ namespace RealLifeOverhaul
             return scene != null && scene.Active && scene.ShowsMarker && !scene.Indoors && (scene.Id == "assault" || scene.Id == "mugging" || scene.Id == "snatch");
         }
 
-        /// <summary>The patrol car scenes share: the one that collects an arrested suspect, or chases a car.</summary>
+        /// <summary>The patrol car the scenes share: the one that collects an arrested suspect, or chases a car.</summary>
         internal static ResponseUnit Patrol => Instance != null ? Instance._patrol : null;
 
         /// <summary>A traffic car a scene has taken over.</summary>
@@ -87,7 +76,6 @@ namespace RealLifeOverhaul
         private float _pendingTheft;
         private float _pendingAt;
 
-        // Calls to 911 about nothing.
         private int _wastedDay = -1;
         private int _wastedCalls;
 
@@ -95,13 +83,13 @@ namespace RealLifeOverhaul
         {
             Instance = this;
             Crime.Logger = Logger;
-            _mark.Keep(this);   // the marker goes with this component, or when the guard stops it (Core/GameUi/GuideMarkWatch)
+            _mark.Keep(this);
             _nextCheck = Time.time + CheckInterval;
             _patrol = new ResponseUnit(gameObject);
             _suspect = new ResponseUnit(gameObject);
             _scenes = CrimeScenes.Build();
             _offscreen = new OffscreenCrimes();
-            gameObject.AddComponent<CuffPose>();   // idle (switched off) until somebody is arrested
+            gameObject.AddComponent<CuffPose>();
         }
 
         private void OnDestroy()
@@ -120,7 +108,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -179,14 +167,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Ended first, so a fault cannot repeat every frame; and after a few of them, off for the session.
+        // The scene is ended first, so a fault cannot repeat every frame; a few of them and it is off for the session.
         private void Fault(Exception e)
         {
             Logger?.Error(e);
             EndScene();
             if (Guard.StandsDown(e, "crime in the street"))
             {
-                enabled = false;   // (a game that lacks something it names would fail at every look)
+                enabled = false;   // a game that lacks something it names would fail at every look
             }
             else if (++_faults >= MaxFaults)
             {
@@ -194,8 +182,6 @@ namespace RealLifeOverhaul
                 enabled = false;
             }
         }
-
-        // ---------------------------------------------------------------- the running scene
 
         private void RunScene(float now)
         {
@@ -210,7 +196,7 @@ namespace RealLifeOverhaul
 
             if (scene.ShowsMarker)
             {
-                _mark.Show(scene.Focus, _markerLabel);   // the game's destination marker; another feature that has it keeps it
+                _mark.Show(scene.Focus, _markerLabel);
             }
             else
             {
@@ -218,7 +204,7 @@ namespace RealLifeOverhaul
             }
 
             Vector3 at = player.transform.position;
-            // The same keys the mod's "enter with a key" uses: F, or E while the game is not offering an interaction of its own.
+            // The mod's enter keys: F, or E while the game offers no interaction of its own.
             if (scene.Interactive && (Keys.Down(KeyAction.Interact) || (Keys.Down(KeyAction.InteractAlt) && !OverlayUI.IsVisible))
                 && !ThirdPersonCamera.IsUiOpen())
             {
@@ -256,7 +242,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Ends whatever scene is running, at once and without a message. For an incident that takes precedence.</summary>
+        /// <summary>Ends whatever scene is running, at once and without a message, for an incident that takes precedence.</summary>
         public static void EndActive()
         {
             if (Instance != null && Instance._scene != null)
@@ -278,13 +264,11 @@ namespace RealLifeOverhaul
             director._suspect?.Release(traffic, remove: false, quiet: true);
         }
 
-        // ---------------------------------------------------------------- dealing
-
         private static bool CanStage()
         {
             return ModState.Loaded && ActorPool.Instance != null && PlayerHelper.PlayerController != null
                    && !TrafficAccidents.IsActive && !PoliceAttention.IsBusy && LifeEvents.IsSafeForEvent()
-                   && !Wiring.Scenes.AnyBut(Wiring.Scene.Crime);   // a fire, a street event or a rally has the street (Wiring/Scenes)
+                   && !Wiring.Scenes.AnyBut(Wiring.Scene.Crime);   // a fire, a street event or a rally has the street
         }
 
         private static CrimePlace CurrentPlace()
@@ -296,7 +280,7 @@ namespace RealLifeOverhaul
             return TrafficTools.Street && !UndergroundParkingManager.IsInsideParking ? CrimePlace.Street : CrimePlace.None;
         }
 
-        // Shops are small and the player is in them briefly: a scene there is rarer than on the street.
+        // Shops are small and the player is in them briefly: a scene there is rarer.
         private static float PlaceShare()
         {
             return BuildingManager.IsInsideBuilding ? 0.5f : 1f;
@@ -305,12 +289,12 @@ namespace RealLifeOverhaul
         private CrimeNeed CurrentNeeds(bool forced)
         {
             CrimeNeed have = CrimeNeed.None;
-            if (Crime.IsNight || forced) have |= CrimeNeed.Night;
-            if (!PlayerHelper.IsUsingVehicle) have |= CrimeNeed.OnFoot;
-            if (Settings.Police) have |= CrimeNeed.PatrolCars;
-            if (TrafficTools.Ready) have |= CrimeNeed.Traffic;
-            if (Settings.Ragdolls) have |= CrimeNeed.Ragdolls;
-            if (Crime.Cash >= Prices.At(CashLeast)) have |= CrimeNeed.Cash;   // (at today's prices)
+            have |= Crime.IsNight || forced ? CrimeNeed.Night : CrimeNeed.None;
+            have |= !PlayerHelper.IsUsingVehicle ? CrimeNeed.OnFoot : CrimeNeed.None;
+            have |= Settings.Police ? CrimeNeed.PatrolCars : CrimeNeed.None;
+            have |= TrafficTools.Ready ? CrimeNeed.Traffic : CrimeNeed.None;
+            have |= Settings.Ragdolls ? CrimeNeed.Ragdolls : CrimeNeed.None;
+            have |= Crime.Cash >= Prices.At(CashLeast) ? CrimeNeed.Cash : CrimeNeed.None;
             if (forced || (Settings.CrimeAgainstPlayer && TimeHelper.CurrentDay - _lastPlayerCrimeDay >= PlayerCrimeRestDays))
             {
                 have |= CrimeNeed.AgainstPlayer;
@@ -341,7 +325,7 @@ namespace RealLifeOverhaul
                     _lastId = entry.Id;
                     break;
                 }
-                _unstageable.Add(entry.Id);   // stays "seen" for the other attempts, so a different kind is drawn
+                _unstageable.Add(entry.Id);   // still seen for the other attempts, so a different kind is drawn
             }
             for (int i = 0; i < _unstageable.Count; i++)
             {
@@ -362,8 +346,7 @@ namespace RealLifeOverhaul
             {
                 Player = player, Spot = player, Place = place, Night = Crime.IsNight, Forced = forced, Amount = amount
             };
-            // A crime against the player happens where the player is (its scene brings the thief up from a few
-            // metres behind); every other street crime is staged on a pavement some way off.
+            // A crime against the player happens where they are; any other street crime on a pavement some way off.
             if (place == CrimePlace.Street && entry.Family != CrimeFamily.Player
                 && !StreetSpots.PavementAround(player, MinDistance, MaxDistance, true, out setup.Spot))
             {
@@ -389,18 +372,14 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Options-menu test buttons: stages a crime of one family right away, whatever the time
-        /// of day and whether or not crimes against the player are switched on. Whatever is
-        /// running gives way. Says so if nothing of that family can be staged here.
-        /// </summary>
+        /// <summary>Test button: a crime of one family at once, whatever the hour or the options; says so if none can be staged.</summary>
         public void StageNow(int family)
         {
             try
             {
                 CrimePlace place = CurrentPlace();
                 bool staged = false;
-                // What stops any of them, said by name; a place where this family cannot play keeps its own sentence below.
+                // What stops any of them, by name; a place this family cannot play keeps its own sentence below.
                 TestRefusal why = !ModState.Loaded || ActorPool.Instance == null || PlayerHelper.PlayerController == null ? TestRefusal.NotLoaded
                     : PoliceAttention.IsBusy ? TestRefusal.PoliceBusy
                     : place == CrimePlace.None && !BuildingManager.IsInsideBuilding ? TestRefusal.TrafficOff
@@ -429,7 +408,7 @@ namespace RealLifeOverhaul
                         if (staged)
                         {
                             _lastId = entry.Id;
-                            // A test says what it staged: several of these scenes show nothing for the first few seconds.
+                            // A test says what it staged: several scenes show nothing for the first few seconds.
                             var data = new Dictionary<string, string>(2)
                             {
                                 { "name", entry.Id },
@@ -440,7 +419,7 @@ namespace RealLifeOverhaul
                     }
                     if (!staged)
                     {
-                        _lastId = null;   // the only one that fits may be the one just shown: allow it next time
+                        _lastId = null;   // the only one that fits may be the one just shown
                     }
                 }
                 if (!staged)
@@ -463,8 +442,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- once a second, once an hour
-
+        // Once a second: the hour's roll, and thefts the game books in the shop the player is standing in.
         private void Watch(float now)
         {
             if (!ModState.Loaded || SaveGameManager.Current == null)
@@ -482,7 +460,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Thefts the game books in the shop the player is standing in.
             BuildingRegistration shop = Settings.StreetCrime ? ShopFloor.OwnRegistration : null;
             if (shop != _watched)
             {
@@ -498,14 +475,14 @@ namespace RealLifeOverhaul
             float cost = shop.stolenItemsCost;
             if (cost < _watchedCost)
             {
-                _pendingTheft = 0f;   // the day's books have closed (or a thief was stopped): nothing of yesterday's is acted out
+                _pendingTheft = 0f;   // the day's books closed at midnight, or a thief was stopped
             }
             else if (cost > _watchedCost + ShopTheftMinimum)
             {
                 _pendingTheft = cost - _watchedCost;
                 _pendingAt = now + Random.Range(3f, 25f);
             }
-            _watchedCost = cost;   // (it also drops: at midnight, and when a thief is stopped)
+            _watchedCost = cost;
             if (_pendingTheft > 0f && now >= _pendingAt && CanStage())
             {
                 float amount = _pendingTheft;
@@ -514,7 +491,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Options-menu test button for the things that happen out of sight: each press stages the next kind.</summary>
+        /// <summary>Test button for the crimes out of sight: each press stages the next kind.</summary>
         public void TestOffscreen()
         {
             try
@@ -534,9 +511,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- 911
-
-        /// <summary>What a 911 call made right now would be about; None if nothing is going on within reach.</summary>
+        /// <summary>What a 911 call made now would be about; None if nothing is going on within reach.</summary>
         internal static ReportKind Reportable()
         {
             CrimeDirector director = Instance;
@@ -556,8 +531,12 @@ namespace RealLifeOverhaul
             CrimeDirector director = Instance;
             try
             {
-                return director != null && director._scene != null && Reportable() != ReportKind.None
-                       && Reportable() != ReportKind.Accident && director._scene.Report(Time.time);
+                if (director == null || director._scene == null)
+                {
+                    return false;
+                }
+                ReportKind kind = Reportable();
+                return kind != ReportKind.None && kind != ReportKind.Accident && director._scene.Report(Time.time);
             }
             catch (Exception e)
             {
@@ -566,10 +545,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A call with nothing to report. The first two in a day get a warning; from the third
-        /// there is a fine. Returns the fine charged (0 for a warning).
-        /// </summary>
+        /// <summary>A call with nothing to report: a warning for the first two in a day, then a fine. Returns the fine (0 for a warning).</summary>
         internal static int WastedCall()
         {
             CrimeDirector director = Instance;
@@ -588,7 +564,7 @@ namespace RealLifeOverhaul
                 return 0;
             }
             Crime.Fine(CrimeLaw.WastedCallFine, "reallife_crime_wasted_fine");
-            Law.Arrests.WastedCall(director._wastedCalls, CrimeLaw.WastedCallFine);   // from the fifth in a day it is a few hours in a cell as well
+            Law.Arrests.WastedCall(director._wastedCalls, CrimeLaw.WastedCallFine);   // from the fifth in a day, a few hours in a cell too
             return CrimeLaw.WastedCallFine;
         }
     }

@@ -3,35 +3,33 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul
 {
-    // This file and CrimeCatalogue.cs deliberately use nothing from Unity or the game:
-    // RealLifeOverhaul.Build\CatalogueCheck compiles them on their own to verify the catalogue
-    // against Locales\en.json and to exercise the dealing. Everything that touches the game is
-    // in the scenes and in CrimeDirector.
+    // Game-free, like CrimeCatalogue.cs: CatalogueCheck compiles both alone to check the catalogue and the dealing.
 
     /// <summary>Where the player has to be for a crime to be staged around them.</summary>
     [Flags]
     internal enum CrimePlace
     {
         None = 0,
-        Street = 1 << 0,      // outdoors in the city, on foot or driving
+        Street = 1 << 0,      // outdoors, on foot or driving
         OwnShop = 1 << 1,     // inside a business the player runs
-        OtherShop = 1 << 2    // inside somebody else's shop
+        OtherShop = 1 << 2
     }
 
-    /// <summary>What else has to be true. All flags of an entry must hold at once.</summary>
+    /// <summary>What else has to be true; an entry needs all of its flags at once.</summary>
     [Flags]
     internal enum CrimeNeed
     {
         None = 0,
-        Night = 1 << 0,           // after dark
-        OnFoot = 1 << 1,          // the player is walking
-        PatrolCars = 1 << 2,      // the "police patrol cars" option is on
-        Traffic = 1 << 3,         // there is traffic to take a car from
-        AgainstPlayer = 1 << 4,   // the "crimes against you" option is on
-        Cash = 1 << 5,            // the player carries enough to be worth robbing
+        Night = 1 << 0,
+        OnFoot = 1 << 1,
+        PatrolCars = 1 << 2,      // the police patrol cars option
+        Traffic = 1 << 3,         // traffic to take a car from
+        AgainstPlayer = 1 << 4,   // the crimes against you option, and not too soon after the last
+        Cash = 1 << 5,            // enough on the player to be worth robbing
         Ragdolls = 1 << 6         // somebody is knocked down
     }
 
+    /// <summary>Who a crime is done to or where, and which test button stages it.</summary>
     internal enum CrimeFamily { Street, Traffic, Shop, Player }
 
     /// <summary>Which line of the 911 call fits a crime in progress.</summary>
@@ -42,7 +40,7 @@ namespace RealLifeOverhaul
     {
         public readonly string Name;
         public readonly float Odds;
-        public readonly bool Arrest;      // somebody is taken in: a caller who reported it is thanked
+        public readonly bool Arrest;      // a caller who reported it is thanked
         public readonly string[] Texts;
 
         public CrimeEnding(string name, float odds, bool arrest, params string[] texts)
@@ -61,13 +59,13 @@ namespace RealLifeOverhaul
         public readonly CrimeFamily Family;
         public CrimePlace Place = CrimePlace.Street;
         public CrimeNeed Needs;
-        public int Cast = 2;              // people it must be able to take from the pool to be worth starting
-        public float Weight = 1f;         // share of the deal; 0 = never dealt at random (triggered by something else)
+        public int Cast = 2;              // people it needs free in the pool
+        public float Weight = 1f;         // share of the deal; 0 is never dealt (started by something else)
         public ReportKind Report = ReportKind.Crime;
         public string Marker = "reallife_crime_marker";
         public string[] Starts = Array.Empty<string>();
         public string[] Near = Array.Empty<string>();      // the player walks up to it
-        public string[] Extra = Array.Empty<string>();     // lines for moments particular to this crime
+        public string[] Extra = Array.Empty<string>();     // moments of this crime's own
         public CrimeEnding[] Endings = Array.Empty<CrimeEnding>();
 
         public CrimeEntry(string id, CrimeFamily family)
@@ -99,21 +97,29 @@ namespace RealLifeOverhaul
         public IEnumerable<string> TextKeys()
         {
             yield return Marker;
-            foreach (string key in Starts) yield return key;
-            foreach (string key in Near) yield return key;
-            foreach (string key in Extra) yield return key;
+            foreach (string key in Starts)
+            {
+                yield return key;
+            }
+            foreach (string key in Near)
+            {
+                yield return key;
+            }
+            foreach (string key in Extra)
+            {
+                yield return key;
+            }
             foreach (CrimeEnding ending in Endings)
             {
-                foreach (string key in ending.Texts) yield return key;
+                foreach (string key in ending.Texts)
+                {
+                    yield return key;
+                }
             }
         }
     }
 
-    /// <summary>
-    /// Deals crimes like cards, the way LifeEventDeck deals life events: a kind that has come up
-    /// is not dealt again until every kind that fits the situation has been seen, and the same
-    /// ending or line is never picked twice running. Nothing here allocates.
-    /// </summary>
+    /// <summary>Deals crimes like cards: no kind again until all that fit were seen, no ending or line twice running. No allocation.</summary>
     internal static class CrimeDeck
     {
         /// <summary>The next crime for this situation, recorded in <paramref name="seen"/>; null when nothing fits.</summary>
@@ -183,10 +189,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// One of an entry's endings by its odds. Endings with no odds are never rolled (a scene
-        /// reaches those by what happens in it). With three or more to choose from, the one it
-        /// had last time is left out, so the same crime does not end the same way twice running;
-        /// with two, leaving one out would only make them take turns.
+        /// An ending by its odds (one with none is reached only by the scene); last time's is left out from three or more,
+        /// since with two that would make them take turns.
         /// </summary>
         public static CrimeEnding DrawEnding(CrimeEnding[] endings, string lastName, Func<float> random01)
         {
@@ -229,7 +233,7 @@ namespace RealLifeOverhaul
             return picked;
         }
 
-        /// <summary>One line out of several, never the one given as the last shown when there is another.</summary>
+        /// <summary>One line out of several, never the last one shown when there is another.</summary>
         public static string DrawText(string[] texts, string last, Func<float> random01)
         {
             if (texts == null || texts.Length == 0)
