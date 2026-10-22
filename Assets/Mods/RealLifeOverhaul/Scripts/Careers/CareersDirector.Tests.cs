@@ -255,6 +255,145 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>
+        /// An interview this hour at the employer nearest the player with a vacancy worked on site: begun at once by its entrance
+        /// (in at the door, the black screen, out again), else set for this hour with the employer as the destination.
+        /// </summary>
+        public void TestInterviewPlace()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                if (w.Openings.Count == 0)
+                {
+                    Vacancies(Save.Day);
+                }
+                Opening pick = null;
+                float near = float.MaxValue;
+                for (int i = 0; i < w.Openings.Count; i++)
+                {
+                    Opening o = w.Openings[i];
+                    if (o.Work == (int)WorkMode.Remote || string.IsNullOrEmpty(o.Street) || !TestInterviewFree(o))
+                    {
+                        continue;
+                    }
+                    float d = InterviewGame.Distance(o.Street, o.Number);
+                    if (d < near)
+                    {
+                        near = d;
+                        pick = o;
+                    }
+                }
+                if (pick == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_none", null, 8f);
+                    return;
+                }
+                Application a = TestInterviewOf(pick, false);
+                string employer = CareersText.Employer(pick.Employer);
+                if (!WorkGame.AtWork(pick.Def, a.Post))
+                {
+                    DeskGame.Route(pick.Street, pick.Number);
+                    Tell2(NotificationType.Info, "reallife_work_test_interview_go", Data("employer", employer, "address", WorkGame.Address(pick.Street, pick.Number)),
+                        TabApplications, CareerApp.ApplicationRow + a.Post.Id);
+                    Logger?.Info("Careers test: an interview at " + pick.Employer + " set for this hour, "
+                                 + near.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " m away; it is the destination.");
+                    Changed();
+                    return;
+                }
+                string why = Interview(a.Post.Id);
+                Logger?.Info("Careers test: an interview at " + pick.Employer + (why == null ? " begun by its entrance." : " not begun (" + why + ")."));
+                if (why != null)
+                {
+                    Notifications.Show(NotificationType.Warning, why, null, 8f);
+                }
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>A video interview now at home: at the home's computer when it has one, else on the game's panel where the player stands, with its one word.</summary>
+        public void TestInterviewHome()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                if (!CareersGame.AtHome())
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_why_interview_home", null, 8f);
+                    return;
+                }
+                WorkFile w = _study.Work;
+                if (w.Openings.Count == 0)
+                {
+                    Vacancies(Save.Day);
+                }
+                Opening pick = null;
+                for (int i = 0; i < w.Openings.Count && (pick == null || pick.Work != (int)WorkMode.Remote); i++)
+                {
+                    Opening o = w.Openings[i];
+                    pick = TestInterviewFree(o) && (pick == null || o.Work == (int)WorkMode.Remote) ? o : pick;   // a post worked from home first
+                }
+                if (pick == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_none", null, 8f);
+                    return;
+                }
+                Application a = TestInterviewOf(pick, true);
+                string why = Interview(a.Post.Id);
+                Logger?.Info("Careers test: a video interview with " + pick.Employer + (why == null ? " begun at home." : " not begun (" + why + ")."));
+                if (why != null)
+                {
+                    Notifications.Show(NotificationType.Warning, why, null, 8f);
+                }
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        // A vacancy the interview tests may use: none of the player's applications to it has an offer or has been taken.
+        private bool TestInterviewFree(Opening o)
+        {
+            Application a = _study.Work.ApplicationOf(o.Id);
+            return a == null || (a.Stage != (int)ApplyStep.Offered && a.Stage != (int)ApplyStep.Accepted);
+        }
+
+        // The player's application to a vacancy, made if there is none, invited to an interview this hour as the employer would; by video if asked.
+        private Application TestInterviewOf(Opening o, bool video)
+        {
+            WorkFile w = _study.Work;
+            Application a = w.ApplicationOf(o.Id);
+            if (a == null)
+            {
+                a = new Application { Day = Save.Day };
+                o.CopyTo(a.Post);
+                w.Applications.Add(a);
+            }
+            if (video)
+            {
+                a.Post.Work = (int)WorkMode.Remote;
+            }
+            a.Stage = (int)ApplyStep.Interview;
+            a.Score = ProRules.HireScore(CandidateFor(o));
+            a.InterviewDay = Save.Day;
+            a.InterviewHour = Save.Hour;
+            a.Lapse = Save.Day;
+            return a;
+        }
+
         /// <summary>The city's vacancies made again now.</summary>
         public void TestVacancies()
         {

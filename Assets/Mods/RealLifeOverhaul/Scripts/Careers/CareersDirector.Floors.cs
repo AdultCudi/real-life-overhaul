@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Careers
         internal CampusInterior Interior => _interior;
 
         /// <summary>True while a class, homework or exam of the mod's is running (in place, at a desk or at the computer at home).</summary>
-        internal bool SittingNow => (_skip != null && _skip.Open) || DeskBusy;
+        internal bool SittingNow => (_skip != null && _skip.Open) || DeskBusy || (_visit != null && _visit.Open);
 
         /// <summary>True for a course of the university followed in person while its floors are there: held in its classroom.</summary>
         private bool InRooms(Enrolment e)

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Helpers;
 using RealLifeOverhaul.Tech;
 using UI.Notification;
 
@@ -9,6 +10,8 @@ namespace RealLifeOverhaul.Careers
     {
         /// <summary>The fields of a refusal's notice (<see cref="TakeWhyData"/>); null for a reason with none.</summary>
         private Dictionary<string, string> _whyData;
+        private InterviewVisit _visit;          // an interview at the employer's, from its offer on the game's panel until it is over
+        private GameInstance _noComputerTold;   // the save whose player was told that a computer at home would seat them for a video interview
 
         /// <summary>What an employer reads of the player for a post.</summary>
         internal Candidate CandidateFor(Opening o)
@@ -223,6 +226,11 @@ namespace RealLifeOverhaul.Careers
             return WorkGame.AtWork(a.Post.Def, a.Post) ? null : "reallife_work_why_interview_place";
         }
 
+        /// <summary>
+        /// The interview begun where it is held (InterviewRules.Way): at the employer's in at its door, the time behind the game's black
+        /// screen and out again (InterviewVisit); by video at the home's computer, sat at as the game's computer seats its user; with no
+        /// computer at home on the game's panel where the player stands, said once. Null if under way, else the reason key.
+        /// </summary>
         public string Interview(int id)
         {
             Application a = Work != null ? Work.ApplicationOf(id) : null;
@@ -232,8 +240,86 @@ namespace RealLifeOverhaul.Careers
             {
                 return why;
             }
-            return Offer(new Sitting(this, SittingKind.Interview, id, minutes, CareersText.T("reallife_work_skip_interview", "employer", CareersText.Employer(a.Post.Employer)), false,
-                CareersText.T("reallife_work_skip_interview_for", "title", CareersText.Title(a.Post.Prof, a.Post.Rank))));
+            string employer = CareersText.Employer(a.Post.Employer);
+            var sitting = new Sitting(this, SittingKind.Interview, id, minutes, CareersText.T("reallife_work_skip_interview", "employer", employer), false,
+                CareersText.T("reallife_work_skip_interview_for", "title", CareersText.Title(a.Post.Prof, a.Post.Rank)));
+            if (a.Post.Work == (int)WorkMode.Remote)
+            {
+                return VideoInterview(a, sitting);
+            }
+            bool inside = CareersGame.InsideAt(a.Post.Street, a.Post.Number) || string.IsNullOrEmpty(a.Post.Street);
+            InterviewDoor door = inside ? null : InterviewGame.Door(a.Post.Street, a.Post.Number);
+            InterviewWay wanted = InterviewRules.Way(false, inside, door != null, false);
+            why = Visit(sitting, wanted, door, a.Post.Employer);
+            WayCheck(a, why == null && _visit != null ? _visit.Way : wanted, wanted, why,
+                inside ? "inside the employer's building" : door != null ? "by the employer's door" : "by the employer, its door not found in the city");
+            return why;
+        }
+
+        // A video interview: at the computer at home when there is one, else on the game's panel where the player stands, with one word that a computer would seat them.
+        private string VideoInterview(Application a, Sitting sitting)
+        {
+            ComputerController computer = DeskGame.UsableComputer();
+            InterviewWay wanted = InterviewRules.Way(true, true, false, computer != null);
+            string where = computer == null ? "at home, no computer there" : computer.FindChair() != null ? "at home, a computer with its chair" : "at home, a computer with no chair";
+            string why;
+            if (wanted == InterviewWay.Computer)
+            {
+                why = SeatBusy();
+                if (why == null && PlayerHelper.ItemInstanceInHands != null && !PlayerHelper.IsHoldingBag)
+                {
+                    why = "notification_need_empty_hands_to_interact";   // the game's own words, as its computer says them
+                }
+                why = why ?? StartAtComputer(computer, sitting, "the interview at " + a.Post.Employer);
+                WayCheck(a, InterviewWay.Computer, wanted, why, where);
+                return why;
+            }
+            if (InterviewRules.TellNoComputer(true, false, ReferenceEquals(_noComputerTold, Save)))
+            {
+                _noComputerTold = Save;
+                Tell2(NotificationType.Info, "reallife_work_note_interview_no_computer", null, TabApplications, CareerApp.ApplicationRow + a.Post.Id);
+            }
+            why = Offer(sitting);
+            WayCheck(a, InterviewWay.Panel, wanted, why, where);
+            return why;
+        }
+
+        // An interview at the employer's on the game's panel: Start, the walk to the door, the black screen, out at the door.
+        private string Visit(Sitting sitting, InterviewWay way, InterviewDoor door, string employer)
+        {
+            if (_broken || !isActiveAndEnabled)
+            {
+                return "reallife_study_test_off";   // its walk and black screen run on this host
+            }
+            string busy = SeatBusy();
+            if (busy != null)
+            {
+                return busy;
+            }
+            CloseApps();
+            var visit = new InterviewVisit(this, sitting, way, door, employer);
+            if (!DeskGame.Show(visit))
+            {
+                return "reallife_study_why_game_busy";
+            }
+            _visit = visit;
+            Hold(sitting, visit);
+            Logger?.Info("Careers: the interview at " + employer + " is on the game's panel, " + (visit.Way == InterviewWay.Door ? "in at its door" : "where the player stands")
+                         + ", " + sitting.SkipMinutes + " minutes.");
+            return null;
+        }
+
+        // With Developer diagnostics on, one line an interview begun: the way its activity took against the way its place asks for (InterviewRules.Way).
+        private static void WayCheck(Application a, InterviewWay taken, InterviewWay wanted, string why, string where)
+        {
+            if (!Meta.Dev.Verbose)
+            {
+                return;
+            }
+            bool remote = a.Post.Work == (int)WorkMode.Remote;
+            Logger?.Info("Careers check (interview way): " + (remote ? "a video interview" : "an interview at " + a.Post.Employer) + ", " + where + ": "
+                         + (why != null ? "not begun (" + why + "), wanted " + wanted + ": PASS" : "the way taken is " + taken + ", wanted " + wanted + ": "
+                         + (taken == wanted ? "PASS" : "FAIL, not the way its place asks for")));
         }
 
         private void InterviewEnded(Sitting s, bool whole)
