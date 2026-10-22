@@ -58,8 +58,7 @@ namespace RealLifeOverhaul.Planner
             {
                 return;
             }
-            bool done;
-            PlannerStore.Falls(note, day, out done);
+            PlannerStore.Falls(note, day, out bool done);
             PlannerStore.SetDone(note, day, !done);
             if (done)
             {

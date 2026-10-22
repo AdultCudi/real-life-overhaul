@@ -191,8 +191,7 @@ namespace RealLifeOverhaul.Planner
             int day = PlannerRules.NextOccurrence(note.Repeat, note.Day, PlannerTime.DayOf(nowMinutes) - 1);
             for (int i = 0; day >= 0 && i < ArmDays; i++)
             {
-                bool done;
-                if (Falls(note, day, out done) && !done && FireAt(day, note.Start, note.Lead) > nowMinutes)
+                if (Falls(note, day, out bool done) && !done && FireAt(day, note.Start, note.Lead) > nowMinutes)
                 {
                     SetReminder(NoteEntry(note, day), day, note.Start, note.Lead, nowMinutes);
                     return;
@@ -350,8 +349,7 @@ namespace RealLifeOverhaul.Planner
             {
                 return;
             }
-            string text;
-            if (data.TryGetValue(Key, out text) && !string.IsNullOrEmpty(text))
+            if (data.TryGetValue(Key, out string text) && !string.IsNullOrEmpty(text))
             {
                 int read = 0;
                 foreach (string part in text.Split(';'))
@@ -361,8 +359,7 @@ namespace RealLifeOverhaul.Planner
                     {
                         continue;
                     }
-                    int value;
-                    if (!Int(part.Substring(eq + 1), out value))
+                    if (!Int(part.Substring(eq + 1), out int value))
                     {
                         continue;
                     }
@@ -410,8 +407,7 @@ namespace RealLifeOverhaul.Planner
                 int read = 0;
                 foreach (string record in text.Split(';'))
                 {
-                    PlannerReminder reminder;
-                    if (!ReadReminder(record, out reminder))
+                    if (!ReadReminder(record, out PlannerReminder reminder))
                     {
                         continue;
                     }
@@ -470,8 +466,7 @@ namespace RealLifeOverhaul.Planner
         private static PlannerNote ReadNote(string record)
         {
             string[] f = record.Split('|');
-            int id, day, start, flags;
-            if (f.Length < 5 || !Int(f[0], out id) || !Int(f[1], out day) || !Int(f[2], out start) || !Int(f[3], out flags) || id < 1 || day < 0)
+            if (f.Length < 5 || !Int(f[0], out int id) || !Int(f[1], out int day) || !Int(f[2], out int start) || !Int(f[3], out int flags) || id < 1 || day < 0)
             {
                 return null;
             }
@@ -486,11 +481,9 @@ namespace RealLifeOverhaul.Planner
             };
             if (f.Length >= 11)
             {
-                float x, y, z;
-                int number;
                 note.Place = NullIfEmpty(Unescape(f[5]));
                 note.Street = NullIfEmpty(Unescape(f[9]));
-                if (Float(f[6], out x) && Float(f[7], out y) && Float(f[8], out z) && Int(f[10], out number))
+                if (Float(f[6], out float x) && Float(f[7], out float y) && Float(f[8], out float z) && Int(f[10], out int number))
                 {
                     note.HasPlace = (flags & 4) != 0;
                     note.X = x;
@@ -499,8 +492,7 @@ namespace RealLifeOverhaul.Planner
                     note.Number = number;
                 }
             }
-            int repeat, doneDay, lead;
-            if (f.Length >= 14 && Int(f[11], out repeat) && Int(f[12], out doneDay) && Int(f[13], out lead))
+            if (f.Length >= 14 && Int(f[11], out int repeat) && Int(f[12], out int doneDay) && Int(f[13], out int lead))
             {
                 note.Repeat = repeat >= (int)PlannerRepeat.Once && repeat <= (int)PlannerRepeat.Weekly ? (PlannerRepeat)repeat : PlannerRepeat.Once;
                 note.DoneDay = note.Repeat == PlannerRepeat.Once ? -1 : doneDay;
@@ -513,8 +505,7 @@ namespace RealLifeOverhaul.Planner
         {
             reminder = default(PlannerReminder);
             string[] f = record.Split('|');
-            int a, b, begins, fireAt, lead;
-            if (f.Length < 6 || !Int(f[1], out a) || !Int(f[2], out b) || !Int(f[3], out begins) || !Int(f[4], out fireAt) || !Int(f[5], out lead))
+            if (f.Length < 6 || !Int(f[1], out int a) || !Int(f[2], out int b) || !Int(f[3], out int begins) || !Int(f[4], out int fireAt) || !Int(f[5], out int lead))
             {
                 return false;
             }
@@ -524,11 +515,10 @@ namespace RealLifeOverhaul.Planner
             {
                 return false;
             }
-            int travel;
             reminder = new PlannerReminder
             {
                 Entry = new EntryId(string.Intern(source), a, b), EntryBegins = begins, FireAt = fireAt, Lead = kind,
-                Travel = kind == ReminderLead.LeaveBy && f.Length >= 7 && Int(f[6], out travel) && travel > 0 ? travel : 0
+                Travel = kind == ReminderLead.LeaveBy && f.Length >= 7 && Int(f[6], out int travel) && travel > 0 ? travel : 0
             };
             return true;
         }

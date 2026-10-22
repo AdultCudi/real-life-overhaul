@@ -201,7 +201,6 @@ namespace RealLifeOverhaul.Planner
         {
             var view = new PlannerApp(this);
             PlannerText.WantIcons();   // before the one look through the game's pictures
-            bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,
@@ -210,7 +209,7 @@ namespace RealLifeOverhaul.Planner
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed
-            }, out tryAgain);
+            }, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -247,22 +246,7 @@ namespace RealLifeOverhaul.Planner
                 {
                     continue;
                 }
-                int before = List.Items.Count;
-                try
-                {
-                    if (_sources[s].Available)
-                    {
-                        _sources[s].Collect(fromDay, toDay, List);
-                    }
-                }
-                catch (Exception e)
-                {
-                    _failed[s] = true;
-                    Logger?.Error(e);
-                    Logger?.Warn("Planner: the source '" + _sources[s].Id + "' failed and is left out for this session.");
-                    List.Items.RemoveRange(before, List.Items.Count - before);
-                }
-                _counts[s] = List.Items.Count - before;
+                _counts[s] = CollectFrom(s, List, fromDay, toDay);
             }
             // a kind switched off is not shown, counted or reminded of
             if (PlannerStore.HiddenCategories != 0)
@@ -284,10 +268,8 @@ namespace RealLifeOverhaul.Planner
         }
 
         /// <summary>
-        /// For another app (the Calendar, through Scripts/Wiring): the sources <paramref name="wanted"/> says yes to by their
-        /// id, asked for the days fromDay..toDay into a list of the caller's own, with their texts. The Planner's own list,
-        /// the categories the player hid in it and its reminders are not touched; a source that throws is left out for the
-        /// session, as on the Planner's own look.
+        /// For another app (the Calendar): the sources <paramref name="wanted"/> accepts by id, for the days fromDay..toDay,
+        /// into the caller's own list with their texts; the Planner's own list, hidden kinds and reminders are untouched.
         /// </summary>
         public void LookFor(PlannerList into, int fromDay, int toDay, Func<string, bool> wanted)
         {
@@ -298,22 +280,29 @@ namespace RealLifeOverhaul.Planner
                 {
                     continue;
                 }
-                int before = into.Items.Count;
-                try
+                CollectFrom(s, into, fromDay, toDay);
+            }
+        }
+
+        // one source's entries into a list, how many; a source that throws is left out for the session
+        private int CollectFrom(int s, PlannerList into, int fromDay, int toDay)
+        {
+            int before = into.Items.Count;
+            try
+            {
+                if (_sources[s].Available)
                 {
-                    if (_sources[s].Available)
-                    {
-                        _sources[s].Collect(fromDay, toDay, into);
-                    }
-                }
-                catch (Exception e)
-                {
-                    _failed[s] = true;
-                    Logger?.Error(e);
-                    Logger?.Warn("Planner: the source '" + _sources[s].Id + "' failed and is left out for this session.");
-                    into.Items.RemoveRange(before, into.Items.Count - before);
+                    _sources[s].Collect(fromDay, toDay, into);
                 }
             }
+            catch (Exception e)
+            {
+                _failed[s] = true;
+                Logger?.Error(e);
+                Logger?.Warn("Planner: the source '" + _sources[s].Id + "' failed and is left out for this session.");
+                into.Items.RemoveRange(before, into.Items.Count - before);
+            }
+            return into.Items.Count - before;
         }
 
         private void Places()
@@ -453,8 +442,7 @@ namespace RealLifeOverhaul.Planner
                     { "when", PlannerText.WhenLong(entry, today) }
                 };
                 string key = late ? "reallife_planner_reminder_late" : "reallife_planner_reminder";
-                float metres;
-                if (reminder.Lead == ReminderLead.LeaveBy && PlannerGame.MetresTo(entry, out metres))
+                if (reminder.Lead == ReminderLead.LeaveBy && PlannerGame.MetresTo(entry, out float metres))
                 {
                     // the way from where the player is now
                     key = late ? "reallife_planner_reminder_leave_late" : "reallife_planner_reminder_leave";
@@ -509,7 +497,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // One line of the day on waking or from 05:00, once a day; looked at once a game minute at most.
+        // the day's line on waking or from 05:00, once a day; looked at once a game minute at most
         private void Morning()
         {
             int now = Now();
@@ -532,8 +520,7 @@ namespace RealLifeOverhaul.Planner
             int count = PlannerRules.MorningCount(List.Items, today);
             PlannerEntry first = PlannerRules.FirstOf(List.Items, today);
             int leave = -1;
-            float metres;
-            if (first != null && first.State == PlannerState.Upcoming && PlannerGame.MetresTo(first, out metres) && metres > PlannerRules.HereMetres)
+            if (first != null && first.State == PlannerState.Upcoming && PlannerGame.MetresTo(first, out float metres) && metres > PlannerRules.HereMetres)
             {
                 leave = PlannerRules.LeaveBy(first, PlannerRules.TravelMinutes(metres, PlannerGame.ByCar() ? PlannerRules.DrivePerMinute : PlannerRules.WalkPerMinute));
             }

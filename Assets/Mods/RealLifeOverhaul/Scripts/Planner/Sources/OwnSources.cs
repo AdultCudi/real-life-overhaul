@@ -24,8 +24,7 @@ namespace RealLifeOverhaul.Planner
 
         private static void Add(PlannerNote note, int day, PlannerList into)
         {
-            bool done;
-            if (!PlannerStore.Falls(note, day, out done))
+            if (!PlannerStore.Falls(note, day, out bool done))
             {
                 return;
             }

@@ -309,8 +309,7 @@ namespace RealLifeOverhaul.Planner
                 for (int j = i + 1; j < items.Count && items[j].Day <= a.Day + 1; j++)
                 {
                     PlannerEntry b = items[j];
-                    bool reach;
-                    if (Blocks(b) && Clashing(a, b, pace, out reach))
+                    if (Blocks(b) && Clashing(a, b, pace, out bool reach))
                     {
                         Mark(a, b, reach);
                         Mark(b, a, reach);
@@ -384,8 +383,7 @@ namespace RealLifeOverhaul.Planner
                 for (int j = i + 1; j < items.Count && items[j].Day <= day + 1; j++)
                 {
                     PlannerEntry b = items[j];
-                    bool reach;
-                    if (b.Clash && Blocks(b) && Clashing(a, b, pace, out reach))
+                    if (b.Clash && Blocks(b) && Clashing(a, b, pace, out _))
                     {
                         pairs++;
                     }
@@ -419,16 +417,12 @@ namespace RealLifeOverhaul.Planner
             for (int i = 0; i < items.Count; i++)
             {
                 PlannerEntry e = items[i];
-                if (e.Done || e.AllDay && !e.Own)
+                if (e.Done || e.AllDay)
                 {
                     continue;
                 }
                 PlannerState state = StateOf(e, nowMinutes);
-                if (state == PlannerState.Now && !e.AllDay)
-                {
-                    count++;
-                }
-                else if (state == PlannerState.Upcoming && !e.AllDay && e.Begins - nowMinutes <= withinMinutes)
+                if (state == PlannerState.Now || state == PlannerState.Upcoming && e.Begins - nowMinutes <= withinMinutes)
                 {
                     count++;
                 }

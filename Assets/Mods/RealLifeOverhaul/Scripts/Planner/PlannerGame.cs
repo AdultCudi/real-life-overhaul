@@ -35,8 +35,7 @@ namespace RealLifeOverhaul.Planner
         public static bool MetresTo(PlannerEntry entry, out float metres)
         {
             metres = 0f;
-            float x, z;
-            if (entry == null || !entry.Placed || !Player(out x, out z))
+            if (entry == null || !entry.Placed || !Player(out float x, out float z))
             {
                 return false;
             }

@@ -79,9 +79,7 @@ namespace RealLifeOverhaul.Planner
                 return;
             }
             box.Row("reallife_planner_glance_first", first.Title + ", " + PlannerText.When(first));
-            int travel;
-            bool here;
-            if (first.State == PlannerState.Upcoming && Way(first, out travel, out here) && !here)
+            if (first.State == PlannerState.Upcoming && Way(first, out int travel, out bool here) && !here)
             {
                 int leave = PlannerRules.LeaveBy(first, travel);
                 box.Row("reallife_planner_way_leave", leave <= now ? PlannerText.T("reallife_planner_way_now") : At(leave, day, today), leave <= now ? CellTone.Red : CellTone.Plain);
@@ -91,8 +89,7 @@ namespace RealLifeOverhaul.Planner
         private void DayFree(InfoBox box, List<PlannerEntry> items, int day, int today, int now)
         {
             int from = day == today ? PlannerTime.OfDay(now) : 0;
-            int total;
-            int gaps = PlannerRules.FreeTime(items, day, from, _freeFrom, _freeTo, out total);
+            int gaps = PlannerRules.FreeTime(items, day, from, _freeFrom, _freeTo, out _);
             string words;
             if (gaps == 0)
             {
@@ -253,8 +250,7 @@ namespace RealLifeOverhaul.Planner
             {
                 return;
             }
-            float metres;
-            if (!PlannerGame.MetresTo(e, out metres))
+            if (!PlannerGame.MetresTo(e, out float metres))
             {
                 return;
             }
@@ -281,8 +277,7 @@ namespace RealLifeOverhaul.Planner
         {
             travel = 0;
             here = false;
-            float metres;
-            if (!PlannerGame.MetresTo(e, out metres))
+            if (!PlannerGame.MetresTo(e, out float metres))
             {
                 return false;
             }
@@ -305,9 +300,7 @@ namespace RealLifeOverhaul.Planner
             {
                 series = null;
             }
-            int travel;
-            bool here;
-            bool leave = !e.AllDay && Way(e, out travel, out here) && !here;
+            bool leave = !e.AllDay && Way(e, out _, out bool here) && !here;
             ReminderLead set = PlannerStore.LeadOf(id);
             if (series != null && set != ReminderLead.LeaveBy)
             {
@@ -336,10 +329,9 @@ namespace RealLifeOverhaul.Planner
                 return;
             }
             int travel = 0;
-            bool here;
             if (lead == ReminderLead.LeaveBy)
             {
-                Way(live, out travel, out here);   // from where the player is now; told again when it goes out
+                Way(live, out travel, out _);   // from where the player is now; told again when it goes out
             }
             if (!PlannerStore.SetReminder(id, live.Day, live.Deadline && live.End >= 0 ? live.End : live.Start, lead, now, travel))
             {
