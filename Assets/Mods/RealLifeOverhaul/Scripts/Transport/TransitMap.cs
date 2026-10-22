@@ -170,8 +170,11 @@ namespace RealLifeOverhaul
         /// <summary>The next slice of the layout, from a timer until <see cref="Ready"/>; a fault leaves an empty network.</summary>
         public static void Step()
         {
+            using var hotSpot = HotSpots.Time(HotStep);
             Next(true);
         }
+
+        private static readonly int HotStep = HotSpots.Slot("Transport: TransitMap.Step");
 
         // In play (sliced) each search and the stops a slice of about a millisecond; behind the loading screen whole.
         private static void Next(bool sliced)
@@ -230,6 +233,7 @@ namespace RealLifeOverhaul
 
         private static void Finish()
         {
+            using var piece = SessionWatch.Piece("transit: the bus network finished (lines, places, timetables)");
             // A line with fewer than two stops carries nobody; a place it laid out goes to the next line that stops there.
             for (int i = Lines.Count - 1; i >= 0; i--)
             {

@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.GameUi
     ///   buttons    Buttons                                  the positive, negative and additional action buttons, copied for a further one of a kind and laid out by ButtonFlow
     ///
     /// The box lays its children out itself (the game's vertical layout group), so a page is whatever was added, in order.
-    /// A page is rebuilt only when the player clicks something.
+    /// A page is rebuilt only when the player clicks something. A slider is the game's own too, from its settings menu
+    /// (InfoBox.Slider.cs), copied the first time a page asks for one.
     ///
     /// On top of the game's parts the box has a look of the mod's own (InfoBox.Look.cs, InfoBox.Parts.cs, LookRules): a
     /// header with the app's colour, the title, a line of who and where and status chips; sections under a heading in
@@ -51,8 +52,8 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>Takes the box's parts as templates and empties it. Null if the parts no page can do without are missing.</summary>
         public static InfoBox From(Transform whiteBox, Transform templates)
         {
-            var box = new InfoBox { _box = whiteBox };
-            box._title = Take(whiteBox, "EmployeePersonalData/EmployeeName", templates, "Title");
+            var box = new InfoBox { _box = whiteBox, _templatesAt = templates };
+            box._title =Take(whiteBox, "EmployeePersonalData/EmployeeName", templates, "Title");
             box._line = Take(whiteBox, "EmployeePersonalData/EmployeeInfoRow1/Age", templates, "Line");
             box._headline = Take(whiteBox, "CurrentBusinessHeadline", templates, "Headline");
             box._switch = Take(whiteBox, "Demands/DemandTemplate", templates, "Switch");

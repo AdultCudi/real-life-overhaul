@@ -30,7 +30,8 @@ namespace RealLifeOverhaul.Texts
         public int Id;
         public string Key;              // what it is for ("fp:123", "ph:dana:42"): the same key asked again finds this one
         public string Prompt;           // the ChatML text (TextCard.ChatMl)
-        public string Card;             // the card alone (TextCard.Card): what an AI service is sent, after TextCard.System (Your own AI)
+        public string Card;             // the card alone (TextCard.Card): what an AI service is sent, after its system turn (Your own AI)
+        public string System;           // ...that system turn (TextCard.ServiceSystem: data v6's in the card's language); null: TextCard.System
         public TextPriority Priority;
         public double Asked;            // real seconds (TextQueue's clock) it was asked
         public double Deadline;         // ...by which it must be shown; past it the written line is used
@@ -42,6 +43,10 @@ namespace RealLifeOverhaul.Texts
         public bool Ran;                // the worker took it (the model was asked): a miss after that is the model's or the machine's, never the budget's own holding back
         public volatile bool Speaking;  // an AI service's first words of it came (a streamed reply): the rest is on its way, never shown until it is whole
         public object Owner;            // the asker's own record (what to do with the words), never read by the queue
+        public int Tokens;              // data v6: the reply's most tokens (TextDecoding.Tokens); 0: TextJson.Tokens
+        public string Grammar;          // data v6: the reply's GBNF grammar (TextDecoding.Grammar); null: none
+        public string BanName;          // data v6: a name the reply may never write (its first token banned); null: none
+        public bool Cut;                // the worker's: the reply stopped at its most tokens (the server's stop_type "limit")
     }
 
     /// <summary>

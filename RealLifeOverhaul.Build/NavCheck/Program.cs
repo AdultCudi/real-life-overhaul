@@ -76,6 +76,7 @@ internal static partial class Program
         CameraYields();  // when the mod's camera stands aside for the game's own camera moments and what it gives back, the highway's bridges among them (CameraYieldCheck.cs)
         Bikes();         // bicycles and motorbikes: the pull-away, the pose, the lean, the boxes the world meets, and their names (BikeCheck.cs)
         LeisureReaches(); // leisure's reaches in metres against squares of flat distances, and every such comparison in the sources (LeisureReachCheck.cs)
+        TableSeats();     // the chess players face the board's centre from either stool, and are kept so once a second (TableSeatCheck.cs)
         StationReaches(); // a police station's door and desk: from the doorstep, as the game's own door, never from the road; JobSpots.Flat never squared (StationReachCheck.cs)
         MeshCutLabels();  // what the session record names as the mod's last change to the walking mesh: a constant text that says where (MeshCutCheck.cs)
         Drivers();        // the city's drivers against a model of the game's own traffic, and the officer's wave-through (DriverCheck.cs)
@@ -84,6 +85,12 @@ internal static partial class Program
         CarContactChecks(); // when a contact of the player's car is a hit: never the road under a braking van, a kerb or its load; every collision judged so (CarContactCheck.cs)
         Handling(Array.IndexOf(args, "--handling") >= 0);   // the driven car's handling on the game's own cars, with the Garage's builds, and its sources (HandlingCheck.cs)
         Walks();          // walking on a key: the toggle, the walk over the game's own pace frame by frame, its cycle, and its sources (WalkCheck.cs)
+        Washes();         // the game's car wash in a repair bay never holding a car for good, and every way out of the custom shop (WashCheck.cs)
+        Culling();        // the mod's own things drawn by distance: the game's bands, what may and may not be culled, the group's slots (CullCheck.cs)
+        Bounces();        // the bounce watch still catches a bounce while moving traffic is looked at a fifth as often (BounceCheck.cs)
+        RenderLevels();   // the performance section's picture settings: the game's own until moved, their limits, the trials (RenderLevelCheck.cs)
+        FlareHours();     // Flare's hour a step a frame, in its order, finished first by the save and the day (FlareHourCheck.cs)
+        SlowSpots();      // the interact key's flags only on a press, the bus zones' parking laid out a lane a tick (SlowSpotCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

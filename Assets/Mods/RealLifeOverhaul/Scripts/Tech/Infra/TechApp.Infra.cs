@@ -194,7 +194,7 @@ namespace RealLifeOverhaul.Tech
                 if (needs == 0 && uis != null && uis.textInputUi != null)
                 {
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_infra_button_launch", () =>
-                        uis.textInputUi.Show("reallife_infra_cloud_name_placeholder", "common_confirm",
+                        GameUi.TextBox.Ask("reallife_infra_cloud_name_placeholder", "common_confirm",
                             text => UiClone.Safe(() => Do(() => _director.LaunchCloud(text))), null, string.Empty, false, 30));
                 }
                 InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);

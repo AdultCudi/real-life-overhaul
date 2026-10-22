@@ -18,8 +18,9 @@ namespace RealLifeOverhaul
     public enum FrameScreen
     {
         Clear = 0,     // the game was being played and seen
-        Black = 1,     // the game's own black screen (UI.UiFader) was up, or coming or going: a walk into or out of a building, sleep
+        Black = 1,     // the game's own black screen (UI.UiFader) was drawn at full strength as the frame began: a walk into or out of a building, sleep
         Loading = 2,   // the game's loading screen (UI.Load.LoadingScreen) was up, or still fading out after the save had loaded
+        Fading = 3,    // the game's own black screen was fading out or back in, the picture showing through it: seen (its fades at a door take 0.2 s each way)
     }
 
     /// <summary>The figures of one frame, as the session record has them (Diagnostics/FrameSteps, Diagnostics/MachineClock). A figure below zero is not known.</summary>
@@ -188,12 +189,24 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// What the screen was during a frame, from what the session record read at its start and at the start of the frame
-        /// after it (either is enough: the screen was up, or coming or going, in that frame). The loading screen is named before
-        /// the black screen: it is the one in front. A frame that was not clear was not seen as a stutter.
+        /// after it. The loading screen there at either look: the loading screen (it is the one in front). Otherwise the game's
+        /// black screen drawn at full strength at the start of the frame (<paramref name="coveredBefore"/>: what was on the
+        /// screen while the frame ran): black. The black screen fading at either look, but not full at the start: fading, the
+        /// picture showing through it, and a long frame there is seen (up to 0.47.0 it was counted as black, and every walk
+        /// into a building ended in a frame of 80 to 110 ms the record said nobody saw). Only <see cref="Unseen"/> screens hide one.
         /// </summary>
-        public static FrameScreen Screen(bool faded, bool fadedBefore, bool loading, bool loadingBefore)
+        public static FrameScreen Screen(bool faded, bool fadedBefore, bool coveredBefore, bool loading, bool loadingBefore)
         {
-            return loading || loadingBefore ? FrameScreen.Loading : faded || fadedBefore ? FrameScreen.Black : FrameScreen.Clear;
+            return loading || loadingBefore ? FrameScreen.Loading
+                : coveredBefore ? FrameScreen.Black
+                : faded || fadedBefore ? FrameScreen.Fading
+                : FrameScreen.Clear;
+        }
+
+        /// <summary>True for a screen on which a long frame is not seen as a stutter: the loading screen, or the black screen at full strength.</summary>
+        public static bool Unseen(FrameScreen screen)
+        {
+            return screen == FrameScreen.Loading || screen == FrameScreen.Black;
         }
 
         /// <summary>The words of the long-frame line for the screen (constant texts).</summary>
@@ -204,7 +217,9 @@ namespace RealLifeOverhaul
                 case FrameScreen.Loading:
                     return "its screen was black or fading (its loading screen, up or fading out after the save had loaded: not seen as a stutter)";
                 case FrameScreen.Black:
-                    return "its screen was black or fading (its own walk into or out of a building: not seen as a stutter)";
+                    return "its screen was black (its own walk into or out of a building: not seen as a stutter)";
+                case FrameScreen.Fading:
+                    return "its screen was fading, the picture showing through (its own walk into or out of a building: seen as a stutter)";
                 default:
                     return "its screen was clear";
             }

@@ -46,6 +46,8 @@ namespace RealLifeOverhaul.Economy
     public static class EstateCatalogue
     {
         public const int HoldingsMost = 40;
+        public const int SoldMost = 24;             // buildings sold remembered, the newest kept: a sold one put back is handed back to its buyer
+        public const int SoldLookBack = 7;          // days of the game's books searched for a building's sale: it keeps at least six days of them
         public const int ApplicantsMost = 3;        // waiting for one unit
         public const int ApplicantsBuildingMost = 12;   // for a whole building: one more for each unit after the first
         public const int UnitsMost = 12;            // the game's count is kept to this, so a page and the save stay small

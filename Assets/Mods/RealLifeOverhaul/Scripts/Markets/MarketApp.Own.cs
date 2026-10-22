@@ -234,7 +234,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            InfoBox.Button(row, InfoBox.Additional, "reallife_lst_name", () => uis.textInputUi.Show("reallife_lst_name_placeholder", "common_confirm",
+            InfoBox.Button(row, InfoBox.Additional, "reallife_lst_name", () => GameUi.TextBox.Ask("reallife_lst_name_placeholder", "common_confirm",
                 text => UiClone.Safe(() =>
             {
                 string typed = MarketStore.Clean((text ?? string.Empty).Trim());

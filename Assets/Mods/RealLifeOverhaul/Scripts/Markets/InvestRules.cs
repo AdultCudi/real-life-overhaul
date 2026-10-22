@@ -371,7 +371,7 @@ namespace RealLifeOverhaul.Markets
             {
                 worth += MarketTrading.Value(founder.Own.Founder, MarketTrading.QuoteOf(s, founder, phase).Bid, false);
             }
-            return worth;
+            return worth + s.Derivs.Balance / 100;   // the futures' margin account: the player's money with the broker
         }
 
         /// <summary>Worked orders' money with the broker: out of the cash in hand and in no holding, so counted here.</summary>

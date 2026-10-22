@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Roommates
         public const string ContactId = "reallife-roommate";
         private const string DialogTypeName = "reallife_roommate_calldialogtype";
 
-        private static readonly List<SocialPerson> Friends = new List<SocialPerson>(SocialRules.CastSize);
+        private static readonly List<SocialPerson> Friends = new List<SocialPerson>(SocialRules.BaseCast);
         /// <summary>The contact, once it has been added to this save's phone; null before, and with the phone's contacts off.</summary>
         public static Contact Contact { get; private set; }
 

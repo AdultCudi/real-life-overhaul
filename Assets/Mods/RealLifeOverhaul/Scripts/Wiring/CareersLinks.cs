@@ -447,7 +447,7 @@ namespace RealLifeOverhaul
                 try
                 {
                     int n = 0;
-                    for (int i = 0; SocialState.Loaded && Settings.Social && i < SocialRules.CastSize; i++)
+                    for (int i = 0; SocialState.Loaded && Settings.Social && i < SocialState.Count; i++)
                     {
                         SocialPerson p = SocialState.Get(i);
                         n += p != null && p.Met && p.Stage >= SocialStage.Friend ? 1 : 0;

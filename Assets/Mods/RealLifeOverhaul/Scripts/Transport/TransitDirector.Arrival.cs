@@ -136,7 +136,9 @@ namespace RealLifeOverhaul
             string shown = _shownAt > 0f ? "; the panel first showed the player " + _shownFigure.ToString("F0") + " s, off by " + (now - _shownAt).ToString("+0;-0") + " s"
                 : string.Empty;
             Logger?.Info("Transit check (on time): the " + line.Number + " at " + StopLabel(stop) + " was promised for " + _promised.ToString("F0") + " s after it set out ("
-                         + (_bus.Held0 > 0.5f ? "held " + _bus.Held0.ToString("F0") + " s at its start, " : string.Empty) + _bus.DriveAtStart.ToString("F0") + " s of open road, "
+                         + (_bus.Held0 > 0.5f ? "held " + _bus.Held0.ToString("F0") + " s at its start, " : string.Empty)
+                         + (_bus.HoldCut > 0.5f ? "the last " + _bus.HoldCut.ToString("F0") + " s of that hold let go when it was seen, so due that much sooner, " : string.Empty)
+                         + _bus.DriveAtStart.ToString("F0") + " s of open road, "
                          + _bus.LightsAtStart + " lit junction(s)) and stood there after " + took.ToString("F0") + " s (" + _bus.AtLights.ToString("F0")
                          + " s of it at red lights): " + off.ToString("+0;-0") + " s against the promise" + shown + "; the estimate learns traffic x"
                          + before.ToString("F2", CultureInfo.InvariantCulture) + " to x" + _pace.Traffic.ToString("F2", CultureInfo.InvariantCulture) + ", "

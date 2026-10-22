@@ -251,12 +251,14 @@ namespace RealLifeOverhaul
         private const int PerTick = 30;
         internal const float Aside = 4.3f;       // metres along the wall from the door, clear of a job board and the university's door
         private const float FromWall = 0.55f;    // metres
+        private const float SignCullRadius = 2f; // metres round a sign's foot: all of it (Performance/ModCulling)
         internal const float Reach = 1.7f;       // metres from a desk's front that count as at it
         private const string SchoolType = "ba:businesstype_school";
 
         private readonly Transform _parent;
         private readonly IModLogger _logger;
         private readonly List<Transform> _signs = new List<Transform>(Most);
+        private readonly List<CullEntry> _culls = new List<CullEntry>(Most);   // the signs, not drawn beyond the game's far band
         private readonly List<Vector3> _fronts = new List<Vector3>(Most);
         private readonly List<string> _addresses = new List<string>(Most);
         private readonly List<CityBuildingController> _buildings = new List<CityBuildingController>(Most);
@@ -342,6 +344,11 @@ namespace RealLifeOverhaul
 
         public void Dispose()
         {
+            for (int i = 0; i < _culls.Count; i++)
+            {
+                ModCulling.Remove(_culls[i]);
+            }
+            _culls.Clear();
             for (int i = 0; i < _signs.Count; i++)
             {
                 if (_signs[i] != null)
@@ -407,6 +414,7 @@ namespace RealLifeOverhaul
                 }
                 sign.SetPositionAndRotation(at, Quaternion.LookRotation(outward, Vector3.up));
                 _signs.Add(sign);
+                _culls.Add(ModCulling.Add(CullRules.Kind.BuildingSign, sign, at, SignCullRadius));
                 _fronts.Add(stand + outward * 0.6f);
                 _addresses.Add(building.building.Address.ToFormattedString());
                 _buildings.Add(building);

@@ -6,11 +6,18 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>The bus zones' part for the parking: the game's boxes shortened, its parked cars taken in, the player's moved.</summary>
+    /// <summary>
+    /// The bus zones' part for the parking: the game's boxes shortened, its parked cars taken in, the player's moved. The
+    /// game lays a shortened lane's spots out again (ParkingLaneGenerator.RegenerateAutoParkSpotsNear: a sync of every
+    /// moved transform with physics, and its spots destroyed and made again) one lane a tick, not all of a zone's in the
+    /// frame it is made: those were the spike the first time the player was back on the street.
+    /// </summary>
     public static partial class BusZones
     {
         private const float Moving = 0.5f;        // m/s above which a car of the player's is being driven, and is left alone
         private static readonly List<Transform> Cars = new List<Transform>(16);
+        private static readonly List<ParkingLaneGenerator> Relay = new List<ParkingLaneGenerator>(16);   // lanes whose spots are to be laid out again
+        private static readonly List<Vector3> RelayAt = new List<Vector3>(16);                           // and where, the middle of each box
         private static bool _told;      // the player has been told a car of theirs was moved from a bay, once a session
 
         // The cars in a zone and its margin, each once out of view; a lane come back whole is cut again first. True when none is left.
@@ -69,8 +76,36 @@ namespace RealLifeOverhaul
             {
                 lost = BusBay.SpotsLost(was, size.z, spot);
             }
-            ParkingLaneGenerator.RegenerateAutoParkSpotsNear(lane.transform.TransformPoint(centre));
+            Vector3 middle = lane.transform.TransformPoint(centre);
+            int queued = Relay.IndexOf(lane);
+            if (queued >= 0)
+            {
+                RelayAt[queued] = middle;   // cut again before its turn: laid out once, as it is now
+            }
+            else
+            {
+                Relay.Add(lane);
+                RelayAt.Add(middle);
+            }
             return lost;
+        }
+
+        // One lane's spots laid out again by the game, the oldest first: once a tick of the director's.
+        private static void RelayOne()
+        {
+            if (Relay.Count == 0)
+            {
+                return;
+            }
+            ParkingLaneGenerator lane = Relay[0];
+            Vector3 middle = RelayAt[0];
+            Relay.RemoveAt(0);
+            RelayAt.RemoveAt(0);
+            if (lane != null)
+            {
+                using var piece = SessionWatch.Piece("transit: a parking lane beside a bus zone laid out again");
+                ParkingLaneGenerator.RegenerateAutoParkSpotsNear(middle);
+            }
         }
 
         // The game's parked cars in a zone, its margin or beyond the lane's end, handed back out of view; those in view count in left.

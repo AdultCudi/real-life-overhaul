@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Economy
             int score = CreditLedger.Value;
             offer.AgreedBp = AgreedAt(kind, score, offer.Bank);
             offer.RateBp = ProductCatalogue.Revolving(kind) ? ProductTerms.WithBase(offer.AgreedBp, AccountRules.BaseBp, AccountRules.BaseMultiplier) : offer.AgreedBp;
-            offer.Most = LimitAt(kind, score, offer.Bank);
+            offer.Most = LimitAt(kind, score, offer.Bank, true);
             if (!ProductCatalogue.Revolving(kind))
             {
                 if (_file.Relief.HasApproval || OpenAccounts() >= FinanceAccountsMost)

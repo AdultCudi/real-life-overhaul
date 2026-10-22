@@ -129,7 +129,9 @@ namespace RealLifeOverhaul
         // Everyone else drawn here in the game's strand hair (another player's character in a Going Public session, or
         // anyone the game builds from the detailed set): the hair finish only, on the materials of this machine's renderers.
         private readonly List<Managed> _others = new List<Managed>(4);
-        private readonly SearchPace _othersPace = new SearchPace();   // the whole scene, only behind the loading screen or the black screen at a door (Core/SearchPace, SceneFinds.Dark)
+        // The whole scene, only on a frame the loading screen or the game's black screen at full strength covers (Core/SearchPace, SceneFinds.Black).
+        private readonly SearchPace _othersPace = new SearchPace();
+        private Action<Address> _onArrived, _arrivedSeen;              // the game's "entered, and settled" call, through the guard: made once, kept on (Core/EventHold)
         private readonly List<Transform> _remotes = new List<Transform>(4);
         private readonly List<AppearanceSetter> _remoteLooks = new List<AppearanceSetter>(4);
         private int _othersFound;
@@ -160,10 +162,19 @@ namespace RealLifeOverhaul
         {
             _searchesLeft = CreationScene ? CreationSearchAttempts : CitySearchAttempts;
             SkinLook.Logger = Logger;
+            if (!CreationScene)
+            {
+                _onArrived = Guard.Wrap<Address>(Arrived);   // (a fault here never reaches the game's own handlers: Core/Guard)
+                HoldArrival();
+            }
         }
 
         private void OnDestroy()
         {
+            if (_onArrived != null)
+            {
+                GlobalEvents.onEnterBuildingDelayed -= _onArrived;
+            }
             Stop();
             if (Instance == this)
             {
@@ -245,15 +256,17 @@ namespace RealLifeOverhaul
 
                 if (!CreationScene && _hairOn && !_hairSuspended && !_stopped)
                 {
-                    // The whole scene only while the screen is dark (never on a plain pause, whose menu would show the
-                    // search as a hitch); in play, Going Public's other players alone.
-                    if (_othersPace.Due(SceneFinds.Dark, Time.unscaledTime))
+                    // The whole scene only on a frame the screen shows black (never in the game's fades, whose picture
+                    // would stop, nor on a plain pause, whose menu would show the search as a hitch); in play, Going
+                    // Public's other players alone.
+                    if (_othersPace.Due(SceneFinds.Dark, SceneFinds.Black, Time.unscaledTime))
                     {
                         FindOthers(SceneFinds.All<AppearanceSetter>("character: everyone in the game's strand hair being looked for (a search of the whole scene, behind the black screen)"));
                     }
                     else if (Time.unscaledTime >= _nextOthers)
                     {
                         _nextOthers = Time.unscaledTime + OthersSeconds;
+                        HoldArrival();
                         FindRemoteOthers();
                     }
                 }
@@ -361,13 +374,15 @@ namespace RealLifeOverhaul
         // swapped: the character's appearance data (what a save keeps and what Going Public sends to the other players) is
         // neither read for this nor written.
         //
-        // Where they are found: every character of the scene, behind the game's black screen at a door or a loading screen
-        // (Core/SearchPace: at most twice in one; never on a plain pause, whose menu would show each search, some 80 ms, as
-        // a hitch: it can be made a dozen times in a short session, at doors, loading screens and pauses); and in
-        // play, every five seconds, the other players' figures of a
-        // Going Public session from that mod's own list (Core/GoingPublic.RemotePlayers): in a game played alone the search
-        // found nobody in the street. The search of the whole scene used to be made every five seconds of play: a frame of
-        // some 90 ms each time in the city (0.9.4). The finish itself only on a change of look.
+        // Where they are found: every character of the scene, on a frame the game's black screen covers at full strength or
+        // the loading screen is up (Core/SearchPace: at most twice in one; at a door, in the frame after the game says the
+        // building is in, four frames before its fade back in; never in a fade, whose picture would stop, nor on a plain
+        // pause, whose menu would show each search, some 80 ms, as a hitch); and in play, every five seconds, the other
+        // players' figures of a Going Public session from that mod's own list (Core/GoingPublic.RemotePlayers): in a game
+        // played alone the search found nobody in the street. The search of the whole scene used to be made every five
+        // seconds of play: a frame of some 90 ms each time in the city (0.9.4); and, up to 0.47.0, half a second into
+        // every fade, which at a door is its fade back in (a frame of 80 to 110 ms on every walk into a building, the room
+        // half shown). The finish itself only on a change of look.
         private void FindOthers(AppearanceSetter[] all)
         {
             PruneOthers();
@@ -375,6 +390,22 @@ namespace RealLifeOverhaul
             {
                 Other(all[i]);
             }
+        }
+
+        // The game's "entered, and settled" call (BuildingManager.DelayedEnterBuildingActions): the building and everyone
+        // the game puts in it are there, and its black screen stays up four frames more before it fades back in. Kept on
+        // the event (the game empties its events on a load) every five seconds, one reference comparison.
+        private void HoldArrival()
+        {
+            if (_onArrived != null)
+            {
+                EventHold.Keep(ref GlobalEvents.onEnterBuildingDelayed, _onArrived, ref _arrivedSeen);
+            }
+        }
+
+        private void Arrived(Address _)
+        {
+            _othersPace.Arrived();   // the search, on the next frame the screen is black: the one that finds who is in the building
         }
 
         // In play: the other players of a Going Public session, from that mod's list. Nothing outside a session.

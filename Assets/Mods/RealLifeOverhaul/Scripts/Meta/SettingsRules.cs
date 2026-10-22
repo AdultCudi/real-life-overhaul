@@ -6,12 +6,41 @@ namespace RealLifeOverhaul.Meta
     /// <summary>What a line of the Settings app is.</summary>
     public enum LineKind
     {
-        Heading,      // a section's name: picking it shows the section, its main switch and its Guide page
+        Heading,      // a section's name: a page of the list on the left
         Option,       // a saved option: a switch, a choice or a number
         Button,       // a button of the player's (a preset, "Save my choices to a file", a page to open)
-        Key,          // one of the mod's keys: shown, changed on the Mods tab
-        TestHeading,  // a section's test tools, under Troubleshooting
+        Key,          // one of the mod's keys: press it, then the new key
+        TestHeading,  // a section's test tools: a page of the list's last category, while the test tools are shown
         Test          // one test tool
+    }
+
+    /// <summary>What a line is drawn with on its page.</summary>
+    public enum ControlKind
+    {
+        None,         // a heading
+        Switch,       // an option that is on or off
+        Slider,       // a number, between the option's own ends, in whole numbers
+        Choice,       // one of a few values: the game's drop-down
+        Action,       // a button of the player's or a test tool: it does something, it holds no value
+        Key           // one of the mod's keys: press it, then the new key
+    }
+
+    /// <summary>One page of the Settings app: a section, or a section's test tools, with its lines; one entry of the list on the left.</summary>
+    public sealed class SettingsPage
+    {
+        public readonly int Index;           // its place in the list of every page
+        public readonly int Category;        // the group it is listed under: a tab, or the test tools after the last one
+        public readonly SettingsLine Heading;
+        public readonly List<SettingsLine> Lines = new List<SettingsLine>();
+
+        internal SettingsPage(int index, int category, SettingsLine heading)
+        {
+            Index = index;
+            Category = category;
+            Heading = heading;
+        }
+
+        public bool IsTests => Heading.Kind == LineKind.TestHeading;
     }
 
     /// <summary>One line of a tab of the Settings app: what it is, the section it stands in, and the row of the page it stands for.</summary>
@@ -64,13 +93,14 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The arithmetic of the Settings app: each tab's lines from the Mods tab's own plan, the presets against the choices, a
-    /// number's steps and the search. No Unity types, so CatalogueCheck runs it as it ships; nothing per frame.
+    /// The arithmetic of the Settings app: each tab's lines from the Mods tab's own plan, the pages of the list on its left,
+    /// the control each line is drawn with, a number's slider, the presets against the choices and the search. No Unity
+    /// types, so CatalogueCheck runs it as it ships; nothing per frame.
     /// </summary>
     public static class SettingsRules
     {
-        public const int MostSteps = 21;   // values a number's selector offers between its ends: a click or two from any of them to any other
-        public const int TabChars = 11;    // a tab's label: ten tabs stand side by side over the table
+        public const string SettingsButtonKey = "reallife_meta_settings_button";   // the Mods tab's button that opens the app: on none of the app's own pages
+        public const int MostFound = 60;   // rows a search shows at once: a word in most rows would be a wall, and more letters narrow it
 
         /// <summary>One tab per group, each section a heading over its rows as placed; rows placed nowhere ("Other") and the test tools go on Troubleshooting.</summary>
         public static SettingsTab[] Tabs(Plan plan, IList<PlanRow> rows, IList<TestPlace> tests)
@@ -204,53 +234,92 @@ namespace RealLifeOverhaul.Meta
             return best;
         }
 
-        /// <summary>A number selector's steps, smallest first: both ends, the value now, the default and even steps between, about <see cref="MostSteps"/> in all.</summary>
-        public static void Steps(int min, int max, int now, int standard, List<int> into)
+        /// <summary>
+        /// The pages of the app, as the list on its left names them: one per section heading and one per heading of a
+        /// section's test tools, each with the lines under it in the page's order. The button that opens this very app is
+        /// on no page. A tab's own pages come first and in its order; the test tools' pages are of the category after the
+        /// last group (<see cref="TestsCategory"/>).
+        /// </summary>
+        public static List<SettingsPage> Pages(SettingsTab[] tabs, IList<PlanRow> rows)
         {
-            into.Clear();
-            if (max < min)
+            var pages = new List<SettingsPage>();
+            int testsCategory = TestsCategory(tabs);
+            for (int t = 0; t < tabs.Length; t++)
             {
-                int swap = min;
-                min = max;
-                max = swap;
-            }
-            now = Math.Max(min, Math.Min(max, now));
-            standard = Math.Max(min, Math.Min(max, standard));
-            long range = (long)max - min;
-            int step = range < MostSteps ? 1 : (int)((range + MostSteps - 2) / (MostSteps - 1));
-            for (long v = min; v <= max; v += step)
-            {
-                into.Add((int)v);
-            }
-            if (into[into.Count - 1] != max)
-            {
-                into.Add(max);
-            }
-            Insert(into, now);
-            Insert(into, standard);
-        }
-
-        private static void Insert(List<int> values, int value)
-        {
-            int at = values.BinarySearch(value);
-            if (at < 0)
-            {
-                values.Insert(~at, value);
-            }
-        }
-
-        /// <summary>Where a value stands among the steps: its own place, else the nearest step.</summary>
-        public static int StepOf(List<int> steps, int value)
-        {
-            int best = 0;
-            for (int i = 1; i < steps.Count; i++)
-            {
-                if (Math.Abs((long)steps[i] - value) < Math.Abs((long)steps[best] - value))
+                SettingsPage page = null;
+                foreach (SettingsLine line in tabs[t].Lines)
                 {
-                    best = i;
+                    if (line.IsHeading)
+                    {
+                        page = new SettingsPage(pages.Count, line.Kind == LineKind.TestHeading ? testsCategory : t, line);
+                        pages.Add(page);
+                        continue;
+                    }
+                    if (page == null || !Shows(line, rows))
+                    {
+                        continue;
+                    }
+                    page.Lines.Add(line);
                 }
             }
-            return best;
+            return pages;
+        }
+
+        /// <summary>The category of the list that holds the test tools' pages: the one after the last group.</summary>
+        public static int TestsCategory(SettingsTab[] tabs)
+        {
+            return tabs.Length;
+        }
+
+        /// <summary>Whether a line is on a page of the app: every line but the button that opens the app itself.</summary>
+        public static bool Shows(SettingsLine line, IList<PlanRow> rows)
+        {
+            if (line.Kind == LineKind.Test || line.IsHeading)
+            {
+                return true;
+            }
+            return line.Row < 0 || line.Row >= rows.Count || rows[line.Row].LabelKey != SettingsButtonKey;
+        }
+
+        /// <summary>The control a line is drawn with: a switch for on and off, a slider for a number, the game's drop-down for a choice, a button for an action, the key itself for a key.</summary>
+        public static ControlKind ControlOf(LineKind line, PlanKind kind)
+        {
+            switch (line)
+            {
+                case LineKind.Option:
+                    switch (kind)
+                    {
+                        case PlanKind.Toggle: return ControlKind.Switch;
+                        case PlanKind.Slider: return ControlKind.Slider;
+                        case PlanKind.Choice: return ControlKind.Choice;
+                        default: return ControlKind.None;
+                    }
+                case LineKind.Button:
+                case LineKind.Test:
+                    return ControlKind.Action;
+                case LineKind.Key:
+                    return ControlKind.Key;
+                default:
+                    return ControlKind.None;
+            }
+        }
+
+        /// <summary>
+        /// A number's slider: the option's own ends (the lower first), whole numbers only, as the game's slider on the Mods
+        /// tab has it (ModOptionsSliderControl: wholeNumbers, Min, Max), starting at the value now kept inside them.
+        /// </summary>
+        public static int SliderStart(int min, int max, int value, out int low, out int high)
+        {
+            low = Math.Min(min, max);
+            high = Math.Max(min, max);
+            return Math.Max(low, Math.Min(high, value));
+        }
+
+        /// <summary>Where a value dragged to stands: the nearest whole number inside the ends, as the slider snaps to it.</summary>
+        public static int Snap(float dragged, int low, int high)
+        {
+            double near = Math.Round(dragged, MidpointRounding.AwayFromZero);
+            return (int)Math.Max(low, Math.Min(high, near));
         }
 
         /// <summary>The lines whose text, section or group has every word typed (<see cref="OptionsFind"/>); a heading is found through its rows. One entry per line in each list.</summary>

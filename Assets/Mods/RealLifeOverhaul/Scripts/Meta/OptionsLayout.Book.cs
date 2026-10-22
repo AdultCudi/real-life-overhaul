@@ -11,19 +11,30 @@ namespace RealLifeOverhaul.Meta
     /// </summary>
     public static partial class OptionsLayout
     {
-        internal const string SettingsButtonKey = "reallife_meta_settings_button";
+        internal const string SettingsButtonKey = SettingsRules.SettingsButtonKey;
 
         private static readonly List<TestPlace> TestPlaces = new List<TestPlace>();
         private static readonly List<Action> TestRuns = new List<Action>();
         private static Row[] _built;              // one per row the page placed, by its index in the built list
         private static SettingsTab[] _tabs;
+        private static List<SettingsPage> _pages;
         private static Dictionary<string, SettingsLine> _lineOf;   // an option's id or a button's label key: its line (made on the first look, once per build)
 
         /// <summary>The page was put in order, so the app has its rows.</summary>
-        internal static bool AppReady => _tabs != null && _built != null;
+        internal static bool AppReady => _tabs != null && _pages != null && _built != null;
 
-        /// <summary>The app's tabs: one per group, Start here first and Troubleshooting last.</summary>
+        /// <summary>The app's groups: one per group of the page, Start here first and Troubleshooting last.</summary>
         internal static SettingsTab[] AppTabs => _tabs;
+
+        /// <summary>The app's pages: a section each, then the sections' test tools (SettingsRules.Pages).</summary>
+        internal static List<SettingsPage> AppPages => _pages;
+
+        /// <summary>The control a line is drawn with (SettingsRules.ControlOf over the row as the page built it).</summary>
+        internal static ControlKind AppControl(SettingsLine line)
+        {
+            ModOption option = RowOf(line)?.Option;
+            return SettingsRules.ControlOf(line.Kind, option != null ? KindOf(option) : PlanKind.Button);
+        }
 
         private static Row RowOf(SettingsLine line)
         {

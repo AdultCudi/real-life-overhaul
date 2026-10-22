@@ -6,7 +6,9 @@ namespace RealLifeOverhaul.Tech
     /// <summary>
     /// Startups, the player's fund and their firms' cap tables in the save: one line under <see cref="Key"/> in
     /// <see cref="TechWriter"/>'s format, a header (h), the fund (f), the venture firms' doors (v), startups (s) and their holders
-    /// (a), the player's firms (c), their holders (k) and term sheets (t), fields in the order <see cref="Write"/> writes them.
+    /// (a), the player's firms (c), their holders (k) and term sheets (t), fields in the order <see cref="Write"/> writes them. A
+    /// startup's last fields (the last round's day, the player's shares and all shares before it, its follow-on taken) came in
+    /// 0.47.1 at the end of its record, so an older RLO reads the line and leaves them out.
     /// </summary>
     public static class VentureStore
     {
@@ -41,7 +43,7 @@ namespace RealLifeOverhaul.Tech
                 TermSheet a = s.Ask;
                 w.Record().Add(s.Id).Add(s.Name).Add(s.Founder).Add(s.Sector).Add(s.Stage).Add(s.State).Add(s.Founded).Add(s.Quality).Add(s.Mrr).Add(s.ClaimBp).Add(s.Cash).Add(s.Burn).Add(s.Post)
                     .Add(s.LastRound).Add(s.FailedRaises).Add(s.Carry).Add(s.Diligence).Add(s.Revealed).Add(a != null ? a.Amount : 0).Add(a != null ? a.Pre : 0).Add(a != null ? a.Lapse : 0)
-                    .Add(a != null && a.Board).Add(a != null && a.ProRata);
+                    .Add(a != null && a.Board).Add(a != null && a.ProRata).Add(s.RoundDay).Add(s.BeforeMine).Add(s.BeforeTotal).Add(s.Followed);
             }
             w.Part('a');
             foreach (Startup s in f.Startups)
@@ -111,6 +113,10 @@ namespace RealLifeOverhaul.Tech
                 long amount = x.Long(), pre = x.Long();
                 int lapse = x.Int();
                 bool board = x.Bool(), proRata = x.Bool();
+                s.RoundDay = x.Int(-1);   // the last round's follow-on (a line from before 0.47.1 has none, and offers no follow-on)
+                s.BeforeMine = Math.Max(0L, x.Long());
+                s.BeforeTotal = Math.Max(0L, x.Long());
+                s.Followed = x.Bool();
                 if (amount > 0)
                 {
                     s.Ask = new TermSheet { Amount = amount, Pre = pre, Lapse = lapse, Board = board, ProRata = proRata };

@@ -23,6 +23,9 @@ using RealLifeOverhaul.Texts;
 internal static partial class Program
 {
     private const string ServiceKey = "sk-test-0123456789abcdefSECRETkeyABCDEFGH4567";   // a pretend key: never in a log line
+    private const int HoldMs = 15000;   // milliseconds the pretend service holds a request it never answers: what a hung client waits
+    private const int HeldTimeMs = 800;   // milliseconds the held request is given (its time-out)
+    private const int LoadedSlackMs = 2700;   // milliseconds past the client's own bound allowed for a busy PC (21 Oct 2026, under load: 1902 and 1986 ms against a bound of 1300); a fifth of the hold, so a hang still fails
 
     private static void TextsService()
     {
@@ -258,8 +261,8 @@ internal static partial class Program
         TextJob job = serviceQ.Take(0.1, true);
         var sheet = new TextSheet();
         TextIntents.Build(TextIntents.Find("friend.crash", null, TextsHub.Newest), r.Who, r.Slots, r.History, sheet);
-        Check(job.Card == TextCard.Card(sheet) && job.Prompt == null && TextCard.ChatMl(sheet).Contains(job.Card) && TextCard.ChatMl(sheet).Contains(TextCard.System),
-            "your own AI, the route: the service is given the very card the pack's prompt holds, with the same system turn");
+        Check(job.Card == TextCard.Card(sheet) && job.Prompt == null && TextCard.ChatMl(sheet).Contains(job.Card) && job.System == TextCard.SystemOf(TextsHub.Newest),
+            "your own AI, the route: the service is given the very card the pack's prompt holds, with the system turn of the card's data");
         serviceQ.Done(job, "Heard about 5th Ave. You alright?", 0.8, null);
         hub.Look(1.0);
         Check(got == "Heard about 5th Ave. You alright?" && r.ByService && hub.ServiceShown == 1 && hub.Shown == 1, "your own AI, the route: the service's words come back checked by TextCheck, and are counted as the service's");
@@ -613,7 +616,7 @@ internal static partial class Program
                 string[] answer = _handle(line[0], line[1], body);
                 if (answer == null)
                 {
-                    Thread.Sleep(15000);   // (a service that takes the connection and never answers)
+                    Thread.Sleep(HoldMs);   // (a service that takes the connection and never answers)
                     return;
                 }
                 byte[] b = Encoding.UTF8.GetBytes(answer[1]);
@@ -655,11 +658,16 @@ internal static partial class Program
             TextWebAnswer busy = web.Send(new TextWebRequest { Url = server.Base + "/busy", Body = "{}" }, 3000);
             Check(busy.Status == 429 && busy.RetryAfter == 7 && TextServiceRules.Read(TextApi.Chat, busy).Fault == TextFault.RateLimited,
                 "your own AI, the web client: a refusal's status and the wait the service asked for (Retry-After)");
+            // What matters is that the client gives the request up by its own deadline and the worker is let go long before
+            // the service would answer: the client's own failure ("no answer within 0.8 s"), not a dropped connection, and the
+            // wall time well under the hold. The time a busy PC adds to starting the wait is not the client's (LoadedSlackMs).
             var watch = Stopwatch.StartNew();
-            TextWebAnswer held = web.Send(new TextWebRequest { Url = server.Base + "/hold", Body = "{}" }, 800);
+            TextWebAnswer held = web.Send(new TextWebRequest { Url = server.Base + "/hold", Body = "{}" }, HeldTimeMs);
             long ms = watch.ElapsedMilliseconds;
-            Check(held.Status == 0 && held.TimedOut && ms < 800 + TextWeb.GraceMs + 400,
-                "your own AI, the web client: a service that takes the request and never answers is given up at its time (" + ms + " ms for 800 ms), the worker never held longer");
+            Check(held.Status == 0 && held.TimedOut && held.Failure == "no answer within 0.8 s" && ms >= HeldTimeMs - 100
+                  && ms < HeldTimeMs + TextWeb.GraceMs + LoadedSlackMs && ms < HoldMs / 3,
+                "your own AI, the web client: a service that takes the request and never answers is given up at its time (" + ms + " ms for " + HeldTimeMs
+                + " ms, at most " + (HeldTimeMs + TextWeb.GraceMs + LoadedSlackMs) + " on a busy PC, the hold " + HoldMs + "), the worker never held longer");
         }
         int free;
         var probe = new TcpListener(IPAddress.Loopback, 0);

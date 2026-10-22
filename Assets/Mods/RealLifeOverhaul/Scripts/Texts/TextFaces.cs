@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Texts
         OfficialAnswer,  // ...answering a report
         Tycoon,          // a rival tycoon: "Space Karen, owner of Karen Aerospace & Motors", a parody, their own style
         Business,        // a business's own account: "Sam's Deli", a business's Flare account
-        Ledger           // the City Ledger, the city's newspaper
+        Ledger,          // the City Ledger, the city's newspaper
+        Employee         // data v6: one of the player's staff: "Dana Reyes, shop assistant at Sam's Deli", your employee, their style, the player
     }
 
     /// <summary>
@@ -40,11 +41,12 @@ namespace RealLifeOverhaul.Texts
         public string Style;      // the style words, a comma and a space between each
         public string Player;     // the player's name
         public string When;       // "Monday 14:05"
+        public string Works;      // data v6: where one of the player's staff works (the business's name)
         public readonly List<string> Traits = new List<string>(2);
 
         public void Clear()
         {
-            Name = First = Job = District = Handle = Role = Title = Mood = Style = Player = When = null;
+            Name = First = Job = District = Handle = Role = Title = Mood = Style = Player = When = Works = null;
             Age = 0;
             Traits.Clear();
         }
@@ -122,6 +124,12 @@ namespace RealLifeOverhaul.Texts
                     s.Who = "the City Ledger";
                     s.Role = "the city's newspaper";
                     s.Style = "plain, factual, a newspaper brief";
+                    break;
+                case TextFace.Employee:
+                    s.Who = w.Name + ", " + w.Job + " at " + w.Works;
+                    s.Role = "your employee";
+                    s.Style = w.Style;
+                    s.Player = w.Player;
                     break;
             }
             s.When = w.When;

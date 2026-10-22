@@ -3,20 +3,22 @@ using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
+using UI.Notification;
 using UI.Smartphone;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The Company app in the game's own frame (GameUi.AppShell): six tabs, a list in the table and the one thing picked
+    /// The Company app in the game's own frame (GameUi.AppShell): seven tabs, a list in the table and the one thing picked
     /// in the white box. Nothing runs while it is closed; a page is written on opening, a pick or a change.
     /// </summary>
     public sealed partial class CompanyApp
     {
         private static readonly string[] TabKeys =
         {
-            "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax", "reallife_rota_tab"
+            "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax", "reallife_rota_tab",
+            "reallife_mgr_tab"
         };
         public static IModLogger Logger;
 
@@ -185,6 +187,9 @@ namespace RealLifeOverhaul.Economy
                         case CompanyDirector.TabRota:
                             WriteRota(box, ref selected);
                             break;
+                        case CompanyDirector.TabManagers:
+                            WriteManagers(box, ref selected);
+                            break;
                         case CompanyDirector.TabTax:
                             if (!_director.On(CompanyPart.Tax) && !_director.On(CompanyPart.Licences))
                             {
@@ -221,6 +226,7 @@ namespace RealLifeOverhaul.Economy
         partial void WriteTax(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteLicences(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteRota(InfoBox box, ref string selected);
+        partial void WriteManagers(InfoBox box, ref string selected);
 
         // A tab whose part is off, or stopped by a fault, says so and shows nothing else.
         private bool PartPage(CompanyPart part, InfoBox box)
@@ -309,7 +315,8 @@ namespace RealLifeOverhaul.Economy
 
         private void Guide(InfoBox box)
         {
-            Meta.Guide.Point(box, _tab == CompanyDirector.TabRota ? "reallife_meta_title_economy_rota" : "reallife_meta_title_economy_company");
+            Meta.Guide.Point(box, _tab == CompanyDirector.TabRota ? "reallife_meta_title_economy_rota"
+                : _tab == CompanyDirector.TabManagers ? "reallife_meta_title_economy_managers" : "reallife_meta_title_economy_company");
         }
 
         private string WriteOverview(InfoBox box, CompanyState state, int day)
@@ -483,11 +490,23 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Row("reallife_co_shop_hidden", file.Hide + "%", CellTone.Yellow);
             }
+            BuildingRegistration reg = shop.Reg;   // the shop is the director's and is used again; the click keeps its own
+            Transform buttons = box.ButtonRow();
+            InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_open_bizman", () => OpenBizMan(reg));
             if (ServicesDirector.CanSell)
             {
-                InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));
+                InfoBox.Button(buttons, InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));
             }
             BackButton(box);
+        }
+
+        // The business's own page in the game's BizMan (CompanyGame.OpenBizMan); the game's notice if it cannot be opened.
+        private static void OpenBizMan(BuildingRegistration reg)
+        {
+            if (!CompanyGame.OpenBizMan(reg))
+            {
+                Notifications.ShowError("reallife_co_bizman_cannot", "reallife_co_bizman_cannot", false);
+            }
         }
     }
 }

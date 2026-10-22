@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
     {
         private const int SizeRow = -1;
         private const string ButtonCook = "reallife_home_cookpanel_cook";
+        private const string Chosen = "a dish was chosen";
         private const string ButtonMake = "reallife_home_cookpanel_make";
         private const string ButtonReheat = "reallife_home_cookpanel_reheat";
         private const string ButtonChange = "reallife_home_cooklist_change";
@@ -134,6 +135,10 @@ namespace RealLifeOverhaul
             {
                 Logger?.Info("Home check (cooking list): closed (" + (_closing ?? "cancelled by the player") + ").");
             }
+            if (_closing != Chosen)
+            {
+                CookingTogether.Finish(false);   // closed without a dish: no meal together
+            }
             _closing = null;
             Plans.Clear();
         }
@@ -163,7 +168,7 @@ namespace RealLifeOverhaul
                 {
                     Logger?.Info("Home check (choice): " + (plan.Reheat ? "leftovers reheated" : plan.NameKey + ", " + plan.Portions + " portion(s), " + plan.Minutes + " min") + ".");
                 }
-                Close("a dish was chosen");
+                Close(Chosen);
                 host?.Cook(plan);
             }
             catch (Exception e)

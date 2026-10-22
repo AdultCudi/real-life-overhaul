@@ -91,6 +91,7 @@ namespace RealLifeOverhaul
             ids.Add("perf_step_timing");
             var switches = new HashSet<string>(ids.Where(i => i.StartsWith("perf_")), StringComparer.Ordinal);   // the options that are on or off
             var buttons = new HashSet<string>(StringComparer.Ordinal);    // label keys of buttons and keys the sources put on the page
+            var keyRows = new HashSet<string>(StringComparer.Ordinal);    // label keys of the mod's keys: each a row that waits for a key
             var tests = new HashSet<string>(StringComparer.Ordinal);
             foreach (string code in sources.Values)
             {
@@ -100,10 +101,11 @@ namespace RealLifeOverhaul
                     labelOf[id] = m.Groups[3].Value;
                     if (m.Groups[1].Value.EndsWith("Toggle") || m.Groups[1].Value.EndsWith("ToggleOption")) switches.Add(id);
                 }
-                foreach (Match m in Regex.Matches(code, @"(?:AddButton|new ButtonOption|new Binding)\(\s*""([^""]+)""(?:,\s*""([^""]+)"")?"))
+                foreach (Match m in Regex.Matches(code, @"(AddButton|new ButtonOption|new Binding)\(\s*""([^""]+)""(?:,\s*""([^""]+)"")?"))
                 {
-                    string key = m.Groups[2].Success ? m.Groups[2].Value : m.Groups[1].Value;
+                    string key = m.Groups[3].Success ? m.Groups[3].Value : m.Groups[2].Value;
                     buttons.Add(key);
+                    if (m.Groups[1].Value == "new Binding") keyRows.Add(key);   // a key of the mod's: its row waits for a key (Core/Keys.RebindOption)
                     if (key.Contains("_test_")) tests.Add(key);
                 }
                 foreach (Match m in Regex.Matches(code, @"\.Test\(((?:\s*""[^""]+"",?)+)"))
@@ -111,6 +113,46 @@ namespace RealLifeOverhaul
                     foreach (Match k in Regex.Matches(m.Groups[1].Value, @"""([^""]+)""")) tests.Add(k.Groups[1].Value);
                 }
             }
+            // The choices (the game's drop-down) and each slider's ends, as the sources give them: the Settings app draws a
+            // control of each kind from them (Meta/SettingsRules.ControlOf) and a slider with the option's own ends.
+            var choices = new HashSet<string>(StringComparer.Ordinal);
+            var sliders = new Dictionary<string, (int Min, int Max)>(StringComparer.Ordinal);
+            int? Resolve(string expr)
+            {
+                if (int.TryParse(expr, out int n)) return n;
+                int dot = expr.LastIndexOf('.');
+                if (dot <= 0) return null;
+                string type = expr.Substring(0, dot), name = expr.Substring(dot + 1);
+                type = type.Substring(type.LastIndexOf('.') + 1);
+                foreach (string code in sources.Values)
+                {
+                    if (!Regex.IsMatch(code, @"\b(?:class|struct)\s+" + Regex.Escape(type) + @"\b")) continue;
+                    Match c = Regex.Match(code, @"\bconst int (?:\w+\s*=\s*-?\d+\s*,\s*)*" + Regex.Escape(name) + @"\s*=\s*(-?\d+)");
+                    if (c.Success) return int.Parse(c.Groups[1].Value);
+                }
+                return null;
+            }
+            foreach (string code in sources.Values)
+            {
+                foreach (Match m in Regex.Matches(code, @"AddDropdown\(\s*([\w.]+)\s*,"))
+                {
+                    if (consts.TryGetValue(m.Groups[1].Value, out string id)) choices.Add(id);
+                }
+                foreach (Match m in Regex.Matches(code, @"AddSlider\(\s*([\w.]+)\s*,\s*""[^""]+""\s*,\s*([\w.\-]+)\s*,\s*([\w.\-]+)\s*,"))
+                {
+                    if (!consts.TryGetValue(m.Groups[1].Value, out string id)) continue;
+                    int? min = Resolve(m.Groups[2].Value), max = Resolve(m.Groups[3].Value);
+                    Check(min != null && max != null, "the slider " + id + "'s ends could not be read: " + m.Groups[2].Value + ", " + m.Groups[3].Value);
+                    if (min != null && max != null) sliders[id] = (min.Value, max.Value);
+                }
+            }
+            foreach (Match m in Regex.Matches(Source("Character", "CharacterCatalogue.cs"), @"new Slot\(""([^""]+)"", ""[^""]+"", ""[^""]+""[^\n]*?(?:, ""([^""]+)"", ""[^""]+""\))?\)?,?\s*$", RegexOptions.Multiline))
+            {
+                choices.Add(m.Groups[1].Value);   // a garment and its colour: the game's drop-down (CharacterCatalogue's AddDropdown)
+                if (m.Groups[2].Success) choices.Add(m.Groups[2].Value);
+            }
+            Console.WriteLine($"  {choices.Count} choices and {sliders.Count} sliders with their ends read from the sources");
+            Check(choices.Count >= 25 && sliders.Count >= 40, "the choices or sliders could not be read: " + choices.Count + " choices, " + sliders.Count + " sliders");
             var features = new List<string>();
             foreach (string code in sources.Values)
             {
@@ -236,10 +278,10 @@ namespace RealLifeOverhaul
 
             // ---- placing the built rows
             Console.WriteLine("\n== The options page: placing the rows ==");
-            PlanKind KindOf(string id) => switches.Contains(id) ? PlanKind.Toggle : PlanKind.Slider;
+            PlanKind KindOf(string id) => switches.Contains(id) ? PlanKind.Toggle : choices.Contains(id) ? PlanKind.Choice : PlanKind.Slider;
             var built = new List<PlanRow>();
             foreach (string id in ids) built.Add(new PlanRow(KindOf(id), id, labelOf[id]));
-            foreach (TreeRow row in treeRows.Where(r => r.IsButton)) built.Add(new PlanRow(PlanKind.Button, null, row.Id));
+            foreach (TreeRow row in treeRows.Where(r => r.IsButton)) built.Add(new PlanRow(keyRows.Contains(row.Id) ? PlanKind.Key : PlanKind.Button, null, row.Id));
             Plan plan = OptionsPlan.Place(built);
             Console.WriteLine($"  {built.Count} rows: {plan.Placed} placed in {plan.Sections.Count} sections of {plan.Groups} groups, {plan.Other.Rows.Count} in Other, {plan.Missing.Count} missing");
             Check(plan.Placed == built.Count, "not every row was placed: " + plan.Placed + " of " + built.Count);
@@ -423,7 +465,7 @@ namespace RealLifeOverhaul
             Console.WriteLine($"  {checks} checks of the options page");
             if (checks < 60) fail("options: only " + checks + " checks ran");
 
-            SettingsAppCheck.Run(fail, locale, src, built, tests, labelOf);
+            SettingsAppCheck.Run(fail, locale, src, built, tests, labelOf, sliders);
         }
     }
 }

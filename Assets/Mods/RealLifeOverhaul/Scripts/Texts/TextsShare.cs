@@ -22,8 +22,13 @@ namespace RealLifeOverhaul.Texts
     ///
     /// One line a text: "w|key|intent|words", the words escaped as the save's (TextsStore.Escape), at most
     /// <see cref="WordsMost"/> characters; the whole part at most <see cref="LinesMost"/> lines (the newest). The key is the
-    /// session's number of the item ("fn:45" a post by the host's number, "fn:45:3:c17" a comment under it, "lp:day:n" a piece of the paper). Game-free
-    /// (EconomyCheck, TextsChecks.cs). COST: a line a text written on the host; nothing per frame.
+    /// session's number of the item ("fn:45" a post by the host's number, "fn:45:3:c17" a comment under it, "lp:day:n" a piece of the paper).
+    ///
+    /// Shared text carries its language: a "w" line is English (as every pack before data v6 wrote), and words of a data
+    /// v6 pack in another language go as "x|key|intent|lang|words", a line kind an older RLO passes over (it shows its
+    /// written line, as it would without the host's words). A guest keeps only words in its own game's language and
+    /// shows its own written line for the rest (<see cref="Apply"/>), checking each in its language (TextCheck.JudgeSharedSix).
+    /// Game-free (EconomyCheck, TextsChecks.cs, TextsLanguageChecks.cs). COST: a line a text written on the host; nothing per frame.
     /// </summary>
     public static class TextsShare
     {
@@ -33,13 +38,22 @@ namespace RealLifeOverhaul.Texts
         public const int ReadMost = 400;         // lines a guest reads of one message
 
         /// <summary>One shared text as a line, ending with its line break (so that changes put together in a message stay lines).</summary>
-        public static void Line(StringBuilder b, string key, string intent, string words)
+        public static void Line(StringBuilder b, string key, string intent, string words) => Line(b, key, intent, words, null);
+
+        /// <summary>The same in a language: English (or none) as a "w" line, any other as an "x" line with its language.</summary>
+        public static void Line(StringBuilder b, string key, string intent, string words, string lang)
         {
-            b.Append("w|");
+            bool english = lang == null || lang == TextLanguages.English;
+            b.Append(english ? "w|" : "x|");
             TextsStore.Escape(key, b);
             b.Append('|');
             TextsStore.Escape(intent ?? string.Empty, b);
             b.Append('|');
+            if (!english)
+            {
+                TextsStore.Escape(lang, b);
+                b.Append('|');
+            }
             TextsStore.Escape(words.Length > WordsMost ? words.Substring(0, WordsMost) : words, b);
             b.Append('\n');
         }
@@ -62,7 +76,7 @@ namespace RealLifeOverhaul.Texts
             {
                 if (Own(all[i]))
                 {
-                    Line(b, NetKey(all[i].Key), all[i].Intent, all[i].Words);
+                    Line(b, NetKey(all[i].Key), all[i].Intent, all[i].Words, all[i].Lang);
                 }
             }
             return b.Length > 0 ? b.ToString() : null;
@@ -75,7 +89,13 @@ namespace RealLifeOverhaul.Texts
         /// A guest: reads the host's lines, checks each again, and keeps the ones that pass, as received (never saved, never
         /// sent on). The host's whole part replaces every text received before it. Returns how many were kept.
         /// </summary>
-        public static int Apply(string text, TextsStore store, int day, List<string> refused, bool whole)
+        public static int Apply(string text, TextsStore store, int day, List<string> refused, bool whole) => Apply(text, store, day, refused, whole, TextLanguages.English);
+
+        /// <summary>
+        /// The same for a guest whose game is in <paramref name="lang"/> (TextLanguages.Of): words in another language are
+        /// not kept (its own written line is shown), and every one kept is checked in its language.
+        /// </summary>
+        public static int Apply(string text, TextsStore store, int day, List<string> refused, bool whole, string lang)
         {
             if (whole)
             {
@@ -90,22 +110,29 @@ namespace RealLifeOverhaul.Texts
             for (int i = 0; i < lines.Length && i < ReadMost; i++)
             {
                 string[] f = lines[i].Split('|');
-                if (f.Length != 4 || f[0] != "w")
+                bool six = f.Length == 5 && f[0] == "x";
+                if (!six && (f.Length != 4 || f[0] != "w"))
                 {
                     continue;   // (a line this version does not know)
                 }
-                string key = TextsStore.Unescape(f[1]), intentKey = TextsStore.Unescape(f[2]), words = TextsStore.Unescape(f[3]);
-                if (!Shareable(key))
+                string key = TextsStore.Unescape(f[1]), intentKey = TextsStore.Unescape(f[2]);
+                string wordsLang = six ? TextsStore.Unescape(f[3]) : TextLanguages.English, words = TextsStore.Unescape(f[six ? 4 : 3]);
+                if (!Shareable(key) || (six && !TextLanguages.Known(wordsLang)))
                 {
                     continue;
                 }
-                TextVerdict verdict = TextCheck.JudgeShared(words, TextIntents.Find(intentKey) ?? TextIntents.Find(intentKey, "on"));
+                if (wordsLang != (lang ?? TextLanguages.English))
+                {
+                    continue;   // (another language than this guest's game: its own written line)
+                }
+                TextIntent intent = TextIntents.Find(intentKey) ?? TextIntents.Find(intentKey, "on") ?? TextIntents.Six(intentKey, null);
+                TextVerdict verdict = six ? TextCheck.JudgeSharedSix(words, intent, wordsLang) : TextCheck.JudgeShared(words, intent);
                 if (verdict != TextVerdict.Ok)
                 {
                     refused?.Add(key + " (" + verdict + ")");
                     continue;
                 }
-                store.Keep(key, day, intentKey, words, true, true);
+                store.Keep(key, day, intentKey, words, true, true, wordsLang);   // (in its language: a switch of the game's language shows the written line)
                 kept++;
             }
             return kept;

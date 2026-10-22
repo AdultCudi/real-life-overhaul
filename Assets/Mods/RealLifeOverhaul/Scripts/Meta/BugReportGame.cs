@@ -287,7 +287,7 @@ namespace RealLifeOverhaul.Meta
             {
                 return false;
             }
-            uis.textInputUi.Show("reallife_bug_placeholder", "reallife_bug_make", text => UiClone.Safe(() => done(text)), null, string.Empty, true, BugReportRules.MostWords);
+            GameUi.TextBox.Ask("reallife_bug_placeholder", "reallife_bug_make", text => UiClone.Safe(() => done(text)), null, string.Empty, true, BugReportRules.MostWords);
             return true;
         }
 

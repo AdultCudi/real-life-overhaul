@@ -33,16 +33,7 @@ namespace RealLifeOverhaul.Planner
             return index < 0 ? index + 7 : index;
         }
 
-        /// <summary>The game's year of a day, as TimeHelper.GetYearsByDays.</summary>
-        public static int Year(int day, int daysPerYear)
-        {
-            return daysPerYear > 0 && day > 0 ? day / daysPerYear : 0;
-        }
-
-        public static int NextYearStart(int day, int daysPerYear)
-        {
-            return daysPerYear > 0 ? (Year(day, daysPerYear) + 1) * daysPerYear : 0;
-        }
+        // The year is the calendar's: CalendarRules.YearOf and NextYearStart.
     }
 
     /// <summary>The kind of an entry; its number is a bit of the saved hidden kinds.</summary>

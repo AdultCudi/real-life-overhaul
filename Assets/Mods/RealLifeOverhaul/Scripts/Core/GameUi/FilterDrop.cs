@@ -78,6 +78,42 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
+        /// A drop-down of the game's already placed (a copy of a row of the game's options, Core/GameUi/OptionRows), made
+        /// awake under a showing page so that the game's scripts on it start. Null if it is no drop-down.
+        /// </summary>
+        public static FilterDrop Of(GameObject placed)
+        {
+            var dropdown = placed != null ? placed.GetComponentInChildren<global::UI.Elements.Dropdown>(true) : null;
+            if (dropdown == null)
+            {
+                return null;
+            }
+            var group = dropdown.GetComponent<CanvasGroup>();
+            if (group != null)
+            {
+                group.alpha = 1f;
+                group.interactable = true;
+                group.blocksRaycasts = true;
+            }
+            return new FilterDrop(dropdown);
+        }
+
+        /// <summary>Whether the player can change it: the game's own look for a control that cannot be used (its CanvasGroup and hover effects).</summary>
+        public void SetInteractable(bool interactable)
+        {
+            _dropdown.SetInteractable(interactable);
+        }
+
+        /// <summary>Closes its list if it is open, as the game closes it.</summary>
+        public void Close()
+        {
+            if (global::UI.Elements.Dropdown.currentDropdown == _dropdown)
+            {
+                _dropdown.HideOptions();
+            }
+        }
+
+        /// <summary>
         /// The choices (final words, the first is "all") and which is chosen. The game's drop-down is only told when
         /// something differs from what it was last given, so writing a table again costs it nothing.
         /// </summary>

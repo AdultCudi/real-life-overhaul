@@ -9,7 +9,7 @@ using UnityEngine;
 namespace RealLifeOverhaul.Markets
 {
     /// <summary>
-    /// The Stocks app in the game's frame (GameUi.AppShell): eight tabs over the table on the right and the white box on the
+    /// The Stocks app in the game's frame (GameUi.AppShell): nine tabs over the table on the right and the white box on the
     /// left; a company's page takes the table's place (<see cref="MarketPage"/>). Nothing runs while the app is closed: it is
     /// written when it opens and when the player does something in it.
     /// </summary>
@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Markets
         private static readonly string[] TabKeys =
         {
             "reallife_mkt_tab_market", "reallife_mkt_tab_companies", "reallife_mkt_tab_watch", "reallife_mkt_tab_orders", "reallife_mkt_tab_portfolio", "reallife_mkt_tab_history",
-            "reallife_mkt_tab_bots", "reallife_mkt_tab_bonds"
+            "reallife_mkt_tab_bots", "reallife_mkt_tab_bonds", "reallife_mkt_tab_futures"
         };
 
         public static IModLogger Logger;
@@ -212,6 +212,7 @@ namespace RealLifeOverhaul.Markets
                     case TabHistory: table = WriteHistory(box, s); break;
                     case TabBots: table = WriteBots(box, s); break;
                     case TabBonds: table = WriteBonds(box, s); break;
+                    case TabFutures: table = WriteFutures(box, s); break;   // MarketApp.Derivatives.cs
                     default: table = WriteMarket(box, s); break;
                 }
             }

@@ -107,10 +107,11 @@ namespace RealLifeOverhaul.Flare
             int day = _director.CurrentDay;
             int talk = file.BuzzAt(row.Key, day), own, last, reviews = 0, stars = 0;
             int posts = FlareCast.PostsAbout(file, row.Key, out own, out last);   // the player's own and the paid posts of the deals there
+            long now = _director.Now;
             for (int k = 0; k < file.Posts.Count; k++)
             {
                 FlarePost p = file.Posts[k];
-                if (p.Place == row.Key && p.Source == FlareSource.Review)
+                if (p.Place == row.Key && p.Source == FlareSource.Review && p.At <= now)   // the reviews that went up, not those of visits still to come
                 {
                     reviews++;
                     stars += p.Arg;

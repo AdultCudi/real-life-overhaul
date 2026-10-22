@@ -34,6 +34,7 @@ namespace RealLifeOverhaul
             Section(text, "LIGHTS", t => Lights(t, camera));
             Section(text, "REFLECTION PROBES", t => Probes(t));
             Section(text, "RENDERERS", t => Renderers(t, camera));
+            Section(text, "THE MOD'S THINGS IN THE STREET: drawn by distance (Performance/ModCulling)", t => ModCulling.Census(t));
             Section(text, "CHARACTERS: skinned meshes and animators", t => Characters(t));
             Section(text, "GAME: traffic, people, streaming", t => PerfGame.Describe(t));
             Section(text, "PARTICLES, PHYSICS, NAVIGATION, AUDIO", t => Simulation(t));

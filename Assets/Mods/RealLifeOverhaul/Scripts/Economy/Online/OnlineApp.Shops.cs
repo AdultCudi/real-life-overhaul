@@ -284,7 +284,7 @@ namespace RealLifeOverhaul.Economy
             {
                 // The game's own text box, as BizMan names a business with it.
                 InfoBox.Button(second, InfoBox.Additional, "reallife_online_button_rename", () =>
-                    uis.textInputUi.Show("reallife_online_rename_placeholder", "common_confirm", text => UiClone.Safe(() => _director.Rename(key, text)), null, shop.Name, false,
+                    GameUi.TextBox.Ask("reallife_online_rename_placeholder", "common_confirm", text => UiClone.Safe(() => _director.Rename(key, text)), null, shop.Name, false,
                         OnlineCatalogue.NameMost));
             }
             InfoBox.Button(second, InfoBox.Negative, "reallife_online_button_shut", () => GameConfirm.Show(

@@ -88,7 +88,7 @@ namespace RealLifeOverhaul
             private static SocialPerson Closest(SocialStage atLeast)
             {
                 SocialPerson best = null;
-                for (int i = 0; FriendsOn && i < SocialRules.CastSize; i++)
+                for (int i = 0; FriendsOn && i < SocialState.Count; i++)
                 {
                     SocialPerson p = SocialState.Get(i);
                     if (p != null && p.Met && p.Stage >= atLeast && (best == null || p.Stage > best.Stage))
@@ -101,7 +101,7 @@ namespace RealLifeOverhaul
 
             private static SocialPerson Named(string name)
             {
-                for (int i = 0; FriendsOn && i < SocialRules.CastSize; i++)
+                for (int i = 0; FriendsOn && i < SocialState.Count; i++)
                 {
                     SocialPerson p = SocialState.Get(i);
                     if (p != null && p.Met && p.Name == name)
@@ -280,7 +280,7 @@ namespace RealLifeOverhaul
                     // The partner first, then close friends.
                     for (int stage = (int)SocialStage.Partner; stage >= (int)SocialStage.CloseFriend; stage--)
                     {
-                        for (int i = 0; i < SocialRules.CastSize; i++)
+                        for (int i = 0; i < SocialState.Count; i++)
                         {
                             SocialPerson p = SocialState.Get(i);
                             if (p != null && p.Met && (int)p.Stage == stage)
@@ -306,7 +306,7 @@ namespace RealLifeOverhaul
                 public int Souvenirs(int count)
                 {
                     int given = 0;
-                    for (int i = 0; FriendsOn && i < SocialRules.CastSize && given < count; i++)
+                    for (int i = 0; FriendsOn && i < SocialState.Count && given < count; i++)
                     {
                         SocialPerson p = SocialState.Get(i);
                         if (p != null && p.Met && p.Stage >= SocialStage.Friend)

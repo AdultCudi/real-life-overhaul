@@ -158,9 +158,9 @@ namespace RealLifeOverhaul
             // Somebody new said yes on Flare: met online, as they are on Flare (their name; their sex, age and face where Flare says them).
             private static void MeetOnline(SocialPerson p, FlareInviteBook b)
             {
-                if (!string.IsNullOrEmpty(b.First) && !string.IsNullOrEmpty(b.Last))
+                if (!string.IsNullOrEmpty(b.First) && !string.IsNullOrEmpty(b.Last) && !SocialState.NameTaken(b.First + " " + b.Last, p))
                 {
-                    p.Name = b.First + " " + b.Last;
+                    p.Name = b.First + " " + b.Last;   // (one name is one contact: somebody else's stays theirs)
                 }
                 if (b.Sex >= 0)
                 {
@@ -188,7 +188,7 @@ namespace RealLifeOverhaul
                     return null;
                 }
                 string name = first + " " + last;
-                for (int i = 0; i < SocialRules.CastSize; i++)
+                for (int i = 0; i < SocialState.Count; i++)
                 {
                     SocialPerson p = SocialState.Get(i);
                     if (p != null && p.Met && p.Name == name)
@@ -200,12 +200,13 @@ namespace RealLifeOverhaul
             }
 
             // The person of the cast somebody new would be when met: one not yet met, not being brought by a friend, not a star
-            // influencer's, of the sex their name says if one is (1 a woman, 0 a man, -1 either); null if nobody is left.
+            // influencer's, of the sex their name says if one is (1 a woman, 0 a man, -1 either), else somebody new while there
+            // is room; null if nobody is left.
             private static SocialPerson Stranger(int sex)
             {
                 FlareFile file = FlareDirector.Instance != null ? FlareDirector.Instance.File : null;
                 SocialPerson either = null;
-                for (int i = 0; i < SocialRules.CastSize; i++)
+                for (int i = 0; i < SocialState.Count; i++)
                 {
                     SocialPerson p = SocialState.Get(i);
                     if (p == null || p.Met || p.IsFamily || p.Origin == SocialOrigin.OldFriend || SocialDirector.Expected(p) || (file != null && FlareCast.IsOne(file, p.Index)))
@@ -218,7 +219,7 @@ namespace RealLifeOverhaul
                     }
                     either = either ?? p;
                 }
-                return either;
+                return SocialDirector.Newcomer(SocialOrigin.Online, sex) ?? either;
             }
 
             // A plan's day and hour in the game's language, always with the day ("Monday 18:00"): the answer is read later.

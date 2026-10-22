@@ -53,6 +53,7 @@ namespace RealLifeOverhaul
                 StreetDirector.TakeGuess = Take;
                 StreetDirector.Ahead = Ahead;
                 StreetDirector.TakeAhead = TakeAhead;
+                StreetDirector.Spoken = Remembered;
             }
 
             internal static void Disconnect()
@@ -62,7 +63,21 @@ namespace RealLifeOverhaul
                 StreetDirector.TakeGuess = null;
                 StreetDirector.Ahead = null;
                 StreetDirector.TakeAhead = null;
+                StreetDirector.Spoken = null;
                 Lately.Clear();
+            }
+
+            // A line the stranger said, however its words came: what they will remember of it (data v6), after the line's own card.
+            private static void Remembered(StreetChat c, StreetLine line, Dictionary<string, string> data)
+            {
+                try
+                {
+                    TextsMemory.Street(c, line, data);
+                }
+                catch (Exception e)
+                {
+                    Fault("RLO Texts, what a stranger remembers", e);
+                }
             }
 
             // ---------------------------------------------------------------- asking
@@ -78,6 +93,11 @@ namespace RealLifeOverhaul
                     if (!TextsDirector.Words.Wants(TextUse.People, false))
                     {
                         c.Heard = "not asked: RLO Texts is off, has no pack or is not running";
+                        string intent = StreetCards.ByData(line, TextsDirector.Words.Data, true, out string _, out int _);
+                        if (intent != null)
+                        {
+                            TextsDirector.Words.NotAsked(TextUse.People, false, intent);   // (counted: the written line, and why)
+                        }
                         return false;
                     }
                     TextRequest asked = null;
@@ -319,9 +339,23 @@ namespace RealLifeOverhaul
                         r.Slots.Set("moment", moment);
                     }
                 }
+                bool six = TextsDirector.Words.Data >= TextIntents.DataV6;
                 if (KnowsName(c))
                 {
                     r.Slots.Set("known", "yes");
+                }
+                else if (six)
+                {
+                    r.Slots.Set("known", "no");   // (data v6: always said, so the model knows not to use it; the request bans it too)
+                }
+                if (six)
+                {
+                    Copy(data, r.Slots, "t_what", "what");     // (the card's English words, whatever the game's language: TextWords)
+                    Copy(data, r.Slots, "t_way", "way");
+                    Copy(data, r.Slots, "t_walk", "walk");
+                    Copy(data, r.Slots, "t_event", "event");
+                    r.Person = TextsMemory.StrangerKey(c);
+                    TextsMemory.Fill(r, null);
                 }
                 History(c, r, HistoryMost, next);
                 return r;

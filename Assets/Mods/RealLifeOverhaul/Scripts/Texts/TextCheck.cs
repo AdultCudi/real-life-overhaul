@@ -17,9 +17,13 @@ namespace RealLifeOverhaul.Texts
         Dash,        // an en or em dash, or a hyphen used as one
         Exclaim,     // an exclamation mark from a voice that never uses one
         Banned,      // a word on Flare's list
-        Language,    // letters of another script while the card asks for English
+        Language,    // letters of another script while the card asks for English (data v6: another script, or another language, than the card's)
         Repeat,      // the same, or nearly the same, as one of the last few things this person said
-        Machine      // the speaker calls itself an AI, a bot, an assistant or a language model
+        Machine,     // the speaker calls itself an AI, a bot, an assistant or a language model
+        Capital,     // data v6: a sentence that starts with a small letter, in a language that has capitals (unless the speaker writes in lower case)
+        Article,     // data v6: "a" before a vowel or "an" before a consonant, in English
+        Name,        // data v6: the player's name from somebody the card says does not know it
+        Cut          // data v6: the reply ran to its most tokens and was cut off
     }
 
     /// <summary>
@@ -44,9 +48,16 @@ namespace RealLifeOverhaul.Texts
     ///
     /// The player's own typed words (a call's composer) are made fit to be shown and sent by <see cref="Typed"/>.
     ///
-    /// Game-free (EconomyCheck, TextsChecks.cs and ComposerChecks.cs: each rule made to fail). COST: one pass over a line of 200 characters.
+    /// Data v6 (<see cref="JudgeSix"/>, TextCheck.Six.cs) checks the reply in the card's language: its length by the
+    /// language's script, a must fact that is a name, a figure or a time's clock in any language and English words only
+    /// in English, no "!" nor its full-width form from anybody, the language's own script and words, a capital at each
+    /// sentence's start where the language has capitals, "a" and "an" in English, the player's name kept from a stranger
+    /// who does not know it, the speaker never calling itself a machine in any of the seven languages, and a reply cut at
+    /// its most tokens refused.
+    ///
+    /// Game-free (EconomyCheck, TextsChecks.cs, ComposerChecks.cs and TextsLanguageChecks.cs: each rule made to fail). COST: one pass over a line of 200 characters.
     /// </summary>
-    public static class TextCheck
+    public static partial class TextCheck
     {
         public const int NearShare = 75;     // per cent of words shared: nearly the same
         public const int NearFrom = 4;       // ...counted only for lines of this many words or more
@@ -68,6 +79,30 @@ namespace RealLifeOverhaul.Texts
                 start++;
             }
             return raw.Substring(start).Trim();
+        }
+
+        /// <summary>
+        /// The same for a reply of data v6 in a language (null: as <see cref="Tidy(string)"/>), the opening marks of the seven
+        /// languages kept as well: Spanish's question mark, the guillemets, German's low quotes, the Chinese corner brackets.
+        /// </summary>
+        public static string Tidy(string raw, string lang)
+        {
+            if (lang == null || raw == null)
+            {
+                return Tidy(raw);
+            }
+            int start = 0;
+            while (start < raw.Length && !Starts(raw[start]) && !Opens(raw[start]))
+            {
+                start++;
+            }
+            return raw.Substring(start).Trim();
+        }
+
+        /// <summary>An opening mark a line of data v6 may start with, or a sentence's first letter come after.</summary>
+        public static bool Opens(char c)
+        {
+            return c == '¿' || c == '«' || c == '»' || c == '„' || c == '‚' || c == '「' || c == '『' || c == '（';
         }
 
         /// <summary>

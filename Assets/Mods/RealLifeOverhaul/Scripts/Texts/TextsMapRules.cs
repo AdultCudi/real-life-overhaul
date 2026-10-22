@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Texts
         // The written lines' pools, without their number (built, so the catalogue's check does not read them as keys).
         private const string Social = "reallife" + "_social_text_";
         private const string Family = "reallife" + "_family_";
+        private const string CityStem = "reallife" + "_texts_";   // data v6's life texts and gossip (CityKeys)
 
         /// <summary>A phone message's intent and branch from its written line's key; null for a line with none.</summary>
         public static string Phone(string key, From from, out string branch)
@@ -28,6 +29,12 @@ namespace RealLifeOverhaul.Texts
                 return null;
             }
             string pool = Pool(key);
+            string city = City(pool, out string cityBranch);
+            if (city != null)
+            {
+                branch = cityBranch;
+                return city;   // (data v6: a text after the player's own event, or gossip: Texts/TextsDirector.City)
+            }
             switch (pool)
             {
                 // friends (Social/SocialCatalogue's pools)
@@ -38,6 +45,7 @@ namespace RealLifeOverhaul.Texts
                 case Social + "cancel_rain": return "friend.cancel.rain";
                 case Social + "stoodup": return "friend.stood_up";
                 case Social + "thanks": return "friend.thanks";
+                case Social + "nextday_good": return from == From.Friend ? "friend.thanks" : null;   // (a friend's the day after a good outing: thanks for it, the card every pack has)
                 case Social + "birthday_own": return "friend.birthday_own";
                 case Social + "birthday_missed": return "friend.birthday_missed";
                 case Social + "rich_kind":
@@ -103,6 +111,48 @@ namespace RealLifeOverhaul.Texts
                 case "reallife_text_shark_warn": return "lender.warn";
                 default: return null;
             }
+        }
+
+        /// <summary>
+        /// The written lines of data v6's life events and gossip by their pool (the key without its number: TextsCityRules.LifeKey,
+        /// GossipKey), with their intent and branch: one row each, "pool|intent|branch" (no branch: empty).
+        /// </summary>
+        public static readonly string[] CityKeys =
+        {
+            "reallife_texts_life_partner_crash|partner.crash|", "reallife_texts_life_mom_news_crash|mom.news.crash|",
+            "reallife_texts_life_partner_court_guilty|partner.court|guilty", "reallife_texts_life_partner_court_cleared|partner.court|cleared",
+            "reallife_texts_life_mom_news_court_guilty|mom.news.court|guilty", "reallife_texts_life_mom_news_court_cleared|mom.news.court|cleared",
+            "reallife_texts_life_mom_news_graduated|mom.news.graduated|", "reallife_texts_life_friend_graduated|friend.graduated|",
+            "reallife_texts_life_friend_listed|friend.listed|", "reallife_texts_life_mom_news_listed|mom.news.listed|",
+            "reallife_texts_life_friend_congrats_open|friend.congrats_open|", "reallife_texts_life_mom_news_opened|mom.news.opened|",
+            "reallife_texts_life_friend_married|friend.married|", "reallife_texts_life_mom_news_baby_born|mom.news.baby|born",
+            "reallife_texts_life_mom_news_baby_adopted|mom.news.baby|adopted", "reallife_texts_life_friend_baby_born|friend.baby|born",
+            "reallife_texts_life_friend_baby_adopted|friend.baby|adopted", "reallife_texts_life_friend_win|friend.win|",
+            "reallife_texts_life_partner_loss|partner.loss|", "reallife_texts_life_friend_loss|friend.loss|",
+            "reallife_texts_gossip_crash|friend.gossip|crash", "reallife_texts_gossip_arrest|friend.gossip|arrest", "reallife_texts_gossip_court|friend.gossip|court",
+            "reallife_texts_gossip_opened|friend.gossip|opened", "reallife_texts_gossip_graduated|friend.gossip|graduated", "reallife_texts_gossip_listed|friend.gossip|listed",
+            "reallife_texts_gossip_married|friend.gossip|married", "reallife_texts_gossip_baby|friend.gossip|baby"
+        };
+
+        // A pool of data v6's life texts or gossip: its intent and branch; null for any other pool.
+        private static string City(string pool, out string branch)
+        {
+            branch = null;
+            if (!pool.StartsWith(CityStem, StringComparison.Ordinal))
+            {
+                return null;
+            }
+            for (int i = 0; i < CityKeys.Length; i++)
+            {
+                string row = CityKeys[i];
+                int a = row.IndexOf('|'), b = row.IndexOf('|', a + 1);
+                if (string.CompareOrdinal(row, 0, pool, 0, Math.Max(a, pool.Length)) == 0 && pool.Length == a)
+                {
+                    branch = b + 1 < row.Length ? row.Substring(b + 1) : null;
+                    return row.Substring(a + 1, b - a - 1);
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -238,7 +288,9 @@ namespace RealLifeOverhaul.Texts
             new[] { "reallife_family_arrest_3", "partner.arrest" }, new[] { "reallife_family_mom_birthday", "mom.grandchild_birthday" },
             new[] { "reallife_family_inlaws_grandchild", "inlaws.baby" }, new[] { "reallife_text_roommate_notice", "roommate.notice" },
             new[] { "reallife_career_text_noshow", "boss.noshow" }, new[] { "reallife_text_shark_warn", "lender.warn" },
-            new[] { "reallife_social_invite_drive", null }, new[] { "reallife_social_text_breakup_1", null }, new[] { "reallife_social_text_where", null }
+            new[] { "reallife_social_invite_drive", null }, new[] { "reallife_social_text_breakup_1", null }, new[] { "reallife_social_text_where", null },
+            new[] { "reallife_social_text_nextday_good_2", "friend.thanks" }, new[] { "reallife_social_text_nextday_bad_1", null },
+            new[] { "reallife_social_text_nextday_date_good_1", null }, new[] { "reallife_social_text_nextday_mom_bad_2", null }
         };
 
         /// <summary>The cases checked (for the checks' line).</summary>

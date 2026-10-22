@@ -9,15 +9,17 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Offline checks of the Settings app (Meta/SettingsRules.cs, as it ships): the tree as the app's tabs (every
-    /// option, button and key once, on its group's tab under its section's heading, in the page's order; the test tools
-    /// only on Troubleshooting, by group and section; rows nothing claims under "Other"), the presets compared with the
-    /// choices made, the values a number's selector steps through, the search over every tab (in English and in
-    /// Chinese), and the app's texts: a tab label for each group, short enough for ten side by side.
+    /// Offline checks of the Settings app (Meta/SettingsRules.cs, as it ships): the tree as the app's groups (every
+    /// option, button and key once, in its group under its section's heading, in the page's order; the test tools only
+    /// under Troubleshooting, by group and section; rows nothing claims under "Other"), the pages of the list on the left
+    /// (every option on exactly one page, with a control of its kind: a switch, a slider with the option's own ends in
+    /// whole numbers, the game's drop-down, a button, a key), the values saved under the keys they always were, the presets
+    /// compared with the choices made, the search over every page (in English and in Chinese), and the app's texts.
     /// </summary>
     internal static class SettingsAppCheck
     {
-        public static void Run(Action<string> fail, Dictionary<string, string> locale, string src, List<PlanRow> built, ICollection<string> testKeys, Dictionary<string, string> labelOf)
+        public static void Run(Action<string> fail, Dictionary<string, string> locale, string src, List<PlanRow> built, ICollection<string> testKeys, Dictionary<string, string> labelOf,
+            Dictionary<string, (int Min, int Max)> sliders)
         {
             Console.WriteLine("\n== The Settings app: the tabs ==");
             int checks = 0;
@@ -173,29 +175,112 @@ namespace RealLifeOverhaul
             Check(Closest(new[] { 0, 3, 0, 0 }, new[] { 0, 40, 0, 0 }, out exact) == 1 && !exact, "a preset that covers nothing was compared");
             Check(Closest(new int[0], new int[0], out exact) == -1, "no presets give one");
 
-            // ---- a number's selector
-            Console.WriteLine("\n== The Settings app: a number's steps ==");
-            var steps = new List<int>();
-            SettingsRules.Steps(1, 10, 4, 5, steps);
-            Check(steps.SequenceEqual(Enumerable.Range(1, 10)), "a small range is not every whole number in it: " + string.Join(",", steps));
-            int worst = 0;
-            foreach (int[] c in new[] { new[] { 70, 150, 100, 100 }, new[] { -50, 50, 7, 0 }, new[] { 0, 100, 33, 50 }, new[] { 100, 300, 101, 100 }, new[] { 1, 20, 20, 5 }, new[] { 0, 1000, 999, 1 }, new[] { 5, 70, 5, 30 } })
+            // ---- the pages of the list on the left, and the control of each row
+            Console.WriteLine("\n== The Settings app: the pages and their controls ==");
+            List<SettingsPage> pages = SettingsRules.Pages(tabs, built);
+            int testsCategory = SettingsRules.TestsCategory(tabs);
+            Console.WriteLine($"  {pages.Count} pages: {pages.Count(p => !p.IsTests)} sections and {pages.Count(p => p.IsTests)} pages of test tools");
+            Check(pages.Count == lines.Count(l => l.IsHeading), "the app has " + pages.Count + " pages for " + lines.Count(l => l.IsHeading) + " headings");
+            Check(pages.Select((p, i) => p.Index == i).All(x => x), "a page's number is not its place in the list");
+            Check(pages.All(p => p.IsTests ? p.Category == testsCategory : p.Category == p.Heading.Tab), "a page is listed under a category not its group's (or the test tools' last one)");
+            Check(pages.All(p => p.Lines.All(l => !l.IsHeading)), "a heading is a row of a page");
+            Check(pages.All(p => p.IsTests == p.Lines.All(l => l.Kind == LineKind.Test) || p.Lines.Count == 0), "a page of test tools has another row, or a section's page a test tool");
+            List<int> categoryOrder = pages.Select(p => p.Category).ToList();
+            Check(categoryOrder.SequenceEqual(categoryOrder.OrderBy(c => c)), "the pages are not in the order of their categories: the groups in the tree's order, then the test tools");
+            var onPages = pages.SelectMany(p => p.Lines).ToList();
+            int settingsButton = built.FindIndex(r => r.LabelKey == SettingsRules.SettingsButtonKey);
+            Check(settingsButton >= 0 && !onPages.Any(l => l.Kind != LineKind.Test && l.Row == settingsButton), "the button that opens the app is on a page of the app itself");
+            var wantedControl = new Dictionary<PlanKind, ControlKind>
             {
-                SettingsRules.Steps(c[0], c[1], c[2], c[3], steps);
-                worst = Math.Max(worst, steps.Count);
-                Check(steps[0] == c[0] && steps[steps.Count - 1] == c[1], "the steps of " + c[0] + ".." + c[1] + " do not reach both ends");
-                Check(steps.Contains(c[2]) && steps.Contains(c[3]), "the steps of " + c[0] + ".." + c[1] + " leave out the value now or the default");
-                Check(steps.SequenceEqual(steps.Distinct().OrderBy(x => x)), "the steps of " + c[0] + ".." + c[1] + " are not distinct and in order");
-                Check(steps.Count <= SettingsRules.MostSteps + 3, "the range " + c[0] + ".." + c[1] + " has " + steps.Count + " steps");
-                Check(steps[SettingsRules.StepOf(steps, c[2])] == c[2], "the value now is not where the selector starts");
+                { PlanKind.Toggle, ControlKind.Switch }, { PlanKind.Slider, ControlKind.Slider }, { PlanKind.Choice, ControlKind.Choice }, { PlanKind.Button, ControlKind.Action }, { PlanKind.Key, ControlKind.Key }
+            };
+            int[] byControl = new int[6];
+            for (int i = 0; i < built.Count; i++)
+            {
+                if (i == settingsButton) continue;
+                List<SettingsLine> places = onPages.Where(l => l.Kind != LineKind.Test && l.Row == i).ToList();
+                Check(places.Count == 1, "the row " + built[i].Key + " is on " + places.Count + " pages of the app (exactly one is wanted)");
+                if (places.Count != 1) continue;
+                ControlKind control = SettingsRules.ControlOf(places[0].Kind, built[i].Kind);
+                byControl[(int)control]++;
+                Check(control == wantedControl[built[i].Kind], "the row " + built[i].Key + " (a " + built[i].Kind + ") is drawn with a " + control + ", not a " + wantedControl[built[i].Kind]);
+                SettingsPage page = pages.First(p => p.Lines.Contains(places[0]));
+                Check(!page.IsTests && page.Heading.Section == OptionsTree.SectionOf(built[i].Key), "the row " + built[i].Key + " is not on its own section's page");
             }
-            SettingsRules.Steps(10, 1, 50, -3, steps);
-            Check(steps[0] == 1 && steps[steps.Count - 1] == 10 && steps.Contains(10) && steps.Contains(1), "a range given the wrong way round, or a value outside it, is not kept inside");
-            SettingsRules.Steps(4, 4, 4, 4, steps);
-            Check(steps.SequenceEqual(new[] { 4 }), "a range of one value is not that value");
-            SettingsRules.Steps(0, 100, 50, 50, steps);
-            Check(SettingsRules.StepOf(steps, 51) == steps.IndexOf(50) || Math.Abs(steps[SettingsRules.StepOf(steps, 51)] - 51) <= 1, "a value between steps does not go to the nearest");
-            Console.WriteLine($"  at most {worst} steps for the mod's ranges (wanted at most {SettingsRules.MostSteps + 3})");
+            Check(Enumerable.Range(0, tests.Count).All(t => onPages.Count(l => l.Kind == LineKind.Test && l.Row == t) == 1), "a test tool is on no page, or on two");
+            Check(onPages.Where(l => l.Kind == LineKind.Test).All(l => SettingsRules.ControlOf(l.Kind, PlanKind.Button) == ControlKind.Action), "a test tool is not a button");
+            foreach (TreeRow row in OptionsTree.Groups.SelectMany(g => g.Sections).SelectMany(s => s.Rows).Where(r => !r.IsButton))
+            {
+                int at = built.FindIndex(r => r.Key == row.Id);
+                Check(at >= 0 && onPages.Count(l => l.Kind == LineKind.Option && l.Row == at) == 1, "the tree's option " + row.Id + " is not on exactly one page of the app as an option");
+            }
+            Check(SettingsRules.ControlOf(LineKind.Heading, PlanKind.Toggle) == ControlKind.None && SettingsRules.ControlOf(LineKind.TestHeading, PlanKind.Button) == ControlKind.None,
+                "a heading is drawn with a control");
+            Check(SettingsRules.ControlOf(LineKind.Option, PlanKind.Button) == ControlKind.None && SettingsRules.ControlOf(LineKind.Option, PlanKind.Key) == ControlKind.None,
+                "an option that is a button or a key is drawn with a control of a value");
+            Console.WriteLine($"  {byControl[(int)ControlKind.Switch]} switches, {byControl[(int)ControlKind.Slider]} sliders, {byControl[(int)ControlKind.Choice]} choices, "
+                              + $"{byControl[(int)ControlKind.Action]} buttons and {byControl[(int)ControlKind.Key]} keys, each on one page");
+            Check(byControl[(int)ControlKind.Switch] >= 150 && byControl[(int)ControlKind.Slider] >= 40 && byControl[(int)ControlKind.Choice] >= 25 && byControl[(int)ControlKind.Key] >= 8,
+                "fewer switches, sliders, choices or keys on the pages than the mod has");
+            SettingsPage[] emptyPages = SettingsRules.Pages(empty, new List<PlanRow>()).ToArray();
+            Check(emptyPages.Length == 0, "an empty page gives pages");
+
+            // ---- a number's slider: the option's own ends and whole numbers
+            Console.WriteLine("\n== The Settings app: the sliders ==");
+            int sliderRows = 0;
+            foreach (KeyValuePair<string, (int Min, int Max)> slider in sliders)
+            {
+                int row = built.FindIndex(r => r.Key == slider.Key);
+                Check(row >= 0 && built[row].Kind == PlanKind.Slider, "the slider " + slider.Key + " is not a slider row of the page");
+                if (row < 0) continue;
+                sliderRows++;
+                (int min, int max) = slider.Value;
+                Check(min < max, "the slider " + slider.Key + " has the ends " + min + " and " + max);
+                int middle = SettingsRules.SliderStart(min, max, (min + max) / 2, out int low, out int high);
+                Check(low == min && high == max && middle == (min + max) / 2, "the slider " + slider.Key + " is not drawn between its own ends " + min + " and " + max);
+                Check(SettingsRules.SliderStart(min, max, max + 7, out _, out _) == max && SettingsRules.SliderStart(min, max, min - 7, out _, out _) == min, "the slider " + slider.Key + " starts outside its ends");
+                bool whole = true;
+                for (float dragged = min; dragged <= max; dragged += 0.25f)
+                {
+                    int snapped = SettingsRules.Snap(dragged, low, high);
+                    whole &= snapped >= min && snapped <= max && Math.Abs(snapped - dragged) <= 0.5f;
+                }
+                Check(whole, "the slider " + slider.Key + " does not snap to its whole numbers between " + min + " and " + max);
+                Check(SettingsRules.Snap(max + 3.6f, low, high) == max && SettingsRules.Snap(min - 3.6f, low, high) == min, "the slider " + slider.Key + " snaps past its ends");
+            }
+            Check(sliderRows == built.Count(r => r.Kind == PlanKind.Slider), "the page has " + built.Count(r => r.Kind == PlanKind.Slider) + " sliders and " + sliderRows + " of them have their ends read");
+            Check(SettingsRules.SliderStart(10, 1, 50, out int lo, out int hi) == 10 && lo == 1 && hi == 10, "a slider given its ends the wrong way round is not drawn from the lower one");
+            Check(SettingsRules.Snap(4.5f, 0, 10) == 5 && SettingsRules.Snap(4.49f, 0, 10) == 4 && SettingsRules.Snap(-0.4f, -50, 50) == 0, "a slider does not snap to the nearest whole number");
+            string view = File.ReadAllText(Path.Combine(src, "Scripts", "Meta", "SettingsView.Rows.cs"));
+            Check(view.Contains("row.Slider.wholeNumbers = true;") && view.Contains("row.Slider.minValue = slot.Low;") && view.Contains("row.Slider.maxValue = slot.High;")
+                  && view.Contains("SettingsRules.SliderStart(min, max, OptionsLayout.AppValue(line), out slot.Low, out slot.High)") && view.Contains("OptionsLayout.AppRange(line, out int min, out int max)"),
+                "the app's slider is not set to the option's own ends (OptionsLayout.AppRange) in whole numbers");
+            Check(view.Contains("SettingsRules.Snap(dragged, slot.Low, slot.High)"), "a value dragged to is not snapped to the slider's whole numbers before it is saved");
+            Check(view.Contains("case ControlKind.Switch: return OptionRowKind.Switch;") && view.Contains("case ControlKind.Slider: return OptionRowKind.Slider;")
+                  && view.Contains("case ControlKind.Choice: return OptionRowKind.Choice;") && view.Contains("ControlKind kind = OptionsLayout.AppControl(line);"),
+                "the app does not draw each line with the game's control of its kind (SettingsRules.ControlOf through OptionsLayout.AppControl)");
+            Console.WriteLine($"  {sliderRows} sliders, each between the option's own ends in whole numbers");
+
+            // ---- the values saved where they always were
+            Console.WriteLine("\n== The Settings app: the values it saves ==");
+            string scripts = Path.Combine(src, "Scripts");
+            string book = File.ReadAllText(Path.Combine(scripts, "Meta", "OptionsLayout.Book.cs"));
+            string settingsCode = File.ReadAllText(Path.Combine(scripts, "Core", "Settings.cs"));
+            Check(book.Contains("string key = row != null && row.Id != null ? Settings.PrefsKey(row.Id) : null;") && book.Contains("UnityEngine.PlayerPrefs.SetInt(key, value);")
+                  && book.Contains("string key = Settings.PrefsKey(row.Id);"),
+                "the app no longer reads and writes an option under the options page's own key (Settings.PrefsKey of its id)");
+            Check(settingsCode.Contains("public static string PrefsKey(string id) => _modId == null ? null : Key(_modId, id);")
+                  && System.Text.RegularExpressions.Regex.IsMatch(settingsCode, @"static string Key\(string modId, string id\)\s*=>\s*""m:"" \+ modId \+ "":"" \+ id;"),
+                "the key an option is saved under is no longer the game's own m:<mod>:<id> (ModOptionPrefs), so the values saved before would be lost");
+            foreach (string file in Directory.GetFiles(Path.Combine(scripts, "Meta"), "SettingsView*.cs"))
+            {
+                string code = File.ReadAllText(file);
+                Check(!code.Contains("PlayerPrefs.Set") && !code.Contains("PlayerPrefs.Delete") && !code.Contains("SettingsTable.Write"),
+                    Path.GetFileName(file) + " writes a value by a way of its own: every value goes through OptionsLayout.AppSet, as the Mods tab saves it");
+            }
+            Check(view.Contains("OptionsLayout.AppSet(line, value)"), "the app's rows do not save through OptionsLayout.AppSet");
+            Check(built.Where(r => r.Kind != PlanKind.Button && r.Kind != PlanKind.Key).All(r => onPages.Any(l => l.Kind == LineKind.Option && built[l.Row].Id == r.Id)),
+                "an option's line in the app stands for another id than the one it is saved under");
 
             // ---- the search
             Console.WriteLine("\n== The Settings app: the search ==");
@@ -266,38 +351,46 @@ namespace RealLifeOverhaul
             Console.WriteLine("\n== The Settings app: the words ==");
             foreach (TreeGroup group in groups)
             {
-                string tab = Text("reallife_set_tab_" + group.Id);
-                Check(!string.IsNullOrEmpty(tab), "the group " + group.Id + " has no tab label reallife_set_tab_" + group.Id);
-                Check(tab == null || tab.Length <= SettingsRules.TabChars, "the tab label of " + group.Id + " has " + (tab ?? string.Empty).Length + " characters (at most " + SettingsRules.TabChars + "): " + tab);
-                Check(tab == null || OptionsWording.WordCount(tab) == 1, "the tab label of " + group.Id + " is more than one word: " + tab);
-                Check(OptionsWording.FirstBanned(tab) == null, "the tab label of " + group.Id + " uses '" + OptionsWording.FirstBanned(tab) + "'");
+                string title = Text(group.TitleKey);
+                Check(!string.IsNullOrEmpty(title) && OptionsWording.FirstBanned(title) == null, "the group " + group.Id + " has no name in the list, or one with the mod's own words: " + title);
             }
-            foreach (string key in new[] { "reallife_set_app", "reallife_set_link", "reallife_set_search", "reallife_set_back", "reallife_set_list_differ", "reallife_set_type_number", "reallife_set_to_default", "reallife_set_switch_on", "reallife_set_guide_page", "reallife_set_search_again" })
+            Check(!string.IsNullOrEmpty(Text("reallife_meta_title_tests")), "the test tools' category has no name");
+            foreach (string key in new[] { "reallife_set_app", "reallife_set_link", "reallife_set_search", "reallife_set_list_differ", "reallife_opt_about" })
             {
                 string text = Text(key);
                 Check(!string.IsNullOrEmpty(text) && text.Length <= 24 && OptionsWording.FirstBanned(text) == null, "the label " + key + " is missing, longer than 24 characters or uses one of the mod's own words: " + text);
             }
-            foreach (string key in new[] { "reallife_set_headline", "reallife_set_count" })
+            var named = new Dictionary<string, string[]>
             {
-                Check((Text(key) ?? string.Empty).Contains("{on}") && (Text(key) ?? string.Empty).Contains("{total}"), "the text " + key + " has lost its numbers");
+                { "reallife_set_count", new[] { "{on}", "{total}" } }, { "reallife_set_tools", new[] { "{count}" } }, { "reallife_set_headline_differ", new[] { "{preset}", "{count}" } },
+                { "reallife_set_headline_in_use", new[] { "{preset}" } }, { "reallife_set_box_needs_line", new[] { "{option}" } }, { "reallife_set_headline_found", new[] { "{count}", "{query}" } },
+                { "reallife_set_default_is", new[] { "{value}" } }, { "reallife_set_preset_sets", new[] { "{preset}", "{value}" } }, { "reallife_set_differ_elsewhere", new[] { "{option}", "{now}" } },
+                { "reallife_set_differ_note", new[] { "{preset}" } }, { "reallife_set_found_more", new[] { "{count}" } }, { "reallife_set_apply_preset", new[] { "{preset}" } },
+                { "reallife_set_box_same", new[] { "{preset}" } }, { "reallife_set_box_differ", new[] { "{preset}", "{count}" } }, { "reallife_set_in_use", new string[0] },
+                { "reallife_set_differ_count", new[] { "{count}" } }, { "reallife_set_reload_note", new string[0] }, { "reallife_set_keys_note", new string[0] },
+                { "reallife_set_box_tests", new string[0] }, { "reallife_set_box_same_page", new string[0] }, { "reallife_set_search_hint", new string[0] },
+                { "reallife_set_empty_found", new string[0] }, { "reallife_set_box_found_none", new string[0] }, { "reallife_set_app_title", new string[0] }
+            };
+            foreach (KeyValuePair<string, string[]> text in named)
+            {
+                string said = Text(text.Key);
+                Check(!string.IsNullOrEmpty(said) && text.Value.All(n => said.Contains(n)), "the app's text " + text.Key + " is missing or has lost " + string.Join(" ", text.Value));
             }
-            Check((Text("reallife_set_headline_differ") ?? string.Empty).Contains("{preset}") && (Text("reallife_set_headline_differ") ?? string.Empty).Contains("{count}"), "the differences headline has lost its preset or count");
-            Check((Text("reallife_set_needs") ?? string.Empty).Contains("{option}") && (Text("reallife_set_box_needs_line") ?? string.Empty).Contains("{option}"), "what an option needs has lost its option");
-            Check((Text("reallife_set_headline_found") ?? string.Empty).Contains("{query}"), "the search's headline has lost what was looked for");
             string start = Text("reallife_guide_start") ?? string.Empty;
             Check(start.Contains("# The " + (Text("reallife_set_app") ?? "?") + " app"), "the Guide's Getting started page has no section on the app by its name");
             Check(start.Contains("'" + (Text("reallife_meta_settings_button") ?? "?") + "'"), "the Guide's section on the app does not name the Mods tab's button as it is");
             Check(start.Contains("'" + (Text("reallife_meta_show_tests") ?? "?") + "'") && start.Contains("'" + (Text("reallife_set_search") ?? "?") + "'"), "the Guide's section on the app does not name 'Show test tools' and 'Search' as they are");
+            Check(start.Contains("'" + (Text("reallife_opt_sec_presets") ?? "?") + "'") && start.Contains("(F1)"), "the Guide's section on the app does not name 'Presets', or the game's help it looks like");
 
             // ---- how long it takes
             Stopwatch watch = Stopwatch.StartNew();
-            for (int i = 0; i < 200; i++) SettingsRules.Tabs(plan, built, tests);
+            for (int i = 0; i < 200; i++) SettingsRules.Pages(SettingsRules.Tabs(plan, built, tests), built);
             double tabsMs = watch.Elapsed.TotalMilliseconds / 200.0;
             watch.Restart();
             for (int i = 0; i < 200; i++) Find("police chase");
             double findMs = watch.Elapsed.TotalMilliseconds / 200.0;
-            Console.WriteLine($"  the tabs from {built.Count} rows and {tests.Count} test tools {tabsMs:0.000} ms; one search over {lines.Count} lines {findMs:0.000} ms");
-            Check(tabsMs < 2.0, "making the tabs takes " + tabsMs.ToString("0.00") + " ms");
+            Console.WriteLine($"  the groups and pages from {built.Count} rows and {tests.Count} test tools {tabsMs:0.000} ms; one search over {lines.Count} lines {findMs:0.000} ms");
+            Check(tabsMs < 2.0, "making the groups and pages takes " + tabsMs.ToString("0.00") + " ms");
             Check(findMs < 2.0, "a search over every line takes " + findMs.ToString("0.00") + " ms");
             Console.WriteLine($"  {checks} checks of the Settings app");
             if (checks < 200) fail("settings app: only " + checks + " checks ran");

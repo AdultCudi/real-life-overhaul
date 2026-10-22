@@ -60,7 +60,7 @@ namespace RealLifeOverhaul
         /// <summary>RLO Texts: asks for a person's answer to the player's typed words on a call (see <see cref="SocialAnswerAsk"/>).</summary>
         public static SocialAnswerAsk AnswerTyped;
 
-        public const string WordsKey = "reallife_texts_line";
+        public const string WordsKey = SocialFollowRules.WordsKey;   // RLO Texts' line for a model's words: "{text}"
     }
 
     /// <summary>
