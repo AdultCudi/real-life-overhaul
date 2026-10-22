@@ -5,16 +5,15 @@ using UI.Notification;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The end game at scale's two tests on the options page: start the four weeks of coming to scale now, as a save that
-    /// already held its ventures would, or bring every venture to the whole scale at once. Each venture does it for itself
-    /// through a bridge set by the wiring (Wiring/EndScaleLinks); one notice says what was done, or why nothing was.
-    /// Cost: nothing per frame; a button press only.
+    /// The end game at scale's two tests on the options page. Each venture does its part through a bridge set by the wiring
+    /// (Wiring/EndScaleLinks); one notice says what was done, or why nothing was. Nothing per frame.
     /// </summary>
     public static class EndScaleTests
     {
-        /// <summary>Each venture's test (the data centres and cloud, the broadband company, the bank): true if it held something and was moved. Set by the wiring.</summary>
+        /// <summary>Each venture's test (the data centres and cloud, broadband, the bank): true if it held something and was moved.</summary>
         public static Func<bool, bool> Infra, Broadband, Bank;
 
+        /// <summary>Starts the four weeks of coming to scale now, or with <paramref name="full"/> brings every venture to the whole scale.</summary>
         public static void Phase(bool full)
         {
             if (!Settings.EndScale)

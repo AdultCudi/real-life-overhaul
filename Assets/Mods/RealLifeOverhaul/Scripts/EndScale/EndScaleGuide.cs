@@ -7,11 +7,9 @@ using RealLifeOverhaul.Utilities;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The end game at scale's entry in the mod's feature list (Core/EndScale; the ventures it scales keep their own
-    /// figures and pages), its option and preset (off in Relaxed: the cheaper figures of before), its two tests, and the
-    /// figures the Guide's page "The end game at scale" prints: every {name} in its text is filled from the ventures'
-    /// catalogues at scale here, so the page can never say anything the rules do not do. Called once, when the feature
-    /// list is built (Meta/FeatureList); each figure is worked out when the page is opened. Cost: nothing per frame.
+    /// The end game at scale's entry in the mod's feature list: its option and preset (off in Relaxed), its two tests, and
+    /// the figures its Guide page prints, each {name} filled from the ventures' catalogues at scale, so the page never says
+    /// what the rules do not do. Called once when the feature list is built; a figure is worked out when the page opens.
     /// </summary>
     public static class EndScaleGuide
     {
@@ -78,7 +76,7 @@ namespace RealLifeOverhaul
                 // the bank
                 .Fact("es_ob_licence", () => Cents(OwnBankCatalogue.LicenceCentsScale))
                 .Fact("es_ob_capital", () => Cents(OwnBankCatalogue.CapitalLeastCentsScale))
-                .Fact("es_ob_licence_community", () => Cents(BankTiers.LicenceCentsScale[BankTiers.Community]))   // a bank starts at the first level (Economy/OwnBank/Tiers)
+                .Fact("es_ob_licence_community", () => Cents(BankTiers.LicenceCentsScale[BankTiers.Community]))   // a bank starts at the first level
                 .Fact("es_ob_capital_community", () => Cents(BankTiers.CapitalCentsScale[BankTiers.Community]))
                 .Fact("es_ob_pool", () => Whole(OwnBankCatalogue.PoolScale / 1000))
                 .Fact("es_ob_tellers", () => Cents(OwnBankCatalogue.TellerCents))
