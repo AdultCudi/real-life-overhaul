@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using Helpers;
-using Localizor;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
-using Vehicles.VehicleTypes;
 
 namespace RealLifeOverhaul
 {

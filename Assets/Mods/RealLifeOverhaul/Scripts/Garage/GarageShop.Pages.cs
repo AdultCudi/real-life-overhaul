@@ -1,17 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using BAModAPI;
-using Cinemachine;
-using Helpers;
-using Localizor;
 using RealLifeOverhaul.GameUi;
 using UI;
-using UI.Load;
-using UI.Notification;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul
 {

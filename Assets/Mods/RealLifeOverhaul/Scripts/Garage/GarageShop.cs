@@ -10,8 +10,6 @@ using UI;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 
 namespace RealLifeOverhaul
@@ -160,27 +158,6 @@ namespace RealLifeOverhaul
                 }
             }
             Logger?.Info("Garage: " + _bays.Count + " repair bays found for the custom shop (" + truck + " of them truck garages).");
-        }
-
-        /// <summary>The bay a vehicle stands in, or null.</summary>
-        private GasStationTrigger BayOf(VehicleController vehicle)
-        {
-            Vector3 at = vehicle.transform.position;
-            for (int i = 0; i < _bays.Count; i++)
-            {
-                GasStationTrigger bay = _bays[i];
-                if (bay == null || bay.stationCollider == null)
-                {
-                    continue;
-                }
-                Bounds bounds = bay.stationCollider.bounds;
-                if (Mathf.Abs(at.x - bounds.center.x) <= bounds.extents.x && Mathf.Abs(at.z - bounds.center.z) <= bounds.extents.z
-                    && Mathf.Abs(at.y - bounds.center.y) <= bounds.extents.y + 2f)
-                {
-                    return bay;
-                }
-            }
-            return null;
         }
 
         /// <summary>The repair bays the shop works at, for the city map (World/MapLinks); looked for on first use. Read only.</summary>

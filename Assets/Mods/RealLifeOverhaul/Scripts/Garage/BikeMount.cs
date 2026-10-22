@@ -462,8 +462,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        public bool Marked => _poi != null;
-
         /// <summary>Where this two-wheeler is and whether it can be seen, as one log line; builds a string.</summary>
         public string Report()
         {
