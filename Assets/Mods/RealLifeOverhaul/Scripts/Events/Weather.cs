@@ -317,7 +317,9 @@ namespace RealLifeOverhaul.Events
         // put on the road. That range is narrowed here, so the cars that set off in the wet do so more carefully.
         private void ApplySpeed()
         {
-            float wanted = Weather.TrafficSpeedFactor;
+            // A guest's traffic is the host's cars, placed from the host's figures: never changed here, and put back the
+            // moment the machine becomes a guest.
+            float wanted = GoingPublic.TrafficMirrored ? 1f : Weather.TrafficSpeedFactor;
             if (_speedFailed || Mathf.Approximately(wanted, _speedApplied))
             {
                 return;

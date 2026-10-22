@@ -26,6 +26,9 @@ namespace RealLifeOverhaul.Events
         private const float EngineBack = 12f;        // metres the engine stands short of the fire, in its lane
         private const float HardLimit = 250f;        // seconds: whatever state it is in, it is cleared by then
         private const int Bystanders = 3;            // people at most
+        private const float CoilOut = 0.8f;          // metres off the engine's side the spare hose lies
+        private const float CoilAhead = -2.7f;       // metres ahead of the modelled body's middle: behind the rear axle, clear of the crew and the hose laid
+        private const float CoilTurn = 30f;          // degrees off the engine's heading, as the props' fire picture lays it
 
         private readonly EventDirector _director;
         private readonly List<Footprint> _footprints = new List<Footprint>(1);
@@ -51,6 +54,7 @@ namespace RealLifeOverhaul.Events
         private BuildingRegistration _business;   // the player's own, if that is what burns
         private GameObject _hazards;
         private Transform _nozzle;
+        private Transform _coil;        // the spare hose lying by the parked engine
         private bool _test, _called, _warned, _engineSent, _engineRetried, _engineParked, _patrolSent, _patrolParked, _closed, _wreckStopped, _waterOn, _told;
         private float _startedAt, _phaseAt, _phaseUntil, _engineAt, _engineDue, _nextSecond, _waterAt, _patrolAt, _leaveAt;
         private int _stage;
@@ -608,6 +612,7 @@ namespace RealLifeOverhaul.Events
             _director.Effects.StopAll();
             StopWater();
             _director.Hose.Take();
+            ReturnCoil();
             for (int i = 0; i < 3; i++)
             {
                 _crew[i] = null;
