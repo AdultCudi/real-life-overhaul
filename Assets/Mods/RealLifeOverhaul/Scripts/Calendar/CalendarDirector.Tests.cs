@@ -5,16 +5,11 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Calendar
 {
-    /// <summary>
-    /// The options page's test of the calendar: today's month is read from every source and written to Player.log, a line
-    /// for each entry and what moves every night, with the month's days checked against the year, and the app opens on it.
-    /// Nothing per frame; nothing is changed.
-    /// </summary>
+    /// <summary>The calendar's test button: today's month from every source into Player.log, checked, and the app opened on it.</summary>
     public sealed partial class CalendarDirector
     {
         private const string TestName = "Calendar";
 
-        /// <summary>Options-page test: this month in the log, and the app opened on it.</summary>
         public void TestMonth()
         {
             if (CalendarGame.Loading())
@@ -59,7 +54,6 @@ namespace RealLifeOverhaul.Calendar
             OpenAt(month);
         }
 
-        /// <summary>A notice of the calendar's, in the game's own notifications.</summary>
         internal static void Notice(string key)
         {
             Notifications.Show(NotificationType.Warning, key, null, 8f);

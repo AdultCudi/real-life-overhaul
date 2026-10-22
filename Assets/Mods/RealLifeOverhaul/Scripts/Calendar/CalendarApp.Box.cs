@@ -3,15 +3,10 @@ using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Calendar
 {
-    /// <summary>
-    /// The Calendar's white box (GameUi.InfoBox): the chosen day, or one entry of it. Each page is written in sections in
-    /// the box's own look: a header (Header, Subtitle, Chip), sections of rows, notes and buttons. The box does not scroll,
-    /// so a day shows its first few things of each kind and says how many more the Day tab has. A page is written when the
-    /// app opens and when the player clicks; nothing here runs per frame.
-    /// </summary>
+    /// <summary>The white box (GameUi.InfoBox): the chosen day or one entry. It does not scroll, so a day shows a few of each kind.</summary>
     public sealed partial class CalendarApp
     {
-        private const int RowsOfAKind = 3;   // rows of one kind a day's page shows: the Day tab has them all
+        private const int RowsOfAKind = 3;   // rows of each kind on a day's page
 
         private void WriteBox(int today)
         {
@@ -29,8 +24,6 @@ namespace RealLifeOverhaul.Calendar
             }
             box.Done();
         }
-
-        // ================================================================ a day
 
         private void WriteDay(InfoBox box, int day, int today)
         {
@@ -66,7 +59,7 @@ namespace RealLifeOverhaul.Calendar
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // "Wednesday 4 March": the game's weekday, the day of the month and its name.
+        // "Wednesday 4 March"
         private string Date(int day, int year)
         {
             int month = CalendarRules.MonthOf(day, year);
@@ -74,7 +67,7 @@ namespace RealLifeOverhaul.Calendar
                 "month", CalendarText.Month(CalendarRules.MonthInYear(month, year)));
         }
 
-        // One kind of the day's entries under its heading, the first few in time order. Returns how many were written.
+        // The first few of one kind under its heading; returns how many were written.
         private static int Kind(InfoBox box, List<CalendarEntry> items, int day, CalendarGroup group, string headingKey)
         {
             int written = 0;
@@ -95,7 +88,7 @@ namespace RealLifeOverhaul.Calendar
             return written;
         }
 
-        // What a row of the box says at its right: the amount for money with one, else the source's words, else the hour.
+        // The amount for money with one, else the source's words, else the hour.
         private static string Value(CalendarEntry e)
         {
             if (e.Group == CalendarGroup.Money && e.Amount > 0f && e.Sign != 0)
@@ -109,7 +102,7 @@ namespace RealLifeOverhaul.Calendar
             return e.Start >= 0 ? CalendarText.Clock(e.Start) : string.Empty;
         }
 
-        // The whole day on the Day tab, and back to today's month from another.
+        // To the Day tab, and back to today's month from another.
         private void DayButtons(InfoBox box, int count, int today, int year)
         {
             bool other = CalendarRules.MonthOf(today, year) != _month;
@@ -128,7 +121,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // The month: the day it ends on, how many are left, and the money set for it with a known amount.
+        // The day the month ends on, the days left, and the known money still to move.
         private void MonthSection(InfoBox box, int first, int last, int today)
         {
             box.Section("reallife_calendar_sec_month");
@@ -156,7 +149,6 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // What moves every night, whatever the day: not marked on the days, said once here.
         private void Nights(InfoBox box)
         {
             List<NightLine> nights = _director.List.Nights;
@@ -172,8 +164,6 @@ namespace RealLifeOverhaul.Calendar
             }
             box.Note(CalendarText.T("reallife_calendar_night_note"));
         }
-
-        // ================================================================ one entry
 
         private void WriteEntry(InfoBox box, CalendarEntry e, int today)
         {
@@ -208,7 +198,6 @@ namespace RealLifeOverhaul.Calendar
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // Money in, money out, money (neither known), your time, the city.
         private static string KindKey(CalendarEntry e)
         {
             switch (e.Group)
@@ -219,7 +208,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // The entry's app, opened as its own button opens it. A notice says so when it is not on the phone.
+        // Opened as its own button on the phone opens it; a notice if it is not there.
         private static void OpenApp(string id)
         {
             if (!PhoneApp.OpenById(id))
