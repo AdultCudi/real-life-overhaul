@@ -5,29 +5,27 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>What the watch of the mod's marks found of one mark (<see cref="GuideMarkRules.Fate"/>).</summary>
     public enum GuideMarkFate
     {
-        Keep,           // on the guider as this mark, its owner at work and its time not up
-        Lost,           // the guider is no longer this mark's (another feature or the game has it, or it was reset): only the claim goes
+        Keep,           // on the guider as this mark, its owner at work, its time not up
+        Lost,           // the guider is no longer this mark's: only the claim goes
         OwnerGone,      // the component that keeps the mark was destroyed without taking it off
-        OwnerStopped,   // ...or its updates were stopped by the guard (its faults, or its feature switched off)
-        SceneOver,      // what it marks is over (the owner's own test says so), and nothing took the mark off
-        TimeUp,         // the latest its owner could need it has passed: whatever the owner is doing, it is not ending the mark
-        Unloaded        // the city is unloading or a save is being loaded: every mark of the mod goes
+        OwnerStopped,   // ...or the guard stopped its updates (its faults, or its feature off)
+        SceneOver,      // what it marks is over by the owner's own test, and nothing took the mark off
+        TimeUp,         // the latest its owner could need it has passed
+        Unloaded        // the city is unloading or a save loading: every mark goes
     }
 
     /// <summary>
-    /// How much a mark of the mod's needs the guider (<see cref="GuideMarkRules.MayTake"/>). Most marks point at something
-    /// the player may go to (a scene nearby, an errand, an office) and wait while another mark has the guider. A course is
-    /// driven or run checkpoint by checkpoint against the clock (a driving lesson or test, a run): without its marker the
-    /// player cannot see where to go next, so it takes the guider from any mark that is not a course, and that mark has it
-    /// again once the course lets it go.
+    /// How much a mark needs the guider (<see cref="GuideMarkRules.MayTake"/>). Most marks point at somewhere the player
+    /// may go and wait while another has the guider. A course (a driving lesson or test, a run) is followed checkpoint by
+    /// checkpoint against the clock, so it takes the guider from any mark that is not a course, which has it back after.
     /// </summary>
     public enum GuideMarkRank
     {
-        Point,    // waits for the guider while another mark has it (every mark unless its owner says otherwise)
-        Course    // checkpoints the player follows against the clock: takes the guider from a mark that is not a course
+        Point,    // waits while another mark has the guider: the default
+        Course    // takes the guider from a mark that is not a course
     }
 
-    /// <summary>One mark of the mod's on the game's guider, as the book and the watch see it (GuideMark; a stand-in offline).</summary>
+    /// <summary>One mark on the game's guider as the book and the watch see it (GuideMark; a stand-in offline).</summary>
     public interface IGuideMarkEntry
     {
         /// <summary>The guider still shows this mark (<see cref="GuideMarkRules.Ours"/>).</summary>
@@ -45,49 +43,38 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The latest time (the game's scaled seconds) the owner can need the mark; 0 for no limit.</summary>
         float Until { get; }
 
-        /// <summary>How much the mark needs the guider: whether it takes it from another mark (<see cref="GuideMarkRules.MayTake"/>).</summary>
+        /// <summary>Whether the mark takes the guider from another (<see cref="GuideMarkRules.MayTake"/>).</summary>
         GuideMarkRank Rank { get; }
 
-        /// <summary>Forgets the mark (it leaves the book), and first resets the guider if <paramref name="clear"/> and the guider is still this mark's.</summary>
+        /// <summary>Forgets the mark, first resetting the guider if <paramref name="clear"/> and it is still this mark's.</summary>
         void Drop(GuideMarkFate why, bool clear);
     }
 
     /// <summary>
-    /// When a mark of the mod's on the game's one guider of its kind (the JobDestination guider, which the game's own
-    /// delivery jobs, the mod's jobs and a dozen of its features share) is still that mark's, and when a mark left up
-    /// by an owner that is no longer looking after it is taken off. A player, 0.28.0: an accident's "Pedestrian down"
-    /// stayed on screen long after the scene was over.
+    /// When a mark on the game's one JobDestination guider (shared by the game's delivery jobs, the mod's jobs and a dozen
+    /// features) is still that mark's, and when a mark left up by an owner no longer looking after it is taken off.
     ///
-    /// Whose it is: the guider marks a place that is no building through one stand-in object of the game's, which every
-    /// user of the guider moves, so that object alone says nothing. A mark is the guider's while the guider points at
-    /// that object, no other mark of the mod's has put itself there since (the book's holder), and the guider's words
-    /// are still the very words (the same string) this mark gave it. Anyone else who sets the guider gives it their
-    /// own words, so a mark never takes off another's, even one put at the same place; and the stand-in having moved
-    /// does not make a mark that is still shown someone else's. Only where the words cannot be read (a mark given no
-    /// words, which the game then names itself, or a game without the field) does the stand-in's place decide.
+    /// Whose it is: the guider marks a place through one stand-in object that every user moves, so the object says nothing.
+    /// A mark has the guider while it points at that object, no other mark took it since (the book's holder), and its
+    /// words are the very string this mark gave; anyone else gives their own words, so a mark never takes off another's at
+    /// the same place. Only where the words cannot be read (none given, or a game without the field) does the place decide.
     ///
-    /// Who has it when two want it: whoever was first keeps it, except that a course (a driving test's checkpoints, a
-    /// run's) takes it from a mark of the mod's that is not one (<see cref="MayTake"/>), so that a scene nearby (a
-    /// pedestrian down, a crime, a street event) never hides the checkpoint the player has to drive or run to. The mark
-    /// that gave way asks again, as it does while a job has the guider, and has it back once the course is over.
+    /// Who has it when two want it: the first keeps it, but a course takes it from a mark that is not one
+    /// (<see cref="MayTake"/>), so a scene nearby never hides the checkpoint; the other asks again and has it back after.
     ///
-    /// When it goes without its owner: its owner's component was destroyed, the guard stopped that component, what it
-    /// marks is over by its owner's own test, or the latest time its owner said it could need it has passed. A mark
-    /// that has lost the guider is only forgotten.
-    ///
-    /// Plain comparisons: no Unity or game types; the book allocates nothing once its list has grown to the marks up at
-    /// once (a handful). Checked offline (EconomyCheck, GuideMarkChecks).
+    /// It goes without its owner when the owner's component was destroyed or stopped by the guard, the owner's test says
+    /// it is over, or its latest time has passed; a mark that lost the guider is only forgotten. Game-free, checked offline
+    /// (EconomyCheck GuideMarkChecks); the book allocates nothing once its list has grown to the marks up at once.
     /// </summary>
     public static class GuideMarkRules
     {
-        public const float WatchEvery = 1f;    // seconds of real time between two looks of the watch: a mark that outlives its owner is off within a second, and nothing is looked at per frame
-        public const float SceneGrace = 20f;   // seconds of game time past the latest a street scene can end (its hard limit) before its mark is taken off whatever its owner is doing
+        public const float WatchEvery = 1f;    // seconds of real time between two looks of the watch: a mark outliving its owner is off within a second
+        public const float SceneGrace = 20f;   // seconds of game time past a street scene's hard limit before its mark is taken off regardless
 
         /// <summary>
-        /// True while the guider still shows the mark: it marks something (<paramref name="guiderMarks"/>), through the
-        /// stand-in this mark set (<paramref name="sameTarget"/>), with no other mark of the mod's put there since
-        /// (<paramref name="holder"/>), and its words this mark's own (<paramref name="sameWords"/>); where the words
-        /// cannot be read (<paramref name="wordsKnown"/> false), the stand-in where this mark put it (<paramref name="samePlace"/>).
+        /// The guider still shows the mark: it marks something, through this mark's stand-in, no other mark put there since,
+        /// and its words are this mark's; where the words cannot be read (<paramref name="wordsKnown"/> false), the stand-in
+        /// is where this mark put it.
         /// </summary>
         public static bool Ours(bool guiderMarks, bool sameTarget, bool holder, bool wordsKnown, bool sameWords, bool samePlace)
         {
@@ -95,10 +82,9 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// True when a mark that does not have the guider may put itself there: the guider marks nothing
-        /// (<paramref name="guiderMarks"/> false), or another mark of the mod's has it (<paramref name="heldByMark"/>, that
-        /// mark still on it) and this mark's <paramref name="rank"/> is a course while the holder's is not. A job's or the
-        /// game's own marker (no mark of the mod's) is never taken, and of two marks of the same rank the first keeps it.
+        /// A mark without the guider may take it: the guider marks nothing, or another mark of the mod's still has it and this
+        /// one is a course while the holder is not. A job's or the game's own marker is never taken; of two of the same rank
+        /// the first keeps it.
         /// </summary>
         public static bool MayTake(bool guiderMarks, bool heldByMark, GuideMarkRank holder, GuideMarkRank rank)
         {
@@ -109,7 +95,7 @@ namespace RealLifeOverhaul.GameUi
             return heldByMark && rank == GuideMarkRank.Course && holder != GuideMarkRank.Course;
         }
 
-        /// <summary>True once the latest time an owner gave (0: none) has come.</summary>
+        /// <summary>The latest time an owner gave (0: none) has come.</summary>
         public static bool TimeUp(float until, float now)
         {
             return until > 0f && now >= until;
@@ -139,9 +125,8 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// The marks of the mod's that are up (or think they are), and which of them last put itself on the guider (the
-    /// holder). A mark comes in when it takes the guider and leaves when it is taken off or forgotten. One look of
-    /// the watch goes through them all; a city that unloads drops them all.
+    /// The marks up (or that think they are), and the holder: the one that last put itself on the guider. A mark comes in
+    /// when it takes the guider and leaves when taken off or forgotten.
     /// </summary>
     public sealed class GuideMarkBook
     {
@@ -150,10 +135,9 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The mark that last put itself on the guider; null after it was taken off.</summary>
         public IGuideMarkEntry Holder { get; private set; }
 
-        /// <summary>Marks up.</summary>
         public int Count => _live.Count;
 
-        /// <summary>The mark has just put itself on the guider: it is up, and the holder.</summary>
+        /// <summary>The mark just put itself on the guider: it is up, and the holder.</summary>
         public void Took(IGuideMarkEntry entry)
         {
             if (entry == null)
@@ -167,7 +151,7 @@ namespace RealLifeOverhaul.GameUi
             Holder = entry;
         }
 
-        /// <summary>The mark is off (or forgotten): out of the book, and no longer the holder.</summary>
+        /// <summary>The mark is off or forgotten: out of the book, no longer the holder.</summary>
         public void Let(IGuideMarkEntry entry)
         {
             if (entry == null)
@@ -181,16 +165,15 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>True when this mark is the one that last put itself on the guider.</summary>
+        /// <summary>This mark last put itself on the guider.</summary>
         public bool Holds(IGuideMarkEntry entry)
         {
             return entry != null && ReferenceEquals(Holder, entry);
         }
 
         /// <summary>
-        /// True when <paramref name="entry"/>, which does not have the guider, may put itself there now
-        /// (<see cref="GuideMarkRules.MayTake"/>): the guider is free (<paramref name="guiderMarks"/> false), or the holder,
-        /// still on it, gives way to a course. A few compares and one look at the holder.
+        /// <paramref name="entry"/>, without the guider, may take it now (<see cref="GuideMarkRules.MayTake"/>): it is free, or
+        /// the holder, still on it, gives way to a course. A few compares and one look at the holder.
         /// </summary>
         public bool MayTake(IGuideMarkEntry entry, bool guiderMarks)
         {
@@ -204,9 +187,9 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// One look of the watch at the time given (the game's scaled seconds): each mark whose owner is gone or
-        /// stopped, whose scene is over, or whose time is up, is taken off (the guider reset if still that mark's); one that has lost the
-        /// guider is forgotten. Returns the marks taken off (the forgotten ones not counted).
+        /// One look of the watch at <paramref name="now"/> (scaled seconds): each mark whose owner is gone or stopped, whose
+        /// scene is over or time up, is taken off (the guider reset if still its); one that lost the guider is forgotten.
+        /// Returns the marks taken off.
         /// </summary>
         public int Sweep(float now)
         {
@@ -215,7 +198,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 if (i >= _live.Count)
                 {
-                    continue;   // (a drop that let more than its own mark go)
+                    continue;   // a drop let more than its own mark go
                 }
                 IGuideMarkEntry entry = _live[i];
                 GuideMarkFate fate = GuideMarkRules.Fate(entry.StillOurs(), entry.OwnerGone, entry.OwnerStopped, entry.Wanted, entry.Until, now);
@@ -225,13 +208,13 @@ namespace RealLifeOverhaul.GameUi
                 }
                 bool clear = fate != GuideMarkFate.Lost;
                 entry.Drop(fate, clear);
-                Let(entry);   // (in case the entry did not let itself go)
+                Let(entry);   // in case the entry did not let itself go
                 off += clear ? 1 : 0;
             }
             return off;
         }
 
-        /// <summary>Takes every mark off (the guider reset where it is still the mark's): the city is unloading or a save loading. Returns how many there were.</summary>
+        /// <summary>Takes every mark off, the guider reset where still a mark's: the city unloading or a save loading. Returns how many.</summary>
         public int DropAll()
         {
             int all = _live.Count;
