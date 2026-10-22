@@ -6,54 +6,49 @@ using Localizor;
 namespace RealLifeOverhaul.Rivals
 {
     /// <summary>
-    /// The words of the rival tycoons. Every text is a key of en.json, written out in full (or in the catalogue's lists) so
-    /// that the locale check finds each one; nothing here is kept. Called when the page shows something, a notice is made
-    /// or the paper is written, never otherwise.
+    /// The words of the rival tycoons: every key written out in full so the locale check finds it. Called when the page,
+    /// a notice or the paper is written; nothing per frame.
     /// </summary>
     public static class RivalText
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>A move as a short phrase for a notice and the page ("buying up buildings in {district}"), by kind.</summary>
+        // By kind of move or counter: the move as a short phrase, what it did as a notice and in the paper, a counter's
+        // outcome as a notice and in the paper, and what a counter does.
         private static readonly string[] WhatKeys =
         {
             "reallife_rival_what_property", "reallife_rival_what_outlet", "reallife_rival_what_poach", "reallife_rival_what_stake", "reallife_rival_what_bid",
             "reallife_rival_what_lobby", "reallife_rival_what_suit", "reallife_rival_what_press"
         };
 
-        /// <summary>What a move did when it came, a notice and a piece of the paper, by kind.</summary>
         private static readonly string[] CameKeys =
         {
             "reallife_rival_came_property", "reallife_rival_came_outlet", "reallife_rival_came_poach", "reallife_rival_came_stake", "reallife_rival_came_bid",
             "reallife_rival_came_lobby", "reallife_rival_came_suit", "reallife_rival_came_press"
         };
 
-        /// <summary>What a move did when it came, as the paper prints it, by kind.</summary>
         private static readonly string[] PaperCameKeys =
         {
             "reallife_rival_paper_came_property", "reallife_rival_paper_came_outlet", "reallife_rival_paper_came_poach", "reallife_rival_paper_came_stake", "reallife_rival_paper_came_bid",
             "reallife_rival_paper_came_lobby", "reallife_rival_paper_came_suit", "reallife_rival_paper_came_press"
         };
 
-        /// <summary>A counter's outcome as the paper prints it, by kind.</summary>
         private static readonly string[] PaperDoneKeys =
         {
             "reallife_rival_paper_done_outbid", "reallife_rival_paper_done_poach", "reallife_rival_paper_done_press", "reallife_rival_paper_done_lobby", "reallife_rival_paper_done_takeover"
         };
 
-        /// <summary>A counter's outcome, a notice, by kind.</summary>
         private static readonly string[] CounterDoneKeys =
         {
             "reallife_rival_done_outbid", "reallife_rival_done_poach", "reallife_rival_done_press", "reallife_rival_done_lobby", "reallife_rival_done_takeover"
         };
 
-        /// <summary>What a counter does, for its question and the page, by kind.</summary>
         private static readonly string[] CounterAboutKeys =
         {
             "reallife_rival_about_outbid", "reallife_rival_about_poach", "reallife_rival_about_press", "reallife_rival_about_lobby", "reallife_rival_about_takeover"
         };
 
-        /// <summary>Each tycoon's way with words, by their index: a line closing the paper's pieces about them, and one as they come forward.</summary>
+        // Each tycoon's lines, by index: one closing the paper's pieces about them, one as they come forward.
         private static readonly string[] QuipKeys = { "reallife_rival_quip_0", "reallife_rival_quip_1", "reallife_rival_quip_2" };
         private static readonly string[] HelloKeys = { "reallife_rival_hello_0", "reallife_rival_hello_1", "reallife_rival_hello_2" };
 
@@ -64,20 +59,6 @@ namespace RealLifeOverhaul.Rivals
         {
             null, "reallife_rival_why_out", "reallife_rival_why_rest", "reallife_rival_why_nothing", "reallife_rival_why_no_holding", "reallife_rival_why_short", "reallife_rival_why_money"
         };
-
-        /// <summary>Every key built from a list here, for the offline check of the three locales.</summary>
-        public static IEnumerable<string> ListedKeys()
-        {
-            foreach (string k in WhatKeys) yield return k;
-            foreach (string k in QuipKeys) yield return k;
-            foreach (string k in HelloKeys) yield return k;
-            foreach (string k in CameKeys) yield return k;
-            foreach (string k in CounterDoneKeys) yield return k;
-            foreach (string k in PaperCameKeys) yield return k;
-            foreach (string k in PaperDoneKeys) yield return k;
-            foreach (string k in CounterAboutKeys) yield return k;
-            for (int i = 1; i < WhyKeys.Length; i++) yield return WhyKeys[i];
-        }
 
         public static string T(string key)
         {
@@ -95,7 +76,7 @@ namespace RealLifeOverhaul.Rivals
             return text;
         }
 
-        /// <summary>The names of a text as the game's data for a notice or a piece of the paper: a new dictionary each time (the game keeps hold of it).</summary>
+        /// <summary>A text's names as the game's data for a notice or the paper: a new dictionary each time, as the game keeps it.</summary>
         public static Dictionary<string, string> Data(params string[] pairs)
         {
             var data = new Dictionary<string, string>(pairs.Length / 2 + 1);
@@ -152,12 +133,15 @@ namespace RealLifeOverhaul.Rivals
         public static string State(RivalMoveState state) => T(RivalCatalogue.StateNames[RivalCatalogue.Clamp((int)state, 0, RivalCatalogue.StateNames.Length - 1)]);
         public static string Strength(int strength) => T(RivalCatalogue.StrengthNames[RivalCatalogue.Clamp(strength, 0, RivalCatalogue.StrengthNames.Length - 1)]);
         public static string Tier(int tier) => T(RivalCatalogue.TierNames[RivalCatalogue.Clamp(tier, 0, RivalCatalogue.TierNames.Length - 1)]);
-        public static string Why(RivalWhy why) => why == RivalWhy.None ? string.Empty : T(WhyKeys[RivalCatalogue.Clamp((int)why, 1, WhyKeys.Length - 1)]);
+        public static string Why(RivalWhy why) => why == RivalWhy.None ? string.Empty : T(WhyKey(why));
+
+        /// <summary>The key of the sentence saying why a counter cannot be used; never asked for <see cref="RivalWhy.None"/>.</summary>
+        public static string WhyKey(RivalWhy why) => WhyKeys[RivalCatalogue.Clamp((int)why, 1, WhyKeys.Length - 1)];
         public static string CounterAbout(RivalCounter kind) => T(CounterAboutKeys[RivalCatalogue.Clamp((int)kind, 0, CounterAboutKeys.Length - 1)]);
         public static string CounterDoneKey(RivalCounter kind) => CounterDoneKeys[RivalCatalogue.Clamp((int)kind, 0, CounterDoneKeys.Length - 1)];
         public static string CameKey(RivalMoveKind kind) => CameKeys[RivalCatalogue.Clamp((int)kind, 0, CameKeys.Length - 1)];
 
-        /// <summary>A move's notice as it came, the true one of its texts: a lobbying with no inspection called in, a piece with the paper off.</summary>
+        /// <summary>A move's notice as it came: the quiet one for a lobbying with no inspection, word round the city with the paper off.</summary>
         public static string CameKey(RivalMove m)
         {
             if (m.Kind == RivalMoveKind.Lobby && m.Second == 0)
@@ -170,6 +154,7 @@ namespace RealLifeOverhaul.Rivals
             }
             return CameKey(m.Kind);
         }
+
         public static string PaperCameKey(RivalMoveKind kind) => PaperCameKeys[RivalCatalogue.Clamp((int)kind, 0, PaperCameKeys.Length - 1)];
         public static string PaperDoneKey(RivalCounter kind) => PaperDoneKeys[RivalCatalogue.Clamp((int)kind, 0, PaperDoneKeys.Length - 1)];
 

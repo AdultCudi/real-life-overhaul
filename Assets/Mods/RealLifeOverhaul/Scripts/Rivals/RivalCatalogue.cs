@@ -71,23 +71,14 @@ namespace RealLifeOverhaul.Rivals
     }
 
     /// <summary>
-    /// EVERY FIGURE OF THE RIVAL TYCOONS. Game-free: the offline checks compile this file, the Guide prints from it, and
-    /// nothing else of the rivals writes a figure of its own.
-    ///
-    /// Money is whole dollars at the start's prices, read at today's by the city's price level (tenths of a point, 1000 at
-    /// the start). Shares are per mille unless named otherwise; days are game days.
-    ///
-    /// WHY THESE NUMBERS. The pressure is for the late game: below <see cref="TierFrom"/>[1] nobody moves against the player
-    /// at all, and every step past it (tens of millions, hundreds of millions, billions, ten billion) brings one more rival,
-    /// moves closer together, larger moves and two more kinds (a stake from hundreds of millions, a bid from billions).
-    /// Every move is announced <see cref="TelegraphDays"/> days before it comes and none can cost more than a bounded
-    /// share of one business or of the player's worth (the "Most" figures, whatever the strength), so the player always
-    /// has time to answer and nothing ruins them in one blow.
+    /// Every figure of the rival tycoons; game-free, read by the Guide and the offline checks. Money is whole dollars at
+    /// the start's prices, read at today's by the price level; shares are per mille unless named; days are game days.
+    /// The pressure is for the late game: nothing moves below <see cref="TierFrom"/>[1], each tier past it brings closer,
+    /// larger moves, and every move is announced ahead and bounded by its "Most" figure, so nothing ruins the player in
+    /// one blow.
     /// </summary>
     public static class RivalCatalogue
     {
-        // ---------------------------------------------------------------- the tycoons
-
         public static readonly TycoonDef[] Tycoons =
         {
             //                 name                  holding                stock   worth at start  aim   property outlet poach stake bid lobby suit press
@@ -109,8 +100,6 @@ namespace RealLifeOverhaul.Rivals
             new FortuneDef("Rocket Richard", 250000000L)
         };
 
-        // ---------------------------------------------------------------- the tiers: how far the player has come
-
         /// <summary>The player's worth from which each tier starts, at the start's prices: quiet, tens of millions, hundreds of millions, billions, ten billion and more.</summary>
         public static readonly long[] TierFrom = { 0L, 5000000L, 100000000L, 1000000000L, 10000000000L };
 
@@ -129,8 +118,6 @@ namespace RealLifeOverhaul.Rivals
         public const int BidTier = 3;              // a bid for it from billions
         public const int CompanyQuarters = 1;      // no stake or bid before the player's company has traded this many quarters of a year: the market's own guard for a new listing
 
-        // ---------------------------------------------------------------- the strength option
-
         public const int Gentle = 0, Normal = 1, Hard = 2, Ruthless = 3, Strengths = 4;
 
         /// <summary>What the gap between moves is multiplied by, per mille, by strength.</summary>
@@ -142,14 +129,10 @@ namespace RealLifeOverhaul.Rivals
         /// <summary>The fortune the tycoons aim for, per mille of their own aim, by strength.</summary>
         public static readonly int[] StrengthAim = { 700, 1000, 1150, 1300 };
 
-        // ---------------------------------------------------------------- pacing
-
         public const int TelegraphDays = 2;        // a move is in the paper and on the phone this many days before it comes: time to answer it
         public const int JitterDays = 2;           // the gap between moves is longer by up to this many days, drawn: not like clockwork
         public const int MovesKept = 24;           // moves kept for the page and the paper, newest last (the oldest that are over go first)
         public const int CountersKept = 16;        // the player's counters kept, newest last
-
-        // ---------------------------------------------------------------- how a fortune grows
 
         public const int MonthDays = 30;           // the growth figures are for thirty days, whatever the length of the save's year
 
@@ -161,8 +144,6 @@ namespace RealLifeOverhaul.Rivals
         public const int SlowShare = 500;          // per mille of their growth while a counter has slowed them
         public const int ForwardShare = 500;       // a tycoon comes forward worth at least this share of their aim, per mille: a rival a player already rich takes notice of
         public const int ForwardPerDay = 1;        // tycoons who come forward on one day, at most: a player rich on their first day meets them over a few days
-
-        // ---------------------------------------------------------------- the moves, at the Normal strength and the tier of hundreds of millions
 
         public const int PropertyDays = 14;
         public const int PropertyPremium = 120;    // per mille on the price of buildings for sale in the district
@@ -195,8 +176,6 @@ namespace RealLifeOverhaul.Rivals
         /// <summary>How long each kind of move runs once it has come, in days (0: it is over the day it comes; its own feature carries it from there).</summary>
         public static readonly int[] MoveDays = { PropertyDays, OutletDays, 0, 0, 0, LobbyDays, 0, 0 };
 
-        // ---------------------------------------------------------------- the player's counters
-
         /// <summary>What a counter costs, per ten thousand of the player's worth, between the least and the most below (a takeover is priced by the market).</summary>
         public static readonly int[] CounterShare = { 20, 10, 5, 10, 0 };
         public static readonly long[] CounterLeast = { 50000L, 25000L, 10000L, 25000L, 0L };
@@ -218,25 +197,43 @@ namespace RealLifeOverhaul.Rivals
         public const int BreakUpPermille = 900;    // what the holding's parts fetch, per mille of what the shares bought were worth at its price
         public const int BreakUpDays = 7;          // ...paid to the player this many days after the takeover
 
-        // ---------------------------------------------------------------- the paper and the list
-
         public const int PiecesMost = 2;           // the rivals' pieces in one morning's paper
         public const int RichListDay = 0;          // the rich list is printed on the days whose number divides by seven with this left over
         public const int RichListSize = 10;        // three tycoons, the player and six old fortunes
 
-        /// <summary>The page's and the paper's keys for each kind of move: name, announced, come, and the notice of each.</summary>
-        public static readonly string[] MoveNames = { "reallife_rival_move_property", "reallife_rival_move_outlet", "reallife_rival_move_poach", "reallife_rival_move_stake", "reallife_rival_move_bid", "reallife_rival_move_lobby", "reallife_rival_move_suit", "reallife_rival_move_press" };
+        /// <summary>The name of each kind of move.</summary>
+        public static readonly string[] MoveNames =
+        {
+            "reallife_rival_move_property", "reallife_rival_move_outlet", "reallife_rival_move_poach", "reallife_rival_move_stake",
+            "reallife_rival_move_bid", "reallife_rival_move_lobby", "reallife_rival_move_suit", "reallife_rival_move_press"
+        };
 
         /// <summary>What each kind of move does, for its page.</summary>
-        public static readonly string[] MoveAbout = { "reallife_rival_move_about_property", "reallife_rival_move_about_outlet", "reallife_rival_move_about_poach", "reallife_rival_move_about_stake", "reallife_rival_move_about_bid", "reallife_rival_move_about_lobby", "reallife_rival_move_about_suit", "reallife_rival_move_about_press" };
+        public static readonly string[] MoveAbout =
+        {
+            "reallife_rival_move_about_property", "reallife_rival_move_about_outlet", "reallife_rival_move_about_poach", "reallife_rival_move_about_stake",
+            "reallife_rival_move_about_bid", "reallife_rival_move_about_lobby", "reallife_rival_move_about_suit", "reallife_rival_move_about_press"
+        };
 
-        public static readonly string[] CounterNames = { "reallife_rival_counter_outbid", "reallife_rival_counter_poach", "reallife_rival_counter_press", "reallife_rival_counter_lobby", "reallife_rival_counter_takeover" };
+        public static readonly string[] CounterNames =
+        {
+            "reallife_rival_counter_outbid", "reallife_rival_counter_poach", "reallife_rival_counter_press", "reallife_rival_counter_lobby", "reallife_rival_counter_takeover"
+        };
 
-        public static readonly string[] StateNames = { "reallife_rival_state_announced", "reallife_rival_state_running", "reallife_rival_state_over", "reallife_rival_state_stopped", "reallife_rival_state_failed" };
+        public static readonly string[] StateNames =
+        {
+            "reallife_rival_state_announced", "reallife_rival_state_running", "reallife_rival_state_over", "reallife_rival_state_stopped", "reallife_rival_state_failed"
+        };
 
-        public static readonly string[] StrengthNames = { "reallife_rival_strength_gentle", "reallife_rival_strength_normal", "reallife_rival_strength_hard", "reallife_rival_strength_ruthless" };
+        public static readonly string[] StrengthNames =
+        {
+            "reallife_rival_strength_gentle", "reallife_rival_strength_normal", "reallife_rival_strength_hard", "reallife_rival_strength_ruthless"
+        };
 
-        public static readonly string[] TierNames = { "reallife_rival_tier_quiet", "reallife_rival_tier_tens", "reallife_rival_tier_hundreds", "reallife_rival_tier_billions", "reallife_rival_tier_ten_billions" };
+        public static readonly string[] TierNames =
+        {
+            "reallife_rival_tier_quiet", "reallife_rival_tier_tens", "reallife_rival_tier_hundreds", "reallife_rival_tier_billions", "reallife_rival_tier_ten_billions"
+        };
 
         public static int Clamp(int v, int least, int most) => v < least ? least : v > most ? most : v;
 

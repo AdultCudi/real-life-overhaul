@@ -193,7 +193,6 @@ RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventRunner.cs	22
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/LifeStory.cs	3
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Permadeath/PermadeathRules.cs	8
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Phone/Contacts/ContactPainter.cs	4
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalText.cs	9
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/RoommateLinks.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessDirector.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Business/BusinessGame.cs	1
@@ -258,13 +257,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Photos/CameraMode.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Photos/GalleryApp.Viewer.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Photos/PhotosGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Ragdoll/RagdollSystem.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalCatalogue.cs	5
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalDirector.Counters.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalDirector.Tests.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalDirector.cs	10
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalGame.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalPage.cs	6
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Rivals/RivalRules.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.Talk.cs	5
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetDirector.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Street/StreetLines.cs	7

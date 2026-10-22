@@ -15,12 +15,9 @@ namespace RealLifeOverhaul.Rivals
     ///     M|id|tycoon|kind|state|announced|comes|ends|amount|second|rented|test|place|name|district|type|who   a move
     ///     C|id|tycoon|kind|day|cost|move                                                                       a counter
     ///
-    /// Every number is written in the invariant culture, so what is read back is exactly what was written. A NEWER
-    /// VERSION adds fields at the end of a line or lines with a new letter: this reader takes the fields it knows, skips
-    /// lines it does not, and drops a move or a counter of a kind it does not know (never reads it as something else).
-    /// A line it cannot read at all is kept in the save as it was read (Core/SaveLines) and the rivals start afresh.
-    /// <see cref="TestKey"/> holds the same line as it was before the first test button changed it, while test changes
-    /// are in place.
+    /// Numbers in the invariant culture. A newer version adds fields at the end or lines with a new letter: the reader
+    /// takes the fields it knows, skips unknown lines and drops a move or counter of an unknown kind. A line it cannot read
+    /// is kept as it was (Core/SaveLines). <see cref="TestKey"/> holds the line from before the first test button.
     /// </summary>
     public static class RivalStore
     {
@@ -39,7 +36,7 @@ namespace RealLifeOverhaul.Rivals
             {
                 return null;
             }
-            return SaveLines.Checked(data, Key, Read(text, out int version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
+            return SaveLines.Checked(data, Key, Read(text, out int version), version, Version);
         }
 
         public static void Save(Dictionary<string, string> data, RivalFile f)
@@ -91,7 +88,7 @@ namespace RealLifeOverhaul.Rivals
             return b.ToString();
         }
 
-        /// <summary>A line into a file. Null for one that is not the rivals' at all or cannot be read; <paramref name="version"/> is the line's own.</summary>
+        /// <summary>A line into a file; null if it is not the rivals' or cannot be read. <paramref name="version"/> is the line's own.</summary>
         public static RivalFile Read(string text, out int version)
         {
             version = 0;
@@ -109,7 +106,8 @@ namespace RealLifeOverhaul.Rivals
                 }
                 var f = new RivalFile
                 {
-                    Seed = I(h, 2), StartDay = I(h, 3), SettledDay = I(h, 4), NextMoveDay = I(h, 5), NextId = Math.Max(1, I(h, 6)), Tier = RivalCatalogue.Clamp(I(h, 7), 0, RivalCatalogue.Tiers - 1),
+                    Seed = I(h, 2), StartDay = I(h, 3), SettledDay = I(h, 4), NextMoveDay = I(h, 5), NextId = Math.Max(1, I(h, 6)),
+                    Tier = RivalCatalogue.Clamp(I(h, 7), 0, RivalCatalogue.Tiers - 1),
                     PlayerWorth = L(h, 8), PlayerWeekAgo = L(h, 9), WeekDay = I(h, 10), TopDay = I(h, 11)
                 };
                 for (int i = 1; i < lines.Length; i++)
@@ -125,15 +123,7 @@ namespace RealLifeOverhaul.Rivals
                 }
                 return f;
             }
-            catch (FormatException)
-            {
-                return null;
-            }
-            catch (OverflowException)
-            {
-                return null;
-            }
-            catch (IndexOutOfRangeException)
+            catch (Exception e) when (e is FormatException || e is OverflowException || e is IndexOutOfRangeException)
             {
                 return null;
             }
@@ -191,7 +181,8 @@ namespace RealLifeOverhaul.Rivals
             }
             f.Moves.Add(new RivalMove
             {
-                Id = I(c, 1), Tycoon = tycoon, Kind = (RivalMoveKind)kind, State = (RivalMoveState)state, Announced = I(c, 5), Land = I(c, 6), End = I(c, 7), Amount = L(c, 8), Second = L(c, 9),
+                Id = I(c, 1), Tycoon = tycoon, Kind = (RivalMoveKind)kind, State = (RivalMoveState)state,
+                Announced = I(c, 5), Land = I(c, 6), End = I(c, 7), Amount = L(c, 8), Second = L(c, 9),
                 Rented = I(c, 10) != 0, Test = I(c, 11) != 0, Place = c[12], Name = c[13], District = c[14], Type = c[15], Who = c.Length > 16 ? c[16] : string.Empty
             });
         }
@@ -209,8 +200,6 @@ namespace RealLifeOverhaul.Rivals
             }
             f.Counters.Add(new RivalCounterNote { Id = I(c, 1), Tycoon = tycoon, Kind = (RivalCounter)kind, Day = I(c, 4), Cost = L(c, 5), Move = I(c, 6) });
         }
-
-        // ---------------------------------------------------------------- pieces
 
         private static void Join(StringBuilder b, params int[] values)
         {
