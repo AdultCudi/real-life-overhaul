@@ -14,6 +14,8 @@ namespace RealLifeOverhaul.Photos
     /// </summary>
     public static class PhotoStore
     {
+        public const int MostSameSecond = 100000;   // numbers tried for one second's photos: far past any camera's pace
+
         /// <summary>A save's folder of photos under the root (persistentDataPath/RealLifeOverhaul/Photos).</summary>
         public static string Folder(string root, string saveId)
         {
@@ -60,12 +62,15 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>The path for a new photo, numbered past any of the same second; makes the folder and writes save.txt.</summary>
+        /// <summary>
+        /// The path for a new photo, numbered past any of the same second and never a file that is there; makes the folder
+        /// and writes save.txt. Null, and nothing to write over, if every number of that second is taken.
+        /// </summary>
         public static string NewPath(string folder, string saveId, DateTime taken, bool selfie, int day, int hour)
         {
             Directory.CreateDirectory(folder);
             MarkSave(folder, saveId);
-            for (int number = 1; number < 1000; number++)
+            for (int number = 1; number <= MostSameSecond; number++)
             {
                 string path = Path.Combine(folder, PhotoStoreRules.NameFor(taken, selfie, day, hour, number));
                 if (!File.Exists(path))
@@ -73,7 +78,7 @@ namespace RealLifeOverhaul.Photos
                     return path;
                 }
             }
-            return Path.Combine(folder, PhotoStoreRules.NameFor(taken, selfie, day, hour, 1000 + Environment.TickCount % 1000));
+            return null;
         }
 
         /// <summary>Writes save.txt whole unless it already holds this id, mending one cut short; false if it could not be written.</summary>
