@@ -16,7 +16,6 @@ RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventCalendar.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
-RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikePlaces.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEventCatalogue.cs	3
 RLO-DOC-002	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavModel.cs	4
@@ -97,7 +96,6 @@ RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Districts/DistrictPanel.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarDrag.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Driving/CarMeasure.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Events/EventRoad.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageShop.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorTab.cs	2
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Life/LifeEvents.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneUiDump.cs	1
@@ -275,10 +273,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Events/Weather.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Faults/FaultDirector.Reports.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/FitOut/FitPlanner.Zones.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikeMount.cs	6
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/BikePlaces.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageBay.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageShop.cs	3
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Garage/TwoWheelers.cs	7
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorDirector.cs	7
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorGame.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Interiors/InteriorRules.cs	1
