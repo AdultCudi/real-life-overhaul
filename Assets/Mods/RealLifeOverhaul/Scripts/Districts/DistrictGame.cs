@@ -58,9 +58,8 @@ namespace RealLifeOverhaul.Districts
 
     /// <summary>
     /// Everything the district view reads from the game or does to it. The districts are the game's own zones on the city
-    /// map (CityMapNeighborhoodZones: one box per neighbourhood, tinted through a property block on "_UnlitColor", as the
-    /// game tints them for its neighbourhood filters). A zone's rectangle is worked out from its mesh's bounds and its
-    /// transform, which hold while the zone is switched off. The figures are one pass over the city's buildings.
+    /// map, tinted through a property block as the game tints them for its filters; a zone's rectangle comes from its
+    /// mesh's bounds, which hold while it is switched off. The figures are one pass over the city's buildings.
     /// </summary>
     internal static class DistrictGame
     {
@@ -129,7 +128,7 @@ namespace RealLifeOverhaul.Districts
             return string.IsNullOrEmpty(id) ? string.Empty : LocalizorManager.IsLocalizedKey(id) ? id.GetLocalization() : id;
         }
 
-        /// <summary>The district whose zone holds a point on the ground; failing that, the district of the nearest building within so many metres. Null for none.</summary>
+        /// <summary>The district whose zone holds a point; failing that, the nearest building's within so many metres. Null for none.</summary>
         public static MapDistrict At(List<MapDistrict> districts, Vector3 point, float nearest)
         {
             for (int i = 0; i < districts.Count; i++)
@@ -154,7 +153,7 @@ namespace RealLifeOverhaul.Districts
             return null;
         }
 
-        /// <summary>The neighbourhood of the building nearest a point, within so many metres; null for none. A look over every building: for a report now and then, never per frame.</summary>
+        /// <summary>The neighbourhood of the nearest building within so many metres, or null. A pass over every building: never per frame.</summary>
         public static string NearestDistrict(Vector3 point, float within)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -178,8 +177,6 @@ namespace RealLifeOverhaul.Districts
             }
             return found;
         }
-
-        // ---------------------------------------------------------------- the game's figures
 
         /// <summary>Every district's own figures, from the game's neighbourhood data and one pass over the city's buildings.</summary>
         public static void Figures(List<MapDistrict> districts)
@@ -300,8 +297,6 @@ namespace RealLifeOverhaul.Districts
             return UnitHelper.GetAreaUnit();
         }
 
-        // ---------------------------------------------------------------- the zones
-
         /// <summary>A zone shown in a colour of the view's.</summary>
         public static void Tint(MapDistrict district, Tint tint)
         {
@@ -316,7 +311,7 @@ namespace RealLifeOverhaul.Districts
             }
         }
 
-        /// <summary>A zone back in the game's own colour; shown only if the game's own filter for its neighbourhood shows it (the game applies its filters again when asked).</summary>
+        /// <summary>A zone back in the game's own colour and hidden; the game's own filters show it again if ticked.</summary>
         public static void Untint(MapDistrict district)
         {
             if (district.Zone != null)
@@ -347,7 +342,7 @@ namespace RealLifeOverhaul.Districts
             }
         }
 
-        /// <summary>True while the open map is the plain map the view belongs on: not picking a subway station, no full menu over it, no choice of the mod's up.</summary>
+        /// <summary>True while the open map is the plain map: no subway pick, no full menu over it, no choice of the mod's up.</summary>
         public static bool MapIsPlain()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;

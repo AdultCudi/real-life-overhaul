@@ -4,10 +4,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Rivals
 {
     /// <summary>
-    /// The rival tycoons' entry in the mod's feature list, and the figures the Guide's page "Rival tycoons" prints: every
-    /// {name} in its text is filled from <see cref="RivalCatalogue"/> here, so the page can never say anything the rules do
-    /// not do. Called once, when the feature list is built (Meta/FeatureList); each figure is worked out when the page is
-    /// opened.
+    /// The rival tycoons' entry in the feature list, and the Guide page's figures, each filled from
+    /// <see cref="RivalCatalogue"/> when the page opens. Registered once, when the feature list is built.
     /// </summary>
     public static class RivalGuide
     {

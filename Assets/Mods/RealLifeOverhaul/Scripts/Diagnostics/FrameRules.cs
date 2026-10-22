@@ -51,10 +51,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The game-free part of a long frame's line (Diagnostics/SessionWatch): which of the causes the figures point to, and
-    /// the words for the processor, the page faults and that cause. Pure arithmetic over a dozen numbers; nothing is
-    /// allocated except the line's text, which is only put together for a line that is written. Checked offline (NavCheck,
-    /// FrameCheck.cs).
+    /// The game-free part of a long frame's line: the cause the figures point to, and the words for the processor, the
+    /// page faults and the cause. Arithmetic over a dozen numbers, checked offline; only a written line is allocated.
     /// </summary>
     public static class FrameRules
     {
@@ -106,10 +104,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// "; the processor: ...; page faults in it: ...; the engine's own figures: ...; so: ..." for a long frame's line.
-        /// What a measure cannot say (an older Windows, Wine, a build without the engine's frame timing) is said in its place.
-        /// </summary>
+        /// <summary>"; the processor: ...; page faults in it: ...; the engine's own figures: ...; so: ...", a missing measure said in its place.</summary>
         public static void Describe(StringBuilder line, in FrameFigures f, string threadMissing, string machineMissing, string faultsMissing, string timingMissing)
         {
             line.Append("; the processor: ");
@@ -188,12 +183,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// What the screen was during a frame, from what the session record read at its start and at the start of the frame
-        /// after it. The loading screen there at either look: the loading screen (it is the one in front). Otherwise the game's
-        /// black screen drawn at full strength at the start of the frame (<paramref name="coveredBefore"/>: what was on the
-        /// screen while the frame ran): black. The black screen fading at either look, but not full at the start: fading, the
-        /// picture showing through it, and a long frame there is seen (up to 0.47.0 it was counted as black, and every walk
-        /// into a building ended in a frame of 80 to 110 ms the record said nobody saw). Only <see cref="Unseen"/> screens hide one.
+        /// What the screen was during a frame, from the looks at its start and at the next frame's: the loading screen at
+        /// either look; else black if the black screen was at full strength as it began; else fading (seen) if it faded at
+        /// either look. Only <see cref="Unseen"/> screens hide a stutter.
         /// </summary>
         public static FrameScreen Screen(bool faded, bool fadedBefore, bool coveredBefore, bool loading, bool loadingBefore)
         {

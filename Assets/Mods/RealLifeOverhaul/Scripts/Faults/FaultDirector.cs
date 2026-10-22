@@ -8,25 +8,12 @@ using UnityEngine;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// Real faults in the city that are worth reporting (Scripts/Faults): street lamps gone dark, potholes, litter, crime
-    /// hot spots and unsafe places, rolled at random as the game runs (FaultRules, with a real source of chance:
-    /// FaultDice), weighted by the city's state, kept in the save (FaultStore) and shown in the street (FaultWorld).
-    ///
-    ///   the hour     the city's runner (the player alone, or the host of a Going Public session) turns the faults
-    ///                (mended ones go, old hot spots and heaps end), rolls new ones and finds each a place (FaultGame),
-    ///                and the city's people report some on Flare (FaultBridges.CityReport). A guest rolls nothing: it takes
-    ///                the host's faults whole (Core/SharedCity, part K: FaultShare) and shows them.
-    ///   reports      Flare's City Office asks before it acts (FaultDirector.Reports.cs, through Wiring/FaultLinks): a
-    ///                report of a real fault sends a crew and the fault is gone when it is done; a report of nothing is
-    ///                answered so and, by the option, costs the player.
-    ///   the street   a dark lamp near the player after dark scales street crime there (FaultBridges.CrimeScale); litter
-    ///                in the player's district keeps the dirty streets' mood, and near a business's door costs it
-    ///                customers (<see cref="FootfallOf"/>); a pothole jolts and wears the player's car (<see cref="RoadHit"/>,
-    ///                from Transport/CarOwnership's own drive tick); an unsafe place trips a passer-by now and then.
-    ///
-    /// Off (Settings.CityFaults): nothing breaks, nothing is shown, reports are answered as before; the save's line is kept.
-    /// COST: nothing per frame but one time comparison. Once a second a few comparisons; every few seconds a pass over a
-    /// dozen faults; the roll once a game hour.
+    /// Real faults in the city worth reporting: dark street lamps, potholes, litter, crime hot spots and unsafe places,
+    /// rolled at random each game hour by the city's runner (<see cref="FaultRules"/>), kept in the save and shown in the
+    /// street (<see cref="FaultWorld"/>). A Going Public guest rolls nothing and takes the host's faults whole
+    /// (<see cref="FaultShare"/>). Flare's City Office checks reports against them. Off, nothing breaks and the save's
+    /// line is kept. Cost: one time comparison per frame; a few comparisons a second, a pass over a dozen faults every
+    /// few seconds, the roll once a game hour.
     /// </summary>
     public sealed partial class FaultDirector : MonoBehaviour
     {
@@ -68,10 +55,10 @@ namespace RealLifeOverhaul.Faults
         /// <summary>True on a guest of a Going Public session that follows the host's faults: nothing is rolled here.</summary>
         public static bool Following => SharedCity.Follows(FaultShare.Part);
 
-        /// <summary>True while the faults are real in this game: the City Office checks reports, the city's people report only real ones.</summary>
+        /// <summary>True while the faults run here: the City Office checks reports against them.</summary>
         public static bool Real => Instance != null && Instance._loaded && !Instance._failed && Settings.CityFaults;
 
-        /// <summary>The dark lamps' lights switched off again now (something else, the performance tools putting back what they held, may have switched one on).</summary>
+        /// <summary>The dark lamps' lights switched off again, after something else (the performance tools) may have switched one on.</summary>
         public static void KeepDark()
         {
             FaultDirector d = Instance;
@@ -105,7 +92,7 @@ namespace RealLifeOverhaul.Faults
             {
                 Stop("the mod is unloading");
                 _world.Dispose();
-                FaultGame.Forget();   // (the city's lists let go with the director; a new save or a switch off and on keeps them: FaultGame.Ready tells another city)
+                FaultGame.Forget();   // (a new save or the option off and on keeps the lists: FaultGame.Ready tells another city)
             }
             catch (Exception e)
             {
@@ -116,8 +103,6 @@ namespace RealLifeOverhaul.Faults
                 Instance = null;
             }
         }
-
-        // ---------------------------------------------------------------- running
 
         private void Update()
         {
@@ -237,13 +222,13 @@ namespace RealLifeOverhaul.Faults
             Logger?.Info("City faults: stopped (" + why + "); every lamp, lane and prop put back as the game had it.");
         }
 
-        /// <summary>Everything of the faults off the street (the save is being prepared for the mod's removal): lamps, lanes and props put back.</summary>
+        /// <summary>Everything of the faults off the street, for the mod's removal: lamps, lanes and props put back.</summary>
         public void StopAll()
         {
             Stop("taken off the street");
         }
 
-        /// <summary>What was remembered of this save is gone (its line was removed): the city starts again with no faults.</summary>
+        /// <summary>The save's line was removed: the city starts again with no faults.</summary>
         public void Forget()
         {
             if (_loaded)
@@ -283,14 +268,12 @@ namespace RealLifeOverhaul.Faults
             }
         }
 
-        // ---------------------------------------------------------------- the hour
-
         private void Hour()
         {
             using var hotSpot = HotSpots.Time(HotHour);
             long now = FaultGame.Now();
             bool changed = false;
-            if (!Following && !GoingPublic.IsGuest)   // (a guest never rolls, even while the host sends no faults)
+            if (!Following && !GoingPublic.IsGuest)   // (a guest never rolls, even while the host sends none)
             {
                 _gone.Clear();
                 changed |= FaultRules.Turn(_file, now, Settings.Civic ? CivicPolicy.Position(Lever.Cleaning) : 0, _gone);
@@ -391,8 +374,6 @@ namespace RealLifeOverhaul.Faults
             return true;
         }
 
-        // ---------------------------------------------------------------- near the player
-
         private void Near(float now)
         {
             bool hasPlayer = FaultGame.Player(out Vector3 player);
@@ -432,8 +413,6 @@ namespace RealLifeOverhaul.Faults
                     + ": PASS");
             }
         }
-
-        // ---------------------------------------------------------------- footfall
 
         /// <summary>Per cent of customers a business of the player's loses to litter near its door now (0 with none, or the faults off).</summary>
         public static int FootfallOf(BuildingRegistration reg)
@@ -482,11 +461,9 @@ namespace RealLifeOverhaul.Faults
             }
         }
 
-        // ---------------------------------------------------------------- what the player meets
-
         /// <summary>
-        /// The player's car went from one point to another (Transport/CarOwnership's drive tick): over a pothole, the share
-        /// of tyre life it takes and the jolt (m/s upwards), more at speed. False when it missed them all.
+        /// The player's car went from one point to another: over a pothole, the share of tyre life taken and the jolt
+        /// (m/s upwards). False when it missed them all.
         /// </summary>
         public static bool RoadHit(Vector3 from, Vector3 to, float speed, out float wear, out float jolt)
         {
@@ -503,7 +480,7 @@ namespace RealLifeOverhaul.Faults
             return true;
         }
 
-        /// <summary>A crime reported in the street at a point (Social/News): one more of a hot spot there, or now and then a new one. Never on a guest.</summary>
+        /// <summary>A crime reported in the street at a point: one more of a hot spot there, or now and then a new one. Never on a guest.</summary>
         public void Crime(Vector3 where)
         {
             if (!_loaded || _failed || Following || GoingPublic.IsGuest || !Settings.CityFaults || where == Vector3.zero || !FaultGame.Ready)

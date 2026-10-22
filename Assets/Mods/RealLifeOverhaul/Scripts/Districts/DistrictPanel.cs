@@ -11,21 +11,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Districts
 {
     /// <summary>
-    /// The district view's window on the city map: a copy of the game's own filter window (Canvases/CityMap/MapFilters,
-    /// class CityMapFilters), standing beside it on the map's canvas, the same size. Its headline names the layer, the
-    /// box under the headline (where the game has its search field) says what the layer shows, and its list holds:
-    ///
-    ///   a category line     the game's own line (an orange word over a grey rule), for "Key", the district's name, "Districts"
-    ///   a key row           the game's own filter row with its icon a disc in the band's colour: the band and its range
-    ///   a card line         the same row with no icon and no switch: one figure of the district pointed at
-    ///   a district row      the row with the disc in its band's colour, its figure, and the game's arrow button that flies
-    ///                       the map there; pointing at it shows its card, clicking it keeps the card on it
-    ///
-    /// Its yellow button at the foot, which closes the map in the game's window, switches the view off here. The copy is
-    /// made asleep the first time the view is shown in a city, the game's scripts are taken off (the ones that only draw
-    /// or sound stay), and the rows the game's window had are destroyed: only its two templates are kept. Rows are made
-    /// when first needed and used again on every filling. Nothing of it runs while it is hidden, and nothing runs per
-    /// frame while it shows: it is written again only when the layer, the day or the district pointed at changes.
+    /// The district view's window: a copy of the game's own map filter window (CityMapFilters) beside it, its headline
+    /// the layer, its list the key, the card and the districts, built from the game's own line and row templates. Its
+    /// yellow button switches the view off. Rows are pooled. Nothing runs per frame: it is written again only when the
+    /// layer, the day or the district pointed at changes.
     /// </summary>
     internal sealed class DistrictPanel
     {
@@ -68,9 +57,8 @@ namespace RealLifeOverhaul.Districts
         public Action Closed;
 
         public bool Alive => _root != null;
-        public bool Shown => _root != null && _root.activeSelf;
 
-        /// <summary>The window, asleep. Null, with one line in Player.log, if the game's filter window is not built as expected.</summary>
+        /// <summary>The window, asleep; null, with one line in the log, if the game's filter window is not built as expected.</summary>
         public static DistrictPanel Make()
         {
             Transform holder = null;
@@ -198,8 +186,7 @@ namespace RealLifeOverhaul.Districts
             }
         }
 
-        // A white disc for the colour swatches, should the game's own "circle" not be in memory: drawn once a session and kept,
-        // not again for each panel made.
+        // A white disc for the swatches when the game's own "circle" is not in memory: drawn once a session.
         private static Sprite _drawnDisc;
 
         private static Sprite Disc()
@@ -249,8 +236,6 @@ namespace RealLifeOverhaul.Districts
             _rows.Clear();
         }
 
-        // ---------------------------------------------------------------- filling
-
         /// <summary>Starts a filling: the headline and the words under it. Lines and rows follow in order, then <see cref="End"/>.</summary>
         public void Begin(string title, string about)
         {
@@ -276,14 +261,14 @@ namespace RealLifeOverhaul.Districts
             Fill(slot, tint, true, words, null, Vector3.zero);
         }
 
-        /// <summary>One of the card's lines: words with no disc and no button, as long as the window is wide (it wraps).</summary>
+        /// <summary>One of the card's lines: words with no disc and no button, wrapped to the window's width.</summary>
         public void Line(string words)
         {
             Slot slot = Take(_rows, ref _usedRows, _rowTemplate, true);
             Fill(slot, default, false, words, null, Vector3.zero);
         }
 
-        /// <summary>A district's row: its band's disc, its words, the arrow that flies the map to it; pointing at it and clicking it are told.</summary>
+        /// <summary>A district's row: its band's disc, its words and the arrow that flies the map to it.</summary>
         public void District(Tint tint, string district, string words, Vector3 place)
         {
             Slot slot = Take(_rows, ref _usedRows, _rowTemplate, true);
@@ -455,7 +440,7 @@ namespace RealLifeOverhaul.Districts
         }
     }
 
-    /// <summary>A row of the district view's window: the pointer coming onto it and leaving it.</summary>
+    /// <summary>A row of the district view's window, told when the pointer comes onto it and leaves. No per-frame cost.</summary>
     public sealed class DistrictPanelRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         public Action Enter, Exit;

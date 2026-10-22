@@ -4,12 +4,8 @@ using System.Security.Cryptography;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// The city's faults' real source of chance: a System.Random started from the operating system's cryptographic
-    /// source and the machine's clock when the faults start, never from anything of the save, the day or a district. So
-    /// what breaks, where and when is different in every game, even from the same save loaded twice. Only the city's
-    /// runner rolls (the player alone, or the host of a Going Public session, who sends the faults to the guests:
-    /// FaultShare); a guest never does. Game-free (EconomyCheck checks it is not started from the save). Cost: a number
-    /// when asked.
+    /// The faults' real source of chance, seeded from the system's cryptographic source and the clock, never the save:
+    /// what breaks differs in every game. Only the city's runner rolls; a Going Public guest takes the host's faults.
     /// </summary>
     public sealed class FaultDice : IFaultDice
     {

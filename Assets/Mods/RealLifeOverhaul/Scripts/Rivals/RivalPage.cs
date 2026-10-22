@@ -8,12 +8,9 @@ using UI.Notification;
 namespace RealLifeOverhaul.Rivals
 {
     /// <summary>
-    /// The rivals' page, in the Finance app's frame (opened from its Overview with a button: EconomyBridges.Rivals, filled
-    /// in by Wiring/RivalLinks), and the City Ledger's page of the rich list (<see cref="ListPage"/>). The table lists the
-    /// city's rich list, the rivals' moves and the player's answers, which the filter over it tells apart; the white box
-    /// has where the player stands, or the one thing picked: a tycoon with the player's answers to them (each asked with
-    /// the game's own question), or a move. Everything on it is the game's. PER FRAME: NOTHING. Written when the page is
-    /// shown, a row is picked or a button is pressed: a few dozen strings, on a click.
+    /// The rivals' page in the Finance app's frame: the rich list, the moves and the player's answers in one filtered
+    /// table, and in the box where the player stands, a tycoon with the answers to them, or a move. Also the City
+    /// Ledger's page of the rich list (<see cref="ListPage"/>). Written on a click: a few dozen strings; nothing per frame.
     /// </summary>
     public static class RivalPage
     {
@@ -35,7 +32,7 @@ namespace RealLifeOverhaul.Rivals
 
         private static readonly List<RichRow> Rows = new List<RichRow>(RivalCatalogue.RichListSize);
 
-        /// <summary>True while there is a page to show: the option is on and the rivals run.</summary>
+        /// <summary>True while the option is on and the rivals run.</summary>
         public static bool On()
         {
             RivalDirector d = RivalDirector.Instance;
@@ -75,8 +72,6 @@ namespace RealLifeOverhaul.Rivals
             }
         }
 
-        // ---------------------------------------------------------------- the table
-
         private static void WriteRows(RivalFile f, Func<string, TableRow> row, long worth, int level)
         {
             RivalRules.RichList(f, worth, level, RivalGame.PlayerName(), Rows);
@@ -115,7 +110,10 @@ namespace RealLifeOverhaul.Rivals
                 int when = m.State == RivalMoveState.Running ? m.End : m.Land;
                 t.Set(3, RivalText.Fill("reallife_rival_day", "day", when.ToString()), when);
                 t.Set(4, m.District.Length > 0 ? RivalGame.DistrictName(m.District) : string.Empty);
-                t.Tones[2] = (byte)(m.State == RivalMoveState.Announced ? TableRow.Yellow : m.State == RivalMoveState.Running ? TableRow.Red : m.State == RivalMoveState.Stopped ? TableRow.Green : TableRow.Plain);
+                t.Tones[2] = (byte)(m.State == RivalMoveState.Announced ? TableRow.Yellow
+                    : m.State == RivalMoveState.Running ? TableRow.Red
+                    : m.State == RivalMoveState.Stopped ? TableRow.Green
+                    : TableRow.Plain);
             }
             kind = RivalText.T(Kinds[KindAnswer]);
             for (int i = f.Counters.Count - 1; i >= 0; i--)
@@ -131,8 +129,6 @@ namespace RealLifeOverhaul.Rivals
                 t.Set(4, string.Empty);
             }
         }
-
-        // ---------------------------------------------------------------- the white box
 
         private static void WriteSummary(RivalDirector director, RivalFile f, InfoBox box, long worth, int level, int day, Action back)
         {
@@ -156,7 +152,8 @@ namespace RealLifeOverhaul.Rivals
             RivalMove pending = f.Pending();
             if (pending != null)
             {
-                box.Line(RivalText.Fill("reallife_rival_pending_line", "rival", RivalCatalogue.Tycoons[pending.Tycoon].Name, "what", RivalText.What(pending), "day", pending.Land.ToString()), CellTone.Yellow);
+                box.Line(RivalText.Fill("reallife_rival_pending_line", "rival", RivalCatalogue.Tycoons[pending.Tycoon].Name, "what", RivalText.What(pending), "day", pending.Land.ToString()),
+                    CellTone.Yellow);
             }
             else if (tier == 0)
             {
@@ -211,7 +208,8 @@ namespace RealLifeOverhaul.Rivals
             }
             if (day < t.QuietUntil || day < t.SlowUntil || day < t.BarredUntil)
             {
-                box.Line(RivalText.Fill("reallife_rival_checked_line", "quiet", Math.Max(day, t.QuietUntil).ToString(), "slow", Math.Max(day, t.SlowUntil).ToString(), "barred", Math.Max(day, t.BarredUntil).ToString()), CellTone.Green);
+                box.Line(RivalText.Fill("reallife_rival_checked_line", "quiet", Math.Max(day, t.QuietUntil).ToString(),
+                    "slow", Math.Max(day, t.SlowUntil).ToString(), "barred", Math.Max(day, t.BarredUntil).ToString()), CellTone.Green);
             }
             box.Section("reallife_rival_sec_answers");
             var can = new bool[(int)RivalCounter.Count];
@@ -280,7 +278,7 @@ namespace RealLifeOverhaul.Rivals
             RivalWhy why = director.CanCounter(who, kind, out long cost);
             if (why != RivalWhy.None)
             {
-                Notifications.Show(NotificationType.Warning, WhyKeyOf(why), null, 8f, null, null, true, false);
+                Notifications.Show(NotificationType.Warning, RivalText.WhyKey(why), null, 8f, null, null, true, false);
                 pick(picked);
                 return;
             }
@@ -289,7 +287,10 @@ namespace RealLifeOverhaul.Rivals
             if (kind == RivalCounter.Takeover)
             {
                 director.TakeoverQuote(who, out long _, out long back);
-                body = "reallife_rival_confirm_takeover".Localize(new { holding = d.Holding, cost = RivalText.Money(cost), back = RivalText.Money(back), days = RivalCatalogue.BreakUpDays.ToString() });
+                body = "reallife_rival_confirm_takeover".Localize(new
+                {
+                    holding = d.Holding, cost = RivalText.Money(cost), back = RivalText.Money(back), days = RivalCatalogue.BreakUpDays.ToString()
+                });
             }
             else
             {
@@ -306,26 +307,12 @@ namespace RealLifeOverhaul.Rivals
             }), null, "reallife_rival_confirm_yes", "common_cancel", false, kind == RivalCounter.Takeover));
         }
 
-        private static string WhyKeyOf(RivalWhy why)
-        {
-            switch (why)
-            {
-                case RivalWhy.Out: return "reallife_rival_why_out";
-                case RivalWhy.Rest: return "reallife_rival_why_rest";
-                case RivalWhy.Nothing: return "reallife_rival_why_nothing";
-                case RivalWhy.NoHolding: return "reallife_rival_why_no_holding";
-                case RivalWhy.Short: return "reallife_rival_why_short";
-                default: return "reallife_rival_why_money";
-            }
-        }
-
         /// <summary>The number after a row id's prefix ("move:3" from 5 is 3); -1 if there is none.</summary>
         private static int Number(string id, int from)
         {
-            return id != null && id.Length > from && int.TryParse(id.Substring(from), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int value) ? value : -1;
+            return id != null && id.Length > from
+                && int.TryParse(id.Substring(from), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int value) ? value : -1;
         }
-
-        // ---------------------------------------------------------------- the City Ledger's page
 
         /// <summary>The rich list as a front page of the City Ledger: the top of the list, the player's place, and the rivals' week.</summary>
         public static RichListPage ListPage(RivalFile f, long worth, int day)
@@ -364,7 +351,8 @@ namespace RealLifeOverhaul.Rivals
                 Tycoon t = f.Tycoons[i];
                 if (t.Active)
                 {
-                    rivals.Add(RivalText.Fill("reallife_rival_list_rival", "rival", t.Def.Name, "holding", t.Def.Holding, "change", RivalText.Change(t.Worth, t.WeekAgo).Length > 0 ? RivalText.Change(t.Worth, t.WeekAgo) : RivalText.Money(0)));
+                    rivals.Add(RivalText.Fill("reallife_rival_list_rival", "rival", t.Def.Name, "holding", t.Def.Holding, "change",
+                        RivalText.Change(t.Worth, t.WeekAgo).Length > 0 ? RivalText.Change(t.Worth, t.WeekAgo) : RivalText.Money(0)));
                 }
                 else if (t.DefeatedDay >= 0)
                 {

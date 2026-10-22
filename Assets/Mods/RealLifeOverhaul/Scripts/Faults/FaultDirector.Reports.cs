@@ -3,20 +3,16 @@ using System;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// The City Office's look before it acts on a report (Flare, through Wiring/FaultLinks): a report of a road, a lamp,
-    /// crime, litter or an unsafe place is checked against the city's real faults where it was made; a business's
-    /// inspection against how clean the business is. Only the city's runner files cases, so only it is asked. The fault a
-    /// case found is kept with the case (Flare's FlareCase.Fault, in the save), so a crew sent later, under the paper's
-    /// eye, takes the same one. COST: a pass over a dozen faults for a report.
+    /// The city's faults, part: the City Office's check of a Flare report against the real faults where it was made, and
+    /// of a business's inspection against its cleanliness. The fault found is kept with the case, so a crew sent later
+    /// takes the same one. Cost: a pass over a dozen faults a report.
     /// </summary>
     public sealed partial class FaultDirector
     {
         /// <summary>
-        /// What a report comes to (FaultVerdict's number), or -1 when the faults do not judge it (switched off, a guest, a
-        /// kind they do not know: the City Office answers as it always has). For a real fault its place comes back, so the
-        /// crew goes there, and its id when the case may take it (-1 when another case has it in hand already: the report
-        /// is true, costs nothing, and the first case keeps the fault). Reports of nothing count against a player (never
-        /// the city's people) when the option says so.
+        /// What a report comes to (a <see cref="FaultVerdict"/>), or -1 when the faults do not judge it. For a real fault
+        /// its place comes back, and its id when the case may take it (-1 when another case has it in hand). Reports of
+        /// nothing count against a player, never the city's people, when the option says so.
         /// </summary>
         public int Check(int report, string district, float x, float z, string reporter, int caseId, string place, out float fx, out float fz, out int fault)
         {
@@ -64,7 +60,7 @@ namespace RealLifeOverhaul.Faults
 
         private const int BusinessReport = 5;   // FlareReport.Business
 
-        /// <summary>A crew is sent on a case answered true: the fault it found is taken (works end it when handed over; a cleaning round or patrols after their time). Nothing for a fault another case has in hand.</summary>
+        /// <summary>A crew is sent on a case answered true: the fault it found is taken, unless another case has it in hand.</summary>
         public void Acted(int caseId, int faultId, bool works)
         {
             Fault f = _loaded && faultId >= 0 ? _file.Find(faultId) : null;
