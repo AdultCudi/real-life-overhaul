@@ -50,6 +50,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../Assets/Mods/RealLifeOverhaul/Scripts/Core/CompanionSnapshot.cs" Link="Mod/CompanionSnapshot.cs" />
+    <Compile Include="../../Assets/Mods/RealLifeOverhaul/Scripts/Core/CompanionModule.cs" Link="Mod/CompanionModule.cs" />
+    <Compile Include="../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Company/CompanyCompanion.cs" Link="Mod/CompanyCompanion.cs" />
+    <Compile Include="../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Banking/Accounts/CreditCompanion.cs" Link="Mod/CreditCompanion.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\ChoreRules.cs" Link="Mod\ChoreRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HeldTextRules.cs" Link="Mod\HeldTextRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\CreditCatalogue.cs" Link="Mod\CreditCatalogue.cs" />

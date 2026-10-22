@@ -123,6 +123,7 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);
             }
+            CompanionGame.Save(SaveGameManager.Current);
             if (timed)
             {
                 Logger?.Info("Session: the mod wrote its state into the save in " + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");

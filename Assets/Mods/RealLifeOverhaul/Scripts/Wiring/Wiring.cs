@@ -136,6 +136,7 @@ namespace RealLifeOverhaul
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("rival tycoons", RivalLinks.Connect);   // after the city's economy, the company, Flare and the interiors: what it wraps of theirs (footfall, the deal, the paper) is theirs already
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
+            Step("companion reporting", CompanionLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -146,6 +147,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("companion reporting", CompanionLinks.Disconnect);
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped is put back before the others take theirs off
             Step("the calendar", CalendarLinks.Disconnect);
             Step("rival tycoons", RivalLinks.Disconnect);   // next: what it wrapped is put back before the others take theirs off

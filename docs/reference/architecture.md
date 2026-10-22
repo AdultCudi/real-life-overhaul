@@ -99,3 +99,11 @@ Performance is a requirement, not a nice-to-have.
   Somebody who is walking keeps the game's own walk and carries with a masked clip (`PlayOver`); a whole-body walking clip is only for where the game's walk will not do, and then its speed is matched to the ground (`MatchSpeed`) from a timer, never per frame.
 
   A character that is about to become a ragdoll has its clip player disposed first.
+
+## Companion reporting
+
+`Core/Companion.CaptureV1` exposes the read-only [companion contract](../../contracts/companion/v1/README.md).
+`SaveHook` writes the same report after the ordinary save handlers. Feature owners
+provide observations through `Wiring.Companion`; consumers do not decode private
+save stores or become another writer of game state. The report is derived data,
+never input to RLO gameplay.
