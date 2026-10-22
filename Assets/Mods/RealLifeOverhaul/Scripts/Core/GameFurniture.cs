@@ -9,30 +9,19 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's own furniture, as it is drawn and nothing more: a copy of one of the game's item prefabs (its office desks,
-    /// chairs, computers, lockers, plants, lamps and the rest: Prefabs/&lt;name&gt;.prefab, loaded with the game's own
-    /// PrefabHelper.LoadPrefabAssetByName) with everything that makes it an item taken off before it ever wakes.
-    ///
-    /// HOW. The copy is made under a holder that is switched off, so not one of its scripts runs (Unity calls no Awake on
-    /// an object made inactive). Then, while it is still asleep: the children the game uses to place and sell an item are
-    /// removed (the ground and direction indicators, the attachment points with their decals, the navigation targets, the
-    /// "for sale" sign, a counter's waiting line and spots), and so is every script, collider, rigid body, obstacle, sound
-    /// and sprite left on it, a light's own data excepted. What remains is its meshes, its LOD group and the game's own
-    /// materials on them. A light keeps its light, with its shadows off. The copy is then handed over, still switched off.
-    ///
-    /// Every item prefab of the game stands on the floor at its pivot with its front towards +Z (its desk's seat point
-    /// is 0.75 m out along +Z); a wall item hangs from its back face at z = 0; a ceiling lamp from its top at y = 0.
-    ///
-    /// COST. One copy per piece, made when it is first wanted and kept: the prefab is the game's own, loaded once per
-    /// game session by the game's own cache (PrefabHelper). Nothing here runs by itself, and a copy has no script at all.
-    /// A building fitted out from end to end (FitOut/FitView) copies from a template instead: the stripped copy of each
-    /// prefab made once and kept asleep, so that every further copy is one instantiation of a few renderers.
+    /// The game's own furniture as it is drawn and nothing more: a copy of one of its item prefabs (loaded with
+    /// PrefabHelper.LoadPrefabAssetByName) with everything that makes it an item taken off before it wakes. The copy is
+    /// made under a holder that is switched off, so none of its scripts runs; the placing and selling helpers and every
+    /// script, collider, body and sound go, leaving meshes, LODs and the game's materials (a light keeps its light,
+    /// without shadows). Item prefabs stand at their pivot facing +Z; wall items hang from z = 0, ceiling lamps from y = 0.
+    /// COST: nothing runs by itself; a copy is made when first wanted. FitOut copies from a kept stripped template, one
+    /// instantiation per further copy.
     /// </summary>
     internal static class GameFurniture
     {
         public static IModLogger Logger;
 
-        // The children of an item prefab that are how the game places, sells or serves at it: never part of the look.
+        // The children by which the game places, sells or serves at an item: never part of the look.
         private static readonly string[] HelperPrefixes =
         {
             "GroundIndicator", "DirectionIndicator", "NavMeshTarget", "ForSaleVisuals", "WaitingLine", "Spots", "SpotTemplate", "AnchorTemplate",
@@ -44,7 +33,7 @@ namespace RealLifeOverhaul
         private static readonly List<Transform> Children = new List<Transform>(64);
         private static Transform _asleep;
 
-        /// <summary>A copy of the game's item <paramref name="prefab"/> to look at, switched off, under <paramref name="parent"/>; null if the game has no such prefab (said once).</summary>
+        /// <summary>A stripped copy of the game's item, switched off, under <paramref name="parent"/>; null if the game has no such prefab.</summary>
         public static Transform Make(string prefab, Transform parent)
         {
             GameObject source = null;
@@ -87,18 +76,15 @@ namespace RealLifeOverhaul
             return copy.transform;
         }
 
-        // ---------------------------------------------------------------- templates: a stripped copy kept, copies made of it
-
         private static readonly Dictionary<string, Transform> Templates = new Dictionary<string, Transform>(64, StringComparer.Ordinal);
         private static readonly Dictionary<string, Bounds> TemplateBounds = new Dictionary<string, Bounds>(64, StringComparer.Ordinal);
 
-        /// <summary>True once a template of the prefab has been made (or found missing): <see cref="Copy"/> is then cheap.</summary>
+        /// <summary>True once a template of the prefab was made or found missing: <see cref="Copy"/> is then cheap.</summary>
         public static bool HasTemplate(string prefab) => Templates.ContainsKey(prefab);
 
         /// <summary>
-        /// The kept, stripped copy of a prefab that copies are made from, made the first time it is asked for (the costly
-        /// part: the game's loading of the prefab and the stripping); null if the game has none. It stays asleep under the
-        /// holder that is switched off, its drawn bounds with it. One per prefab, until <see cref="Forget"/>.
+        /// The kept stripped copy of a prefab, made on first asking (the costly part); null if the game has none. Kept
+        /// asleep with its drawn bounds until <see cref="Forget"/>.
         /// </summary>
         public static Transform Template(string prefab, out Bounds bounds)
         {
@@ -116,14 +102,11 @@ namespace RealLifeOverhaul
                 bounds = LocalBounds(made);
                 TemplateBounds[prefab] = bounds;
             }
-            Templates[prefab] = made;   // (a prefab the game does not have is remembered as missing, and said once)
+            Templates[prefab] = made;   // a missing prefab is remembered as missing
             return made;
         }
 
-        /// <summary>
-        /// A copy of the game's item to look at, switched off, under <paramref name="parent"/>, made from its template: one
-        /// instantiation of a copy with no script on it, no load and no stripping. Null if the game has no such prefab.
-        /// </summary>
+        /// <summary>As <see cref="Make"/>, from the template: one instantiation, no load or stripping.</summary>
         public static Transform Copy(string prefab, Transform parent)
         {
             Transform template = Template(prefab, out _);
@@ -137,7 +120,7 @@ namespace RealLifeOverhaul
             return copy;
         }
 
-        /// <summary>The templates let go of (the city going): what they hold of the game's assets is free to be unloaded.</summary>
+        /// <summary>The city is unloading: the templates go, so the game's assets they hold can be unloaded.</summary>
         public static void Forget()
         {
             foreach (KeyValuePair<string, Transform> pair in Templates)
@@ -151,22 +134,21 @@ namespace RealLifeOverhaul
             TemplateBounds.Clear();
         }
 
-        /// <summary>The name of the empty children a copy is given where the game's own item has its sitting positions.</summary>
+        /// <summary>The name of the empty children a copy is given at the item's sitting positions.</summary>
         public const string SeatName = "RealLife Seat";
 
         private static readonly List<KeyValuePair<Vector3, Quaternion>> SeatPoses = new List<KeyValuePair<Vector3, Quaternion>>(8);
         private static FieldInfo _sittingPositions;
         private static bool _sittingLooked;
 
-        // The sitting positions of the game's item (its own ItemController.sittingPositions, the places the game seats its
-        // people and its employees on), kept as poses in the copy's own space before the item's script is taken off.
+        // ItemController.sittingPositions, kept as poses in the copy's own space before the script is taken off.
         private static int ReadSeats(GameObject copy)
         {
             SeatPoses.Clear();
             if (!_sittingLooked)
             {
                 _sittingLooked = true;
-                _sittingPositions = GameContract.SittingPositions.Field;   // (resolved once: Core/GameContract)
+                _sittingPositions = GameContract.SittingPositions.Field;
                 if (_sittingPositions == null)
                 {
                     Logger?.Info("Game furniture: the game's items have no list of sitting positions any more; nobody is seated on a copy.");
@@ -199,7 +181,7 @@ namespace RealLifeOverhaul
             return SeatPoses.Count;
         }
 
-        /// <summary>The places to sit on a copy (where the game's item seats people), in order; none for a piece that is not a seat.</summary>
+        /// <summary>The places to sit on a copy, in order; none for a piece that is not a seat.</summary>
         public static void Seats(Transform piece, List<Transform> into)
         {
             into.Clear();
@@ -230,7 +212,7 @@ namespace RealLifeOverhaul
                     UnityEngine.Object.DestroyImmediate(t.gameObject);
                 }
             }
-            // Every script and every piece of physics: in passes, as one may be needed by another until that one is gone.
+            // In passes: a component may be required by another until that one is gone.
             for (int pass = 0; pass < 4; pass++)
             {
                 Components.Clear();
@@ -257,7 +239,7 @@ namespace RealLifeOverhaul
             {
                 if (Components[i] is Light light)
                 {
-                    light.shadows = LightShadows.None;   // a lamp of the room's: light, no shadow map of its own
+                    light.shadows = LightShadows.None;   // no shadow map of its own
                 }
             }
             Components.Clear();
@@ -288,12 +270,12 @@ namespace RealLifeOverhaul
             }
             if (c is MonoBehaviour)
             {
-                return c.GetType().Name != "HDAdditionalLightData";   // (a light of the game's pipeline is drawn by it)
+                return c.GetType().Name != "HDAdditionalLightData";   // the pipeline draws a light by it
             }
             return c is Collider || c is Rigidbody || c is NavMeshObstacle || c is AudioSource || c is SpriteRenderer || c is Animator || c is ReflectionProbe || c is Canvas;
         }
 
-        /// <summary>The bounds of what a copy draws, in its own space (its pivot at the origin): the size the room is planned with.</summary>
+        /// <summary>The bounds of what a copy draws, in its own space: the size the room is planned with.</summary>
         public static Bounds LocalBounds(Transform piece)
         {
             var bounds = new Bounds(Vector3.zero, Vector3.zero);

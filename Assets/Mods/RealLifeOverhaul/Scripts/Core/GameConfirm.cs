@@ -8,19 +8,12 @@ using Localizor.LanguageChangeEvent;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's own question box, HudConfirm.Show, for every part of the mod: the same two calls with the same
-    /// parameters, so that a call reads exactly as the game's. The mod is compiled against the game's Show with eight
-    /// parameters; a build of the game before it (Build 3675) has no such method, and on it every method of the mod that
-    /// asked a question could not be compiled at all, the opening of each of the mod's apps among them (Core/GameUi/PhoneApps).
-    ///
-    /// So the game's method is named only here, in a small method of its own. It is a line of the game contract
-    /// (Core/GameContract: ConfirmByKey, ConfirmByData), resolved as the mod starts: on a game without it
-    /// <see cref="Known"/> says so before any question is asked (and a call that finds it missing anyway says so once),
-    /// and the running game's own Show is found (once) and called with the same answers: its parameters matched by
-    /// name, then by place, any it has beyond these given their defaults. Where none can be found the box is not shown,
-    /// and that is said once; nothing is done in its place.
-    ///
-    /// Cost: one call more than the game's own; the search is made once, and only on a game that needs it.
+    /// The game's own question box, HudConfirm.Show, for every part of the mod, with the game's two calls and
+    /// parameters. The mod is compiled against the eight-parameter Show, which older builds lack; on those, Mono could
+    /// not compile any method naming it. So it is named only here, in small methods. On a game without it (the contract's
+    /// ConfirmByKey, ConfirmByData) the running game's own Show is found by reflection once and called with the same
+    /// answers, matched by name, then by place, the rest at their defaults; with none, nothing is shown, logged once.
+    /// COST: one call more than the game's own; the search runs once, only on a game that needs it.
     /// </summary>
     public static class GameConfirm
     {
@@ -28,12 +21,12 @@ namespace RealLifeOverhaul
         private const string TestBodyKey = "reallife_test_build_box_body";
         private const string OkKey = "reallife_opt_ok";
 
-        private static bool _direct = true;   // false once the game has been found to lack the Show the mod is built with
+        private static bool _direct = true;   // false once the game is found to lack the Show the mod is built with
         private static bool _looked, _toldOwn, _toldNone;
         private static MethodInfo _byKey, _byData;
         private static ParameterInfo[] _byKeyParameters, _byDataParameters;
 
-        /// <summary>From Core/Guard as the mod starts, once the contract is resolved: a game that lacks the Show the mod is built with is asked the way round from the first question.</summary>
+        /// <summary>From Core/Guard once the contract is resolved: a game lacking the built-in Show goes the way round from the first question.</summary>
         public static void Known()
         {
             if (GameContract.ConfirmByKey.Missing || GameContract.ConfirmByData.Missing)
@@ -44,29 +37,29 @@ namespace RealLifeOverhaul
             _noListening = GameContract.ConfirmListening.Missing;
         }
 
-        private static bool _noOpen, _noListening;   // the box's two flags this game lacks (Core/GameContract)
+        private static bool _noOpen, _noListening;   // the box's two flags this game lacks
 
-        // The answers in the order of the game's own parameters.
+        // The game's own parameter names, in order.
         private static readonly string[] Names = { "headerKey", "bodyKey", "onConfirmAction", "onCancelAction", "confirmKey", "cancelKey", "allowConfirmationSkip", "isNegative" };
         private static readonly string[] DataNames = { "headerData", "bodyData", "onConfirmAction", "onCancelAction", "confirmKey", "cancelKey", "allowConfirmationSkip", "isNegative" };
 
-        /// <summary>The game's question box (HudConfirm.Show with keys, or words shown as they are).</summary>
-        public static void Show(string headerKey = null, string bodyKey = null, Action onConfirmAction = null, Action onCancelAction = null, string confirmKey = null, string cancelKey = null, bool allowConfirmationSkip = true, bool isNegative = false)
+        /// <summary>The game's question box, by locale keys.</summary>
+        public static void Show(string headerKey = null, string bodyKey = null, Action onConfirmAction = null, Action onCancelAction = null,
+            string confirmKey = null, string cancelKey = null, bool allowConfirmationSkip = true, bool isNegative = false)
         {
             TryShow(headerKey, bodyKey, onConfirmAction, onCancelAction, confirmKey, cancelKey, allowConfirmationSkip, isNegative);
         }
 
-        /// <summary>The game's question box with texts that fill names (HudConfirm.Show with LanguageChangeEventDataHolder).</summary>
-        public static void Show(LanguageChangeEventDataHolder headerData = default, LanguageChangeEventDataHolder bodyData = default, Action onConfirmAction = null, Action onCancelAction = null, string confirmKey = null, string cancelKey = null, bool allowConfirmationSkip = true, bool isNegative = false)
+        /// <summary>The game's question box, with texts that fill in names.</summary>
+        public static void Show(LanguageChangeEventDataHolder headerData = default, LanguageChangeEventDataHolder bodyData = default, Action onConfirmAction = null,
+            Action onCancelAction = null, string confirmKey = null, string cancelKey = null, bool allowConfirmationSkip = true, bool isNegative = false)
         {
             TryShow(headerData, bodyData, onConfirmAction, onCancelAction, confirmKey, cancelKey, allowConfirmationSkip, isNegative);
         }
 
-        /// <summary>
-        /// As <see cref="Show(LanguageChangeEventDataHolder, LanguageChangeEventDataHolder, Action, Action, string, string, bool, bool)"/>;
-        /// false only when the running game has no question box the mod can call, so that nothing was shown.
-        /// </summary>
-        public static bool TryShow(LanguageChangeEventDataHolder headerData, LanguageChangeEventDataHolder bodyData, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
+        /// <summary>As Show; false only when the game has no question box the mod can call.</summary>
+        public static bool TryShow(LanguageChangeEventDataHolder headerData, LanguageChangeEventDataHolder bodyData, Action onConfirmAction, Action onCancelAction,
+            string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
         {
             onConfirmAction = Answer(onConfirmAction);
             onCancelAction = Answer(onCancelAction);
@@ -93,17 +86,13 @@ namespace RealLifeOverhaul
                          onConfirmAction, onCancelAction, confirmKey, cancelKey, allowConfirmationSkip, isNegative);
         }
 
-        /// <summary>
-        /// As <see cref="Show(string, string, Action, Action, string, string, bool, bool)"/>; false only when the running game
-        /// has no question box the mod can call, so that nothing was shown.
-        /// </summary>
+        /// <summary>As Show; false only when the game has no question box the mod can call.</summary>
         public static bool TryShow(string headerKey, string bodyKey, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
         {
             return ByKey(headerKey, bodyKey, Answer(onConfirmAction), Answer(onCancelAction), confirmKey, cancelKey, allowConfirmationSkip, isNegative);
         }
 
-        // An answer of the question box runs inside the guard of the class it is written in (Core/Guard): a fault of it
-        // never reaches the game's own box, and counts for that class as its other entry points' do. Once for each question.
+        // An answer runs inside the guard of the class it is written in: its fault never reaches the game's box.
         private static Action Answer(Action answer)
         {
             return answer != null ? Guard.Wrap(answer) : null;
@@ -137,7 +126,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>True while the game's question box is up (HudConfirm.isOpen); false on a game where that cannot be read.</summary>
+        /// <summary>True while the game's question box is up; false where that cannot be read.</summary>
         public static bool IsOpen
         {
             get
@@ -159,10 +148,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True when the game's question box is there to be shown (HudConfirm.onShow: its panel has started, in the main
-        /// menu and in the city); true as well on a game where that cannot be read, which is then left to the game.
-        /// </summary>
+        /// <summary>True when the game's question box can be shown (its panel has started); true too where that cannot be read.</summary>
         public static bool Ready
         {
             get
@@ -184,10 +170,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Options > Tests: a question through the running game's own Show found as the mod runs, the way the mod asks on a
-        /// game that lacks the Show it is built with, so that the way round can be seen on the game the mod is made for.
-        /// </summary>
+        /// <summary>Options > Tests: a question the way round, through the Show found by reflection.</summary>
         public static void TestOwnBox()
         {
             try
@@ -206,8 +189,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the game's own
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Direct(string headerKey, string bodyKey, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
         {
@@ -215,7 +196,8 @@ namespace RealLifeOverhaul
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void DirectData(LanguageChangeEventDataHolder headerData, LanguageChangeEventDataHolder bodyData, Action onConfirmAction, Action onCancelAction, string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
+        private static void DirectData(LanguageChangeEventDataHolder headerData, LanguageChangeEventDataHolder bodyData, Action onConfirmAction, Action onCancelAction,
+            string confirmKey, string cancelKey, bool allowConfirmationSkip, bool isNegative)
         {
             HudConfirm.Show(headerData, bodyData, onConfirmAction, onCancelAction, confirmKey, cancelKey, allowConfirmationSkip, isNegative);
         }
@@ -232,8 +214,7 @@ namespace RealLifeOverhaul
             return HudConfirm.onShow != null;
         }
 
-        // Only the game's own Show itself missing counts: a fault of what the box is told to do (an answer run at once,
-        // with the skip key held) is the caller's, as it always was.
+        // Only the Show itself missing counts: a fault of an answer run at once (the skip key held) is the caller's.
         private static bool Lacks(Exception e)
         {
             return Guard.Missing(e) && e.Message != null && e.Message.IndexOf("HudConfirm", StringComparison.Ordinal) >= 0;
@@ -244,8 +225,6 @@ namespace RealLifeOverhaul
             _direct = false;
             Guard.DoesWithout(e, "the mod's questions", "they are asked through the running game's own question box instead");
         }
-
-        // ---------------------------------------------------------------- the running game's Show, by reflection
 
         private static bool Found()
         {
@@ -311,7 +290,6 @@ namespace RealLifeOverhaul
             return typeof(HudConfirm);
         }
 
-        // Said once, the first time a question really goes the way round.
         private static void TellOwn(ParameterInfo[] parameters)
         {
             if (!_toldOwn)
@@ -331,8 +309,7 @@ namespace RealLifeOverhaul
             return text.Append(')').ToString();
         }
 
-        // Each of the game's parameters gets the answer of its name; failing that the answer in its place if the type
-        // agrees; failing that its own default.
+        // Each parameter gets the answer of its name, else the one in its place if the type agrees, else its default.
         private static void Call(MethodInfo method, ParameterInfo[] parameters, string[] names, object[] answers)
         {
             var arguments = new object[parameters.Length];
@@ -363,7 +340,7 @@ namespace RealLifeOverhaul
             }
             catch (TargetInvocationException e) when (e.InnerException != null)
             {
-                ExceptionDispatchInfo.Capture(e.InnerException).Throw();   // what the box ran is the caller's fault, as with a direct call
+                ExceptionDispatchInfo.Capture(e.InnerException).Throw();   // the caller's fault, as with a direct call
             }
         }
 
