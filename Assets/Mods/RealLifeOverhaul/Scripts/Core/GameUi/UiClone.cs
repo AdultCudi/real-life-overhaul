@@ -264,6 +264,17 @@ namespace RealLifeOverhaul.GameUi
             entry.gameObject.SetActive(false);
         }
 
+        /// <summary>A copy's canvas group, if it has one, opaque and taking clicks, whatever state the original was copied in.</summary>
+        internal static void Visible(CanvasGroup group)
+        {
+            if (group != null)
+            {
+                group.alpha = 1f;
+                group.interactable = true;
+                group.blocksRaycasts = true;
+            }
+        }
+
         /// <summary>Nothing under a window left selected: its entries are reused, and the confirm key presses whatever is.</summary>
         internal static void Deselect(Transform root)
         {

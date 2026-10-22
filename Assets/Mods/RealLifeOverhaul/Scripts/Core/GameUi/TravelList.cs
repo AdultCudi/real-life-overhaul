@@ -172,13 +172,7 @@ namespace RealLifeOverhaul.GameUi
                 list._cancel = cancel.GetComponentInChildren<TextLocalizationComponent>(true);
                 list._cancelButton = cancel.gameObject;
 
-                var group = root.GetComponent<CanvasGroup>();
-                if (group != null)
-                {
-                    group.alpha = 1f;
-                    group.interactable = true;
-                    group.blocksRaycasts = true;
-                }
+                UiClone.Visible(root.GetComponent<CanvasGroup>());
                 // The middle of the screen, where the game asks the player things: nothing of the HUD stands there.
                 root.SetActive(false);
                 var rect = (RectTransform)root.transform;

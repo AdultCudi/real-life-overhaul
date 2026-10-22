@@ -156,13 +156,7 @@ namespace RealLifeOverhaul.GameUi
             }
             header.Find("LeftButton").gameObject.SetActive(true);
             header.Find("RightButton").gameObject.SetActive(true);
-            var group = _selector.GetComponent<CanvasGroup>();
-            if (group != null)
-            {
-                group.alpha = 1f;
-                group.interactable = true;
-                group.blocksRaycasts = true;
-            }
+            UiClone.Visible(_selector.GetComponent<CanvasGroup>());
         }
 
         private void PrepareSwitch()

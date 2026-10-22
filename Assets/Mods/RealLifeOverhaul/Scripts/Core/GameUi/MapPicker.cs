@@ -162,13 +162,7 @@ namespace RealLifeOverhaul.GameUi
                 UiClone.Rewire(cancel, picker.Close);
                 picker._cancel = cancel.GetComponentInChildren<TextLocalizationComponent>(true);
 
-                var group = root.GetComponent<CanvasGroup>();
-                if (group != null)
-                {
-                    group.alpha = 1f;
-                    group.interactable = true;
-                    group.blocksRaycasts = true;
-                }
+                UiClone.Visible(root.GetComponent<CanvasGroup>());
                 // On the map's canvas just after the game's window, with the game's anchors.
                 root.SetActive(false);
                 var rect = (RectTransform)root.transform;
