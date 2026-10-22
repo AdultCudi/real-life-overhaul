@@ -5,8 +5,8 @@ namespace RealLifeOverhaul
     /// <summary>What a contact's picture is: a person's face, or an organisation's logo.</summary>
     public enum PictureKind
     {
-        Logo = 0,       // one of the game's own logo shapes (StreamingAssets/LogoShapes) on a square of colour, as a business logo is made
-        Person = 1      // a face drawn by the game's own portrait camera (Character.Customization.PortraitGenerator), as the Rivals app draws a rival
+        Logo = 0,       // one of the game's logo shapes on a square of colour, as a business logo is made
+        Person = 1      // a face from the game's own portrait camera, as the Rivals app draws a rival
     }
 
     /// <summary>One contact's picture as the catalogue gives it.</summary>
@@ -18,8 +18,8 @@ namespace RealLifeOverhaul
         public byte R, G, B;        // a logo: the colour of its square
         public bool Female;         // a person
         public int Age;             // a person: years
-        public string LikeGame;     // a logo: one of the game's own contact pictures to use instead when the game has it; null for none
-        public int Seed;            // a person: their look's seed when it is the same in every game (Mom, Alex); 0 for one of each save's own
+        public string LikeGame;     // a logo: the game's own contact picture to use instead when the game has it, or null
+        public int Seed;            // a person: a look's seed that is the same in every game (Mom, Alex); 0 for each save's own
 
         public static ContactLook Logo(string id, string shape, byte r, byte g, byte b, string likeGame = null)
         {
@@ -33,35 +33,29 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The two people the player's life starts with look the same in every game and every save: Mom a woman of 58, Alex,
-    /// the old friend, a man of 30 (about the player's age at the start; neither follows the player's own sex or age, so
-    /// the face never changes). One look each, used by everything that shows them: the social life's street character
-    /// (Social/SocialCast), the contact's picture with the social life on or off (Phone/Contacts), the wedding's mother
-    /// (Family/FamilyCast) and Flare's pictures, which take the social life's look. The game builds a look from its seed
-    /// alone (AppearanceSetter.RandomizeElements: System.Random of the seed, and the engine's dice set from it for the
-    /// beard's colour), so a constant seed is a constant face. Game-free.
+    /// The looks of Mom (a woman of 58) and Alex, the old friend (a man of 30): the same in every game and save, and used by
+    /// everything that shows them (the street character, the contact picture, the wedding's mother, Flare). The game builds
+    /// a look from its seed alone, so a constant seed is a constant face. Game-free.
     /// </summary>
     public static class FixedLooks
     {
-        public const int MomSeed = 77171;        // Mom's look (the wedding's mother has always had this one)
+        public const int MomSeed = 77171;        // the wedding's mother has always had this look
         public const int MomAge = 58;            // years
         public const bool MomFemale = true;
-        public const int AlexSeed = 52817;       // Alex's look
+        public const int AlexSeed = 52817;
         public const int AlexAge = 30;           // years
         public const bool AlexFemale = false;
     }
 
     /// <summary>
-    /// Every phone contact the mod adds, and its picture. Nothing is drawn by the mod itself: an organisation's picture is
-    /// one of the game's own logo shapes on a square of colour, the way the game makes a business's logo; a person's is
-    /// their face from the game's own portrait camera. People whose look the mod already gives (the people of the social
-    /// life, a partner, a roommate) are drawn from that same look by the code that knows them (ContactPictures.Person);
-    /// the ages and sexes here are for the contacts no other feature describes. Game-free: CatalogueCheck holds every
-    /// contact id the mod registers against this table, and every shape against the game's list.
+    /// Every phone contact the mod adds, and its picture: an organisation's is one of the game's logo shapes on a square of
+    /// colour, a person's is a face from the game's portrait camera. People another feature already gives a look (the social
+    /// life, a partner, a roommate) are drawn from that look instead (ContactPictures.Person). Game-free:
+    /// CatalogueCheck holds every contact id the mod registers, and every shape, against this table.
     /// </summary>
     public static class ContactCatalogue
     {
-        /// <summary>The game's logo shapes this table uses: each must be a file of the game's StreamingAssets/LogoShapes.</summary>
+        /// <summary>The game's logo shapes this table uses: each is a file of the game's StreamingAssets/LogoShapes.</summary>
         public static readonly string[] Shapes =
         {
             "lawfirm1", "lawfirm2", "lawfirm3", "headquarter1", "headquarter3", "bank2", "marketing2", "marketing3", "furniture1", "furniture3", "gym3",
@@ -70,12 +64,12 @@ namespace RealLifeOverhaul
 
         public static readonly ContactLook[] All =
         {
-            // The emergency line, the doctor, an old friend and Mom (Phone/PhoneContacts; Mom and Alex are the social life's when it is on)
+            // The emergency line, the doctor, an old friend and Mom (Mom and Alex take the social life's look when it is on)
             ContactLook.Logo("reallife-911", "lawfirm2", 186, 42, 42),
             ContactLook.Person("reallife-doctor", true, 46),
             ContactLook.Person("reallife-friend", FixedLooks.AlexFemale, FixedLooks.AlexAge, FixedLooks.AlexSeed),
             ContactLook.Person("reallife-mom", FixedLooks.MomFemale, FixedLooks.MomAge, FixedLooks.MomSeed),
-            // Money (Economy/Debt): the collections agency is a firm; the private lender and the adviser are people
+            // Money: the collections agency is a firm; the private lender and the adviser are people
             ContactLook.Logo("reallife-collections", "bank2", 128, 40, 52),
             ContactLook.Person("reallife-lender", false, 44),
             ContactLook.Person("reallife-debt-advice", true, 38),
@@ -86,7 +80,7 @@ namespace RealLifeOverhaul
             ContactLook.Logo("reallife-records", "lawfirm3", 30, 52, 112),
             ContactLook.Logo("reallife-legal", "lawfirm1", 112, 38, 50),
             ContactLook.Logo("reallife-dmv", "school1", 28, 124, 136),
-            // Home and family (a partner and a roommate are drawn from their own look once they are known)
+            // Home and family (a partner and a roommate are drawn from their own look once known)
             ContactLook.Logo("reallife-family", "furniture1", 204, 82, 122),
             ContactLook.Person("reallife-partner", true, 30),
             ContactLook.Person("reallife-inlaws", true, 62),
@@ -123,9 +117,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A person's look seed from their contact id and the save's own name for the character, so that Mom has one face
-        /// in one playthrough and another in the next, and the same face on every load. FNV-1a over both, never negative;
-        /// string.GetHashCode is not used, as it may differ between runtimes.
+        /// A person's look seed from their contact id and the save's name for the character: one face per playthrough, the
+        /// same on every load. FNV-1a, never negative; string.GetHashCode may differ between runtimes.
         /// </summary>
         public static int Seed(string id, string save)
         {
@@ -150,13 +143,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A drawn face's file name in the portrait cache: what it is drawn from, so a different look is a different file. The first part is the version of how faces are drawn.</summary>
+        /// <summary>A drawn face's file name in the portrait cache, from what it is drawn from; "v1" is the way faces are drawn.</summary>
         public static string CacheName(bool female, int age, int seed)
         {
-            return "v1_" + (female ? "f" : "m") + Math.Max(0, age) + "_" + Math.Max(0, seed) + PersonLooks.Mark(seed) + ".jpg";   // (a kept look's apart from a rolled one of the same number: People/PersonLook)
+            // The mark keeps a kept look's file apart from a rolled one of the same seed.
+            return "v1_" + (female ? "f" : "m") + Math.Max(0, age) + "_" + Math.Max(0, seed) + PersonLooks.Mark(seed) + ".jpg";
         }
 
-        /// <summary>The words a contact list row is found by: whether every word of the query is in the name or the description, ignoring case and accents.</summary>
+        /// <summary>Whether every word of the query is in the name or the description, by the given comparison.</summary>
         public static bool Matches(string query, string name, string description, Func<string, string, bool> contains)
         {
             if (string.IsNullOrEmpty(query))
