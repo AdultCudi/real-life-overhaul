@@ -2,56 +2,47 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul
 {
-    // Game-free, like CrimeDeck.cs: RealLifeOverhaul.Build\CatalogueCheck compiles this file on
-    // its own. Every locale key is written out in full here so the check can find it.
+    // Game-free, like CrimeDeck.cs: CatalogueCheck compiles it alone and finds every locale key written out here.
 
-    /// <summary>
-    /// What the police charge, and how likely it is that anybody saw. Kept beside the crimes so
-    /// that everything a player might want to tune is in one file.
-    /// </summary>
+    /// <summary>What the police charge and how likely it is that anybody saw, beside the crimes so the tuning is in one file.</summary>
     internal static class CrimeLaw
     {
-        // Traffic offences by the player. A fine is only ever charged by an officer who has stopped them.
+        // Charged only by an officer who has stopped the player.
         public static int RedLightFine => Prices.At(250);
         public static int SpeedingFine => Prices.At(180);
-        public static int RecklessFine => Prices.At(320);           // driving on the pavement or against the traffic
+        public static int RecklessFine => Prices.At(320);           // on the pavement or against the traffic
         public static int JaywalkFine => Prices.At(25);
-        public static int HornFine => Prices.At(40);                // sounding the horn again and again at people who have the right of way, with an officer in earshot (People/HornReactions)
-        public static int DrunkDrivingFine => Prices.At(900);       // at the wheel after two drinks or more (Leisure), found at any stop
-        public static int FleeingFine => Prices.At(900);            // on top of the offence, for making them chase
-        public static int FleeingPerQuarterMinute => Prices.At(120); // the longer the chase, the more it costs
+        public static int HornFine => Prices.At(40);                // horn at people with the right of way, an officer in earshot (People/HornReactions)
+        public static int DrunkDrivingFine => Prices.At(900);       // two drinks or more (Leisure), found at any stop
+        public static int FleeingFine => Prices.At(900);            // on top of the offence
+        public static int FleeingPerQuarterMinute => Prices.At(120);
         public static int FleeingMost => Prices.At(2000);
-        public static int WastedCallFine => Prices.At(150);         // a third 911 call about nothing in one day
+        public static int WastedCallFine => Prices.At(150);         // from the third 911 call about nothing in a day
 
-        // The chance that a patrol car happens to be near enough to see an offence nobody on foot saw.
+        // The chance that a patrol car happens to see an offence nobody on foot saw.
         public const float RedLightSeen = 0.22f;
-        public const float SpeedingSeen = 0.06f;       // (was 0.10 when few cars could speed at all; see below)
+        public const float SpeedingSeen = 0.06f;
         public const float RecklessSeen = 0.16f;
         public const float JaywalkFineChance = 0.2f;   // of the times an officer says anything at all
 
-        // Speeding. Since Driving/CarTuning every car passes 130 km/h and brisk driving is over the limit on every
-        // straight, so it is policed as "well over, for a while, now and then": 95 in a 50 held for four seconds
-        // is looked at once and then not again for a minute and a half. A patrol car happens to see it 6 times in
-        // 100 (3.6 to 9.6 by the crime frequency option; 4.3 as that option comes), twice that from 150 km/h; an
-        // officer on foot with a clear view at most 19 in 100. Driven at without pause that is a stop about every
-        // 35 minutes, every 8 under an officer's nose, every 4 in a car that got away earlier in the day.
-        public const float SpeedLimitKmh = 50f;        // where the road itself does not say
-        public const float SpeedingMarginKmh = 45f;    // "well over": this much above the limit
-        public const float SpeedingSeconds = 4f;       // ...for this long
-        public const float SpeedingCooldown = 90f;     // seconds after speeding was looked at before it is looked at again
-        public const float SpeedingOnFoot = 0.35f;     // of what an officer on foot notices of other offences (0.55 on watch, 0.30 at work)
+        // Every car can speed on every straight, so speeding is policed as well over the limit, for a while, now and then:
+        // looked at once, then not for a minute and a half. Driven so without pause, a stop comes about every 35 minutes.
+        public const float SpeedLimitKmh = 50f;        // where the road does not say
+        public const float SpeedingMarginKmh = 45f;    // km/h over the limit
+        public const float SpeedingSeconds = 4f;       // held this long
+        public const float SpeedingCooldown = 90f;     // seconds before speeding is looked at again
+        public const float SpeedingOnFoot = 0.35f;     // of what an officer on foot notices of other offences
         public const float SpeedingGrossKmh = 150f;    // from this speed, whatever the limit...
-        public const float SpeedingGrossTimes = 2f;    // ...a patrol car is this much more likely to notice
-        public const float SpeedingSeenKnown = 0.35f;  // the chance for a car that got away earlier today (any other offence: certain)
+        public const float SpeedingGrossTimes = 2f;    // ...a patrol car is this much likelier to notice
+        public const float SpeedingSeenKnown = 0.35f;  // for a car that got away earlier today (any other offence: certain)
 
-        public const int CustodyHoursMin = 2;
+        public const int CustodyHoursMin = 2;          // hours
         public const int CustodyHoursMax = 5;
     }
 
     /// <summary>
-    /// Every crime the mod can stage. Adding one is: an entry here (with its lines in
-    /// Locales\en.json), and a scene for it in CrimeScenes (a new class, or one more instance of
-    /// an existing one). See docs/contributing/adding-things.md.
+    /// Every crime the mod can stage. A new one is an entry here, its lines in Locales\en.json and a scene in CrimeScenes
+    /// (docs/contributing/adding-things.md).
     /// </summary>
     internal static class CrimeCatalogue
     {
@@ -81,7 +72,6 @@ namespace RealLifeOverhaul
         {
             return new[]
             {
-                // ------------------------------------------------------------ on the pavement
                 new CrimeEntry("foot_chase", CrimeFamily.Street)
                 {
                     Starts = new[] { "reallife_crime_chase_start_1", "reallife_crime_chase_start_2", "reallife_crime_chase_start_3" },
@@ -154,7 +144,7 @@ namespace RealLifeOverhaul
                 new CrimeEntry("assault", CrimeFamily.Street)
                 {
                     Cast = 3,
-                    Needs = CrimeNeed.Ragdolls,   // it is about somebody being knocked down
+                    Needs = CrimeNeed.Ragdolls,
                     Starts = new[] { "reallife_crime_assault_start_1", "reallife_crime_assault_start_2", "reallife_crime_assault_start_3" },
                     Extra = new[] { "reallife_crime_assault_x_1", "reallife_crime_assault_x_2" },
                     Endings = new[]
@@ -274,8 +264,6 @@ namespace RealLifeOverhaul
                         End("escaped", 0.5f, "reallife_crime_cartheft_escaped_1", "reallife_crime_cartheft_escaped_2")
                     }
                 },
-
-                // ------------------------------------------------------------ on the road
                 new CrimeEntry("traffic_stop", CrimeFamily.Traffic)
                 {
                     Cast = 1,
@@ -318,8 +306,6 @@ namespace RealLifeOverhaul
                         End("let_off", 0.25f, "reallife_crime_parking_letoff_1", "reallife_crime_parking_letoff_2")
                     }
                 },
-
-                // ------------------------------------------------------------ in shops
                 new CrimeEntry("shop_theft_own", CrimeFamily.Shop)
                 {
                     Place = CrimePlace.OwnShop,
@@ -368,8 +354,6 @@ namespace RealLifeOverhaul
                         End("till", 0f, "reallife_crime_holdup_till_1")
                     }
                 },
-
-                // ------------------------------------------------------------ against the player
                 new CrimeEntry("player_pickpocket", CrimeFamily.Player)
                 {
                     Cast = 1,

@@ -89,7 +89,6 @@ namespace RealLifeOverhaul
                     Second.Quiet();
                     if (Is("fought_back") && Floor(now))
                     {
-
                         Go(Floored, now, 14f);
                     }
                     else

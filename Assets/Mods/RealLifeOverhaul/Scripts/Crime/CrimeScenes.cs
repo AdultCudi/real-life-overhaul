@@ -3,9 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The scene that plays each catalogue entry: one line per crime. The scenes are created
-    /// once and reused; idle, each is a handful of fields. CatalogueCheck reads this file to
-    /// make sure every dealt entry has a scene and every scene an entry.
+    /// The scene that plays each catalogue entry, made once and reused. CatalogueCheck reads this file to match every
+    /// dealt entry to a scene.
     /// </summary>
     internal static class CrimeScenes
     {

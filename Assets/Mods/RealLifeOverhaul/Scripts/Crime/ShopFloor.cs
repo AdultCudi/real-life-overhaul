@@ -10,10 +10,8 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What the indoor scenes need to know about the shop the player is standing in: whether it
-    /// is theirs, where the doors, shelves and cameras are, and whether a security guard is on
-    /// the floor. All of it is read from the game's own objects when a scene starts; nothing
-    /// here keeps a reference past the call, and nothing is changed.
+    /// The shop the player stands in, for the indoor scenes: whose it is, its doors, shelves and cameras, and its guard.
+    /// Read from the game's objects when asked; nothing is kept or changed.
     /// </summary>
     internal static class ShopFloor
     {
@@ -77,7 +75,7 @@ namespace RealLifeOverhaul
             return found;
         }
 
-        /// <summary>A stocked shelf picked at random: where to stand at it, whether a camera covers it, and what it is called.</summary>
+        /// <summary>A shelf picked at random: where to stand at it, whether a camera covers it, and what it is called.</summary>
         public static bool RandomShelf(out Vector3 standAt, out Vector3 shelf, out bool covered, out string itemName)
         {
             standAt = default;
@@ -101,7 +99,7 @@ namespace RealLifeOverhaul
                 }
                 if (Random.Range(0, ++seen) == 0)
                 {
-                    picked = item;   // each shelf equally likely, in one pass
+                    picked = item;   // each equally likely, in one pass
                 }
             }
             if (picked == null || !Standable(picked.transform.position, 2f, out standAt))

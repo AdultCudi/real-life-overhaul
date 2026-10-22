@@ -1,17 +1,14 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Police patrols stepped up in the district the player stands in: a crime reported on Flare that the City Office
-    /// acted on (Social/Flare, through Wiring/FlareLinks, which sets this once a game hour from where the player is). While
-    /// it holds, crime in the street there is rarer (CrimeDirector) and an offence of the player's is likelier to be seen
-    /// (PoliceAttention). A dark street lamp of the city's faults near the player after dark (Scripts/Faults, through
-    /// Wiring/FaultLinks, when it changes) makes street crime there likelier. Two field reads where those already roll
-    /// their chances; nothing per frame of its own.
+    /// How the district the player stands in scales crime: patrols stepped up after a Flare report make street crime rarer
+    /// and an offence likelier to be seen; a dark street lamp makes street crime likelier. Set by Wiring once an hour or on a
+    /// change, read where the chances are rolled; nothing per frame.
     /// </summary>
     public static class CityWatch
     {
-        public const float PatrolCrime = 0.6f;   // of the street crime there while the police patrol it
-        public const float PatrolSeen = 1.3f;    // ...and how much likelier an offence is to be seen
+        public const float PatrolCrime = 0.6f;   // times the street crime while the police patrol
+        public const float PatrolSeen = 1.3f;    // times the chance an offence is seen while they do
 
         private static bool _patrol;
         private static float _dark = 1f;
