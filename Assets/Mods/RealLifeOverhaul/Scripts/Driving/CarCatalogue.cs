@@ -49,10 +49,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// The targets for every vehicle type the game has (one row each; docs/features/driving.md lists them), and a rule for
-    /// types it does not know, such as other mods' vehicles. Game-free: NavCheck compiles it.
-    /// </summary>
+    /// <summary>The targets of every vehicle type the game has, and a rule for those it does not know. Game-free: NavCheck compiles it.</summary>
     public static class CarCatalogue
     {
         private const string Prefix = "ba:vehicletype_";
@@ -86,8 +83,7 @@ namespace RealLifeOverhaul
                 case "mersaididash": return new CarSpec(CarKind.Van, 14.5f, 150f);            // modern panel van
                 case "deliverytruck": return new CarSpec(CarKind.Truck, 18.0f, 135f);         // box truck
                 case "freighttruckt1": return new CarSpec(CarKind.Truck, 20.0f, 130f);        // heavy truck
-                // Two cars of other mods', sold through Empire Motors' desk, by their whole names; their own figures are in
-                // asset files this mod cannot read beforehand.
+                // Two cars of other mods' sold through Empire Motors' desk, by their whole names.
                 case "empiremustanggt:vehicletype_mustanggt": return new CarSpec(CarKind.Sports, 4.5f, 250f);   // muscle coupe of today
                 case "empirebmwg82:vehicletype_empirebmwg82": return new CarSpec(CarKind.Sports, 4.0f, 250f);   // sports coupe, limited to 250
                 case "electricscooter":

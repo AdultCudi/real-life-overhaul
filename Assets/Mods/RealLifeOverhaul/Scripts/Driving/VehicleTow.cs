@@ -11,9 +11,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Brings the player's car to them after they were taken away without it (a crash that ends in hospital): parked in the
-    /// nearest free kerbside space the game's auto-park would offer, or else towed by the game's own tow to the nearest
-    /// repair shop. Runs once per trip, never per frame.
+    /// Brings the player's car to them after a crash that ends in hospital: parked in the nearest free kerbside space the
+    /// game's auto-park would offer, or else the game's own tow. Once per trip, never per frame.
     /// </summary>
     public static class VehicleTow
     {
@@ -27,10 +26,9 @@ namespace RealLifeOverhaul
         private static readonly Collider[] Blockers = new Collider[16];
 
         /// <summary>
-        /// The car the player drives, remembered as they are taken away from it, so it can be brought to them afterwards: null
-        /// for none, for one the game carries with the player, and for another player's car in Going Public
-        /// (GoingPublic.MineVehicle). That car is left where it stopped, as it stands on its owner's machine, never towed or
-        /// billed for here, and the player is told so once (WhoseCar.BringLater, checked offline).
+        /// The car the player drives, remembered as they are taken from it: null for none, for one the game carries, and for
+        /// another player's car in Going Public (GoingPublic.MineVehicle), which is left where it stopped, never towed or
+        /// billed, and the player told once (WhoseCar.BringLater).
         /// </summary>
         public static VehicleInstance LeftBehind(VehicleController driven)
         {
@@ -62,10 +60,7 @@ namespace RealLifeOverhaul
             BringNear(instance, near, Fee, "reallife_event_car_towed", "reallife_event_car_towed_shop", "reallife_event_car_not_towed", "reallife_transaction_towing");
         }
 
-        /// <summary>
-        /// The same for somebody else's reasons (the police impound): another fee, and the three messages that say where the
-        /// car went.
-        /// </summary>
+        /// <summary>The same for somebody else's reasons (the police impound): another fee, and the messages of where the car went.</summary>
         public static void BringNear(VehicleInstance instance, Vector3 near, int fee, string parkedKey, string shopKey, string leftKey, string transactionKey)
         {
             if (instance == null)
@@ -124,10 +119,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>
-        /// Parks one of the player's cars in the nearest free kerbside space near a place, leaving out any space
-        /// <paramref name="refuse"/> turns down. No fee and no message. False, with the car where it was, if there is none.
-        /// </summary>
+        /// <summary>Parks one of the player's cars in the nearest free kerbside space not refused; no fee, no message, false if none.</summary>
         public static bool ParkNearby(VehicleController vehicle, Vector3 near, Func<Vector3, bool> refuse)
         {
             if (vehicle == null || vehicle.vehicleInstance == null || !GoingPublic.MineVehicle(vehicle))
@@ -227,11 +219,8 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The game's own move, as its tow does it (VehicleHelper.TeleportVehicleToGround), then the car put there as one. The
-        // game moves only the body, and a parked car's body is held still: let go for the game's call and held again before
-        // any physics step, its transform (the model and the map's marker) would stay at the crash site while the collision
-        // and the door went to the space. So the transform is set to where the body went, and the body to it, before the car
-        // is held again.
+        // The game's own move, then the car put there as one: the game moves only the body, and a parked car's held body would
+        // leave the model and the map's marker at the crash site. So the transform follows the body, and the body it.
         private static void Teleport(VehicleController vehicle, Vector3 position, Quaternion rotation)
         {
             Rigidbody body = vehicle.TryGetComponent(out NWH.VehiclePhysics2.VehicleController physics) ? physics.vehicleRigidbody : null;

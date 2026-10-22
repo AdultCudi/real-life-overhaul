@@ -9,14 +9,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The recorded car sounds (the Garage's option): which car plays them, and every way back to the game's own. Only one
-    /// car ever does: the custom shop's turntable car while the shop is open, else the car the player drives, if it is their
-    /// own (Going Public: never another player's) and has a recorded engine. Traffic, the bus, the tow truck and the
-    /// two-wheelers are never touched. The game's sound comes back the frame any way out happens (getting out, the shop
-    /// closing, a load, the city going, the option off, a fault, after which the sounds stay off for the session).
-    ///
-    /// Cost a frame: idle, two reference reads and a comparison (and a retry twice a second while a car waits for its
-    /// clips); with a car held, <see cref="CarSoundCar.Frame"/>, and its build looked at four times a second.
+    /// The recorded car sounds: which one car plays them (the shop's turntable car, else the car the player drives if it is
+    /// their own and has a recorded engine), and every way back to the game's own, the frame it happens. Cost a frame: idle,
+    /// two reference reads and a comparison; with a car held, <see cref="CarSoundCar.Frame"/>.
     /// </summary>
     public sealed class CarSoundDirector : MonoBehaviour
     {

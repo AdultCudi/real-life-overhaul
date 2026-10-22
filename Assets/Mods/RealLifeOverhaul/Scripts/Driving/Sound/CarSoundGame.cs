@@ -48,9 +48,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The one place the recorded car sounds meet the game: the car's NWH sound system, its powertrain, its wheels and the
-    /// player's throttle key. Each member that might change in a game update is read in a small method of its own. Nothing
-    /// here runs unless a car is held.
+    /// The one place the recorded car sounds meet the game; each member a game update might change is read in a small
+    /// method of its own. Nothing here runs unless a car is held.
     /// </summary>
     public static class CarSoundGame
     {
@@ -99,10 +98,7 @@ namespace RealLifeOverhaul
             reading.Throttle = engine.ThrottlePosition;
         }
 
-        /// <summary>
-        /// The player's own throttle key (or pedal), added up over the game's input providers as the car's own input adds
-        /// them (InputProvider.CombinedInput): the shop's turntable revs on it.
-        /// </summary>
+        /// <summary>The player's throttle key, added up over the game's input providers as the car's own input adds them.</summary>
         public static float ThrottleKey()
         {
             List<InputProvider> providers = InputProvider.Instances;
@@ -140,10 +136,7 @@ namespace RealLifeOverhaul
             return nwh.soundManager.masterVolume;
         }
 
-        /// <summary>
-        /// Quiets the game's own engine note, pops, turbo and skid sources on this car (each source muted, nothing else of
-        /// them changed) and takes the note's distortion off the engine group, recording all of it first.
-        /// </summary>
+        /// <summary>Mutes the game's engine note, pops, turbo and skid sources on the car and takes the note's distortion off, recording it all first.</summary>
         public static void Mute(NwhVehicle nwh, GameSounds into)
         {
             SoundManager sound = nwh.soundManager;
@@ -199,10 +192,7 @@ namespace RealLifeOverhaul
             return back;
         }
 
-        /// <summary>
-        /// The loudest wheel's squeal, 0 to 1, on a surface where the game plays a skid sound, times that surface's own
-        /// skid level; 0 elsewhere (grass, gravel) and in the air.
-        /// </summary>
+        /// <summary>The loudest wheel's squeal, 0 to 1, times the surface's skid level; 0 where the game plays no skid, and in the air.</summary>
         public static float Squeal(NwhVehicle nwh)
         {
             if (nwh.groundDetection == null || !nwh.groundDetection.state.isEnabled || nwh.powertrain.wheels == null)

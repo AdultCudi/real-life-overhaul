@@ -9,18 +9,11 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Every feature's places on the city map. The features know nothing of this class: it reads where their places are
-    /// through members they already have and hands them to <see cref="MapPlaces"/>, which gives each kind a row in the map's
-    /// filters, a named marker for every place, and "set destination". The kinds are declared in <see cref="Declare"/>;
-    /// police stations are Law's own. Every building the mod claims (Core/SpecialBuildings) has a row of its own with its
-    /// own icon, and its place is that building, so the row's tick lights it on the open map as the game lights its own
-    /// (MapRowCheck holds this).
-    ///
-    /// One look every three seconds, real time (the map pauses the game): each kind has a stamp, a few integer operations
-    /// over what the feature already holds, and only a changed stamp reads its places again. Markers are made six at a
-    /// time, a fifth of a second apart, so the hundred-odd bus stops do not arrive in one frame. A kind's row is made the
-    /// first time it has a place and offered only while it has one and its option is on; a kind whose places cannot be
-    /// read is left off with one log line. Nothing per frame; everything goes with the city (MapPlaces.Shutdown).
+    /// Every feature's places on the city map, read through members the features already have and handed to
+    /// <see cref="MapPlaces"/>: a row in the map's filters, a named marker for every place, and "set destination". The kinds
+    /// are in <see cref="Declare"/>; every building the mod claims has a row of its own. A look every three real seconds
+    /// compares each kind's stamp, and only a changed one reads its places again; markers go on six at a time. Nothing per
+    /// frame; everything goes with the city.
     /// </summary>
     public sealed class MapLinks : MonoBehaviour
     {
@@ -257,8 +250,7 @@ namespace RealLifeOverhaul
                     });
                 }
             });
-            // Careers: Hudson City University, a building the mod has made its own, with its own card and row, there while
-            // the university's part is on.
+            // Careers: Hudson City University, a building of the mod's with its own card and row, while its part is on.
             _links.Add(new Link
             {
                 Id = "university", TitleKey = "reallife_map_row_university", Colour = new Color(0.30f, 0.24f, 0.66f), Icon = MapIcon.Mortarboard, InStreet = true,
@@ -266,8 +258,7 @@ namespace RealLifeOverhaul
                 Stamp = UniversityStamp,
                 Fill = UniversityPlace
             });
-            // Careers: the other places to study: the game's school, which keeps its own card, and the hospitals and clinics
-            // whose wards teach nursing.
+            // Careers: the game's school, which keeps its own card, and the hospitals' wards that teach nursing.
             _links.Add(new Link
             {
                 Id = "study", TitleKey = "reallife_map_row_study", Colour = new Color(0.55f, 0.16f, 0.22f), Icon = MapIcon.Star, InStreet = true,
@@ -630,8 +621,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                // A hotel that is a building of its own has the game's card under its name; the cottages' board stands by
-                // somebody else's building, which keeps its own card.
+                // A hotel of its own building has the game's card under its name; the cottages' board stands by another's.
                 bool own = site.Slot != null && site.Slot.Anchors == null;
                 places.Add(new MapPlace(site.Desk, site.Name, own ? site.Building : null)
                 {
@@ -692,8 +682,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A street event (never a fire: the incident marker has that), a campaign rally, the chess player's table, the
-        // place a plan with somebody is agreed for. With no list: only the stamp (zero for none of them).
+        // A street event (not a fire), a rally, the chess table, a plan's place. With no list: only the stamp (0 for none).
         private static long WhatsOn(List<MapPlace> places)
         {
             long stamp = 0L;

@@ -73,10 +73,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Asks the portrait camera for a face of a look; 'back' gets the game's sprite (readable, 256 pixels square) or null.
-        /// False, with nothing asked, while the camera is not there.
-        /// </summary>
+        /// <summary>Asks for a face of a look; 'back' gets the game's readable sprite or null. False, nothing asked, without the camera.</summary>
         public static bool Face(bool female, int age, int seed, Action<Sprite> back)
         {
             PortraitGenerator generator = Generator();
@@ -89,8 +86,7 @@ namespace RealLifeOverhaul
             AppearanceSetter setter = generator != null ? Setter(generator) : null;
             if (setter == null)
             {
-                // Without the camera's own appearance the game's public way is used: the same person each time, though not
-                // dressed as the mod dresses them.
+                // Without the camera's own appearance the game's public way: the same person, not dressed as in the city.
                 if (!_toldFallback)
                 {
                     _toldFallback = true;

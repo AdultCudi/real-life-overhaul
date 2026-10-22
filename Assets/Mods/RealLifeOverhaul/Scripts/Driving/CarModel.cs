@@ -55,12 +55,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A car in a straight line, the way the game's vehicle physics moves it: engine power over a curve,
-    /// gears, a clutch that slips from rest, tyres that can only push so hard, rolling resistance and air
-    /// drag. <see cref="Solve"/> finds the engine power, gearing and drag with which a car reaches 100 km/h
-    /// in a given time and tops out at a given speed (power against drag in top gear, no cap);
-    /// <see cref="Run"/> drives it. Game-free and allocation-free once the setup exists; run once per car,
-    /// never per frame.
+    /// A car in a straight line as the game's vehicle physics moves it: power over a curve, gears, a clutch that slips from
+    /// rest, tyres that push only so hard, rolling resistance and drag. <see cref="Solve"/> finds the power, gearing and
+    /// drag that meet a target; <see cref="Run"/> drives it. Game-free and allocation-free; run once per car.
     /// </summary>
     public static class CarModel
     {
@@ -76,16 +73,13 @@ namespace RealLifeOverhaul
         private const float MaxPowerPerKg = 0.6f;      // kW per kg: more than any road car, the ceiling of the search
         private const float ClutchLocksAbove = 3f;      // m/s: the game's clutch stops slipping here
 
-        /// <summary>
-        /// The eased pedal: slow at first, quicker as it goes down (0 to 1 in <see cref="ThrottleRise"/>),
-        /// and straight back up when released. Never past what is asked, so an analogue trigger keeps its feel.
-        /// </summary>
+        /// <summary>The eased pedal: slow at first and quicker as it goes down, 0 to 1 in <see cref="ThrottleRise"/>; straight back up when released.</summary>
         public static float Pedal(float current, float asked, float dt)
         {
             if (asked > current)
             {
-                // Straight past the gearbox's dead zone: below it the box takes the pedal for released and drops
-                // back to neutral, which in reverse (where the pedals swap) would never let the car pull away.
+            // Straight past the gearbox's dead zone: below it the box drops to neutral, which in reverse (pedals swapped)
+            // would never let the car pull away.
                 if (current < PedalDeadZone && asked > PedalDeadZone)
                 {
                     current = PedalDeadZone;
@@ -106,16 +100,13 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Finds the setup for a target. Power is searched (more power is never slower); for each power
-        /// the gearing and drag follow from the top speed: top gear turns the engine at 95 % of its limit
-        /// there, and drag is whatever makes the engine's power at that speed just hold it. False if no
-        /// power gets this car to 100 km/h at all (then nothing should be done to it).
+        /// Finds the setup for a target: power is searched (more is never slower), and for each the gearing and drag follow
+        /// from the top speed, top gear at 95 % of the limit there. False if no power gets this car to 100 km/h at all.
         /// </summary>
         public static bool Solve(CarPhysics car, CarKind kind, float seconds, float topKmh, bool easedThrottle, CarSetup setup, out CarRun run)
         {
-            // The time to 100 km/h only means something for a car that goes well past it. With the top speed
-            // turned down below that, the power is found as if it topped out at 125, and then geared and
-            // dragged down to what was asked: the car pulls as it would have, and stops sooner.
+            // A top speed turned down below 125 km/h is solved as 125, then geared and dragged down: the car pulls as it
+            // would have, and stops sooner.
             float solveAt = topKmh < SolveAtLeastKmh ? SolveAtLeastKmh : topKmh;
             float low = 5f;
             float high = car.Mass * MaxPowerPerKg;
@@ -165,8 +156,7 @@ namespace RealLifeOverhaul
             float push = powerKw * car.Boost * car.Power(TopGearRevs) * 1000f / top - car.RollingForce;
             setup.Drag = push > 0f ? push / (top * top) : 0f;
 
-            // First gear runs out at about a fifth of top speed (45 to 58 km/h), but is never so short that
-            // the engine's best torque spins the tyres.
+            // First gear runs out at about a fifth of top speed, but never so short that the best torque spins the tyres.
             float firstEnds = top * 0.2f;
             firstEnds = firstEnds < 12.5f ? 12.5f : firstEnds > 16.1f ? 16.1f : firstEnds;
             float firstRatio = engineAtTop * car.WheelRadius / firstEnds;

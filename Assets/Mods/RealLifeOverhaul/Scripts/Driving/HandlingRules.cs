@@ -9,10 +9,7 @@ namespace RealLifeOverhaul
         Heavy = 3    // more weight, roll and give, still never off the road or over on a city turn (the Hardcore preset)
     }
 
-    /// <summary>
-    /// The six tuning sliders of the test tools, each in per cent of the design (100 as designed); the values chosen are
-    /// written to the log, so the design can be set from them.
-    /// </summary>
+    /// <summary>The six sliders of the test tools, in per cent of the design; the values chosen are logged so the design can be set from them.</summary>
     public readonly struct HandlingTuning
     {
         public const int Least = 50;    // per cent: every slider's lowest setting
@@ -46,11 +43,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// What the handling does to one car at one level, each figure against the game's own for that car:
-    /// <see cref="HandlingModel.Design"/> keeps the game's grip, steering, springs, bars and centre of mass and adds these
-    /// on top. The sliders' factors are folded in.
-    /// </summary>
+    /// <summary>What the handling adds to one car at one level, each figure against the game's own for that car, the sliders folded in.</summary>
     public struct HandlingTarget
     {
         public float Mass;           // kg a car of the kind weighs
@@ -69,9 +62,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The handling's levels: the game's own car, read when the player gets in, with a little weight, roll, nose dive,
-    /// smooth brakes that never lock and a little give past the limit added; more of each at Heavy, almost none at Light.
-    /// Also the eased brake pedal. Game-free: NavCheck compiles this file.
+    /// The handling's levels on top of the game's own car, more of each at Heavy, almost none at Light, and the eased brake
+    /// pedal. Game-free: NavCheck compiles this file.
     /// </summary>
     public static class HandlingRules
     {
@@ -150,9 +142,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The eased brake pedal, as the throttle's (<see cref="CarModel.Pedal"/>): slow at first and quicker as it goes down,
-        /// nothing to full in <paramref name="rise"/> seconds, quickly back up when let go. Never past what is asked, so an
-        /// analogue trigger keeps its feel; straight past the gearbox's dead zone, so a tap counts.
+        /// The eased brake pedal, as the throttle's: nothing to full in <paramref name="rise"/> seconds, quickly back up, never
+        /// past what is asked, and straight past the gearbox's dead zone so a tap counts.
         /// </summary>
         public static float BrakePedal(float current, float asked, float dt, float rise)
         {

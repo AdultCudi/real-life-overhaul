@@ -8,18 +8,11 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// V in a car is this mod's camera key, with Empire Motors on as without it. That mod's view from the driver's seat acts
-    /// on V by itself in any car, and breaks the chase camera: it hands the game's camera list to the indoorVehicleCamera,
-    /// putting the vehicleCamera the chase camera follows at priority 0, and on the game's cars it never moves the camera at
-    /// all, leaving the player with the game's camera for driving inside a building.
-    ///
-    /// So while this mod's camera key is V, that controller is switched off (Behaviour.enabled): the one thing of another
-    /// author's mod this mod changes, deliberately, as the two views cannot share a key and that mod has no setting for
-    /// its own. Its OnDisable puts the game's vehicle camera back, and the camera the game wants is asked for again
-    /// (<see cref="GameCamera"/>). It is switched on again as it was once the key moves off V or this mod unloads.
-    ///
-    /// Cost: nothing per frame. The controller is looked for once a run, in the game's list of listeners for getting into
-    /// a vehicle, or else by a search of the scene behind the loading screen (<see cref="Prewarm"/>).
+    /// V in a car is this mod's camera key, with Empire Motors on too. That mod's view from the driver's seat acts on V in
+    /// any car and breaks the chase camera (it puts the vehicleCamera at priority 0), so while this mod's key is V that
+    /// controller is switched off: the one thing of another author's mod this mod changes, as the two cannot share a key.
+    /// It is switched on again as it was once the key moves off V or this mod unloads. Nothing per frame; the controller
+    /// is looked for once a run, from the game's listeners or a search behind the loading screen.
     /// </summary>
     public static class EmpireView
     {
@@ -38,10 +31,7 @@ namespace RealLifeOverhaul
         /// <summary>True while that view is switched off by this mod.</summary>
         public static bool Claimed => _claimed;
 
-        /// <summary>
-        /// While driving with this mod's camera: Empire Motors' view on V is switched off, if the key is V. On the chase
-        /// camera's coming on and on the camera key, never per frame.
-        /// </summary>
+        /// <summary>Switches Empire Motors' view off while the key is V: on the chase camera's coming on and on the key, never per frame.</summary>
         public static void Claim(GameManager gm)
         {
             if (_claimed || !Claims)
@@ -103,10 +93,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// For ScenePrewarm, behind the loading screen: the controller found and kept. True once it is found or known not to
-        /// be there; false while Empire Motors has not made it yet (tried again behind the next black screen).
-        /// </summary>
+        /// <summary>For ScenePrewarm: true once the controller is found or known absent; false while Empire Motors has not made it.</summary>
         public static bool Prewarm()
         {
             if (!EmpireMotors.On)
@@ -162,8 +149,7 @@ namespace RealLifeOverhaul
             return _controller;
         }
 
-        // The controller joins the game's listeners for getting into a vehicle in its OnEnable. Not there while it is off,
-        // when there is nothing to claim, or after a later load, which empties the list while the controller lives on.
+        // The controller joins the game's vehicle listeners in its OnEnable; absent while it is off, or after a later load.
         private static Behaviour Listening()
         {
             Action<VehicleController> listeners = GlobalEvents.onEnterVehicle;
@@ -185,8 +171,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // The camera the game wants now: for a car, the game's own choice (VehicleController.UpdateCamera); otherwise the
-        // camera live before, unless that was a vehicle camera, which on foot means the on-foot or indoor camera.
+        // For a car the game's own choice; otherwise the camera live before, or for a vehicle camera the on-foot or indoor one.
         private static void GameCamera(GameManager gm, CinemachineVirtualCameraBase before)
         {
             if (gm == null)

@@ -61,10 +61,7 @@ namespace RealLifeOverhaul
         /// <summary>True while the modern look is on the phone: only then has it a wallpaper a photo can be.</summary>
         public bool Applied => _applied;
 
-        /// <summary>
-        /// A picture as the wallpaper, or null for the drawn one; false while the look is off. The picture stays through the
-        /// look being switched off and on; the caller keeps it alive until it puts the drawn one back.
-        /// </summary>
+        /// <summary>A picture as the wallpaper, or null for the drawn one; false while the look is off. The caller keeps the picture alive.</summary>
         public bool Wallpaper(Texture picture)
         {
             if (picture != null && !_applied)

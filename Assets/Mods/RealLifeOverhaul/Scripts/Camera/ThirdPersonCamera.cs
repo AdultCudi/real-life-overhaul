@@ -17,17 +17,11 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A third-person camera on foot, made by driving the public fields of the game's own PedestrianCam (offset, distance,
-    /// angle), so the game keeps doing the positioning and zooming. With mouse look the pointer is locked and the mouse
-    /// orbits the camera; the game's hover and click ray then runs from the screen's centre, a crosshair.
-    ///
-    /// It follows <see cref="CameraYield.Orders"/>: for any camera of the game's not of ordinary play, the figures are given
-    /// back exactly as taken (<see cref="FigureHandover"/>) once that camera has left the picture, and taken again when play
-    /// is back, the player's distance kept across it. The placement camera copies the indoor camera's distance as it opens:
-    /// what it copied of this mod's is put back to the game's own.
-    ///
-    /// Per frame: the orders read, the figures written to the cameras that carry them and, while one is looked through,
-    /// at most one ray for the ground under it out of doors, or one sphere cast indoors.
+    /// A third-person camera on foot, made by driving the public fields of the game's own PedestrianCam, so the game keeps
+    /// doing the positioning and zooming; with mouse look the mouse orbits it and the game's click ray runs from the screen's
+    /// centre. It follows <see cref="CameraYield.Orders"/>, giving the game's figures back exactly as taken
+    /// (<see cref="FigureHandover"/>) for any camera of the game's not of ordinary play. Per frame: the orders read, the
+    /// figures written and, while looked through, at most one ray out of doors or one sphere cast indoors.
     /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
@@ -55,10 +49,7 @@ namespace RealLifeOverhaul
         /// <summary>While set, the camera watches this instead of the player's root: the body of a player knocked down.</summary>
         public static Transform Focus { get; set; }
 
-        /// <summary>
-        /// While set, the player rides inside it (the mod's bus): out of doors the camera keeps within its sides and ends,
-        /// coming in closer as a wall would have it; its top is open. One box test a frame while set.
-        /// </summary>
+        /// <summary>While set, the player rides inside it (the mod's bus): the camera keeps within its sides and ends, its top open.</summary>
         public static Transform Inside { get; private set; }
 
         private static Vector3 _insideCentre;
@@ -112,8 +103,7 @@ namespace RealLifeOverhaul
         private const float CollisionRadius = 0.25f;  // metres
         private static readonly RaycastHit[] CollisionHits = new RaycastHit[24];
 
-        // Out of doors the view may look up further than the camera can swing down: the camera stops over the ground
-        // and the rest of the tilt is a look upwards from where it stands (Orbit).
+        // The camera stops over the ground; the rest of a low tilt is a look upwards from where it stands (Orbit).
         private const float GroundClearance = 0.45f;   // metres between the camera and the ground under it
         private const float LowOrbit = 15f;            // degrees: at this tilt or steeper the camera is well over the ground, not looked at
         private const float FloorEase = 12f;           // per second, so that a kerb under the camera does not make it hop
@@ -201,8 +191,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The camera key switches between this camera and the game's, on foot and in a car. Empire Motors' view acts on
-            // V too: while the key is V that view is kept off, so a press in a car does one thing.
+            // The camera key, on foot and in a car. While it is V, Empire Motors' view on V is kept off, so a press does one thing.
             if (Keys.Down(KeyAction.CameraToggle) && !IsUiOpen())
             {
                 if (gm.selectedVehicle != null && gm.selectedVehicle.controlledByPlayer)
@@ -226,8 +215,8 @@ namespace RealLifeOverhaul
                 _pitch = Settings.CameraPitch;
             }
 
-            // A camera of the game's not of ordinary play gets the game's figures back only once it has left the picture,
-            // so its blend in starts from where the game's own camera was.
+            // A moment's camera gets the game's figures back only once this one has left the picture, so its blend starts
+            // where the game's camera was.
             if (orders.Moment && !_moment)
             {
                 Uncopy(gm);   // the first frame of the moment, before its camera has blended in
@@ -268,8 +257,8 @@ namespace RealLifeOverhaul
             return ordered || (linger && state != null && state.Applied && CinemachineCore.Instance.IsLive(state.VCam));
         }
 
-        // The placement camera copies the indoor camera's distance as it opens and keeps it in the save: if what it copied
-        // is this mod's, it gets the game's own instead, before it has blended in. Once a moment.
+        // The placement camera copies the indoor camera's distance as it opens and saves it: if that is this mod's, it gets
+        // the game's own instead, before it blends in. Once a moment.
         private void Uncopy(GameManager gm)
         {
             if (_indoor == null || !_indoor.Applied)
@@ -304,10 +293,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Gives the pointer, both on-foot cameras' figures and the held bridge back to the game at once: for the feature's
-        /// clean-up and the options page. Safe at any time.
-        /// </summary>
+        /// <summary>Gives the pointer, both cameras' figures and the held bridge back at once, for the clean-up and the options page.</summary>
         public static void StandAside()
         {
             if (_instance != null)
@@ -356,8 +342,7 @@ namespace RealLifeOverhaul
         /// <summary>A window that needs the pointer, the mod's own cameras left out; <paramref name="menuCounts"/>: whether the full menu counts.</summary>
         public static bool AnyWindow(bool menuCounts)
         {
-            // The item and vehicle panel is not counted: it is up the whole time the player drives or carries something,
-            // and it works by keys.
+            // The item and vehicle panel is left out: it is up whenever the player drives or carries something, and works by keys.
             return (menuCounts && FullMenu.IsOpen) || CityMap.IsOpen || MiniMenu.IsOpen || BuildingPreview.isPreviewing
                    || HudConfirm.isOpen || Feedback.IsOpen || PlayerActivityUI.IsPanelOpen
                    || PurchaseUI.IsPanelOpen || PurchaseVehicleUI.IsPanelOpen || InteriorDesignerUI.IsOpen
@@ -459,10 +444,7 @@ namespace RealLifeOverhaul
             };
         }
 
-        /// <summary>
-        /// This mod's figures on one of the game's on-foot cameras, or the game's own given back exactly as taken. Each take
-        /// writes the game's figures down first, so what the game changed while it had the camera is what is given back.
-        /// </summary>
+        /// <summary>This mod's figures on one of the game's on-foot cameras, or the game's own given back exactly as taken.</summary>
         private void Apply(CamState state, bool enabled, Transform player, bool momentEnded = false)
         {
             if (state == null || state.Cam == null)
@@ -502,8 +484,7 @@ namespace RealLifeOverhaul
             CameraFigures game = state.Handover.Game;
             bool fresh = CameraYieldRules.Fresh(taken, momentEnded);
 
-            // The game's camera is a long-lens top-down view aimed at the feet; up close that frames only the legs, so the
-            // camera orbits and aims at the upper body instead, with a wider lens.
+            // The game's long-lens view aimed at the feet frames only the legs up close: orbit the upper body, with a wider lens.
             if (state.Follow != null && player != null)
             {
                 if (state.Target == null)
@@ -540,15 +521,13 @@ namespace RealLifeOverhaul
             float max = Mathf.Max(game.Far, min + 1f);
             state.Cam.minMaxDistance = new Vector2(min, max);
 
-            // Whatever the scroll wheel changed since this mod's last write is the player's zoom; what the game wrote while
-            // it had the camera is not.
+            // What the scroll wheel changed since this mod's last write is the player's zoom; what the game wrote is not.
             state.Desired = CameraYieldRules.Wanted(fresh, state.Known, state.AppliedDistance != Settings.CameraDistance, Settings.CameraDistance,
                 state.Desired, state.Cam.distance, state.LastWritten, min, max);
             state.Known = true;
             state.AppliedDistance = Settings.CameraDistance;
 
-            // Interiors are built for the top-down view, so indoors the camera stays in front of walls; only while that
-            // camera is looked through, as a cast for one that is not live is wasted.
+            // Indoors the camera stays in front of walls, cast only while that camera is looked through.
             float distance = state.Indoor && CinemachineCore.Instance.IsLive(state.VCam) ? Collide(state, player, state.Desired)
                 : confined && CinemachineCore.Instance.IsLive(state.VCam) ? Confined(state, state.Desired) : state.Desired;
             state.Cam.distance = distance;
@@ -558,10 +537,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// How high the camera swings round its target, in degrees of tilt, and what it looks at. Indoors that is the tilt, at
-        /// least <see cref="IndoorMinPitch"/>. Out of doors the view may look up to the skyline, but the camera stops
-        /// <see cref="GroundClearance"/> over the ground; past that it aims above the target, as high as makes the view's tilt
-        /// the one asked for. One ray at most, and only while the camera may swing low enough for the ground to matter.
+        /// How high the camera swings round its target, in degrees of tilt, and what it looks at: indoors the tilt, at least
+        /// <see cref="IndoorMinPitch"/>; out of doors the camera stops <see cref="GroundClearance"/> over the ground and
+        /// aims above the target for the rest of the tilt. One ray at most, only while the swing is low.
         /// </summary>
         private float Orbit(CamState state, Vector3 flat)
         {
@@ -601,8 +579,7 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The lowest a camera may swing round its target and stay a clearance over the ground, in degrees of tilt (under 0,
-        /// below the target looking up). <paramref name="above"/> is the target's height over that ground. Never deeper than
-        /// 25 degrees under the target, nor higher than 30. The chase camera's too.
+        /// below it), between 25 degrees under and 30 over. The chase camera's too.
         /// </summary>
         public static float LowestOrbit(float above, float clearance, float distance)
         {
@@ -638,10 +615,7 @@ namespace RealLifeOverhaul
             return Mathf.Max(IndoorMinDistance, nearest - 0.15f);
         }
 
-        /// <summary>
-        /// How far the camera may be from its target and stay inside <see cref="Inside"/>'s sides and ends: where the line
-        /// from the target to the camera leaves the box, a little short of it; the desired distance if the target is outside.
-        /// </summary>
+        /// <summary>How far the camera may be from its target inside <see cref="Inside"/>'s sides and ends; the desired distance if the target is outside.</summary>
         private static float Confined(CamState state, float desired)
         {
             Transform frame = Inside;
@@ -723,8 +697,7 @@ namespace RealLifeOverhaul
 
         private static void Steer(CamState state, float heading, float blend)
         {
-            // PedestrianCam places the camera at offset turned by angle round the player, so the camera is behind the player
-            // when offsetYaw + angle == heading + 180.
+            // PedestrianCam turns the offset by angle round the player: behind the player when offsetYaw + angle == heading + 180.
             Vector3 offset = state.Cam.offset;
             float offsetYaw = Mathf.Atan2(offset.x, offset.z) * Mathf.Rad2Deg;
             float target = heading + 180f - offsetYaw;

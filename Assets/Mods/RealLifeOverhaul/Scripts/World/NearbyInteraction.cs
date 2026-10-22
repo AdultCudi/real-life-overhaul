@@ -90,8 +90,7 @@ namespace RealLifeOverhaul
                 ? null
                 : FindNearestBuilding(playerPos, out float buildingSqr, vehicleSqr);
 
-            // On a job the key opens no door: going indoors ends the shift, which a stray press must not do. The car is
-            // still got into: a courier and a driver need theirs.
+            // On a job the key opens no door (going in ends the shift); the car is still got into.
             if (building != null && JobDirector.OnShift)
             {
                 if (vehicle != null)

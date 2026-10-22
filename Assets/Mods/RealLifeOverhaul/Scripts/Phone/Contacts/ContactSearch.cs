@@ -93,8 +93,7 @@ namespace RealLifeOverhaul
             return field != null ? field.GetValue(owner) as T : null;
         }
 
-        // The box on its own line under the game's buttons, as high as they are and as wide as the list, which starts below
-        // it. Measured from the game's own pieces in the panel they share, so it holds at any screen size.
+        // On its own line under the game's buttons, measured from the game's own pieces, so it holds at any screen size.
         private void Dress(Button mark, Transform row)
         {
             var markRect = (RectTransform)mark.transform;

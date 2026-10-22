@@ -9,10 +9,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The car's speed as one more reading of the game's vehicle panel (VehicleInfoPanel's row of parking, cargo, fuel and
-    /// condition): a copy of its condition reading, put after it, in the same lettering. Made the first time it is wanted,
-    /// as <see cref="CarDash"/> adds its reading, then only switched on and off and written when the whole number changes;
-    /// each reading's text is made once and kept, so nothing is allocated. No panel as expected, no reading, and one log line.
+    /// The car's speed as one more reading of the game's vehicle panel, a copy of its condition reading put after it. Made
+    /// when first wanted, then only switched on and off and written when the whole number changes; each reading's text is
+    /// made once and kept, so nothing is allocated.
     /// </summary>
     public static class SpeedReading
     {

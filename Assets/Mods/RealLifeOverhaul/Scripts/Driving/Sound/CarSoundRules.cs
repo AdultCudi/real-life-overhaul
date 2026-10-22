@@ -65,16 +65,11 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The recorded car sounds as numbers, with nothing of the game or the engine in them, so NavCheck checks the very code
-    /// <see cref="CarSoundCar"/> plays by. Where each sound was recorded is in Sounds/SOURCES.md; <see cref="AllClips"/>
-    /// names every clip the mod loads.
-    ///
-    /// An engine is a set of loops, each a real engine at steady revs, with an off-throttle loop for each above idle. The
-    /// loops are laid on the car's own rev range (<see cref="Place"/>) and crossfade equal-power over the middle half of
-    /// each span on a scale of ratios (<see cref="Mix"/>), so no level steps; on and off the throttle cross the same way
-    /// (<see cref="OnShare"/>). An exhaust is louder and lower and pops after a lift-off (<see cref="PopChance"/>); a turbo
-    /// builds boost (<see cref="Boost"/>), whistles and flutters (<see cref="Flutters"/>). On the shop's turntable the
-    /// revs are the sound's own (<see cref="ShopRevs"/>). A handful of multiplications a frame; nothing allocated.
+    /// The recorded car sounds as numbers, nothing of the game in them, so NavCheck checks the code
+    /// <see cref="CarSoundCar"/> plays by (the recordings' sources: Sounds/SOURCES.md). An engine is loops at steady revs,
+    /// on and off the throttle, laid on the car's rev range (<see cref="Place"/>) and crossfaded equal-power
+    /// (<see cref="Mix"/>), so no level steps; exhausts pop and turbos whistle and flutter on top. A handful of
+    /// multiplications a frame; nothing allocated.
     /// </summary>
     public static class CarSoundRules
     {
@@ -184,10 +179,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The engine a car is given: by its kind, with the muscle cars (the Vord Pony and the Mustang GT of another mod) a
-        /// V8 among the sports cars. <paramref name="typeName"/> is the game's whole vehicle type name.
-        /// </summary>
+        /// <summary>The engine a car is given by its kind, the muscle cars a V8 among the sports cars; <paramref name="typeName"/> is the whole type name.</summary>
         public static EngineVoice VoiceFor(string typeName, CarKind kind)
         {
             switch (kind)
@@ -219,11 +211,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The revs each loop of an engine stands for on a car with this idle and rev limit, into <paramref name="at"/>
-        /// (at least as long as the loops). The loops keep the recordings' ratios to each other, so two loops crossing over
-        /// sound at one pitch; the idle loop is at the car's idle unless the top loop would then be pitched past
-        /// <see cref="TopPitch"/> at the limit, when every loop is moved up by one factor (the idle a little deeper, at most
-        /// down to <see cref="IdlePitch"/>). Returns the count.
+        /// The revs each loop stands for on this car, into <paramref name="at"/>; returns the count. The loops keep the
+        /// recordings' ratios; if the top loop would pass <see cref="TopPitch"/> at the limit, all move up by one factor, the
+        /// idle no deeper than <see cref="IdlePitch"/>.
         /// </summary>
         public static int Place(EngineVoice voice, float idleRpm, float limitRpm, float[] at)
         {
@@ -245,9 +235,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// How loud each loop is at these revs (<paramref name="gains"/>, the first <paramref name="count"/>): one loop
-        /// below the first span and above the last, two equal-power across the middle of each span (on a scale of ratios),
-        /// one elsewhere. The squares always add up to one.
+        /// Each loop's gain at these revs into <paramref name="gains"/>: one loop outside the spans, two equal-power across the
+        /// middle of each span on a scale of ratios. The squares always add up to one.
         /// </summary>
         public static void Mix(float rpm, float[] at, int count, float[] gains)
         {
@@ -325,9 +314,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The chance of a pop in this frame, <paramref name="sinceLift"/> s after a lift-off at these revs (of the limit),
-        /// <paramref name="sinceLastPop"/> s after the last one. None from a stock exhaust, below <see cref="PopFromRevs"/>,
-        /// back on the throttle, or after <see cref="PopWindow"/>.
+        /// The chance of a pop this frame after a lift-off; none from a stock exhaust, below <see cref="PopFromRevs"/>, back on
+        /// the throttle, or past <see cref="PopWindow"/>.
         /// </summary>
         public static float PopChance(in ExhaustSound exhaust, float revs, float throttle, float sinceLift, float sinceLastPop, float dt)
         {
@@ -400,10 +388,7 @@ namespace RealLifeOverhaul
             return idle + above * (float)Math.Exp(-dt / ShopFallTail);   // the last of it eases onto idle, at the same rate where the two meet
         }
 
-        /// <summary>
-        /// One wheel's squeal, 0 to 1, as the game's own skid sound reckons it (WheelSkidComponent): its slip, times how fast
-        /// it moves, so a car spinning on the spot or crawling squeals little.
-        /// </summary>
+        /// <summary>One wheel's squeal, 0 to 1, as the game's skid sound reckons it: slip times speed, so a crawl squeals little.</summary>
         public static float Squeal(float slip, float speed, float wheelSpin)
         {
             float s = slip < 0f ? 0f : slip > 1f ? 1f : slip;

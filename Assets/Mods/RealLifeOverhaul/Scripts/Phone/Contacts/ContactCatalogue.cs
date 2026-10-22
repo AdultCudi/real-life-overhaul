@@ -33,9 +33,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The looks of Mom (a woman of 58) and Alex, the old friend (a man of 30): the same in every game and save, and used by
-    /// everything that shows them (the street character, the contact picture, the wedding's mother, Flare). The game builds
-    /// a look from its seed alone, so a constant seed is a constant face. Game-free.
+    /// The looks of Mom (a woman of 58) and Alex, the old friend (a man of 30), the same in every game and wherever they are
+    /// shown: the game builds a look from its seed alone. Game-free.
     /// </summary>
     public static class FixedLooks
     {
@@ -48,10 +47,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Every phone contact the mod adds, and its picture: an organisation's is one of the game's logo shapes on a square of
-    /// colour, a person's is a face from the game's portrait camera. People another feature already gives a look (the social
-    /// life, a partner, a roommate) are drawn from that look instead (ContactPictures.Person). Game-free:
-    /// CatalogueCheck holds every contact id the mod registers, and every shape, against this table.
+    /// Every phone contact the mod adds, and its picture: a logo on a square of colour, or a face from the game's portrait
+    /// camera (people another feature gives a look are drawn from that, ContactPictures.Person). Game-free: CatalogueCheck
+    /// holds every registered contact id and every shape against this table.
     /// </summary>
     public static class ContactCatalogue
     {
@@ -116,10 +114,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// A person's look seed from their contact id and the save's name for the character: one face per playthrough, the
-        /// same on every load. FNV-1a, never negative; string.GetHashCode may differ between runtimes.
-        /// </summary>
+        /// <summary>A person's look seed from their contact id and the save's character: FNV-1a, never negative, the same on every runtime.</summary>
         public static int Seed(string id, string save)
         {
             unchecked

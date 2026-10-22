@@ -5,11 +5,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A chase camera for cars. The game's vehicle cameras are scene-authored Cinemachine rigs with nothing to steer, so this
-    /// adds its own virtual camera above them in priority while <see cref="CameraYield"/> orders it (the game asks for its
-    /// vehicleCamera); the look-back camera, garages and parking keep the game's own. While it is looked through, the bridge
-    /// under the car is kept in sight (<see cref="BridgeHold"/>). Per frame: the orders read; while live, at most one ray for
-    /// the road under it and a few vector operations.
+    /// A chase camera for cars: a virtual camera of its own above the game's in priority while <see cref="CameraYield"/>
+    /// orders it, as the game's vehicle cameras have nothing to steer. Per frame: the orders read; while live, at most one
+    /// ray for the road under it and a few vector operations.
     /// </summary>
     public class ChaseCamera : MonoBehaviour
     {
@@ -24,8 +22,7 @@ namespace RealLifeOverhaul
         private const float RecenterDelay = 1.2f;   // seconds without mouse input before swinging back behind the car
         private const float RecenterSpeed = 2f;     // m/s the car must be moving
 
-        // The view may look up further than the camera can swing down: the camera stops over the road and the rest of
-        // the tilt is a look upwards from where it stands (Orbit).
+        // The camera stops over the road; the rest of a low tilt is a look upwards from where it stands (Orbit).
         private const float GroundClearance = 0.5f;   // metres between the camera and the road under it
         private const float LowOrbit = 10f;           // degrees: at this tilt or steeper the camera is well over the road, not looked at
         private const float FloorEase = 12f;          // per second, so that a kerb under the camera does not make it hop
@@ -152,8 +149,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // How high the camera swings round the car, in degrees of tilt: never so low that it comes nearer the road under it
-        // than GroundClearance. One ray at most, and only while the tilt is low.
+        // The tilt the camera swings at, never nearer the road than GroundClearance; one ray at most, only while low.
         private float Orbit(Vector3 target, float yaw, float dt)
         {
             float above = TargetHeight;   // as on a level road
@@ -241,10 +237,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Lets the chase camera go at once, frees the pointer and gives the bridge back: the camera feature's clean-up when
-        /// the guard switches it off. Safe at any time.
-        /// </summary>
+        /// <summary>Lets the chase camera go, frees the pointer and gives the bridge back: the feature's clean-up. Safe at any time.</summary>
         public static void LetGo()
         {
             if (_instance != null)

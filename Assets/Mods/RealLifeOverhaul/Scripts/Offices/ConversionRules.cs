@@ -15,14 +15,10 @@ namespace RealLifeOverhaul.Offices
     }
 
     /// <summary>
-    /// Which of the city's empty shops are offices while the mod runs. In every district with office buildings the player
-    /// can choose between at least <see cref="DistrictFloor"/> offices to let, and at least <see cref="CityFloor"/> across
-    /// the city: the game's own free offices count first, and as many empty shops as are short become offices, never more
-    /// than <see cref="Cap"/> of the district's, so the shops' market keeps its choice too.
-    ///
-    /// The shops are picked by a hash of their address (<see cref="Rank"/>, no dice), so the same city gives the same shops
-    /// on every machine, whatever order the buildings come in. A held one stays an office and counts against the cap; an
-    /// empty one no longer needed is a shop again. Game-free: checked in NavCheck.
+    /// Which of the city's empty shops are offices while the mod runs: at least <see cref="DistrictFloor"/> offices to let
+    /// in each district with offices and <see cref="CityFloor"/> in the city, the game's own free offices first, never more
+    /// than <see cref="Cap"/> of a district's shops. Shops are picked by a hash of their address (<see cref="Rank"/>), so
+    /// every machine picks the same; a held one stays an office. Game-free: checked in NavCheck.
     /// </summary>
     public static class ConversionRules
     {
@@ -73,10 +69,7 @@ namespace RealLifeOverhaul.Offices
             return names;
         }
 
-        /// <summary>
-        /// Sets into[i] for every shop that is to be an office now (false for the game's offices). Returns how many offices
-        /// the player can choose between across the city's office districts.
-        /// </summary>
+        /// <summary>Sets into[i] for each shop to be an office now; returns the offices to let across the office districts.</summary>
         public static int Decide(IList<ConversionRow> rows, bool[] into)
         {
             int count = rows != null ? rows.Count : 0;

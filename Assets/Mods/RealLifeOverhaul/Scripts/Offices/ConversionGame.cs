@@ -10,19 +10,11 @@ using UI;
 namespace RealLifeOverhaul.Offices
 {
     /// <summary>
-    /// Everything the conversion reads from or does to the game. A building's type (Building.BuildingType) is a field of
-    /// the city's building asset, loaded once and never saved, and everything asks it when it needs it: which businesses
-    /// can start there, the map's filters and marker, the rent, value and deposit, the customers, the game's competition.
-    /// The interior is loaded by size and version alone.
-    ///
-    /// A shop can be an office when the game's data lists its size and version for both (today size C version 1 and
-    /// size D version 2): the game's own offices of that size stand on that structure, so an office business there has the
-    /// game's office layouts and designs. Warehouses stay warehouses.
-    ///
-    /// Written, and put back when the city goes, the option is off or the save is prepared for removal: the chosen shops'
-    /// BuildingType (the asset outlives a load), and RivalsHelper.IgnoredAddresses for a converted shop standing empty
-    /// with no rival landlord, so the game's competition does not move in. Each change draws the building's marker and
-    /// applies the map's filters again.
+    /// Everything the conversion reads from or does to the game. A building's type is a field of the city's building asset,
+    /// never saved, that everything asks (the businesses that may start there, the map, the rent, the customers, the
+    /// competition), while the interior goes by size and version alone; a shop whose size and version the game lists for
+    /// offices too stands on an office's structure. Written, and put back on every way out: the shops' BuildingType, and
+    /// the rivals' ignored addresses for an empty converted shop with no rival landlord.
     /// </summary>
     internal static class ConversionGame
     {

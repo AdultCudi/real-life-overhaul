@@ -13,21 +13,12 @@ using UnityEngine;
 namespace RealLifeOverhaul.Offices
 {
     /// <summary>
-    /// More offices to rent: some of the city's empty shops are offices while the mod runs (option "Empty shops as
-    /// offices"). The mod's claims take the game's empty office buildings and the game's businesses and rivals hold the
-    /// rest, so a player could find none to let. Which shops and how many is <see cref="ConversionRules"/>'s; to the game
-    /// such a shop is an office in every way (<see cref="ConversionGame"/>).
-    ///
-    /// At a city load the shops that are offices and somebody has (an office business, or one the save keeps,
-    /// <see cref="ConversionStore"/>) are offices again at the first look; the empty ones are chosen once the other
-    /// features have chosen their buildings (<see cref="OthersPicked"/>, two minutes at most), and again once a game day,
-    /// when a watched building changes hands and when another feature claims or lets go of a building. Nothing is saved
-    /// in a building: everything is put back when the city goes, the option is off, or the save is prepared for removal.
-    ///
-    /// Going Public: the choice comes from the city and who rents what, the same on every machine, so nothing is sent;
-    /// another player's building is never made an office. Other features' choices of an office skip these
-    /// (<see cref="Holds"/>). Cost: no Update; a one-second real-time timer reading a few fields, and the choice (one pass
-    /// over a few hundred buildings) only on a change.
+    /// More offices to rent: some empty shops are offices while the mod runs, as the mod's claims, the game's businesses and
+    /// its rivals can leave no office to let. Which shops is <see cref="ConversionRules"/>'s; to the game such a shop is an
+    /// office in every way (<see cref="ConversionGame"/>). The held ones come back at load (<see cref="ConversionStore"/>);
+    /// the empty ones are chosen once the other features have chosen (<see cref="OthersPicked"/>) and again on a change.
+    /// Going Public: every machine chooses the same from the city, nothing is sent, and another player's building is never
+    /// made an office. Cost: no frame work, a one-second timer reading a few fields; the choice only on a change.
     /// </summary>
     public sealed class Conversions : MonoBehaviour
     {

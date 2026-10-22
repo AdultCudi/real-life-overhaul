@@ -15,16 +15,10 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The handling of the car the player drives: the game's own car, read when the player gets in, with a little weight,
-    /// roll and nose dive, smooth brakes that never lock and a little give past the very limit. <see cref="HandlingModel"/>
-    /// works the values out; this puts them on the game's vehicle physics (mass, springs, dampers, force points, anti-squat,
-    /// tyre ratings, a friction preset of the mod's, the bars and brake shares, the steering if the slider moved it, the
-    /// game's ABS module, and a ground preset that never swaps the tyres back).
-    ///
-    /// Everything is recorded first and put back exactly. The Garage's parts always lie on top: lifted before anything here
-    /// changes and laid back after (<see cref="DrivingBridges"/>), so nothing is applied twice. Only the car the player
-    /// drives, and only their own in Going Public. Driven by <see cref="CarTuning"/>: nothing per frame; the work runs once
-    /// when the player gets in and on a change of an option or a slider.
+    /// The handling of the car the player drives: the game's own car with a little weight, roll and nose dive, smooth brakes
+    /// that never lock and a little give past the limit. <see cref="HandlingModel"/> works the values out; this puts them on
+    /// the game's vehicle physics, records everything first and puts it back exactly. The Garage's parts always lie on top
+    /// (<see cref="DrivingBridges"/>). Only the player's own car. Driven by <see cref="CarTuning"/>: nothing per frame.
     /// </summary>
     public sealed class CarHandling
     {
@@ -91,10 +85,8 @@ namespace RealLifeOverhaul
         public string Refusal { get; private set; }
 
         /// <summary>
-        /// Puts the handling on a car at a level, the Garage's parts lifted first and laid back on top after, then the brakes
-        /// shared out for the parts. True if it is on. Refused, and said once in the log, for a car that is not a four-wheeled
-        /// car of a kind the mod tunes or not the player's own in Going Public; anything unexpected throws, and the caller
-        /// puts the car back.
+        /// Puts the handling on a car, the Garage's parts lifted first and laid back on top after. True if it is on; refused,
+        /// said once, for a car of a kind the mod does not tune or not the player's own; anything unexpected throws.
         /// </summary>
         public bool Apply(CarController car, NwhVehicle vehicle, HandlingLevel level, in HandlingTuning tuning)
         {
@@ -280,8 +272,7 @@ namespace RealLifeOverhaul
             return keys.Length > 0;
         }
 
-        // The mod's own objects for the setup: the tyre preset, the steering curve if the slider moved it, the ground's
-        // preset. Made before the car records anything, so a fault here changes nothing on it.
+        // The mod's own presets and curve, made before the car records anything, so a fault here changes nothing on it.
         private void Build(NwhVehicle vehicle)
         {
             FrictionPreset game = FrontTyre(vehicle);
@@ -376,8 +367,7 @@ namespace RealLifeOverhaul
             {
                 _centre.baseMass = _setup.Mass;
             }
-            // A heavier car turns as heavily: its inertia grows with its mass. The engine scales a tensor it works out
-            // itself; one it does not is written here, scaled the same.
+            // A heavier car turns as heavily: the engine scales a tensor it works out itself; one it does not is scaled here.
             float ratio = _setup.Mass / _mass;
             _inertiaSet = Mathf.Abs(body.inertiaTensor.y - before.y * ratio) > before.y * ratio * 0.02f;
             if (_inertiaSet)
@@ -425,8 +415,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // What PutOn wrote, read back from the car before the Garage's parts go back on top of it (their springs, tyres and
-        // bars then lie on these): the first value that did not take, or null.
+        // What PutOn wrote, read back before the Garage's parts go on top: the first value that did not take, or null.
         private string Took(NwhVehicle vehicle, Rigidbody body)
         {
             if (Mathf.Abs(body.mass - _setup.Mass) > 0.01f)
@@ -476,9 +465,8 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // The Garage's brakes, weight and tyres as they now lie on top, against what was under them: each axle's brake share
-        // for the deceleration they give, never past what the tyres take (HandlingModel.PartsBrakes). Its write back is
-        // TakeOff's, with the rest.
+        // Each axle's brake share for the Garage's brakes, weight and tyres on top, never past what the tyres take; TakeOff
+        // writes it back with the rest.
         private void BrakesForParts(NwhVehicle vehicle, Rigidbody body, float torqueUnder, float massUnder, float gripUnder)
         {
             _partsBrakes = torqueUnder > 1f ? vehicle.brakes.maxTorque / torqueUnder : 1f;
@@ -652,10 +640,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// For the test button: the figures of the car the handling is on, for the notice, and the self-check line written to
-        /// Player.log whatever the diagnostics say. False with the handling on no car.
-        /// </summary>
+        /// <summary>For the test button: the car's figures for the notice, and the self-check line in Player.log. False with the handling on no car.</summary>
         public bool Tell(Dictionary<string, string> data, in HandlingTuning tuning)
         {
             if (_vehicle == null)
@@ -672,10 +657,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// For the custom shop: the metres from 100 km/h this car stops in with a build of the Garage's brakes, weight and tyres
-        /// on top (each a factor, 1 for none), by the car's own model; -1 for a car the handling is not on.
-        /// </summary>
+        /// <summary>For the custom shop: the metres from 100 km/h with a Garage build on top (factors, 1 for none); -1 without the handling.</summary>
         public float ShopStop(CarController car, float brakes, float mass, float grip)
         {
             if (_vehicle == null || car == null || car.vehicleController != _vehicle || _vehicle.brakes == null)

@@ -158,8 +158,7 @@ namespace RealLifeOverhaul
             return Path.Combine(Folder, LogoVersion + "game_" + name + "_" + Nav.NavBaseGame.Build() + ".raw");
         }
 
-        // A kept logo painted from one of the game's shapes: by the shape, the colour, and the shape file's size and date.
-        // Null if the game has no such file.
+        // Named by the shape, the colour and the shape file's size and date; null if the game has no such file.
         private static string ShapeLogoFile(ContactLook look)
         {
             var shape = new FileInfo(Path.Combine(LogoHelper.GetBuildInIconsFolder(), look.Shape + ".png"));
@@ -273,8 +272,7 @@ namespace RealLifeOverhaul
             var white = new Color32(255, 255, 255, 255);
             int size = ContactPictures.Size;
             NativeArray<Color32> pixels = p.Texture.GetPixelData<Color32>(0);
-            // The shape is fitted by what is drawn of it, not by its canvas: GlyphShare of the square high, a wide one (a car)
-            // WideShare wide, centred. Its pixels are sampled here (Ink) rather than one engine call a pixel.
+            // Fitted by what is drawn of the shape, not its canvas, and sampled here (Ink) rather than one engine call a pixel.
             int minX = 0, minY = 0, maxX = -1, maxY = -1;
             Color32[] texels = null;
             int sw = 1, sh = 1;
@@ -309,8 +307,7 @@ namespace RealLifeOverhaul
             Done(p, "the game's logo shape '" + p.Look.Shape + "'" + (shape == null ? " (not found: the game's own 'not found' shape)" : string.Empty));
         }
 
-        // The shape's alpha at texel coordinates, filtered between the four nearest texels as Texture2D.GetPixelBilinear
-        // does it for the game's shapes (texel centres at half-texel offsets, edges clamped).
+        // The shape's alpha at texel coordinates, filtered as Texture2D.GetPixelBilinear does for the game's shapes.
         private static float Ink(Color32[] texels, int w, int h, float tx, float ty)
         {
             float u = tx - 0.5f, v = ty - 0.5f;
@@ -484,8 +481,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A readable texture into a picture's own memory, scaled if need be. A cached JPEG is RGB24, the camera's picture
-        // RGBA32 or ARGB32; no array is made for either.
+        // A readable texture into a picture's own memory, scaled if need be; no array is made.
         private static void Copy(Texture2D source, Texture2D into)
         {
             int size = ContactPictures.Size;

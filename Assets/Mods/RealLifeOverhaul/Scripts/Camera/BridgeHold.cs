@@ -7,20 +7,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The bridge the player is on kept in sight under this mod's close cameras. The game hides whatever its camera's sphere
-    /// meets (ViewBlockingObjectManager: 3.75 metres around the camera in a car), and for a bridge that hides its renderers
-    /// and every car on it. The game's camera rides 15 to 35 metres up, so it never meets the deck; the chase camera rides a
-    /// metre or two above it, and on the highway the bridge and the player's car would vanish and come back over and over.
-    ///
-    /// So while a close camera is looked through out of doors, and through its blend out (CameraOrders.HoldBridges), the
-    /// bridge under the player is shown as the game shows it unblocked (SetCameraBlockMode(false), as its screenshots do) and
-    /// its view-blocking pieces switched off, which the game's block asks first; nothing else of a bridge reads that switch.
-    /// Every other bridge stays the game's, so a viaduct overhead is hidden as ever. Off the bridge, or when the game's
-    /// camera is back, each piece this switched off is switched on again, and none other.
-    ///
-    /// The bridge under the player is asked as the game asks it, four times a second. The bridges are found once a city
-    /// behind the loading screen. Per frame: one time comparison and one of a number; the pieces are walked only in the
-    /// frame the held bridge changes. Nothing is sent or saved: in Going Public it is this player's view only.
+    /// The bridge the player is on kept in sight under this mod's close cameras. The game hides whatever meets a sphere
+    /// round its camera, a bridge with every car on it; its own camera rides 15 to 35 metres up, the chase camera a metre or
+    /// two above the deck, where the bridge and the car would vanish over and over. So while a close camera is looked
+    /// through (CameraOrders.HoldBridges) the bridge under the player is shown as the game shows it unblocked and its
+    /// view-blocking pieces switched off; every other bridge stays the game's, and each piece is switched on again after.
+    /// The bridges are found behind the loading screen; per frame, two comparisons. Nothing is sent or saved.
     /// </summary>
     public static class BridgeHold
     {
@@ -42,10 +34,7 @@ namespace RealLifeOverhaul
         /// <summary>The bridge held (its place in the city's list), or -1.</summary>
         public static int Held => _held;
 
-        /// <summary>
-        /// For ScenePrewarm, behind the loading screen: every bridge of the city and the view-blocking pieces under each.
-        /// Always true.
-        /// </summary>
+        /// <summary>For ScenePrewarm: every bridge of the city and the view-blocking pieces under each. Always true.</summary>
         public static bool Prewarm()
         {
             Release();
@@ -116,10 +105,7 @@ namespace RealLifeOverhaul
             return -1;
         }
 
-        /// <summary>
-        /// Once a frame with the frame's <see cref="CameraOrders.HoldBridges"/>: the bridge under the player kept in sight, or
-        /// given back. Does anything only in the frame the held bridge changes.
-        /// </summary>
+        /// <summary>Once a frame with the frame's order: the bridge under the player held or given back, work only when it changes.</summary>
         public static void Hold(bool want)
         {
             int bridge = want ? _under : -1;

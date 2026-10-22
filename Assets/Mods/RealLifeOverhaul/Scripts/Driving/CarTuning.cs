@@ -12,15 +12,11 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Gives the car the player drives the acceleration and top speed of its kind. The game's cars all weigh the same, share
-    /// one gearbox and are stopped by a limiter at 50 to 100 km/h; here each vehicle type has a target
-    /// (<see cref="CarCatalogue"/>), and <see cref="CarModel"/> works out from the car's own mass, wheels and power curve the
-    /// power, gearing and drag that meet it, so acceleration tapers as a real car's does. The throttle key eases the pedal.
-    ///
-    /// Only the car being driven is touched. Everything changed is recorded first and put back exactly when the player gets
-    /// out, changes car, switches the option off, or the mod unloads; anything unexpected restores the car, says so once and
-    /// leaves cars alone from then on. It also carries the car's handling (<see cref="CarHandling"/>): put on first, since
-    /// the power is found for the car's weight, and taken off after. Per frame: one reference and two numbers compared.
+    /// Gives the car the player drives the acceleration and top speed of its kind (<see cref="CarCatalogue"/>): the game's
+    /// cars share one gearbox and a limiter, so <see cref="CarModel"/> works out the power, gearing and drag that meet the
+    /// target, and the throttle key eases the pedal. It carries the handling too (<see cref="CarHandling"/>). Everything is
+    /// recorded first and put back exactly on every way out; anything unexpected restores the car and leaves cars alone
+    /// from then on. Per frame: one reference and two numbers compared.
     /// </summary>
     public class CarTuning : MonoBehaviour
     {
@@ -168,10 +164,7 @@ namespace RealLifeOverhaul
                 Settings.HandlingBrakes);
         }
 
-        /// <summary>
-        /// A tuning slider moved: the six figures and the level written to Player.log whatever the diagnostics say, so the
-        /// design can be set from them. The car being driven takes them at once.
-        /// </summary>
+        /// <summary>A tuning slider moved: the figures written to Player.log, and the car being driven takes them at once.</summary>
         public static void TuningChanged()
         {
             HandlingTuning t = Tuning();
@@ -179,10 +172,7 @@ namespace RealLifeOverhaul
                                     + t.Steering + " %, brakes " + t.Brakes + " %, at the level " + HandlingRules.Level(Settings.Handling) + ".");
         }
 
-        /// <summary>
-        /// For the custom shop's figures: the metres from 100 km/h the car being driven stops in with a build of the Garage's
-        /// brakes, weight and tyres on top, by its handling's own model; -1 with the handling not on it.
-        /// </summary>
+        /// <summary>For the custom shop: the car's stop from 100 km/h with a Garage build on top, by its handling; -1 without it.</summary>
         public static float HandlingStop(CarController car, float brakes, float mass, float grip)
         {
             CarTuning tuning = Instance;
@@ -476,8 +466,8 @@ namespace RealLifeOverhaul
             Logger?.Info(line);
         }
 
-        // Called by the car's own input handler each frame, after it has read the keys and before the drivetrain sees them.
-        // In reverse the game swaps the two pedals: the one that drives is eased as the throttle, the one that brakes as the brake.
+        // Run by the car's input handler each frame, between the keys and the drivetrain. In reverse the game swaps the
+        // pedals: the one that drives is eased as the throttle, the one that brakes as the brake.
         private void EasePedal()
         {
             NwhVehicle vehicle = _pedalOn;

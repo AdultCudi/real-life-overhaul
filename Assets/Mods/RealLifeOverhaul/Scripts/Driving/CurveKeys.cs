@@ -1,10 +1,8 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A curve of the game's (an AnimationCurve of plain keys: tyre force by slip, spring force by compression, steering by
-    /// speed) as the engine evaluates it: a cubic Hermite between neighbouring keys, held at the end values beyond them.
-    /// Game-free, so the handling's model and NavCheck read the curves exactly as the car does. The arrays grow only for a
-    /// longer curve; evaluating allocates nothing.
+    /// A curve of the game's (an AnimationCurve of plain keys) as the engine evaluates it: cubic Hermite between keys, held
+    /// beyond the ends. Game-free, so the model and NavCheck read the curves as the car does; evaluating allocates nothing.
     /// </summary>
     public sealed class CurveKeys
     {

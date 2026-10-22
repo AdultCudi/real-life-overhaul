@@ -9,20 +9,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The one place this mod's camera decides to stand aside, for the game's own camera moments and for another author's
-    /// camera mod, and to come back. Every camera path follows the frame's <see cref="Orders"/>; what they are is a rule of
-    /// plain values (<see cref="CameraYieldRules"/>), and this class only reads the game's signals for it.
-    ///
-    /// The game's moments are told by its own signals, never by a list: which camera of its own list it asked for, a screen,
-    /// a conversation (DialogController.current), the player's death. Another camera mod is noticed without its name
-    /// (<see cref="Observe"/>): the game gives its own virtual cameras priority 1 or 0 only, so a live one above that which
-    /// is not this mod's is another mod's; and nothing of the game's moves the camera after the engine's brain, so a camera
-    /// not where the brain put it was moved by something else. <see cref="CameraWatch"/> counts either over frames before
-    /// the camera stands down (<see cref="StoodDown"/>). Nothing is looked at behind a screen or during a moment.
-    ///
-    /// Cost per frame: the screen test, two properties of the camera brain, one reference comparison and, while nothing
-    /// foreign is live, a position and a rotation compared; for the orders, the priorities of at most seven game cameras.
-    /// Nothing is allocated; a virtual camera is judged once, when it becomes live.
+    /// The one place this mod's camera decides to stand aside, for the game's camera moments and for another author's
+    /// camera mod, and to come back; the rule is <see cref="CameraYieldRules"/>'s, and this reads the game's signals for it.
+    /// Another camera mod is noticed without its name (<see cref="Observe"/>): a live virtual camera above the game's
+    /// priorities that is not this mod's, or a camera not where the engine's brain put it. <see cref="CameraWatch"/>
+    /// counts either over frames. Cost per frame: the screen test, two properties of the brain, a reference comparison and
+    /// a position and rotation compared; for the orders, at most seven priorities. Nothing allocated.
     /// </summary>
     public static class CameraYield
     {
@@ -171,8 +163,7 @@ namespace RealLifeOverhaul
                 _confirm = false;
                 Confirm();
             }
-            // The camera mode is read here, not through the orders: they are made after this count, so another mod's camera
-            // is stood aside for in the frame it is seen.
+            // Read here, not through the orders, which come after this count: another mod is stood aside for in the frame it shows.
             GameManager gm = InstanceBehavior<GameManager>.Instance;
             if (ThirdPersonCamera.IsUiOpen() || GameMembers.PlayerDead || (gm != null && ViewOf(gm) == GameView.Moment))
             {
@@ -287,10 +278,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Test: from the next frame every frame counts as one in which something else drove the camera, so the stand-down
-        /// runs as it would. Pressed again, the pretence ends and the camera comes back after the usual wait.
-        /// </summary>
+        /// <summary>Test: every frame counts as foreign until pressed again, so the stand-down runs as it would.</summary>
         public static void TestPretend()
         {
             try

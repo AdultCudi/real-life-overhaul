@@ -8,12 +8,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Puts the game's on-screen place markers on the right side of the screen when what they mark is behind the camera.
-    /// The game projects each marker straight to the screen, and a point behind the camera projects mirrored, which a camera
-    /// looking down on the player never meets but the mod's street-level cameras do. Each frame after the game has placed
-    /// its markers (the mod's camera on, the map closed), a direction marker or one of the player's vehicles behind the
-    /// camera goes to the screen's edge on its true side, in the lower half; any other marker behind goes out of the picture.
-    /// Cost: a few subtractions per marker, nothing allocated.
+    /// Puts the game's place markers on the right side of the screen when what they mark is behind the camera: the game
+    /// projects a point behind the camera mirrored, which its top-down camera never meets. Each frame after the game has
+    /// placed them, a direction or vehicle marker behind goes to the screen's edge on its true side, any other out of the
+    /// picture. Cost: a few subtractions per marker, nothing allocated.
     /// </summary>
     public sealed class PoiDirection : MonoBehaviour
     {

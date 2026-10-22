@@ -8,10 +8,8 @@ using UnityEngine.Networking;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The recorded car sounds, read once a game session from the mod's Sounds folder (<see cref="CarSoundRules.AllClips"/>)
-    /// in the background as the mod starts; until an engine's clips are all in, that car keeps the game's sound. Each clip is
-    /// decoded once into memory (about 6 MB in all) and kept; nothing runs per frame. A file that fails is said once in the
-    /// log, and only the sounds that need it do without.
+    /// The recorded car sounds, read once a session in the background as the mod starts and kept decoded (about 6 MB); until
+    /// an engine's clips are in, that car keeps the game's sound. Nothing per frame; a failed file is said once.
     /// </summary>
     public static class CarSoundBank
     {
