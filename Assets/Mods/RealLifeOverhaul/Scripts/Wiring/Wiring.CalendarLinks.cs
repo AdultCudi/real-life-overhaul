@@ -9,26 +9,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The Calendar (Scripts/Calendar) with the rest of the mod. The calendar asks its sources only when it is shown;
-        /// every source here reads what its feature already keeps, from its real schedule, and changes nothing:
-        ///
-        ///   the Planner   the Planner's own sources of dated things (CalendarLinks.PlannerDays): classes and exams, shifts
-        ///                 and working days, interviews, court dates, licence dates, family appointments, plans with
-        ///                 friends, a hotel checkout, the city's events and election, the game's tax bill, dividends and
-        ///                 bonds, bills due, investors' days, the paper online, and the player's own entries. Its alerts
-        ///                 (what was missed yesterday, what waits on the player at a business) are left to the Planner.
-        ///   every night   what the game takes and pays each night: rent, wages, its loans, the mod's accounts and fines
-        ///                 (Economy/Books), the businesses' insurance, the subscriptions to the player's products and a
-        ///                 pension
-        ///   money         bills sent, card statements, the private lender, car insurance and registration, web hosting,
-        ///                 the paper delivered, the tax quarter, the accountant, business cover, licences and claims, a
-        ///                 firm's monthly invoices, reviews, profit shares and benefit, the trading bots' statements and
-        ///                 the central bank's decisions (Wiring.CalendarMoney.cs, Wiring.CalendarWork.cs)
-        ///   people        the birthdays of the people the player knows and of their children, and the week the children
-        ///                 cost (Wiring.CalendarPeople.cs)
-        ///
-        /// The sources are given to the calendar once a city (it keeps them with its director, which goes with the city).
-        /// Nothing here has an Update.
+        /// The Calendar's sources: the Planner's dated sources (its alerts are left to the Planner), what each night takes
+        /// and pays, and each feature's schedule of money and days (CalendarMoney, CalendarWork, CalendarPeople). Each reads
+        /// what its feature keeps and changes nothing; asked only when the calendar is shown.
         /// </summary>
         public static class CalendarLinks
         {
@@ -54,12 +37,7 @@ namespace RealLifeOverhaul
             private static readonly PlannerDays Planned = new PlannerDays();
             private static readonly NightMoney Nightly = new NightMoney();
 
-            /// <summary>
-            /// The Planner's sources of dated things, asked for the calendar's month (PlannerDirector.LookFor), each entry
-            /// written as a day of the calendar: money with what it costs, the player's time with its hour, the city's
-            /// events. Which of the Planner's sources are dates (rather than alerts) and the app each belongs to is the
-            /// table below.
-            /// </summary>
+            /// <summary>The Planner's dated sources for the calendar's month, each entry written as a day of the calendar.</summary>
             private sealed class PlannerDays : ICalendarSource
             {
                 // The Planner's sources that are dates, and the app that deals with each; null for none.
@@ -107,10 +85,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>
-            /// What the game's night takes and pays, as the Finance app's Overview adds it up (Economy/Books.Tomorrow): rent,
-            /// wages as last night, the game's loans, the mod's own accounts, fines and court debts.
-            /// </summary>
+            /// <summary>What the game's night takes and pays, as the Finance app's Overview adds it up (Books.Tomorrow).</summary>
             private sealed class NightMoney : ICalendarSource
             {
                 public string Id => "nightly";

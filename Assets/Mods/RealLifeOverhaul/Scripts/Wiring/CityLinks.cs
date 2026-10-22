@@ -9,26 +9,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The city's economy with the rest of the mod (Economy/City/CityBridges). The city's economy calls no other
-        /// feature and none calls it: what they have to do with each other is here.
-        ///
-        ///   Day           the season of a game day (the calendar's, Events/Weather.SeasonOf), the spell the weather has
-        ///                 rolled for it and a thunderstorm on now (only while "Weather matters" is on), and the street
-        ///                 event the calendar has for it (only while street events are on)
-        ///   Footfall      a business's promotion figure, written by business pressure's own mechanism
-        ///                 (BusinessDirector.Footfall), which asks <see cref="BusinessGame.Ambient"/> for what the city's
-        ///                 economy adds: one writer of that figure, whoever asks
-        ///   Copycat       a rival opens beside a business that does well: business pressure's own "a competitor
-        ///                 undercuts you", started through its own rules (BusinessDirector.StartIssue)
-        ///   RollScale     the cycle's chance of a business trouble on business pressure's morning roll
-        ///   WeightOf      rivals undercut more often in a slowdown or a recession
-        ///   the paper     up to two pieces a day in the City Ledger (News.Extra)
-        ///   the Planner   rows in the Finance source (<see cref="Rows"/>, called by EconomyLinks' source)
-        ///   MaterialFactor a raw material's price from the stock market's raw materials exchange (Markets/Derivatives), which
-        ///                 the city writes as the importers' in place of its kind's factor and the price index
-        ///
-        /// Nothing per district is public in the mod's other features (crime, council building sites and street events
-        /// are kept by place or by day, not by neighbourhood), so nothing of theirs pushes a district's income.
+        /// The city's economy (CityBridges) with the season, the weather and the street's events, business pressure
+        /// (footfall through its one writer, copycat rivals, the morning roll), the paper, the Planner's Finance rows and
+        /// the raw materials exchange's prices.
         /// </summary>
         public static class CityLinks
         {
@@ -53,8 +36,7 @@ namespace RealLifeOverhaul
                 BusinessDirector.RollScale = null;
                 BusinessDirector.WeightOf = null;
                 News.Extra = null;
-                // The city is unloading or the mod is being switched off: the wholesale prices are the game's own again
-                // now, not only when the city's economy's own object is destroyed at the end of the frame.
+                // The wholesale prices are the game's own again now, not only once the director is destroyed.
                 CityGame.RestoreWholesale();
                 LendingTerms.BasePoints = 0f;
                 AccountRules.BaseBp = 0;
@@ -141,10 +123,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// The city's economy's rows in the Planner's Finance source: the central bank's decision on the day it
-            /// takes effect, once it is announced (id 20 with the day), and a shortage or a glut that starts tomorrow
-            /// in goods the player's businesses stock (id 21 with the kind of goods). It reads the model and changes
-            /// nothing.
+            /// Rows for the Planner's Finance source: the central bank's announced decision (id 20 with the day) and a
+            /// shortage or glut from tomorrow in goods the player stocks (id 21 with the kind). Read only.
             /// </summary>
             internal static void Rows(string source, int today, PlannerList into)
             {

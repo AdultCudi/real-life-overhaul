@@ -6,16 +6,13 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The game-free part of what people remember of the player (Wiring.TextsMemory): what the social life keeps of one of
-        /// its people as RLO Texts' memory facts (how they met, their memories: outings, favours, a birthday remembered, being
-        /// stood up, what they heard of), and what they last texted the player about, from their own thread, whichever
-        /// feature sent it. Every fact is of the kinds and codes data 6 was trained on (TextMemoryRules.Codes), so a card
-        /// with them keeps the shape the packs know. Game-free (EconomyCheck, TextsHistoryChecks.cs).
-        /// COST: a pass over a person's six memories and one thread of twenty messages at most, a card.
+        /// The game-free part of TextsMemory: a social life person's meeting, memories and last text to the
+        /// player as RLO Texts' memory facts, only of the kinds and codes data 6 was trained on (TextMemoryRules.Codes).
+        /// Compiled into EconomyCheck. Costs a pass over six memories and a thread of twenty messages at most.
         /// </summary>
         public static class TextsMemoryFacts
         {
-            /// <summary>How a person of the social life met the player, and their memories, as memory facts.</summary>
+            /// <summary>How a person met the player, and their memories, as memory facts.</summary>
             public static void People(SocialPerson p, List<TextFact> into)
             {
                 if (p == null || !p.Met)
@@ -37,10 +34,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// What a person last texted the player about, from their own thread (oldest first): the newest of their texts that
-            /// has a topic, as the "talked" memory of a text ("texted you about the garage door, yesterday"), while that is
-            /// remembered (TextMemoryRules.Lifetime). The text a card is being written for is not in the thread yet, so a text's
-            /// card has the one before it, and a call back's the text it opened on.
+            /// The newest of a person's texts in their thread (oldest first) that has a topic, as a "talked" memory while it is
+            /// remembered. The text a card is written for is not in the thread yet, so a text's card has the one before it.
             /// </summary>
             public static void Texted(IReadOnlyList<SocialThreadLine> thread, bool family, bool together, int today, List<TextFact> into)
             {
@@ -61,10 +56,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>
-            /// A text's topic in the cards' words: the contract's for a line RLO Texts' map knows (TextMemoryTopics.Text of its
-            /// intent), else the call back's subject's (SocialFollowSubject.Topic); null for a text with neither.
-            /// </summary>
+            /// <summary>A text's topic in the cards' words, from RLO Texts' map or else the call back's subject; null for neither.</summary>
             public static string TopicOf(string key, bool family, bool together)
             {
                 if (key == null)

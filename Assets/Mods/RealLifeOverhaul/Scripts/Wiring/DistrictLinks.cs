@@ -12,20 +12,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The district view on the city map (Districts/DistrictBridges) with what the other features keep by district:
-        ///
-        ///   Income     the city's economy's income level of the district; while it is off, the level the district
-        ///              starts from by the game's class shares (Economy/City: CityEconomy, CityModel.StartIncome)
-        ///   Footfall   the city's economy's change to the district's customers, and what its customers bear
-        ///   Standing   what the district thinks of the player and how well they are known there (Fame: FameFile);
-        ///              a district the player has no part in yet stands where every district starts
-        ///   Supply     the player's power and water accounts at their places in the district (Utilities)
-        ///   Internet   the providers that reach the district, the day's outages, the player's own fibre (Utilities)
-        ///   Council    building sites at work there, its voters and the last count there (Civic)
-        ///   crime      every crime the mod reports with a place (Social/News: a street crime, a car broken into, a hit
-        ///              and run) and every break-in at the player's shops (Crime/BreakIns), noted in the view's log
-        ///
-        /// Each reader is asked once a day at most (when the map is opened with a layer ticked), never per frame.
+        /// The district view on the city map (DistrictBridges) with what the features keep by district: the economy's
+        /// income (with it off, the level the game's class shares start from) and footfall, Standing, power, water and the
+        /// internet, the council, and the crimes reported there. Each is asked once a day at most, when the map opens with
+        /// a layer ticked.
         /// </summary>
         public static class DistrictLinks
         {
@@ -216,7 +206,7 @@ namespace RealLifeOverhaul
                 return true;
             }
 
-            // A report with a place: the kinds that are crimes against somebody in the street are noted in their district.
+            // Crimes against somebody in the street are noted in their district.
             private static void OnReported(NewsKind kind, Vector3 where)
             {
                 if (kind == NewsKind.Crime || kind == NewsKind.CarBreakIn || kind == NewsKind.HitAndRun)

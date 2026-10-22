@@ -6,20 +6,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Empty shops as offices (Scripts/Offices) with the rest of the mod:
-        ///
-        ///   OthersPicked  the utilities office, the courthouse, the police stations and the tech companies' headquarters
-        ///                 have chosen their buildings (or are off), so that the empty shops made offices are chosen from
-        ///                 a city whose claims are settled: the police stations may take a shop, and the offices those
-        ///                 features take are not the player's to let. The same on every machine.
-        ///
-        /// The other way round, every feature that chooses an office building asks Conversions.Holds itself (one line in its
-        /// own choice), so none of them takes a shop made an office. Everything is read from what those features already
-        /// keep in public; nothing of theirs is changed.
-        ///
-        ///   the player's offices  the two largest office buildings a player can rent or buy (Core/CityReserves) are
-        ///                 reserved in the book of the mod's buildings from the start, before any feature chooses, so every
-        ///                 feature passes them over; they are not refused to the player. Always, whatever the options.
+        /// Empty shops as offices with the features that claim buildings. The shops are chosen only once the utilities
+        /// office, the courthouse, the police stations and the tech headquarters have chosen theirs (or are off), so the
+        /// choice is the same on every machine. The player's two largest offices (CityReserves) are reserved from the
+        /// start, whatever the options, so no feature takes them; they are not refused to the player.
         /// </summary>
         public static class OfficeLinks
         {

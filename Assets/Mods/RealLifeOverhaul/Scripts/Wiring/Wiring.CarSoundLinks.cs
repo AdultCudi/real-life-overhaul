@@ -3,12 +3,8 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The recorded car sounds with the Garage:
-        ///
-        ///   CarSoundBridges.Parts       what a car's build fits that changes its sound (its exhaust and its turbo): the cart
-        ///                               while it is on the turntable, the build it carries otherwise, and stock with the
-        ///                               Garage or its performance parts switched off;
-        ///   CarSoundBridges.Turntable   the car in the custom shop while the shop is open.
+        /// The recorded car sounds with the Garage: the exhaust and turbo a car's build fits (the cart while it is on the
+        /// turntable, stock with the Garage's tuning off), and the car in the open custom shop.
         /// </summary>
         public static class CarSoundLinks
         {

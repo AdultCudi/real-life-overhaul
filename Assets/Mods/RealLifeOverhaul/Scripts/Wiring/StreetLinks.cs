@@ -10,26 +10,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Street talk (Scripts/Street) with the rest of the mod, one line each:
-        ///
-        ///   Facts         how the city sees the player (Standing: public standing, recognition, a record; Justice: a
-        ///                 warrant), whether they have washed (the home's hygiene, with the home's needs on), whether the social
-        ///                 life runs, and the city's facts of the day as Flare's posts read them (FlareBridges.CityFacts: the
-        ///                 election and its candidates, prices, the bank rate, the street event, the day's trouble)
-        ///   PoliceNear    a parked patrol car or an officer of the beat within earshot (People/PolicePresence, BeatPatrol)
-        ///   Noticed       the police watch more closely for the rest of the day (Law: Reputation.Noticed)
-        ///   CanMeet, Meet somebody of the social life's cast still to meet takes on the stranger's name, sex, age, job,
-        ///                 home district, traits and look (the game's own appearance of the figure, kept with them: People/
-        ///                 PersonLook), and is met in the street (SocialOrigin.Street, SocialLife.Meet): People
-        ///   InviteLook, InviteBook  an invitation decided with Flare's own look (FlareBridges.InviteLook: a plan on already, a
-        ///                 place near the player, the first hour that suits) and a yes booked as a call books a plan
-        ///                 (SocialLife.MakePlan), meeting the stranger in the street first
-        ///   Footfall      word of mouth for the player's business: its part added to BusinessGame.Ambient on top of the
-        ///                 others' and written by business pressure's own writer (BusinessDirector.Footfall) when it changes
-        ///   Words, Guess  RLO Texts' words for what people say (Wiring/StreetTexts)
-        ///
-        /// Nothing of the other features is changed but through their own entries. COST: nothing per frame; each answer is
-        /// asked on a press or a click.
+        /// Street talk (StreetBridges) with how the city sees the player and the day's city facts as Flare reads them, the
+        /// police within earshot, a stranger met in the street as one of the social life's cast (their name, look and
+        /// traits), an invitation booked as a plan, word of mouth on footfall, and RLO Texts' words (StreetTexts). Nothing
+        /// per frame: each answer is asked on a press or a click.
         /// </summary>
         public static class StreetLinks
         {
@@ -55,7 +39,7 @@ namespace RealLifeOverhaul
             {
                 StreetTexts.Disconnect();
                 StreetBridges.Reset();
-                BusinessGame.Ambient = _ambientBefore;   // (the others' own pairings take theirs off in a moment)
+                BusinessGame.Ambient = _ambientBefore;   // the others' pairings take theirs off next
                 _ambientBefore = null;
             }
 
@@ -84,7 +68,7 @@ namespace RealLifeOverhaul
                     f.PriceTrend = City.PriceTrend;
                     f.RateMove = City.RateMove;
                     f.EventToday = City.EventToday != null ? City.EventToday.GetLocalization() : null;
-                    f.EventWords = City.EventToday != null ? Texts.TextWords.EventWords(City.EventToday) : null;   // (RLO Texts' card: English in every language)
+                    f.EventWords = City.EventToday != null ? Texts.TextWords.EventWords(City.EventToday) : null;   // RLO Texts' cards are English in every language
                     f.NewsDistrict = City.NewsDistrict != null ? Districts.DistrictGame.Name(City.NewsDistrict) : null;
                 }
                 catch (Exception e)
@@ -106,11 +90,8 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- People
-
-            // The person of the cast somebody new would be when met: one not yet met, not being brought by a friend, not a star
-            // influencer's, of the sex given if one is (1 a woman, 0 a man, -1 either), else somebody new while there is room;
-            // null if nobody is left (as Flare's).
+            // Who of the cast somebody new would be: one not yet met, not brought by a friend, not a star influencer's, of
+            // the sex given (1 a woman, 0 a man, -1 either), else somebody new while there is room; null if nobody is left.
             private static SocialPerson Stranger(int sex)
             {
                 if (!Settings.Social || !Settings.SocialMeetings || !SocialState.Loaded || SocialDirector.Instance == null)
@@ -135,7 +116,7 @@ namespace RealLifeOverhaul
                 return SocialDirector.Newcomer(SocialOrigin.Street, sex) ?? either;
             }
 
-            // Somebody new met in the street: who they were in the street, their face and clothes too.
+            // Somebody new met in the street, with their face and clothes.
             private static int Meet(StreetMeet m)
             {
                 try
@@ -159,7 +140,7 @@ namespace RealLifeOverhaul
             {
                 if (!SocialState.NameTaken(m.First + " " + m.Last, p))
                 {
-                    p.Name = m.First + " " + m.Last;   // (one name is one contact: somebody else's stays theirs)
+                    p.Name = m.First + " " + m.Last;   // one name is one contact: somebody else's stays theirs
                 }
                 p.Female = m.Female;
                 p.Age = Mathf.Clamp(m.Age, 18, 85);
@@ -167,18 +148,18 @@ namespace RealLifeOverhaul
                 p.District = m.District;
                 p.Traits = m.Traits;
                 p.Origin = SocialOrigin.Street;
-                int seed = PersonLooks.Remember(m.Look);   // the look the game gave the figure, kept: the same person in the street, on the contact's picture and on Flare
+                int seed = PersonLooks.Remember(m.Look);   // the same look in the street, on the contact's picture and on Flare
                 if (seed != 0)
                 {
                     p.Look = m.Look;
                     p.Seed = seed;
                 }
-                ContactPictures.Person(SocialPhone.IdOf(p), p.Female, p.Age, p.Seed);   // (their face under the name they now have: the contact's picture)
+                ContactPictures.Person(SocialPhone.IdOf(p), p.Female, p.Age, p.Seed);
                 SocialLife.Meet(p, m.Warm);
                 SocialDirector.Logger?.Info("Social: " + p.Name + " swapped numbers with the player in the street: met in the street" + (seed != 0 ? ", with the look they had there." : " (their look could not be read: the seat's own)."));
             }
 
-            // A yes's plan booked as a call books it; -1 if it cannot be now (a plan on already, the place gone, nobody of the cast left).
+            // A yes booked as a call books a plan; -1 if it cannot be now (a plan on already, the place gone, nobody left).
             private static int Book(FlareInviteAsk a, StreetMeet m)
             {
                 try
@@ -211,8 +192,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- word of mouth
-
+            // The earlier pairings' part with word of mouth on top.
             private static int Ambient(BuildingRegistration reg)
             {
                 return (_ambientBefore != null ? _ambientBefore(reg) : 0) + StreetDirector.FootfallOf(reg);

@@ -8,30 +8,15 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Power and water (Scripts/Utilities) with the rest of the mod:
-        ///
-        ///   Grade        the credit rating (Economy): the deposit a new account asks for
-        ///   Household    who lives at the player's home besides them (Family: a partner who moved in, children at
-        ///                home; the roommate at the home they share): the home's power and water
-        ///   CloseFor     a business closed for want of power, water or a connection (Business, the game's own switch),
-        ///                as the utilities' own closure: asked again each hour, it lasts while the want does, whether or
-        ///                not business events are on
-        ///   Release      ...and ended as soon as the business has what it lacked
-        ///   UtilitiesOn  their off switch, read by the closures' keeper (BusinessDirector): off, or stopped by a fault,
-        ///                every business they closed opens again
-        ///   Record       why, in the Business desk's messages (BusinessDesk.Text), to read back after the notification
-        ///   Life         the electricity company's events need a power account of the player's (LifeAccounts.Power)
-        ///   Home         a home without water has dry taps, one without power dark screens and no cooker (HomeTidy)
-        ///   shares       the partner's share and the roommate's are of the rent and the home's power and water
-        ///   Finance      power and water owed are among "what you owe" (EconomyLinks.AddDebts)
-        ///   the Planner  a source of its own: a bill's due day, the day an unpaid one is cut, the end of a temporary
-        ///                supply, the morning an account connects
+        /// Power and water (UtilitiesBridges) with the credit grade, the household, business closures (the utilities' own,
+        /// lasting while the want does, all lifted when they are off or stopped by a fault), the home's taps and screens,
+        /// the bills' shares, "what you owe" in the Finance app and the Planner.
         /// </summary>
         public static class UtilityLinks
         {
             internal static void Connect()
             {
-                // City Utilities' building, 13 7th Street, held for it from the start while it is on (Core/CityReserves).
+                // City Utilities' building, held for it from the start while it is on.
                 SpecialBuildings.Reserve(CityReserves.UtilitiesId, CityReserves.UtilitiesStreet, CityReserves.UtilitiesNumber, () => Settings.Utilities);
                 TravelBridges.UtilitiesPicked = () => !Settings.Utilities || UtilitiesDirector.Failed
                     || (UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.Office != null && UtilitiesDirector.Instance.Office.Searched);
@@ -163,7 +148,7 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                // The same number for the same account in every session (it is kept with a reminder).
+                // The same number for the same account in every session: it is kept with a reminder.
                 private static int Key(Account a)
                 {
                     unchecked

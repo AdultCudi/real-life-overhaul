@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Helpers;
 using RealLifeOverhaul.Nav;
 using UI.Guiders;
@@ -8,19 +10,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The taxi called from the phone with the rest of the mod (Transport/Taxi/TaxiRoads.cs has TaxiBridges):
-        ///
-        ///   Held      the player is held and it is not their doing: the police have business with them (a stop, an
-        ///             arrest, custody: Crime, Law), a driving test is on (Licences), or they are in prison (Justice).
-        ///             No taxi is sent; one that is out is let go with nothing charged
-        ///   Riding    the player is on a bus (Transport): no taxi is sent; one that is out counts as cancelled
-        ///   Wet       rain or a storm of Events/Weather, while "Weather that matters" is on: the call-out is dearer
-        ///             and the taxi starts further off
-        ///   Roads     the road graph the GPS has made (Navigation), searched without making it a second time
-        ///
-        /// and with the minimap (Navigation/NavBridges.MoreMarks): the called taxi is marked where it is, with the
-        /// game's own vehicle picture in the colour the game gives its private driver. Read when the minimap gathers
-        /// its places (every two seconds while it shows); one static read while no taxi is out.
+        /// The taxi called from the phone (TaxiBridges) with the holds, the bus, the weather and the GPS's road graph, and
+        /// its mark on the minimap. The mark is read when the minimap gathers its places (every two seconds while it
+        /// shows); one static read while no taxi is out.
         /// </summary>
         public static class TaxiLinks
         {
@@ -42,7 +34,7 @@ namespace RealLifeOverhaul
                 NavBridges.MoreMarks = null;
             }
 
-            private static void Mark(System.Collections.Generic.List<NavMark> marks)
+            private static void Mark(List<NavMark> marks)
             {
                 try
                 {
@@ -55,7 +47,7 @@ namespace RealLifeOverhaul
                     colour.a = 255;
                     marks.Add(new NavMark { X = at.x, Z = at.z, Icon = references != null ? references.vehiclePOIIcon : null, Colour = colour });
                 }
-                catch (System.Exception e)
+                catch (Exception e)
                 {
                     Fault("TaxiLinks.Mark", e);
                 }

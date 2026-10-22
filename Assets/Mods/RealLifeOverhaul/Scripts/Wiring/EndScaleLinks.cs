@@ -7,10 +7,8 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The end game at scale (Core/EndScale) with the ventures it scales. Each venture reads the option and keeps the
-        /// day its scale began itself; only the two tests on the options page reach them all, through these bridges
-        /// (EndScaleTests): the data centres and the cloud (Tech), the broadband company (Utilities) and the bank
-        /// (Economy/OwnBank). Called on a button press only.
+        /// The end game at scale's two tests (EndScaleTests) with the ventures they scale: the data centres, the broadband
+        /// company and the player's bank. Called on a button press only.
         /// </summary>
         public static class EndScaleLinks
         {

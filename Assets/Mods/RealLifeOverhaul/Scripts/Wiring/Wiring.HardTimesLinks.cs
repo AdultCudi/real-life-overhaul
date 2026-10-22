@@ -10,21 +10,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Family life's difficult moments (Family/HardTimesWatch) with what the other features know of the player's
-        /// days. The door that is filled in, HardTimesBridges.Life, answers from what each feature already keeps:
-        ///
-        ///   home life     hours on a job over the last days, stress, sleep owed, meals skipped and the diet, how tidy
-        ///                 the home is (each only while its part of home life is on)
-        ///   careers       the professional job's burnout
-        ///   social life   the partner's last call, text or meeting, their last outing together, the last time they
-        ///                 were stood up or kept waiting, and their birthday (only while it keeps the family's partner)
-        ///   travel        a trip the partner came along on
-        ///   the economy   net worth as the Finance app shows it, the businesses, and from the game's own transactions
-        ///                 of the last three days the largest purchase (not a running cost, not the family's) and what
-        ///                 was borrowed
-        ///
-        /// Read once a game hour (the days) and once a game day (the money), never per frame. A fault is said once
-        /// (<see cref="Fault"/>) and the figures it would have given stay unknown, so no moment comes of them.
+        /// Family life's difficult moments (HardTimesBridges.Life) with what home life, careers, the social life, travel
+        /// and the economy know of the player's days. Read once a game hour (the days) and once a game day (the money); a
+        /// fault leaves its figures unknown, so no moment comes of them.
         /// </summary>
         public static class HardTimesLinks
         {
@@ -140,7 +128,7 @@ namespace RealLifeOverhaul
                         SocialPerson p = SocialState.Loaded && Settings.Social ? SocialState.Partner : null;
                         if (p == null || string.IsNullOrEmpty(partner) || p.Name != partner)
                         {
-                            return;   // the social life keeps somebody else, or nobody
+                            return;   // the social life keeps somebody else as the partner, or nobody
                         }
                         signs.ContactDay = p.LastContactDay;
                         signs.OutingDay = p.LastOutingDay;
@@ -205,7 +193,7 @@ namespace RealLifeOverhaul
                         if (t.amount < 0f && bought && -t.amount > biggest)
                         {
                             biggest = -t.amount;
-                            before = t.balance - t.amount;   // the balance after it, and what it took
+                            before = t.balance - t.amount;   // the balance before it
                         }
                         else if (t.amount > 0f && category == CashCategory.Loans && Borrowing(type))
                         {

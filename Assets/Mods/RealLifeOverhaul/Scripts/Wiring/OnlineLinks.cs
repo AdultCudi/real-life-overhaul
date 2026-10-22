@@ -10,35 +10,13 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The online shops with the rest of the mod (Economy/Online/OnlineBridges). The online shops call no other
-        /// feature and none calls them: what they have to do with each other is here.
-        ///
-        ///   Campaign      a campaign of the company's that runs at a business today (CampaignRules.Footfall on the
-        ///                 company's own file of the business): half of its customers also find the site. Nothing
-        ///                 while the company's marketing is off
-        ///   Season        the season of a day, as the city's economy is told it (CityBridges.Day, the mod's calendar)
-        ///   Road          the metres of road between two places over the road graph the GPS has made
-        ///                 (Navigation.NavDirector.Roads), searched with a search of its own a slice at a time so that
-        ///                 no call takes more than a few thousand points; nothing while the GPS has no graph
-        ///   Cost          every deductible cost of an online shop (set-up, hosting, courier fees, the vans' running
-        ///                 costs, advertising) is counted in the company's quarter as it is paid, by the company's own
-        ///                 public rule (TaxRules.Note on CompanyDirector.State.Tax), so that the accountant's rebate
-        ///                 counts it, once. The company has no kind of cost for selling online, so it goes under its
-        ///                 marketing costs. Nothing while the company's tax part is off
-        ///   the Planner   a source of its own (<see cref="OnlineSource"/>): the rows the online shops have made
-        ///
-        /// Everything is read from what those features already keep in public or asked through an entry they already
-        /// have; nothing of theirs is changed. The online sales reach the company's quarterly return and the game's
-        /// tax through the game's own statements (OnlineGame.Book), not through anything here.
+        /// The online shops (OnlineBridges) with the company's campaigns, the season, the GPS's roads (searched a slice of a
+        /// few thousand points per call, on a search of its own) and the Planner. Their costs go into the company's quarter
+        /// as marketing costs, the company having no kind for selling online, so the accountant's rebate counts them once.
         /// </summary>
         public static class OnlineLinks
         {
-            /// <summary>
-            /// The online shops' rows in the Planner, as a source of its own: orders that wait with nobody on shift to
-            /// pick them, a rating that is falling or poor, a site that is offline for unpaid hosting, and hosting that
-            /// is taken tomorrow. The rows are made by the online shops when what they depend on changes
-            /// (OnlineDirector.Alerts); this only hands them over, and changes nothing.
-            /// </summary>
+            /// <summary>The online shops' rows in the Planner, made by OnlineDirector.Alerts; this only hands them over.</summary>
             private sealed class OnlineSource : IPlannerSource
             {
                 public string Id => "online";
@@ -156,12 +134,12 @@ namespace RealLifeOverhaul
                     RouteSearch made = NavDirector.Roads;
                     if (made == null || made.EdgeStart == null)
                     {
-                        return NavDirector.Instance != null && ++_waits < WaitsMost ? -1 : 0;   // (the GPS makes its graph in the first moments of a city; with it off there is none)
+                        return NavDirector.Instance != null && ++_waits < WaitsMost ? -1 : 0;   // the GPS makes its graph in a city's first moments
                     }
                     if (!ReferenceEquals(made, _made))
                     {
                         _made = made;
-                        _search = new RouteSearch(made);   // the same points, a search of its own: the GPS's own search is never disturbed
+                        _search = new RouteSearch(made);   // a search of its own, so the GPS's is never disturbed
                         _search.SetEdges(made.EdgeStart, made.EdgeTo, made.EdgeExtra);
                         _begun = false;
                     }
@@ -210,7 +188,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The lane points nearest a place, a couple of dozen at most: one pass over the graph's points, when a search begins.
+            // The lane points nearest a place, a couple of dozen at most: one pass over the graph when a search begins.
             private static void Near(Vector3 place, List<int> into)
             {
                 into.Clear();
