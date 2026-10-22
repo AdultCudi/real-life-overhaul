@@ -6,27 +6,19 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The GPS's part of the game's full city map: the route drawn on it, and a double click that sets a destination.
-    ///
-    /// The game's map is the city itself seen by a camera, and its markers are interface objects that the game puts
-    /// where their places are on the screen every frame the map is open (CityMap.LateUpdate, PointOfInterest
-    /// .UpdatePosition). The route is drawn the same way: one object in the markers' own layer, under the markers,
-    /// whose line is worked out again in a frame in which the map's camera has moved, and in no other. The object is
-    /// switched off while the map is shut, so none of this runs then (and the game is paused while the map is open).
-    ///
-    /// The game offers "set destination" on a building's card only. Here two clicks on the same spot within 0.4 s
-    /// make that spot the destination (a building: exactly as its card's button does). One click is not used: it is
-    /// what drags the map and what selects a building, and a destination must not be replaced by accident.
+    /// The GPS's part of the game's city map: the route, in the markers' own layer under them, worked out again only in
+    /// a frame the map's camera has moved, and a double click that sets a destination (one click drags the map or picks
+    /// a building). Switched off, costing nothing, while the map is shut.
     /// </summary>
     public sealed class NavCityMap : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("navigation", "NavCityMap", typeof(NavCityMap));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("navigation", "NavCityMap", typeof(NavCityMap));
 
         public const string ObjectName = "RealLife Map Route";
-        private const float TapSeconds = 0.3f;
-        private const float TapPixels = 6f;
-        private const float DoubleSeconds = 0.4f;
-        private const float DoublePixels = 12f;
+        private const float TapSeconds = 0.3f;     // seconds a click may be held
+        private const float TapPixels = 6f;        // pixels it may move
+        private const float DoubleSeconds = 0.4f;  // seconds between the two clicks
+        private const float DoublePixels = 12f;    // pixels between them
 
         public static IModLogger Logger;
 
@@ -77,7 +69,6 @@ namespace RealLifeOverhaul.Nav
             return map;
         }
 
-        /// <summary>The map has been opened or shut.</summary>
         public void Open(bool open)
         {
             if (gameObject.activeSelf != open)
@@ -108,14 +99,14 @@ namespace RealLifeOverhaul.Nav
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
             {
                 OnLateUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -181,14 +172,14 @@ namespace RealLifeOverhaul.Nav
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }

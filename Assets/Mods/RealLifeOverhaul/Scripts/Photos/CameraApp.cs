@@ -1,4 +1,3 @@
-using System;
 using BAModAPI;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.GameUi;
@@ -10,16 +9,9 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Camera app on the phone. Opening it puts the phone away and opens the camera (CameraMode) at once, as a phone's
-    /// camera opens; the app's own page is seen only for the moment the phone takes to close, or when the camera cannot
-    /// open now (the game's notice says why, and the page says it too). In the game's frame (GameUi.AppShell):
-    ///
-    ///   the white box   the title "Camera", why it cannot open now (if it cannot), the save's photos against the most it
-    ///                   keeps, a note on where it works, and three buttons: Rear camera, Selfie, Gallery; the Guide's page
-    ///   the tabs        Rear camera and Selfie: either opens the camera that way
-    ///   the right side  the newest photo, large, over the game's own list background, with when it was taken
-    ///
-    /// PER FRAME: NOTHING. The page is written when the app opens and when a photo is added.
+    /// The Camera app on the phone: opening it opens the camera at once, so its page (why the camera cannot open, the photo
+    /// count, the newest photo) is seen only when the camera is refused. Nothing per frame: the page is written when the
+    /// app opens and when a photo is added.
     /// </summary>
     internal sealed class CameraApp
     {
@@ -44,7 +36,7 @@ namespace RealLifeOverhaul.Photos
 
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        /// <summary>Once a second while the Camera runs: the app among the game's (the phone is built a little after the city).</summary>
+        /// <summary>Called once a second until it takes, since the phone is built a little after the city.</summary>
         public void Install()
         {
             if (_app != null || _gaveUp)
@@ -81,8 +73,6 @@ namespace RealLifeOverhaul.Photos
             _gaveUp = false;
         }
 
-        // ---------------------------------------------------------------- building it
-
         private GameObject Build(FullMenu menu, Transform dormant)
         {
             using var piece = SessionWatch.Piece("photos: the Camera app being built from the game's MyEmployees");   // once per city
@@ -107,8 +97,6 @@ namespace RealLifeOverhaul.Photos
             return _shell.Root;
         }
 
-        // ---------------------------------------------------------------- opening
-
         private void Opened()
         {
             if (_shell == null)
@@ -119,7 +107,7 @@ namespace RealLifeOverhaul.Photos
             Write();
             if (_refused == CameraRefusal.None)
             {
-                Ask(false);   // the camera opens at once, as a phone's does
+                Ask(false);
             }
         }
 
@@ -141,7 +129,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>A photo was added or deleted: the page is written again if it is showing.</summary>
+        /// <summary>A photo was added or deleted.</summary>
         public void Changed()
         {
             if (Showing)
@@ -149,8 +137,6 @@ namespace RealLifeOverhaul.Photos
                 Write();
             }
         }
-
-        // ---------------------------------------------------------------- the page
 
         private void Write()
         {
@@ -176,7 +162,6 @@ namespace RealLifeOverhaul.Photos
             WriteLatest();
         }
 
-        // The newest photo, as large as the right side has room for, its shape kept.
         private void WriteLatest()
         {
             Texture latest = _director.LatestTexture;
@@ -200,10 +185,8 @@ namespace RealLifeOverhaul.Photos
     }
 
     /// <summary>
-    /// The right side of the Camera's page: the game's own list background over the table, copied and stretched (as
-    /// Newsstand's page is), and switched on. The game keeps MyEmployees' ListBackground switched off (its prefab has it so
-    /// and nothing of the game's switches it on), and a copy of an object that is off is off: in 0.27.0 the copy was
-    /// never switched on, so nothing on it was drawn or could be clicked (the Gallery's photos among it).
+    /// The right side of a photos page: a copy of the game's list background stretched over the table. MyEmployees' prefab
+    /// keeps that background switched off, so the copy must be switched on or nothing on it draws or takes a click.
     /// </summary>
     internal static class GallerySheet
     {
@@ -217,13 +200,13 @@ namespace RealLifeOverhaul.Photos
                 UnityEngine.Object.DestroyImmediate(sheet.transform.GetChild(i).gameObject);
             }
             var paper = sheet.GetComponent<Image>() ?? sheet.AddComponent<Image>();
-            paper.raycastTarget = true;   // the sheet takes the clicks meant for the table under it
+            paper.raycastTarget = true;   // takes the clicks meant for the table under it
             var unlaid = sheet.GetComponent<LayoutElement>() ?? sheet.AddComponent<LayoutElement>();
             unlaid.ignoreLayout = true;
             var rect = (RectTransform)sheet.transform;
             FlareKit.Stretch(rect, 0f, 0f, 0f, 0f);
             rect.SetAsLastSibling();
-            sheet.SetActive(true);   // (a copy of the game's switched-off background is switched off: see above)
+            sheet.SetActive(true);
             return rect;
         }
     }

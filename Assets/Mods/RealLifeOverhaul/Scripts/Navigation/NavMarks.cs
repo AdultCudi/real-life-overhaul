@@ -18,17 +18,9 @@ namespace RealLifeOverhaul.Nav
     }
 
     /// <summary>
-    /// The places that matter, read from what the game and the mod already keep (nothing is added to either):
-    ///
-    ///   the game's guiders other than the one being routed to (quests, a job's destination, the private driver);
-    ///   the game's permanent markers (the player's own buildings: the ones it shows in the street as well);
-    ///   the subway stations, with the map's own station icon;
-    ///   every kind of place of this mod whose row on the city map is ticked (Core/MapPlaces).
-    ///
-    /// <see cref="Gather"/> is called every two seconds while the minimap shows, and reads positions and pictures
-    /// only; a marker's picture and colour are private to the game's marker, so they are read through two fields
-    /// found once. If the game no longer has those fields the player's own buildings are left off the minimap, the
-    /// other places stand on the game's plain circle, and one line says so.
+    /// The places the minimap marks: the game's guiders but the one routed to, its permanent markers, the subway
+    /// stations and the mod's places ticked on the city map, gathered every two seconds while the minimap shows. A
+    /// marker's picture and colour are private to the game, read through fields found once.
     /// </summary>
     public static class NavMarks
     {
@@ -38,7 +30,7 @@ namespace RealLifeOverhaul.Nav
 
         public static readonly List<NavMark> All = new List<NavMark>(128);
 
-        /// <summary>Marks a test has put out for a while (the director's "mark three buildings"); empty otherwise.</summary>
+        /// <summary>Marks the "mark three buildings" test has put out for a while; empty otherwise.</summary>
         public static readonly List<NavMark> Trial = new List<NavMark>(3);
 
         private static FieldInfo _blob, _icon, _iconImage, _words;
@@ -61,7 +53,7 @@ namespace RealLifeOverhaul.Nav
             _looked = true;
             try
             {
-                _blob = GameContract.PoiBlob.Field;   // (the game's private fields, resolved once: Core/GameContract)
+                _blob = GameContract.PoiBlob.Field;
                 _icon = GameContract.PoiIcon.Field;
                 _iconImage = GameContract.BuildingIconImage.Field;
                 _words = GameContract.PoiText.Field;
@@ -75,11 +67,12 @@ namespace RealLifeOverhaul.Nav
             _missing = _blob == null || _icon == null || _iconImage == null || Blob == null;
             if (_missing)
             {
-                Logger?.Warn("Navigation: the game's map markers are not built as this version expects, so the minimap leaves the player's own buildings off and marks the other places on a plain circle.");
+                Logger?.Warn("Navigation: the game's map markers are not built as this version expects, so the minimap leaves the player's own buildings off"
+                             + " and marks the other places on a plain circle.");
             }
         }
 
-        /// <summary>What one of the game's markers is called (the words on its name plate, without the distance the game adds); null if unknown.</summary>
+        /// <summary>The words on a marker's name plate, without the distance the game adds; null if unknown.</summary>
         public static string Words(PointOfInterest marker)
         {
             Prepare();
@@ -96,7 +89,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>The picture and colour of one of the game's markers. False if they cannot be read.</summary>
+        /// <summary>The picture and colour of one of the game's markers; false if they cannot be read.</summary>
         public static bool Read(PointOfInterest marker, out Sprite icon, out Color32 colour)
         {
             icon = null;
@@ -118,7 +111,7 @@ namespace RealLifeOverhaul.Nav
             return true;
         }
 
-        /// <summary>Reads every place again. <paramref name="routed"/> is the guider the GPS is routing to (it has a marker of its own), or null.</summary>
+        /// <summary>Reads every place again; <paramref name="routed"/>, the guider routed to, has a marker of its own.</summary>
         public static void Gather(DirectionGuider routed)
         {
             All.Clear();
@@ -190,9 +183,9 @@ namespace RealLifeOverhaul.Nav
             }
             for (int i = 0; i < Trial.Count; i++)
             {
-                All.Insert(i, Trial[i]);   // first, so that a full view cannot crowd them out
+                All.Insert(i, Trial[i]);   // first, so a full view cannot crowd them out
             }
-            NavBridges.MoreMarks?.Invoke(All);   // what moves (Wiring fills it in): a called taxi
+            NavBridges.MoreMarks?.Invoke(All);
         }
 
         private static void Add(Vector3 at, Sprite icon, Color32 colour)
