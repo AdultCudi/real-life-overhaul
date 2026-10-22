@@ -5,15 +5,11 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Designs
 {
-    /// <summary>
-    /// The options page's tests of the ready-made designs: say what is in place, and have the installation firms do the
-    /// orders for the mod's businesses now instead of on their day. Nothing per frame: each runs on a press.
-    /// </summary>
+    /// <summary>The designs' test buttons: what is in place, and the firms' orders for the mod's businesses done now.</summary>
     public static partial class DesignsDirector
     {
         private const string TestName = "Ready-made designs";
 
-        /// <summary>Options-page test: how many designs the firms offer the mod's business types now, or why none.</summary>
         public static void TestSay()
         {
             if (!Settings.Designs)
@@ -40,10 +36,7 @@ namespace RealLifeOverhaul.Designs
             });
         }
 
-        /// <summary>
-        /// Options-page test: every installation firm order for a business of one of the mod's types is done now, by the
-        /// game's own installation, as on its day. Not in a Going Public session, where an order may be another player's.
-        /// </summary>
+        /// <summary>Every firm order for the mod's businesses done now; not in a Going Public session, where one may be another player's.</summary>
         public static void TestInstall()
         {
             if (!Settings.Designs || !DesignsGame.Loaded())

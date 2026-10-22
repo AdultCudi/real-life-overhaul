@@ -4,10 +4,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Designs
 {
-    /// <summary>
-    /// The feature's entry in the mod's feature list, and the figures its Guide page prints from <see cref="DesignCatalogue"/>.
-    /// Called once, when the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
-    /// </summary>
+    /// <summary>The designs' entry in the feature list, with the figure its Guide page prints from <see cref="DesignCatalogue"/>.</summary>
     public static class DesignsGuide
     {
         public static void Register()
@@ -21,10 +18,9 @@ namespace RealLifeOverhaul.Designs
         }
     }
 
-    /// <summary>The ready-made designs' place on the options page, under the mod's own namespace so that it is one line there.</summary>
+    /// <summary>The designs' place on the options page.</summary>
     public static class DesignsOptions
     {
-        /// <summary>The "Ready-made designs" block of the options page: its switch and its tests.</summary>
         public static ModOptions AddDesigns(this ModOptions options)
         {
             return options

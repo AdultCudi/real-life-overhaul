@@ -4,29 +4,21 @@ using System.IO;
 
 namespace RealLifeOverhaul.Designs
 {
-    /// <summary>One ready-made design to be put in the installers' folder: for which type and size, under which name, from what.</summary>
+    /// <summary>One ready-made design to be put in the installers' folder.</summary>
     public sealed class PlannedDesign
     {
         public int Kind;
         public string Size;
         public string Name;
         public DesignSource Source;
-        public ShowroomCut Cut;              // what a Car Showroom or a bank branch keeps of its source; null for a design offered whole
+        public ShowroomCut Cut;              // null for a design offered whole
         public string Path;                  // under the installers' folder, with '/': building/size/type/name.json
     }
 
-    /// <summary>
-    /// The game's design files the ready-made designs are made from, found on disk (System.IO only, so that the offline checks
-    /// find exactly what the game's start does), and the plan of every design made from them. Called once, on a worker thread,
-    /// when the designs are put in place; nothing of it runs in a frame.
-    /// </summary>
+    /// <summary>The game's design files on disk and the plan made from them; System.IO only, so the checks find what the game does.</summary>
     public static class DesignPlan
     {
-        /// <summary>
-        /// Every source of every kind under the game's StreamingAssets folder, in <see cref="DesignRules.Order"/>, and the
-        /// sizes the game has designs for in each kind's building (its size folders), in order. False if the game's
-        /// installers' folder is not there.
-        /// </summary>
+        /// <summary>Every kind's sources in <see cref="DesignRules.Order"/>, and each kind's sizes; false with no installers' folder.</summary>
         public static bool Find(string streamingAssets, List<DesignSource> into, Dictionary<int, List<string>> sizes, Dictionary<int, string> buildings)
         {
             into.Clear();
@@ -74,7 +66,7 @@ namespace RealLifeOverhaul.Designs
             return true;
         }
 
-        // A size folder holds the game's designs for some business of its own (not only the mod's).
+        // Designs for some business of the game's own, not only the mod's.
         private static bool HasDesigns(string sizeDir, DesignKind kind)
         {
             string[] businesses = Directory.GetDirectories(sizeDir);
@@ -136,12 +128,7 @@ namespace RealLifeOverhaul.Designs
             }
         }
 
-        /// <summary>
-        /// The plan: for every kind and every size its building has designs for, the designs it is offered. A kind offered
-        /// the game's own whole takes the first of each name; a Car Showroom reads each candidate (<paramref name="read"/>,
-        /// null for one that cannot be read), cuts it for its lot on the room the size's candidates fill, and takes the best
-        /// (<see cref="DesignRules.Showrooms"/>).
-        /// </summary>
+        /// <summary>Every kind's designs for every size; a showroom or branch reads (<paramref name="read"/>, null if unreadable) and cuts each.</summary>
         public static List<PlannedDesign> Make(List<DesignSource> sources, Dictionary<int, List<string>> sizes, Dictionary<int, string> buildings,
             Func<DesignSource, List<DesignItem>> read)
         {

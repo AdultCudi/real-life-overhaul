@@ -2,12 +2,11 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Walking
 {
-    /// <summary>The options page's test of walking: says, as a notice, how the player is moving now. Nothing per frame.</summary>
+    /// <summary>Walking's test button: a notice of how the player moves now.</summary>
     public sealed partial class WalkDirector
     {
         private const string TestName = "Walking";
 
-        /// <summary>Options-page test: walking or not, and whether the game's walk is on the player now or the game's own pace for a moment.</summary>
         public void TestSay()
         {
             if (!Settings.WalkToggle || WalkGame.Loading())

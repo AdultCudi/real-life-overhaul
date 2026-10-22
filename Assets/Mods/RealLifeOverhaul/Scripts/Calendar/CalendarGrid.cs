@@ -8,24 +8,18 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Calendar
 {
     /// <summary>
-    /// The Month tab: seven columns, Monday to Sunday, where the table stands on the Day tab. Each column is a heading
-    /// for its weekday and a cell for each week of the month, every one of them a copy of the game's own table row
-    /// (MyEmployees' row, with only its background, its click and its first text): the game's grey rounded row, its hover
-    /// and its click sound, its pale colour when chosen. A cell says its day of the month, today in the game's yellow,
-    /// the money that day brings in (green) and takes out (red), and how many other things are on it. A click on a cell
-    /// chooses its day.
-    ///
-    /// Every cell is made once, asleep, when the app is built (seven headings and six weeks of cells); showing a month only
-    /// writes their words and colours and switches them on or off. Nothing runs per frame.
+    /// The Month tab: seven weekday columns where the Day tab's table stands, each cell a copy of the game's own table row
+    /// (MyEmployees') with its look, hover and click. A cell shows its day, the money in and out and how many other things.
+    /// Every cell is made once when the app is built; showing a month only writes them. Nothing runs per frame.
     /// </summary>
     public sealed class CalendarGrid
     {
         private const float HeadHeight = 64f;     // the weekday's heading
-        private const float CellHeight = 148f;    // three lines of the smaller words below
-        private const float FontSize = 26f;       // the game's table rows write 30: a column is a seventh of the table
+        private const float CellHeight = 148f;    // three lines at FontSize
+        private const float FontSize = 26f;       // the game's rows use 30; a column is a seventh of the table
         private const float Spacing = 10f;        // between two cells of a column
-        private const float ColumnGap = 15f;      // between two columns: what the game's scroller leaves between rows
-        private const float PastAlpha = 0.55f;    // a day gone by is written fainter
+        private const float ColumnGap = 15f;      // between columns: what the game's scroller leaves between rows
+        private const float PastAlpha = 0.55f;    // a day gone by is fainter
 
         private sealed class Cell
         {
@@ -40,17 +34,12 @@ namespace RealLifeOverhaul.Calendar
         private GameObject _root;
         private readonly Cell[] _heads = new Cell[MonthViewRules.Columns];
         private readonly Cell[,] _cells = new Cell[MonthViewRules.MostWeeks, MonthViewRules.Columns];
-        private Color _plainBackground = new Color(0.349f, 0.412f, 0.459f, 0.635f);   // the game's row (EmployeeCellView's Background), read from the copy below
+        private Color _plainBackground = new Color(0.349f, 0.412f, 0.459f, 0.635f);   // the game's row, read again from each copy
         private Color _chosenBackground = new Color(0.741f, 0.78f, 0.812f, 1f);
 
-        /// <summary>Told the day of a cell that was clicked.</summary>
         public Action<int> DayClicked;
 
-        /// <summary>
-        /// The grid beside the app's table (the same place and size), asleep until shown, made of copies of the game's row
-        /// as AppShell hands it over, before the table's own script goes on it. Null, with one line in Player.log, if the row
-        /// is not built as expected.
-        /// </summary>
+        /// <summary>The grid in the table's place, asleep, from the game's row before the table's script goes on it; null, logged, if unexpected.</summary>
         public static CalendarGrid Make(GameObject row, Transform list, Color chosen)
         {
             if (row == null || list == null || list.parent == null || row.transform.Find("EmployeeName") == null || row.transform.Find("Background") == null)
@@ -102,7 +91,7 @@ namespace RealLifeOverhaul.Calendar
             return grid;
         }
 
-        // A copy of the game's row with only its background, its click and its first text, which holds the words.
+        // A copy of the game's row with only its background, its click and its first text.
         private Cell Copy(GameObject row, Transform column, float height, Action click)
         {
             GameObject copy = UnityEngine.Object.Instantiate(row, column, false);
@@ -142,8 +131,6 @@ namespace RealLifeOverhaul.Calendar
             return cell;
         }
 
-        public bool Showing => _root != null && _root.activeSelf;
-
         public void Show(bool shown)
         {
             if (_root != null && _root.activeSelf != shown)
@@ -161,12 +148,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // ---------------------------------------------------------------- writing it
-
-        /// <summary>
-        /// Writes the month: the weekdays' headings, and each cell of its weeks with its day, the money and how many other
-        /// things the list has on it; the day chosen as the game draws the chosen row of a table, today in its yellow.
-        /// </summary>
+        /// <summary>Writes the month's headings and cells; the chosen day drawn as the game draws a chosen row.</summary>
         public void Fill(int firstDay, int length, int today, int chosenDay, List<CalendarEntry> items)
         {
             var references = InstanceBehavior<GlobalReferences>.Instance;
@@ -205,7 +187,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // "12  Today" over "+$1.2K  $340" over "3 planned": the day of the month, the money with a known amount, the rest.
+        // "12  Today" over "+$1.2K  $340" over "3 planned".
         private static string Words(int day, int firstDay, int today, bool chosen, DayTally tally, GlobalReferences references)
         {
             string words = "<b>" + (day - firstDay + 1) + "</b>";
@@ -235,8 +217,7 @@ namespace RealLifeOverhaul.Calendar
             return words;
         }
 
-        // Words in one of the mod's tones: the game's own yellow, red and green (GlobalReferences.colors), as its tables write
-        // them; on the chosen (pale) cell its yellow is orange, as the game's tables have it (BaTableCellView.VisualizeSelected).
+        // In the game's own colours; on the chosen (pale) cell yellow is orange, as in BaTableCellView.VisualizeSelected.
         private static string Tinted(string words, CellTone tone, bool chosen, GlobalReferences references)
         {
             if (tone == CellTone.Plain || references == null)
