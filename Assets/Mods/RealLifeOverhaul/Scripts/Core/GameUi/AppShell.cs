@@ -476,6 +476,11 @@ namespace RealLifeOverhaul.GameUi
                 labels[i] = label != null ? label.GetComponent<TMP_Text>() : null;
                 if (tabs[i] == null || labels[i] == null)
                 {
+                    // The bar as it was: this call's copies taken off again, Tabs still the game's two.
+                    for (int k = i; k >= 1; k--)
+                    {
+                        UnityEngine.Object.DestroyImmediate(k == i ? copy : tabs[k].gameObject);
+                    }
                     UiClone.Fallback("a copy of the game's table tab is not a tab, so the app cannot have " + count + " of them");
                     return false;
                 }

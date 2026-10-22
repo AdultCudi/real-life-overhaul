@@ -393,6 +393,10 @@ namespace RealLifeOverhaul.GameUi
 
         public override void ResetVisuals()
         {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
             try
             {
                 Look(false);

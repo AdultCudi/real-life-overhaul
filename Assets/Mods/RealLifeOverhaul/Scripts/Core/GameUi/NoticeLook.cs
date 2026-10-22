@@ -116,6 +116,19 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        /// <summary>The game's pictures the notices ask for, named before the one look behind the loading screen (GameSprites.Prewarm).</summary>
+        internal static void WantPictures()
+        {
+            GameSprites.Want("circle");
+            for (int kind = 1; kind < GameNames.Length; kind++)
+            {
+                if (GameNames[kind] != null)
+                {
+                    GameSprites.Want(GameNames[kind]);
+                }
+            }
+        }
+
         /// <summary>One-off work behind the loading screen (ScenePrewarm): the game's toast maker, its list and the pictures. True once done.</summary>
         public static bool Prewarm()
         {

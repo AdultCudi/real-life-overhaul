@@ -20,21 +20,18 @@ namespace RealLifeOverhaul.GameUi
         private readonly GameObject _root;
         private readonly RectTransform _rect;
         private readonly Image _fill;
-        private readonly RectTransform _span;    // the filler's own rectangle: what "0 to 1" means on this bar
         private readonly RectTransform _zone, _best, _mark;
         private float _shown = -1f;              // the share last written to the filler; below zero for none
         private float _markShown = -1f;
         private float _zoneFrom = -1f, _zoneTo = -1f, _bestFrom = -1f, _bestTo = -1f;
-        private float _width = -1f;
         private bool _timing;
         private bool _on;
 
-        private GameBar(GameObject root, Image fill, RectTransform span, RectTransform zone, RectTransform best, RectTransform mark)
+        private GameBar(GameObject root, Image fill, RectTransform zone, RectTransform best, RectTransform mark)
         {
             _root = root;
             _rect = (RectTransform)root.transform;
             _fill = fill;
-            _span = span;
             _zone = zone;
             _best = best;
             _mark = mark;
@@ -117,7 +114,7 @@ namespace RealLifeOverhaul.GameUi
                     graphic.raycastTarget = false;
                 }
                 bar.AddComponent<Canvas>();   // drawn by itself: a moving marker does not redraw its panel
-                var made = new GameBar(bar, fill, span, zone, best, mark);
+                var made = new GameBar(bar, fill, zone, best, mark);
                 bar.SetActive(false);
                 rect.SetParent(parent, false);
                 UnityEngine.Object.Destroy(holder.gameObject);
@@ -225,20 +222,18 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>The marker at <paramref name="value"/> (0 to 1); one position written only when it moved a visible step. Call <see cref="Zone"/> first.</summary>
+        /// <summary>The marker at <paramref name="value"/> (0 to 1), anchored at that share of the bar; written only when it moved a visible step. Call <see cref="Zone"/> first.</summary>
         public void Mark(float value)
         {
             if (_root == null || !_timing || !BarRule.Due(_markShown, value))
             {
                 return;
             }
-            if (_width < 0f)
-            {
-                _width = _span.rect.width;
-            }
             bool first = _markShown < 0f;
             _markShown = BarRule.Clamp(value);
-            _mark.anchoredPosition = new Vector2(_markShown * _width, 0f);
+            // Anchored at its share of the span, as the zone is: it stays in place at any screen size or interface scale.
+            _mark.anchorMin = new Vector2(_markShown, 0f);
+            _mark.anchorMax = new Vector2(_markShown, 1f);
             if (first)
             {
                 Switch(_mark, true);

@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy.Brands
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             BrandsGame.Logger = Logger;
             BrandsGame.Forget();   // a new city: the map's rows of the last one went with it
             _second = EachSecond;
@@ -316,7 +317,6 @@ namespace RealLifeOverhaul.Economy.Brands
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new BrandsApp(this);
-            GameSprites.Want(AppGlyphs);
             bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {

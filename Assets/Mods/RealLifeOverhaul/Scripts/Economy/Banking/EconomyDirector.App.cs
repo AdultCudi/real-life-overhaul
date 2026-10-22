@@ -21,7 +21,6 @@ namespace RealLifeOverhaul.Economy
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new FinanceApp(this);
-            GameSprites.Want(FinanceApp.AppGlyphs);
             bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {

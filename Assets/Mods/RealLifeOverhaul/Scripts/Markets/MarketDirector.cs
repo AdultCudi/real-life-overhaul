@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Markets
         private void Awake()
         {
             Instance = this;
+            GameUi.GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _onSave = OnSave;
             _say = (kind, a, b) => _engine?.Event(kind, a, b);
             _world = new MarketGameWorld(this);

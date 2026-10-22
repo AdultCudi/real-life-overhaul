@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Careers
         private void Awake()
         {
             Instance = this;
+            GameUi.GameSprites.Want(CareerGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
+            GameUi.GameSprites.Want(CampusGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             CareersGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);

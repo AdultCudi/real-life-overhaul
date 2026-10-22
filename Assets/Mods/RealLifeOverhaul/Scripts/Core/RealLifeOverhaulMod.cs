@@ -1305,6 +1305,8 @@ namespace RealLifeOverhaul
             Guard.Step("GameUi.NoticeRoom", () => GameUi.NoticeRoom.Logger = context.Logger);
             Guard.Step("GameUi.NoticeLook", () => Guard.Add<GameUi.NoticeLook>(_root));   // nothing per frame
             Guard.Step("the notices' prewarm", () => ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm));
+            // Run first (pieces run last added first): every picture the features named in their Awake, in one look.
+            Guard.Step("the pictures' prewarm", () => ScenePrewarm.Add("game UI: the game's interface pictures being found by name (everything in memory gone through)", GameUi.GameSprites.Prewarm));
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // two null tests a frame
@@ -1495,6 +1497,7 @@ namespace RealLifeOverhaul
             Guard.Step("the looks", () => Looks.Reset());
             Guard.Step("the city life prewarm", () => CityLifeDirector.Instance?.Prewarm());
             Guard.Step("the street pool prewarm", () => ActorPool.Instance?.Prewarm());
+            Guard.Step("the game's pictures", WantPictures);   // the helpers' names; each director named its own in its Awake
             // Every whole-scene search a feature would otherwise make in play, at over 100 ms each.
             Guard.Step("the scene prewarm", () => ScenePrewarm.Begin());
             Guard.Step("the options page in the city", () => Meta.MetaCity.Begin(context, _root));   // the check for leftovers, the guide's contact, the welcome panel
@@ -1503,11 +1506,24 @@ namespace RealLifeOverhaul
             return LoadHold.Wait();
         }
 
+        // The game's pictures that the helpers and the shell ask for (the round of an InfoBox and of the districts' panel, More
+        // apps and the folders, the Planner's place), named before the one look behind the loading screen.
+        private static void WantPictures()
+        {
+            GameUi.GameSprites.Want("Circle-20", "circle", GameUi.PhoneGridPager.MoreGlyph, "Icon-SetDestination");
+            GameUi.NoticeLook.WantPictures();
+            Meta.GuideApp.WantPictures();
+            Meta.SettingsApp.WantPictures();
+            Ledger.NewsstandApp.WantPictures();
+            SpeedReading.WantPictures();
+            CarDash.WantPictures();
+            HomeNeedsBar.WantPictures();
+        }
+
         // The game's font is found by a scene search and kept: asked for here, not when the first sign is lettered.
         private static bool FindFont()
         {
-            _ = GameUi.GameFont.Asset;
-            return true;
+            return GameUi.GameFont.Refind();
         }
 
         public Task OnUnloadAsync()

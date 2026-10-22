@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Districts
         private void Awake()
         {
             Instance = this;
+            GameUi.GameSprites.Want(Sprites);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _onMap = Guard.Wrap<bool>(OnMap);
             _onDay = Guard.Wrap(OnDay);
             _onSave = OnSave;
@@ -74,7 +75,6 @@ namespace RealLifeOverhaul.Districts
             try
             {
                 var rows = new MapPlaces.ChoiceRow[DistrictRules.Layers];
-                GameUi.GameSprites.Want(Sprites);
                 for (int i = 0; i < rows.Length; i++)
                 {
                     Sprite icon = Sprites[i] != null ? GameUi.GameSprites.Get(Sprites[i]) : null;
