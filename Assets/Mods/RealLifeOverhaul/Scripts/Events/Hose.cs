@@ -78,12 +78,12 @@ namespace RealLifeOverhaul.Events
             return true;
         }
 
-        /// <summary>Rolls it up one length at a time from the nozzle end. True while there is hose left on the ground.</summary>
-        public bool RollUp()
+        /// <summary>Rolls it up two lengths at a time from the nozzle end.</summary>
+        public void RollUp()
         {
             if (_shown <= 0)
             {
-                return false;
+                return;
             }
             _shown = Mathf.Max(0, _shown - 2);
             for (int i = _shown; i < Segments; i++)
@@ -97,7 +97,6 @@ namespace RealLifeOverhaul.Events
             {
                 _root.gameObject.SetActive(false);
             }
-            return _shown > 0;
         }
 
         /// <summary>Gone at once. Safe at any time.</summary>

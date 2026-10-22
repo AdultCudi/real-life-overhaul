@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Events
 {
+    /// <summary>The kinds of street event; None on a day with nothing on.</summary>
     public enum EventKind { None, Market, FarmersMarket, Parade, Protest, FunRun, FilmShoot, Fireworks }
 
     /// <summary>One street event on the calendar: what, on which day, between which hours.</summary>
@@ -79,7 +80,7 @@ namespace RealLifeOverhaul.Events
                 plan.To = 13;
                 return plan;
             }
-            if (Roll(day, 3) >= Settings.StreetEventFrequency * 0.08f * CivicPolicy.EventScale)   // the city's events policy: 1 unless a council has changed it
+            if (Roll(day, 3) >= Settings.StreetEventFrequency * 0.08f * CivicPolicy.EventScale)   // 1 unless a council changed the events policy
             {
                 return plan;
             }
