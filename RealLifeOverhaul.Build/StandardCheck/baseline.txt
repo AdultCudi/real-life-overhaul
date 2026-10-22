@@ -15,7 +15,6 @@ RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/FrontSignRules.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
 RLO-DOC-004	Assets/Mods/RealLifeOverhaul/Scripts/Core/StartRules.cs	1
-RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/FlareLinks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StandingLinks.cs	1
 RLO-DOC-005	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/Wiring.cs	1
@@ -57,10 +56,6 @@ RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneUiDump.cs	1
 RLO-PERF-006	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Character/CharacterQuality.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/ClaimedOffers.cs	1
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/MapPicker.cs	2
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneApps.cs	2
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	4
-RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/TravelList.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Core/Keys.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
@@ -160,7 +155,6 @@ RLO-STY-006	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/VenturesLinks.cs	1
 RLO-STY-009	Assets/Mods/RealLifeOverhaul/Scripts/Economy/Brands/BrandClaims.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/CompanyLinks.cs	1
 RLO-STY-010	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/StreetLinks.cs	1
-RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/NoticeKinds.cs	9
 RLO-STY-013	Assets/Mods/RealLifeOverhaul/Scripts/Wiring/RoommateLinks.cs	8
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersStore.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Careers/Study/StudyCatalogue.cs	19
@@ -176,9 +170,6 @@ RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/DayRollGuard.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/DayRollRules.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameConfirm.cs	4
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameContract.cs	13
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/InfoBox.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/PhoneGridPager.cs	1
-RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GameUi/TableView.cs	1
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/GoingPublic.cs	2
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/Guard.cs	3
 RLO-STY-014	Assets/Mods/RealLifeOverhaul/Scripts/Core/MapPlaces.cs	1
