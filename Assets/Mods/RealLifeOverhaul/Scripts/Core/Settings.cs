@@ -1,10 +1,8 @@
-﻿using UnityEngine;
-
-namespace RealLifeOverhaul
+﻿namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Live option values. The game only fires option callbacks once the options
-    /// screen has been opened, so saved values are read from PlayerPrefs at load.
+    /// Live option values. The game fires option callbacks only once the options screen has been opened, so saved
+    /// values are read from PlayerPrefs at load.
     /// </summary>
     public static class Settings
     {
@@ -310,15 +308,14 @@ namespace RealLifeOverhaul
         public const string InteriorsPricesStrengthId = "interiors_prices_strength";
         public const string InteriorsWearStrengthId = "interiors_wear_strength";
         public const string InteriorsBasketId = "interiors_basket";
-        // The drop-downs the four sliders above replaced (0.8.2 to 0.9.10), read while a slider has no saved value yet so
-        // that a choice made there is kept (InteriorRules' "Was" tables); the reward's had no slider of its own to go to.
+        // The drop-downs the four sliders above replaced, read while a slider has no saved value, so a choice made there
+        // is kept (InteriorRules' "Was" tables).
         private const string StandardLevelWas = "interiors_standard_level", DecorLevelWas = "interiors_decor_level", PricesLevelWas = "interiors_prices_level", WearLevelWas = "interiors_wear_level";
-        // The switches those drop-downs replaced (0.8.0): read when neither has a saved choice, so that a part switched
-        // off stays off. They have no row of their own any more.
+        // The switches those drop-downs replaced: read when neither has a saved choice, so a part switched off stays off.
         private const string StandardSwitchWas = "interiors_standard", DecorSwitchWas = "interiors_decor", PricesSwitchWas = "interiors_prices", WearSwitchWas = "interiors_wear";
-        // Set once the basket's and the decor's old defaults (off, and 5%: level 1) were moved to the new ones (MoveInteriorDefaults). No row of its own.
+        // Set once the basket's and the decor's old defaults were moved to the new ones (MoveInteriorDefaults).
         private const string InteriorDefaultsMoved = "interiors_defaults_moved";
-        private const int DecorChoiceWas = 1, DecorChoiceNow = 2;   // (the decor drop-down's 5% and 10%)
+        private const int DecorChoiceWas = 1, DecorChoiceNow = 2;   // the decor drop-down's 5% and 10%
         public const string InteriorsStandingId = "interiors_standing";
         public const string InteriorsStaffId = "interiors_staff";
         public const string DesignsId = "designs";
@@ -329,10 +326,10 @@ namespace RealLifeOverhaul
         public static int CameraPitch = 18;      // degrees above the horizon
         public static int CameraDistance = 6;    // metres behind the player
         public static int CameraFollow = 5;      // 0 = never swing behind the player (only without mouse look)
-        public static bool CityFaults = true;       // real faults in the city, rolled at random as the game runs: dark lamps, potholes, litter, crime hot spots, unsafe places; Flare's reports are checked against them (Scripts/Faults)
-        public static int CityFaultsCount = 1;      // ...how many at once: 0 a few, 1 some, 2 many (Faults/FaultRules.Most)
+        public static bool CityFaults = true;       // real faults in the city, rolled at random as the game runs
+        public static int CityFaultsCount = 1;      // ...how many at once: 0 a few, 1 some, 2 many
         public static bool CityFaultsFalseCost = true;   // ...a report of nothing costs a little Flare reputation, and many stop the crews for a few days
-        public static bool Texts = true;            // RLO Texts: a small text model on the player's own PC words the city's messages (Scripts/Texts); without a pack, the news texts only
+        public static bool Texts = true;            // RLO Texts
         public static int TextsDevice = 0;          // ...where it runs: 0 Auto (the processor unless a GPU has ample free memory), 1 the processor, 2 the GPU
         public static int TextsThreads = 0;         // ...processor threads: 0 Auto (by the cores, Texts/TextSpeed), 1 two, 2 three, 3 four
         public static bool TextsReplies = true;     // ...Flare comments and replies
@@ -341,25 +338,25 @@ namespace RealLifeOverhaul
         public static bool TextsOfficial = true;    // ...the city's accounts and their answers
         public static bool TextsRivals = true;      // ...the rival tycoons
         public static bool TextsLedger = true;      // ...the City Ledger's briefs
-        public static int TextsService = 0;         // ...Your own AI: the AI service the cards go to (Texts/TextProviders: 0 off, the default)
-        public static bool TextsCity = true;        // ...people's texts after the player's news (a pack or not); with a pack of data 6, the staff's and gossip (Texts/TextsDirector.City)
-        public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
-        public static bool PhoneCamera = true;      // the Camera and Gallery apps on the phone: rear camera and selfie, photos kept per save (Scripts/Photos)
+        public static int TextsService = 0;         // ...Your own AI: the AI service the cards go to
+        public static bool TextsCity = true;        // ...people's texts after the player's news (a pack or not); with a pack of data 6, the staff's and gossip
+        public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card
+        public static bool PhoneCamera = true;      // the Camera and Gallery apps on the phone: rear camera and selfie, photos kept per save
         public static bool PhoneCameraGrid = true;  // ...the viewfinder opens with the rule of thirds' grid showing
-        public static bool MapPlacesShown = true;   // the mod's places on the city map: their markers and their rows in the map's filter list (Core/MapPlaces; off hides all of them)
-        public static bool SpecialNames = true;     // the mod's special buildings carry their own names wherever the game names a building (Core/SpecialBuildings; off: the game's own names)
+        public static bool MapPlacesShown = true;   // the mod's places on the city map: their markers and their rows in the map's filter list
+        public static bool SpecialNames = true;     // the mod's special buildings carry their own names wherever the game names a building
         public static bool MouseLook = true;     // GTA-style: mouse steers the camera, cursor locked
         public static int MouseSensitivity = 6;
         public static bool EnterWithKey = true;  // E/F near a door enters the building
-        public static bool WalkToggle = true;    // on foot, the walk key walks and gives back the game's own pace (Walking/WalkDirector)
+        public static bool WalkToggle = true;    // on foot, the walk key walks and gives back the game's own pace
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
         public static bool CrashConsequences = true;
         public static bool TrafficAccidents = true;
-        public static bool AccidentNotices = true;   // the notifications (and their sound) as an accident of other people's unfolds; off, it still happens
+        public static bool AccidentNotices = true;   // the notifications (and their sound) as an accident of other people's unfolds
         public static bool AccidentMarker = true;    // the game's destination marker on an accident, and so the route to it
-        public static bool TowTrucks = true;         // a tow truck takes a wreck away once its scene has cleared (Traffic/Tow); off, the wreck simply goes
+        public static bool TowTrucks = true;         // a tow truck takes a wreck away once its scene has cleared; off, the wreck simply goes
         public static int AccidentFrequency = 2;     // 1 = rare, 10 = constant
         public static bool Siren = true;
         public static bool Police = true;            // patrol cars attend accidents and chase hit-and-run drivers
@@ -372,26 +369,26 @@ namespace RealLifeOverhaul
         public static bool Ragdolls = true;          // people hit by a car fall as ragdolls and can be hurt or killed
         public static bool PlayerKnockdown = true;   // traffic can knock the player down when on foot
         public static bool PedestrianIncidents = true;   // now and then a traffic car hits someone near the player
-        public static bool HornReactions = true;         // people hurry, glare or look round when the player sounds the horn (People/HornReactions)
-        public static bool NaturalAccidents = true;      // accidents come from reckless drivers on the road, in view (Traffic/Reckless); off: the old roll that stages them out of view
-        public static bool SolidStreets = true;          // traffic brakes for people in the road, sounds its horn and waits (Traffic/Solid); off: the game's cars drive through people
-        public static bool CityDrivers = true;           // the city's cars slow in good time, leave room to park and let the player out (Traffic/Drivers)
+        public static bool HornReactions = true;         // people hurry, glare or look round when the player sounds the horn
+        public static bool NaturalAccidents = true;      // accidents come from reckless drivers on the road, in view
+        public static bool SolidStreets = true;          // traffic brakes for people in the road, sounds its horn and waits
+        public static bool CityDrivers = true;           // the city's cars slow in good time, leave room to park and let the player out
         public static bool PhoneContacts = true;
-        public static bool CarTuning = true;         // each car gets the acceleration and top speed of its kind (Driving/CarCatalogue)
+        public static bool CarTuning = true;         // each car gets the acceleration and top speed of its kind
         public static int CarTopSpeed = 100;         // percent of the car's own target top speed
         public static int CarAcceleration = 100;     // percent: at 150 a car reaches 100 km/h in two thirds of its own target time
         public static bool SmoothThrottle = true;    // the throttle key eases the pedal down instead of flooring it
         public static bool Speedometer = true;
-        public static int Handling = 2;              // the driven car's weight, soft ride, roll and sliding (Driving/CarHandling): 0 off, 1 light, 2 full, 3 heavy
-        public static int HandlingSoftness = 100;    // the test tools' tuning sliders, per cent of the design (Driving/HandlingRules): the springs' softness...
+        public static int Handling = 2;              // the driven car's weight, soft ride, roll and sliding: 0 off, 1 light, 2 full, 3 heavy
+        public static int HandlingSoftness = 100;    // the test tools' tuning sliders, per cent of the design: the springs' softness...
         public static int HandlingBounce = 100;      // ...how lightly the bounce is damped
         public static int HandlingRoll = 100;        // ...the body roll
         public static int HandlingGrip = 100;        // ...the tyres' grip
         public static int HandlingSteering = 100;    // ...the steering's reach at speed
         public static int HandlingBrakes = 100;      // ...how quickly the brakes build
         public static bool PhoneSkin = true;         // modern phone body, wallpaper and status bar
-        public static bool PhoneFolders = true;      // the mod's apps in folders on the home screen, and a dock (GameUi/PhoneLayoutRules); off, the plain pages of before
-        public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour (Core/GameUi/NoticeLook); off: they look like the game's
+        public static bool PhoneFolders = true;      // the mod's apps in folders on the home screen, and a dock; off, the plain pages of before
+        public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour
         public static bool CarCamera = true;     // chase camera while driving
         public static int CarCameraDistance = 8; // metres behind the car
         public static int CameraHeight = 15;     // look-at height above the player's feet, in tenths of a metre
@@ -407,7 +404,7 @@ namespace RealLifeOverhaul
         public static bool CharacterHair = true;         // solid base layer and calmer highlights for detailed hair and beards
         public static bool CharacterLighting = true;     // fill and rim light in character creation and the shop previews
         public static bool CharacterNewLooks = true;     // the mod's own hair, beards and clothes on the player (picked on the options page)
-        public static bool CharacterSkin = false;        // skin finish on the player: fine relief, calmer gloss on dark tones (off: a small change, close up only)
+        public static bool CharacterSkin = false;        // skin finish on the player (off: a small change, close up only)
         public static bool CrimeAgainstPlayer = true;    // pickpockets, muggers, break-ins, scam calls: all capped, all with days of rest between
         public static bool PlayerOffences = true;        // red lights, speeding and reckless driving can get the player pulled over
         public static int PolicePresence = 5;            // 0 = no police standing or walking about; 10 = somebody nearly always in sight
@@ -418,95 +415,93 @@ namespace RealLifeOverhaul
         public static bool CityInteractions = true;      // the player can buy a coffee at the cart
         public static bool Jobs = true;                  // jobs the player can take themselves, from the Gig Line contact on the phone
         public static int JobPay = 100;                  // percent of what the job catalogue pays
-        public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives (Scripts/Family)
-        public static bool Utilities = true;             // power and water bills, the utilities office and the Utilities app (Scripts/Utilities)
-        public static bool FamilyAtHome = true;          // the partner is shown as a character in the home (off: they still live there, as notices and conversations)
+        public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
+        public static bool Utilities = true;             // power and water bills, the utilities office and the Utilities app
+        public static bool FamilyAtHome = true;          // the partner is shown as a character in the home
         public static bool FamilyWedding = true;         // rings, the proposal, planning and holding a wedding
         public static bool FamilyChildren = true;        // deciding to have children, pregnancy and adoption, growing up
         public static bool FamilyRelatives = true;       // Mom and the in-laws react, visit, invite to holiday dinners
         public static bool FamilyFriction = true;        // chores, arguments, separation and divorce (off: the home only ever gets warmer)
-        public static bool FamilyWealthMood = true;      // the partner reacts to the player's wealth by how they lean, proud or envious (off: it is never mentioned)
-        public static bool FamilyExpect = true;          // the partner expects a bigger home and more evenings out as the player gets richer (off: nothing is expected)
-        public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off (off: always full days)
+        public static bool FamilyWealthMood = true;      // the partner reacts to the player's wealth by how they lean, proud or envious
+        public static bool FamilyExpect = true;          // the partner expects a bigger home and more evenings out as the player gets richer
+        public static bool FamilyWork = true;            // the partner asks to cut back to half days once the player is well off
         public static int FamilyInterest = 0;            // who the default "Someone special" introduces: 0 anyone, 1 women, 2 men
         public static int FamilyYearWeeks = 4;           // in-game weeks per year of a child's age
-        public static bool Civic = true;                 // civic life: a city government and a construction programme (Scripts/Civic)
+        public static bool Civic = true;                 // civic life: a city government and a construction programme
         public static bool CivicElections = true;        // elections, the mayor's policies and their effects, the campaign in the street
         public static bool CivicConstruction = true;     // construction sites that progress over days
-        public static bool CivicOffice = true;           // the player may stand for the council or for mayor (Civic/CivicOffice)
+        public static bool CivicOffice = true;           // the player may stand for the council or for mayor
         public static bool DrivingLicence = true;        // driving needs a licence for the class of vehicle; unlicensed driving is punished when police stop the player
         public static bool StartWithLicence = false;     // a save that owns no vehicle the first time the rule runs is given a car licence anyway
         public static bool DrivingSchool = true;         // the desks at the school buildings, the written test, lessons and the driven test
         public static bool LicencePoints = true;         // booked offences put penalty points on the licence; twelve suspend it
-        public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda (Scripts/Planner)
+        public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
-        public static bool Calendar = true;              // the Calendar app: the month as the chosen year divides it, with the days money moves and the player's own time (Scripts/Calendar)
-        public static bool PlannerMorning = true;        // ...and one line of the day on waking: how many entries, the first and when to leave for it (off: none)
-        public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
-        public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade (off: only a fall is told; the Finance app shows the rating either way)
-        public static bool EconomyProducts = true;       // more kinds of credit: an overdraft, a card, a business loan, car finance, a mortgage, consolidation (off: nothing new is opened or drawn; what is owed stays owed)
-        public static bool EconomyShark = true;          // the lender of last resort (off: it lends nothing and does nothing; a debt to it can still be paid)
+        public static bool Calendar = true;              // the Calendar app
+        public static bool PlannerMorning = true;        // ...and one line of the day on waking (off: none)
+        public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app
+        public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade
+        public static bool EconomyProducts = true;       // more kinds of credit (off: nothing new is opened or drawn; what is owed stays owed)
+        public static bool EconomyShark = true;          // the lender of last resort
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
-        public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Banking/Terms/ProductCatalogue)
-        public static bool EconomyCity = true;           // the city's economy: a central bank, prices, a cycle, districts and supply (off: every figure is the game's own and the model stands still) (Scripts/Economy/City)
-        public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects (off: none; the decision comes all the same)
-        public static int EconomyCityLevel = 1;          // how far it swings: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/City/MacroCatalogue)
-        public static bool VenturesInvestors = true;     // investors: offers for a business that does well, the pitch, deals (off: no new offers or meetings; deals that exist carry on) (Scripts/Economy/Ventures)
-        public static bool Markets = true;               // the city's stock market and the Stocks app (off: the market stands still and nothing is traded; shares held are kept) (Scripts/Markets)
-        public static bool MarketsMargin = true;         // a margin account may be opened: borrowing against shares and selling short, with margin calls (off: no new account; one that is open can only be wound down)
-        public static bool MarketsListing = true;        // the player's own company may come to the market (off: no new listing is begun; a company on the market stays there until taken private) (Scripts/Markets/Listing)
-        public static bool MarketsBots = true;           // trading bots may be hired in the Stocks app (off: none is hired, and every bot hired is let go, its shares the player's own) (Scripts/Markets/MarketBots)
-        public static bool MarketsDividendNotes = true;  // a notification when dividends are paid to the player or their bots, one for all that land at once (off: paid all the same, each still a line of the market news)
+        public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
+        public static bool EconomyCity = true;           // the city's economy (off: every figure is the game's own and the model stands still)
+        public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects
+        public static int EconomyCityLevel = 1;          // how far it swings: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
+        public static bool VenturesInvestors = true;     // investors (off: no new offers or meetings; deals that exist carry on)
+        public static bool Markets = true;               // the city's stock market and the Stocks app
+        public static bool MarketsMargin = true;         // a margin account may be opened
+        public static bool MarketsListing = true;        // the player's own company may come to the market
+        public static bool MarketsBots = true;           // trading bots may be hired in the Stocks app
+        public static bool MarketsDividendNotes = true;  // a notification when dividends are paid to the player or their bots, one for all that land at once
         public static bool MarketsBondSoFar = true;      // a bond's interest notice adds what it has paid so far (off: the payment alone)
-        public static bool MarketsBonds = true;          // bonds and bank deposits may be bought in the Stocks app (off: none is bought; those held still pay, end and can be sold) (Scripts/Markets/Bonds)
-        public static bool MarketsLarge = true;          // an order over one order's limit is worked a slice of each step at a time, and one bond purchase may be up to a share of what the player is worth (off: both limits as before; worked orders open are cancelled) (Scripts/Markets/InvestRules)
-        public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open (off: every dividend is paid in cash) (Scripts/Markets/InvestRules)
-        public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab (off: prices as before, nothing new) (Markets/Derivatives)
-        public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Ventures/VenturesCatalogue)
-        public static bool EconomyCompany = true;        // running a business: staff, insurance, marketing, tax and licences, with the Company app (off: none of it runs and nothing is charged) (Scripts/Economy/Company)
-        public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Company/CompanyCatalogue)
+        public static bool MarketsBonds = true;          // bonds and bank deposits may be bought in the Stocks app
+        public static bool MarketsLarge = true;          // a large order is worked a slice a step, and a bond purchase may be a share of what the player is worth
+        public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open
+        public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab
+        public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
+        public static bool EconomyCompany = true;        // running a business (off: none of it runs and nothing is charged)
+        public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompanyStaff = true;   // ...the wage market, raises, rivals' offers, strikes, overtime and sick pay
         public static bool EconomyCompanyCover = true;   // ...business insurance: policies, premiums and claims
         public static bool EconomyCompanyMarketing = true;   // ...campaigns and their reports
         public static bool EconomyCompanyTax = true;     // ...the quarterly return and the accountant
         public static bool EconomyCompanyHide = true;    // ...cash sales kept off the books (off: every share is nothing and none can be set)
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
-        public static bool EconomyRota = true;           // the staff rota planner: a customer forecast, the hours worth opening, the people they take and a rota at a press, on the Company app's Rota tab (off: the tab says so and nothing is worked out) (Scripts/Economy/Company/CompanyDirector.Rota.cs)
+        public static bool EconomyRota = true;           // the staff rota planner (off: the tab says so and nothing is worked out)
         public static bool EconomyManagers = true;       // managers deciding inside the player's limits (CompanyDirector.Managers)
-        public static bool Estate = true;                // property: a market that moves, letting a building yourself, works, selling and an estate agency, with the Property app (off: every value and rent is the game's own) (Scripts/Economy/Estate)
-        public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
-        public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300) (Scripts/Economy/Estate/EstateRules.MarketRent)
-        public static bool EstateHire = true;            // car hire: the player's own vehicles go out to customers from a lot (off: no car goes out, and one that is out is called back)
-        public static bool TechPeople = true;            // professionals: roles, levels and skills of their own for the player's professional staff, reviews, promotions, courses, notice and severance, rivals' offers, in the Open Roles app (off: the game's own staff alone; files are kept) (Scripts/Tech/People)
-        public static bool TechJobs = true;              // the jobs board and the labour market: ads in the Open Roles app, applicants from the city's job seekers, interviews, offers, executive search, and more candidates from the recruitment office (off: the game's own hiring alone) (Scripts/Tech/Hiring)
-        public static bool TechSector = true;            // the tech sector: software studios, game studios, IT consultancies, cybersecurity firms and AI labs of the player's, products with customers and recurring revenue, client contracts and tenders, outages and breaches, in the Tech app (off: those businesses earn nothing of their own; their files are kept) (Scripts/Tech/Firms)
-        public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender (off: they still come, on the Tech app's Contracts tab)
-        public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside: rows of racks by its tier and the racks bought, cooling, power, trays, a raised floor, status lights, technicians; amber and dim in an outage (Scripts/Tech/Sites)
-        public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters: its name on the map, the GPS and the card, a furnished lobby and the rest of its floor fitted out (Scripts/FitOut), and the jobs there (Scripts/Tech/Sites)
-        public static bool TechSiteCloud = true;         // the player's data centres signed outside with the cloud's name, with a security booth and a barrier where there is room, and on the map as "Your cloud" (Scripts/Tech/Sites)
-        public static bool TechSiteOffices = true;       // a few tech fittings (a server closet, a developer's desk, a whiteboard) in an office a tech firm of the player's runs in, where there is room (Scripts/Tech/Sites)
-        public static bool TechStartups = true;          // startups and venture capital: the city's startups that grow, raise, fail or are bought, their pitches to the player, an angel portfolio and a fund, and the player's own tech firms raising from venture firms with a board and share options (off: no startup is founded or pitches; holdings are kept) (Scripts/Tech/Venture)
-        public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
-        public static bool EconomyOnlineWaitNotes = true; // ...a notification after three opening hours of orders nobody is on shift to pick (off: the Planner still says so)
-        public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
-        public static bool EconomyDealerFloor = true;    // visitors on the Car Showroom's floor: the hour's customers seen walking round the showroom the player stands in, looking at the cars, a salesperson going to some (off: the floor is empty; the hour is worked as before) (Scripts/Economy/Dealer/Floor)
-        public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
-        public static bool OfficeConversion = true;      // some empty shops in the districts with offices are offices to rent while the mod runs: on the map, in BizMan, at an office's rent, for any office business; never written into the save (Scripts/Offices)
-        public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
-        public static bool EconomyBank = true;           // the player's own bank: a licence, savers, loans, a fund and a regulator, in its own app (off: it stands still, nothing is run, booked or charged) (Scripts/Economy/OwnBank)
-        // bank branches: a business type whose customers bank with the player's own bank and bring it more of the city;
-        // the player may work the counter (off: branches do nothing, the bank is as without them) (Economy/OwnBank/Branch)
-        public static bool EconomyBranch = true;
-        public static bool EndScale = true;              // the end game at scale: data centres, the cloud and the hyperscaler, the broadband company and the player's own bank cost and earn at the size of the real thing, with upkeep, crews of staff by kind and income that grows with what is built; a save that already held one is brought to it over four game weeks (off: every figure as before) (Scripts/Core/EndScale)
-        public static bool EconomyBrands = true;         // brands and franchises: a brand made from a shop, its recognition and standards, franchising it, and a shop under a city chain, with the Brands app (off: none of it runs, nothing is paid and footfall is without it) (Scripts/Economy/Brands)
-        public static bool EconomyBanks = true;          // the Banks app: the city's three largest banks in one app on the phone, each bank's slice of the accounts, loans, card, offers and rating (off: no Banks app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
-        public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
+        public static bool Estate = true;                // property (off: every value and rent is the game's own)
+        public static bool EstateHotel = true;           // owning a hotel of the city's as a business
+        public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300)
+        public static bool EstateHire = true;            // car hire (off: no car goes out, and one that is out is called back)
+        public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
+        public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
+        public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
+        public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
+        public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside
+        public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters
+        public static bool TechSiteCloud = true;         // the player's data centres signed with the cloud's name, a booth and a barrier, "Your cloud" on the map
+        public static bool TechSiteOffices = true;       // a few tech fittings in an office a tech firm of the player's runs in, where there is room
+        public static bool TechStartups = true;          // startups and venture capital (off: no startup is founded or pitches; holdings are kept)
+        public static bool EconomyOnline = true;         // online shops (off: no orders come, nothing is charged or paid)
+        public static bool EconomyOnlineWaitNotes = true; // ...a notification after three opening hours of orders nobody is on shift to pick
+        public static bool EconomyDealer = true;         // the car dealership (off: its dealerships do not trade; their cars stay on the lots)
+        public static bool EconomyDealerFloor = true;    // visitors on the Car Showroom's floor
+        public static bool EconomyCleaning = true;       // the cleaning service (off: no round, no contracts, nothing cleaned or charged by it)
+        public static bool OfficeConversion = true;      // some empty shops in the districts with offices are offices to rent while the mod runs
+        public static bool EconomySale = true;           // selling a business (off: nothing is offered, paid or charged by it)
+        public static bool EconomyBank = true;           // the player's own bank (off: it stands still, nothing is run, booked or charged)
+        public static bool EconomyBranch = true;         // bank branches of the player's own bank (off: branches do nothing)
+        public static bool EndScale = true;              // the end game at scale (off: every figure as before)
+        public static bool EconomyBrands = true;         // brands and franchises (off: none of it runs, nothing is paid and footfall is without it)
+        public static bool EconomyBanks = true;          // the Banks app
+        public static bool Minimap = true;               // the minimap on the HUD while out in the city
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
-        public static bool NavOtherRoute = false;        // with the mod Voogle Route switched on: its route line only, and none of this mod's (the row is there only then)
+        public static bool NavOtherRoute = false;        // with the mod Voogle Route switched on
         public static int MinimapSize = 80;              // per cent of the width of the game's left column
         public static int MinimapZoom = 100;             // per cent: more is closer
-        public static bool MinimapBase = true;           // buildings and water on the minimap, under the roads (off: roads only, as before) (Scripts/Navigation/NavBase.cs)
+        public static bool MinimapBase = true;           // buildings and water on the minimap, under the roads (off: roads only, as before)
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
         public static bool ShowTestTools = false;        // the test buttons are on the options page
         public static bool DevDiagnostics = false;       // the diagnostic keys work and Info lines go to the log
@@ -534,9 +529,9 @@ namespace RealLifeOverhaul
         public static bool GarageTuning = true;          // performance parts take effect
         public static bool GarageUnderglow = true;       // underglow kits light up after dark
         public static bool GaragePolice = true;          // a straight-through exhaust or riding without a helmet can be fined
-        public static bool GarageSounds = true;          // recorded engine, exhaust, turbo and tyre sounds on the car the player drives (Driving/Sound)
+        public static bool GarageSounds = true;          // recorded engine, exhaust, turbo and tyre sounds on the car the player drives
         public static bool TwoWheelers = true;           // bicycles and motorbikes: docks, racks, stands, and the ones already out
-        public static bool HomeLife = true;              // home life and health as a whole (Scripts/Home)
+        public static bool HomeLife = true;              // home life and health as a whole
         public static bool HomeNeeds = true;             // hygiene, stress and how tidy the flat is
         public static bool HomeRoutines = true;          // cooking, coffee, tidying up and floor exercises as activities
         public static bool HomeSleep = true;             // sleep quality, sleep debt, the morning's mood
@@ -545,20 +540,20 @@ namespace RealLifeOverhaul
         public static bool HomeBody = true;              // the body slowly changes with exercise and food (on waking)
         public static bool HomeJog = true;               // going for a run out of doors
         public static bool HomeMorning = true;           // the morning summary
-        public static bool HomeMorningNews = true;       // ...with the city's news held while the player slept in it, one notification or few (Core/MorningNews; off: each notice comes on its own)
+        public static bool HomeMorningNews = true;       // ...with the city's news held while the player slept in it, one notification or few
         public static bool HomeStrip = true;             // the small needs strip on screen
         public static bool HomeEasy = false;             // needs wear down half as fast, illness is half as likely
-        public static bool LawPrecincts = true;          // a police precinct in each district: sign, patrol cars, officers at the door, a marker on the map
+        public static bool LawPrecincts = true;          // a police precinct in each district
         public static bool LawCustody = true;            // an arrest ends in a cell at the nearest precinct (off: the old time skip where caught)
         public static bool LawArrests = true;            // arrested for a death even when stopped, and for 911 calls about nothing; wanted after an escape
         public static bool LawReputation = true;         // the record and reputation have effects: scrutiny, thanks from passers-by
-        public static bool LawStationFurniture = true;   // ...furnished with the game's own furniture and the walls and floors of its office design for the unit: waiting chairs and a queue, desks with computers, lockers, a briefing row, a break table, a toilet in the cell, and the officers and visitors who use them (off: the counter, bench, desks and cell only, and the people as before) (Scripts/Law/StationInterior.Furnish.cs, .Rooms.cs, .Design.cs, .Cast.cs)
-        public static bool LawStation = true;            // a precinct can be walked into: front desk, waiting area, holding cell (off: the front desk answers at its door)
+        public static bool LawStationFurniture = true;   // ...furnished with the game's own furniture and the walls and floors of its office design for the unit
+        public static bool LawStation = true;            // a precinct can be walked into (off: the front desk answers at its door)
         public static bool LawMapMarkers = true;         // police stations on the city map and its filter list, and their markers in the street
         public static bool Buses = true;                 // bus stops near the player, buses that call at them, riding one
         public static bool TransitPeople = true;         // people waiting at a stop, getting on and off
-        public static bool SubwayJourney = true;         // the game's own subway ride takes the time of a journey: the wait for a train, the stops, any delay
-        public static bool TaxiCall = true;              // the City Cabs contact: a taxi called from the phone comes to the player's street (Scripts/Transport/Taxi)
+        public static bool SubwayJourney = true;         // the game's own subway ride takes the time of a journey
+        public static bool TaxiCall = true;              // the City Cabs contact: a taxi called from the phone comes to the player's street
         public static bool CarOwnership = true;          // distance, servicing, wear, breakdowns, insurance, registration, the fuel gauge
         public static bool CarEasy = false;              // easy car ownership: no fuel use, no breakdowns, no wear
         public static bool Leisure = true;               // everything under Scripts/Leisure
@@ -568,7 +563,7 @@ namespace RealLifeOverhaul
         public static bool LeisureSights = true;         // landmarks to take in and tick off
         public static bool LeisureCinema = true;         // cinemas and theatres name what is on, and a show watched is remembered
         public static bool ClothesShops = true;          // the rack in clothing stores and the wardrobe at home
-        public static bool ClothesMustBeBought = true;   // what the options page shows; the rule itself is kept per save (Leisure/LeisureState.MustBuy)
+        public static bool ClothesMustBeBought = true;   // what the options page shows; the rule itself is kept per save
         public static bool NightLife = true;             // people outside nightclubs, cinemas and theatres in the evening
         public static bool AmbientSound = true;          // birds, crickets, a far hum of traffic, a murmur where people are
         public static int AmbientBirds = 60;             // percent
@@ -577,58 +572,58 @@ namespace RealLifeOverhaul
         public static int AmbientCrowd = 60;
         public static bool RadioHud = true;              // the station and song named on screen when the car radio changes
         public static bool PhotoMode = true;
-        public static bool CityFires = true;             // car, bin and shopfront fires with a fire engine and crew (Scripts/Events)
+        public static bool CityFires = true;             // car, bin and shopfront fires with a fire engine and crew
         public static int FireFrequency = 2;             // 1 = rare, 10 = one every few minutes
         public static bool WeatherMatters = true;        // wet roads, mist, storms, heat and cold change grip, traffic, accidents, crime and energy
         public static int WeatherFrequency = 5;          // how often a summer day is a heat wave and a winter day a cold snap: 1 = hardly ever, 10 = nearly half of them
-        public static bool StreetEvents = true;          // markets, parades, protests, fun runs, film shoots, fireworks: on the calendar, announced the day before
+        public static bool StreetEvents = true;          // markets, parades, protests, fun runs, film shoots, fireworks
         public static int StreetEventFrequency = 4;      // 1 = one day in twelve has one, 10 = four in five (the Saturday market and the fireworks nights are fixed)
-        public static bool StreetProtestNotes = true;    // the notifications of a protest: planned, begun, over (off: it still happens and closes its street; the City Bulletin still lists it)
-        public static bool Social = true;                // the people in the player's life: Mom, Alex and whoever is met; their contacts and the People page
+        public static bool StreetProtestNotes = true;    // the notifications of a protest
+        public static bool Social = true;                // the people in the player's life
         public static bool SocialMeetings = true;        // new people walk up to the player (after the gym, a shift, a coffee, a good turn)
         public static bool SocialRelationships = true;   // relationships wear down with neglect and can be damaged; off: nothing is ever lost
-        public static bool SocialOutings = true;         // plans can be made and kept: coffee, a meal, drinks, the cinema, a walk, a drive, a workout, the shop
+        public static bool SocialOutings = true;         // plans can be made and kept
         public static bool SocialContact = true;         // they get in touch themselves: invitations, favours, news, a visit at the shop
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
-        public static bool SocialComposer = true;        // with an RLO Texts pack, a call's chat is answered in the player's own typed words (off: the two answers)
-        public static bool StreetTalk = true;            // talk to anybody in the street: the game's panel over a passer-by offers Talk (Scripts/Street)
+        public static bool SocialComposer = true;        // with an RLO Texts pack, a call's chat is answered in the player's own typed words
+        public static bool StreetTalk = true;            // talk to anybody in the street: the game's panel over a passer-by offers Talk
         public static int StreetBrush = 1;               // how often people in the street have no time: 0 rarely, 1 sometimes, 2 often (StreetRules.BrushFactor)
-        public static bool SocialMedia = true;           // Flare, the city's social media app: an account, posts about what really happened, friends who follow (Scripts/Social/Flare)
+        public static bool SocialMedia = true;           // Flare, the city's social media app
         public static bool SocialMediaNotices = true;    // Flare's few notifications (off: none at all; the app's badge still counts)
-        public static int FlareBusy = 1;                 // how busy the city's feed is: 0 quiet, 1 normal, 2 busy (Social/Flare/FlareLiveRules)
-        public static bool FlareCityOffice = true;       // the City Office acts on reports (works, patrols, cleaning, inspections); off: it answers only
+        public static int FlareBusy = 1;                 // how busy the city's feed is: 0 quiet, 1 normal, 2 busy
+        public static bool FlareCityOffice = true;       // the City Office acts on reports (works, patrols, cleaning, inspections)
         public static bool FlareSharePosts = true;       // in a Going Public session the player's posts go to the session's shared feed
         public static bool FlareSharePictures = true;    // ...and their pictures, as small copies
         public static int FlareFilter = 0;               // what other players type: 0 standard (Steam's filter, else the mod's list), 1 strict (both, and addresses starred)
         public static int FlareTheme = 0;                // Flare's look: 0 follows the phone (dark from 19:00 to 07:00), 1 light, 2 dark
-        public static bool FlarePictures = true;         // every account shows its picture: faces from the game's portrait camera, the game's logos, emblems (Social/Flare/FlareAvatars); off: the initials
-        public static int FlareCityPhotos = 2;           // how many of the city's posts carry a photo from the bank of city photos: 0 none, 1 a few, 2 some (about three in ten of the city's posts, over half of those with something to see), 3 many (Social/Flare/FlareCityPhotoRules)
-        public static bool Standing = true;              // Standing: the city knows the player's wealth, name and reputation, and reacts (Scripts/Fame)
+        public static bool FlarePictures = true;         // every account shows its picture (off: the initials)
+        public static int FlareCityPhotos = 2;           // the city's posts with a photo: 0 none, 1 a few, 2 some (about three in ten), 3 many
+        public static bool Standing = true;              // Standing: the city knows the player's wealth, name and reputation, and reacts
         public static bool StandingStreet = true;        // ...people in the street and customers in the player's shops know them
         public static bool StandingPress = true;         // ...reporters, the night show, magazines and the papers' pieces about the player
-        public static bool Rivals = true;                // rival tycoons: two or three named fortunes with holdings on the stock market who grow with the player and move against them in the late game (off: they stand still and do nothing; the save keeps them) (Scripts/Rivals)
-        public static int RivalsStrength = 1;            // how hard they push: 0 Gentle, 1 Normal, 2 Hard, 3 Ruthless (Rivals/RivalCatalogue)
+        public static bool Rivals = true;                // rival tycoons (off: they stand still and do nothing; the save keeps them)
+        public static int RivalsStrength = 1;            // how hard they push: 0 Gentle, 1 Normal, 2 Hard, 3 Ruthless
         public static bool StandingCorruption = true;    // ...officials who offer to speed things up for a bribe, and what comes of it
-        public static bool StandingRequestNotes = true;  // ...a notification when the city asks something of the player (off: the requests still come, on the Standing page)
-        public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks (Scripts/Ledger)
+        public static bool StandingRequestNotes = true;  // ...a notification when the city asks something of the player
+        public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks
         public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
-        public static bool LedgerOnline = true;          // Newsstand: the City Ledger and three other titles read on the phone by subscription, over the home's internet
+        public static bool LedgerOnline = true;          // Newsstand
         public static bool LedgerOnlineNotes = true;     // a notification each morning the online editions are in
-        public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel (Scripts/Travel)
+        public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
-        public static bool Careers = true;               // employers behind the help-wanted boards: rota, reviews, ranks (Jobs/Career*)
-        public static bool CareersStudy = true;          // the city's courses: short courses and diplomas at the school with a timetable, homework and an exam, and the player's own skills, in the Campus app (off: the game's own courses alone; records are kept) (Scripts/Careers)
-        public static bool CareersDegrees = true;        // the university: degrees at Hudson City University and on the wards, professional certificates studied at home, the student loan, grants and graduation day (off: those courses are not offered; results are kept) (Scripts/Careers)
-        public static bool CareersJobs = true;           // professional jobs: the city's businesses, the rivals', its tech companies and the public sector take the player on by their qualifications and skills, with applications, interviews, offers and working days, in the Career app (off: no vacancies; a job held is kept) (Scripts/Careers)
-        public static bool CareersLife = true;           // working life in a profession: reviews, rises, bonuses and promotions, office matters, overtime and burnout, search firms, redundancy and benefit, share options, the pension and the top seats of a rival's company (off: a job is its days and pay alone) (Scripts/Careers)
-        public static bool CareersFamily = true;         // the family's children at university, tutoring from home, and the player's own training academy as a business type (off: none of them; records are kept) (Scripts/Careers)
-        public static bool CareersClassStart = true;     // "your class starts now" at a class's hour while the player is not inside the place that holds it, once a class (off: the older notice of a class begun elsewhere)
-        public static bool CareersRejectReason = true;   // an employer's no says how many points of score the application was short, or that it was close (off: the no alone)
-        public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office (off: none; the registration ends all the same)
-        public static bool CareersOwn = true;            // working for oneself: leaving a profession to found a company or open a practice, former colleagues, restraint clauses and claims, freelance contracts and side work (off: no contracts come; a practice is kept) (Scripts/Careers)
-        public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers (off: the offers still come, on the Career app's Own work tab)
+        public static bool Careers = true;               // employers behind the help-wanted boards: rota, reviews, ranks
+        public static bool CareersStudy = true;          // the city's courses (off: the game's own courses alone; records are kept)
+        public static bool CareersDegrees = true;        // the university (off: those courses are not offered; results are kept)
+        public static bool CareersJobs = true;           // professional jobs (off: no vacancies; a job held is kept)
+        public static bool CareersLife = true;           // working life in a profession (off: a job is its days and pay alone)
+        public static bool CareersFamily = true;         // the family's children at university, tutoring from home, and the player's own training academy as a business type
+        public static bool CareersClassStart = true;     // "your class starts now" at a class's hour while the player is not inside the place that holds it, once a class
+        public static bool CareersRejectReason = true;   // an employer's no says how many points of score the application was short, or that it was close
+        public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
+        public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
+        public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
         public static bool BusinessEasy = false;         // "easy business": only the opportunities are left
@@ -640,16 +635,16 @@ namespace RealLifeOverhaul
         public static bool BusinessCustomers = true;
         public static bool BusinessAudit = true;
         public static bool BusinessOpportunities = true;
-        public static bool Interiors = true;                // how a business looks counts: the game's interior design score, a decor score from the placed items, wear, the district's standard, and a BizMan tab (off: none of the parts below, and the tab is gone) (Scripts/Interiors)
-        public static int InteriorsStandardStrength = 100;  // (InteriorRules.StrengthDefault) per cent, 0 off to 200 double: each district's standard, what falling short of it costs (customers, complaints: 6% at most at 100) and being over it brings (with Meaningful Interiors on: nothing) (Scripts/Interiors)
-        public static int InteriorsDecorStrength = 100;     // per cent, 0 off to 200 double: the customers decor brings (10% at a decor score of 100 at 100), and an office's clients (with Meaningful Ambience on: nothing) (Scripts/Interiors)
-        public static int InteriorsPricesStrength = 100;    // per cent, 0 off to 200 double: what a nicer place lets a shop charge: the price the district bears over the standard (3% at most at 100) and the basket's share (Scripts/Interiors)
-        public static int InteriorsWearStrength = 100;      // per cent, 0 off to 200 double: how fast finishes wear and get dirty (Scripts/Interiors)
-        public static bool InteriorsBasket = true;          // over the standard each customer takes more products the shop has in stock, by the size of their order (it adds to the game's own list of the hour's customers) (with Meaningful Interiors on: nothing) (Scripts/Interiors)
-        public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way (Scripts/Interiors)
-        public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs (Scripts/Designs)
-        public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids (Scripts/Interiors)
-        public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
+        public static bool Interiors = true;                // how a business looks counts (off: none of the parts below, and the tab is gone)
+        public static int InteriorsStandardStrength = 100;  // per cent, 0 off to 200 double: each district's standard (6% at most at 100)
+        public static int InteriorsDecorStrength = 100;     // per cent, 0 off to 200 double: the customers decor brings (10% at a score of 100)
+        public static int InteriorsPricesStrength = 100;    // per cent, 0 off to 200 double: the price a nicer place may charge (3% at most at 100)
+        public static int InteriorsWearStrength = 100;      // per cent, 0 off to 200 double: how fast finishes wear and get dirty
+        public static bool InteriorsBasket = true;          // over the standard each customer takes more of the shop's stock (off with Meaningful Interiors)
+        public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way
+        public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs
+        public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids
+        public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
 
         private static string _modId;
 
@@ -670,7 +665,7 @@ namespace RealLifeOverhaul
             _modId = modId;
             if (starting)
             {
-                // The game starts in the main menu, where the switch is no save's: off, until moved there for the next game begun.
+                // The game starts in the main menu, where the switch is no save's: off.
                 UnityEngine.PlayerPrefs.SetInt(Key(modId, PermadeathId), 0);
             }
             Permadeath = Bool(modId, PermadeathId, false);
@@ -737,8 +732,7 @@ namespace RealLifeOverhaul
             CarTopSpeed = Int(modId, CarTopSpeedId, CarTopSpeed);
             CarAcceleration = Int(modId, CarAccelerationId, CarAcceleration);
             SmoothThrottle = Bool(modId, SmoothThrottleId, SmoothThrottle);
-            // The old slider was a percentage of the game's own car; the new two are percentages of each car's own
-            // targets, so its saved value means nothing to them. It is dropped and the new sliders start at 100.
+            // The old single slider's value means nothing to the two per-car sliders: dropped, so they start at 100.
             UnityEngine.PlayerPrefs.DeleteKey(Key(modId, CarSpeedId));
             Keys.Load(modId);
             Speedometer = Bool(modId, SpeedometerId, Speedometer);
@@ -979,7 +973,8 @@ namespace RealLifeOverhaul
             BusinessOpportunities = Bool(modId, BusinessOpportunitiesId, BusinessOpportunities);
             Interiors = Bool(modId, InteriorsId, Interiors);
             MoveInteriorDefaults(modId);
-            InteriorsStandardStrength = Strength(modId, InteriorsStandardStrengthId, StandardLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.StandardWas, StandardSwitchWas, InteriorsStandardStrength);
+            InteriorsStandardStrength = Strength(modId, InteriorsStandardStrengthId, StandardLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.StandardWas,
+                StandardSwitchWas, InteriorsStandardStrength);
             InteriorsDecorStrength = Strength(modId, InteriorsDecorStrengthId, DecorLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.DecorWas, DecorSwitchWas, InteriorsDecorStrength);
             InteriorsPricesStrength = Strength(modId, InteriorsPricesStrengthId, PricesLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.PricesWas, PricesSwitchWas, InteriorsPricesStrength);
             InteriorsWearStrength = Strength(modId, InteriorsWearStrengthId, WearLevelWas, global::RealLifeOverhaul.Interiors.InteriorRules.WearWas, WearSwitchWas, InteriorsWearStrength);
@@ -990,8 +985,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// "Clothes must be bought" is kept per save (Leisure/LeisureState); when a save is loaded its value is written
-        /// here and to PlayerPrefs, so the options page shows what holds for the game being played.
+        /// "Clothes must be bought" is kept per save: a loaded save's value is written here and to PlayerPrefs, so the
+        /// options page shows what holds.
         /// </summary>
         public static void SetClothesMustBeBought(bool on)
         {
@@ -1003,8 +998,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// "Permadeath" is kept per save (Permadeath/PermadeathState); the save being played writes it here and to PlayerPrefs,
-        /// so that the options page shows what holds for it, and the main menu writes it off. True if it changed.
+        /// "Permadeath" is kept per save: the save played writes it here and to PlayerPrefs, the main menu writes it off.
+        /// True if it changed.
         /// </summary>
         public static bool SetPermadeath(bool on)
         {
@@ -1020,10 +1015,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Once only (the marker below): the basket came on by default and the customers decor brings went from 5% to 10%,
-        /// as the other authors' Meaningful Interiors and Meaningful Ambience have them. A saved basket still at its old
-        /// default (off) is switched on, and a saved decor choice still at its old default (5%) moves to 10%. Any other
-        /// value stays as it is, and whatever is chosen afterwards is never touched again.
+        /// Once only: a saved basket still at its old default (off) is switched on, and a saved decor choice still at 5%
+        /// moves to 10%, the new defaults. Any other value, and anything chosen afterwards, is never touched.
         /// </summary>
         private static void MoveInteriorDefaults(string modId)
         {
@@ -1045,16 +1038,16 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A strength slider of the interiors (per cent, 0 to 200): its saved value; while it has none, the drop-down it
-        /// replaced as its slider figure (a choice made there is kept); while neither has one, off if the switch before
-        /// them was switched off, and otherwise the default. Nothing is written: the old rows stay as they were.
+        /// An interiors strength slider (per cent, 0 to 200): its saved value, else the drop-down it replaced, else off if
+        /// the older switch was off, else the default. Nothing is written.
         /// </summary>
         private static int Strength(string modId, string id, string levelWas, int[] was, string switchWas, int fallback)
         {
             string key = Key(modId, id), old = Key(modId, levelWas);
             if (UnityEngine.PlayerPrefs.HasKey(key))
             {
-                return global::RealLifeOverhaul.Interiors.InteriorRules.Clamp(UnityEngine.PlayerPrefs.GetInt(key, fallback), global::RealLifeOverhaul.Interiors.InteriorRules.StrengthLeast, global::RealLifeOverhaul.Interiors.InteriorRules.StrengthMost);
+                return global::RealLifeOverhaul.Interiors.InteriorRules.Clamp(UnityEngine.PlayerPrefs.GetInt(key, fallback),
+                    global::RealLifeOverhaul.Interiors.InteriorRules.StrengthLeast, global::RealLifeOverhaul.Interiors.InteriorRules.StrengthMost);
             }
             if (UnityEngine.PlayerPrefs.HasKey(old))
             {
@@ -1063,7 +1056,7 @@ namespace RealLifeOverhaul
             return Bool(modId, switchWas, true) ? fallback : 0;
         }
 
-        // Same key format the game uses when it saves mod options.
+        // The key format the game uses when it saves mod options.
         private static string Key(string modId, string id) => "m:" + modId + ":" + id;
 
         private static bool Bool(string modId, string id, bool fallback) =>

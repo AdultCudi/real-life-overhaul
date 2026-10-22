@@ -37,17 +37,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The other authors' mods this one knows of, and whether each is switched on. See
-    /// RealLifeOverhaul.Build/docs/other-mods.md: the rule for living with another mod, and this table, to which the
-    /// next clash is one more line.
-    ///
-    /// A mod is known by a type of its own, by name: the game loads every mod that is switched on into the same
-    /// program, so its assembly is among the loaded ones. An assembly whose name begins as the table says and which
-    /// holds the named type is that mod (the name alone would not do: one of them carries its version in it).
-    ///
-    /// The cost: nothing per frame. <see cref="Look"/> walks the loaded assemblies once when it is called (a city
-    /// being loaded, the options page being drawn), and stops looking for a mod once it has been found. Everything
-    /// else here is a field read.
+    /// The other authors' mods this one knows of, and whether each is switched on (RealLifeOverhaul.Build/docs/other-mods.md).
+    /// A mod is an assembly whose name begins as the table says and that holds the named type. Nothing per frame:
+    /// <see cref="Look"/> walks the loaded assemblies when called; the rest are field reads.
     /// </summary>
     public static class OtherMods
     {
@@ -69,10 +61,7 @@ namespace RealLifeOverhaul
         public static readonly OtherMod[] All = { RpgCamera, VoogleRoute, GoingPublic, GoingPublicExtras, FriendTrade, GoingPublicFrench, EmpireMotors, EmpireMustang, EmpireBmw,
                                                   MeaningfulInteriors, MeaningfulAmbience };
 
-        /// <summary>
-        /// One walk over the loaded assemblies for every mod of the table not found yet. One line in the log for each
-        /// newly found. Safe at any time; nothing thrown here reaches the caller.
-        /// </summary>
+        /// <summary>Looks for every mod not found yet, with a log line for each found; never throws.</summary>
         public static void Look(IModLogger logger)
         {
             try
@@ -106,7 +95,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // What this mod does about a mod of a kind, for its line in Player.log.
+        // What this mod does about a mod of a kind, for its log line.
         private static string Sentence(OtherModKind kind)
         {
             switch (kind)
@@ -116,13 +105,17 @@ namespace RealLifeOverhaul
                 case OtherModKind.Route:
                     return "The city map is left to it: this mod draws its route on its own minimap only, and not at all with 'Use the other mod's route line' on.";
                 case OtherModKind.Session:
-                    return "In one of its sessions this mod passes no time of its own, takes nothing out of a guest's traffic and counts no other player's building as this player's (Core/GoingPublic).";
+                    return "In one of its sessions this mod passes no time of its own, takes nothing out of a guest's traffic and counts no other player's "
+                           + "building as this player's (Core/GoingPublic).";
                 case OtherModKind.Business:
-                    return "Its dealerships are businesses of the player's here, with their car sales and costs in the books; the cars of their stock are left to it; its view from the driver's seat is kept off while this mod's camera key is V (Core/EmpireMotors, Camera/EmpireView).";
+                    return "Its dealerships are businesses of the player's here, with their car sales and costs in the books; the cars of their stock are "
+                           + "left to it; its view from the driver's seat is kept off while this mod's camera key is V (Core/EmpireMotors, Camera/EmpireView).";
                 case OtherModKind.Interiors:
-                    return "Each district's minimum and the extra products in customers' baskets are left to it: this mod's district standard (its footfall and complaints) and its basket stay off (Scripts/Interiors).";
+                    return "Each district's minimum and the extra products in customers' baskets are left to it: this mod's district standard (its "
+                           + "footfall and complaints) and its basket stay off (Scripts/Interiors).";
                 case OtherModKind.Ambience:
-                    return "The customers decor brings are left to it: this mod's decor footfall stays off, and its redraws of a day's customers keep the hour under way (Scripts/Interiors, Core/CustomerDraw).";
+                    return "The customers decor brings are left to it: this mod's decor footfall stays off, and its redraws of a day's customers keep the "
+                           + "hour under way (Scripts/Interiors, Core/CustomerDraw).";
                 default:
                     return "It adds to a mod this one already lives with; nothing more is changed for it.";
             }

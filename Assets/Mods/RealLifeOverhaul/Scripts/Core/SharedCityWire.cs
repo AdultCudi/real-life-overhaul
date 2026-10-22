@@ -62,24 +62,20 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The shared city's messages as bytes. Game-free (RealLifeOverhaul.Build/EconomyCheck writes and reads them).
+    /// The shared city's messages as bytes. Game-free.
     ///
     ///     "RLOZ" | the unpacked length (int) | the packed length (int) | the rest, deflated:
     ///         "RLOC" | format (byte) | kind (byte) | version (string) | sequence (int) | parts (byte) |
     ///         for each: id (byte) | text (string) | CRC-32 of everything before it (uint)
     ///
-    /// Strings are as BinaryWriter writes them (a length, then UTF-8). The magic, the format and the version come first
-    /// and never move, so a later layout can always be told apart and its sender's version named. A message whose CRC,
-    /// length or layout does not match is damaged and dropped whole: no part of it is applied. Nothing larger than
-    /// <see cref="MostPacked"/> is sent or read, and nothing unpacks to more than <see cref="MostUnpacked"/>.
-    ///
-    /// The bytes go out as the attachment of one of Going Public's envelopes (Core/GoingPublicLink), which Going Public
-    /// does not compress itself: hence the deflate here.
+    /// Strings are as BinaryWriter writes them. The magic, the format and the version come first and never move, so a
+    /// later layout can always be told apart and its sender's version named. A message whose CRC, length or layout does
+    /// not match is dropped whole. Nothing over <see cref="MostPacked"/> is sent or read, nor unpacks past
+    /// <see cref="MostUnpacked"/>. Going Public does not compress its envelopes' attachments, hence the deflate.
     /// </summary>
     public static class SharedCityWire
     {
-        /// <summary>Going Public's message type for this mod's messages: free in Going Public (its own end at 222) and in its add-ons (Friend Trade 249, Extras 250).</summary>
-        public const byte MessageType = 231;
+        public const byte MessageType = 231;   // Going Public's message type for these: free there (its own end at 222) and in its add-ons
 
         public const int Format = 1;
         public const int MostPacked = 1 << 20;        // 1 MB on the wire
@@ -122,7 +118,7 @@ namespace RealLifeOverhaul
             using (var packed = new MemoryStream(body.Length / 3 + 16))
             {
                 packed.Write(Outer, 0, 4);
-                packed.Write(BitConverter.GetBytes(body.Length), 0, 4);   // (little-endian on every machine the game runs on)
+                packed.Write(BitConverter.GetBytes(body.Length), 0, 4);   // little-endian on every machine the game runs on
                 packed.Write(BitConverter.GetBytes(0), 0, 4);             // the packed length, once it is known
                 using (var deflate = new DeflateStream(packed, CompressionLevel.Optimal, true))
                 {
@@ -138,11 +134,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Reads a message. With <see cref="SharedRead.OtherVersion"/> the message is whole and given, so that the sender's
-        /// version can be named; with <see cref="SharedRead.OtherFormat"/> only its version is set; with
-        /// <see cref="SharedRead.Damaged"/> it is null.
-        /// </summary>
+        /// <summary>Reads a message: whole for another version, only its version for another format, null if damaged.</summary>
         public static SharedRead Read(byte[] bytes, string mine, out SharedMessage m)
         {
             m = null;
@@ -220,7 +212,7 @@ namespace RealLifeOverhaul
             int length = BitConverter.ToInt32(bytes, 4);
             if (length <= 0 || length > MostUnpacked || BitConverter.ToInt32(bytes, 8) != bytes.Length - 12)
             {
-                return null;   // (the deflate stream itself would not notice bytes after its end)
+                return null;   // the deflate stream itself would not notice bytes after its end
             }
             try
             {
@@ -250,7 +242,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>CRC-32 (the common polynomial, reflected), of a stretch of bytes.</summary>
+        /// <summary>CRC-32 (the common polynomial, reflected) of a stretch of bytes.</summary>
         public static uint Crc(byte[] data, int from, int count)
         {
             uint c = 0xFFFFFFFFu;

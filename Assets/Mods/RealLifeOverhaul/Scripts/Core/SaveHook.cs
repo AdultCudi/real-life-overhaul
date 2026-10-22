@@ -6,26 +6,17 @@ using BAModAPI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The mod's one place in the game's "a save is being written" event. The game empties that
-    /// event on every load, so every feature used to take itself off and put itself back on it
-    /// once a second: a dozen features, two new delegates each, every second, for nothing.
-    /// Now one relay sits in the game's event and calls the features' handlers in the order
-    /// they joined; it is put back only when the game's event is not the one last seen.
+    /// The mod's one place in the game's "a save is being written" event, which the game empties on every load: one relay
+    /// calls the features' handlers in the order they joined, and is put back only when the event is not the one last
+    /// seen. Keep costs a reference comparison and a short list search.
     ///
     ///     private Action _onSave;                                   // in the feature
-    ///     SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));         // where it used to re-hook, as often as it likes
+    ///     SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));         // as often as it likes
     ///     SaveHook.Drop(_onSave);                                   // in OnDestroy
     ///
-    /// Keep costs a reference comparison and a short list search; nothing is allocated unless
-    /// the handler is new or the game's event has changed. A handler that throws is logged and
-    /// does not cost the others their save; it counts against its class's guard (Core/Guard), and
-    /// the handler of a feature switched off after its faults is not called, so that its line in
-    /// the save stays as it last wrote it. <see cref="KeepEssential"/> is for what must be done
-    /// whatever is off (the mod's moods taken out of the save, so that it loads without the mod).
-    /// Once every handler has written, the lines a store could not read are put back as they
-    /// were read (Core/SaveLines).
-    ///
-    /// Any other of the game's event fields is kept with <see cref="EventHold"/> (Core/EventHold.cs).
+    /// A handler that throws counts against its class's guard and costs the others nothing; one of a feature switched
+    /// off after its faults is skipped, so its line stays as it last wrote it, unless kept with
+    /// <see cref="KeepEssential"/>. Then the lines a store could not read are put back as read (<see cref="SaveLines"/>).
     /// </summary>
     public static class SaveHook
     {
@@ -34,7 +25,7 @@ namespace RealLifeOverhaul
         private static readonly HashSet<Action> Essential = new HashSet<Action>();
         private static readonly HashSet<FeatureGuard> Skipped = new HashSet<FeatureGuard>();   // said once each
         private static readonly Action Relay = Run;
-        private static Action _seen;   // the game's event as it was when the relay was last put on it
+        private static Action _seen;   // the game's event when the relay was last put on it
 
         public static IModLogger Logger;
 
@@ -125,7 +116,9 @@ namespace RealLifeOverhaul
             }
             if (timed)
             {
-                Logger?.Info("Session: the mod wrote its state into the save in " + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");
+                Logger?.Info("Session: the mod wrote its state into the save in "
+                             + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture)
+                             + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");
             }
         }
     }

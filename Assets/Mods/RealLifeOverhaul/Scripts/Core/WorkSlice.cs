@@ -3,15 +3,10 @@ using System.Diagnostics;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// How much of a piece of work spread over frames one frame may do: as much as fits in a budget of milliseconds,
-    /// with the clock looked at every few items, and always the first item (so the work is never stuck). An item known to
-    /// be heavy (a picture not in its cache, a renderer list not yet sorted) is done only as the first of a slice, so a
-    /// frame never takes a heavy one after others. Used by the work of the first minute after a load that cannot be done
-    /// behind the loading screen: the contacts' pictures (Phone/Contacts/ContactPainter), the bus stops' searches and
-    /// dressings (Transport/TransitMap, TransitDirector), and the performance tweaks' looks (Performance/Tweaks).
-    ///
-    /// A struct made at the start of each slice: nothing is allocated. Cost of <see cref="More()"/>: one count, and one
-    /// read of the clock every <c>lookEvery</c> items. No Unity or game types: checked offline (NavCheck, LoadPaceCheck.cs).
+    /// How much of a piece of work spread over frames one frame may do: what fits in a budget of milliseconds, and
+    /// always the first item so the work is never stuck. A heavy item is done only as the first of a slice. A struct
+    /// made at each slice's start, nothing allocated; <see cref="More()"/> costs one count and a clock read every
+    /// <c>lookEvery</c> items. Game-free.
     /// </summary>
     public struct WorkSlice
     {
@@ -28,7 +23,7 @@ namespace RealLifeOverhaul
             _over = false;
         }
 
-        /// <summary>A slice of <paramref name="milliseconds"/> from now, the clock looked at every <paramref name="lookEvery"/> items. Zero or less: one item a slice.</summary>
+        /// <summary>A slice of <paramref name="milliseconds"/> from now; zero or less: one item a slice.</summary>
         public static WorkSlice Of(double milliseconds, int lookEvery)
         {
             long now = Stopwatch.GetTimestamp();
@@ -40,10 +35,9 @@ namespace RealLifeOverhaul
         /// <summary>A slice with no end: all the work at once (behind the loading screen, where a long frame is not seen).</summary>
         public static WorkSlice Whole => new WorkSlice(long.MaxValue, int.MaxValue);
 
-        /// <summary>True once <see cref="More()"/> has said no (or <see cref="End"/> was called): the slice's time was spent with work left.</summary>
+        /// <summary>True once <see cref="More()"/> has said no or <see cref="End"/> was called.</summary>
         public bool Over => _over;
 
-        /// <summary>Items handed out in this slice so far.</summary>
         public int Done => _done;
 
         /// <summary>True if one more item may be done in this slice (always the first).</summary>
@@ -65,7 +59,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Ends the slice now (the item just done was a heavy one, or the work must wait): <see cref="More()"/> says no from here on.</summary>
+        /// <summary>Ends the slice now: <see cref="More()"/> says no from here on.</summary>
         public void End()
         {
             _over = true;
