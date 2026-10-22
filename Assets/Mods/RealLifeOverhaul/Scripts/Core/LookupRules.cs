@@ -4,14 +4,10 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The place of the first item of a list with a key, as a walk along the list would find it, kept in a dictionary
-    /// and made again whenever the list is another one, has another length or another last item, or the caller's stamp
-    /// (a day, a version) has moved. For the economy's look-ups by an address, a place or a key, which walked the save's
-    /// lists for every business asked about: every answer the same, a look-up each.
-    ///
-    /// Only for keys an item never changes (an address, a place). An item its key function gives no key for (null) is not
-    /// listed. No Unity or game types: checked offline (EconomyCheck, MorningChecks.cs). Cost: one walk of the list when it
-    /// changes, then a dictionary look-up and three comparisons an asking; nothing allocated once its dictionary has grown.
+    /// The place of the first item of a list with a key, as a walk along it would find it, kept in a dictionary and made
+    /// again when the list, its length, its last item or the caller's stamp changes. Only for keys an item never changes
+    /// (an address); an item with a null key is not listed. Game-free, checked by EconomyCheck.
+    /// COST: one walk when the list changes, then a dictionary look-up an asking; nothing allocated once grown.
     /// </summary>
     public sealed class ListIndex<TItem, TKey> where TItem : class where TKey : class
     {
@@ -22,7 +18,7 @@ namespace RealLifeOverhaul
         private TItem _last;
         private int _stamp;
 
-        /// <summary>How many times the index was made: for the checks (made again only when its list changed).</summary>
+        /// <summary>How many times the index was made, for the checks.</summary>
         public int Built { get; private set; }
 
         public ListIndex(Func<TItem, TKey> keyOf, IEqualityComparer<TKey> comparer = null)
@@ -31,7 +27,7 @@ namespace RealLifeOverhaul
             _first = new Dictionary<TKey, int>(64, comparer ?? EqualityComparer<TKey>.Default);
         }
 
-        /// <summary>Where in the list the first item with this key is; -1 if none. A null key is never listed.</summary>
+        /// <summary>Where in the list the first item with this key is; -1 if none.</summary>
         public int At(List<TItem> list, TKey key, int stamp)
         {
             if (list == null || key == null)
@@ -54,7 +50,7 @@ namespace RealLifeOverhaul
             return at >= 0 ? list[at] : null;
         }
 
-        /// <summary>Made again at the next asking, whatever the list looks like (its items changed in place).</summary>
+        /// <summary>Made again at the next asking, for items changed in place.</summary>
         public void Reset()
         {
             _list = null;
@@ -84,11 +80,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Sums by key, each key once, in the order its first figure came in, each sum added up in the order its figures came
-    /// (so the same to the last bit as a walk along a list of keys that adds to the first it finds, or a new one at its end).
-    /// For the day's rent, wages and takings of the city's economy by address, category and deduction, which
-    /// were found by walking every line so far for every one of the day's thousands of transactions, and for the brands'
-    /// staff by business. No Unity or game types: checked offline (EconomyCheck, MorningChecks.cs).
+    /// Sums by key, keys in the order their first figure came, each sum added in the order its figures came: the same
+    /// to the last bit as a walk along a list of keys. For the day's figures of the city's economy by address and
+    /// category, and the brands' staff by business. Game-free, checked by EconomyCheck.
     /// </summary>
     public sealed class KeyedSums<TKey>
     {
@@ -105,7 +99,7 @@ namespace RealLifeOverhaul
 
         public int Count => Keys.Count;
 
-        /// <summary>A figure added to its key's sum (a new key at the end). Returns the key's place.</summary>
+        /// <summary>Adds a figure to its key's sum, a new key at the end; returns the key's place.</summary>
         public int Add(TKey key, float figure)
         {
             if (!_at.TryGetValue(key, out int at))
@@ -137,18 +131,11 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// One day's items of a queue the game only adds to at its end and drops from at its head (its transactions, kept a
-    /// week), in the queue's order, kept up to date by walking only past what it saw at the last asking. Every reader of a
-    /// morning (the city's day figures, each business's statement brought up to date, the dealerships' deductions, what
-    /// leaves tomorrow) read the whole queue of 25,000 to 35,000 for the one day it wanted, four or five times.
-    /// Here the queue is walked in full once a day, and after that only compared item by item (no item is opened)
-    /// until the last one seen, with the day of each item added since looked at. The same items in the same order as a
-    /// walk of the queue that keeps the day's, so every sum over them is the same to the last bit.
-    ///
-    /// The game drops only days older than its own day less six from the head (GameManager.ReduceTransactionQueue): a day
-    /// as old as that, or older, is walked in full each time it is asked for. Two days are kept (the morning's and
-    /// yesterday's: the hour that opens the day asks for the one before). No Unity or game types: checked offline
-    /// (EconomyCheck, MorningChecks.cs). Cost: nothing allocated once its lists have grown to a day's items.
+    /// One day's items of a queue the game adds to at its end and drops from at its head (its transactions, kept a
+    /// week; 25,000 to 35,000 of them), in its order: walked in full once a day, then only past the last item seen, so
+    /// every sum over them is the same to the last bit as a full walk. The game drops days older than its day less six
+    /// (GameManager.ReduceTransactionQueue): such a day is walked in full each time. Two days are kept: the morning's
+    /// and the one before. Game-free, checked by EconomyCheck. COST: nothing allocated once grown to a day's items.
     /// </summary>
     public sealed class DayCut<T> where T : class
     {
@@ -159,14 +146,14 @@ namespace RealLifeOverhaul
             public Queue<T> Queue;
             public int Count;      // the queue's length at the last asking
             public T Head, Last;   // and its first and last items
-            public int Asked;      // when this slice was last asked for (for which of two is made again)
+            public int Asked;      // when last asked for: the older of the two is made again
         }
 
         private readonly Func<T, int> _dayOf;
         private readonly Slice[] _slices = { new Slice(), new Slice() };
         private int _asked;
 
-        /// <summary>Items walked over in all, for the checks: a day is walked in full once, then only past what was seen.</summary>
+        /// <summary>Items walked over in all, for the checks.</summary>
         public long Walked { get; private set; }
 
         /// <summary>Items whose day was looked at, for the checks.</summary>
@@ -178,8 +165,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The queue's items of a day, in its order (a list kept by this: read it, never keep or change it).
-        /// <paramref name="dropsBefore"/>: the oldest day the queue may still drop items of from its head.
+        /// The queue's items of a day, in its order: a list kept here, to read but never keep or change.
+        /// <paramref name="dropsBefore"/>: the oldest day the queue may still drop items of.
         /// </summary>
         public List<T> Of(Queue<T> queue, int day, int dropsBefore)
         {
@@ -206,7 +193,7 @@ namespace RealLifeOverhaul
             return s.Items;
         }
 
-        /// <summary>Nothing kept (another save, a city gone).</summary>
+        /// <summary>Forgets everything: another save, or the city unloaded.</summary>
         public void Forget()
         {
             for (int i = 0; i < _slices.Length; i++)
@@ -240,8 +227,7 @@ namespace RealLifeOverhaul
             s.Last = last;
         }
 
-        // The items added since the last asking, after the last one seen then: false if it is no longer there (the queue
-        // was emptied or replaced in place), and the slice is made again.
+        // Adds the items after the last one seen; false if that one is gone (the queue emptied or replaced in place).
         private bool Follow(Slice s, Queue<T> queue)
         {
             bool past = s.Count == 0 || s.Last == null;
@@ -273,11 +259,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Runs of profit by business over the last days of the game's statements, newest day first (the city's
-    /// rivals): a business that made a loss or nothing on one of them has no run; the first statement of a
-    /// business in a day counts, as a walk along that day's statements finds it. One pass over the days' statements
-    /// instead of a walk of every day's statements for every business. No Unity or game types: checked offline
-    /// (EconomyCheck, MorningChecks.cs).
+    /// Runs of profit by business over the last days of the game's statements, newest day first, in one pass: a loss or
+    /// nothing on a day ends a business's run; its first statement of a day counts. Game-free, checked by EconomyCheck.
     /// </summary>
     public sealed class ProfitRuns<TKey>
     {
@@ -316,7 +299,7 @@ namespace RealLifeOverhaul
             _group++;
         }
 
-        /// <summary>A business's statement of the day: its profit. Only its first of the day counts.</summary>
+        /// <summary>A business's profit on a statement of the day; only its first of the day counts.</summary>
         public void Add(TKey key, float profit)
         {
             if (key == null)
@@ -355,7 +338,7 @@ namespace RealLifeOverhaul
             run.Days++;
         }
 
-        /// <summary>True if the business made a profit on every one of its days, on at least so many; its total then.</summary>
+        /// <summary>True if the business made a profit on each of its days, at least <paramref name="days"/> of them; its total then.</summary>
         public bool Ran(TKey key, int days, out float total)
         {
             total = 0f;
@@ -368,10 +351,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// Equality by reference, for keys whose own Equals is not wanted or not cheap: a business's registration, a day's
-    /// statements, a list. No Unity or game types.
-    /// </summary>
+    /// <summary>Equality by reference, for keys whose own Equals is not wanted or not cheap. Game-free.</summary>
     public sealed class ReferenceComparer<T> : IEqualityComparer<T> where T : class
     {
         public static readonly ReferenceComparer<T> Instance = new ReferenceComparer<T>();
