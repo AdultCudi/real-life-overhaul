@@ -108,6 +108,9 @@ namespace RealLifeOverhaul.Economy
 
         private static GameInstance Save => SaveGameManager.Current;
 
+        /// <summary>The places of the player's past the most read (CompanyCatalogue.ShopsMost) on the last read: not listed.</summary>
+        public static int LeftOut { get; private set; }
+
         /// <summary>Every place the player runs: one pass over the save's buildings and one over its staff.</summary>
         public static void ReadPlaces(List<RotaPlace> into, List<RotaPlace> pool)
         {
@@ -119,12 +122,18 @@ namespace RealLifeOverhaul.Economy
             into.Clear();
             GameInstance save = Save;
             List<BuildingRegistration> all = save != null ? save.BuildingRegistrations : null;
-            for (int i = 0; all != null && i < all.Count && into.Count < CompanyCatalogue.ShopsMost; i++)
+            LeftOut = 0;
+            for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
                 if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !reg.HasValidAddress
                     || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || reg.scheduleDays == null)
                 {
+                    continue;
+                }
+                if (into.Count >= CompanyCatalogue.ShopsMost)
+                {
+                    LeftOut++;   // counted, so the Managers tab can say so; the rest of the pass is a few comparisons each
                     continue;
                 }
                 RotaPlace place;

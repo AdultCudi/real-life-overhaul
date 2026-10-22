@@ -261,8 +261,9 @@ namespace RealLifeOverhaul.Economy
         {
             Decision d = _mgr.Add(day, hour, mp.Place.Place, task, ManagerStore.Clean(subject), ManagerStore.Clean(who));
             d.Mistake = mistake;
-            mp.Own.Decided++;
-            mp.Own.Mistakes += mistake ? 1 : 0;
+            ManagerFile by = MadeBy(mp, who) ?? mp.Own;   // the regional manager standing in for one off sick counts their own
+            by.Decided++;
+            by.Mistakes += mistake ? 1 : 0;
             return d;
         }
 
@@ -461,21 +462,34 @@ namespace RealLifeOverhaul.Economy
                 Notify(NotificationType.Warning, "reallife_mgr_note_cannot", null, 7f);
                 return;
             }
+            ManagerFile m = Appointed(mp, e, id);
+            if (m == null)
+            {
+                Notify(NotificationType.Warning, "reallife_mgr_note_most", new Dictionary<string, string> { { "count", ManagerCatalogue.ManagersMost.ToString() } }, 7f);
+                return;
+            }
+            Notify(NotificationType.Success, "reallife_mgr_note_appointed", new Dictionary<string, string> { { "name", m.Name }, { "place", mp.Place.Name } }, 8f);
+            ManagerRead();
+            Changed();
+        }
+
+        // The post of a place given to one of its staff, checked by the caller; null when no post is left (ManagersMost).
+        private ManagerFile Appointed(ManagedPlace mp, EmployeeInstance e, string id)
+        {
             ManagerFile other = _mgr.Of(id);
+            ManagerFile m = mp.Own;
+            bool fresh = m == null;
+            if (fresh && _mgr.Managers.Count - (other != null ? 1 : 0) >= ManagerCatalogue.ManagersMost)
+            {
+                return null;
+            }
             if (other != null && other != mp.Own)
             {
                 _mgr.Managers.Remove(other);   // somebody manages one place at a time: moved here, the other post is empty
             }
-            ManagerFile m = mp.Own;
-            bool fresh = m == null;
             if (fresh)
             {
-                if (_mgr.Managers.Count >= ManagerCatalogue.ManagersMost)
-                {
-                    Notify(NotificationType.Warning, "reallife_mgr_note_most", new Dictionary<string, string> { { "count", ManagerCatalogue.ManagersMost.ToString() } }, 7f);
-                    return;
-                }
-                m = new ManagerFile { Place = place, Role = ManagerCatalogue.RolePlace, Tasks = ManagerRules.Kinds(mp.Kind), Keep = mp.Place.Staff };
+                m = new ManagerFile { Place = mp.Place.Place, Role = ManagerCatalogue.RolePlace, Tasks = ManagerRules.Kinds(mp.Kind), Keep = mp.Place.Staff };
                 _mgr.Managers.Add(m);
             }
             m.Id = id;
@@ -488,9 +502,7 @@ namespace RealLifeOverhaul.Economy
             Logger?.Info("Company: " + m.Name + " (skill " + m.Skill + ") " + (fresh ? "appointed manager of " : "now manages ") + mp.Place.Name
                          + ", allowance " + AllowanceOf(m) + " a day; kinds " + m.Tasks + ", limits: wage band step " + m.WageBand + ", stock " + m.StockDays
                          + ", prices " + m.PriceLow + " to " + m.PriceHigh + ", budget " + m.Budget + ", keeps " + m.Keep + " staff.");
-            Notify(NotificationType.Success, "reallife_mgr_note_appointed", new Dictionary<string, string> { { "name", m.Name }, { "place", mp.Place.Name } }, 8f);
-            ManagerRead();
-            Changed();
+            return m;
         }
 
         /// <summary>Somebody at a headquarters made the regional manager of a district.</summary>
@@ -511,19 +523,34 @@ namespace RealLifeOverhaul.Economy
                 Notify(NotificationType.Warning, "reallife_mgr_note_cannot", null, 7f);
                 return;
             }
+            ManagerFile m = AppointedRegion(district, e, id, office);
+            if (m == null)
+            {
+                Notify(NotificationType.Warning, "reallife_mgr_note_most", new Dictionary<string, string> { { "count", ManagerCatalogue.ManagersMost.ToString() } }, 7f);
+                return;
+            }
+            Notify(NotificationType.Success, "reallife_mgr_note_appointed", new Dictionary<string, string> { { "name", m.Name }, { "place", CompanyText.District(district) } }, 8f);
+            ManagerRead();
+            Changed();
+        }
+
+        // A district's post given to somebody at a headquarters, checked by the caller; null when no post is left. One who
+        // was the regional manager of another district moves here and leaves that one with none, as the tab says first.
+        private ManagerFile AppointedRegion(string district, EmployeeInstance e, string id, RotaPlace office)
+        {
             ManagerFile other = _mgr.Of(id);
             ManagerFile m = RegionOf(district);
+            if (m == null && _mgr.Managers.Count - (other != null ? 1 : 0) >= ManagerCatalogue.ManagersMost)
+            {
+                return null;
+            }
+            string left = other != null && other != m && other.Region ? other.Place : null;
             if (other != null && other != m)
             {
                 _mgr.Managers.Remove(other);
             }
             if (m == null)
             {
-                if (_mgr.Managers.Count >= ManagerCatalogue.ManagersMost)
-                {
-                    Notify(NotificationType.Warning, "reallife_mgr_note_most", new Dictionary<string, string> { { "count", ManagerCatalogue.ManagersMost.ToString() } }, 7f);
-                    return;
-                }
                 m = new ManagerFile { Place = district, Role = ManagerCatalogue.RoleRegion };
                 _mgr.Managers.Add(m);
             }
@@ -534,10 +561,8 @@ namespace RealLifeOverhaul.Economy
             m.Skill = ManagerGame.SkillOf(e);
             m.Seen = true;
             Logger?.Info("Company: " + m.Name + " (skill " + m.Skill + ", at " + office.Name + ") appointed regional manager of " + CompanyText.District(district)
-                         + ", allowance " + AllowanceOf(m) + " a day.");
-            Notify(NotificationType.Success, "reallife_mgr_note_appointed", new Dictionary<string, string> { { "name", m.Name }, { "place", CompanyText.District(district) } }, 8f);
-            ManagerRead();
-            Changed();
+                         + ", allowance " + AllowanceOf(m) + " a day" + (left != null ? "; " + CompanyText.District(left) + " has no regional manager now" : string.Empty) + ".");
+            return m;
         }
 
         /// <summary>A post emptied: nothing more is decided there, and the company's notices ask the player again.</summary>

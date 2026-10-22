@@ -503,8 +503,9 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// Who decides at a place today: 1 its manager (with the regional manager's review), 2 the regional manager standing
-        /// in for a manager off sick, 0 nobody (the decisions wait a day).
+        /// Who decides at a place today: 1 its manager (with the regional manager's review while the regional manager is at
+        /// work: one off sick looks over nothing), 2 the regional manager standing in for a manager off sick, 0 nobody (the
+        /// decisions wait a day).
         /// </summary>
         public static int Decider(bool own, bool ownSick, int ownSkill, bool region, bool regionSick, int regionSkill, out int skill, out int review)
         {
@@ -516,7 +517,7 @@ namespace RealLifeOverhaul.Economy
             if (!ownSick)
             {
                 skill = CompanyCatalogue.Clamp(ownSkill, 0, 100);
-                review = region ? CompanyCatalogue.Clamp(regionSkill, 0, 100) : 0;
+                review = region && !regionSick ? CompanyCatalogue.Clamp(regionSkill, 0, 100) : 0;
                 return 1;
             }
             if (!region || regionSick)
