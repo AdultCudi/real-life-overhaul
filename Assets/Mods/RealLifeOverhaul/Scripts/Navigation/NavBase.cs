@@ -10,38 +10,15 @@ using UnityEngine;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The minimap's base picture: the city's buildings and its water, under the roads. One texture, made once per
-    /// city load and shown by one picture on the minimap whose window on it moves with the player (NavHud).
+    /// The minimap's base picture, the city's buildings and water under the roads, in the game's palette: the game's own
+    /// city map is the city under a camera, not a picture. The measured city is read from the mod's folder, or measured once
+    /// per version of the game (each building's outline, then a ray down each 8 m square, at most 0.8 ms a frame); the
+    /// picture is drawn on a pool thread and sent to the graphics card in one call.
     ///
-    /// The game's own city map is the city itself under a camera, not a picture (see NavBaseGame), so this is drawn
-    /// from what the game keeps, in the game's palette:
-    ///
-    ///   1  the measured city is read from the mod's folder if this version of the game has been measured before
-    ///      (about 150 KB, one read);
-    ///   2  otherwise every building's outline is read, a few a frame, and
-    ///   3  the city is asked where its water is, square by square of 8 m, a few a frame (one ray each);
-    ///      steps 2 and 3 take 0.8 ms of a frame at most, for some seconds, once per version of the game;
-    ///   4  the picture is drawn from that on a thread of the pool (and the measured city written to the mod's folder);
-    ///   5  the picture goes to the graphics card: one call, the same as the road picture's.
-    ///
-    /// The size. The picture is at most 2048 pixels on its long side, four bytes a pixel and no smaller copies: for
-    /// the game's city (3.6 km by 2 km) 2048 x 1154, 9.0 MB on the graphics card and nothing in main memory once it
-    /// is there. That is 1.77 m a pixel. The minimap's view is at most 676 units of the HUD wide (338 pixels on a
-    /// 1920 screen) and shows 260 m at the usual zoom: a pixel of the picture is 2.3 pixels of such a screen (4.6 at
-    /// 3840), smoothed by the graphics card. A building is 10 to 30 pixels of the picture, so its shape holds; only
-    /// its edge is soft, by under a metre, where the roads above it are sharp (their picture has 4096). More would
-    /// buy a sharper edge on a flat shape and cost four times the memory.
-    ///
-    /// KEPT ACROSS LOADS. The picture on the graphics card is kept for the session with a print of everything it was drawn
-    /// from (the measured city, the roads' rectangle, its size and the two colours: Core/InputPrint). A city loaded again
-    /// (another save, the same save again) whose print is the same is given the same picture: no thread job, no 11 MB of
-    /// arrays (the coverage and the colours, which grew the managed heap on every load), no upload. A print that differs
-    /// draws a new one and lets the old one go.
-    ///
-    /// Cost. Nothing per frame once the picture is made (<see cref="Busy"/> is false: the director's one test). While
-    /// a city is measured: 0.8 ms a frame. Per city load: one read of the file and its print, behind the loading screen
-    /// (the director's late prewarm, Core/SceneFinds); the first load of a session also draws it there (a thread job of
-    /// some 130 ms, waited for while the loading screen is up) and sends it to the graphics card.
+    /// At most 2048 pixels a side (2048 x 1154 for the game's city, 1.77 m a pixel, 9 MB on the graphics card and none in
+    /// main memory): a building stays 10 to 30 pixels, and more would cost four times the memory for a sharper edge. The
+    /// picture is kept for the session with a print of what it was drawn from, so a load with the same print draws and
+    /// sends nothing. Nothing per frame once made; the director tests <see cref="Busy"/>.
     /// </summary>
     public sealed class NavBase
     {
@@ -49,7 +26,7 @@ namespace RealLifeOverhaul.Nav
         private const int LookEvery = 8;                // the clock is looked at after this many buildings or squares
         private const float RoadReach = 8f;             // metres: a square this near a lane point is road, and is not asked
         private const float StreetReach = 150f;         // metres within which the nearest road gives the street's height
-        private const float Sky = 400f;                 // metres above the highest road from which a square is looked down on (over every roof)
+        private const float Sky = 400f;                 // metres above the highest road a square is looked down from
 
         public static IModLogger Logger;
 
@@ -73,8 +50,8 @@ namespace RealLifeOverhaul.Nav
         private readonly float[] _cornerX = new float[8], _cornerZ = new float[8];
         private readonly float[] _outX = new float[17], _outZ = new float[17];
 
-        // The picture of the session, with the print of what it was drawn from (see the summary). Survives the city: a texture
-        // made by the mod is no scene's, and it is marked to stay through the engine's sweep of unused assets.
+        // The session's picture and the print of what it was drawn from. It survives the city: a texture made by the mod is
+        // no scene's, and it is marked to stay through the engine's sweep of unused assets.
         private static Texture2D _kept;
         private static ulong _keptPrint;
 
@@ -86,11 +63,11 @@ namespace RealLifeOverhaul.Nav
         public float OriginX { get; private set; }
         public float OriginZ { get; private set; }
 
-        /// <summary>The piece of the world the picture covers, in metres from its origin: exactly what its pixels cover.</summary>
+        /// <summary>The metres from the origin that the picture's pixels cover.</summary>
         public float WorldWidth { get; private set; }
         public float WorldHeight { get; private set; }
 
-        /// <summary>What the picture was drawn from (kept for the checks and the tests: some hundreds of outlines and a byte per square).</summary>
+        /// <summary>What the picture was drawn from, kept for the checks and the tests.</summary>
         public NavBaseData Data => _stage == Stage.Done ? _data : null;
 
         /// <summary>True while there is work to do in <see cref="Step"/>.</summary>
@@ -103,7 +80,7 @@ namespace RealLifeOverhaul.Nav
         /// <summary>True if the last picture came from the mod's folder and not from measuring the city.</summary>
         public bool FromFile => _fromFile;
 
-        // What the thread works on, and what it says when it is done. Nothing of the engine is touched off the main thread.
+        // What the thread works on and says when done; nothing of the engine is touched off the main thread.
         private sealed class Job
         {
             public NavBaseData Data;
@@ -159,9 +136,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// Begins: from the mod's folder if this city has been measured (and <paramref name="measureAgain"/> is not
-        /// asked for), by measuring it otherwise. Does nothing while the game's palette is not there yet (it is
-        /// asked again on the director's next tick).
+        /// Begins from the mod's folder if this city has been measured and <paramref name="measureAgain"/> is false, else by
+        /// measuring it. Does nothing while the game's palette is not there yet.
         /// </summary>
         public void Begin(NavGraph graph, bool measureAgain)
         {
@@ -203,7 +179,7 @@ namespace RealLifeOverhaul.Nav
                     _fromFile = true;
                     if (_kept != null && _keptPrint == PrintOf(kept, Width, Height, OriginX, OriginZ, PerMetre, _building, _water))
                     {
-                        Picture = _kept;   // the same city drawn the same way: the picture of an earlier load is this one
+                        Picture = _kept;   // the same city drawn the same way as at an earlier load
                         _stage = Stage.Done;
                         Logger?.Info("Navigation: the minimap's buildings and water are the picture made at an earlier load (the same city, size and colours): "
                                      + Width + " x " + Height + " pixels, nothing drawn and nothing sent to the graphics card.");
@@ -239,9 +215,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// The next piece of work, 0.8 ms of it at most. Called once a frame while <see cref="Busy"/>.
-        /// <paramref name="inCity"/>: a save is loaded and the loading screen is gone (the city is measured only
-        /// then: under the loading screen not everything of it need be there).
+        /// At most 0.8 ms of work, once a frame while <see cref="Busy"/>. The city is measured only <paramref name="inCity"/>,
+        /// the loading screen gone: under it not everything need be there.
         /// </summary>
         public void Step(bool inCity)
         {
@@ -319,7 +294,7 @@ namespace RealLifeOverhaul.Nav
             _data.HullZ = _hullZ.ToArray();
             using var piece = SessionWatch.Piece("the minimap's buildings");
             NavBaseWater.Prepare(_data);
-            // From over every roof down to under the lowest road.
+            // from over every roof to under the lowest road
             float[] y = _graph.Drive.Y;
             bool[] usable = _graph.Usable;
             float lowest = float.MaxValue, highest = float.MinValue;
@@ -379,9 +354,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// Behind the loading screen (the director's late prewarm): waits up to <paramref name="milliseconds"/> for the thread
-        /// drawing the picture, so that it goes to the graphics card there and not in play. False if it is not done by then
-        /// (it is then sent on the director's timer, as before).
+        /// Behind the loading screen, waits up to <paramref name="milliseconds"/> for the drawing thread, so the picture is
+        /// sent there and not in play. False if it is not done by then; the director's timer then sends it.
         /// </summary>
         public bool WaitForDrawing(int milliseconds)
         {
@@ -398,7 +372,7 @@ namespace RealLifeOverhaul.Nav
             return job.Done;
         }
 
-        /// <summary>The print of everything a picture is drawn from (Core/InputPrint): the same print, the same picture.</summary>
+        /// <summary>The print of everything a picture is drawn from: the same print, the same picture.</summary>
         internal static ulong PrintOf(NavBaseData data, int width, int height, float originX, float originZ, float perMetre, Color32 building, Color32 water)
         {
             var print = new InputPrint();
@@ -454,7 +428,7 @@ namespace RealLifeOverhaul.Nav
             var picture = new Texture2D(job.Width, job.Height, TextureFormat.RGBA32, false, false)
             {
                 name = "RealLife Minimap Base",
-                wrapMode = TextureWrapMode.Clamp,   // past the picture's edge its outermost pixels go on: open water stays water, and no building is drawn there
+                wrapMode = TextureWrapMode.Clamp,   // past the edge its outermost pixels go on: water stays water, no building is drawn out
                 filterMode = FilterMode.Bilinear,
                 anisoLevel = 0
             };
@@ -463,7 +437,7 @@ namespace RealLifeOverhaul.Nav
             picture.hideFlags = HideFlags.DontUnloadUnusedAsset;
             if (_kept != null && _kept != picture)
             {
-                UnityEngine.Object.Destroy(_kept);   // another city's, or drawn from other figures: this one takes its place
+                UnityEngine.Object.Destroy(_kept);   // another city's, or drawn from other figures
             }
             _kept = picture;
             _keptPrint = job.Print;
@@ -489,9 +463,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// Forgets everything, so that <see cref="Begin"/> starts afresh. A thread still drawing finishes into an array nobody
-        /// reads. The picture itself is kept for the next load unless <paramref name="letGo"/> (the option switched off, the
-        /// city to be measured again): it is then destroyed.
+        /// Forgets everything, so <see cref="Begin"/> starts afresh; a thread still drawing finishes into an array nobody reads.
+        /// The picture is kept for the next load, or destroyed with <paramref name="letGo"/>.
         /// </summary>
         public void Drop(bool letGo)
         {

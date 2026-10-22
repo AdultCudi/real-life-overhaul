@@ -12,30 +12,19 @@ using UnityEngine;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The city's roads as the minimap and the GPS use them, made once per city in four short steps
-    /// (<see cref="Step"/>, one per call, each named for the session record):
-    ///
-    ///   1  the road graph for driving (the city's one graph, Core/RoadGraph.Shared, which the bus network searches
-    ///      too), and for each lane point its road's number, whether it is a junction's, and its speed;
-    ///   2  the same roads for walking (every edge both ways), and the grid that answers "which lane points are near";
-    ///   3  the map picture, drawn from the graph on a thread of the pool (it reads these arrays and writes its own);
-    ///   4  the picture handed to the graphics card, once the thread is done.
-    ///
-    /// All four are done behind the loading screen (<see cref="StepsNow"/> and <see cref="WaitForPicture"/>, from the
-    /// director's late prewarm: Core/SceneFinds), where they used to be done in the frames the loading screen went (a
-    /// frame of 394 ms with 1284 KB of this in it); the timer does them only where that
-    /// could not be. The picture is kept for the session with a print of what it was drawn from (Core/InputPrint): a city
-    /// loaded again with the same roads is given the same picture, with no 9 MB array, no thread and no upload.
-    ///
-    /// After that nothing here runs unless it is asked: a route search is begun and advanced by the director, and a
-    /// street's name is worked out the first time a turn onto it is announced.
+    /// The city's roads as the minimap and the GPS use them, made once per city in four steps of <see cref="Step"/>: the
+    /// city's one driving graph (<see cref="RoadGraph.Shared"/>, which the buses search too) with each lane point's road,
+    /// junction and speed; the walking graph and the index of points; the road picture, drawn on a pool thread; and its
+    /// upload. All four run behind the loading screen (<see cref="StepsNow"/>, <see cref="WaitForPicture"/>), the timer
+    /// doing them only where that could not be. The picture is kept for the session with a print of what it was drawn
+    /// from, so the same roads load with no drawing and no upload. Nothing runs after that unless asked.
     /// </summary>
     public sealed class NavGraph
     {
-        public const float LaneChangeCost = RoadGraph.LaneChangeCost;   // metres a change of lane counts for (the city's one graph: the bus network's too)
+        public const float LaneChangeCost = RoadGraph.LaneChangeCost;   // metres a change of lane counts for
         private const float Margin = 24f;          // metres of empty picture round the outermost road
         private const int LongestSide = 4096;      // pixels
-        private const float MostPerMetre = 1.25f;
+        private const float MostPerMetre = 1.25f;  // pixels
         private const float LaneHalfWidth = 2.3f;  // metres either side of a lane's middle that are drawn as road
 
         public static IModLogger Logger;
@@ -45,11 +34,11 @@ namespace RealLifeOverhaul.Nav
         private PictureJob _job;
         private float[] _doorX, _doorY, _doorZ;    // every building's door, and the street of its address
         private string[] _doorStreet;
-        private string[] _streetOfRoad;            // by road number; "" = looked for and not found
+        private string[] _streetOfRoad;            // by road number; "" looked for and not found
         private readonly Dictionary<string, int> _votes = new Dictionary<string, int>(8);
 
-        // The road picture of the session and the print of what it was drawn from (see the summary): no scene's, and marked
-        // to stay through the engine's sweep of unused assets.
+        // The session's road picture and the print of what it was drawn from: no scene's, and marked to stay through the
+        // engine's sweep of unused assets.
         private static Texture2D _keptPicture;
         private static ulong _keptPrint;
 
@@ -62,7 +51,7 @@ namespace RealLifeOverhaul.Nav
         public float[] Speed { get; private set; }
         public int Roads { get; private set; }
 
-        /// <summary>The map picture: one byte a pixel, how much road is there. Null until step 4 (or if it could not be made).</summary>
+        /// <summary>The road picture, a byte of road cover a pixel; null until step 4, or if it could not be made.</summary>
         public Texture2D Picture { get; private set; }
         public float OriginX { get; private set; }
         public float OriginZ { get; private set; }
@@ -75,10 +64,10 @@ namespace RealLifeOverhaul.Nav
         /// <summary>True once every step is done, with or without a picture.</summary>
         public bool Finished => _step >= 5;
 
-        /// <summary>True once the picture's rectangle and size are known (step 3 begun): what the minimap's base picture is laid out by.</summary>
+        /// <summary>True once the picture's rectangle and size are known, which the base picture is laid out by.</summary>
         public bool Sized => _step >= 4;
 
-        // What the thread draws into, and what it says when it is done. Nothing of the engine is touched off the main thread.
+        // What the thread draws into and says when done; nothing of the engine is touched off the main thread.
         private sealed class PictureJob
         {
             public byte[] Pixels;
@@ -139,8 +128,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// Behind the loading screen: steps 1 to 3 at once (the graph, the walking graph and the index, the picture begun or
-        /// the kept one taken). False if the city's roads or its traffic system are not there yet: the timer then goes on.
+        /// Behind the loading screen, the steps up to the picture's drawing at once. False if the city's roads or its traffic
+        /// system are not there yet; the timer then goes on.
         /// </summary>
         public bool StepsNow()
         {
@@ -157,8 +146,8 @@ namespace RealLifeOverhaul.Nav
         }
 
         /// <summary>
-        /// Behind the loading screen: waits up to <paramref name="milliseconds"/> for the thread drawing the picture and sends
-        /// it to the graphics card (step 4). False if it is not done by then (the timer then sends it, as before).
+        /// Behind the loading screen, waits up to <paramref name="milliseconds"/> for the drawing thread and sends the picture
+        /// to the graphics card. False if it is not done by then; the timer then sends it.
         /// </summary>
         public bool WaitForPicture(int milliseconds)
         {
@@ -220,7 +209,7 @@ namespace RealLifeOverhaul.Nav
                 Junction[i] = NavMath.IsConnector(point.name);
                 Speed[i] = point.maxSpeed > 0 ? point.maxSpeed / 3.6f : 13.9f;
                 roads = Mathf.Max(roads, Road[i] + 1);
-                // A point is part of the roads if a lane leads from it or to it.
+                // a point is part of the roads if a lane leads from it or to it
                 for (int e = start[i]; e < start[i + 1]; e++)
                 {
                     Usable[i] = true;
@@ -279,7 +268,7 @@ namespace RealLifeOverhaul.Nav
             _job.Print = PrintOf(width, height, OriginX, OriginZ, perMetre, Drive, Usable);
             if (_keptPicture != null && _keptPrint == _job.Print)
             {
-                Picture = _keptPicture;   // the same roads drawn the same way: the picture of an earlier load is this one
+                Picture = _keptPicture;   // the same roads drawn the same way as at an earlier load
                 Logger?.Info("Navigation: map made: the picture of an earlier load (the same roads, " + width + " x " + height + " pixels): nothing drawn and nothing sent to the graphics card.");
                 _job = null;
                 return;
@@ -288,7 +277,7 @@ namespace RealLifeOverhaul.Nav
             ThreadPool.QueueUserWorkItem(_job.Run);
         }
 
-        /// <summary>The print of everything the road picture is drawn from (Core/InputPrint): the same print, the same picture.</summary>
+        /// <summary>The print of everything the road picture is drawn from: the same print, the same picture.</summary>
         internal static ulong PrintOf(int width, int height, float originX, float originZ, float perMetre, RouteSearch drive, bool[] usable)
         {
             var print = new InputPrint();
@@ -335,7 +324,7 @@ namespace RealLifeOverhaul.Nav
             picture.hideFlags = HideFlags.DontUnloadUnusedAsset;
             if (_keptPicture != null && _keptPicture != picture)
             {
-                UnityEngine.Object.Destroy(_keptPicture);   // another city's roads: this one takes its place
+                UnityEngine.Object.Destroy(_keptPicture);   // another city's roads
             }
             _keptPicture = picture;
             _keptPrint = job.Print;
@@ -345,7 +334,7 @@ namespace RealLifeOverhaul.Nav
                          + " ms off the main thread, sent to the graphics card in " + watch.Elapsed.TotalMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms.");
         }
 
-        /// <summary>The city is going: everything of it is let go but the picture, which is kept for the next load (see the summary).</summary>
+        /// <summary>The city is going: everything is let go but the picture, kept for the next load.</summary>
         public void Dispose()
         {
             Picture = null;
@@ -353,13 +342,10 @@ namespace RealLifeOverhaul.Nav
             _points = null;
         }
 
-        // ---------------------------------------------------------------- street names
-
         /// <summary>
-        /// What the street a road belongs to is called, or null. The road graph has no names; buildings have
-        /// addresses. So a road is named after the street most of the buildings along it give as their address:
-        /// up to seven places along the road each ask for the building whose door is nearest (within 45 m), and a
-        /// name needs two of them (or the only one, on a short road). Worked out once per road, when first asked for; the doors are read once.
+        /// The name of a road's street, or null. The graph has no names, so up to seven places along the road each take the
+        /// street of the nearest door within 45 m, and a name needs two votes, or one on a short road. Worked out once per
+        /// road, when first asked for.
         /// </summary>
         public string StreetOf(int road)
         {
@@ -445,7 +431,7 @@ namespace RealLifeOverhaul.Nav
             return string.IsNullOrEmpty(name) ? null : name;
         }
 
-        // Every building's door and the street in its address, read once (the first time a name is wanted).
+        // Every building's door and its address's street, read the first time a name is wanted.
         private void Doors()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
