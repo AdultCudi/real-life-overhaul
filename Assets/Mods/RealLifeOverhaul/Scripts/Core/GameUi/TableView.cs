@@ -7,23 +7,21 @@ using Localizor;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// What makes a table of an app's sort and filter: the thin layer between the table's model (TableModel: pure
-    /// arithmetic) and the game's own controls on the copy of MyEmployees (AppShell): its header cells, which are
-    /// buttons with two arrows, and its drop-down over the table. One per app.
+    /// The thin layer between a table's model (TableModel) and the game's own controls on the copy of MyEmployees
+    /// (AppShell): its header buttons with their two arrows, and its drop-down over the table. One per app.
     ///
-    ///   view.Begin(spec, rows)    the table that is being written: its columns go on the headers
-    ///   view.Model.Set / Kind     what each row gives for each column, and its kind
-    ///   view.Apply()              the order, the filter and the totals are worked out; arrows and drop-downs follow
-    ///   view.Changed              called when the player clicked a header or picked a kind: show the rows again
+    ///   view.Begin(spec, rows)    the table being written: its columns go on the headers
+    ///   view.Model.Set / Kind     what each row gives each column, and its kind
+    ///   view.Apply()              order, filter and totals worked out; arrows and drop-downs follow
+    ///   view.Changed              the player clicked a header or picked a kind: show the rows again
     ///
-    /// Nothing here runs unless the table is written or the player clicks. If the game's header buttons or its
-    /// drop-down are not there (a game update), the table is what it was before: plain headers, no filter, one
-    /// line in Player.log (UiClone.Fallback), and the app works as ever.
+    /// Runs only when a table is written or clicked. Without the game's header buttons or drop-down the table has plain
+    /// headers and no filter, with one line in Player.log, and the app works as ever.
     /// </summary>
     public sealed class TableView
     {
         public readonly TableModel Model = new TableModel();
-        /// <summary>The player changed the order (false) or the filter (true): the owner shows its rows again in the model's order.</summary>
+        /// <summary>The player changed the order (false) or the filter (true): the owner shows its rows again.</summary>
         public Action<bool> Changed;
 
         private readonly AppShell _shell;
@@ -47,37 +45,37 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>How many cells of text the app's row has: said once, for the self-check.</summary>
+        /// <summary>How many cells of text the app's row has, for the self-check.</summary>
         public int RowCells
         {
             set { _rowCells = value; }
         }
 
-        /// <summary>Whether a filter can be shown at all (the game's drop-down was there to copy and has not failed).</summary>
+        /// <summary>A filter can be shown: the game's drop-down was there to copy and has not failed.</summary>
         public bool CanFilter => !_filtersOff && _shell.FilterTemplate != null;
 
-        /// <summary>A table is about to be written: its columns go on the header cells, and the model is emptied for its rows.</summary>
+        /// <summary>A table is about to be written: its columns on the header cells, the model emptied for its rows.</summary>
         public void Begin(TableSpec spec, int rows)
         {
             _shell.SetColumns(spec);
             Model.Begin(spec, rows);
         }
 
-        /// <summary>A table of rows the app has written: its columns go on the header cells, the rows' figures and kinds into the model.</summary>
+        /// <summary>A table of rows the app has written: columns on the header cells, figures and kinds into the model.</summary>
         public void Begin(TableSpec spec, List<TableRow> rows)
         {
             _shell.SetColumns(spec);
             Model.Begin(spec, rows);
         }
 
-        /// <summary>A table written from a source when shown: its columns go on the header cells, its rows' figures and kinds into the model.</summary>
+        /// <summary>A table written from a source when shown: columns on the header cells, figures and kinds into the model.</summary>
         public void Begin(TableSpec spec, ITableSource source)
         {
             _shell.SetColumns(spec);
             Model.Begin(spec, source);
         }
 
-        /// <summary>The rows are in: the order, the filter and the totals are worked out and the game's controls show them.</summary>
+        /// <summary>The rows are in: order, filter and totals worked out, and the game's controls show them.</summary>
         public void Apply()
         {
             Model.Apply();
@@ -85,7 +83,7 @@ namespace RealLifeOverhaul.GameUi
             Report();
         }
 
-        // The arrow on the column the table is ordered by, and a drop-down for each filter the rows have two kinds for.
+        // The arrow on the ordered column, and a drop-down for each filter the rows have two kinds for.
         private void Shown()
         {
             TableSpec spec = Model.Spec;
@@ -116,7 +114,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // "All" first, then each kind the table holds, as EconoView lists the types of its transactions.
+        // "All" first, then each kind the table holds, as EconoView lists its transaction types.
         private void Offer(TableSpec spec, int g)
         {
             if (_drops[g] == null)
@@ -173,7 +171,7 @@ namespace RealLifeOverhaul.GameUi
                 }
                 catch (Exception)
                 {
-                    // (it is being given up: nothing more to say about it)
+                    // It is being given up: nothing more to say.
                 }
             }
             TableSpec spec = Model.Spec;
@@ -187,8 +185,6 @@ namespace RealLifeOverhaul.GameUi
                 Model.Apply();
             }
         }
-
-        // ---------------------------------------------------------------- the player's clicks
 
         private void HeaderClicked(int column)
         {
@@ -242,8 +238,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The HotSpots slot of an app's tables' sorts and filters ("Table: Finance"): named once an app, on its first click (a slot for each
-        // app, not each table: the names are a few hundred in all, HotSpots.Most).
+        // "Table: Finance", named on an app's first click: a slot per app, not per table (HotSpots.Most allows a few hundred).
         private static int SlotOf(TableSpec spec)
         {
             if (spec.Slot < 0)
@@ -258,10 +253,8 @@ namespace RealLifeOverhaul.GameUi
             return ((Stopwatch.GetTimestamp() - started) * 1000.0 / Stopwatch.Frequency).ToString("0.00", CultureInfo.InvariantCulture);
         }
 
-        // ---------------------------------------------------------------- the self-check
-
-        // One line the first time a table is written in a session, with "Developer diagnostics" on: what it declares
-        // and whether the game's parts it needs were all found.
+        // With diagnostics on, one line the first time a table is written in a session: what it declares and whether the
+        // game's parts it needs were found.
         private void Report()
         {
             TableSpec spec = Model.Spec;
@@ -280,7 +273,8 @@ namespace RealLifeOverhaul.GameUi
                     filter += " and one with " + spec.Filters[g].Kinds;
                 }
             }
-            string failed = (headers ? string.Empty : " the header cells do not fit;") + (filters ? string.Empty : " the game's drop-down is missing;") + (cells ? string.Empty : " the row has too few cells;");
+            string failed = (headers ? string.Empty : " the header cells do not fit;") + (filters ? string.Empty : " the game's drop-down is missing;")
+                            + (cells ? string.Empty : " the row has too few cells;");
             AppShell.Logger?.Info("Table check (" + spec.Id + "): " + spec.Count + " columns, " + spec.Sortable + " sortable, " + filter + ", " + (spec.HasTotals ? "totals" : "no totals")
                 + ": " + (headers && filters && cells ? "PASS" : "FAIL:" + failed.TrimEnd(';')) + ".");
         }

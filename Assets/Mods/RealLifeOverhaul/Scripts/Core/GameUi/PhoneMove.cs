@@ -10,20 +10,17 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// Moving an app of the mod's on the phone, as a long press does on a real phone: a right click on its button on the
-    /// HUD phone (PhoneAppPress) opens the game's own list window (DeskList, the subway's list), the app's name at its head
-    /// and an entry for each place it can go: the five folders, the home screen by itself and the dock. The place it is in
-    /// is marked and cannot be picked, and the dock cannot while it holds two apps. A pick moves it at once
-    /// (PhoneLayoutPrefs: kept on this computer) and both phones follow; Cancel and the game's cancel key close the list.
-    /// Also the options page's "Put every app back in its folder", and the two tests.
-    ///
-    /// Cost: nothing per frame; the list is filled when it opens.
+    /// Moving a mod app on the phone, as a long press does on a real phone: a right click on its HUD button (PhoneAppPress)
+    /// opens the game's own list window (DeskList) with an entry for each place it can go, the five folders, the home screen
+    /// and the dock; its own place is marked and cannot be picked, nor the dock while full. A pick moves it at once
+    /// (PhoneLayoutPrefs, kept on this computer) and both phones follow. Also the options page's reset and the two tests.
+    /// Costs nothing a frame; the list is filled when it opens.
     /// </summary>
     public static class PhoneMove
     {
         public static IModLogger Logger;
 
-        private const float Width = 900f;        // the HUD's units (3,840 across): the game's own list is 775; a folder's name and a note beside the button
+        private const float Width = 900f;        // the HUD's units (3,840 across); the game's list is 775: room for a folder's name and a note
         private const float EntryHeight = 104f;  // the game's own entry
         private const float NoticeSeconds = 5f;
 
@@ -114,7 +111,7 @@ namespace RealLifeOverhaul.GameUi
                 : T("reallife_phone_place_home");
         }
 
-        // The app's name as its button shows it, in the game's language (its title's text: the game's component on it, as PhoneApp dresses it).
+        // As its button shows it, in the game's language: the text of its title's component, as PhoneApp dresses it.
         private static string TitleOf(Transform button)
         {
             var localised = button.GetComponentInChildren<TextLocalizationComponent>(true);
@@ -123,7 +120,7 @@ namespace RealLifeOverhaul.GameUi
             return string.IsNullOrEmpty(words) ? button.name : words;
         }
 
-        /// <summary>The options page's button: every app back in its usual folder, and the dock as it came.</summary>
+        /// <summary>The options page's button: every app back in its usual place, and the dock as it came.</summary>
         public static void ResetAll()
         {
             try
@@ -139,7 +136,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Test: every button of both phones in exactly one place, for the home screen and every folder (PhoneGridPager.Check).</summary>
+        /// <summary>Test: every button of both phones in exactly one place (PhoneGridPager.Check).</summary>
         public static void TestCheck()
         {
             try
@@ -163,7 +160,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Test: the HUD phone opens its first folder with an app in it; the Back tile or the cancel key closes it.</summary>
+        /// <summary>Test: the HUD phone opens its first folder with an app; the Back tile or the cancel key closes it.</summary>
         public static void TestFolder()
         {
             try
@@ -192,7 +189,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>The window gone with the city's interface (the HUD phone's pager going): a later move makes it again.</summary>
+        /// <summary>The window went with the city's interface (the HUD pager going): a later move makes it again.</summary>
         public static void Forget()
         {
             List.Destroy(e => Logger?.Error(e));

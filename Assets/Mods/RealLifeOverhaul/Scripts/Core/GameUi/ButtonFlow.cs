@@ -6,23 +6,18 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The layout of a row of buttons of the apps' white box (InfoBox.ButtonRow), in place of the game's own row's
-    /// HorizontalLayoutGroup. The game's row has one button of each kind (positive, negative, additional) and a page
-    /// asked for a kind by its place in the row, so a second button of a kind took the first one's place: the Campus
-    /// app's "Enrol on a student loan" was written over by "Close", and some forty other rows of the apps lost a button
-    /// the same way. And the game's row is one line, so buttons that did not fit were squeezed until their words were
-    /// cut. Here a row shows every button its page writes, in the order it writes them: a kind's own button first, a
-    /// copy of it (<see cref="Take"/>) for every further one, and the copies go when the row is written again.
-    /// Where they stand is ButtonRules': lines from the box's left edge to its right, the game's gap between buttons
-    /// and lines, as many lines as the words need.
+    /// The layout of a row of buttons in the apps' white box (InfoBox.ButtonRow), in place of the game's one-line
+    /// HorizontalLayoutGroup. The game's row has one button per kind (positive, negative, additional), so a second button of
+    /// a kind would take the first's place, and buttons that did not fit were squeezed. Here a row shows every button its
+    /// page writes, in order: a kind's own button first, a copy (<see cref="Take"/>) for each further one, the copies gone
+    /// when the row is written again; ButtonRules places them on as many lines as the words need.
     ///
-    /// Cost: nothing per frame. The engine asks a layout only when something under it changed (a page written on a
-    /// click): then one measure of each button's words and arithmetic over the buttons that show. Lists are kept and
-    /// used again.
+    /// Costs nothing a frame: the engine asks a layout only when something under it changed (a page written on a click),
+    /// then one measure of each button's words and arithmetic over those that show. Lists are kept and reused.
     /// </summary>
     public sealed class ButtonFlow : LayoutGroup
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ButtonFlow", typeof(ButtonFlow));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ButtonFlow", typeof(ButtonFlow));   // the game's calls of it
 
         private const string CopyMark = " (more)";   // the name of a copy of one of the row's own buttons
 
@@ -64,9 +59,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
-        /// The button a page writes with this kind and key: the one already written with both on this page (written
-        /// again), else the row's own button of the kind if this page has not used it, else a new copy of it. A row with
-        /// fewer kinds uses the last it has.
+        /// The button a page writes with this kind and key: the one already written with both on this page, else the row's own
+        /// button of the kind if this page has not used it, else a new copy of it. A row with fewer kinds uses its last.
         /// </summary>
         public Transform Take(int kind, string key)
         {
@@ -95,7 +89,7 @@ namespace RealLifeOverhaul.GameUi
                 copy.name = own.name + CopyMark;
                 for (int i = 0; i < copy.transform.childCount; i++)
                 {
-                    copy.transform.GetChild(i).localScale = Vector3.one;   // (a copy of the button under the pointer is not taken at its hover size)
+                    copy.transform.GetChild(i).localScale = Vector3.one;   // a copy of the button under the pointer is not taken at its hover size
                 }
                 _copies.Add(copy);
                 button = (RectTransform)copy.transform;
@@ -181,8 +175,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The buttons that show, in the order the page wrote them (any other shown by another hand after them), and the
-        // width each one's words need.
+        // The buttons that show in the order the page wrote them (any shown by another hand after), and each one's width.
         private void Order()
         {
             _order.Clear();
@@ -216,7 +209,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The lines for the width the row has now.
+        // The lines for the row's width now.
         private void Place()
         {
             _lines = ButtonRules.Place(rectTransform.rect.width - padding.horizontal, _needs, _order.Count, _line, _x, _w);
