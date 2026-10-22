@@ -20,6 +20,7 @@ internal static partial class Program
         ManagerHiring();
         ManagerOffAndOverrides();
         ManagerTasks();   // the task switches and the weekly rota written only whole (ManagerTaskChecks.cs)
+        ManagerDirectory();   // the Managers tab's directory and the bugs found behind it (ManagerDirectoryChecks.cs)
         ManagerSave();
         ManagerWords();
     }

@@ -108,21 +108,103 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_rota_col_worth", 300f, TableSort.None)
             .Column("reallife_rota_col_staff", 300f, TableSort.None, right: true);
 
-        /// <summary>Managers, the list: 0 place, 1 manager, 2 skill, 3 decisions this month, 4 state.</summary>
-        public static readonly TableSpec Managers = new TableSpec("Company", "Managers")
-            .Column("reallife_mgr_col_place", 600f, TableSort.Text, flexible: true)
-            .Column("reallife_mgr_col_manager", 440f, TableSort.Text)
-            .Column("reallife_tab_co_col_skill", 200f, TableSort.Number)
-            .Column("reallife_mgr_col_month", 300f, TableSort.Number)
-            .Column("reallife_co_col_state", 300f, TableSort.Text, right: true)
-            .Empty("reallife_mgr_row_no_places");
+        // A manager's post as the directory's groups filter it (ManagerDirectoryRules.FilterNeeds, FilterSick, FilterFine).
+        private static readonly string[] PostFilters = { "reallife_mgr_filter_needs", "reallife_mgr_filter_sick", "reallife_mgr_filter_fine" };
+        // A district's regional post: in post, off sick, nobody.
+        public const int RegionInPost = 0, RegionSick = 1, RegionEmpty = 2;
+        private static readonly string[] RegionFilters = { "reallife_mgr_in_post", "reallife_mgr_off_sick", "reallife_mgr_empty_post" };
+        /// <summary>The kinds of place, by ManagedKind: the vacancies' first filter.</summary>
+        public static readonly string[] PlaceKinds = { "reallife_mgr_kind_shop", "reallife_mgr_kind_works", "reallife_mgr_kind_warehouse" };
+        // What needs the player: a mistake still open, a manager off sick with nobody standing in, a budget nearly used.
+        public const int NeedMistake = 0, NeedUncovered = 1, NeedBudget = 2;
+        private static readonly string[] NeedKinds = { "reallife_mgr_need_kind_mistake", "reallife_mgr_need_kind_uncovered", "reallife_mgr_need_kind_budget" };
 
-        // A place's kinds of decision, then its decisions, newest first: laid out by hand, nothing sorts.
+        /// <summary>Managers, the directory's first page, one row a group: 0 group, 1 managers, 2 cost a month, 3 open decisions, 4 state. Laid out by hand.</summary>
+        public static readonly TableSpec Managers = new TableSpec("Company", "Managers")
+            .Column("reallife_mgr_col_group", 640f, TableSort.None, flexible: true)
+            .Column("reallife_mgr_col_count", 360f, TableSort.None)
+            .Column("reallife_mgr_col_month_cost", 320f, TableSort.None)
+            .Column("reallife_mgr_col_open", 300f, TableSort.None)
+            .Column("reallife_co_col_state", 420f, TableSort.None, right: true);
+
+        /// <summary>
+        /// Managers of one kind of place, by ManagedKind: 0 place, 1 manager, 2 district, 3 skill, 4 cost a month, 5 decisions
+        /// this month, 6 open decisions, 7 state. First in the order they are written: by district, then by name.
+        /// </summary>
+        public static readonly TableSpec[] ManagerKinds = { PlaceManagers("Managers: businesses"), PlaceManagers("Managers: factories and offices"), PlaceManagers("Managers: warehouses") };
+
+        private static TableSpec PlaceManagers(string tab)
+        {
+            return new TableSpec("Company", tab)
+                .Column("reallife_mgr_col_place", 400f, TableSort.Text, flexible: true)
+                .Column("reallife_mgr_col_manager", 340f, TableSort.Text)
+                .Column("reallife_co_col_district", 280f, TableSort.Text)
+                .Column("reallife_tab_co_col_skill", 140f, TableSort.Number)
+                .Column("reallife_mgr_col_month_cost", 250f, TableSort.Money, sums: true)
+                .Column("reallife_mgr_col_month", 190f, TableSort.Number)
+                .Column("reallife_mgr_col_open", 190f, TableSort.Number)
+                .Column("reallife_co_col_state", 320f, TableSort.Custom, right: true)
+                .Filter("reallife_tab_all_districts")
+                .Filter("reallife_mgr_all_states", PostFilters)
+                .Empty("reallife_mgr_empty_group");
+        }
+
+        /// <summary>Regional managers, a row a district: 0 district, 1 manager, 2 skill, 3 places with a manager, 4 standing in today, 5 cost a month, 6 state.</summary>
+        public static readonly TableSpec ManagerRegions = new TableSpec("Company", "Managers: regional")
+            .Column("reallife_co_col_district", 440f, TableSort.Text, flexible: true)
+            .Column("reallife_mgr_col_manager", 380f, TableSort.Text)
+            .Column("reallife_tab_co_col_skill", 150f, TableSort.Number)
+            .Column("reallife_mgr_col_covers", 230f, TableSort.Number)
+            .Column("reallife_mgr_col_standing", 250f, TableSort.Number)
+            .Column("reallife_mgr_col_month_cost", 260f, TableSort.Money, sums: true)
+            .Column("reallife_co_col_state", 320f, TableSort.Custom, right: true)
+            .Filter("reallife_mgr_all_states", RegionFilters)
+            .Order(0, true)
+            .Empty("reallife_mgr_empty_group");
+
+        /// <summary>Places with no manager: 0 place, 1 kind, 2 district, 3 staff, 4 the district's regional manager, 5 state. By district, then name.</summary>
+        public static readonly TableSpec ManagerVacancies = new TableSpec("Company", "Managers: no manager")
+            .Column("reallife_mgr_col_place", 520f, TableSort.Text, flexible: true)
+            .Column("reallife_mgr_col_kind", 340f, TableSort.Text)
+            .Column("reallife_co_col_district", 320f, TableSort.Text)
+            .Column("reallife_rota_col_staff", 170f, TableSort.Number)
+            .Column("reallife_mgr_col_regional", 360f, TableSort.Text)
+            .Column("reallife_co_col_state", 380f, TableSort.Text, right: true)
+            .Filter("reallife_mgr_all_kinds", PlaceKinds)
+            .Filter("reallife_tab_all_districts")
+            .Empty("reallife_mgr_empty_group");
+
+        /// <summary>What needs the player: 0 place, 1 manager, 2 why, 3 day.</summary>
+        public static readonly TableSpec ManagerNeeds = new TableSpec("Company", "Managers: needs you")
+            .Column("reallife_mgr_col_place", 520f, TableSort.Text, flexible: true)
+            .Column("reallife_mgr_col_manager", 380f, TableSort.Text)
+            .Column("reallife_mgr_col_why", 760f, TableSort.Text)
+            .Column("reallife_mgr_col_day", 200f, TableSort.Date, right: true)
+            .Filter("reallife_mgr_all_needs", NeedKinds)
+            .Empty("reallife_mgr_needs_none");
+
+        // A district's places with their managers and who stands in: laid out by hand, nothing sorts.
+        public static readonly TableSpec ManagerRegion = new TableSpec("Company", "Managers: a district")
+            .Column("reallife_mgr_col_place", 560f, TableSort.None, flexible: true)
+            .Column("reallife_mgr_col_manager", 420f, TableSort.None)
+            .Column("reallife_mgr_col_kind", 340f, TableSort.None)
+            .Column("reallife_co_col_state", 520f, TableSort.None, right: true);
+
+        // A place's kinds of decision, then its decisions, newest first, with who made each: laid out by hand, nothing sorts.
         public static readonly TableSpec ManagerPlace = new TableSpec("Company", "Managers: a place")
             .Column("reallife_mgr_col_what", 420f, TableSort.None)
             .Column("reallife_mgr_col_detail", 640f, TableSort.None, flexible: true)
             .Column("reallife_mgr_col_day", 220f, TableSort.None)
-            .Column("reallife_co_col_state", 320f, TableSort.None, right: true);
+            .Column("reallife_co_col_state", 320f, TableSort.None)
+            .Column("reallife_mgr_col_by", 320f, TableSort.None, right: true);
+
+        // A regional manager's decisions standing in, newest first, with the place of each: laid out by hand.
+        public static readonly TableSpec ManagerLog = new TableSpec("Company", "Managers: standing in")
+            .Column("reallife_mgr_col_what", 420f, TableSort.None)
+            .Column("reallife_mgr_col_detail", 640f, TableSort.None, flexible: true)
+            .Column("reallife_mgr_col_day", 220f, TableSort.None)
+            .Column("reallife_co_col_state", 320f, TableSort.None)
+            .Column("reallife_mgr_col_place", 320f, TableSort.None, right: true);
 
         /// <summary>Managers, who could be appointed: 0 name, 1 skill or place, 2 skill, 3 pay, 4 now.</summary>
         public static readonly TableSpec ManagerHands = new TableSpec("Company", "Managers: who")
@@ -130,7 +212,7 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_mgr_col_where", 440f, TableSort.Text)
             .Column("reallife_tab_co_col_skill", 200f, TableSort.Number)
             .Column("reallife_co_col_pay", 300f, TableSort.Money)
-            .Column("reallife_co_col_state", 260f, TableSort.Text, right: true);
+            .Column("reallife_co_col_state", 360f, TableSort.Text, right: true);
 
         public static TableSpec For(int tab)
         {

@@ -19,7 +19,10 @@ Economy/Company/              the first three are game-free and compiled by Econ
   CompanyDirector.Managers      the places read, who decides, the hours, the day (allowances, the month's report), the player's buttons
   CompanyDirector.ManagerDecisions   each kind's decision and its undo
   CompanyDirector.ManagerTests  the three test buttons
-  CompanyApp.Managers           the tab
+  ManagerDirectoryRules         the directory's rules, game-free: groups, how a post stands, what needs the player, counts, order
+  CompanyDirector.ManagerDirectory   each place's post read for a page, who stands in, pay, cost a month, who a decision counts to
+  CompanyApp.Managers           the tab: a manager's panel, a kind, a decision, a district, appointing
+  CompanyApp.ManagerGroups      the directory: its first page and a page per group
   ManagerGuide                  the Guide page's figures, all from the catalogue
 ```
 
@@ -59,6 +62,26 @@ Economy/Company/              the first three are game-free and compiled by Econ
 - With a manager answering a kind at a place, the company sends no notice asking the player about it (`ManagerRules.Answers`). A manager's own request or offer is always the player's. With the option off, a post stood down or the kind taken back, the notices ask the player again, and nothing of the game's is left changed by the switch.
 - Money that has moved stays moved.
 
+## The directory
+
+A player asked for the managers not to be one growing list. The tab opens on a directory, one row a group, in the Company app's own table and white box (`CompanyTables.Managers`, laid out by hand): **Needs you**, **Regional managers**, the managers of businesses, of factories and offices and of warehouses (`ManagedKind`), and **Places with no manager**. Each row counts its group, what it costs a month (`ManagerDirectoryRules.MonthCost`: the allowance a day times the game's month), its open decisions (those that can still be undone) and how it stands. The white box beside it is the overview: managers in post against places and districts, the cost a month, open decisions, those off sick today, the places where nobody decides today, this month's and last month's figures, and the first lines of what needs the player.
+
+- **A group's page** (`mg:shop`, `mg:works`, `mg:warehouse`): every place of the kind with a manager, first by district and then by name (`ManagerDirectoryRules.Order`, the place's id last so the order is the same on every machine); every column sorts (place, manager, district, skill, cost a month with a total, decisions this month, open decisions, state) and two filters, district and state (needs you, off sick and covered, in order), through the kit's `TableSpec`. The order and the filters are the table's, kept until the game is closed, never in the save. A button opens the kind's places with no manager.
+- **Regional managers** (`mg:region`): a row a district with its regional manager, skill, the places with a manager there, how many they stand in for today, cost a month and state; a district's page (`rg:`) lists its places with their managers and who stands in for whom today, a click from each place's panel, which has a row back to the district. Their own decisions standing in are a page of their own (`rh:`). Who could be appointed (`ra:`) says who already is the regional manager of another district, and appointing them says that district is left with none.
+- **Places with no manager** (`mg:vacant`): kind, district, staff and the district's regional manager; a click opens the staff to appoint from.
+- **Needs you** (`mg:need`): one line a place and reason (`ManagerDirectoryRules.NeedsOf`): a mistake that can still be undone (a click opens it when it is the only one), a manager off sick with nobody standing in, a budget with `BudgetNearShare` (800 thousandths) or more used.
+- **A manager's panel**: since when, the game's wage an hour beside the allowance, and the chance of a mistake today as the decisions are made (`CompanyDirector.ChanceToday`, through `Decider`).
+- How a post stands (`ManagerDirectoryRules.State`) agrees with `ManagerRules.Decider` in every case; a page reads every place once (`CompanyDirector.ManagerLook`, pooled lines, no allocation after the first) and is written only when it is shown or something changes.
+
+### Bugs found and fixed with it
+
+- A decision a regional manager made standing in was counted to the place manager off sick (`Record` added to `mp.Own`), so a regional manager's month was always nothing; now it is counted to whoever made it (`MadeBy`, `ManagerDirectoryRules.ByRegion`), and an undo the same way (`CountUndone`).
+- A regional manager off sick still cut the district's mistakes (`Decider` gave the review whatever the regional manager's health); now only one at work reviews.
+- A manager's panel showed the chance of a mistake from the manager's own skill on a day the regional manager stood in, said the regional manager stood in when they were off sick too, and a regional manager's row always said in post.
+- The list of who could be a regional manager did not say who already was one of another district, and appointing them emptied it without a word.
+- A kind's page stayed open for a kind its place no longer had (a business become a factory), with a switch that did nothing.
+- Places past the most the company follows (`CompanyCatalogue.ShopsMost`) were left out without a word; `RotaGame.LeftOut` counts them and the directory says so.
+
 ## A switch for each task
 
 - The manager's own panel (a place picked on the tab) has a section, What they decide, with a switch for each kind its place has: the game's own settings menu switch, as the Mod settings app has them (`GameUi/InfoBox.Toggle`, made from `OptionRows.SwitchRow`; where the menu cannot be copied, the box's tick switch, then a button). Under each, its limit, or for the rota when it is written. A kind's own page has the same switch and its limits.
@@ -86,7 +109,7 @@ Nothing per frame. Once a game hour, a comparison of the hour against the kinds'
 
 ## Tests
 
-Three buttons under the options: make the most skilled employee of a business its manager with every kind it has; let every manager decide everything now (whatever the hour and the day); undo every decision that can still be undone.
+Four buttons under the options: make the most skilled employee of a business its manager with every kind it has; fill the company with managers (every place with staff and no manager given its most skilled employee, every district without one a regional manager from a headquarters, so the directory shows every group at once); let every manager decide everything now (whatever the hour and the day); undo every decision that can still be undone.
 
 ## Checks
 
@@ -94,6 +117,8 @@ Three buttons under the options: make the most skilled employee of a business it
 
 
 `EconomyCheck` (`ManagerChecks.cs`): each place's kinds; the mistake's chance over every skill and review, the roll's spread and that a save rolls the same; every kind's decision inside its limit with and without a mistake (raises over a grid of pay, asks and ceilings, offers, overtime against the budget, claims against the loading, orders over use, stock, floors, limits and skills, prices over markets, suggestions and bands, hires over two thousand random lists); the weekly counts of the game's delivery contracts; who decides when a manager is off sick; the company asking again when the managers are off, the post empty or the kind taken back; a figure the player changed taken as theirs; the undo windows; the month's report; the save's line over a round trip, a later version, a damaged line and the log's cap; the texts in every language and What's new.
+
+`ManagerDirectoryChecks.cs` (`EconomyCheck --managers` runs the managers' checks alone): a post's state against `Decider` in all 16 cases; a regional manager off sick reviewing nothing; the chance of a mistake shown on a day the regional manager stands in; who a decision is counted to; the groups, what needs the player, a budget nearly used, a month's cost; a whole company's counts; the order by district and name, the same for any order the places are read in, and its time; the director and the tab going through those rules, only the player's own places, one read a page and nothing per frame; the test button; every new text in every language, the Guide page and What's new. Made to fail once: the bug checks against the code before the fix (16 of them), the rules' checks by breaking each rule.
 
 ## Not checked in the game (the game could not be run)
 

@@ -927,6 +927,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
                 .AddButton("reallife_mgr_test_appoint", () => Economy.CompanyDirector.Instance?.TestManagerAppoint())
+                .AddButton("reallife_mgr_test_fill", () => Economy.CompanyDirector.Instance?.TestManagerFill())
                 .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())
                 .AddButton("reallife_mgr_test_undo", () => Economy.CompanyDirector.Instance?.TestManagerUndoAll())
                 .AddButton("reallife_ob_test_found", () => Economy.OwnBankDirector.Instance?.TestFound())
