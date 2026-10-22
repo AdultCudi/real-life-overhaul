@@ -12,12 +12,9 @@ using Vehicles.VehicleTypes;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Bicycles and motorbikes. To the game and the save each is an ordinary electric scooter, made, ridden and saved as
-    /// the game does one; which scooters are something else is one line in modData (<see cref="GarageState.Bikes"/>), and
-    /// <see cref="BikeMount"/> dresses each as the game spawns it. Without the mod they are scooters again; an owned one
-    /// the game cleared away is stood back where it was left. Bicycles are hired at docks and bought at racks, motorbikes
-    /// and helmets at stands (<see cref="BikePlaces"/>), through the game's panel over a place and its list. Driven by the
-    /// director: a reference comparison a frame, the panel four times a second, the walk over the scooters once a second.
+    /// Bicycles and motorbikes. Each is the game's own electric scooter, made, ridden and saved as the game does one, and
+    /// dressed by <see cref="BikeMount"/>; which ones is a line in modData. Without the mod they are scooters again. A
+    /// reference comparison a frame, the place panel four times a second, the walk over the scooters once a second.
     /// </summary>
     public sealed partial class TwoWheelers
     {
@@ -191,8 +188,7 @@ namespace RealLifeOverhaul
             scooter.UpdateNavMeshTargets();
         }
 
-        // How high over the ground a scooter moved from a place is stood: as high as it stood there (at rest it does not
-        // settle), or just off the ground if it was lying over or off it.
+        // As high as it stood over the ground (at rest it does not settle), or just off it if it was lying down.
         private static float Lift(ScooterController scooter, Vector3 was)
         {
             if (BikePlaces.StandHeight(was, out float under, out _) && was.y - under > -0.1f && was.y - under < 0.4f
@@ -203,11 +199,7 @@ namespace RealLifeOverhaul
             return 0.02f;
         }
 
-        /// <summary>
-        /// As a bike is got off and on: one of the player's own with its frame or bars in something solid
-        /// (<see cref="BikeClearRules"/>) is stood upright on the nearest clear place round it. The game holds a bike nobody
-        /// is on where it was left, so one left in a meter could not be ridden out. Two box queries when nothing is wrong.
-        /// </summary>
+        // As a bike is got off and on: the player's own standing in something solid is moved to a clear place.
         private void Unpin(BikeMount mount, GameManager gm, string when)
         {
             try
@@ -258,10 +250,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The nearest of <see cref="BikeClearRules.Place"/>'s places where the bike stands upright as it faces: pavement
-        /// first, else ground within a step; its boxes in nothing and on nobody but the player; no wall between.
-        /// </summary>
+        // The nearest of BikeClearRules' places where the bike stands clear, pavement first, no wall between.
         private static bool ClearSpot(BikeMount mount, Transform player, out Vector3 spot, out Quaternion facing)
         {
             Transform bike = mount.transform;
@@ -457,7 +446,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The panel's button, on the game's interact key or a click.
         private void UseClicked()
         {
             BikePlace place = _promptPlace;

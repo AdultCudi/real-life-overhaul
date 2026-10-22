@@ -12,12 +12,9 @@ using UI.Notification;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A bicycle or a motorbike called by its own name wherever the game writes the scooter's: the HUD's vehicle panel
-    /// while ridden, the game's messages naming the ridden vehicle (listened to first on Notifications.onShow), and an
-    /// underground car park's list of parked vehicles. Nothing of the game's stays changed; only the player's own
-    /// two-wheelers are named. Cost: one reference comparison a frame while riding, four dictionary looks a message,
-    /// and in a car park a comparison four times a second plus a walk of the save's vehicles when the game makes its
-    /// list again. Nothing allocated.
+    /// A two-wheeler called by its own name wherever the game writes the scooter's: the vehicle panel, the messages and a
+    /// car park's list. Cost: a reference comparison a frame while riding, four dictionary looks a message, a comparison
+    /// four times a second in a car park; nothing allocated.
     /// </summary>
     public sealed class BikeNames
     {
@@ -133,8 +130,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's list holds the car park's vehicles in the save's order, the ridden one left out
-        // (CurrentBuildingUI.GetParkedVehicles).
+        // The game's list holds the car park's vehicles in the save's order, the ridden one left out.
         private void Name(List<string> list)
         {
             GameInstance save = SaveGameManager.Current;

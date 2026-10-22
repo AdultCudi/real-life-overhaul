@@ -152,10 +152,7 @@ namespace RealLifeOverhaul
             _closing = null;
         }
 
-        /// <summary>
-        /// One title and one line of detail per vehicle, cars with a build first, for a Transport feature's garage page.
-        /// Builds strings: call it when the page opens, not per frame.
-        /// </summary>
+        /// <summary>A title and a line per vehicle for a garage page of another feature's. Builds strings: not per frame.</summary>
         public static void Lines(List<string> titles, List<string> details)
         {
             Lines(titles, details, null);

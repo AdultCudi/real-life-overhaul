@@ -34,10 +34,7 @@ namespace RealLifeOverhaul
         public const float BackMost = 1.0f;             // m/s backwards, a slow walk
         public const float WalkingPace = 1.4f;          // m/s, 5 km/h
 
-        /// <summary>
-        /// The air's hold, N per (m/s) squared, that settles steady pedalling at the cruising speed once the tyres'
-        /// rolling (N) is paid.
-        /// </summary>
+        /// <summary>The air's hold (N per (m/s) squared) that settles steady pedalling at the cruising speed, rolling (N) paid.</summary>
         public static float Drag(Ride ride, float mass, float rolling)
         {
             float cruise = ride.CruiseKmh / 3.6f;
@@ -45,10 +42,7 @@ namespace RealLifeOverhaul
             return push > 0f ? push / (cruise * cruise) : 0f;
         }
 
-        /// <summary>
-        /// The rider's push along the bike (N) at this forward speed (m/s), with the throttle (0 to 1) and the effort
-        /// (1 fresh, 0.5 worn out); with the brake held (the gearbox's reverse) a slow walk back; else zero.
-        /// </summary>
+        /// <summary>The rider's push (N) at this speed (m/s); with the brake held (the gearbox's reverse), a walk back.</summary>
         public static float Pedal(Ride ride, float mass, float along, float throttle, float effort, float back)
         {
             if (throttle > 0.1f)
@@ -80,11 +74,7 @@ namespace RealLifeOverhaul
         public const float ChangeHold = 0.3f;           // s pedalling and freewheeling have to last before the pose follows
         public const float PoseFade = 0.35f;            // s one riding clip takes to cross into the next; no other change is made meanwhile
 
-        /// <summary>
-        /// The pose the rider should be in: <paramref name="speed"/> signed along the bike (m/s),
-        /// <paramref name="pushing"/> with the throttle held. Without a stopped clip the rider never stands; without a
-        /// freewheeling one never coasts.
-        /// </summary>
+        /// <summary>The pose the rider should be in at this signed speed (m/s); never one there is no clip for.</summary>
         public static Pose Want(Pose now, float speed, bool pushing, bool canStand, bool canCoast, bool bicycle)
         {
             float fast = speed < 0f ? -speed : speed;
@@ -121,7 +111,7 @@ namespace RealLifeOverhaul
             return t * t * (3f - 2f * t);
         }
 
-        /// <summary>A shown value eased towards its target over about <paramref name="seconds"/>, the same at any frame rate.</summary>
+        /// <summary>A shown value eased towards its target over about this many seconds, the same at any frame rate.</summary>
         public static float Ease(float shown, float target, float dt, float seconds)
         {
             if (seconds <= 0f || dt <= 0f)
@@ -175,10 +165,7 @@ namespace RealLifeOverhaul
         public const float BarsBehindSeat = 0.10f;      // m behind the saddle's front the bars box starts (the rider's thighs)
         public const float BarsAhead = 0.08f;           // m ahead of the grips
 
-        /// <summary>
-        /// The frame box: from the back of the rear wheel to the front of the front one, from just off the road to the
-        /// saddle, as narrow as the frame.
-        /// </summary>
+        /// <summary>The frame box: wheel to wheel, from just off the road to the saddle, as narrow as the frame.</summary>
         public static Box Frame(float rearZ, float frontZ, float wheelRadius, float seatHeight, bool motor)
         {
             float half = motor ? FrameHalfMotorbike : FrameHalfBicycle;
@@ -193,10 +180,7 @@ namespace RealLifeOverhaul
             };
         }
 
-        /// <summary>
-        /// The bars box: as wide as the hands on the grips, from the rider's knees to the hands, from the saddle's front
-        /// to just ahead of the grips.
-        /// </summary>
+        /// <summary>The bars box: as wide as the hands, from the knees up to them, from the saddle's front to past the grips.</summary>
         public static Box Bars(float gripHalf, float gripHeight, float gripZ, float seatZ)
         {
             float half = gripHalf + GripReach;
@@ -213,10 +197,7 @@ namespace RealLifeOverhaul
             };
         }
 
-        /// <summary>
-        /// The lowest a box's bottom may be for its half width to stay <see cref="LeanClearance"/> off the road at full
-        /// lean and the margin.
-        /// </summary>
+        /// <summary>The lowest a box's bottom may be to stay <see cref="LeanClearance"/> off the road at full lean and the margin.</summary>
         public static float Bottom(float halfWidth)
         {
             double lean = (LeanMostDeg + LeanMargin) * Math.PI / 180.0;
@@ -231,10 +212,7 @@ namespace RealLifeOverhaul
             return (float)(box.Bottom * Math.Cos(lean) - box.HalfWidth * Math.Sin(lean));
         }
 
-        /// <summary>
-        /// A box's size along the axes of a space turned by the rotation matrix m (rows: the space's axes in the bike's).
-        /// Absolute parts, so a quarter turn swaps width and length and no size comes out negative.
-        /// </summary>
+        /// <summary>A box's size along the axes of a space turned by m (rows: its axes in the bike's); never negative.</summary>
         public static void SizeAlong(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22,
             float x, float y, float z, out float sx, out float sy, out float sz)
         {
@@ -251,10 +229,7 @@ namespace RealLifeOverhaul
             return Turning(x) && Turning(y) && Turning(z);
         }
 
-        /// <summary>
-        /// Whether the centre of mass and inertia read now are kept: only from a body free to turn. The game freezes
-        /// every scooter nobody rides (VehicleController.SetFreeze) by zeroing its inertia.
-        /// </summary>
+        /// <summary>Whether the mass read now is kept: only from a body free to turn (the game's hold zeroes the inertia).</summary>
         public static bool KeepMass(bool turnFree, float x, float y, float z)
         {
             return turnFree && Turns(x, y, z);

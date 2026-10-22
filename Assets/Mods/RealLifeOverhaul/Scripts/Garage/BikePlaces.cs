@@ -27,18 +27,17 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Where two-wheelers are hired and sold, worked out once a city load by rule and in a fixed order, so a save
-    /// always has them in the same spots: bike-share docks beside every other game scooter stand (eight at most), a
-    /// bicycle rack outside supermarkets (five), a motorbike stand outside car dealerships (four; at repairing garages
-    /// where the city has none). Each stands wholly on level pavement off crossings (<see cref="Grounded"/>). A place
-    /// is a few renderers with no collider, built within 90 m.
+    /// Where two-wheelers are hired and sold, worked out once a city load by rule and in a fixed order, so a save always
+    /// has them in the same spots: docks beside the game's scooter stands, racks outside supermarkets, motorbike stands
+    /// outside car dealerships (repairing garages where the city has none), each wholly on level pavement off crossings
+    /// (<see cref="Grounded"/>). A place is a few renderers with no collider, built within 90 m; a second's tick.
     /// </summary>
     public sealed class BikePlaces
     {
         private const int MaxDocks = 8, MaxShops = 5, MaxStands = 4;
         private const float ShowWithin = 90f;   // metres
         public const float Reach = 3.5f;   // metres: a place's panel
-        private const int ShareColour = 0x1E88E5;
+        private const int ShareColour = 0x1E88E5;   // 0xRRGGBB
 
         // Half sizes of what stands at a place, for the room test (the height from 0.35 m up).
         private static readonly Vector3 DockHalf = new Vector3(1.55f, 0.55f, 1.05f);
@@ -68,11 +67,7 @@ namespace RealLifeOverhaul
 
         public bool Found => _found;
 
-        /// <summary>
-        /// For ScenePrewarm: the game's scooter stands, which only a search of the whole scene finds (84 ms the first
-        /// time on the street after a load), kept for <see cref="Find"/>. False indoors: tried again behind the black
-        /// screen at a door.
-        /// </summary>
+        /// <summary>For ScenePrewarm: the scooter stands, found by a search of the scene (84 ms). False indoors: tried again.</summary>
         public bool PrewarmStands()
         {
             if (_found || _stands != null || !Settings.Garage || !Settings.TwoWheelers)
@@ -87,7 +82,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The stands the game has put out in the street, of its electric scooters.
         private static List<Transform> Stands()
         {
             var stands = new List<Transform>();
@@ -101,7 +95,7 @@ namespace RealLifeOverhaul
             return stands;
         }
 
-        /// <summary>Finds the places, once a city load (the search of the scene it needs is made behind the loading screen).</summary>
+        /// <summary>Finds the places, once a city load, from the stands found behind the loading screen.</summary>
         public void Find()
         {
             _found = true;
@@ -180,8 +174,7 @@ namespace RealLifeOverhaul
             return byX != 0 ? byX : Mathf.RoundToInt(p.z).CompareTo(Mathf.RoundToInt(q.z));
         }
 
-        // A dock beside one of the game's scooter stands: the first of eight places round it on pavement with room for
-        // the whole dock.
+        // The first of eight places round a scooter stand on pavement with room for the whole dock.
         private static bool Beside(Vector3 from, Quaternion facing, out Vector3 spot)
         {
             Vector3 right = facing * Vector3.right;
@@ -203,8 +196,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // A rack or a stand on the pavement along from a building's door, clear of what the player uses (CitySpots
-        // keeps 2.4 m from doors, benches and machines), with room for all of it.
+        // On the pavement along from a building's door, clear of what the player uses, with room for all of it.
         private static bool Outside(CityBuildingController building, Vector3 half, out Vector3 spot, out Quaternion facing)
         {
             spot = default;
@@ -232,12 +224,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// True if the whole place stands on pavement: every sample of <see cref="BikeSpotRules"/> over its footprint
-        /// and margin is pavement, the ground level, and no marked crossing under it
-        /// (<see cref="CitySpots.ClearOfCrossings"/>); the spot is then put on the ground at its middle. Nine samples
-        /// of two rays and a mesh query and one box query, once per place tried; refusals counted.
-        /// </summary>
+        /// <summary>True if the whole place stands on level pavement off crossings; the spot then goes on the ground.</summary>
         public static bool Grounded(ref Vector3 spot, Quaternion facing, Vector3 half)
         {
             int off = 0;
@@ -289,18 +276,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True if a box of this half size on the ground at a spot (its middle moved forwards by an offset) touches
-        /// nothing solid.
-        /// It starts 0.35 m up, so kerbs and the ground do not count.
-        /// </summary>
+        /// <summary>True if a box of this half size at a spot, moved forwards, touches nothing solid from 0.35 m up (over kerbs).</summary>
         public static bool Fits(Vector3 spot, Quaternion facing, Vector3 half, float forwards)
         {
             Vector3 centre = spot + facing * new Vector3(0f, 0.35f + half.y, forwards);
             return !Physics.CheckBox(centre, half, facing, SolidMask, QueryTriggerInteraction.Ignore);
         }
 
-        // All layers but the ground and the zone-only ones (as CitySpots).
+        // All layers but the ground and the zone-only ones.
         private static int SolidMask
         {
             get
@@ -316,7 +299,7 @@ namespace RealLifeOverhaul
         private static int _pinMask, _crowdMask, _wallMask;
         private static bool _masksRead;
 
-        /// <summary>The layers a bike must never be left in (<see cref="BikeClearRules.Pins"/>), read from the engine's layer names once.</summary>
+        /// <summary>The layers a bike must never be left in (<see cref="BikeClearRules.Pins"/>), read once.</summary>
         public static int PinMask
         {
             get
@@ -326,7 +309,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>What a place a bike is moved to must be clear of: those layers and people's (<see cref="BikeClearRules.Crowds"/>).</summary>
+        /// <summary>What a place a bike is moved to must be clear of: those layers and people's.</summary>
         public static int RoomMask
         {
             get
@@ -358,31 +341,20 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True if no building's wall stands between two points, looked along at a height: a moved bike never goes
-        /// through a shopfront. Only walls count, so the post it stood in does not.
-        /// </summary>
+        /// <summary>True if no building's wall stands between two points at a height; the post a bike stood in does not count.</summary>
         public static bool Unwalled(Vector3 from, Vector3 to, float height)
         {
             ReadMasks();
             return _wallMask == 0 || !Physics.Linecast(from + Vector3.up * height, to + Vector3.up * height, _wallMask, QueryTriggerInteraction.Ignore);
         }
 
-        /// <summary>
-        /// True if nothing solid stands between two points, looked along at a height. A box wholly behind a shopfront
-        /// touches nothing (a wall is a skin, not a solid), so <see cref="Fits"/> alone can pass a place indoors; this
-        /// line crosses the wall.
-        /// </summary>
+        /// <summary>True if nothing solid stands between two points: a wall is a skin, which <see cref="Fits"/> alone misses.</summary>
         public static bool Seen(Vector3 from, Vector3 spot, float height)
         {
             return !Physics.Linecast(from + Vector3.up * height, spot + Vector3.up * height, SolidMask, QueryTriggerInteraction.Ignore);
         }
 
-        /// <summary>
-        /// The height a two-wheeler stands at over a point: the ground the rays find, or the pavement's walkable
-        /// surface where that is higher (a kerb the ray went under). <paramref name="pavement"/>: whether it is
-        /// pavement at all. False: no ground there.
-        /// </summary>
+        /// <summary>The height a two-wheeler stands at: the ground, or the pavement where higher (a kerb). False: no ground.</summary>
         public static bool StandHeight(Vector3 point, out float height, out bool pavement)
         {
             bool ground = CitySpots.Ground(point, out height);
@@ -400,10 +372,7 @@ namespace RealLifeOverhaul
             return ground;
         }
 
-        /// <summary>
-        /// A place for a two-wheeler 2.2 m ahead of somebody on foot, side on to them, in the open and in their sight;
-        /// else a little to either side, further or nearer. False if none will do.
-        /// </summary>
+        /// <summary>A place for a two-wheeler 2.2 m ahead of somebody on foot, side on, in the open; else close by. False: none.</summary>
         public static bool SpotAhead(Transform player, out Vector3 spot, out Quaternion facing)
         {
             Vector3 from = player.position;
@@ -426,11 +395,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// True if a two-wheeler stands where nobody can walk up to it: pavement near it with a building's wall
-        /// between. For a bike found so at a load (handed over behind a shopfront). Two queries, once per bike per
-        /// load.
-        /// </summary>
+        /// <summary>True if a two-wheeler stands where nobody can walk up to it, a wall between it and the pavement; two queries.</summary>
         public static bool Walled(Vector3 at)
         {
             if (!CitySpots.Pavement(at, 8f, out Vector3 walk) || CitySpots.Flat(walk - at) < 0.3f * 0.3f)
@@ -444,10 +409,7 @@ namespace RealLifeOverhaul
         private static readonly float[] AheadTurn = { 0f, 35f, -35f, 0f, 0f, 70f, -70f };
         private static readonly float[] AheadReach = { 2.2f, 2.2f, 2.2f, 3.0f, 1.7f, 2.2f, 2.2f };
 
-        /// <summary>
-        /// What a place is called: the nearest building's address and its district; empty if the city cannot say. A
-        /// scan of the city's buildings: for a panel or a toast, never per frame.
-        /// </summary>
+        /// <summary>The nearest building's address and district, or empty. A scan of the city's buildings: never per frame.</summary>
         public static string Whereabouts(Vector3 where)
         {
             try
@@ -534,8 +496,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Where a handed-over bike may stand, in the place's frame (x across the pavement, z along it): along the
-        // pavement first, as "to its side" is the shopfront or the kerb.
+        // In the place's frame (x across the pavement, z along it): along first, as across is the shopfront or the kerb.
         private static readonly Vector2[] HandOver =
         {
             new Vector2(0f, 2.6f), new Vector2(0f, -2.6f), new Vector2(0f, 3.4f), new Vector2(0f, -3.4f),
@@ -543,10 +504,7 @@ namespace RealLifeOverhaul
             new Vector2(2.1f, 0f), new Vector2(-2.1f, 0f)
         };
 
-        /// <summary>
-        /// Where a bike handed over at a place is stood: beside it along the pavement, clear and in the place's sight
-        /// (never behind a wall); else any ground level with the place still in sight. False if there is no room.
-        /// </summary>
+        /// <summary>Where a bike handed over is stood: beside the place along the pavement, in its sight. False: no room.</summary>
         public static bool HandOverSpot(BikePlace place, out Vector3 spot)
         {
             for (int pass = 0; pass < 2; pass++)
@@ -560,8 +518,7 @@ namespace RealLifeOverhaul
                         continue;
                     }
                     spot = new Vector3(at.x, height, at.z);
-                    // Looked along above head height, so whoever stands at the stand is not a wall. Never on a
-                    // crossing.
+                    // Looked along above head height, so whoever stands there is not a wall. Never on a crossing.
                     if (Fits(spot, place.Rotation, BikeHalf, 0f) && Seen(place.Position, spot, 2.1f)
                         && CitySpots.ClearOfCrossings(spot + Vector3.up * 0.5f, new Vector3(BikeHalf.x, 1f, BikeHalf.z), place.Rotation, out _))
                     {

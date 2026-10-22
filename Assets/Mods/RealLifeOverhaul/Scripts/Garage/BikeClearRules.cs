@@ -4,10 +4,8 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Where a two-wheeler may be left, in plain numbers so that NavCheck checks the rules <see cref="TwoWheelers"/>
-    /// leaves a bike by. The game stands a scooter wherever its rider gets off and freezes it there, so a bike left
-    /// against a post or a meter stays in it. On every getting off and on, its frame and bars boxes are looked for in
-    /// anything solid (<see cref="Pins"/>), and the player's own bike found in something is moved to the nearest clear
-    /// place (<see cref="Place"/>). A few multiplications a check; nothing allocated.
+    /// leaves a bike by: the game freezes a scooter where it was got off, so one left in a post stays in it. A few
+    /// multiplications a check.
     /// </summary>
     public static class BikeClearRules
     {
@@ -21,10 +19,7 @@ namespace RealLifeOverhaul
 
         public static int Places => Rings.Length * Ways;
 
-        /// <summary>
-        /// The i-th place tried, in the bike's own frame (metres across and along): the nearest ring first, on each
-        /// ring either side first (along the pavement), then ahead and behind, then the corners.
-        /// </summary>
+        /// <summary>The i-th place tried, in the bike's frame (metres): nearest ring first, either side, ahead and behind, corners.</summary>
         public static void Place(int i, out float across, out float along)
         {
             if (i < 0 || i >= Places)
@@ -45,10 +40,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True for a layer a bike must never be left in: street furniture, buildings, vehicles, anything solid. Never
-        /// the ground, people (they walk off), trigger-only zones or a layer with no name.
-        /// </summary>
+        /// <summary>True for a layer a bike must never be left in: anything solid, never the ground, people or zones.</summary>
         public static bool Pins(string layer)
         {
             if (string.IsNullOrEmpty(layer) || Zone(layer))
@@ -65,7 +57,7 @@ namespace RealLifeOverhaul
             return !string.IsNullOrEmpty(layer) && CarContactRules.KindOfLayer(layer) == ContactKind.Person;
         }
 
-        // Zone-only layers, left out as the mod's other room tests leave them (CitySpots, BikePlaces.Fits).
+        // Zone-only layers, left out as the mod's other room tests leave them.
         private static bool Zone(string layer)
         {
             switch (layer)
@@ -82,10 +74,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Whether a bike is moved: it stands in something, it is the player's own (Going Public), and it is outdoors
-        /// (indoors the street is not there to measure; it is looked at again when got on).
-        /// </summary>
+        /// <summary>A bike is moved if it stands in something, is the player's own (Going Public) and is outdoors.</summary>
         public static bool Move(bool pinned, bool mine, bool indoors)
         {
             return pinned && mine && !indoors;

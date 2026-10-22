@@ -59,8 +59,7 @@ namespace RealLifeOverhaul
                 bool stopped = _seated != null && _riding == BikeRules.Pose.Stand;
                 if (stopped)
                 {
-                    // Astride with the left foot down: the clip has the right pedal forward and level, so the cranks are
-                    // brought round to there, backwards as on a freewheel, and the legs handed to the clip.
+                    // The clip has the right pedal forward and level: the cranks go back round to there, the legs to the clip.
                     if (_crank != 0f)
                     {
                         _crank = Mathf.MoveTowards(_crank, _crank > Mathf.PI ? Mathf.PI * 2f : 0f, CrankHome * dt);
@@ -100,9 +99,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The Head bone's axes are the rig's, not the character's. In the avatar's T-pose the head is straight, so the
-        // bone's rotation there is what stands between them. False when the avatar does not say: the helmet then keeps
-        // the player's heading.
+        // The Head bone's axes are the rig's; its rotation in the avatar's T-pose squares them. False if the avatar does not say.
         private static bool HeadSquare(Animator animator, Transform head, out Quaternion square)
         {
             square = Quaternion.identity;
@@ -153,8 +150,7 @@ namespace RealLifeOverhaul
             return id != null && ClipLibrary.TryGet(id, out CityClip clip) && clip.Loop ? clip.Clip : null;
         }
 
-        // Which clip the rider shows (BikeRules.Want). A change has to last its moment first, and none is made while the
-        // last is fading in: the animator would replace the clip fading out, which shows as a jump.
+        // A change has to last its moment, and none is made while the last fades in: that would show as a jump.
         private void Pose(float dt, float speed, bool pushing)
         {
             _poseAge += dt;

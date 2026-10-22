@@ -164,8 +164,7 @@ namespace RealLifeOverhaul
         /// <summary>Where every two-wheeler stands now, written into its record; called while the game saves.</summary>
         public void RememberPositions()
         {
-            // The game takes a scooter away four hours after it was last seen, tested as it spawns one from a save: ours
-            // are saved as in view, so without the mod the clock starts when one first goes out of sight.
+            // Saved as in view: the game takes a scooter away four hours after it was last seen.
             GameInstance save = SaveGameManager.Current;
             if (save != null && save.VehicleInstances != null)
             {

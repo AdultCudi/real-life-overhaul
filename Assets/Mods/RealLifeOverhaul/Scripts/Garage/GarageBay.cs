@@ -13,11 +13,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's own panel at a filling station or a repair bay (GasStationOverlay), with one more line and button in
-    /// a bay. The game keeps one object of it in OverlayUI.gasStation and shows it through IOverlay: this class derives
-    /// from the game's and implements the interface again, so the box's questions (the second line, the buttons) are
-    /// answered here while the station, the repair, the wash and the refuelling stay the game's. Asked when the game
-    /// shows or refreshes its panel, never per frame.
+    /// The game's own panel at a filling station or a repair bay, with one more line and button in a bay. It derives from
+    /// the game's GasStationOverlay and implements IOverlay again, so the box's questions are answered here while the
+    /// repair, the wash and the refuelling stay the game's. Asked when the game shows its panel, never per frame.
     /// </summary>
     public sealed class RepairBayOverlay : GasStationOverlay, IOverlay
     {
@@ -27,7 +25,7 @@ namespace RealLifeOverhaul
         private bool _atBay;
         private ButtonInfo[] _own;
 
-        // The game's own buttons, asked for once a frame at most (the box asks for the lines and the buttons in turn).
+        // The game's own buttons, asked for once a frame at most: the box asks for the lines and the buttons in turn.
         private ButtonInfo[] Own()
         {
             if (_frame != Time.frameCount)
@@ -124,14 +122,9 @@ namespace RealLifeOverhaul
 
         public static bool Installed => _ours != null;
 
-        /// <summary>True while the workshop's list is open.</summary>
         public static bool ListOpen => GarageList.OpenFor(Owner);
 
-        /// <summary>
-        /// Four times a second: puts the extended panel in the game's field once the box is down, ends a car wash of the
-        /// game's that stopped without ending (<see cref="GarageWash"/>), and closes the workshop's list when the car
-        /// has left the bay or another screen has come up.
-        /// </summary>
+        /// <summary>Four times a second: the panel in the game's field, a stopped wash ended, the list closed when due.</summary>
         public static void Tick(GameManager gm)
         {
             if (_ours == null && !_failed)
@@ -319,8 +312,7 @@ namespace RealLifeOverhaul
                 TravelList list = GarageList.Take(Owner, false);
                 if (list == null)
                 {
-                    // The game's window could not be copied (a "Game UI:" line says why): the button does the one
-                    // thing that is due.
+                    // The game's window could not be copied: the button does the one thing that is due.
                     Logger?.Info("Garage check (workshop): the game's list could not be made; the service is ordered directly if anything is due: FAIL.");
                     CarOwnership.Instance?.OrderService(car);
                     return;
@@ -437,9 +429,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The one window the Garage's lists share: a copy of the game's subway station list (<see cref="TravelList"/>),
-    /// made when first wanted. Only one list is open: taking the window closes whichever had it, and that one's closing
-    /// runs.
+    /// The one window the Garage's lists share, a copy of the game's subway station list (<see cref="TravelList"/>) made
+    /// when first wanted: taking it closes whichever list had it.
     /// </summary>
     public static class GarageList
     {
@@ -462,10 +453,7 @@ namespace RealLifeOverhaul
             return IsOpen && ReferenceEquals(_owner, owner);
         }
 
-        /// <summary>
-        /// The window, for this owner to fill and open: <paramref name="aside"/> left of the middle (the custom shop,
-        /// the car to its right), otherwise in the middle. Null if the game's window could not be copied.
-        /// </summary>
+        /// <summary>The window for this owner to fill, aside (left of the middle) or in the middle; null if it could not be copied.</summary>
         public static TravelList Take(object owner, bool aside)
         {
             if (_failed)
@@ -490,8 +478,7 @@ namespace RealLifeOverhaul
             }
             _owner = owner;
             RectTransform window = _list.Window;
-            // Aside: clear of the game's task panel (740 wide at the left), its phone (628 wide at the right) and its
-            // item panel, which stand on canvases of the same order and may draw over it.
+            // Aside: clear of the game's task panel (740 wide at the left), phone (628 at the right) and item panel.
             Vector2 at = aside ? new Vector2(0f, 0.5f) : new Vector2(0.5f, 0.5f);
             window.anchorMin = window.anchorMax = window.pivot = at;
             window.anchoredPosition = new Vector2(aside ? AsideLeft : 0f, 60f);   // 60 up: the item panel is on screen while a car is sat in

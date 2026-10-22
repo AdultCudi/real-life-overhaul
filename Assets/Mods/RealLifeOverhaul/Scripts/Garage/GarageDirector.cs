@@ -36,10 +36,7 @@ namespace RealLifeOverhaul
 
         public TwoWheelers Bikes => _bikes;
 
-        /// <summary>
-        /// True while the game's panel at a dock, a rack or a stand has its button on the interact key: the mod's own
-        /// interact key then does nothing else (World/NearbyInteraction).
-        /// </summary>
+        /// <summary>True while a bike place's panel has the interact key: the mod's own key then does nothing else.</summary>
         public static bool TakesInteractKey => Instance != null && !Instance._failed && Instance._bikes.TakesInteractKey;
 
         /// <summary>False once the Garage has switched itself off for the session: its shop and lists are then not offered.</summary>
@@ -276,10 +273,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Lets go at once of everything that holds the player's car or the view: the custom shop, the lists, "My vehicles".
-        /// The feature's clean-up (Meta/FeatureList), since after the guard's switch the director's timer never runs again.
-        /// </summary>
+        /// <summary>The feature's clean-up: the shop and lists let go at once, as the guard's switch stops the timer for good.</summary>
         public static void LetGo()
         {
             GarageDirector director = Instance;

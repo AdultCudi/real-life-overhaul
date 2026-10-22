@@ -133,8 +133,7 @@ namespace RealLifeOverhaul
             Changed("paint " + (colour < 0 ? "factory" : "#" + colour.ToString("X6")));
         }
 
-        // The game's own colour picker, as its interior designer has it: the car is repainted as the colour moves; its button
-        // keeps the colour, closing it any other way puts the paint back.
+        // The game's own colour picker: its button keeps the colour, closing it any other way puts the paint back.
         private void MixOpen()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;

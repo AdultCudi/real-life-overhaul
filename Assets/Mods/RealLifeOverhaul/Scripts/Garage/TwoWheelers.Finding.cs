@@ -18,10 +18,7 @@ namespace RealLifeOverhaul
         private const float PointNear = 3f;          // metres
         private const float BringFreeWithin = 25f;   // metres
 
-        /// <summary>
-        /// Marks a two-wheeler with the game's destination marker until the player is near it, gets on, goes indoors or
-        /// the time is up. While a job or an outing has the marker it is asked for again four times a second.
-        /// </summary>
+        /// <summary>The game's destination marker on a two-wheeler until the player is near, on it, indoors or the time is up.</summary>
         public void PointTo(BikeMount mount, Vector3 at, BikeDef def, float seconds = PointSeconds)
         {
             _pointMount = mount;
@@ -121,7 +118,6 @@ namespace RealLifeOverhaul
                 : angle > 0f ? "reallife_bike_dir_right" : "reallife_bike_dir_left");
         }
 
-        // Its name, how far and which way.
         private static void SayWhere(NotificationType type, string key, BikeDef def, Vector3 at, float seconds = 10f)
         {
             string direction = Direction(at, out int metres);
@@ -149,10 +145,7 @@ namespace RealLifeOverhaul
                 + "."));
         }
 
-        /// <summary>
-        /// "Bring it here" of My vehicles: the two-wheeler stood in front of the player, on foot and out of doors; free
-        /// from close by, else a small fee. One the game no longer has is made again, the same sort and colour.
-        /// </summary>
+        /// <summary>"Bring it here": the two-wheeler stood in front of the player, made again if the game no longer has it.</summary>
         public void BringHere(string id)
         {
             BikeRecord record = GarageState.Bike(id);

@@ -17,11 +17,9 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The custom shop, at every repair bay of the game's (opened from the bay's panel, <see cref="GarageBay"/>): a
-    /// turntable camera round the car and the game's list window (<see cref="GarageList"/>) with what can be done to it,
-    /// page by page. Every choice is shown on the car as it is picked; the first entry pays the one bill, and leaving
-    /// without paying puts the car back as it came in. Work is done at once: the game has no notion of a car away being
-    /// worked on. Ticked four times a second by the director, a compare while closed.
+    /// The custom shop at every repair bay: a turntable view of the car and the game's list window with what can be done
+    /// to it. Each choice shows on the car at once; leaving without paying puts it back as it came. Work is done at once,
+    /// as the game has no notion of a car away being worked on. A compare four times a second while closed.
     /// </summary>
     public sealed partial class GarageShop
     {
@@ -49,7 +47,6 @@ namespace RealLifeOverhaul
         private readonly List<GasStationTrigger> _bays = new List<GasStationTrigger>(24);
         private bool _baysFound;
 
-        // the session
         private VehicleController _car;
         private GarageCar _fitted;
         private GarageBuild _saved;        // what the car came in with
@@ -60,12 +57,10 @@ namespace RealLifeOverhaul
         private bool _frozen;
         private Page _page;
 
-        // the view
         private CinemachineVirtualCamera _vcam;
         private float _yaw, _pitch, _distance, _minDistance, _maxDistance;
         private Vector3 _focus;
 
-        // the list
         private readonly List<Action> _acts = new List<Action>(40);   // each entry's button, by the entry's id
         private readonly System.Text.StringBuilder _text = new System.Text.StringBuilder(240);
         private readonly System.Text.StringBuilder _info = new System.Text.StringBuilder(320);
@@ -260,8 +255,7 @@ namespace RealLifeOverhaul
                 _page = Page.Main;
                 _mixing = false;
 
-                // Seated: the pedals off the keys and the car held where it stands, both pedals up. To the automatic gearbox a
-                // brake held at a standstill is reverse, and in reverse the brake is the throttle: the car would shoot back.
+                // The car held with both pedals up: a brake held at a standstill is reverse, where the brake is the throttle.
                 var driven = gm != null && gm.selectedVehicle == car ? car as CarController : null;
                 if (driven != null && driven.vehicleController != null && driven.vehicleController.input != null)
                 {
@@ -433,7 +427,6 @@ namespace RealLifeOverhaul
             list.Add(_acts.Count - 1, name, detail, button, enabled);
         }
 
-        // An entry's button: its action runs, and the list is written again.
         private void Picked(int id)
         {
             try
@@ -525,7 +518,6 @@ namespace RealLifeOverhaul
             return GarageCatalogue.Price(_saved, _cart, _kind, _cart.Paint < 0 || GarageCatalogue.InPalette(_cart.Paint));
         }
 
-        // What the cart does to the car's figures, in up to four lines.
         private string Figures()
         {
             var car = _car as CarController;

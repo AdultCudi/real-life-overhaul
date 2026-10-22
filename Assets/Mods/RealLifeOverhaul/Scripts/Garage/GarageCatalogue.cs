@@ -37,9 +37,7 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// One performance part. Its gains are factors on the car without it (<see cref="Accel"/> divides the 0-100 km/h
-    /// time, the others multiply); <see cref="Ride"/> is metres of ride height. Its costs: <see cref="Wear"/> how much
-    /// faster the car wears, <see cref="Insurance"/> what it adds to a premium, <see cref="Loud"/> 2 not street legal;
-    /// with <see cref="Boost"/> it picks the recorded sound.
+    /// time, the others multiply), <see cref="Ride"/> metres of ride height; <see cref="Loud"/> 2 is not street legal.
     /// </summary>
     public sealed class PartDef
     {
@@ -88,10 +86,7 @@ namespace RealLifeOverhaul
         public bool ChangesPerformance => Acceleration != 1f || TopSpeed != 1f;
     }
 
-    /// <summary>
-    /// What one car carries from the custom shop, kept in the save's modData as one line per vehicle id
-    /// (<see cref="GarageState"/>); the vehicle itself is never changed in the save.
-    /// </summary>
+    /// <summary>What one car carries from the custom shop, one line in the save's modData; the vehicle itself is never changed.</summary>
     public sealed class GarageBuild
     {
         public int Paint = -1;                 // 0xRRGGBB, -1 = the colour the car was bought in
@@ -170,8 +165,7 @@ namespace RealLifeOverhaul
                 m.Loudness = part.Loud > m.Loudness ? part.Loud : m.Loudness;
                 m.Pitch += part.Pitch;
             }
-            // Weight is asked of the model as a quicker time: the model finds the power for a target, so weight alone
-            // would cancel out.
+            // Weight is asked of the model as a quicker time: it finds the power for a target, so weight would cancel out.
             m.Acceleration /= m.Mass;
             // However the parts stack, these are the most the model is asked for.
             m.Acceleration = m.Acceleration > GarageCatalogue.MaxAcceleration ? GarageCatalogue.MaxAcceleration : m.Acceleration;
@@ -218,10 +212,7 @@ namespace RealLifeOverhaul
             return text.ToString();
         }
 
-        /// <summary>
-        /// Reads a line written by <see cref="Write"/>. Anything it does not know is skipped, so an older or newer line
-        /// still loads.
-        /// </summary>
+        /// <summary>Reads a line of <see cref="Write"/>'s, skipping anything it does not know, so an older or newer line loads.</summary>
         public static GarageBuild Read(string line)
         {
             var build = new GarageBuild();
@@ -459,10 +450,7 @@ namespace RealLifeOverhaul
         public static int WheelsPrice => Prices.At(1200);
         public static int RemovalPrice => Prices.At(50);   // taking a fitted part off again
 
-        /// <summary>
-        /// What turning one build into another costs: every choice that differs is paid for, taking a thing off costs a
-        /// little labour.
-        /// </summary>
+        /// <summary>What turning one build into another costs: each choice that differs, and a little labour to take a thing off.</summary>
         public static int Price(GarageBuild from, GarageBuild to, CarKind kind, bool paletteColour)
         {
             int total = 0;

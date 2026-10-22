@@ -82,8 +82,7 @@ namespace RealLifeOverhaul
             Aim();
         }
 
-        // An invisible plate behind everything on the HUD: dragging turns the view, the wheel moves it in and out, and no
-        // click in the shop reaches the world behind.
+        // An invisible plate behind the HUD to drag the view on, so no click in the shop reaches the world behind.
         private void DragArea()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;

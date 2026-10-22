@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One car body as measured from the game's meshes by GarageAssets/scripts/extract_fit.py: where its roof, boot
-    /// deck and nose are, in the vehicle's own space (metres, origin on the ground under the middle, +Z forwards).
+    /// One car body as GarageAssets/scripts/extract_fit.py measured it: where its roof, boot deck and nose are, in the
+    /// vehicle's own space (metres, origin on the ground under the middle, +Z forwards).
     /// </summary>
     public readonly struct CarFit
     {
@@ -47,8 +47,7 @@ namespace RealLifeOverhaul
         private const string Prefix = "ba:vehicletype_";
 
         // rear z, front z, half width, top | roof from z, to z, height at the bars, half width, height at the feet |
-        // deck height, slope (deg), half width, height at the posts | nose low, nose high, nose half width, bonnet
-        // height
+        // deck height, slope (deg), half width, height at the posts | nose low, nose high, nose half width, bonnet height
         private static readonly Dictionary<string, CarFit> Table = new Dictionary<string, CarFit>
         {
             { "anselmoaf90", new CarFit(-2.13f, 2.53f, 1.11f, 1.20f, -0.39f, 0.29f, 1.17f, 0.54f, 1.12f, 0.91f, 1.6f, 0.80f, 0.90f, 0.17f, 0.46f, 0.38f, 0.59f) },
@@ -108,11 +107,7 @@ namespace RealLifeOverhaul
                    && BarTop(fit) - (fit.NoseLow + 0.05f) >= 0.35f && fit.NoseHalfWidth >= 0.45f;
         }
 
-        /// <summary>
-        /// How high a bull bar stands on this nose: to just under the bonnet's edge, but no more than 0.22 m above
-        /// the upright part of the nose (on a van the front leans back above that, and a taller bar would stand
-        /// out in front of nothing), and never more than 0.75 m tall.
-        /// </summary>
+        /// <summary>A bull bar's top: under the bonnet's edge, at most 0.22 m over the upright nose and 0.75 m tall.</summary>
         public static float BarTop(in CarFit fit)
         {
             float top = fit.BonnetHeight - 0.05f;

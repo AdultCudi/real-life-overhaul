@@ -3,11 +3,9 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Where a two-wheeler place (<see cref="BikePlaces"/>) may stand, in plain numbers so that NavCheck checks these
-    /// very rules. The pedestrians' mesh runs on over marked crossings, so one walkable point says nothing of the rest
-    /// of a rack: the whole footprint with a margin is sampled, every point must be pavement, the ground level within a
-    /// kerb's fraction and no crossing under it. A few multiplications for each place tried, once a city load; nothing
-    /// allocated.
+    /// Where a two-wheeler place (<see cref="BikePlaces"/>) may stand, in plain numbers so that NavCheck checks them. The
+    /// walkers' mesh runs on over crossings, so the whole footprint is sampled: all pavement, level, no crossing under
+    /// it. A few multiplications a place tried, once a city load.
     /// </summary>
     public static class BikeSpotRules
     {
@@ -20,10 +18,7 @@ namespace RealLifeOverhaul
         /// <summary>Why a place was refused, or None.</summary>
         public enum Refusal { None, OffPavement, OverKerb, Crossing }
 
-        /// <summary>
-        /// The i-th sample in the place's own frame (metres across and along from its middle): the middle, the corners,
-        /// then the sides.
-        /// </summary>
+        /// <summary>The i-th sample in the place's frame (metres from its middle): the middle, the corners, then the sides.</summary>
         public static void Sample(int i, float halfAcross, float halfAlong, out float across, out float along)
         {
             if (i < 0 || i >= Samples)
@@ -59,10 +54,7 @@ namespace RealLifeOverhaul
             return highest - lowest > LevelMost ? Refusal.OverKerb : Refusal.None;
         }
 
-        /// <summary>
-        /// Whether a sample is pavement: the walkable mesh found within <see cref="OnMesh"/> of it on the flat (the
-        /// square of the flat distance given).
-        /// </summary>
+        /// <summary>Whether a sample is pavement: the walkable mesh within <see cref="OnMesh"/> of it on the flat (given squared).</summary>
         public static bool OnPavement(bool meshFound, float flatSquare)
         {
             return meshFound && flatSquare <= OnMesh * OnMesh;

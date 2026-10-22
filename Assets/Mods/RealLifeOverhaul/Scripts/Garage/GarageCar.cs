@@ -10,11 +10,9 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One of the player's cars wearing its build: paint and finish, lamp tint, underglow, fitted parts, and the parts
-    /// that change how it stops, grips and rides. On the car's own object, so it goes with the car. Nothing per frame:
-    /// all is done once as the build changes, everything touched recorded first, so <see cref="Clear"/> leaves the car as
-    /// the game made it. The game paints a car through property blocks on <c>CarFeatures.bodyMeshes</c> (tint and two
-    /// fresnel values of "SH_Vehicle"); a finish here is those and its SmoothnessBoost.
+    /// One of the player's cars wearing its build, on the car's own object. Nothing per frame: all is done once as the
+    /// build changes, through the property blocks the game paints cars with, everything touched recorded first so that
+    /// <see cref="Clear"/> leaves the car as the game made it.
     /// </summary>
     public sealed partial class GarageCar : MonoBehaviour
     {
@@ -253,7 +251,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A modelled part from the prop bundle, when it has one.
         private static bool Modelled(string id, Transform root, Vector3 at, Vector3 scale)
         {
             if (!PropLibrary.TryGet(id, out Mesh mesh, out Material material) || mesh == null || material == null)
@@ -393,8 +390,7 @@ namespace RealLifeOverhaul
                 wheel.LateralFrictionGrip *= grip;
                 if (wheel.SpringMaxLength > 0.05f && wheel.SpringMaxForce > 1f)
                 {
-                    // Stiffer and higher or lower by the part, on the spring the car has and its own curve, a lighter car at the
-                    // same height; never into the travel a kerb needs (HandlingModel.FitSpring). The roll centre moves with it.
+                    // On the car's own spring and curve, never into the travel a kerb needs; the roll centre moves with it.
                     float load = WheelLoad(nwh, wheel, body);   // before the weight part, which the fit takes in
                     HandlingModel.FitSpring(CurveOf(wheel), wheel.SpringMaxForce, wheel.SpringMaxLength, load, weight, stiffness, m.Ride, GarageCatalogue.MaxLower,
                         GarageCatalogue.MaxRaise, out float force, out float length, out float change);
@@ -498,10 +494,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// For the driven car's handling (Wiring.DrivingLinks): the parts' handling off for a moment so that what lies under
-        /// can change. True if it had any on; <see cref="LayHandling"/> puts them back.
-        /// </summary>
+        /// <summary>For the driven car's handling: the parts' handling off for a moment. True if any was on.</summary>
         public bool LiftHandling()
         {
             if (!_handling)
@@ -526,8 +519,7 @@ namespace RealLifeOverhaul
             Handling(_liftedParts, _liftedWet);
         }
 
-        // The load on one wheel at rest: the weight shared between the axles by the centre of mass, evenly within an axle;
-        // evenly between all if the wheels do not stand both sides of it.
+        // The load on a wheel at rest, shared between the axles by the centre of mass (evenly if all stand one side).
         private static float WheelLoad(NwhVehicle nwh, WheelUAPI wheel, Rigidbody body)
         {
             List<WheelComponent> wheels = nwh.powertrain.wheels;

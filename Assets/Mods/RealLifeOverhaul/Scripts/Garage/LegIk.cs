@@ -3,9 +3,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A leg put on a point after the animation: the thigh and shin are turned so that the ankle is on
-    /// the target with the knee towards a given side. Unlike CityLife's TwoBoneReach (made for arms that
-    /// are already bent the right way) this decides the bend itself: a standing leg is straight.
+    /// A leg put on a point after the animation, the knee towards a given side. Unlike CityLife's TwoBoneReach (for arms
+    /// already bent the right way) it decides the bend itself.
     /// </summary>
     public static class LegIk
     {

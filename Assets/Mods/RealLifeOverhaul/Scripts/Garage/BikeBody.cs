@@ -277,11 +277,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The bodies the two-wheelers wear. A modelled body from the prop bundle, put together from its parts each on the
-    /// object that turns it (wheels spin, cranks go round with the pedals level, bars steer), the paint parts drawn
-    /// with <see cref="PropLibrary.Tinted"/>; a bike only on show in its own colour is the one whole mesh. Without the
-    /// model, a stand-in of tubes, rings and boxes: a few shared meshes in three colours made once per kind. Nothing
-    /// runs per frame: <see cref="BikeMount"/> turns the parts, only while ridden.
+    /// The bodies the two-wheelers wear: the prop bundle's model in parts that turn (the paint parts tinted), or a
+    /// stand-in of a few shared meshes made once per kind. Nothing per frame: <see cref="BikeMount"/> turns the parts.
     /// </summary>
     public sealed class BikeBody
     {
@@ -313,10 +310,7 @@ namespace RealLifeOverhaul
         public Vector3 SteerAxis;       // in the steering assembly's own space
         public bool Modelled;
 
-        /// <summary>
-        /// Builds a body under a parent, on its origin facing +Z. colour is 0xRRGGBB, or negative for the model's own;
-        /// still: it only stands on show and never turns.
-        /// </summary>
+        /// <summary>A body on a parent's origin facing +Z; colour 0xRRGGBB or negative for the model's own; still: never turns.</summary>
         public static BikeBody Build(BikeDef def, Transform parent, int colour, bool still = false)
         {
             if (!Shapes.Available)
@@ -335,9 +329,7 @@ namespace RealLifeOverhaul
             body.HandLeft = Child("Left Hand", body.Steer, new Vector3(-def.Grip.x, def.Grip.y, def.Grip.z) - headTop);
             body.HandRight = Child("Right Hand", body.Steer, new Vector3(def.Grip.x, def.Grip.y, def.Grip.z) - headTop);
 
-            // In parts whenever it may move or is not the model's colour; the one whole mesh when it only stands on
-            // show in its own colour or the bundle has no parts (an older one), so its wheels and bars do not move. The
-            // hands and feet go the same either way.
+            // In parts if it may move or is another colour; else, or with an older bundle without parts, the one whole mesh.
             int rgb = colour >= 0 ? colour : def.Colour;
             bool parts = HasParts(def);
             if ((!parts || (still && rgb == def.Colour)) && PropLibrary.Has(def.Prop)
@@ -386,9 +378,7 @@ namespace RealLifeOverhaul
                        : PropLibrary.Has(id + "_wheel_front") && PropLibrary.Has(id + "_wheel_rear"));
         }
 
-        // The modelled parts, each on the object BikeMount turns: the fork's pivot is the top of the steering axis, the
-        // front wheel a child of the fork, the crank set on the bottom bracket, the pedals kept level by Pedals. Nine
-        // renderers at most, all shared.
+        // Each modelled part on the object BikeMount turns (the fork about the top of the steering axis); nine renderers at most.
         private bool Assemble(BikeDef def, Transform root, Vector3 headTop, int rgb)
         {
             Color wanted = GarageCar.FromRgb(rgb);
