@@ -152,7 +152,6 @@ namespace RealLifeOverhaul
             if (_picture != null)
             {
                 _picture.raycastTarget = false;
-                GameSprites.Want("Icon-ExclamationMark", "Icon-Info-32");
                 Sprite sprite = GameSprites.Get("Icon-ExclamationMark") ?? GameSprites.Get("Icon-Info-32");
                 if (sprite != null)
                 {
@@ -165,6 +164,12 @@ namespace RealLifeOverhaul
             UnityEngine.Object.DestroyImmediate(holder.gameObject);
             _reading = copy;
             return true;
+        }
+
+        /// <summary>The game's pictures this asks for, named before the one look behind the loading screen (GameSprites.Prewarm).</summary>
+        internal static void WantPictures()
+        {
+            GameSprites.Want("Icon-ExclamationMark", "Icon-Info-32");
         }
     }
 }

@@ -7,8 +7,10 @@ namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
     /// The game's own interface pictures by name ("Icon-Calendar"), never shipped: found among the sprites in memory in one
-    /// look, the first time a new name is asked for. A name the game does not have gives null, and the caller shows no
-    /// picture. Costs nothing a frame.
+    /// look behind the loading screen (<see cref="Prewarm"/>, a piece of ScenePrewarm), for every name the features asked
+    /// for in their Awake (<see cref="Want"/>). A name first asked for later is looked for only while nothing is seen,
+    /// the loading screen, the game's black screen or a pause (RLO-PERF-005); in play it gives null until then. A name the
+    /// game does not have gives null, and the caller shows no picture. Costs nothing a frame.
     /// </summary>
     public static class GameSprites
     {
@@ -16,16 +18,16 @@ namespace RealLifeOverhaul.GameUi
 
         private static readonly Dictionary<string, Sprite> Found = new Dictionary<string, Sprite>(32, StringComparer.Ordinal);
         private static readonly HashSet<string> Wanted = new HashSet<string>(StringComparer.Ordinal);
-        private static bool _looked;
+        private static bool _stale;   // a name is wanted that no look has been made for since
 
-        /// <summary>Names pictures that will be asked for, so the one look finds them all.</summary>
+        /// <summary>Names pictures that will be asked for, so the one look finds them all. Called from Awake.</summary>
         public static void Want(params string[] names)
         {
             for (int i = 0; i < names.Length; i++)
             {
                 if (names[i] != null && Wanted.Add(names[i]))
                 {
-                    _looked = false;
+                    _stale = true;
                 }
             }
         }
@@ -36,43 +38,62 @@ namespace RealLifeOverhaul.GameUi
             {
                 return null;
             }
+            Sprite sprite;
+            if (Found.TryGetValue(name, out sprite) && sprite != null)
+            {
+                return sprite;
+            }
             if (Wanted.Add(name))
             {
-                _looked = false;
+                _stale = true;
             }
-            if (!_looked)
+            if (_stale && Unseen())
             {
                 Look();
+                return Found.TryGetValue(name, out sprite) && sprite != null ? sprite : null;
             }
-            Sprite sprite;
-            return Found.TryGetValue(name, out sprite) && sprite != null ? sprite : null;
+            return null;
         }
 
-        // One pass over the sprites in memory, a few thousand names compared: only on a menu's opening or behind a load.
+        /// <summary>Behind the loading screen: the one look for every name wanted so far. Always done.</summary>
+        public static bool Prewarm()
+        {
+            Look();
+            return true;
+        }
+
+        // While a long frame is not seen: the loading screen or its late part, the game's black screen at full strength, a pause.
+        private static bool Unseen()
+        {
+            return SceneFinds.Black || ScenePrewarm.InLate || Looks.Hidden;
+        }
+
+        // One pass over the sprites in memory, a few thousand names compared.
         private static void Look()
         {
-            _looked = true;
+            _stale = false;
             try
             {
-                Sprite[] all = Resources.FindObjectsOfTypeAll<Sprite>();
+                Sprite[] all = SceneFinds.InMemory<Sprite>("game UI: the game's interface pictures being found by name");
                 for (int i = 0; i < all.Length; i++)
                 {
                     Sprite sprite = all[i];
-                    if (sprite != null && Wanted.Contains(sprite.name) && !Found.ContainsKey(sprite.name))
+                    string name = sprite != null ? sprite.name : null;
+                    if (name != null && Wanted.Contains(name) && (!Found.TryGetValue(name, out Sprite held) || held == null))
                     {
-                        Found[sprite.name] = sprite;
+                        Found[name] = sprite;   // the first of a name, or one in place of a picture that has gone
                     }
                 }
                 if (Meta.Dev.Verbose)
                 {
                     int missing = 0;
                     string first = null;
-                    foreach (string name in Wanted)
+                    foreach (string wanted in Wanted)
                     {
-                        if (!Found.ContainsKey(name))
+                        if (!Found.ContainsKey(wanted))
                         {
                             missing++;
-                            first = first ?? name;
+                            first = first ?? wanted;
                         }
                     }
                     Logger?.Info("Game UI: " + (Wanted.Count - missing) + " of " + Wanted.Count + " of the game's pictures found among " + all.Length
@@ -85,11 +106,11 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A city was left: its sprites may have gone with it.</summary>
+        /// <summary>A city was left: its sprites may have gone with it, and the next load's look finds them again.</summary>
         public static void Forget()
         {
             Found.Clear();
-            _looked = false;
+            _stale = Wanted.Count > 0;
         }
     }
 }

@@ -529,11 +529,17 @@ namespace RealLifeOverhaul.Meals
             return player.Character.walkingSpeed == ThirdPersonCharacter.WalkingSpeed.Zombie;
         }
 
-        /// <summary>One of the game's own dances, started the way its dance list starts one (it spends energy as the game's dancing does).</summary>
+        /// <summary>
+        /// One of the game's own dances on the player's animator, and nothing else: the game's own start of a dance
+        /// (PlayerDances' StartDancing) would also add its "dancing" energy spender (0.08 a game minute) and, in the
+        /// player's own nightclub, its happiness boost. A dance of the game's own already going is ended first, its spender
+        /// with it. Moving or running out of energy still ends this one through the game's own listeners (PlayerDances.Init).
+        /// </summary>
         public static void StartDance(PlayerController player, int dance)
         {
+            PlayerDances.StopDancing();
             player.ResetNavigation();
-            PlayerDances.StartDancing((DanceType)dance);
+            player.Character.SetDance((DanceType)dance);
         }
 
         public static void StopDance()

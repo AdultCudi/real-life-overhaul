@@ -138,8 +138,16 @@ namespace RealLifeOverhaul
 
             private static bool IsPartner(int index)
             {
-                SocialPerson p = Friend(index);
-                return p != null && p.Met && p.Together;
+                try
+                {
+                    SocialPerson p = Friend(index);
+                    return p != null && p.Met && p.Together;
+                }
+                catch (Exception e)
+                {
+                    Fault("RoommateLinks.IsPartner", e);
+                    return false;
+                }
             }
 
             private static void FriendMoved(int index, float affection, float trust)

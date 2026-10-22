@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Utilities
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _onSave = OnSaveGame;
             _door = new DoorPanel(Logger, "Utilities check (office panel)");
             _window = new DeskList("RealLifeOverhaul Utilities Desk", 1100f, 120f);
@@ -679,7 +680,6 @@ namespace RealLifeOverhaul.Utilities
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new UtilitiesApp(this);
-            GameSprites.Want(AppGlyphs);
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,

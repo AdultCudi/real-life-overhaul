@@ -169,22 +169,30 @@ namespace RealLifeOverhaul
             // roommate at the home the two share.
             private static int Household(BuildingRegistration reg)
             {
-                if (reg == null)
+                try
                 {
+                    if (reg == null)
+                    {
+                        return 0;
+                    }
+                    int people = 0;
+                    if (ReferenceEquals(reg, FirstHome()))
+                    {
+                        people += (Family.FamilyApi.LivesTogether ? 1 : 0) + Family.FamilyApi.Children;
+                    }
+                    Roommates.RoommateDirector roommates = Roommates.RoommateDirector.Instance;
+                    Roommates.RoommateState state = roommates != null ? roommates.State : null;
+                    if (state != null && state.Living && reg.StreetName == state.HomeStreet && reg.StreetNumber == state.HomeNumber)
+                    {
+                        people++;
+                    }
+                    return people;
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.Household", e);
                     return 0;
                 }
-                int people = 0;
-                if (ReferenceEquals(reg, FirstHome()))
-                {
-                    people += (Family.FamilyApi.LivesTogether ? 1 : 0) + Family.FamilyApi.Children;
-                }
-                Roommates.RoommateDirector roommates = Roommates.RoommateDirector.Instance;
-                Roommates.RoommateState state = roommates != null ? roommates.State : null;
-                if (state != null && state.Living && reg.StreetName == state.HomeStreet && reg.StreetNumber == state.HomeNumber)
-                {
-                    people++;
-                }
-                return people;
             }
 
             private static BuildingRegistration FirstHome()

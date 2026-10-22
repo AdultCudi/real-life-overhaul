@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             BankApp.Logger = Logger;
             _second = EachSecond;
             _onHour = Badges;
@@ -166,7 +167,6 @@ namespace RealLifeOverhaul.Economy
             }
             var view = new BankApp(credit, AppId);
             view.Offer(_banks);
-            GameSprites.Want(AppGlyphs);
             bool tryAgain;
             PhoneApp app = PhoneApp.Install(new PhoneAppDef
             {

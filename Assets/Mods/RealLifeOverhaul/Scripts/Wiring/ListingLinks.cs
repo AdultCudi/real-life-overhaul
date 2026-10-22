@@ -121,8 +121,16 @@ namespace RealLifeOverhaul
             // The Company app's line: the market's own words for where the player's company stands.
             private static string Line()
             {
-                MarketDirector market = MarketDirector.Instance;
-                return market != null && market.Running ? market.ListingSummary() : null;
+                try
+                {
+                    MarketDirector market = MarketDirector.Instance;
+                    return market != null && market.Running ? market.ListingSummary() : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("ListingLinks.Line", e);
+                    return null;
+                }
             }
 
             // The player's own businesses now, by the key the statements' addresses are compared under.
@@ -326,21 +334,36 @@ namespace RealLifeOverhaul
 
             private static void Places(List<string> into)
             {
-                into.Clear();
-                Books.Businesses(Businesses);
-                for (int i = 0; i < Businesses.Count; i++)
+                try
                 {
-                    if (Businesses[i] != null)
+                    into.Clear();
+                    Books.Businesses(Businesses);
+                    for (int i = 0; i < Businesses.Count; i++)
                     {
-                        into.Add(ServicesGame.Place(Businesses[i]));
+                        if (Businesses[i] != null)
+                        {
+                            into.Add(ServicesGame.Place(Businesses[i]));
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    Fault("ListingLinks.Places", e);
                 }
             }
 
             private static bool HandOver(string place, string buyer)
             {
-                ServicesDirector services = ServicesDirector.Instance;
-                return services != null && services.HandOver(place, buyer);
+                try
+                {
+                    ServicesDirector services = ServicesDirector.Instance;
+                    return services != null && services.HandOver(place, buyer);
+                }
+                catch (Exception e)
+                {
+                    Fault("ListingLinks.HandOver", e);
+                    return false;
+                }
             }
 
             // The player's largest business by yesterday's takings.

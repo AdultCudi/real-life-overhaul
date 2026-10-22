@@ -73,25 +73,45 @@ namespace RealLifeOverhaul
             {
                 id = null;
                 sightX = sightZ = 0f;
-                Leisure.Landmark mark = Leisure.LeisureVenues.LandmarkAt(new Vector3(x, 0f, z));
-                if (mark == null)
+                try
                 {
+                    Leisure.Landmark mark = Leisure.LeisureVenues.LandmarkAt(new Vector3(x, 0f, z));
+                    if (mark == null)
+                    {
+                        return false;
+                    }
+                    id = mark.Id;
+                    sightX = mark.Position.x;
+                    sightZ = mark.Position.z;
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLiveLinks.SightAt", e);
                     return false;
                 }
-                id = mark.Id;
-                sightX = mark.Position.x;
-                sightZ = mark.Position.z;
-                return true;
             }
 
             // The street event on now, its middle and its label.
             private static bool StreetEventAt(out float x, out float y, out float z, out string label)
             {
-                bool on = EventDirector.StreetEvent(out Vector3 at, out label);
-                x = at.x;
-                y = at.y;
-                z = at.z;
-                return on;
+                try
+                {
+                    bool on = EventDirector.StreetEvent(out Vector3 at, out label);
+                    x = at.x;
+                    y = at.y;
+                    z = at.z;
+                    return on;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLiveLinks.StreetEventAt", e);
+                    x = 0f;
+                    y = 0f;
+                    z = 0f;
+                    label = null;
+                    return false;
+                }
             }
 
             private static void Facts(FlareCityFacts f)
@@ -243,40 +263,54 @@ namespace RealLifeOverhaul
 
             private static void Watched(bool patrol, bool clean)
             {
-                CityWatch.Set(patrol);
-                if (clean && Settings.Civic)
+                try
                 {
-                    CivicEffects.Keep(ModState.CivicClean, 2);
+                    CityWatch.Set(patrol);
+                    if (clean && Settings.Civic)
+                    {
+                        CivicEffects.Keep(ModState.CivicClean, 2);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLiveLinks.Watched", e);
                 }
             }
 
             // The rivals in play, each with their latest move announced in the last two days.
             private static void Tycoons(List<FlareTycoon> into)
             {
-                Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
-                Rivals.RivalFile f = rivals != null && rivals.Running && !rivals.Resting ? rivals.File : null;
-                if (f == null)
+                try
                 {
-                    return;
-                }
-                for (int i = 0; i < f.Tycoons.Length; i++)
-                {
-                    Rivals.Tycoon t = f.Tycoons[i];
-                    if (t == null || !t.Active)
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null && rivals.Running && !rivals.Resting ? rivals.File : null;
+                    if (f == null)
                     {
-                        continue;
+                        return;
                     }
-                    int move = -1, at = -1;
-                    for (int m = 0; m < f.Moves.Count; m++)
+                    for (int i = 0; i < f.Tycoons.Length; i++)
                     {
-                        Rivals.RivalMove mv = f.Moves[m];
-                        if (mv.Tycoon == t.Index && mv.Live && !mv.Test && mv.Announced >= f.SettledDay - 2 && mv.Announced > at)
+                        Rivals.Tycoon t = f.Tycoons[i];
+                        if (t == null || !t.Active)
                         {
-                            at = mv.Announced;
-                            move = (int)mv.Kind;
+                            continue;
                         }
+                        int move = -1, at = -1;
+                        for (int m = 0; m < f.Moves.Count; m++)
+                        {
+                            Rivals.RivalMove mv = f.Moves[m];
+                            if (mv.Tycoon == t.Index && mv.Live && !mv.Test && mv.Announced >= f.SettledDay - 2 && mv.Announced > at)
+                            {
+                                at = mv.Announced;
+                                move = (int)mv.Kind;
+                            }
+                        }
+                        into.Add(new FlareTycoon { Index = t.Index, Name = t.Def.Name, Move = move });
                     }
-                    into.Add(new FlareTycoon { Index = t.Index, Name = t.Def.Name, Move = move });
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLiveLinks.Tycoons", e);
                 }
             }
 
@@ -298,11 +332,14 @@ namespace RealLifeOverhaul
                             }
                         }
                     }
-                    Staffed.Clear();
                 }
                 catch (Exception e)
                 {
                     Fault("FlareLiveLinks.Staff", e);
+                }
+                finally
+                {
+                    Staffed.Clear();   // no employee of the game's kept past the look, a fault or not
                 }
             }
 
@@ -336,14 +373,22 @@ namespace RealLifeOverhaul
 
             private static bool EventDestination()
             {
-                Vector3 at;
-                string nameKey;
-                if (!EventDirector.StreetEvent(out at, out nameKey))
+                try
                 {
+                    Vector3 at;
+                    string nameKey;
+                    if (!EventDirector.StreetEvent(out at, out nameKey))
+                    {
+                        return false;
+                    }
+                    _eventAt = at;
+                    return EventMark.Show(at, nameKey != null ? nameKey.GetLocalization() : string.Empty);
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLiveLinks.EventDestination", e);
                     return false;
                 }
-                _eventAt = at;
-                return EventMark.Show(at, nameKey != null ? nameKey.GetLocalization() : string.Empty);
             }
 
             // The street event Flare's way points to is still on, where it was.
@@ -354,22 +399,40 @@ namespace RealLifeOverhaul
 
             private static void Paper(int day, List<NewsItem> into)
             {
-                _paperBefore?.Invoke(day, into);
-                FlareDirector flare = FlareDirector.Instance;
-                if (flare == null)
+                try
                 {
-                    return;
+                    _paperBefore?.Invoke(day, into);
                 }
-                flare.Stories(day, Stories);
-                for (int i = 0; i < Stories.Count; i++)
+                catch (Exception e)
                 {
-                    FlareStory s = Stories[i];
-                    var data = new Dictionary<string, string>(4);
-                    for (int k = 0; k + 1 < s.Data.Length; k += 2)
+                    Fault("FlareLiveLinks.Paper (the pieces before)", e);
+                }
+                try
+                {
+                    FlareDirector flare = FlareDirector.Instance;
+                    if (flare == null)
                     {
-                        data[s.Data[k]] = s.Data[k + 1];
+                        return;
                     }
-                    into.Add(new NewsItem { Key = s.Key, Data = data });
+                    flare.Stories(day, Stories);
+                    for (int i = 0; i < Stories.Count; i++)
+                    {
+                        FlareStory s = Stories[i];
+                        var data = new Dictionary<string, string>(4);
+                        for (int k = 0; k + 1 < s.Data.Length; k += 2)
+                        {
+                            data[s.Data[k]] = s.Data[k + 1];
+                        }
+                        into.Add(new NewsItem { Key = s.Key, Data = data });
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLiveLinks.Paper", e);
+                }
+                finally
+                {
+                    Stories.Clear();   // the day's stories are in the paper: nothing of Flare's kept here
                 }
             }
         }

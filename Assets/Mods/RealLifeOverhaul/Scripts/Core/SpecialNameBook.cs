@@ -331,28 +331,40 @@ namespace RealLifeOverhaul
             }
         }
 
-        private int _shownSign = int.MinValue;
+        private readonly HashSet<string> _shown = new HashSet<string>(StringComparer.Ordinal);   // the ids shown at the last look
+        private bool _looked;
 
-        /// <summary>Moves <see cref="Stamp"/> when the set shown has changed (an option switched changes no entry).</summary>
+        /// <summary>
+        /// Moves <see cref="Stamp"/> when the set shown has changed (an option switched changes no entry): the ids shown now
+        /// against the set kept at the last look, so two different sets are never taken for one. Nothing allocated; the set
+        /// is written again only when it changed.
+        /// </summary>
         public bool LookShown()
         {
-            int sign = 17;
-            unchecked
+            bool same = _looked;
+            int count = 0;
+            foreach (SpecialEntry entry in _byId.Values)
             {
-                foreach (SpecialEntry entry in _byId.Values)
+                if (IsShown(entry))
                 {
-                    if (IsShown(entry))
-                    {
-                        sign += entry.Id.GetHashCode() * 31 + 7;   // a sum: the dictionary's order does not matter
-                    }
+                    count++;
+                    same &= _shown.Contains(entry.Id);
                 }
             }
-            if (sign == _shownSign)
+            if (same && count == _shown.Count)
             {
-                return false;
+                return false;   // ids are unique: as many, and every one kept, is the same set
             }
-            bool first = _shownSign == int.MinValue;
-            _shownSign = sign;
+            bool first = !_looked;
+            _looked = true;
+            _shown.Clear();
+            foreach (SpecialEntry entry in _byId.Values)
+            {
+                if (IsShown(entry))
+                {
+                    _shown.Add(entry.Id);
+                }
+            }
             if (!first)
             {
                 Stamp++;

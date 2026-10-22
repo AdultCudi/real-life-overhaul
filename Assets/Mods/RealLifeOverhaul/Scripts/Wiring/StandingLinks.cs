@@ -93,19 +93,26 @@ namespace RealLifeOverhaul
             // The council's policies for business and growth, and better transport, that neither stand nor are on their way.
             private static void Levers(List<FameLever> into)
             {
-                CivicGovernment gov = Settings.Civic && CivicDirector.Instance != null ? CivicDirector.Instance.Government : null;
-                if (gov == null)
+                try
                 {
-                    return;
-                }
-                for (int i = 0; i < CivicCatalogue.All.Length; i++)
-                {
-                    PolicyDef p = CivicCatalogue.All[i];
-                    bool wanted = p.Issue == Issue.Business || p.Issue == Issue.Growth || (p.Lever == Lever.Transit && p.Dir > 0);
-                    if (wanted && !gov.Settled(p.Lever, p.Dir))
+                    CivicGovernment gov = Settings.Civic && CivicDirector.Instance != null ? CivicDirector.Instance.Government : null;
+                    if (gov == null)
                     {
-                        into.Add(new FameLever { Lever = (int)p.Lever, Position = p.Dir, Name = CivicText.T(p.Name), Effect = CivicText.Effect(p) });
+                        return;
                     }
+                    for (int i = 0; i < CivicCatalogue.All.Length; i++)
+                    {
+                        PolicyDef p = CivicCatalogue.All[i];
+                        bool wanted = p.Issue == Issue.Business || p.Issue == Issue.Growth || (p.Lever == Lever.Transit && p.Dir > 0);
+                        if (wanted && !gov.Settled(p.Lever, p.Dir))
+                        {
+                            into.Add(new FameLever { Lever = (int)p.Lever, Position = p.Dir, Name = CivicText.T(p.Name), Effect = CivicText.Effect(p) });
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Levers", e);
                 }
             }
 
@@ -115,7 +122,24 @@ namespace RealLifeOverhaul
 
             private static int Ambient(BuildingRegistration reg)
             {
-                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + FameDirector.FootfallOf(reg);
+                int before = 0;
+                try
+                {
+                    before = _ambientBefore != null ? _ambientBefore(reg) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Ambient (the pairings before)", e);
+                }
+                try
+                {
+                    return before + FameDirector.FootfallOf(reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Ambient", e);
+                    return before;
+                }
             }
 
             private static bool Footfall(BuildingRegistration reg, bool newDay)
@@ -139,28 +163,52 @@ namespace RealLifeOverhaul
             // A kind of issue's weight in business pressure's deal: the earlier pairings' first, then the player's standing.
             private static int Weight(string kind, int weight)
             {
-                int w = _weightBefore != null ? _weightBefore(kind, weight) : weight;
-                FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
-                if (f == null)
+                int w = weight;
+                try
                 {
-                    return w;
+                    w = _weightBefore != null ? _weightBefore(kind, weight) : weight;
                 }
-                switch (kind)
+                catch (Exception e)
                 {
-                    case BusinessCatalogue.Complaint: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Complaint) / 1000);
-                    case BusinessCatalogue.Praise: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Praise) / 1000);
-                    case BusinessCatalogue.Health:
-                    case BusinessCatalogue.Fire:
-                    case BusinessCatalogue.Licence: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Inspection) / 1000);
-                    case BusinessCatalogue.Audit: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Audit) / 1000);
-                    default: return w;
+                    Fault("StandingLinks.Weight (the pairings before)", e);
+                }
+                try
+                {
+                    FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
+                    if (f == null)
+                    {
+                        return w;
+                    }
+                    switch (kind)
+                    {
+                        case BusinessCatalogue.Complaint: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Complaint) / 1000);
+                        case BusinessCatalogue.Praise: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Praise) / 1000);
+                        case BusinessCatalogue.Health:
+                        case BusinessCatalogue.Fire:
+                        case BusinessCatalogue.Licence: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Inspection) / 1000);
+                        case BusinessCatalogue.Audit: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Audit) / 1000);
+                        default: return w;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Weight", e);
+                    return w;
                 }
             }
 
             private static int Esteem()
             {
-                FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
-                return f != null ? FamePress.Esteem(f) : 0;
+                try
+                {
+                    FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
+                    return f != null ? FamePress.Esteem(f) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Esteem", e);
+                    return 0;
+                }
             }
 
             // Somebody in the street who needs help now: an accident nobody has helped at, or a crime's victim.
@@ -180,7 +228,14 @@ namespace RealLifeOverhaul
 
             private static void Helped()
             {
-                FameDirector.Instance?.Helped();
+                try
+                {
+                    FameDirector.Instance?.Helped();
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Helped", e);
+                }
             }
 
             /// <summary>
@@ -271,8 +326,16 @@ namespace RealLifeOverhaul
 
             private static int Followers()
             {
-                FlareFile file = FlareDirector.Instance != null ? FlareDirector.Instance.File : null;
-                return file != null ? file.Followers : 0;
+                try
+                {
+                    FlareFile file = FlareDirector.Instance != null ? FlareDirector.Instance.File : null;
+                    return file != null ? file.Followers : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Followers", e);
+                    return 0;
+                }
             }
 
             // A business's staff as the company counts them this morning.
@@ -304,82 +367,110 @@ namespace RealLifeOverhaul
 
             private static void Holdings(List<FameHolding> into)
             {
-                EstateState s = EstateDirector.Instance != null ? EstateDirector.Instance.State : null;
-                for (int i = 0; s != null && i < s.Holdings.Count; i++)
+                try
                 {
-                    // Each unit has its own lease: let if any unit is, the asking rents averaged, the agreed rents summed.
-                    EstateHolding h = s.Holdings[i];
-                    bool let = false;
-                    int ask = 0, rent = 0;
-                    for (int u = 0; u < h.Units.Count; u++)
+                    EstateState s = EstateDirector.Instance != null ? EstateDirector.Instance.State : null;
+                    for (int i = 0; s != null && i < s.Holdings.Count; i++)
                     {
-                        EstateUnit unit = h.Units[u];
-                        ask += unit.Ask;
-                        if (unit.Let)
+                        // Each unit has its own lease: let if any unit is, the asking rents averaged, the agreed rents summed.
+                        EstateHolding h = s.Holdings[i];
+                        bool let = false;
+                        int ask = 0, rent = 0;
+                        for (int u = 0; u < h.Units.Count; u++)
                         {
-                            let = true;
-                            rent += unit.Rent;
+                            EstateUnit unit = h.Units[u];
+                            ask += unit.Ask;
+                            if (unit.Let)
+                            {
+                                let = true;
+                                rent += unit.Rent;
+                            }
                         }
+                        into.Add(new FameHolding
+                        {
+                            District = h.District,
+                            Let = let,
+                            Ask = h.Managed && h.Units.Count > 0 ? ask / h.Units.Count : FameRules.AskMarket,
+                            Rent = h.Managed ? rent : 0
+                        });
                     }
-                    into.Add(new FameHolding
-                    {
-                        District = h.District,
-                        Let = let,
-                        Ask = h.Managed && h.Units.Count > 0 ? ask / h.Units.Count : FameRules.AskMarket,
-                        Rent = h.Managed ? rent : 0
-                    });
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Holdings", e);
                 }
             }
 
             // The best of the player's brands' recognition in each district, in points (the brands keep hundredths).
             private static void Brand(Dictionary<string, int> into)
             {
-                BrandsState s = BrandsDirector.Instance != null ? BrandsDirector.Instance.State : null;
-                for (int b = 0; s != null && b < s.Brands.Count; b++)
+                try
                 {
-                    List<DistrictFile> districts = s.Brands[b].Districts;
-                    for (int i = 0; i < districts.Count; i++)
+                    BrandsState s = BrandsDirector.Instance != null ? BrandsDirector.Instance.State : null;
+                    for (int b = 0; s != null && b < s.Brands.Count; b++)
                     {
-                        int points = districts[i].Rec / 100, best;
-                        if (!string.IsNullOrEmpty(districts[i].Name) && (!into.TryGetValue(districts[i].Name, out best) || points > best))
+                        List<DistrictFile> districts = s.Brands[b].Districts;
+                        for (int i = 0; i < districts.Count; i++)
                         {
-                            into[districts[i].Name] = points;
+                            int points = districts[i].Rec / 100, best;
+                            if (!string.IsNullOrEmpty(districts[i].Name) && (!into.TryGetValue(districts[i].Name, out best) || points > best))
+                            {
+                                into[districts[i].Name] = points;
+                            }
                         }
                     }
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Brand", e);
                 }
             }
 
             private static void Deed()
             {
-                FameDirector.Instance?.Moved(FamePart.Integrity, FameCause.GoodDeed, DeedIntegrity);
+                try
+                {
+                    FameDirector.Instance?.Moved(FamePart.Integrity, FameCause.GoodDeed, DeedIntegrity);
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Deed", e);
+                }
             }
 
             // One of business pressure's issues has closed: what it says to the customers and the workers of the player.
             private static void IssueClosed(string kind, string place, string outcome)
             {
-                FameDirector fame = FameDirector.Instance;
-                if (fame == null || fame.File == null || outcome == null)
+                try
                 {
-                    return;
+                    FameDirector fame = FameDirector.Instance;
+                    if (fame == null || fame.File == null || outcome == null)
+                    {
+                        return;
+                    }
+                    switch (outcome)
+                    {
+                        case "reallife_biz_complaint_voucher_done": fame.Moved(FamePart.Customers, FameCause.Complaint, 2); break;
+                        case "reallife_biz_complaint_ignored": fame.Moved(FamePart.Customers, FameCause.Complaint, -2); break;
+                        case "reallife_biz_praise_shared": fame.Moved(FamePart.Customers, FameCause.Praise, 1); break;
+                        case "reallife_biz_health_pass":
+                        case "reallife_biz_health_pass_second":
+                        case "reallife_biz_fire_pass": fame.Moved(FamePart.Customers, FameCause.Inspection, 1); break;
+                        case "reallife_biz_health_fail":
+                        case "reallife_biz_health_fail_closed":
+                        case "reallife_biz_fire_fail":
+                        case "reallife_biz_fire_fail_closed": fame.Moved(FamePart.Customers, FameCause.Inspection, -2); break;
+                        case "reallife_biz_strike_raised":
+                        case "reallife_biz_strike_bonus_done": fame.Moved(FamePart.Workers, FameCause.Strike, 2); break;
+                        case "reallife_biz_strike_walkout":
+                        case "reallife_biz_strike_backed_down": fame.Moved(FamePart.Workers, FameCause.Strike, -3); break;
+                        case "reallife_biz_argument_festered":
+                        case "reallife_biz_poach_lost": fame.Moved(FamePart.Workers, FameCause.Staff, -1); break;
+                    }
                 }
-                switch (outcome)
+                catch (Exception e)
                 {
-                    case "reallife_biz_complaint_voucher_done": fame.Moved(FamePart.Customers, FameCause.Complaint, 2); break;
-                    case "reallife_biz_complaint_ignored": fame.Moved(FamePart.Customers, FameCause.Complaint, -2); break;
-                    case "reallife_biz_praise_shared": fame.Moved(FamePart.Customers, FameCause.Praise, 1); break;
-                    case "reallife_biz_health_pass":
-                    case "reallife_biz_health_pass_second":
-                    case "reallife_biz_fire_pass": fame.Moved(FamePart.Customers, FameCause.Inspection, 1); break;
-                    case "reallife_biz_health_fail":
-                    case "reallife_biz_health_fail_closed":
-                    case "reallife_biz_fire_fail":
-                    case "reallife_biz_fire_fail_closed": fame.Moved(FamePart.Customers, FameCause.Inspection, -2); break;
-                    case "reallife_biz_strike_raised":
-                    case "reallife_biz_strike_bonus_done": fame.Moved(FamePart.Workers, FameCause.Strike, 2); break;
-                    case "reallife_biz_strike_walkout":
-                    case "reallife_biz_strike_backed_down": fame.Moved(FamePart.Workers, FameCause.Strike, -3); break;
-                    case "reallife_biz_argument_festered":
-                    case "reallife_biz_poach_lost": fame.Moved(FamePart.Workers, FameCause.Staff, -1); break;
+                    Fault("StandingLinks.IssueClosed", e);
                 }
             }
         }

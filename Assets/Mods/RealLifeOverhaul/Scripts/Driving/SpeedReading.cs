@@ -151,7 +151,6 @@ namespace RealLifeOverhaul
             {
                 // The condition's picture would say something else: the game's own information picture, or none.
                 var image = picture.GetComponent<Image>();
-                GameSprites.Want("Icon-Info-32");
                 Sprite sprite = GameSprites.Get("Icon-Info-32");
                 if (image != null && sprite != null)
                 {
@@ -170,6 +169,12 @@ namespace RealLifeOverhaul
             UnityEngine.Object.DestroyImmediate(holder.gameObject);
             _reading = copy;
             return true;
+        }
+
+        /// <summary>The game's pictures this asks for, named before the one look behind the loading screen (GameSprites.Prewarm).</summary>
+        internal static void WantPictures()
+        {
+            GameSprites.Want("Icon-Info-32");
         }
     }
 }

@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Flare
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
@@ -255,7 +256,6 @@ namespace RealLifeOverhaul.Flare
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new FlareApp(this);
-            GameSprites.Want(AppGlyphs);
             bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {

@@ -77,25 +77,68 @@ namespace RealLifeOverhaul
             // A manager's price, through the brands' writer: never at another player's shop (BrandsGame.KeepPrice asks Going Public).
             private static bool WritePrice(BuildingRegistration reg, string item, float price, string district)
             {
-                return BrandsGame.KeepPrice(reg, item, price, district, false);
+                try
+                {
+                    return BrandsGame.KeepPrice(reg, item, price, district, false);
+                }
+                catch (Exception e)
+                {
+                    Fault("BrandLinks.WritePrice", e);
+                    return false;
+                }
             }
 
             private static bool PricesKept(string place)
             {
-                BrandsDirector brands = BrandsDirector.Instance;
-                return Settings.Economy && Settings.EconomyBrands && brands != null && brands.Running && brands.KeepsPrices(place);
+                try
+                {
+                    BrandsDirector brands = BrandsDirector.Instance;
+                    return Settings.Economy && Settings.EconomyBrands && brands != null && brands.Running && brands.KeepsPrices(place);
+                }
+                catch (Exception e)
+                {
+                    Fault("BrandLinks.PricesKept", e);
+                    return false;
+                }
             }
 
             // The earlier pairings' part with the brand's share on top; business pressure bounds the sum.
             private static int Ambient(BuildingRegistration reg)
             {
-                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + BrandsDirector.FootfallOf(reg);
+                int before = 0;
+                try
+                {
+                    before = _ambientBefore != null ? _ambientBefore(reg) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("BrandLinks.Ambient (the pairings before)", e);
+                }
+                try
+                {
+                    return before + BrandsDirector.FootfallOf(reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("BrandLinks.Ambient", e);
+                    return before;
+                }
             }
 
             private static bool Footfall(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written)
             {
-                bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0);
-                return BusinessDirector.Footfall(reg, redraw && !drawn, newDay, out own, out written);
+                try
+                {
+                    bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0);
+                    return BusinessDirector.Footfall(reg, redraw && !drawn, newDay, out own, out written);
+                }
+                catch (Exception e)
+                {
+                    Fault("BrandLinks.Footfall", e);
+                    own = 0;
+                    written = 0;
+                    return false;
+                }
             }
 
             private static int PriceLoss(BuildingRegistration reg)

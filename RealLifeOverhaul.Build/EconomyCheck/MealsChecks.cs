@@ -206,7 +206,11 @@ internal static partial class Program
         Check(slow.Contains("!MealsGame.Dancing(player)") && slow.Contains("!Settings.MealsDance") && slow.Contains("MealsGame.Building(), _danceIn") && slow.Contains("!MealsGame.MusicPlaying()"),
             "meals sources: the dance ends when the game ends it (moving), the option goes off, the player leaves or the music stops");
         Check(InOrder(slow, "MealsRules.Lifts(", "_lastLift = now;", "ModState.AddModifier(ModState.MoodUp);") && Occurs(dance, "ModState.AddModifier(") == 1, "meals sources: the lift is the mod's own mood, once, and capped by the rules");
-        Check(game.Contains("PlayerDances.StartDancing((DanceType)dance);") && game.Contains("PlayerDances.StopDancing();"), "meals sources: the dances are the game's own, started and stopped by its own calls");
+        string start = MemberText(game, "public static void StartDance(PlayerController player, int dance)");
+        Check(InOrder(start, "PlayerDances.StopDancing();", "player.ResetNavigation();", "player.Character.SetDance((DanceType)dance);") && game.Contains("PlayerDances.StopDancing();"),
+            "meals sources: the dances are the game's own clips, started on the player's animator and stopped by the game's own call");
+        Check(!game.Contains("PlayerDances.StartDancing") && !Regex.IsMatch(game + dance, @"EnergyHelper\.(AddEnergySpender|SpentEnergyOnce)|ChangeEnergy|HappinessHelper|TemporalHappinessBoost"),
+            "meals sources: dancing to the music spends no energy and lifts nothing but the mod's mood (never the game's dancing, its energy spender or its nightclub boost)");
 
         // Home cooking: a seat asked for before the food, the food given once whatever the answer.
         string cook = ModSource(@"Home\CookActivity.cs");
@@ -278,6 +282,15 @@ internal static partial class Program
                     Check(page.Contains(fact), "meals texts: the Guide page has " + fact + " in " + code);
                 }
             }
+        }
+        // Dancing only lifts the mood: the Guide says it costs no energy, in each language the page is written in.
+        var noEnergy = new Dictionary<string, string> { { "en", "Dancing costs no energy" }, { "pt", "Dançar não gasta energia" }, { "zh-cn", "跳舞不消耗能量" } };
+        foreach (KeyValuePair<string, string> said in noEnergy)
+        {
+            Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, said.Key + ".json"));
+            Check(words != null && words.TryGetValue(MealsText.Guide, out string page) && page.Contains(said.Value) && !page.Contains("spends energy") && !page.Contains("gasta energia como")
+                  && !page.Contains("一样消耗能量"),
+                "meals texts: the Guide page says dancing to the music costs no energy, in " + said.Key);
         }
         // What's new in all nine, in any row: the next row until a release numbers it into its own.
         var lines = new Dictionary<string, string>

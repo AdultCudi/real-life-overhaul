@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Calendar
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
         }
 
         private void OnDestroy()
@@ -143,7 +144,6 @@ namespace RealLifeOverhaul.Calendar
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new CalendarApp(this);
-            GameSprites.Want(AppGlyphs);   // asked for before the one look through the game's pictures
             bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {

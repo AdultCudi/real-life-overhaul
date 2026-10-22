@@ -32,6 +32,8 @@ namespace RealLifeOverhaul.Tech
         private void Awake()
         {
             Instance = this;
+            GameUi.GameSprites.Want(RolesGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
+            GameUi.GameSprites.Want(TechGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             TalentGame.Logger = Logger;
             HiringGame.Logger = Logger;
             FirmsGame.Logger = Logger;

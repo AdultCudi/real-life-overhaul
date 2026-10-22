@@ -114,7 +114,24 @@ namespace RealLifeOverhaul
             // The earlier pairings' part with the litter near the door on top; business pressure bounds the sum.
             private static int Ambient(BuildingRegistration reg)
             {
-                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + FaultDirector.FootfallOf(reg);
+                int before = 0;
+                try
+                {
+                    before = _ambientBefore != null ? _ambientBefore(reg) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("FaultLinks.Ambient (the pairings before)", e);
+                }
+                try
+                {
+                    return before + FaultDirector.FootfallOf(reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("FaultLinks.Ambient", e);
+                    return before;
+                }
             }
 
             private static void Footfall(BuildingRegistration reg)

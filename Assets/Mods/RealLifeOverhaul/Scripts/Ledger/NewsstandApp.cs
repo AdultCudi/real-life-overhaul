@@ -82,7 +82,6 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
-            GameSprites.Want(AppGlyphs);
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,
@@ -423,6 +422,12 @@ namespace RealLifeOverhaul.Ledger
         private static void Say(NotificationType type, string key, params string[] pairs)
         {
             Notifications.Show(type, key, pairs.Length > 0 ? LedgerText.Data(pairs) : null, 6f);
+        }
+
+        /// <summary>The game's pictures this asks for, named before the one look behind the loading screen (GameSprites.Prewarm).</summary>
+        internal static void WantPictures()
+        {
+            GameSprites.Want(AppGlyphs);
         }
     }
 }

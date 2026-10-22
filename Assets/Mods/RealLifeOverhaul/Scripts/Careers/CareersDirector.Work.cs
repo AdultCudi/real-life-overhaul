@@ -539,7 +539,6 @@ namespace RealLifeOverhaul.Careers
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new CareerApp(this);
-            GameSprites.Want(CareerGlyphs);
             bool tryAgain;
             _careerApp = PhoneApp.Install(new PhoneAppDef
             {

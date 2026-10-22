@@ -320,36 +320,44 @@ namespace RealLifeOverhaul
             private static NetState Connection(out string home)
             {
                 home = null;
-                Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
-                Utilities.UtilitiesState state = d != null ? d.State : null;
-                GameInstance save = SaveGameManager.Current;
-                if (!Settings.Utilities || state == null || Utilities.UtilitiesDirector.Failed || save == null)
+                try
                 {
+                    Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
+                    Utilities.UtilitiesState state = d != null ? d.State : null;
+                    GameInstance save = SaveGameManager.Current;
+                    if (!Settings.Utilities || state == null || Utilities.UtilitiesDirector.Failed || save == null)
+                    {
+                        return NetState.NotKept;
+                    }
+                    int hour = save.Day * 24 + save.Hour;
+                    NetState best = NetState.NoHome;
+                    IReadOnlyList<Utilities.PlaceInfo> places = d.Places;
+                    for (int i = 0; i < places.Count; i++)
+                    {
+                        Utilities.PlaceInfo place = places[i];
+                        if (place.Kind != Utilities.PlaceKind.Home)
+                        {
+                            continue;
+                        }
+                        Utilities.Account a = state.Find(place.Place, Utilities.Service.Internet);
+                        NetState here = a == null || a.State == Utilities.SupplyState.Closed ? NetState.NoLine
+                            : a.State == Utilities.SupplyState.Pending ? NetState.Installing
+                            : a.State == Utilities.SupplyState.Cut ? NetState.Cut
+                            : a.State != Utilities.SupplyState.Active ? NetState.NoLine
+                            : Utilities.InternetRules.InOutage(a, hour) ? NetState.Outage : NetState.Online;
+                        if (here < best)
+                        {
+                            best = here;
+                            home = place.Name;
+                        }
+                    }
+                    return best;
+                }
+                catch (Exception e)
+                {
+                    Fault("LedgerLinks.Connection", e);
                     return NetState.NotKept;
                 }
-                int hour = save.Day * 24 + save.Hour;
-                NetState best = NetState.NoHome;
-                IReadOnlyList<Utilities.PlaceInfo> places = d.Places;
-                for (int i = 0; i < places.Count; i++)
-                {
-                    Utilities.PlaceInfo place = places[i];
-                    if (place.Kind != Utilities.PlaceKind.Home)
-                    {
-                        continue;
-                    }
-                    Utilities.Account a = state.Find(place.Place, Utilities.Service.Internet);
-                    NetState here = a == null || a.State == Utilities.SupplyState.Closed ? NetState.NoLine
-                        : a.State == Utilities.SupplyState.Pending ? NetState.Installing
-                        : a.State == Utilities.SupplyState.Cut ? NetState.Cut
-                        : a.State != Utilities.SupplyState.Active ? NetState.NoLine
-                        : Utilities.InternetRules.InOutage(a, hour) ? NetState.Outage : NetState.Online;
-                    if (here < best)
-                    {
-                        best = here;
-                        home = place.Name;
-                    }
-                }
-                return best;
             }
 
             private static readonly NewsstandRenewals Renewals = new NewsstandRenewals();

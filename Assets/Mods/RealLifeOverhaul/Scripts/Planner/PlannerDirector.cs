@@ -84,6 +84,7 @@ namespace RealLifeOverhaul.Planner
         private void Awake()
         {
             Instance = this;
+            PlannerText.WantIcons();   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             PlannerStore.Reset();
             Samples = false;
             _onSave = OnSave;
@@ -204,7 +205,6 @@ namespace RealLifeOverhaul.Planner
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new PlannerApp(this);
-            PlannerText.WantIcons();   // before the one look through the game's pictures
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,

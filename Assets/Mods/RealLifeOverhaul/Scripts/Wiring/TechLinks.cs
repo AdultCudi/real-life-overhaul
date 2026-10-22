@@ -53,8 +53,16 @@ namespace RealLifeOverhaul
 
             private static int Esteem()
             {
-                FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
-                return f != null ? FamePress.Esteem(f) : 0;
+                try
+                {
+                    FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
+                    return f != null ? FamePress.Esteem(f) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Esteem", e);
+                    return 0;
+                }
             }
 
             private static string Rival(BuildingRegistration reg)
@@ -112,16 +120,32 @@ namespace RealLifeOverhaul
             // The tech company of the player's job, by name: its floor of a tower is offered as theirs.
             private static string Employer()
             {
-                Careers.WorkFile work = Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.Work : null;
-                Careers.Job job = work != null ? work.Job : null;
-                return job != null && job.Post != null && job.Post.Kind == (int)Careers.EmployerKind.TechFirm ? job.Post.Employer : null;
+                try
+                {
+                    Careers.WorkFile work = Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.Work : null;
+                    Careers.Job job = work != null ? work.Job : null;
+                    return job != null && job.Post != null && job.Post.Kind == (int)Careers.EmployerKind.TechFirm ? job.Post.Employer : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Employer", e);
+                    return null;
+                }
             }
 
             private static bool OthersPicked()
             {
-                Careers.CareersDirector careers = Careers.CareersDirector.Instance;
-                bool campus = !Careers.CareersDirector.UniversityOpen || (careers != null && careers.University != null && careers.University.Searched);
-                return OfficeLinks.CityOfficesPicked() && campus;
+                try
+                {
+                    Careers.CareersDirector careers = Careers.CareersDirector.Instance;
+                    bool campus = !Careers.CareersDirector.UniversityOpen || (careers != null && careers.University != null && careers.University.Searched);
+                    return OfficeLinks.CityOfficesPicked() && campus;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.OthersPicked", e);
+                    return false;
+                }
             }
 
             private static bool Supplied(BuildingRegistration reg, int service)

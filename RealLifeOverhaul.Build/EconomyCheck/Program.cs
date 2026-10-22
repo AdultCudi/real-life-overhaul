@@ -137,6 +137,8 @@ internal static partial class Program
             DiagnosticsFixes();
             CalendarFixes();
             TextsStreetFixes();
+            WiringFixes();
+            CoreFixes();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -262,6 +264,8 @@ internal static partial class Program
         PhoneWorldFixes();   // the level of detail put back only if it was set, the doctor's refused payment ends the call with a word (PhoneFixChecks.cs)
         DiagnosticsFixes();   // the logs page on the graphics card's figures, no count of civic props nobody reads (DiagnosticsFixChecks.cs)
         CalendarFixes();   // a failed calendar source leaves nothing behind, every app made only once the phone can take it (CalendarFixChecks.cs)
+        WiringFixes();   // every Wiring adapter behind a try with a Wiring fault, the pairing before asked inside one, the financial analyst named, lists let go after a fault (WiringFixChecks.cs)
+        CoreFixes();   // the phone dump gone, the shown buildings compared as a set, the tab copies taken back, the pictures found behind the loading screen, the bar marker by share, the font not looked for again (CoreFixChecks.cs)
         TextsStreetFixes();   // a raise thanked though first seen on another text's look, never "X and X", web requests let go, the packs said found by a barrier, a Done that asks again safe in the hub's look (TextsFixChecks.cs)
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)

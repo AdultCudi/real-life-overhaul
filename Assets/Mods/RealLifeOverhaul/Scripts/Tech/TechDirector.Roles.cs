@@ -20,7 +20,6 @@ namespace RealLifeOverhaul.Tech
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new RolesApp(this);
-            GameSprites.Want(RolesGlyphs);
             _rolesApp = PhoneApp.Install(new PhoneAppDef
             {
                 Id = RolesAppId,

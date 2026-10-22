@@ -165,8 +165,16 @@ namespace RealLifeOverhaul
 
             private static ulong Playthrough()
             {
-                MarketState state = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
-                return state != null ? state.Id : 0UL;
+                try
+                {
+                    MarketState state = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
+                    return state != null ? state.Id : 0UL;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Playthrough", e);
+                    return 0UL;
+                }
             }
 
             private static bool Holding(int id, out long shares, out long held, out long most, out int midCents)
@@ -231,28 +239,68 @@ namespace RealLifeOverhaul
 
             private static int Ambient(BuildingRegistration reg)
             {
-                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + RivalDirector.FootfallOf(reg);
+                int before = 0;
+                try
+                {
+                    before = _ambientBefore != null ? _ambientBefore(reg) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Ambient (the pairings before)", e);
+                }
+                try
+                {
+                    return before + RivalDirector.FootfallOf(reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Ambient", e);
+                    return before;
+                }
             }
 
             // A kind of issue's weight in business pressure's deal: the earlier pairings' first, then a rival's lobbying.
             private static int Weight(string kind, int weight)
             {
-                int w = _weightBefore != null ? _weightBefore(kind, weight) : weight;
-                switch (kind)
+                int w = weight;
+                try
                 {
-                    case BusinessCatalogue.Health:
-                    case BusinessCatalogue.Fire:
-                    case BusinessCatalogue.Licence:
-                    case BusinessCatalogue.Audit:
-                        return (int)((long)w * (1000 + RivalDirector.InspectionWeight()) / 1000);
-                    default:
-                        return w;
+                    w = _weightBefore != null ? _weightBefore(kind, weight) : weight;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Weight (the pairings before)", e);
+                }
+                try
+                {
+                    switch (kind)
+                    {
+                        case BusinessCatalogue.Health:
+                        case BusinessCatalogue.Fire:
+                        case BusinessCatalogue.Licence:
+                        case BusinessCatalogue.Audit:
+                            return (int)((long)w * (1000 + RivalDirector.InspectionWeight()) / 1000);
+                        default:
+                            return w;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Weight", e);
+                    return w;
                 }
             }
 
             private static void Extra(int day, List<NewsItem> into)
             {
-                _extraBefore?.Invoke(day, into);
+                try
+                {
+                    _extraBefore?.Invoke(day, into);
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Extra (the pieces before)", e);
+                }
                 try
                 {
                     RivalDirector.Instance?.Paper(day, into);

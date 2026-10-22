@@ -107,8 +107,6 @@ namespace RealLifeOverhaul.Meta
             {
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
-            GameSprites.Want(AppGlyphs);
-            GameSprites.Want(SettingsView.Glyphs);
             var view = new SettingsView();
             _app = PhoneApp.Install(new PhoneAppDef
             {
@@ -213,6 +211,13 @@ namespace RealLifeOverhaul.Meta
             {
                 MetaLog.Error(e);
             }
+        }
+
+        /// <summary>The game's pictures this asks for, named before the one look behind the loading screen (GameSprites.Prewarm).</summary>
+        internal static void WantPictures()
+        {
+            GameSprites.Want(AppGlyphs);
+            GameSprites.Want(SettingsView.Glyphs);
         }
     }
 }

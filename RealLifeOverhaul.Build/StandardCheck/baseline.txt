@@ -24,7 +24,6 @@ RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Garage/GarageTuning.cs	1
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Meta/MetaUi.cs	1
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Navigation/NavCityMap.cs	2
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Phone/Contacts/ContactPainter.cs	1
-RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneUiDump.cs	5
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Photos/CameraMode.cs	1
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/FlareFacePainter.cs	1
 RLO-PERF-003	Assets/Mods/RealLifeOverhaul/Scripts/World/NearbyInteraction.cs	1
@@ -43,7 +42,6 @@ RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfCensus.cs	20
 RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Performance/PerfGame.cs	2
 RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Performance/Tweaks/FarDistricts.cs	1
 RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Performance/Tweaks/RefractionOff.cs	1
-RLO-PERF-005	Assets/Mods/RealLifeOverhaul/Scripts/Phone/PhoneUiDump.cs	1
 RLO-PERF-006	Assets/Mods/RealLifeOverhaul/Scripts/Events/FireScene.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Character/CharacterQuality.cs	1
 RLO-PERF-012	Assets/Mods/RealLifeOverhaul/Scripts/Diagnostics/CharacterLab.cs	1
