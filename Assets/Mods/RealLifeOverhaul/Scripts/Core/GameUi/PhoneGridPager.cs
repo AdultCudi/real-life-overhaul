@@ -125,8 +125,8 @@ namespace RealLifeOverhaul.GameUi
             return folder >= 0 && folder < _members.Length ? _members[folder] : 0;
         }
 
-        /// <summary>Pages for the HUD phone's grid. <paramref name="dot"/> is not used.</summary>
-        public static PhoneGridPager On(Transform grid, Transform template, Sprite dot)
+        /// <summary>Pages for the HUD phone's grid.</summary>
+        public static PhoneGridPager On(Transform grid, Transform template)
         {
             if (grid == null)
             {
@@ -185,8 +185,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Pages for the full menu's row; <paramref name="rightData"/> is read only for the diagnostics line, <paramref name="dot"/> not at all.</summary>
-        public static PhoneGridPager OnStrip(Transform strip, Transform template, Sprite dot, RectTransform rightData)
+        /// <summary>Pages for the full menu's row, whose room ends at <paramref name="rightData"/>, the box of the money, date and time.</summary>
+        public static PhoneGridPager OnStrip(Transform strip, Transform template, RectTransform rightData)
         {
             if (strip == null || !(strip is RectTransform) || strip.GetComponent<HorizontalLayoutGroup>() == null)
             {
@@ -387,8 +387,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A badge of the mod's changed: the More apps button counts again. The parameters are not read.</summary>
-        public void SetAttention(Transform button, bool on)
+        /// <summary>A badge of the mod's changed: the More apps button counts again.</summary>
+        public void SetAttention()
         {
             Paint();
         }

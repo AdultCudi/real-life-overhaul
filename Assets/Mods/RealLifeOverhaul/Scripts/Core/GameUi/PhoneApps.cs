@@ -145,14 +145,10 @@ namespace RealLifeOverhaul.GameUi
                 hud.gameObject.SetActive(true);
                 inMenu.gameObject.SetActive(true);
 
-                // The dot under the open app: the one round dot at hand.
-                Transform selected = menuTemplate.Find("SelectedIcon");
-                Image dot = selected != null ? selected.GetComponent<Image>() : null;
-                app._pager = PhoneGridPager.On(hudTemplate.parent, hudTemplate, dot != null ? dot.sprite : null);
+                app._pager = PhoneGridPager.On(hudTemplate.parent, hudTemplate);
                 // The full menu's row ends at the money, the date and the time ("RightData").
                 Transform bar = menuTemplate.parent.parent;
-                app._strip = PhoneGridPager.OnStrip(menuTemplate.parent, menuTemplate, dot != null ? dot.sprite : null,
-                                                    bar != null ? bar.Find("RightData") as RectTransform : null);
+                app._strip = PhoneGridPager.OnStrip(menuTemplate.parent, menuTemplate, bar != null ? bar.Find("RightData") as RectTransform : null);
 
                 if (Meta.Dev.Verbose)
                 {
@@ -334,7 +330,7 @@ namespace RealLifeOverhaul.GameUi
                 _hudButton.UpdateBadgeCount(count);
                 if (_pager != null)
                 {
-                    _pager.SetAttention(_hudButton.transform, count > 0);
+                    _pager.SetAttention();
                 }
             }
             catch (Exception e)
