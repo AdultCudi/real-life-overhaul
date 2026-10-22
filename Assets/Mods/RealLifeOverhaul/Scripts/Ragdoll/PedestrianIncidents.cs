@@ -336,7 +336,7 @@ namespace RealLifeOverhaul
                 {
                     return Strike.NotCounted;
                 }
-                Strike why = CanStrike(actor.Character);   // nobody the pool is not drawing is run over
+                Strike why = CanStrike(actor.Character, posedByHand: actor.PosedByHand);   // nobody the pool is not drawing is run over
                 if (why != Strike.Down)
                 {
                     return why;
@@ -371,8 +371,9 @@ namespace RealLifeOverhaul
             Failed        // could not be taken over or thrown after all
         }
 
-        // Down if this person can be thrown right now; otherwise why not.
-        private static Strike CanStrike(BaseHuman person, bool seatedToo = false)
+        // Down if this person can be thrown right now; otherwise why not. posedByHand: one of the mod's people kneeling by
+        // hand, drawn, whose animator is off only for the pose (StreetActor.PosedByHand), which Casualty.BeginActor clears.
+        private static Strike CanStrike(BaseHuman person, bool seatedToo = false, bool posedByHand = false)
         {
             RagdollSystem ragdolls = RagdollSystem.Instance;
             if (!ModState.Loaded || ragdolls == null || person == null || RagdollSystem.Holds(person))
@@ -385,7 +386,7 @@ namespace RealLifeOverhaul
                 // tied to the seat than that.
                 return Strike.Seated;
             }
-            return ragdolls.CanBegin(person) ? Strike.Down : Strike.NoRagdoll;
+            return ragdolls.CanBegin(person, posedByHand) ? Strike.Down : Strike.NoRagdoll;
         }
 
         private void OnPlayerHit(Casualty casualty, float speed, Rigidbody playerCar)

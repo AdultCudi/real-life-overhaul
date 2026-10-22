@@ -88,7 +88,7 @@ namespace RealLifeOverhaul
                 {
                     return Strike.NotCounted;
                 }
-                Strike why = CanStrike(actor.Character);
+                Strike why = CanStrike(actor.Character, posedByHand: actor.PosedByHand);
                 if (why != Strike.Down)
                 {
                     return why;

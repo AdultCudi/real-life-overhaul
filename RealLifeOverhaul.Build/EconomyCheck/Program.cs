@@ -117,6 +117,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--clean-fixes")
+        {
+            RagdollLifeFixes();   // (the clean-up's fixes alone, while working on them: RagdollFixChecks.cs and the rest named in Main)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--probe-start")
         {
             return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
@@ -234,6 +240,7 @@ internal static partial class Program
         Fame();
         CrimeFixes();   // a hold-up empties the till, rewards at today's prices, a release in a session names no hours, no Crime.Pay dropped (CrimeFixChecks.cs)
         CityEventFixes();   // the spare hose by the engine, a guest's traffic left alone by the weather, arrivals past one who never came (CityEventFixChecks.cs)
+        RagdollLifeFixes();   // a kneeling medic struck as one standing and kneeling again if not, the memorial's ids with commas, the building manager tested (RagdollFixChecks.cs)
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)
