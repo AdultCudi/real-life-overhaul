@@ -390,9 +390,10 @@ namespace RealLifeOverhaul.Nav
             _sinceRoute = 0f;
         }
 
-        /// <param name="lateral">Metres from the route's line.</param>
-        /// <param name="left">Metres of route still ahead.</param>
-        /// <param name="toPlace">Metres in a straight line to the place itself.</param>
+        /// <summary>
+        /// One tick of <paramref name="dt"/> seconds; <paramref name="lateral"/> is metres from the route's line,
+        /// <paramref name="left"/> metres of route ahead and <paramref name="toPlace"/> metres straight to the place.
+        /// </summary>
         public NavEvent Tick(float dt, bool onFoot, float lateral, float left, float toPlace)
         {
             _sinceRoute += dt;
