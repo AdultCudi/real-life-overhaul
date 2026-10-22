@@ -1,12 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 using BAModAPI;
-using Extensions;
-using Localizor;
-using UI.Notification;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
